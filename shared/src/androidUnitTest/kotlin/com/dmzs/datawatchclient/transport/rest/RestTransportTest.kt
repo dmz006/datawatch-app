@@ -85,16 +85,15 @@ class RestTransportTest {
 
     @Test
     fun listSessionsDeserializesHappyPath() = runTest {
+        // Datawatch returns a bare JSON array for /api/sessions.
         server.enqueue(
             jsonResponse(
                 """
-                {
-                  "sessions": [
-                    {"id":"a3f2","state":"running","task_summary":"fix bug",
-                     "hostname_prefix":"laptop","created_ts":1700000000000,
-                     "last_activity_ts":1700000060000}
-                  ]
-                }
+                [
+                  {"id":"a3f2","state":"running","task_summary":"fix bug",
+                   "hostname_prefix":"laptop","created_ts":1700000000000,
+                   "last_activity_ts":1700000060000}
+                ]
                 """.trimIndent(),
             ),
         )

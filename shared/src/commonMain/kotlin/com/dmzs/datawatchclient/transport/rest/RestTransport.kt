@@ -7,7 +7,7 @@ import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.HealthDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
-import com.dmzs.datawatchclient.transport.dto.SessionListDto
+import com.dmzs.datawatchclient.transport.dto.SessionDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionResponseDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
@@ -69,10 +69,12 @@ public class RestTransport(
     }
 
     override suspend fun listSessions(): Result<List<Session>> = request {
-        val dto: SessionListDto = client.get("${profile.baseUrl}/api/sessions") {
+        // Datawatch returns /api/sessions as a bare JSON array, not wrapped in
+        // {"sessions": [...]} — verified against a live server 2026-04-18.
+        val dto: List<SessionDto> = client.get("${profile.baseUrl}/api/sessions") {
             bearer()?.let { header(HttpHeaders.Authorization, it) }
         }.body()
-        dto.sessions.map { it.toDomain(profile.id) }
+        dto.map { it.toDomain(profile.id) }
     }
 
     override suspend fun startSession(task: String, serverHint: String?): Result<String> =

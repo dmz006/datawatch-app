@@ -79,7 +79,13 @@ public class AddServerViewModel : ViewModel() {
             )
 
             val transport = ServiceLocator.transportFor(profile)
-            val probe = transport.ping()
+            // Two-step probe: health confirms reachability + TLS; then listSessions
+            // confirms the datawatch REST API shapes match what we deserialize —
+            // prevents "added successfully but sessions tab fails" class of bugs.
+            val probe = transport.ping().fold(
+                onSuccess = { transport.listSessions().map { Unit } },
+                onFailure = { Result.failure(it) },
+            )
             probe.fold(
                 onSuccess = {
                     ServiceLocator.profileRepository.upsert(profile)

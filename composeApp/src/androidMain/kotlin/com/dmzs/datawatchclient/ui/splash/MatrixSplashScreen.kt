@@ -57,10 +57,11 @@ import kotlin.random.Random
 @Composable
 public fun MatrixSplashScreen(
     replay: Boolean = false,
+    autoAdvance: Boolean = !replay,
     autoAdvanceMs: Long = 3200L,
     onFinished: () -> Unit,
 ) {
-    if (!replay) {
+    if (autoAdvance) {
         LaunchedEffect(Unit) {
             delay(autoAdvanceMs)
             onFinished()
