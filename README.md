@@ -28,24 +28,20 @@ Sprint 1 (2026-05-02).
 
 ## Build (Sprint 0+)
 
-Requires JDK 21+, Android SDK, and Xcode (for iOS skeleton only).
+Requires JDK 17 or 21 (AGP 8.5.2 ceiling; JDK 25+ is incompatible as of this writing)
+and the Android SDK. iOS build additionally requires Xcode on a Mac.
 
 ```bash
-# First-time wrapper bootstrap (once, not checked in yet — see scaffold note below):
-gradle wrapper --gradle-version 8.9 --distribution-type bin
-
-# Then:
-./gradlew :composeApp:assembleDebug       # Android phone debug
-./gradlew :wear:assembleDebug             # Wear OS debug
-./gradlew :auto:assemblePublicDebug       # Android Auto (Messaging) debug
-./gradlew :auto:assembleDevDebug          # Android Auto (full passenger) internal
-./gradlew test                            # Shared + common tests
-./gradlew detekt ktlintCheck lintDebug    # Linters
+./gradlew :composeApp:assembleDebug            # Android phone debug
+./gradlew :composeApp:assembleDevDebug         # Internal dev-flavor debug
+./gradlew :wear:assembleDebug                  # Wear OS debug
+./gradlew :auto:assemblePublicMessagingDebug   # Android Auto — Messaging template
+./gradlew :auto:assembleDevPassengerDebug      # Android Auto — internal passenger UI
+./gradlew test                                 # Shared + common tests
+./gradlew detekt ktlintCheck lintDebug         # Linters
 ```
 
-> **Scaffold note (2026-04):** the Gradle wrapper JAR is not yet committed — run
-> `gradle wrapper --gradle-version 8.9` once on first clone. Sprint 1 Day 1 commits the
-> wrapper + working initial Gradle sync.
+Gradle wrapper is committed — no bootstrap step needed on clone.
 
 ## Project layout
 

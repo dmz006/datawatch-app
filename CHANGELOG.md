@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- Gradle wrapper committed (`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`,
+  Gradle 8.9) — no first-clone bootstrap step needed.
+- Concept B icon set (ADR-0037): Android adaptive icon foreground + background +
+  monochrome vector drawables under `composeApp/src/androidMain/res/drawable/`;
+  dev-flavor variant with amber "DEV" chip under `composeApp/src/dev/res/drawable/`;
+  master SVG + Play Store feature graphic under `assets/`.
+
 ### Changed
 - App display name set to `datawatch` (lowercase) for all user-facing surfaces — Play
   Store listing, launcher label, Wear watchface, Android Auto, iOS bundle display

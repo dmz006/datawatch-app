@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Play Store feature graphic, 1024×500 (Concept B, ADR-0037 / ADR-0041).
+  Layout: icon centered-left on a bleed background with the lowercase `datawatch`
+  word mark + a short tagline to the right. Matches parent datawatch palette.
+  Export as PNG with ImageMagick, rsvg-convert, or Android Asset Studio before
+  upload to Play Console (Sprint 5 task).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" role="img"
+     aria-label="datawatch Play Store feature graphic">
+  <defs>
+    <linearGradient id="bleed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="100%" stop-color="#0F1117"/>
+    </linearGradient>
+    <radialGradient id="fgSpot" cx="22%" cy="50%" r="35%">
+      <stop offset="0%" stop-color="#3B0764" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0F1117" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bleed)"/>
+  <rect width="1024" height="500" fill="url(#fgSpot)"/>
+
+  <!-- Left: the icon, scaled down from master 512 into 260 px at x~60 y~120 -->
+  <g transform="translate(60, 120) scale(0.51)">
+    <!-- Reuse master SVG content (inlined simplified) -->
+    <circle cx="256" cy="256" r="248" fill="#0A0620"/>
+    <!-- signal arcs -->
+    <g fill="none" stroke="#7C3AED" stroke-linecap="round">
+      <path d="M 136,122 A 120,120 0 0,1 376,122" stroke-width="8" opacity="0.45"/>
+      <path d="M 166,136 A 90,90 0 0,1 346,136" stroke-width="10" opacity="0.70"/>
+      <path d="M 196,150 A 60,60 0 0,1 316,150" stroke-width="12" opacity="0.95"
+            stroke="#A855F7"/>
+    </g>
+    <!-- phone body -->
+    <rect x="158" y="180" width="196" height="272" rx="36" ry="36"
+          fill="#150930" stroke="#7C3AED" stroke-width="3"/>
+    <rect x="172" y="214" width="168" height="202" rx="16" ry="16"
+          fill="#0A0318" stroke="#4C1D95" stroke-width="1"/>
+    <!-- mini eye -->
+    <g transform="translate(256, 315)">
+      <ellipse cx="0" cy="0" rx="72" ry="46" fill="#080518"
+               stroke="#7C3AED" stroke-width="1.6"/>
+      <circle cx="0" cy="0" r="34" fill="#7C3AED"/>
+      <circle cx="0" cy="0" r="14" fill="#04020E"/>
+      <g stroke="#E879F9" stroke-width="1.6">
+        <line x1="0" y1="-10" x2="0" y2="-4"/>
+        <line x1="0" y1="4"   x2="0" y2="10"/>
+        <line x1="-10" y1="0" x2="-4" y2="0"/>
+        <line x1="4"   y1="0" x2="10" y2="0"/>
+      </g>
+      <circle cx="0" cy="0" r="2" fill="#F0ABFC"/>
+    </g>
+  </g>
+
+  <!-- Right: word mark + tagline -->
+  <g transform="translate(380, 230)">
+    <text x="0" y="0"
+          font-family="JetBrains Mono, Menlo, monospace"
+          font-size="96" font-weight="700"
+          fill="#E2E8F0" letter-spacing="4">datawatch</text>
+    <text x="0" y="60"
+          font-family="system-ui, sans-serif"
+          font-size="32" fill="#A855F7" letter-spacing="1">
+      phone · watch · car
+    </text>
+    <text x="0" y="108"
+          font-family="system-ui, sans-serif"
+          font-size="22" fill="#94A3B8">
+      Your datawatch on the go. Voice, chat, and terminal for every session.
+    </text>
+  </g>
+</svg>
