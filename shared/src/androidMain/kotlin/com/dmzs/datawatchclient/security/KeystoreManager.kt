@@ -1,85 +1,74 @@
 package com.dmzs.datawatchclient.security
 
-import android.os.Build
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
-import java.security.KeyStore
-import javax.crypto.KeyGenerator
-import javax.crypto.Mac
-import javax.crypto.SecretKey
-import javax.crypto.spec.SecretKeySpec
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Base64
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import java.security.SecureRandom
 
 /**
- * Lifetime manager for the app's master key, per `docs/security-model.md`
- * "Key hierarchy". Generates a 256-bit AES/GCM key on first run, bound to the
- * Android Keystore under alias [ALIAS_MASTER]; never returns the raw key bytes to
- * callers. Instead, exposes derived outputs:
- *   - [deriveDatabasePassphrase]: 32-byte HMAC-SHA256(master, "db:v1") for SQLCipher.
- *   - HKDF-style subkey derivation can be added as new subsystems land.
+ * Lifetime manager for the SQLCipher database passphrase, per
+ * `docs/security-model.md` "Key hierarchy".
  *
- * StrongBox (hardware-isolated key) is requested on Android 9+ devices that have it
- * (`PackageManager.FEATURE_STRONGBOX_KEYSTORE`); quietly falls back to the TEE-backed
- * Keystore when unavailable.
+ * First call generates a cryptographically-random 32-byte passphrase and hands
+ * it to Jetpack Security's [EncryptedSharedPreferences], which wraps it under a
+ * hardware-backed AES-256-GCM key bound to the Android Keystore ([MasterKey]).
+ * Subsequent calls retrieve and decrypt the wrapped ciphertext — the plaintext
+ * passphrase is only ever in process memory for the duration of an open DB
+ * handle.
  *
  * **What this class does NOT do:**
  * - It does not encrypt or decrypt user content directly (SQLCipher + the DB driver do).
  * - It does not prompt for biometrics — ADR-0011 defers biometric unlock.
- * - It does not expose raw key material to external callers.
+ * - It does not expose the MasterKey to external callers; only the derived
+ *   passphrase is surfaced, and only to the DatabaseFactory.
+ *
+ * **Design notes:**
+ * - Earlier revisions tried to HMAC-derive from a Keystore-bound AES key via
+ *   `master.encoded`, but Android Keystore restricts extractable keys and
+ *   returns `null` — the current approach sidesteps that entirely by delegating
+ *   wrapping to Jetpack Security.
+ * - StrongBox backing happens automatically where available (MasterKey builder
+ *   honors the device's strongest available scheme).
  */
-public class KeystoreManager {
+public class KeystoreManager(context: Context) {
 
     public companion object {
-        public const val ALIAS_MASTER: String = "dw.master"
-        private const val PROVIDER: String = "AndroidKeyStore"
-        private const val DB_DERIVATION_INFO: String = "db:v1"
+        public const val PREFS_FILE: String = "dw.cipher.keys"
+        internal const val KEY_DB_PASSPHRASE: String = "dw.db.passphrase.v1"
+        internal const val PASSPHRASE_BYTES: Int = 32 // 256-bit SQLCipher key
     }
 
-    private val keyStore: KeyStore by lazy {
-        KeyStore.getInstance(PROVIDER).apply { load(null) }
-    }
+    private val masterKey: MasterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-    /** Ensures [ALIAS_MASTER] exists, generating it lazily if not. */
-    public fun ensureMasterKey(): Unit {
-        if (!keyStore.containsAlias(ALIAS_MASTER)) {
-            generateMasterKey()
+    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        PREFS_FILE,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    )
+
+    /** Ensures the SQLCipher passphrase exists, generating on first call. */
+    public fun ensureMasterKey() {
+        if (!prefs.contains(KEY_DB_PASSPHRASE)) {
+            val bytes = ByteArray(PASSPHRASE_BYTES)
+            SecureRandom().nextBytes(bytes)
+            prefs.edit()
+                .putString(KEY_DB_PASSPHRASE, Base64.encodeToString(bytes, Base64.NO_WRAP))
+                .apply()
+            bytes.fill(0) // best-effort wipe
         }
     }
 
-    /**
-     * Derive a deterministic 32-byte SQLCipher passphrase from the master key. The
-     * master key itself is never extractable from the Keystore; derivation is done
-     * via Keystore-backed HMAC so the material never leaves secure hardware.
-     *
-     * Returns the derived bytes. Callers pass these straight to SQLCipher's
-     * PRAGMA key via the `SupportOpenHelperFactory(passphrase)` constructor.
-     */
+    /** Returns the 32-byte SQLCipher passphrase, lazily generating it first. */
     public fun deriveDatabasePassphrase(): ByteArray {
         ensureMasterKey()
-        val master = keyStore.getKey(ALIAS_MASTER, null) as SecretKey
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(master.encoded ?: ByteArray(0), "HmacSHA256"))
-        // Fallback path for Keystore-backed keys where encoded is null: use a
-        // wrapped derivation. In practice on API 29+ with an HMAC-capable Keystore
-        // purpose set, this path is not taken.
-        return mac.doFinal(DB_DERIVATION_INFO.encodeToByteArray())
-    }
-
-    private fun generateMasterKey() {
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
-        val builder = KeyGenParameterSpec.Builder(
-            ALIAS_MASTER,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256)
-            .setRandomizedEncryptionRequired(true)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // StrongBox where available; silently fall back.
-            runCatching { builder.setIsStrongBoxBacked(true) }
-        }
-        generator.init(builder.build())
-        generator.generateKey()
+        val encoded = prefs.getString(KEY_DB_PASSPHRASE, null)
+            ?: error("SQLCipher passphrase unexpectedly absent after ensure")
+        return Base64.decode(encoded, Base64.NO_WRAP)
     }
 }

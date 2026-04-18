@@ -25,7 +25,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
  */
 public actual class DatabaseFactory(
     private val context: Context,
-    private val keystore: KeystoreManager = KeystoreManager(),
+    private val keystore: KeystoreManager = KeystoreManager(context),
 ) {
 
     public actual fun driver(): SqlDriver {

@@ -31,7 +31,7 @@ public object ServiceLocator {
         appContext = app.applicationContext
     }
 
-    private val keystoreManager: KeystoreManager by lazy { KeystoreManager() }
+    private val keystoreManager: KeystoreManager by lazy { KeystoreManager(appContext) }
 
     private val databaseFactory: DatabaseFactory by lazy {
         DatabaseFactory(appContext, keystoreManager)

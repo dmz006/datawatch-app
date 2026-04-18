@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **Boot crash on first launch** (`java.lang.IllegalArgumentException: Empty key` in
+  `KeystoreManager.deriveDatabasePassphrase`). Root cause: Android Keystore refuses to
+  expose `SecretKey.encoded` for non-extractable keys, so the HMAC derivation received
+  an empty byte array and `SecretKeySpec` rejected it. Rewrote `KeystoreManager` to
+  delegate to Jetpack Security's `EncryptedSharedPreferences` (MasterKey-wrapped
+  AES-256-GCM), which is the recommended pattern for storing 32-byte passphrases —
+  same at-rest protection, simpler, correct. `DatabaseFactory` + `ServiceLocator`
+  updated to pass `Context` into the manager.
+
 ## [0.2.0] — 2026-04-18
 
 **Sprint 1 delivery — first working Android build.** A fresh install of the debug APK
