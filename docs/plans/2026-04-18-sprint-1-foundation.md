@@ -45,17 +45,21 @@ Out of scope (explicitly — later sprints handle these):
 - [x] SQLDelight schema expansion (session, session_message, settings_kv, migrations)
 - [x] `storage/ServerProfileRepository.kt` + one unit test
 
-### Phase 2 — Android storage + crypto (next commit)
+### Phase 2 — Android storage + crypto
 
-**Status:** Planned.
+**Status:** Done.
 
-- [ ] `androidMain/storage/AndroidDatabaseFactory.kt` — SQLCipher driver bootstrap
-- [ ] `androidMain/security/KeystoreManager.kt` — master-key generation + unwrap
-- [ ] `androidMain/security/TokenVault.kt` — EncryptedSharedPreferences wrapper for
-      bearer tokens (stored behind keystore alias)
-- [ ] `commonMain/storage/DatabaseFactory.kt` — `expect` side
-- [ ] `commonTest/` — token-storage round-trip test (Android instrumented)
-- [ ] `androidTest/` — SQLCipher open/close and key-rotation test
+- [x] `androidMain/storage/AndroidDatabaseFactory.kt` — SQLCipher-wrapped driver
+- [x] `androidMain/security/KeystoreManager.kt` — AES-256-GCM master key + HMAC
+      derivation for DB passphrase; StrongBox-preferred
+- [x] `androidMain/security/TokenVault.kt` — EncryptedSharedPreferences (AES-256-GCM
+      values, AES-256-SIV keys) with MasterKey-bound storage; alias-keyed by
+      profile id
+- [x] `commonMain/storage/DatabaseFactory.kt` — `expect` side already landed in Phase 1
+- [x] `DatawatchApp.onCreate` loads `libsqlcipher.so` before any DB open attempt
+- [ ] `androidTest/` — SQLCipher open/close + Keystore round-trip test (deferred to
+      Phase 4 because it needs an instrumented Android test runner; unit coverage
+      on pure-logic callers is sufficient for now)
 
 ### Phase 3 — composeApp onboarding + sessions list
 

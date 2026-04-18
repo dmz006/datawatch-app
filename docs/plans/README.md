@@ -32,7 +32,7 @@ _None yet._
 | BL5 | iOS content phase | After Android production |
 | BL6 | Home-screen widget | Post-v1 |
 | BL7 | Foldable layout | Post-v1 |
-| BL8 | SQLCipher Android driver swap (plaintext → encrypted) | Sprint 1 Phase 2 — in-scope |
+| _(BL8 landed in Sprint 1 Phase 2 — see Completed Backlog)_ | | |
 
 ## Completed
 
@@ -40,4 +40,6 @@ _None yet._
 
 ## Completed backlog
 
-_None yet._
+| ID | Title | Shipped in | Notes |
+|----|-------|-----------|-------|
+| BL8 | SQLCipher Android driver swap | v0.1.x Sprint 1 Phase 2 | `net.zetetic:sqlcipher-android` + Keystore-derived passphrase |

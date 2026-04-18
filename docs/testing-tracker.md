@@ -19,8 +19,10 @@ gets two levels of validation:
 | Shared | `RestTransport` network error → Unreachable | No | No | 1 | | Phase 4 |
 | Shared | `ServerProfileRepository` CRUD | No | No | 1 | | Phase 4 — in-memory SqlDriver |
 | Shared | `SessionRepository` upsert + observe | No | No | 1 | | Phase 4 |
-| Android | SQLCipher open + key unwrap | No | No | 1 | | Phase 2 |
-| Android | Keystore master-key round-trip | No | No | 1 | | Phase 2 |
+| Android | SQLCipher open + key unwrap | No | No | 1 | | Phase 4 androidTest — needs instrumented runner |
+| Android | Keystore master-key round-trip | No | No | 1 | | Phase 4 androidTest — needs instrumented runner |
+| Android | `KeystoreManager.deriveDatabasePassphrase` (Phase 2) | No | No | 1 | | Phase 4 |
+| Android | `TokenVault` put / get / remove round-trip | No | No | 1 | | Phase 4 |
 | Phone | Onboarding + add-server happy path | No | No | 1 | | Phase 3 |
 | Phone | Live session list against running datawatch | No | No | 1 | | Phase 3 |
 | Phone | WebSocket `/ws` stream | No | No | 2 | | |

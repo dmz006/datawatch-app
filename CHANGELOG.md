@@ -26,6 +26,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
     Phase 2), `ServerProfileRepository`, `SessionRepository`
   - SQLDelight schema split into `profile.sq` + `session.sq`
   - Unit tests: `SessionStateTest`, `MappersTest`
+- Sprint 1 Phase 2 — Android storage + crypto:
+  - `KeystoreManager` — AES-256-GCM master key in Android Keystore (StrongBox-preferred
+    on capable devices); HMAC-SHA256 derivation of the SQLCipher passphrase.
+  - `TokenVault` — EncryptedSharedPreferences for bearer tokens, alias-keyed per
+    profile; never persisted to the SQLite DB.
+  - `AndroidDatabaseFactory` now opens a SQLCipher-encrypted database via
+    `net.zetetic.database.sqlcipher.SupportOpenHelperFactory` with the derived
+    passphrase; `DatawatchApp.onCreate` loads `libsqlcipher.so` at process start.
+  - Completed backlog: BL8.
 
 ### Changed
 - App display name set to `datawatch` (lowercase) for all user-facing surfaces — Play
