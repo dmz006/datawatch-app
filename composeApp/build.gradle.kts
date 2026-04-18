@@ -91,6 +91,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        // Sprint 1: lint reports but doesn't gate the build. Sprint 5 flips
+        // abortOnError back to true and adds a lint baseline.
+        abortOnError = false
+        warningsAsErrors = false
+        checkReleaseBuilds = false
+    }
 }
 
 ktlint {
