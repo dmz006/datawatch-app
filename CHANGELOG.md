@@ -8,6 +8,22 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+- **Launcher icon promoted to B8** (Earthrise composition): adaptive foreground
+  + background + monochrome variants. Old phone-silhouette Concept B is gone;
+  the launcher now shows the lunar surface with pronounced craters, Earth
+  rising above the horizon, and the datawatch tablet (with eye + matrix-rain
+  stand-in) sitting on the moon. Monochrome silhouette for Android 13+ themed
+  icons.
+- **Splash animation rewritten to match B8**: live Compose-canvas Earthrise
+  scene around the existing animated tablet — starfield, Earth disc with halo
+  + continent + cloud + specular highlight, lunar surface with eight
+  pronounced craters, Earthshine rim along the horizon, plus the existing
+  matrix rain animation + pulsing pupil + scan line on the tablet.
+- **`docs/parity-status.md`**: complete PWA feature → mobile sprint matrix.
+  Honest accounting of what's shipped, what's planned, and which sprint
+  delivers each item. Reviewed every sprint close.
+
 ### Fixed
 - **Boot crash on first launch** (`java.lang.IllegalArgumentException: Empty key` in
   `KeystoreManager.deriveDatabasePassphrase`). Root cause: Android Keystore refuses to

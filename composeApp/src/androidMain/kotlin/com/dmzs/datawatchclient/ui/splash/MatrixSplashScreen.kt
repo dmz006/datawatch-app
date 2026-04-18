@@ -234,25 +234,136 @@ private fun MatrixSplashArtwork() {
         val cy = size.height / 2f
         val discRadius = minOf(size.width, size.height) / 2.2f
 
-        // 1. Dark disc background (centered, slightly smaller than screen).
-        drawCircle(color = Color(0xFF1A0A2E), radius = discRadius, center = Offset(cx, cy))
+        // SCENE — Apollo 8 Earthrise composition (B8 v2).
+        //   • Space + stars background (drawn by Box, but we add subtle stars here)
+        //   • Earth (centered above midline, with halo)
+        //   • Moon surface filling lower 60% with pronounced craters
+        //   • Tablet on lunar surface (showing matrix + eye)
+
+        // Subtle starfield in upper area (deterministic positions).
+        val starPositions = listOf(
+            0.05f to 0.06f, 0.12f to 0.10f, 0.20f to 0.04f, 0.32f to 0.08f,
+            0.42f to 0.05f, 0.62f to 0.07f, 0.72f to 0.04f, 0.84f to 0.10f,
+            0.92f to 0.06f, 0.08f to 0.18f, 0.94f to 0.20f, 0.34f to 0.16f,
+            0.66f to 0.18f,
+        )
+        starPositions.forEach { (xf, yf) ->
+            drawCircle(
+                color = Color.White.copy(alpha = 0.55f),
+                radius = 1.2f,
+                center = Offset(size.width * xf, size.height * yf),
+            )
+        }
+
+        // Earth — radius ~6% of canvas width, centered horizontally.
+        val earthRadius = size.width * 0.075f
+        val earthCenter = Offset(cx, size.height * 0.22f)
+        // Atmospheric halo
         drawCircle(
-            color = SplashPalette.Border.copy(alpha = 0.35f),
-            radius = discRadius * 0.98f,
-            center = Offset(cx, cy),
-            style = Stroke(width = 1.5f),
+            color = Color(0xFF7AB8E8).copy(alpha = 0.30f),
+            radius = earthRadius * 1.28f,
+            center = earthCenter,
+        )
+        // Earth disc — layered for sphere illusion
+        drawCircle(color = Color(0xFF0B2A55), radius = earthRadius, center = earthCenter)
+        drawCircle(
+            color = Color(0xFF4988C8),
+            radius = earthRadius * 0.78f,
+            center = Offset(earthCenter.x - earthRadius * 0.10f, earthCenter.y - earthRadius * 0.10f),
+        )
+        drawCircle(
+            color = Color(0xFFA8D4F2),
+            radius = earthRadius * 0.40f,
+            center = Offset(earthCenter.x - earthRadius * 0.20f, earthCenter.y - earthRadius * 0.20f),
+        )
+        // Continent hint
+        drawCircle(
+            color = Color(0xFF2F5E36).copy(alpha = 0.7f),
+            radius = earthRadius * 0.30f,
+            center = Offset(earthCenter.x + earthRadius * 0.20f, earthCenter.y + earthRadius * 0.10f),
+        )
+        // Specular highlight
+        drawCircle(
+            color = Color.White.copy(alpha = 0.35f),
+            radius = earthRadius * 0.18f,
+            center = Offset(earthCenter.x - earthRadius * 0.30f, earthCenter.y - earthRadius * 0.30f),
         )
 
-        // 2. Antenna arcs (B1 crown) above the tablet.
-        val arcTop = cy - discRadius * 0.72f
-        val arcCenter = Offset(cx, arcTop)
-        drawArcGroup(arcCenter, baseRadius = discRadius * 0.28f)
+        // Moon surface — fills bottom ~60% with horizon at y = 40% of height.
+        val horizonY = size.height * 0.40f
+        // Moon body rectangle (filled solid; clipping to icon shape happens via
+        // Compose's Canvas clip—we use a simple rect since the disc clip is
+        // implicit at higher level).
+        drawRect(
+            color = Color(0xFF332B25),
+            topLeft = Offset(0f, horizonY),
+            size = Size(size.width, size.height - horizonY),
+        )
+        // Moon gradient overlay for depth
+        drawRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF7A6B5F),
+                    Color(0xFF332B25),
+                    Color(0xFF0F0A08),
+                ),
+                startY = horizonY,
+                endY = size.height,
+            ),
+            topLeft = Offset(0f, horizonY),
+            size = Size(size.width, size.height - horizonY),
+        )
+        // Earthshine rim
+        drawLine(
+            color = Color(0xFF7AB8E8).copy(alpha = 0.4f),
+            start = Offset(0f, horizonY),
+            end = Offset(size.width, horizonY),
+            strokeWidth = 2f,
+        )
 
-        // 3. Tablet bezel — rounded rectangle landscape.
+        // Pronounced craters on moon surface
+        val craters = listOf(
+            // x_frac, y_frac (within bottom 60%), rx_frac, ry_frac
+            Triple(0.12f, 0.78f, 0.08f),
+            Triple(0.88f, 0.80f, 0.09f),
+            Triple(0.32f, 0.55f, 0.06f),
+            Triple(0.68f, 0.55f, 0.06f),
+            Triple(0.06f, 0.58f, 0.05f),
+            Triple(0.94f, 0.58f, 0.04f),
+            Triple(0.22f, 0.94f, 0.04f),
+            Triple(0.78f, 0.94f, 0.05f),
+        )
+        craters.forEach { (xf, yf, sizeFrac) ->
+            val crCx = size.width * xf
+            val crCy = size.height * yf
+            val rx = size.width * sizeFrac
+            val ry = rx * 0.28f
+            // Dark inner ellipse
+            drawOval(
+                color = Color(0xFF1A1310),
+                topLeft = Offset(crCx - rx, crCy - ry),
+                size = Size(rx * 2f, ry * 2f),
+            )
+            // Lit rim (slightly above center)
+            drawOval(
+                color = Color(0xFF8B7B6E).copy(alpha = 0.6f),
+                topLeft = Offset(crCx - rx, crCy - ry - 1f),
+                size = Size(rx * 2f, ry * 2f),
+                style = Stroke(width = 1.2f),
+            )
+        }
+
+        // 3. Tablet bezel — sized to sit naturally on the lunar surface.
         val tabletWidth = discRadius * 1.50f
         val tabletHeight = discRadius * 1.10f
         val tabletLeft = cx - tabletWidth / 2f
-        val tabletTop = cy - tabletHeight / 2f + discRadius * 0.05f
+        val tabletTop = cy - tabletHeight / 2f + discRadius * 0.10f
+        // Shadow on regolith
+        drawOval(
+            color = Color.Black.copy(alpha = 0.45f),
+            topLeft = Offset(tabletLeft - 4f, tabletTop + tabletHeight - 4f),
+            size = Size(tabletWidth + 8f, 14f),
+        )
         drawRoundedRect(
             tabletLeft, tabletTop, tabletWidth, tabletHeight,
             cornerRadius = 28f, fillColor = SplashPalette.BezelDark,
