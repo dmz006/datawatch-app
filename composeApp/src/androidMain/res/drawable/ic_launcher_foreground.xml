@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Launcher icon foreground — port of icon-B8-earthrise-with-tablet.svg to
-    Android VectorDrawable. Apollo-8 Earthrise scene: lunar surface fills
-    most of the icon, Earth rises above the horizon, datawatch tablet
-    sits on the moon with the eye centered on its screen.
+    Launcher icon foreground — per user direction:
+      "the application icon was supposed to just be the datawatch eye with
+       the screen only (matrix rain) in background. not the moon or
+       anything else."
 
-    VectorDrawable limitations vs SVG:
-      - No text → matrix rain rendered as small purple-tinted rectangles
-        (stand-in for falling chars; actual text is invisible at thumb size)
-      - No SVG filters → no blur/glow
-      - Gradients via aapt:attr (radial + linear)
-
-    Authored on the 108dp adaptive-icon canvas; critical content stays
-    inside the inner ~66dp safe zone.
+    No moon, no Earth, no tablet bezel. The icon IS the device screen:
+    matrix rain texture covers the icon area; the datawatch eye sits
+    centered on top. Background drawable provides the dark purple "screen"
+    fill; this foreground holds the matrix rain + eye.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -21,165 +17,87 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Earth atmospheric halo (subtle cyan glow). Smaller + higher than v1 to
-         leave room for a centered tablet below. -->
-    <path android:pathData="M 58.4,16 m -10,0 a 10,10 0 1 0 20,0 a 10,10 0 1 0 -20,0 z">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="radial"
-                android:centerX="58.4" android:centerY="16"
-                android:gradientRadius="10"
-                android:startColor="#007AB8E8"
-                android:centerColor="#8C7AB8E8"
-                android:endColor="#007AB8E8"/>
-        </aapt:attr>
-    </path>
-
-    <!-- Earth body — radial gradient from cloud-white center to deep blue edge -->
-    <path android:pathData="M 58.4,16 m -7,0 a 7,7 0 1 0 14,0 a 7,7 0 1 0 -14,0 z">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="radial"
-                android:centerX="55.5" android:centerY="13.5"
-                android:gradientRadius="9"
-                android:startColor="#F4FAFF"
-                android:centerColor="#4988C8"
-                android:endColor="#0B2A55"/>
-        </aapt:attr>
-    </path>
-
-    <!-- Earth continents — impressionistic green blobs -->
-    <path android:pathData="M 54,14.5 C 54.8,13.5 56,13.5 56.6,14.5 C 57.4,16 56.5,17.6 55.7,18.2 C 54.5,18.4 53.4,17.6 53.8,16.2 Z M 60.5,15 C 62,14.2 63.6,15.4 64,17.4 C 64,18.8 63,19.8 61.6,20 C 60,20 59.3,18.8 59.6,17.4 C 59.9,15.9 59.9,15.4 60.5,15 Z"
-        android:fillColor="#2F5E36"
-        android:fillAlpha="0.85"/>
-
-    <!-- Earth cloud highlights -->
-    <path android:pathData="M 53,15.5 C 56,14 59,14.6 61,16 C 58,17.6 55,17 52.6,17 Z M 62,13.5 C 64.5,13.8 65.5,15.6 65.6,16.6 C 64,16 62,15.2 61.6,14.8 Z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.55"/>
-
-    <!-- Moon surface — horizon raised to y=30 (was y=38) so the tablet sits
-         centered in the icon, well below the horizon. -->
-    <path android:pathData="M 0,30 Q 54,26 108,32 L 108,108 L 0,108 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="linear"
-                android:startX="0" android:startY="30"
-                android:endX="0" android:endY="108"
-                android:startColor="#7A6B5F"
-                android:centerColor="#3E352F"
-                android:endColor="#0F0A08"/>
-        </aapt:attr>
-    </path>
-
-    <!-- Earthshine rim along horizon -->
-    <path android:pathData="M 0,30 Q 54,26 108,32"
-        android:strokeColor="#7AB8E8"
-        android:strokeWidth="0.35"
-        android:strokeAlpha="0.4"
-        android:fillColor="#00000000"/>
-
-    <!-- Pronounced craters — left foreground (moved further down to clear the
-         now larger tablet) -->
-    <path android:pathData="M 12,98 m -9,0 a 9,2.8 0 1 0 18,0 a 9,2.8 0 1 0 -18,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.85"/>
-    <path android:pathData="M 12,98 m -8.6,0 a 8.6,2.6 0 1 0 17.2,0 a 8.6,2.6 0 1 0 -17.2,0 z"
-        android:strokeColor="#8B7B6E" android:strokeWidth="0.35"
-        android:strokeAlpha="0.6" android:fillColor="#00000000"/>
-
-    <!-- Right foreground crater -->
-    <path android:pathData="M 96,99 m -10,0 a 10,3 0 1 0 20,0 a 10,3 0 1 0 -20,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.85"/>
-    <path android:pathData="M 96,99 m -9.6,0 a 9.6,2.8 0 1 0 19.2,0 a 9.6,2.8 0 1 0 -19.2,0 z"
-        android:strokeColor="#8B7B6E" android:strokeWidth="0.35"
-        android:strokeAlpha="0.6" android:fillColor="#00000000"/>
-
-    <!-- Mid-distance craters near horizon (above tablet) -->
-    <path android:pathData="M 22,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.7"/>
-    <path android:pathData="M 86,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.7"/>
-
-    <!-- Distant small craters near horizon -->
-    <path android:pathData="M 38,36 m -3,0 a 3,0.9 0 1 0 6,0 a 3,0.9 0 1 0 -6,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-    <path android:pathData="M 70,36 m -3,0 a 3,0.9 0 1 0 6,0 a 3,0.9 0 1 0 -6,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-    <path android:pathData="M 100,38 m -3.4,0 a 3.4,1 0 1 0 6.8,0 a 3.4,1 0 1 0 -6.8,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-    <path android:pathData="M 8,38 m -3.4,0 a 3.4,1 0 1 0 6.8,0 a 3.4,1 0 1 0 -6.8,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-
     <!--
-        SCREEN — per user direction "the launcher icon should just be the screen,
-        no tablet". The bezel + shadow are removed; the screen rectangle is the
-        sole frame for the matrix rain + eye. Centered on the icon.
+        Matrix rain — denser than the previous variant since it now covers the
+        whole icon, not just a small tablet screen. Each "column" is a vertical
+        stripe of small purple-tinted squares (text would be invisible at icon
+        size, so we use shapes that suggest data without trying to render
+        characters).
+
+        Six columns, varied phase. Stays inside the inner 66dp safe zone so
+        the launcher's mask shape doesn't crop critical content.
     -->
-
-    <!-- Screen recess -->
-    <path android:pathData="M 28,44 h 52 a 2,2 0 0 1 2,2 v 36 a 2,2 0 0 1 -2,2 h -52 a 2,2 0 0 1 -2,-2 v -36 a 2,2 0 0 1 2,-2 z">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="radial"
-                android:centerX="54" android:centerY="64"
-                android:gradientRadius="22"
-                android:startColor="#220F42"
-                android:endColor="#08031A"/>
-        </aapt:attr>
-    </path>
-
-    <!-- Matrix rain stand-in — purple specks across screen, denser to read at
-         this larger tablet scale -->
-    <path android:pathData="M 30,46 h 1 v 1 h -1 z M 30,49 h 1 v 1 h -1 z M 30,52 h 1 v 1 h -1 z M 30,55 h 1 v 1 h -1 z M 30,58 h 1 v 1 h -1 z M 30,72 h 1 v 1 h -1 z M 30,75 h 1 v 1 h -1 z M 30,78 h 1 v 1 h -1 z M 30,81 h 1 v 1 h -1 z
-                            M 33,47 h 1 v 1 h -1 z M 33,50 h 1 v 1 h -1 z M 33,53 h 1 v 1 h -1 z M 33,56 h 1 v 1 h -1 z M 33,59 h 1 v 1 h -1 z M 33,73 h 1 v 1 h -1 z M 33,76 h 1 v 1 h -1 z M 33,79 h 1 v 1 h -1 z M 33,82 h 1 v 1 h -1 z
-                            M 36,46 h 1 v 1 h -1 z M 36,49 h 1 v 1 h -1 z M 36,52 h 1 v 1 h -1 z M 36,55 h 1 v 1 h -1 z M 36,58 h 1 v 1 h -1 z M 36,72 h 1 v 1 h -1 z M 36,75 h 1 v 1 h -1 z M 36,78 h 1 v 1 h -1 z M 36,81 h 1 v 1 h -1 z
-                            M 71,46 h 1 v 1 h -1 z M 71,49 h 1 v 1 h -1 z M 71,52 h 1 v 1 h -1 z M 71,55 h 1 v 1 h -1 z M 71,58 h 1 v 1 h -1 z M 71,72 h 1 v 1 h -1 z M 71,75 h 1 v 1 h -1 z M 71,78 h 1 v 1 h -1 z M 71,81 h 1 v 1 h -1 z
-                            M 74,47 h 1 v 1 h -1 z M 74,50 h 1 v 1 h -1 z M 74,53 h 1 v 1 h -1 z M 74,56 h 1 v 1 h -1 z M 74,59 h 1 v 1 h -1 z M 74,73 h 1 v 1 h -1 z M 74,76 h 1 v 1 h -1 z M 74,79 h 1 v 1 h -1 z M 74,82 h 1 v 1 h -1 z
-                            M 77,46 h 1 v 1 h -1 z M 77,49 h 1 v 1 h -1 z M 77,52 h 1 v 1 h -1 z M 77,55 h 1 v 1 h -1 z M 77,58 h 1 v 1 h -1 z M 77,72 h 1 v 1 h -1 z M 77,75 h 1 v 1 h -1 z M 77,78 h 1 v 1 h -1 z M 77,81 h 1 v 1 h -1 z"
+    <path android:pathData="M 22,16 h 1 v 1 h -1 z M 22,20 h 1 v 1 h -1 z M 22,24 h 1 v 1 h -1 z M 22,28 h 1 v 1 h -1 z M 22,40 h 1 v 1 h -1 z M 22,44 h 1 v 1 h -1 z M 22,48 h 1 v 1 h -1 z M 22,72 h 1 v 1 h -1 z M 22,76 h 1 v 1 h -1 z M 22,80 h 1 v 1 h -1 z M 22,84 h 1 v 1 h -1 z M 22,88 h 1 v 1 h -1 z
+                            M 32,18 h 1 v 1 h -1 z M 32,22 h 1 v 1 h -1 z M 32,26 h 1 v 1 h -1 z M 32,30 h 1 v 1 h -1 z M 32,34 h 1 v 1 h -1 z M 32,38 h 1 v 1 h -1 z M 32,72 h 1 v 1 h -1 z M 32,76 h 1 v 1 h -1 z M 32,80 h 1 v 1 h -1 z M 32,84 h 1 v 1 h -1 z M 32,88 h 1 v 1 h -1 z M 32,92 h 1 v 1 h -1 z
+                            M 42,16 h 1 v 1 h -1 z M 42,20 h 1 v 1 h -1 z M 42,24 h 1 v 1 h -1 z M 42,28 h 1 v 1 h -1 z M 42,32 h 1 v 1 h -1 z M 42,36 h 1 v 1 h -1 z M 42,76 h 1 v 1 h -1 z M 42,80 h 1 v 1 h -1 z M 42,84 h 1 v 1 h -1 z M 42,88 h 1 v 1 h -1 z M 42,92 h 1 v 1 h -1 z
+                            M 65,18 h 1 v 1 h -1 z M 65,22 h 1 v 1 h -1 z M 65,26 h 1 v 1 h -1 z M 65,30 h 1 v 1 h -1 z M 65,34 h 1 v 1 h -1 z M 65,38 h 1 v 1 h -1 z M 65,76 h 1 v 1 h -1 z M 65,80 h 1 v 1 h -1 z M 65,84 h 1 v 1 h -1 z M 65,88 h 1 v 1 h -1 z M 65,92 h 1 v 1 h -1 z
+                            M 75,16 h 1 v 1 h -1 z M 75,20 h 1 v 1 h -1 z M 75,24 h 1 v 1 h -1 z M 75,28 h 1 v 1 h -1 z M 75,32 h 1 v 1 h -1 z M 75,36 h 1 v 1 h -1 z M 75,72 h 1 v 1 h -1 z M 75,76 h 1 v 1 h -1 z M 75,80 h 1 v 1 h -1 z M 75,84 h 1 v 1 h -1 z M 75,88 h 1 v 1 h -1 z
+                            M 85,18 h 1 v 1 h -1 z M 85,22 h 1 v 1 h -1 z M 85,26 h 1 v 1 h -1 z M 85,30 h 1 v 1 h -1 z M 85,34 h 1 v 1 h -1 z M 85,38 h 1 v 1 h -1 z M 85,72 h 1 v 1 h -1 z M 85,76 h 1 v 1 h -1 z M 85,80 h 1 v 1 h -1 z M 85,84 h 1 v 1 h -1 z M 85,88 h 1 v 1 h -1 z M 85,92 h 1 v 1 h -1 z"
         android:fillColor="#A855F7"
-        android:fillAlpha="0.55"/>
+        android:fillAlpha="0.5"/>
 
     <!--
-        EYE — significantly larger so it's the legible focal element of the icon.
-        Sclera ellipse rx=18 ry=11 (was 10.2,5.9). Iris radius 9 (was 4.7).
-        Pupil radius 4 (was 1.9). Centered on tablet (54, 64).
+        EYE — the datawatch identity. Centered on the icon (54, 54) and
+        sized to dominate visually but stay inside the 66dp safe zone (radius
+        ~20 from center max).
+
+        Sclera ellipse + iris gradient + pupil + crosshair + center highlight,
+        same constructional pattern as the splash version, scaled to the
+        108-unit canvas.
     -->
-    <path android:pathData="M 54,64 m -18,0 a 18,11 0 1 0 36,0 a 18,11 0 1 0 -36,0 z"
+
+    <!-- Sclera (almond-shaped dark eye background) -->
+    <path android:pathData="M 54,54 m -22,0 a 22,14 0 1 0 44,0 a 22,14 0 1 0 -44,0 z"
         android:fillColor="#080518"
         android:strokeColor="#7C3AED"
-        android:strokeWidth="0.5"/>
+        android:strokeWidth="0.6"/>
 
-    <!-- Iris -->
-    <path android:pathData="M 54,64 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z">
+    <!-- Iris with radial gradient (purple lit from upper-left) -->
+    <path android:pathData="M 54,54 m -12,0 a 12,12 0 1 0 24,0 a 12,12 0 1 0 -24,0 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="51" android:centerY="61"
-                android:gradientRadius="10"
+                android:centerX="50" android:centerY="50"
+                android:gradientRadius="13"
                 android:startColor="#A855F7"
                 android:centerColor="#7C3AED"
                 android:endColor="#3B0764"/>
         </aapt:attr>
     </path>
+
     <!-- Iris ring detail -->
-    <path android:pathData="M 54,64 m -8.4,0 a 8.4,8.4 0 1 0 16.8,0 a 8.4,8.4 0 1 0 -16.8,0 z"
+    <path android:pathData="M 54,54 m -11.4,0 a 11.4,11.4 0 1 0 22.8,0 a 11.4,11.4 0 1 0 -22.8,0 z"
         android:strokeColor="#A855F7"
         android:strokeWidth="0.4"
         android:strokeAlpha="0.5"
         android:fillColor="#00000000"/>
+    <path android:pathData="M 54,54 m -8.5,0 a 8.5,8.5 0 1 0 17,0 a 8.5,8.5 0 1 0 -17,0 z"
+        android:strokeColor="#C084FC"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.4"
+        android:fillColor="#00000000"/>
 
     <!-- Pupil -->
-    <path android:pathData="M 54,64 m -4,0 a 4,4 0 1 0 8,0 a 4,4 0 1 0 -8,0 z"
+    <path android:pathData="M 54,54 m -5,0 a 5,5 0 1 0 10,0 a 5,5 0 1 0 -10,0 z"
         android:fillColor="#04020E"/>
+    <path android:pathData="M 54,54 m -4.6,0 a 4.6,4.6 0 1 0 9.2,0 a 4.6,4.6 0 1 0 -9.2,0 z"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000"/>
 
-    <!-- Crosshair (bigger to match larger pupil) -->
-    <path android:pathData="M 54,60 v 1.4 M 54,66.6 v 1.4 M 50,64 h 1.4 M 56.6,64 h 1.4"
+    <!-- Crosshair (datawatch surveillance signature) -->
+    <path android:pathData="M 54,49 v 2 M 54,57 v 2 M 49,54 h 2 M 57,54 h 2"
         android:strokeColor="#E879F9"
-        android:strokeWidth="0.6"
+        android:strokeWidth="0.7"
         android:strokeLineCap="round"
         android:fillColor="#00000000"/>
 
     <!-- Center highlight -->
-    <path android:pathData="M 54,64 m -0.7,0 a 0.7,0.7 0 1 0 1.4,0 a 0.7,0.7 0 1 0 -1.4,0 z"
+    <path android:pathData="M 54,54 m -0.9,0 a 0.9,0.9 0 1 0 1.8,0 a 0.9,0.9 0 1 0 -1.8,0 z"
         android:fillColor="#F0ABFC"/>
 
-    <!-- Lens highlight (subtle bright spec) -->
-    <path android:pathData="M 50,60 m -1.8,-0.8 a 1.8,0.8 0 1 0 3.6,0 a 1.8,0.8 0 1 0 -3.6,0 z"
+    <!-- Lens highlight (subtle bright spec, upper-left of iris) -->
+    <path android:pathData="M 49,49 m -2.2,-1 a 2.2,1 0 1 0 4.4,0 a 2.2,1 0 1 0 -4.4,0 z"
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.18"/>
+        android:fillAlpha="0.20"/>
 </vector>

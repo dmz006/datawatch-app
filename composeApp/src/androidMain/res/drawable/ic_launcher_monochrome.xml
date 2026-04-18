@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Monochrome variant for Android 13+ themed launcher icons. Single-color
-    silhouette; system tints to match the user's wallpaper. Reduced to the
-    essential shapes: moon horizon + tablet + eye + Earth.
+    silhouette tinted by system theme. Reduced to the eye glyph + a few
+    matrix-rain dots so the icon still reads as 'datawatch' when stripped
+    of color.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -11,31 +12,28 @@
     android:viewportHeight="108"
     android:tint="?attr/colorControlNormal">
 
-    <!-- Earth — small disc, top-center (matches foreground v2) -->
-    <path android:pathData="M 58.4,16 m -7,0 a 7,7 0 1 0 14,0 a 7,7 0 1 0 -14,0 z"
+    <!-- Sparse matrix dots (texture hint) -->
+    <path android:pathData="M 22,16 h 1 v 1 h -1 z M 22,24 h 1 v 1 h -1 z M 22,80 h 1 v 1 h -1 z M 22,88 h 1 v 1 h -1 z M 32,18 h 1 v 1 h -1 z M 32,84 h 1 v 1 h -1 z M 42,16 h 1 v 1 h -1 z M 42,80 h 1 v 1 h -1 z M 65,16 h 1 v 1 h -1 z M 65,84 h 1 v 1 h -1 z M 75,16 h 1 v 1 h -1 z M 75,84 h 1 v 1 h -1 z M 85,18 h 1 v 1 h -1 z M 85,80 h 1 v 1 h -1 z"
+        android:fillColor="#000000"
+        android:fillAlpha="0.45"/>
+
+    <!-- Eye sclera -->
+    <path android:pathData="M 54,54 m -22,0 a 22,14 0 1 0 44,0 a 22,14 0 1 0 -44,0 z"
         android:fillColor="#000000"/>
 
-    <!-- Moon surface — horizon raised to y=30 -->
-    <path android:pathData="M 0,30 Q 54,26 108,32 L 108,108 L 0,108 Z"
-        android:fillColor="#000000"/>
-
-    <!-- Crater silhouettes -->
-    <path android:pathData="M 12,98 m -9,0 a 9,2.8 0 1 0 18,0 a 9,2.8 0 1 0 -18,0 z M 96,99 m -10,0 a 10,3 0 1 0 20,0 a 10,3 0 1 0 -20,0 z M 22,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z M 86,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
+    <!-- Iris (lighter inside via white-with-alpha) -->
+    <path android:pathData="M 54,54 m -12,0 a 12,12 0 1 0 24,0 a 12,12 0 1 0 -24,0 z"
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.35"/>
+        android:fillAlpha="0.50"/>
 
-    <!-- Screen only (no tablet bezel) per user direction -->
-
-    <path android:pathData="M 28,44 h 52 a 2,2 0 0 1 2,2 v 36 a 2,2 0 0 1 -2,2 h -52 a 2,2 0 0 1 -2,-2 v -36 a 2,2 0 0 1 2,-2 z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.25"/>
-
-    <!-- Eye on tablet — significantly larger to match foreground v2 -->
-    <path android:pathData="M 54,64 m -18,0 a 18,11 0 1 0 36,0 a 18,11 0 1 0 -36,0 z"
+    <!-- Pupil -->
+    <path android:pathData="M 54,54 m -5,0 a 5,5 0 1 0 10,0 a 5,5 0 1 0 -10,0 z"
         android:fillColor="#000000"/>
-    <path android:pathData="M 54,64 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.5"/>
-    <path android:pathData="M 54,64 m -4,0 a 4,4 0 1 0 8,0 a 4,4 0 1 0 -8,0 z"
-        android:fillColor="#000000"/>
+
+    <!-- Crosshair -->
+    <path android:pathData="M 54,49 v 2 M 54,57 v 2 M 49,54 h 2 M 57,54 h 2"
+        android:strokeColor="#000000"
+        android:strokeWidth="0.7"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
 </vector>

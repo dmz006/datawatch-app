@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Adaptive icon background — deep space with starfield. Foreground holds
-    the moon + Earth + tablet scene; background is the canvas behind it.
+    Adaptive icon background — solid screen-fill (dark purple radial gradient
+    matching the device-screen recess color from the design system). The
+    foreground draws the matrix rain + eye on top of this.
+
+    No starfield, no Earth, no moon — per user direction the launcher icon
+    is just the screen with eye, nothing else.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -10,20 +14,14 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Space gradient (slightly brighter near top-center) -->
     <path android:pathData="M 0,0 h 108 v 108 h -108 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="59" android:centerY="27"
-                android:gradientRadius="76"
-                android:startColor="#04060F"
-                android:centerColor="#020308"
-                android:endColor="#000000"/>
+                android:centerX="54" android:centerY="54"
+                android:gradientRadius="78"
+                android:startColor="#220F42"
+                android:centerColor="#13072A"
+                android:endColor="#08031A"/>
         </aapt:attr>
     </path>
-
-    <!-- Stars in the upper region (around Earth area) -->
-    <path android:pathData="M 5,10 m -0.2,0 a 0.2,0.2 0 1 0 0.4,0 a 0.2,0.2 0 1 0 -0.4,0 z M 15,7 m -0.15,0 a 0.15,0.15 0 1 0 0.3,0 a 0.15,0.15 0 1 0 -0.3,0 z M 24,12 m -0.22,0 a 0.22,0.22 0 1 0 0.44,0 a 0.22,0.22 0 1 0 -0.44,0 z M 32,5 m -0.18,0 a 0.18,0.18 0 1 0 0.36,0 a 0.18,0.18 0 1 0 -0.36,0 z M 78,5 m -0.18,0 a 0.18,0.18 0 1 0 0.36,0 a 0.18,0.18 0 1 0 -0.36,0 z M 88,11 m -0.22,0 a 0.22,0.22 0 1 0 0.44,0 a 0.22,0.22 0 1 0 -0.44,0 z M 96,7 m -0.18,0 a 0.18,0.18 0 1 0 0.36,0 a 0.18,0.18 0 1 0 -0.36,0 z M 102,18 m -0.18,0 a 0.18,0.18 0 1 0 0.36,0 a 0.18,0.18 0 1 0 -0.36,0 z M 4,28 m -0.16,0 a 0.16,0.16 0 1 0 0.32,0 a 0.16,0.16 0 1 0 -0.32,0 z M 90,30 m -0.18,0 a 0.18,0.18 0 1 0 0.36,0 a 0.18,0.18 0 1 0 -0.36,0 z M 100,33 m -0.16,0 a 0.16,0.16 0 1 0 0.32,0 a 0.16,0.16 0 1 0 -0.32,0 z M 76,18 m -0.14,0 a 0.14,0.14 0 1 0 0.28,0 a 0.14,0.14 0 1 0 -0.28,0 z M 38,15 m -0.14,0 a 0.14,0.14 0 1 0 0.28,0 a 0.14,0.14 0 1 0 -0.28,0 z"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.6"/>
 </vector>
