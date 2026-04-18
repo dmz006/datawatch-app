@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Auto Backup rules per ADR-0017 + data-model.md "Data classification" table.
+    Encrypted SQLite DB + non-secret preferences are backed up; audio blobs, debug
+    artifacts, and Keystore-bound bindings are excluded. Keystore material is
+    platform-excluded by default.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="."/>
+        <include domain="sharedpref" path="."/>
+        <exclude domain="database" path="pending_upload.db"/>
+        <exclude domain="file" path="xterm/"/>
+        <exclude domain="sharedpref" path="debug_prefs.xml"/>
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="."/>
+        <include domain="sharedpref" path="."/>
+        <exclude domain="database" path="pending_upload.db"/>
+    </device-transfer>
+</data-extraction-rules>

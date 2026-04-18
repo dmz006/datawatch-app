@@ -1,0 +1,25 @@
+name: DatawatchClient
+options:
+  bundleIdPrefix: com.dmzs
+  deploymentTarget:
+    iOS: 16.0
+
+targets:
+  DatawatchClient:
+    type: application
+    platform: iOS
+    sources:
+      - iosApp
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: Datawatch Client
+        UILaunchScreen:
+          UIColorName: ""
+    settings:
+      base:
+        FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
+        OTHER_LDFLAGS: $(inherited) -framework DatawatchShared
+    dependencies:
+      - framework: ../shared/build/XCFrameworks/debug/DatawatchShared.xcframework
+        embed: true

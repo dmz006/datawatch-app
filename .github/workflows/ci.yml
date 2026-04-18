@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-version:
+    name: Verify Version parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure all three Version locations match
+        run: |
+          set -euo pipefail
+          if [ ! -f composeApp/build.gradle.kts ]; then
+            echo "Pre-Sprint-1 scaffold — skipping version check until Gradle wrapper lands."
+            exit 0
+          fi
+          app_v=$(grep -oP 'versionName = "\K[^"]+' composeApp/build.gradle.kts || echo "")
+          wear_v=$(grep -oP 'versionName = "\K[^"]+' wear/build.gradle.kts || echo "")
+          shared_v=$(grep -oP 'VERSION = "\K[^"]+' shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt || echo "")
+          echo "app=$app_v wear=$wear_v shared=$shared_v"
+          if [ "$app_v" != "$wear_v" ] || [ "$app_v" != "$shared_v" ]; then
+            echo "::error::Version mismatch across modules"
+            exit 1
+          fi
+
+  build-and-test:
+    name: Build + test
+    runs-on: ubuntu-latest
+    needs: [check-version]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+      - name: Bootstrap Gradle wrapper if missing (pre-MVP only)
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "::warning::Gradle wrapper not yet committed — pre-Sprint-1 scaffold. Skipping build."
+            exit 0
+          fi
+      - name: Setup Gradle
+        if: hashFiles('gradlew') != ''
+        uses: gradle/actions/setup-gradle@v4
+      - name: Assemble + test
+        if: hashFiles('gradlew') != ''
+        run: |
+          ./gradlew build test detekt ktlintCheck android-lintDebug --no-daemon --stacktrace
+
+  docs-lint:
+    name: Docs lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/mlc_config.json'
+        continue-on-error: true

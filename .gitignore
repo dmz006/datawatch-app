@@ -1,0 +1,71 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+.kotlin/
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+local.properties
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+.externalNativeBuild/
+.cxx/
+captures/
+
+# Keystores — NEVER COMMIT
+*.jks
+*.keystore
+release-key.properties
+keystore.properties
+google-services.json
+!.github/google-services.json.example
+
+# Generated
+generated/
+**/build/
+**/generated/
+kotlin-js-store/
+
+# macOS / Windows / Linux noise
+.DS_Store
+Thumbs.db
+*~
+.swp
+
+# Xcode / iOS
+iosApp/Pods/
+iosApp/build/
+iosApp/**/xcuserdata/
+iosApp/**/*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Env / secret scratch
+.env
+.env.*
+secrets.properties
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Build outputs
+*.mapping.txt
+mapping.txt
+
+# Ignore pre-scaffold design staging (moved to docs/)
+design/
+
+# Session-local Claude state (not part of the published repo)
+CLAUDE.md
+.claude/

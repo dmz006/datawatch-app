@@ -1,0 +1,90 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
+}
+
+val appVersion: String = providers.gradleProperty("DATAWATCH_APP_VERSION").get()
+val appVersionCode: Int =
+    providers.gradleProperty("DATAWATCH_APP_VERSION_CODE").get().toInt()
+
+kotlin {
+    androidTarget {
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
+    sourceSets {
+        val androidMain by getting {
+            dependencies {
+                implementation(project(":shared"))
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.lifecycle.viewmodel.compose)
+                implementation(libs.androidx.navigation.compose)
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(libs.firebase.messaging)
+                implementation(libs.kotlinx.coroutines.android)
+            }
+        }
+    }
+}
+
+android {
+    namespace = "com.dmzs.datawatchclient"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.dmzs.datawatchclient"
+        minSdk = 29
+        targetSdk = 35
+        versionCode = appVersionCode
+        versionName = appVersion
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions += "track"
+    productFlavors {
+        create("publicTrack") {
+            dimension = "track"
+            applicationIdSuffix = ""
+            versionNameSuffix = ""
+            manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
+        }
+        create("dev") {
+            dimension = "track"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+        debug {
+            applicationIdSuffix = ".debug"
+            isMinifyEnabled = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Internal-build-only passenger UI per ADR-0031. Never published to Play Store
+             Production. Sprint 4 implements the full session list / terminal / voice
+             screens behind the same Car App Library. -->
+        <service
+            android:name="com.dmzs.datawatchclient.auto.dev.DatawatchPassengerService"
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService"/>
+                <category android:name="androidx.car.app.category.MESSAGING"/>
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

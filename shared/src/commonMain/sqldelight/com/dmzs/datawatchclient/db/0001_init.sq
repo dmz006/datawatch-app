@@ -1,0 +1,47 @@
+-- Initial schema. See docs/data-model.md for the full ERD and retention rules.
+-- All tables are stored inside a SQLCipher-encrypted SQLite database per ADR-0016.
+
+CREATE TABLE server_profile (
+    id                     TEXT NOT NULL PRIMARY KEY,
+    display_name           TEXT NOT NULL,
+    base_url               TEXT NOT NULL,
+    bearer_token_ref       TEXT NOT NULL,
+    trust_anchor_sha256    TEXT,
+    reachability_profile_id TEXT NOT NULL,
+    enabled                INTEGER NOT NULL DEFAULT 1,
+    created_ts             INTEGER NOT NULL,
+    last_seen_ts           INTEGER
+);
+
+CREATE TABLE reachability_profile (
+    id     TEXT NOT NULL PRIMARY KEY,
+    kind   TEXT NOT NULL,
+    config TEXT NOT NULL
+);
+
+CREATE TABLE session (
+    id                  TEXT NOT NULL PRIMARY KEY,
+    server_profile_id   TEXT NOT NULL REFERENCES server_profile(id) ON DELETE CASCADE,
+    hostname_prefix     TEXT,
+    state               TEXT NOT NULL,
+    task_summary        TEXT,
+    created_ts          INTEGER NOT NULL,
+    last_activity_ts    INTEGER NOT NULL,
+    muted               INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX session_by_activity ON session(server_profile_id, last_activity_ts DESC);
+
+-- Additional tables (session_message, terminal_frame, pending_upload, memory_snippet,
+-- timeline_entry, channel_binding, push_registration, telemetry_event, mcp_tool_cache,
+-- proxy_server_link, settings_kv) are defined in subsequent migrations shipped in
+-- Sprint 1 onward. This file intentionally keeps the bootstrap minimal.
+
+selectAllProfiles:
+SELECT * FROM server_profile ORDER BY last_seen_ts DESC NULLS LAST, display_name ASC;
+
+insertProfile:
+INSERT OR REPLACE INTO server_profile(id, display_name, base_url, bearer_token_ref, trust_anchor_sha256, reachability_profile_id, enabled, created_ts, last_seen_ts)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteProfile:
+DELETE FROM server_profile WHERE id = ?;

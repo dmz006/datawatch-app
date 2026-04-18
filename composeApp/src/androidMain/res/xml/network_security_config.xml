@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Per ADR-0010 + security-model.md: default trust is system CAs only; per-profile
+    user-imported anchors are added at runtime via NetworkSecurityPolicy.
+    Cleartext traffic is blocked everywhere — datawatch servers must expose TLS.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user" overridePins="false"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

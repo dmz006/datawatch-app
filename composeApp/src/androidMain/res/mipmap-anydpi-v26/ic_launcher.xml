@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Placeholder adaptive icon. Sprint 0 asset pass replaces foreground + background
+    with the finalized Concept B artwork (phone silhouette + mini eye + signal arcs,
+    per ADR-0037).
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/black"/>
+    <foreground android:drawable="@drawable/ic_tile_voice"/>
+</adaptive-icon>

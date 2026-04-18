@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Datawatch Client</string>
+    <string name="tile_voice_label">Datawatch voice</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Declared per ADR-0031: public build hosts Messaging Car App; the dev flavor only
+     exposes the internal passenger UI per flavor-gated sourceSets. -->
+<automotiveApp>
+    <uses name="template"/>
+</automotiveApp>
