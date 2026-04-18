@@ -45,7 +45,12 @@ import kotlinx.serialization.json.Json
 public class RestTransport(
     override val profile: ServerProfile,
     private val client: HttpClient,
-    private val tokenProvider: suspend () -> String,
+    /**
+     * Resolves the bearer token on each request. `null` means the profile was
+     * configured with "no bearer token" (opt-in, insecure) — in that case the
+     * `Authorization` header is omitted.
+     */
+    private val tokenProvider: (suspend () -> String)? = null,
 ) : TransportClient {
 
     private val _isReachable = MutableStateFlow(false)
@@ -53,7 +58,7 @@ public class RestTransport(
 
     override suspend fun ping(): Result<Unit> = request {
         val res: HttpResponse = client.get("${profile.baseUrl}/api/health") {
-            header(HttpHeaders.Authorization, bearer())
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
         }
         // health often unauth; tolerate 401 as still-reachable if handshake completed.
         if (res.status != HttpStatusCode.OK && res.status != HttpStatusCode.Unauthorized) {
@@ -65,7 +70,7 @@ public class RestTransport(
 
     override suspend fun listSessions(): Result<List<Session>> = request {
         val dto: SessionListDto = client.get("${profile.baseUrl}/api/sessions") {
-            header(HttpHeaders.Authorization, bearer())
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
         }.body()
         dto.sessions.map { it.toDomain(profile.id) }
     }
@@ -74,7 +79,7 @@ public class RestTransport(
         request {
             val res: StartSessionResponseDto =
                 client.post("${profile.baseUrl}/api/sessions/start") {
-                    header(HttpHeaders.Authorization, bearer())
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
                     setBody(StartSessionDto(task = task, serverHint = serverHint))
                 }.body()
@@ -85,7 +90,7 @@ public class RestTransport(
         request {
             val res: ReplyResponseDto =
                 client.post("${profile.baseUrl}/api/sessions/reply") {
-                    header(HttpHeaders.Authorization, bearer())
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
                     setBody(ReplyDto(sessionId = sessionId, text = text))
                 }.body()
@@ -94,7 +99,7 @@ public class RestTransport(
 
     override suspend fun killSession(sessionId: String): Result<Unit> = request {
         client.post("${profile.baseUrl}/api/sessions/kill") {
-            header(HttpHeaders.Authorization, bearer())
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
             contentType(ContentType.Application.Json)
             setBody(mapOf("session_id" to sessionId))
         }
@@ -102,11 +107,12 @@ public class RestTransport(
 
     override suspend fun stats(): Result<StatsDto> = request {
         client.get("${profile.baseUrl}/api/stats") {
-            header(HttpHeaders.Authorization, bearer())
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
         }.body()
     }
 
-    private suspend fun bearer(): String = "Bearer ${tokenProvider()}"
+    private suspend fun bearer(): String? =
+        tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> = try {
         val v = block()

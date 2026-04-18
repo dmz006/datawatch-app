@@ -56,12 +56,14 @@ public object ServiceLocator {
      * the vault on each request via a suspend provider — no plaintext in memory
      * outside the request scope.
      */
-    public fun transportFor(profile: ServerProfile): TransportClient = RestTransport(
-        profile = profile,
-        client = httpClient,
-        tokenProvider = {
-            tokenVault.get(profile.bearerTokenRef)
-                ?: error("Missing token for profile ${profile.id}")
-        },
-    )
+    public fun transportFor(profile: ServerProfile): TransportClient {
+        // Empty bearerTokenRef = "no bearer token" per AddServerViewModel. Builds
+        // the transport without an Authorization header. All other cases resolve
+        // the token from the encrypted vault on each request.
+        val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
+        val tokenProvider: (suspend () -> String)? = alias?.let {
+            { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
+        }
+        return RestTransport(profile, httpClient, tokenProvider)
+    }
 }

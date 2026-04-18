@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -72,8 +73,21 @@ public fun AddServerScreen(
                 label = { Text("Bearer token") },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
+                enabled = !state.noToken,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = state.noToken, onCheckedChange = vm::onNoToken)
+                Text(
+                    "No bearer token  (insecure — only for test servers)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (state.noToken) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(checked = state.selfSigned, onCheckedChange = vm::onSelfSigned)
                 Text(

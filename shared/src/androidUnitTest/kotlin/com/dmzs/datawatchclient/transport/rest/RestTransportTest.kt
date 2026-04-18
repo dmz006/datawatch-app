@@ -60,6 +60,20 @@ class RestTransportTest {
             .setBody(body)
 
     @Test
+    fun noTokenProviderOmitsAuthorizationHeader() = runTest {
+        val client = HttpClient(OkHttp) {
+            install(ContentNegotiation) { json(RestTransport.DefaultJson) }
+            expectSuccess = true
+        }
+        val authless = RestTransport(transport.profile, client, tokenProvider = null)
+        server.enqueue(jsonResponse("""{"ok":true}"""))
+        val res = authless.ping()
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals(null, sent.getHeader("Authorization"))
+    }
+
+    @Test
     fun pingSucceedsOn200() = runTest {
         server.enqueue(jsonResponse("""{"ok":true}"""))
         val res = transport.ping()
