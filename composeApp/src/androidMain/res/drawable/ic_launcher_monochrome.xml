@@ -11,34 +11,34 @@
     android:viewportHeight="108"
     android:tint="?attr/colorControlNormal">
 
-    <!-- Earth as a filled disc -->
-    <path android:pathData="M 58.4,24.5 m -8.7,0 a 8.7,8.7 0 1 0 17.4,0 a 8.7,8.7 0 1 0 -17.4,0 z"
+    <!-- Earth — small disc, top-center (matches foreground v2) -->
+    <path android:pathData="M 58.4,16 m -7,0 a 7,7 0 1 0 14,0 a 7,7 0 1 0 -14,0 z"
         android:fillColor="#000000"/>
 
-    <!-- Moon surface (filled bottom region with horizon curve) -->
-    <path android:pathData="M 0,38 Q 54,33 108,40 L 108,108 L 0,108 Z"
+    <!-- Moon surface — horizon raised to y=30 -->
+    <path android:pathData="M 0,30 Q 54,26 108,32 L 108,108 L 0,108 Z"
         android:fillColor="#000000"/>
 
-    <!-- Crater silhouettes (lighter dots inside moon for texture) -->
-    <path android:pathData="M 14.5,82 m -10.5,0 a 10.5,3.4 0 1 0 21,0 a 10.5,3.4 0 1 0 -21,0 z M 90,84 m -11.4,0 a 11.4,3.6 0 1 0 22.8,0 a 11.4,3.6 0 1 0 -22.8,0 z M 36,57 m -7.5,0 a 7.5,2.3 0 1 0 15,0 a 7.5,2.3 0 1 0 -15,0 z M 77,57 m -6.7,0 a 6.7,2.0 0 1 0 13.4,0 a 6.7,2.0 0 1 0 -13.4,0 z"
+    <!-- Crater silhouettes -->
+    <path android:pathData="M 12,98 m -9,0 a 9,2.8 0 1 0 18,0 a 9,2.8 0 1 0 -18,0 z M 96,99 m -10,0 a 10,3 0 1 0 20,0 a 10,3 0 1 0 -20,0 z M 22,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z M 86,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.35"/>
 
-    <!-- Tablet body silhouette -->
-    <path android:pathData="M 36,69 h 36 a 2.1,2.1 0 0 1 2.1,2.1 v 22 a 2.1,2.1 0 0 1 -2.1,2.1 h -36 a 2.1,2.1 0 0 1 -2.1,-2.1 v -22 a 2.1,2.1 0 0 1 2.1,-2.1 z"
+    <!-- Tablet body — centered, large -->
+    <path android:pathData="M 24,40 h 60 a 3,3 0 0 1 3,3 v 42 a 3,3 0 0 1 -3,3 h -60 a 3,3 0 0 1 -3,-3 v -42 a 3,3 0 0 1 3,-3 z"
         android:fillColor="#000000"/>
 
     <!-- Tablet screen carved out -->
-    <path android:pathData="M 39.4,71 h 29.2 a 1.3,1.3 0 0 1 1.3,1.3 v 17.6 a 1.3,1.3 0 0 1 -1.3,1.3 h -29.2 a 1.3,1.3 0 0 1 -1.3,-1.3 v -17.6 a 1.3,1.3 0 0 1 1.3,-1.3 z"
+    <path android:pathData="M 28,44 h 52 a 2,2 0 0 1 2,2 v 36 a 2,2 0 0 1 -2,2 h -52 a 2,2 0 0 1 -2,-2 v -36 a 2,2 0 0 1 2,-2 z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.25"/>
 
-    <!-- Eye on tablet -->
-    <path android:pathData="M 54,81 m -10.2,0 a 10.2,5.9 0 1 0 20.4,0 a 10.2,5.9 0 1 0 -20.4,0 z"
+    <!-- Eye on tablet — significantly larger to match foreground v2 -->
+    <path android:pathData="M 54,64 m -18,0 a 18,11 0 1 0 36,0 a 18,11 0 1 0 -36,0 z"
         android:fillColor="#000000"/>
-    <path android:pathData="M 54,81 m -4.7,0 a 4.7,4.7 0 1 0 9.4,0 a 4.7,4.7 0 1 0 -9.4,0 z"
+    <path android:pathData="M 54,64 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.5"/>
-    <path android:pathData="M 54,81 m -1.9,0 a 1.9,1.9 0 1 0 3.8,0 a 1.9,1.9 0 1 0 -3.8,0 z"
+    <path android:pathData="M 54,64 m -4,0 a 4,4 0 1 0 8,0 a 4,4 0 1 0 -8,0 z"
         android:fillColor="#000000"/>
 </vector>

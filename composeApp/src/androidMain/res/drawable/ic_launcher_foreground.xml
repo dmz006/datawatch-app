@@ -21,12 +21,13 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Earth atmospheric halo (subtle cyan glow) -->
-    <path android:pathData="M 58.4,24.5 m -12.3,0 a 12.3,12.3 0 1 0 24.6,0 a 12.3,12.3 0 1 0 -24.6,0 z">
+    <!-- Earth atmospheric halo (subtle cyan glow). Smaller + higher than v1 to
+         leave room for a centered tablet below. -->
+    <path android:pathData="M 58.4,16 m -10,0 a 10,10 0 1 0 20,0 a 10,10 0 1 0 -20,0 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="58.4" android:centerY="24.5"
-                android:gradientRadius="12.3"
+                android:centerX="58.4" android:centerY="16"
+                android:gradientRadius="10"
                 android:startColor="#007AB8E8"
                 android:centerColor="#8C7AB8E8"
                 android:endColor="#007AB8E8"/>
@@ -34,32 +35,33 @@
     </path>
 
     <!-- Earth body — radial gradient from cloud-white center to deep blue edge -->
-    <path android:pathData="M 58.4,24.5 m -8.7,0 a 8.7,8.7 0 1 0 17.4,0 a 8.7,8.7 0 1 0 -17.4,0 z">
+    <path android:pathData="M 58.4,16 m -7,0 a 7,7 0 1 0 14,0 a 7,7 0 1 0 -14,0 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="55" android:centerY="21"
-                android:gradientRadius="11"
+                android:centerX="55.5" android:centerY="13.5"
+                android:gradientRadius="9"
                 android:startColor="#F4FAFF"
                 android:centerColor="#4988C8"
                 android:endColor="#0B2A55"/>
         </aapt:attr>
     </path>
 
-    <!-- Earth continents — impressionistic green blobs (Africa-ish + Americas-ish) -->
-    <path android:pathData="M 52.5,22 C 53.5,20.5 55,20.5 56,22 C 57,24 55.7,26 54.7,26.8 C 53,27 51.5,26 52,24 Z M 53,27 C 54,26.7 55,27.5 54.5,29 C 53.5,30 52,29.5 52,28.5 Z M 60,23 C 62,22 64,23.5 64.5,26 C 64.5,28.5 63,30 61.2,30.4 C 59.5,30.4 58.5,28.5 59,26.6 C 59.5,24.7 59.5,23.5 60,23 Z"
+    <!-- Earth continents — impressionistic green blobs -->
+    <path android:pathData="M 54,14.5 C 54.8,13.5 56,13.5 56.6,14.5 C 57.4,16 56.5,17.6 55.7,18.2 C 54.5,18.4 53.4,17.6 53.8,16.2 Z M 60.5,15 C 62,14.2 63.6,15.4 64,17.4 C 64,18.8 63,19.8 61.6,20 C 60,20 59.3,18.8 59.6,17.4 C 59.9,15.9 59.9,15.4 60.5,15 Z"
         android:fillColor="#2F5E36"
         android:fillAlpha="0.85"/>
 
     <!-- Earth cloud highlights -->
-    <path android:pathData="M 52,24 C 56,22 60,23 62,25 C 58,27 54,26 51,26 Z M 63,21 C 66,21.5 67,24 67,25.5 C 65,24.5 62.5,23.5 62,23 Z"
+    <path android:pathData="M 53,15.5 C 56,14 59,14.6 61,16 C 58,17.6 55,17 52.6,17 Z M 62,13.5 C 64.5,13.8 65.5,15.6 65.6,16.6 C 64,16 62,15.2 61.6,14.8 Z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.55"/>
 
-    <!-- Moon surface — large gradient region from horizon to bottom -->
-    <path android:pathData="M 0,38 Q 54,33 108,40 L 108,108 L 0,108 Z">
+    <!-- Moon surface — horizon raised to y=30 (was y=38) so the tablet sits
+         centered in the icon, well below the horizon. -->
+    <path android:pathData="M 0,30 Q 54,26 108,32 L 108,108 L 0,108 Z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="linear"
-                android:startX="0" android:startY="38"
+                android:startX="0" android:startY="30"
                 android:endX="0" android:endY="108"
                 android:startColor="#7A6B5F"
                 android:centerColor="#3E352F"
@@ -68,110 +70,136 @@
     </path>
 
     <!-- Earthshine rim along horizon -->
-    <path android:pathData="M 0,38 Q 54,33 108,40"
+    <path android:pathData="M 0,30 Q 54,26 108,32"
         android:strokeColor="#7AB8E8"
         android:strokeWidth="0.35"
         android:strokeAlpha="0.4"
         android:fillColor="#00000000"/>
 
-    <!-- Pronounced craters — left foreground large -->
-    <path android:pathData="M 14.5,82 m -10.5,0 a 10.5,3.4 0 1 0 21,0 a 10.5,3.4 0 1 0 -21,0 z"
+    <!-- Pronounced craters — left foreground (moved further down to clear the
+         now larger tablet) -->
+    <path android:pathData="M 12,98 m -9,0 a 9,2.8 0 1 0 18,0 a 9,2.8 0 1 0 -18,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.85"/>
-    <path android:pathData="M 14.5,82 m -10,0 a 10,3 0 1 0 20,0 a 10,3 0 1 0 -20,0 z"
+    <path android:pathData="M 12,98 m -8.6,0 a 8.6,2.6 0 1 0 17.2,0 a 8.6,2.6 0 1 0 -17.2,0 z"
         android:strokeColor="#8B7B6E" android:strokeWidth="0.35"
         android:strokeAlpha="0.6" android:fillColor="#00000000"/>
 
-    <!-- Right foreground large crater -->
-    <path android:pathData="M 90,84 m -11.4,0 a 11.4,3.6 0 1 0 22.8,0 a 11.4,3.6 0 1 0 -22.8,0 z"
+    <!-- Right foreground crater -->
+    <path android:pathData="M 96,99 m -10,0 a 10,3 0 1 0 20,0 a 10,3 0 1 0 -20,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.85"/>
-    <path android:pathData="M 90,84 m -11,0 a 11,3.2 0 1 0 22,0 a 11,3.2 0 1 0 -22,0 z"
+    <path android:pathData="M 96,99 m -9.6,0 a 9.6,2.8 0 1 0 19.2,0 a 9.6,2.8 0 1 0 -19.2,0 z"
         android:strokeColor="#8B7B6E" android:strokeWidth="0.35"
         android:strokeAlpha="0.6" android:fillColor="#00000000"/>
 
-    <!-- Mid-distance craters -->
-    <path android:pathData="M 36,57 m -7.5,0 a 7.5,2.3 0 1 0 15,0 a 7.5,2.3 0 1 0 -15,0 z"
+    <!-- Mid-distance craters near horizon (above tablet) -->
+    <path android:pathData="M 22,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.7"/>
-    <path android:pathData="M 77,57 m -6.7,0 a 6.7,2.0 0 1 0 13.4,0 a 6.7,2.0 0 1 0 -13.4,0 z"
+    <path android:pathData="M 86,40 m -5,0 a 5,1.5 0 1 0 10,0 a 5,1.5 0 1 0 -10,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.7"/>
-    <path android:pathData="M 96,60 m -5.9,0 a 5.9,1.7 0 1 0 11.8,0 a 5.9,1.7 0 1 0 -11.8,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.65"/>
-    <path android:pathData="M 13,60 m -6.3,0 a 6.3,1.9 0 1 0 12.6,0 a 6.3,1.9 0 1 0 -12.6,0 z"
-        android:fillColor="#1A1310" android:fillAlpha="0.65"/>
 
     <!-- Distant small craters near horizon -->
-    <path android:pathData="M 17,44 m -3.8,0 a 3.8,1.0 0 1 0 7.6,0 a 3.8,1.0 0 1 0 -7.6,0 z"
+    <path android:pathData="M 38,36 m -3,0 a 3,0.9 0 1 0 6,0 a 3,0.9 0 1 0 -6,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-    <path android:pathData="M 70,44 m -3.4,0 a 3.4,1.0 0 1 0 6.8,0 a 3.4,1.0 0 1 0 -6.8,0 z"
+    <path android:pathData="M 70,36 m -3,0 a 3,0.9 0 1 0 6,0 a 3,0.9 0 1 0 -6,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.55"/>
-    <path android:pathData="M 84,42 m -4.2,0 a 4.2,1.2 0 1 0 8.4,0 a 4.2,1.2 0 1 0 -8.4,0 z"
+    <path android:pathData="M 100,38 m -3.4,0 a 3.4,1 0 1 0 6.8,0 a 3.4,1 0 1 0 -6.8,0 z"
         android:fillColor="#1A1310" android:fillAlpha="0.55"/>
+    <path android:pathData="M 8,38 m -3.4,0 a 3.4,1 0 1 0 6.8,0 a 3.4,1 0 1 0 -6.8,0 z"
+        android:fillColor="#1A1310" android:fillAlpha="0.55"/>
+
+    <!--
+        TABLET — sized to be the visual focus of the icon. Centered horizontally
+        AND vertically (cy ≈ 64). Width 60 (was 36) → fills most of the icon.
+        Height 48 (was 26). Sits clearly below the horizon (y=30) with bottom at
+        y=88 leaving room for foreground craters.
+    -->
 
     <!-- Tablet shadow on regolith -->
-    <path android:pathData="M 54,92 m -20.3,0 a 20.3,1.5 0 1 0 40.6,0 a 20.3,1.5 0 1 0 -40.6,0 z"
-        android:fillColor="#000000" android:fillAlpha="0.45"/>
+    <path android:pathData="M 54,90 m -28,0 a 28,2 0 1 0 56,0 a 28,2 0 1 0 -56,0 z"
+        android:fillColor="#000000" android:fillAlpha="0.5"/>
 
     <!-- Tablet bezel -->
-    <path android:pathData="M 36,69 h 36 a 2.1,2.1 0 0 1 2.1,2.1 v 22 a 2.1,2.1 0 0 1 -2.1,2.1 h -36 a 2.1,2.1 0 0 1 -2.1,-2.1 v -22 a 2.1,2.1 0 0 1 2.1,-2.1 z">
+    <path android:pathData="M 24,40 h 60 a 3,3 0 0 1 3,3 v 42 a 3,3 0 0 1 -3,3 h -60 a 3,3 0 0 1 -3,-3 v -42 a 3,3 0 0 1 3,-3 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="linear"
-                android:startX="54" android:startY="69"
-                android:endX="54" android:endY="95"
+                android:startX="54" android:startY="40"
+                android:endX="54" android:endY="88"
                 android:startColor="#2A1B40"
                 android:endColor="#0D0720"/>
         </aapt:attr>
     </path>
-    <path android:pathData="M 36,69 h 36 a 2.1,2.1 0 0 1 2.1,2.1 v 22 a 2.1,2.1 0 0 1 -2.1,2.1 h -36 a 2.1,2.1 0 0 1 -2.1,-2.1 v -22 a 2.1,2.1 0 0 1 2.1,-2.1 z"
+    <path android:pathData="M 24,40 h 60 a 3,3 0 0 1 3,3 v 42 a 3,3 0 0 1 -3,3 h -60 a 3,3 0 0 1 -3,-3 v -42 a 3,3 0 0 1 3,-3 z"
         android:strokeColor="#7C3AED"
-        android:strokeWidth="0.45"
+        android:strokeWidth="0.6"
         android:fillColor="#00000000"/>
 
     <!-- Tablet screen recess -->
-    <path android:pathData="M 39.4,71 h 29.2 a 1.3,1.3 0 0 1 1.3,1.3 v 17.6 a 1.3,1.3 0 0 1 -1.3,1.3 h -29.2 a 1.3,1.3 0 0 1 -1.3,-1.3 v -17.6 a 1.3,1.3 0 0 1 1.3,-1.3 z">
+    <path android:pathData="M 28,44 h 52 a 2,2 0 0 1 2,2 v 36 a 2,2 0 0 1 -2,2 h -52 a 2,2 0 0 1 -2,-2 v -36 a 2,2 0 0 1 2,-2 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="54" android:centerY="81"
-                android:gradientRadius="14"
+                android:centerX="54" android:centerY="64"
+                android:gradientRadius="22"
                 android:startColor="#220F42"
                 android:endColor="#08031A"/>
         </aapt:attr>
     </path>
 
-    <!-- Matrix rain stand-in (text isn't possible in VectorDrawable; tiny purple
-         dots visually suggest data behind the eye) -->
-    <path android:pathData="M 41,73 h 0.7 v 0.7 h -0.7 z M 41,75 h 0.7 v 0.7 h -0.7 z M 41,77 h 0.7 v 0.7 h -0.7 z M 41,80 h 0.7 v 0.7 h -0.7 z M 41,83 h 0.7 v 0.7 h -0.7 z M 41,86 h 0.7 v 0.7 h -0.7 z M 44,72 h 0.7 v 0.7 h -0.7 z M 44,74 h 0.7 v 0.7 h -0.7 z M 44,76 h 0.7 v 0.7 h -0.7 z M 44,79 h 0.7 v 0.7 h -0.7 z M 44,82 h 0.7 v 0.7 h -0.7 z M 44,85 h 0.7 v 0.7 h -0.7 z M 47,73 h 0.7 v 0.7 h -0.7 z M 47,75 h 0.7 v 0.7 h -0.7 z M 47,78 h 0.7 v 0.7 h -0.7 z M 47,81 h 0.7 v 0.7 h -0.7 z M 47,84 h 0.7 v 0.7 h -0.7 z M 47,87 h 0.7 v 0.7 h -0.7 z M 60,72 h 0.7 v 0.7 h -0.7 z M 60,74 h 0.7 v 0.7 h -0.7 z M 60,76 h 0.7 v 0.7 h -0.7 z M 60,79 h 0.7 v 0.7 h -0.7 z M 60,82 h 0.7 v 0.7 h -0.7 z M 60,85 h 0.7 v 0.7 h -0.7 z M 63,73 h 0.7 v 0.7 h -0.7 z M 63,75 h 0.7 v 0.7 h -0.7 z M 63,78 h 0.7 v 0.7 h -0.7 z M 63,81 h 0.7 v 0.7 h -0.7 z M 63,84 h 0.7 v 0.7 h -0.7 z M 63,87 h 0.7 v 0.7 h -0.7 z M 66,72 h 0.7 v 0.7 h -0.7 z M 66,75 h 0.7 v 0.7 h -0.7 z M 66,77 h 0.7 v 0.7 h -0.7 z M 66,80 h 0.7 v 0.7 h -0.7 z M 66,83 h 0.7 v 0.7 h -0.7 z M 66,86 h 0.7 v 0.7 h -0.7 z"
+    <!-- Matrix rain stand-in — purple specks across screen, denser to read at
+         this larger tablet scale -->
+    <path android:pathData="M 30,46 h 1 v 1 h -1 z M 30,49 h 1 v 1 h -1 z M 30,52 h 1 v 1 h -1 z M 30,55 h 1 v 1 h -1 z M 30,58 h 1 v 1 h -1 z M 30,72 h 1 v 1 h -1 z M 30,75 h 1 v 1 h -1 z M 30,78 h 1 v 1 h -1 z M 30,81 h 1 v 1 h -1 z
+                            M 33,47 h 1 v 1 h -1 z M 33,50 h 1 v 1 h -1 z M 33,53 h 1 v 1 h -1 z M 33,56 h 1 v 1 h -1 z M 33,59 h 1 v 1 h -1 z M 33,73 h 1 v 1 h -1 z M 33,76 h 1 v 1 h -1 z M 33,79 h 1 v 1 h -1 z M 33,82 h 1 v 1 h -1 z
+                            M 36,46 h 1 v 1 h -1 z M 36,49 h 1 v 1 h -1 z M 36,52 h 1 v 1 h -1 z M 36,55 h 1 v 1 h -1 z M 36,58 h 1 v 1 h -1 z M 36,72 h 1 v 1 h -1 z M 36,75 h 1 v 1 h -1 z M 36,78 h 1 v 1 h -1 z M 36,81 h 1 v 1 h -1 z
+                            M 71,46 h 1 v 1 h -1 z M 71,49 h 1 v 1 h -1 z M 71,52 h 1 v 1 h -1 z M 71,55 h 1 v 1 h -1 z M 71,58 h 1 v 1 h -1 z M 71,72 h 1 v 1 h -1 z M 71,75 h 1 v 1 h -1 z M 71,78 h 1 v 1 h -1 z M 71,81 h 1 v 1 h -1 z
+                            M 74,47 h 1 v 1 h -1 z M 74,50 h 1 v 1 h -1 z M 74,53 h 1 v 1 h -1 z M 74,56 h 1 v 1 h -1 z M 74,59 h 1 v 1 h -1 z M 74,73 h 1 v 1 h -1 z M 74,76 h 1 v 1 h -1 z M 74,79 h 1 v 1 h -1 z M 74,82 h 1 v 1 h -1 z
+                            M 77,46 h 1 v 1 h -1 z M 77,49 h 1 v 1 h -1 z M 77,52 h 1 v 1 h -1 z M 77,55 h 1 v 1 h -1 z M 77,58 h 1 v 1 h -1 z M 77,72 h 1 v 1 h -1 z M 77,75 h 1 v 1 h -1 z M 77,78 h 1 v 1 h -1 z M 77,81 h 1 v 1 h -1 z"
         android:fillColor="#A855F7"
-        android:fillAlpha="0.5"/>
+        android:fillAlpha="0.55"/>
 
-    <!-- Eye sclera -->
-    <path android:pathData="M 54,81 m -10.2,0 a 10.2,5.9 0 1 0 20.4,0 a 10.2,5.9 0 1 0 -20.4,0 z"
+    <!--
+        EYE — significantly larger so it's the legible focal element of the icon.
+        Sclera ellipse rx=18 ry=11 (was 10.2,5.9). Iris radius 9 (was 4.7).
+        Pupil radius 4 (was 1.9). Centered on tablet (54, 64).
+    -->
+    <path android:pathData="M 54,64 m -18,0 a 18,11 0 1 0 36,0 a 18,11 0 1 0 -36,0 z"
         android:fillColor="#080518"
         android:strokeColor="#7C3AED"
-        android:strokeWidth="0.3"/>
+        android:strokeWidth="0.5"/>
 
     <!-- Iris -->
-    <path android:pathData="M 54,81 m -4.7,0 a 4.7,4.7 0 1 0 9.4,0 a 4.7,4.7 0 1 0 -9.4,0 z">
+    <path android:pathData="M 54,64 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
-                android:centerX="52.5" android:centerY="79.5"
-                android:gradientRadius="5"
+                android:centerX="51" android:centerY="61"
+                android:gradientRadius="10"
                 android:startColor="#A855F7"
                 android:centerColor="#7C3AED"
                 android:endColor="#3B0764"/>
         </aapt:attr>
     </path>
+    <!-- Iris ring detail -->
+    <path android:pathData="M 54,64 m -8.4,0 a 8.4,8.4 0 1 0 16.8,0 a 8.4,8.4 0 1 0 -16.8,0 z"
+        android:strokeColor="#A855F7"
+        android:strokeWidth="0.4"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000"/>
 
     <!-- Pupil -->
-    <path android:pathData="M 54,81 m -1.9,0 a 1.9,1.9 0 1 0 3.8,0 a 1.9,1.9 0 1 0 -3.8,0 z"
+    <path android:pathData="M 54,64 m -4,0 a 4,4 0 1 0 8,0 a 4,4 0 1 0 -8,0 z"
         android:fillColor="#04020E"/>
 
-    <!-- Crosshair -->
-    <path android:pathData="M 54,79.5 v 0.6 M 54,82 v 0.6 M 52.5,81 h 0.6 M 55,81 h 0.6"
+    <!-- Crosshair (bigger to match larger pupil) -->
+    <path android:pathData="M 54,60 v 1.4 M 54,66.6 v 1.4 M 50,64 h 1.4 M 56.6,64 h 1.4"
         android:strokeColor="#E879F9"
-        android:strokeWidth="0.36"
+        android:strokeWidth="0.6"
         android:strokeLineCap="round"
         android:fillColor="#00000000"/>
 
     <!-- Center highlight -->
-    <path android:pathData="M 54,81 m -0.34,0 a 0.34,0.34 0 1 0 0.68,0 a 0.34,0.34 0 1 0 -0.68,0 z"
+    <path android:pathData="M 54,64 m -0.7,0 a 0.7,0.7 0 1 0 1.4,0 a 0.7,0.7 0 1 0 -1.4,0 z"
         android:fillColor="#F0ABFC"/>
+
+    <!-- Lens highlight (subtle bright spec) -->
+    <path android:pathData="M 50,60 m -1.8,-0.8 a 1.8,0.8 0 1 0 3.6,0 a 1.8,0.8 0 1 0 -3.6,0 z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.18"/>
 </vector>

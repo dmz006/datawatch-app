@@ -255,9 +255,10 @@ private fun MatrixSplashArtwork() {
             )
         }
 
-        // Earth — radius ~6% of canvas width, centered horizontally.
-        val earthRadius = size.width * 0.075f
-        val earthCenter = Offset(cx, size.height * 0.22f)
+        // Earth — slightly smaller and higher so the tablet has dominant
+        // vertical real estate below the horizon.
+        val earthRadius = size.width * 0.065f
+        val earthCenter = Offset(cx, size.height * 0.16f)
         // Atmospheric halo
         drawCircle(
             color = Color(0xFF7AB8E8).copy(alpha = 0.30f),
@@ -289,8 +290,10 @@ private fun MatrixSplashArtwork() {
             center = Offset(earthCenter.x - earthRadius * 0.30f, earthCenter.y - earthRadius * 0.30f),
         )
 
-        // Moon surface — fills bottom ~60% with horizon at y = 40% of height.
-        val horizonY = size.height * 0.40f
+        // Moon surface — horizon raised to 28% of height so the moon fills
+        // ~72% of the canvas. Tablet sits firmly below the horizon with
+        // moon visible above and below it.
+        val horizonY = size.height * 0.28f
         // Moon body rectangle (filled solid; clipping to icon shape happens via
         // Compose's Canvas clip—we use a simple rect since the disc clip is
         // implicit at higher level).
@@ -353,16 +356,21 @@ private fun MatrixSplashArtwork() {
             )
         }
 
-        // 3. Tablet bezel — sized to sit naturally on the lunar surface.
-        val tabletWidth = discRadius * 1.50f
-        val tabletHeight = discRadius * 1.10f
+        // 3. Tablet — bigger (1.8× discRadius wide, 1.4× tall) and positioned
+        // so its top sits comfortably below the horizon with moon visible
+        // above AND below it. The eye becomes the visual focal element.
+        val tabletWidth = discRadius * 1.8f
+        val tabletHeight = discRadius * 1.4f
         val tabletLeft = cx - tabletWidth / 2f
-        val tabletTop = cy - tabletHeight / 2f + discRadius * 0.10f
+        // Centre the tablet vertically within the moon area: between horizon
+        // and bottom edge.
+        val moonAreaCenter = (horizonY + size.height) / 2f
+        val tabletTop = moonAreaCenter - tabletHeight / 2f
         // Shadow on regolith
         drawOval(
-            color = Color.Black.copy(alpha = 0.45f),
-            topLeft = Offset(tabletLeft - 4f, tabletTop + tabletHeight - 4f),
-            size = Size(tabletWidth + 8f, 14f),
+            color = Color.Black.copy(alpha = 0.5f),
+            topLeft = Offset(tabletLeft - 6f, tabletTop + tabletHeight - 6f),
+            size = Size(tabletWidth + 12f, 18f),
         )
         drawRoundedRect(
             tabletLeft, tabletTop, tabletWidth, tabletHeight,
