@@ -79,6 +79,10 @@ android {
     }
 }
 
+ktlint {
+    ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
+}
+
 sqldelight {
     databases {
         create("DatawatchDb") {

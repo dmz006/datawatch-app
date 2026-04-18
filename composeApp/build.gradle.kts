@@ -89,3 +89,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+
+ktlint {
+    ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
+}

@@ -36,6 +36,10 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 
+ktlint {
+    ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
+}
+
 dependencies {
     implementation(project(":shared"))
     implementation(libs.androidx.wear.compose.material)
