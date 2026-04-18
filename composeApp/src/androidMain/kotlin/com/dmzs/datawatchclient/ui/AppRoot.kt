@@ -19,6 +19,7 @@ import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.shell.PlaceholderTabScreen
+import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 
 /**
@@ -32,17 +33,41 @@ public fun AppRoot() {
             .observeAll()
             .collectAsState(initial = emptyList())
         val navController = rememberNavController()
-        val startDestination = remember(profiles.isEmpty()) {
-            if (profiles.isEmpty()) Destinations.Onboarding else Destinations.Home
-        }
-
-        Nav(navController = navController, startDestination = startDestination)
+        // Cold-launch always lands on Splash. After Splash finishes it picks the
+        // next destination based on whether any server profiles exist.
+        Nav(
+            navController = navController,
+            startDestination = Destinations.Splash,
+            hasProfiles = profiles.isNotEmpty(),
+        )
     }
 }
 
 @Composable
-private fun Nav(navController: NavHostController, startDestination: String) {
+private fun Nav(
+    navController: NavHostController,
+    startDestination: String,
+    hasProfiles: Boolean,
+) {
     NavHost(navController = navController, startDestination = startDestination) {
+        composable(Destinations.Splash) {
+            MatrixSplashScreen(
+                replay = false,
+                onFinished = {
+                    val next = if (hasProfiles) Destinations.Home else Destinations.Onboarding
+                    navController.navigate(next) {
+                        popUpTo(Destinations.Splash) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable(Destinations.SplashReplay) {
+            MatrixSplashScreen(
+                replay = true,
+                onFinished = { navController.popBackStack() },
+            )
+        }
         composable(Destinations.Onboarding) {
             OnboardingScreen(onGetStarted = { navController.navigate(Destinations.AddServer) })
         }
@@ -58,13 +83,15 @@ private fun Nav(navController: NavHostController, startDestination: String) {
             )
         }
         composable(Destinations.Home) {
-            HomeShell()
+            HomeShell(
+                onReplaySplash = { navController.navigate(Destinations.SplashReplay) },
+            )
         }
     }
 }
 
 @Composable
-private fun HomeShell() {
+private fun HomeShell(onReplaySplash: () -> Unit) {
     val tabNav = rememberNavController()
     Scaffold(bottomBar = { BottomNavBar(tabNav) }) { inner ->
         NavHost(
@@ -79,7 +106,9 @@ private fun HomeShell() {
             composable(Destinations.Tabs.Stats) {
                 PlaceholderTabScreen("Stats", "Sprint 1 Phase 4 adds the live stats dashboard.")
             }
-            composable(Destinations.Tabs.Settings) { SettingsScreen() }
+            composable(Destinations.Tabs.Settings) {
+                SettingsScreen(onReplaySplash = onReplaySplash)
+            }
         }
     }
 }

@@ -1,63 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Variant B5: combines B4's screen-dominant framing with B1's three-arc antenna
-  crown. The frame reads as a tablet (wide landscape bezel, subtle speaker slit),
-  not a phone. Behind the eye on the screen, blurred Matrix-style rain in the
-  datawatch purple palette drifts down — close enough to suggest "data flowing"
-  without pulling the eye off center.
+  Variant B5 (v2): combines B4's screen-dominant framing with B1's three-arc
+  antenna crown, now with animated matrix rain. Tablet-shaped landscape frame.
+  Matrix rain characters drift downward with SMIL animations + staggered start
+  offsets; each character has its own opacity — no longer just a brighter "head
+  glyph" leading convention. Animation is visible in any modern browser that
+  renders inline SVG; for the Android launcher we bake a static frame, and the
+  Compose splash reproduces the animation in Kotlin (see
+  composeApp/.../ui/splash/MatrixSplashScreen.kt).
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
-     aria-label="datawatch mobile — variant B5 (tablet + matrix rain + arcs)">
+     aria-label="datawatch — tablet with matrix rain + antenna arcs (animated)">
   <defs>
     <radialGradient id="bg" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#1A0A2E"/>
       <stop offset="100%" stop-color="#080810"/>
     </radialGradient>
-
     <linearGradient id="bezel" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#241438"/>
       <stop offset="100%" stop-color="#0D0720"/>
     </linearGradient>
-
     <radialGradient id="screen" cx="50%" cy="50%" r="70%">
       <stop offset="0%" stop-color="#220F42"/>
       <stop offset="100%" stop-color="#08031A"/>
     </radialGradient>
-
     <radialGradient id="iris" cx="42%" cy="42%" r="58%">
       <stop offset="0%" stop-color="#A855F7"/>
       <stop offset="45%" stop-color="#7C3AED"/>
       <stop offset="80%" stop-color="#5B21B6"/>
       <stop offset="100%" stop-color="#3B0764"/>
     </radialGradient>
-
     <linearGradient id="signalFade" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#A855F7" stop-opacity="0.3"/>
       <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.95"/>
     </linearGradient>
-
     <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="4" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-
-    <!-- Blur for matrix rain — stronger so it reads as distant background texture. -->
+    <!-- Less blur so the matrix reads legibly. -->
     <filter id="matrixBlur" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="1.8"/>
+      <feGaussianBlur stdDeviation="0.6"/>
     </filter>
-
-    <!-- Mask so the matrix rain is clipped to the screen area only. -->
     <clipPath id="screenClip">
       <rect x="96" y="172" width="320" height="248" rx="22" ry="22"/>
     </clipPath>
   </defs>
 
-  <!-- Dark disc background -->
+  <!-- Background disc -->
   <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
   <circle cx="256" cy="256" r="242" fill="none" stroke="#3B0764"
           stroke-width="2" opacity="0.5"/>
-
-  <!-- Clock tick marks (quieter echo of parent identity) -->
   <g stroke="#7C3AED" stroke-width="3" opacity="0.45">
     <line x1="256" y1="14"  x2="256" y2="34"/>
     <line x1="256" y1="478" x2="256" y2="498"/>
@@ -65,7 +58,7 @@
     <line x1="478" y1="256" x2="498" y2="256"/>
   </g>
 
-  <!-- B1-style three-arc crown above the tablet -->
+  <!-- B1-style three-arc antenna crown -->
   <g fill="none" stroke="url(#signalFade)" stroke-linecap="round"
      filter="url(#softGlow)">
     <path d="M 136,122 A 120,120 0 0,1 376,122" stroke-width="6" opacity="0.45"/>
@@ -73,141 +66,300 @@
     <path d="M 196,150 A 60,60 0 0,1 316,150"   stroke-width="10" opacity="0.95"/>
   </g>
 
-  <!-- Tablet bezel: wide landscape rounded rectangle -->
+  <!-- Tablet bezel -->
   <rect x="80" y="158" width="352" height="276" rx="28" ry="28"
         fill="url(#bezel)" stroke="#7C3AED" stroke-width="3"/>
-
-  <!-- Subtle speaker slit at the top edge of the bezel -->
   <rect x="236" y="166" width="40" height="4" rx="2" ry="2" fill="#2D1B4E"/>
-
-  <!-- Camera dot on the bezel -->
   <circle cx="256" cy="178" r="2.4" fill="#4C1D95" opacity="0.75"/>
 
   <!-- Screen recess -->
   <rect x="96" y="186" width="320" height="234" rx="18" ry="18"
         fill="url(#screen)" stroke="#4C1D95" stroke-width="1" opacity="0.95"/>
 
-  <!-- Matrix rain: columns of JetBrains-monospace hex characters behind the eye.
-       Clipped to screen, softly blurred, low opacity. Pattern is hand-set so each
-       column has a slightly different offset + head-glyph brightness. -->
+  <!--
+    MATRIX RAIN (animated) — each column is a <g> that translates down the screen
+    using SMIL <animateTransform>. Per-character <animate> on opacity gives each
+    glyph its own flicker pattern. Characters themselves are a mix of hex, kana-
+    like forms, and leaked references ("DATAWATCHER") for texture. The animation
+    loops forever; durations and delays are staggered so the columns don't
+    pulse in unison.
+  -->
   <g clip-path="url(#screenClip)" filter="url(#matrixBlur)"
-     font-family="JetBrains Mono, Menlo, monospace" font-size="11"
-     letter-spacing="0.4" text-anchor="middle">
-    <!-- col helpers with per-column slight transform to create "falling" feel -->
-    <g fill="#A855F7" opacity="0.22">
-      <text x="120" y="208">A</text><text x="120" y="222">3</text>
-      <text x="120" y="236">F</text><text x="120" y="250">2</text>
-      <text x="120" y="264">9</text><text x="120" y="278">C</text>
-      <text x="120" y="292">1</text><text x="120" y="306">B</text>
-      <text x="120" y="320">4</text><text x="120" y="334">E</text>
-      <text x="120" y="348">7</text><text x="120" y="362">D</text>
-      <text x="120" y="376">2</text><text x="120" y="390">F</text>
+     font-family="JetBrains Mono, Menlo, monospace" font-size="12"
+     letter-spacing="0.4" text-anchor="middle" fill="#A855F7">
+    <!-- Column template used by each actual column:
+         <g transform="translate(X 0)">
+           <g animateTransform on translate Y>
+             <text opacity=random animate>...chars...</text>
+           </g>
+         </g>
+    -->
+
+    <!-- column 120 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -60" to="0 280" dur="5.4s" repeatCount="indefinite"/>
+        <text x="120" y="200" fill="#C084FC">
+          A<animate attributeName="opacity" values="0.25;0.55;0.3" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="214" fill="#A855F7">
+          3<animate attributeName="opacity" values="0.45;0.2;0.5" dur="2.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="228" fill="#C084FC">
+          F<animate attributeName="opacity" values="0.3;0.55;0.25" dur="1.7s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="242" fill="#A855F7">
+          2<animate attributeName="opacity" values="0.5;0.25;0.45" dur="2.1s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="256" fill="#E879F9">
+          9<animate attributeName="opacity" values="0.4;0.7;0.35" dur="1.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="270" fill="#A855F7">
+          C<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.5s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="284" fill="#C084FC">
+          1<animate attributeName="opacity" values="0.4;0.2;0.55" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="298" fill="#A855F7">
+          B<animate attributeName="opacity" values="0.3;0.6;0.35" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="120" y="312" fill="#F0ABFC">
+          4<animate attributeName="opacity" values="0.55;0.8;0.5" dur="1.5s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#C084FC" opacity="0.20">
-      <text x="152" y="198">D</text><text x="152" y="212">E</text>
-      <text x="152" y="226">A</text><text x="152" y="240">D</text>
-      <text x="152" y="254">B</text><text x="152" y="268">E</text>
-      <text x="152" y="282">E</text><text x="152" y="296">F</text>
-      <text x="152" y="310">1</text><text x="152" y="324">3</text>
-      <text x="152" y="338">3</text><text x="152" y="352">7</text>
-      <text x="152" y="366">C</text><text x="152" y="380">0</text>
-      <text x="152" y="394">D</text><text x="152" y="408">E</text>
+
+    <!-- column 152 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -80" to="0 260" dur="4.8s" begin="-1.2s" repeatCount="indefinite"/>
+        <text x="152" y="196" fill="#A855F7">
+          D<animate attributeName="opacity" values="0.35;0.6;0.3" dur="1.6s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="210" fill="#E879F9">
+          E<animate attributeName="opacity" values="0.6;0.35;0.7" dur="1.4s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="224" fill="#C084FC">
+          A<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.2s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="238" fill="#A855F7">
+          D<animate attributeName="opacity" values="0.45;0.25;0.55" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="252" fill="#C084FC">
+          B<animate attributeName="opacity" values="0.3;0.55;0.25" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="266" fill="#A855F7">
+          E<animate attributeName="opacity" values="0.5;0.25;0.45" dur="1.7s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="280" fill="#F0ABFC">
+          E<animate attributeName="opacity" values="0.6;0.8;0.5" dur="1.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="152" y="294" fill="#C084FC">
+          F<animate attributeName="opacity" values="0.35;0.2;0.5" dur="2.4s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#A855F7" opacity="0.24">
-      <text x="184" y="216">C</text><text x="184" y="230">A</text>
-      <text x="184" y="244">F</text><text x="184" y="258">E</text>
-      <text x="184" y="272">B</text><text x="184" y="286">A</text>
-      <text x="184" y="300">B</text><text x="184" y="314">E</text>
-      <text x="184" y="328">1</text><text x="184" y="342">2</text>
-      <text x="184" y="356">3</text><text x="184" y="370">4</text>
-      <text x="184" y="384">5</text>
+
+    <!-- column 184 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -40" to="0 300" dur="6.2s" begin="-0.6s" repeatCount="indefinite"/>
+        <text x="184" y="204" fill="#A855F7">
+          C<animate attributeName="opacity" values="0.3;0.55;0.25" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="218" fill="#C084FC">
+          A<animate attributeName="opacity" values="0.4;0.2;0.5" dur="2.1s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="232" fill="#E879F9">
+          F<animate attributeName="opacity" values="0.55;0.75;0.4" dur="1.5s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="246" fill="#A855F7">
+          E<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="260" fill="#C084FC">
+          B<animate attributeName="opacity" values="0.4;0.2;0.55" dur="1.7s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="274" fill="#A855F7">
+          A<animate attributeName="opacity" values="0.3;0.6;0.35" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="184" y="288" fill="#F0ABFC">
+          B<animate attributeName="opacity" values="0.6;0.8;0.5" dur="1.4s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#C084FC" opacity="0.18">
-      <text x="216" y="202">0</text><text x="216" y="216">1</text>
-      <text x="216" y="230">0</text><text x="216" y="244">1</text>
-      <text x="216" y="258">1</text><text x="216" y="272">0</text>
-      <text x="216" y="286">0</text><text x="216" y="300">1</text>
-      <text x="216" y="314">B</text><text x="216" y="328">E</text>
-      <text x="216" y="342">E</text><text x="216" y="356">F</text>
+
+    <!-- column 216 - sparser so the eye sits clearly on top -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -20" to="0 240" dur="7.0s" begin="-2.1s" repeatCount="indefinite"/>
+        <text x="216" y="200" fill="#A855F7">
+          0<animate attributeName="opacity" values="0.25;0.5;0.3" dur="2.4s" repeatCount="indefinite"/>
+        </text>
+        <text x="216" y="214" fill="#C084FC">
+          1<animate attributeName="opacity" values="0.35;0.2;0.55" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="216" y="228" fill="#A855F7">
+          1<animate attributeName="opacity" values="0.3;0.55;0.25" dur="2.2s" repeatCount="indefinite"/>
+        </text>
+        <text x="216" y="242" fill="#E879F9">
+          0<animate attributeName="opacity" values="0.5;0.7;0.45" dur="1.6s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <!-- NOTE: columns 248 + 264 deliberately thinner so the eye sits on near-empty
-         space when it overlays; prevents character heads pointing at the pupil. -->
-    <g fill="#A855F7" opacity="0.20">
-      <text x="296" y="212">7</text><text x="296" y="226">F</text>
-      <text x="296" y="240">F</text><text x="296" y="254">F</text>
-      <text x="296" y="268">F</text><text x="296" y="282">E</text>
-      <text x="296" y="296">B</text><text x="296" y="310">A</text>
-      <text x="296" y="324">5</text><text x="296" y="338">E</text>
-      <text x="296" y="352">7</text>
+
+    <!-- column 296 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -70" to="0 290" dur="5.0s" begin="-0.3s" repeatCount="indefinite"/>
+        <text x="296" y="208" fill="#A855F7">
+          7<animate attributeName="opacity" values="0.4;0.6;0.3" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="222" fill="#C084FC">
+          F<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.1s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="236" fill="#E879F9">
+          F<animate attributeName="opacity" values="0.6;0.8;0.5" dur="1.4s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="250" fill="#A855F7">
+          E<animate attributeName="opacity" values="0.35;0.55;0.3" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="264" fill="#C084FC">
+          B<animate attributeName="opacity" values="0.4;0.2;0.55" dur="2.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="278" fill="#A855F7">
+          A<animate attributeName="opacity" values="0.3;0.55;0.25" dur="1.7s" repeatCount="indefinite"/>
+        </text>
+        <text x="296" y="292" fill="#F0ABFC">
+          5<animate attributeName="opacity" values="0.55;0.8;0.5" dur="1.3s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#C084FC" opacity="0.22">
-      <text x="328" y="196">0</text><text x="328" y="210">x</text>
-      <text x="328" y="224">D</text><text x="328" y="238">E</text>
-      <text x="328" y="252">A</text><text x="328" y="266">D</text>
-      <text x="328" y="280">B</text><text x="328" y="294">E</text>
-      <text x="328" y="308">E</text><text x="328" y="322">F</text>
-      <text x="328" y="336">5</text><text x="328" y="350">9</text>
-      <text x="328" y="364">3</text>
+
+    <!-- column 328 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -100" to="0 260" dur="5.6s" begin="-1.5s" repeatCount="indefinite"/>
+        <text x="328" y="194" fill="#A855F7">
+          0<animate attributeName="opacity" values="0.3;0.55;0.25" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="208" fill="#C084FC">
+          x<animate attributeName="opacity" values="0.4;0.2;0.5" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="222" fill="#E879F9">
+          D<animate attributeName="opacity" values="0.55;0.75;0.45" dur="1.5s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="236" fill="#A855F7">
+          E<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.2s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="250" fill="#C084FC">
+          A<animate attributeName="opacity" values="0.4;0.2;0.55" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="264" fill="#A855F7">
+          D<animate attributeName="opacity" values="0.35;0.55;0.3" dur="2.1s" repeatCount="indefinite"/>
+        </text>
+        <text x="328" y="278" fill="#F0ABFC">
+          B<animate attributeName="opacity" values="0.6;0.8;0.5" dur="1.4s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#A855F7" opacity="0.18">
-      <text x="360" y="220">C</text><text x="360" y="234">0</text>
-      <text x="360" y="248">D</text><text x="360" y="262">E</text>
-      <text x="360" y="276">W</text><text x="360" y="290">A</text>
-      <text x="360" y="304">T</text><text x="360" y="318">C</text>
-      <text x="360" y="332">H</text><text x="360" y="346">E</text>
-      <text x="360" y="360">R</text>
+
+    <!-- column 360 — leaks the "DATAWATCHER" word -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -50" to="0 310" dur="6.8s" begin="-2.7s" repeatCount="indefinite"/>
+        <text x="360" y="202" fill="#A855F7">
+          D<animate attributeName="opacity" values="0.3;0.55;0.25" dur="1.7s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="216" fill="#C084FC">
+          A<animate attributeName="opacity" values="0.4;0.2;0.55" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="230" fill="#A855F7">
+          T<animate attributeName="opacity" values="0.35;0.6;0.3" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="244" fill="#E879F9">
+          A<animate attributeName="opacity" values="0.5;0.7;0.4" dur="1.5s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="258" fill="#C084FC">
+          W<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.3s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="272" fill="#A855F7">
+          A<animate attributeName="opacity" values="0.4;0.2;0.55" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="286" fill="#C084FC">
+          T<animate attributeName="opacity" values="0.35;0.55;0.3" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="360" y="300" fill="#F0ABFC">
+          C<animate attributeName="opacity" values="0.6;0.85;0.5" dur="1.3s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
-    <g fill="#C084FC" opacity="0.22">
-      <text x="392" y="208">F</text><text x="392" y="222">E</text>
-      <text x="392" y="236">E</text><text x="392" y="250">D</text>
-      <text x="392" y="264">1</text><text x="392" y="278">F</text>
-      <text x="392" y="292">A</text><text x="392" y="306">C</text>
-      <text x="392" y="320">E</text><text x="392" y="334">C</text>
-      <text x="392" y="348">A</text>
-    </g>
-    <!-- Bright "head" glyph per column — barely brighter, simulates the leading
-         char in Matrix rain. -->
-    <g fill="#F0ABFC" opacity="0.55">
-      <text x="120" y="404">F</text>
-      <text x="152" y="420">D</text>
-      <text x="184" y="398">5</text>
-      <text x="216" y="370">0</text>
-      <text x="296" y="366">E</text>
-      <text x="328" y="378">3</text>
-      <text x="360" y="374">R</text>
-      <text x="392" y="362">A</text>
+
+    <!-- column 392 -->
+    <g>
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          from="0 -30" to="0 270" dur="4.6s" begin="-0.9s" repeatCount="indefinite"/>
+        <text x="392" y="206" fill="#A855F7">
+          F<animate attributeName="opacity" values="0.3;0.55;0.25" dur="1.8s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="220" fill="#C084FC">
+          E<animate attributeName="opacity" values="0.4;0.2;0.5" dur="2.1s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="234" fill="#A855F7">
+          E<animate attributeName="opacity" values="0.35;0.6;0.3" dur="1.6s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="248" fill="#E879F9">
+          D<animate attributeName="opacity" values="0.55;0.75;0.45" dur="1.4s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="262" fill="#C084FC">
+          1<animate attributeName="opacity" values="0.3;0.5;0.25" dur="2.0s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="276" fill="#A855F7">
+          F<animate attributeName="opacity" values="0.4;0.2;0.55" dur="1.9s" repeatCount="indefinite"/>
+        </text>
+        <text x="392" y="290" fill="#F0ABFC">
+          A<animate attributeName="opacity" values="0.6;0.8;0.5" dur="1.3s" repeatCount="indefinite"/>
+        </text>
+      </g>
     </g>
   </g>
 
-  <!-- Eye sits on top, centered on screen -->
+  <!-- Eye layered on top -->
   <g transform="translate(256, 306)">
-    <!-- Sclera -->
     <ellipse cx="0" cy="0" rx="116" ry="74" fill="#080518"
              stroke="#7C3AED" stroke-width="2"/>
-    <!-- Iris -->
     <circle cx="0" cy="0" r="62" fill="url(#iris)"/>
     <circle cx="0" cy="0" r="60" fill="none" stroke="#A855F7"
             stroke-width="1" opacity="0.45"/>
     <circle cx="0" cy="0" r="46" fill="none" stroke="#C084FC"
             stroke-width="0.7" opacity="0.35"/>
-    <!-- Pupil -->
     <circle cx="0" cy="0" r="26" fill="#04020E"/>
     <circle cx="0" cy="0" r="24" fill="none" stroke="#7C3AED"
             stroke-width="1" opacity="0.55"/>
-    <!-- Crosshair -->
     <g stroke="#E879F9" stroke-width="2.8" filter="url(#softGlow)">
       <line x1="0" y1="-20" x2="0" y2="-10"/>
       <line x1="0" y1="10"  x2="0" y2="20"/>
       <line x1="-20" y1="0" x2="-10" y2="0"/>
       <line x1="10"  y1="0" x2="20" y2="0"/>
     </g>
-    <!-- Center highlight -->
-    <circle cx="0" cy="0" r="4" fill="#F0ABFC"/>
-    <!-- Lens highlight (subtle) -->
+    <circle cx="0" cy="0" r="4" fill="#F0ABFC">
+      <!-- Subtle pupil pulse to suggest "live" watching. -->
+      <animate attributeName="r" values="3.6;4.6;3.6" dur="2.0s" repeatCount="indefinite"/>
+    </circle>
     <ellipse cx="-28" cy="-18" rx="11" ry="5" fill="#FFFFFF" opacity="0.10"
              transform="rotate(-30 -28 -18)"/>
   </g>
 
-  <!-- Subtle scan line across the screen — echoes parent datawatch identity -->
-  <rect x="96" y="388" width="320" height="2" fill="#7C3AED" opacity="0.35"/>
+  <!-- Scan line sweep across the screen — slow vertical drift for extra life. -->
+  <rect x="96" y="388" width="320" height="2" fill="#7C3AED" opacity="0.35">
+    <animate attributeName="y" values="190;418;190" dur="9.0s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0.5;0" dur="9.0s" repeatCount="indefinite"/>
+  </rect>
 </svg>

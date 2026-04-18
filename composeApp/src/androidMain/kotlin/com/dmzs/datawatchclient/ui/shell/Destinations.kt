@@ -6,6 +6,8 @@ package com.dmzs.datawatchclient.ui.shell
  * level of routes.
  */
 public object Destinations {
+    public const val Splash: String = "splash"
+    public const val SplashReplay: String = "splash/replay"
     public const val Onboarding: String = "onboarding"
     public const val AddServer: String = "servers/add"
     public const val Home: String = "home"
