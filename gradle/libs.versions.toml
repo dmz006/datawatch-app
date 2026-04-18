@@ -10,6 +10,7 @@ ktor = "2.3.12"
 sqldelight = "2.0.2"
 sqlcipher = "4.5.6"
 androidx-security = "1.1.0-alpha06"
+material-components = "1.12.0"
 androidx-lifecycle = "2.8.4"
 androidx-activity = "1.9.2"
 androidx-navigation = "2.8.0"
@@ -51,6 +52,7 @@ sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "s
 
 # AndroidX security
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security" }
+material-components = { module = "com.google.android.material:material", version.ref = "material-components" }
 
 # AndroidX foundational
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
