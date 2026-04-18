@@ -24,11 +24,8 @@
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.35"/>
 
-    <!-- Tablet body — centered, large -->
-    <path android:pathData="M 24,40 h 60 a 3,3 0 0 1 3,3 v 42 a 3,3 0 0 1 -3,3 h -60 a 3,3 0 0 1 -3,-3 v -42 a 3,3 0 0 1 3,-3 z"
-        android:fillColor="#000000"/>
+    <!-- Screen only (no tablet bezel) per user direction -->
 
-    <!-- Tablet screen carved out -->
     <path android:pathData="M 28,44 h 52 a 2,2 0 0 1 2,2 v 36 a 2,2 0 0 1 -2,2 h -52 a 2,2 0 0 1 -2,-2 v -36 a 2,2 0 0 1 2,-2 z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.25"/>

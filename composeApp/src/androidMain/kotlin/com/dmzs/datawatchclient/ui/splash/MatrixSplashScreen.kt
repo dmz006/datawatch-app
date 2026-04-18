@@ -114,7 +114,9 @@ public fun MatrixLogoAnimated(modifier: Modifier = Modifier) {
         modifier = modifier.background(Color(0xFF0F1117)),
         contentAlignment = Alignment.Center,
     ) {
-        MatrixSplashArtwork()
+        // compact = true: tablet sits in the moon area below horizon — the
+        // settings card layout the user approved.
+        MatrixSplashArtwork(compact = true)
     }
 }
 
@@ -151,8 +153,14 @@ private data class ColumnSpec(
     val charCount: Int,
 )
 
+/**
+ * @param compact when `true` (Settings → About card), tablet sits inside the
+ *   moon area below the horizon — the layout the user approved. When `false`
+ *   (full-screen splash), the tablet is centered on the canvas so the eye
+ *   sits at the optical center of the screen.
+ */
 @Composable
-private fun MatrixSplashArtwork() {
+private fun MatrixSplashArtwork(compact: Boolean = false) {
     val textMeasurer = rememberTextMeasurer()
     val infinite = rememberInfiniteTransition(label = "matrix")
 
@@ -356,16 +364,20 @@ private fun MatrixSplashArtwork() {
             )
         }
 
-        // 3. Tablet — bigger (1.8× discRadius wide, 1.4× tall) and positioned
-        // so its top sits comfortably below the horizon with moon visible
-        // above AND below it. The eye becomes the visual focal element.
+        // 3. Tablet placement depends on `compact`:
+        //   - compact (settings card): centered in the moon area, below horizon
+        //     — the layout user approved for the Settings render
+        //   - !compact (full-screen splash): centered on the canvas so the eye
+        //     ends up at the optical center of the device screen
         val tabletWidth = discRadius * 1.8f
         val tabletHeight = discRadius * 1.4f
         val tabletLeft = cx - tabletWidth / 2f
-        // Centre the tablet vertically within the moon area: between horizon
-        // and bottom edge.
         val moonAreaCenter = (horizonY + size.height) / 2f
-        val tabletTop = moonAreaCenter - tabletHeight / 2f
+        val tabletTop = if (compact) {
+            moonAreaCenter - tabletHeight / 2f
+        } else {
+            cy - tabletHeight / 2f
+        }
         // Shadow on regolith
         drawOval(
             color = Color.Black.copy(alpha = 0.5f),
@@ -444,8 +456,12 @@ private fun MatrixSplashArtwork() {
             )
         }
 
-        // 5. Eye — layered on top of matrix rain.
-        drawEye(center = Offset(cx, cy + discRadius * 0.06f), radius = discRadius * 0.34f,
+        // 5. Eye — centered on the SCREEN recess (not on the bezel above it).
+        // screenTop / screenHeight were computed during step 4. Centering on
+        // the screen rectangle ensures the eye lands inside the device-screen
+        // area rather than overlapping the bezel chrome above it.
+        val eyeCenterY = screenTop + screenHeight / 2f
+        drawEye(center = Offset(cx, eyeCenterY), radius = discRadius * 0.34f,
                 pupilScale = pupilScale)
     }
 }
