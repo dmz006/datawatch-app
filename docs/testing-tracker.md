@@ -7,21 +7,28 @@ gets two levels of validation:
 - **Validated** (`Yes` / `No`): live end-to-end confirmed on a real device against a real
   datawatch server. Document environment in *Test Conditions*.
 
-Pre-MVP scaffold — everything rolls out in the sprints enumerated in
-[sprint-plan.md](sprint-plan.md). No rows are marked Yes yet.
-
 ## Interfaces
 
 | Surface | Feature | Tested | Validated | Sprint | Test Conditions | Notes |
 |---------|---------|--------|-----------|--------|-----------------|-------|
-| Phone | Server profile add + keystore bind | No | No | 1 | | |
-| Phone | REST transport (sessions list) | No | No | 1 | | |
+| Shared | `SessionState.fromWire` mapping | Yes | — | 1 | JVM commonTest | 4 tests: canonical, synonyms, case-insensitive, unknown → Error |
+| Shared | DTO → domain `Session` mapper | Yes | — | 1 | JVM commonTest | 2 tests: happy path + unknown state degrade |
+| Shared | `RestTransport` happy path | No | No | 1 | | Phase 4 — MockWebServer |
+| Shared | `RestTransport` 401 → Unauthorized | No | No | 1 | | Phase 4 |
+| Shared | `RestTransport` 5xx → ServerError | No | No | 1 | | Phase 4 |
+| Shared | `RestTransport` network error → Unreachable | No | No | 1 | | Phase 4 |
+| Shared | `ServerProfileRepository` CRUD | No | No | 1 | | Phase 4 — in-memory SqlDriver |
+| Shared | `SessionRepository` upsert + observe | No | No | 1 | | Phase 4 |
+| Android | SQLCipher open + key unwrap | No | No | 1 | | Phase 2 |
+| Android | Keystore master-key round-trip | No | No | 1 | | Phase 2 |
+| Phone | Onboarding + add-server happy path | No | No | 1 | | Phase 3 |
+| Phone | Live session list against running datawatch | No | No | 1 | | Phase 3 |
 | Phone | WebSocket `/ws` stream | No | No | 2 | | |
 | Phone | xterm.js WebView | No | No | 2 | | |
 | Phone | Voice capture (all 4 surfaces) | No | No | 3 | | |
 | Phone | MCP SSE tool invocation | No | No | 3 | | |
 | Phone | Intent-relay fallback (Signal / SMS) | No | No | 3 | | |
-| Phone | FCM wake (dumb-ping) | No | No | 2 | | depends on dmz006/datawatch#1 |
+| Phone | FCM wake (dumb-ping) | No | No | 2 | | dmz006/datawatch#1 |
 | Phone | ntfy fallback subscription | No | No | 2 | | |
 | Phone | DNS TXT covert channel | No | No | 3 | | |
 | Phone | Proxy drill-down (breadcrumb) | No | No | 3 | | |

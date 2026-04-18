@@ -1,0 +1,65 @@
+-- Sprint 1 additions: session_message table for cached chat messages, plus queries
+-- covering the Sessions list + detail read paths. Terminal frames (WebSocket stream)
+-- arrive in Sprint 2.
+
+CREATE TABLE session_message (
+    id          TEXT NOT NULL PRIMARY KEY,
+    session_id  TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
+    role        TEXT NOT NULL,             -- user | llm | system
+    body        TEXT,
+    ts          INTEGER NOT NULL,
+    delivery    TEXT NOT NULL DEFAULT 'sent',  -- sent | pending-retry | failed
+    audio_ref   TEXT
+);
+CREATE INDEX msg_by_session_ts ON session_message(session_id, ts);
+
+CREATE TABLE settings_kv (
+    key     TEXT NOT NULL PRIMARY KEY,
+    value   TEXT NOT NULL,
+    updated INTEGER NOT NULL
+);
+
+-- Session queries
+
+selectSessionsForProfile:
+SELECT * FROM session
+WHERE server_profile_id = ?
+ORDER BY last_activity_ts DESC;
+
+selectSessionById:
+SELECT * FROM session WHERE id = ?;
+
+upsertSession:
+INSERT OR REPLACE INTO session(id, server_profile_id, hostname_prefix, state, task_summary, created_ts, last_activity_ts, muted)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteSessionsForProfile:
+DELETE FROM session WHERE server_profile_id = ?;
+
+setSessionMuted:
+UPDATE session SET muted = ? WHERE id = ?;
+
+-- Session message queries
+
+selectMessagesForSession:
+SELECT * FROM session_message
+WHERE session_id = ?
+ORDER BY ts ASC;
+
+insertMessage:
+INSERT OR REPLACE INTO session_message(id, session_id, role, body, ts, delivery, audio_ref)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+setMessageDelivery:
+UPDATE session_message SET delivery = ? WHERE id = ?;
+
+-- Settings key-value (arbitrary small blobs; tokens do NOT live here)
+
+getSetting:
+SELECT value FROM settings_kv WHERE key = ?;
+
+putSetting:
+INSERT OR REPLACE INTO settings_kv(key, value, updated) VALUES (?, ?, ?);
+
+deleteSetting:
+DELETE FROM settings_kv WHERE key = ?;

@@ -1,22 +1,41 @@
 package com.dmzs.datawatchclient.transport
 
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Stable surface the rest of the app calls to reach a datawatch server.
- * Per AGENT.md, this interface is load-bearing — changes are breaking.
+ * Sprint-1 expanded contract. This is the primary surface the rest of the app talks
+ * to. Per AGENT.md, this interface is load-bearing — changes are breaking; additions
+ * are a minor version bump.
  *
- * Implementations: [RestTransport], [WebSocketTransport], [McpSseTransport],
- * [DnsTxtTransport]. The relay/Intent-handoff path (ADR-0004) is intentionally not
- * part of this interface — it's a `BackendRelay`, not a transport.
+ * All operations are suspend functions returning [Result] so call sites can handle
+ * [TransportError] without try/catch ceremony. A streaming WebSocket surface arrives
+ * in Sprint 2 (`/ws?session=`) and MCP SSE in Sprint 3 — those are deliberately not
+ * added here to keep Sprint 1 focused.
  */
 public interface TransportClient {
     public val profile: ServerProfile
 
-    /** True if a ping round-trip succeeded recently. Cached, cheap to read. */
+    /** Cached reachability, updated by [ping] and transport-error observations. */
     public val isReachable: Flow<Boolean>
 
-    /** Active round-trip ping against `/api/health`. */
-    public suspend fun ping(): Boolean
+    /** GET /api/health. */
+    public suspend fun ping(): Result<Unit>
+
+    /** GET /api/sessions. */
+    public suspend fun listSessions(): Result<List<Session>>
+
+    /** POST /api/sessions/start. Returns new session id. */
+    public suspend fun startSession(task: String, serverHint: String? = null): Result<String>
+
+    /** POST /api/sessions/reply. */
+    public suspend fun replyToSession(sessionId: String, text: String): Result<Unit>
+
+    /** POST /api/sessions/kill. Requires confirm dialog upstream (ADR-0019). */
+    public suspend fun killSession(sessionId: String): Result<Unit>
+
+    /** GET /api/stats. */
+    public suspend fun stats(): Result<StatsDto>
 }

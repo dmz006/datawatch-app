@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  datawatch mobile — icon master (Concept B, ADR-0037 / ADR-0041)
+
+  Metaphor: an old-school handset silhouette (phone body with screen) whose screen
+  displays a miniature datawatch eye (iris + crosshair pupil). Three signal arcs rise
+  above the handset, carrying the parent datawatch's surveillance motif into the
+  "client reaching out to the service" idiom. Palette matches the parent datawatch
+  icon exactly (#7C3AED primary, #A855F7 secondary, #F0ABFC highlight) so the two
+  projects read as siblings at a glance.
+
+  This SVG is the source of truth. Downstream outputs:
+    - Android adaptive icon (foreground + background + monochrome vector drawables)
+    - Wear OS round variants (384×384)
+    - Play Store hi-res icon (512×512 PNG)
+    - Play Store feature graphic (1024×500 PNG)
+    - Dev-variant overlay (adds "DEV" chip to launcher foreground)
+
+  Safe zone: critical content fits within an inner circle of radius 160 centered at
+  (256, 256) — about 62 % of canvas width — which satisfies the Android adaptive icon
+  66dp-safe-zone rule on a 108dp canvas.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="datawatch mobile client icon">
+  <defs>
+    <!-- Background radial gradient — mirrors parent datawatch icon -->
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </radialGradient>
+
+    <!-- Phone body gradient -->
+    <linearGradient id="phoneBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E1235"/>
+      <stop offset="100%" stop-color="#0D0720"/>
+    </linearGradient>
+
+    <!-- Phone screen glow (subtle) -->
+    <radialGradient id="screenGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#2A1550"/>
+      <stop offset="100%" stop-color="#0A0318"/>
+    </radialGradient>
+
+    <!-- Iris gradient — same palette as parent datawatch iris -->
+    <radialGradient id="iris" cx="42%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="45%" stop-color="#7C3AED"/>
+      <stop offset="80%" stop-color="#5B21B6"/>
+      <stop offset="100%" stop-color="#3B0764"/>
+    </radialGradient>
+
+    <!-- Signal arc gradient (top→bottom fade) -->
+    <linearGradient id="signalFade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background disc -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- Outer rings (brand anchor to parent) -->
+  <circle cx="256" cy="256" r="242" fill="none" stroke="#3B0764" stroke-width="2"
+          opacity="0.5"/>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#6D28D9" stroke-width="1"
+          opacity="0.3"/>
+
+  <!-- Clock tick marks (N/S/E/W + corners) — quieter than parent -->
+  <g stroke="#7C3AED" stroke-width="3" opacity="0.55">
+    <line x1="256" y1="14"  x2="256" y2="34"/>
+    <line x1="256" y1="478" x2="256" y2="498"/>
+    <line x1="14"  y1="256" x2="34"  y2="256"/>
+    <line x1="478" y1="256" x2="498" y2="256"/>
+  </g>
+
+  <!-- Signal arcs above handset: three concentric arcs centered near top of phone -->
+  <g fill="none" stroke="url(#signalFade)" filter="url(#softGlow)"
+     stroke-linecap="round">
+    <!-- innermost arc, strongest -->
+    <path d="M 196,150 A 60,60 0 0,1 316,150" stroke-width="10" opacity="0.95"/>
+    <!-- middle arc -->
+    <path d="M 166,136 A 90,90 0 0,1 346,136" stroke-width="8" opacity="0.70"/>
+    <!-- outer arc, faintest -->
+    <path d="M 136,122 A 120,120 0 0,1 376,122" stroke-width="6" opacity="0.45"/>
+  </g>
+
+  <!-- Handset silhouette (phone body) -->
+  <!-- Rounded rectangle centered, elongated portrait orientation -->
+  <g>
+    <rect x="158" y="180" width="196" height="272" rx="36" ry="36"
+          fill="url(#phoneBody)"
+          stroke="#7C3AED" stroke-width="3"/>
+    <!-- Speaker slit at top -->
+    <rect x="234" y="198" width="44" height="6" rx="3" ry="3" fill="#2D1B4E"/>
+    <!-- Home indicator at bottom -->
+    <rect x="224" y="430" width="64" height="6" rx="3" ry="3"
+          fill="#4C1D95" opacity="0.8"/>
+    <!-- Screen recess -->
+    <rect x="172" y="214" width="168" height="202" rx="16" ry="16"
+          fill="url(#screenGlow)"
+          stroke="#4C1D95" stroke-width="1" opacity="0.95"/>
+  </g>
+
+  <!-- Miniature datawatch eye on the screen -->
+  <g transform="translate(256, 315)">
+    <!-- Eye sclera -->
+    <ellipse cx="0" cy="0" rx="72" ry="46" fill="#080518"
+             stroke="#7C3AED" stroke-width="1.6"/>
+    <!-- Iris -->
+    <circle cx="0" cy="0" r="34" fill="url(#iris)"/>
+    <!-- Iris rings -->
+    <circle cx="0" cy="0" r="32" fill="none" stroke="#A855F7"
+            stroke-width="0.8" opacity="0.5"/>
+    <circle cx="0" cy="0" r="24" fill="none" stroke="#C084FC"
+            stroke-width="0.6" opacity="0.4"/>
+    <!-- Pupil -->
+    <circle cx="0" cy="0" r="14" fill="#04020E"/>
+    <circle cx="0" cy="0" r="12" fill="none" stroke="#7C3AED"
+            stroke-width="1" opacity="0.6"/>
+    <!-- Crosshair in pupil -->
+    <g stroke="#E879F9" stroke-width="1.6" filter="url(#softGlow)">
+      <line x1="0" y1="-10" x2="0" y2="-4"/>
+      <line x1="0" y1="4"   x2="0" y2="10"/>
+      <line x1="-10" y1="0" x2="-4" y2="0"/>
+      <line x1="4"   y1="0" x2="10" y2="0"/>
+    </g>
+    <!-- Center glow -->
+    <circle cx="0" cy="0" r="2" fill="#F0ABFC"/>
+    <!-- Lens highlight -->
+    <ellipse cx="-14" cy="-8" rx="5" ry="3"
+             fill="#FFFFFF" opacity="0.12"
+             transform="rotate(-30 -14 -8)"/>
+  </g>
+
+  <!-- Subtle scan line across screen -->
+  <rect x="172" y="372" width="168" height="2" fill="#7C3AED" opacity="0.35"/>
+
+  <!-- Bottom label arc — echoes parent's "DATAWATCH" arc but straight + lowercase -->
+  <text x="256" y="488" text-anchor="middle"
+        font-family="JetBrains Mono, Menlo, monospace"
+        font-size="18" letter-spacing="4"
+        fill="#6D28D9" opacity="0.55">datawatch</text>
+</svg>

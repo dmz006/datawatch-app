@@ -15,6 +15,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
   monochrome vector drawables under `composeApp/src/androidMain/res/drawable/`;
   dev-flavor variant with amber "DEV" chip under `composeApp/src/dev/res/drawable/`;
   master SVG + Play Store feature graphic under `assets/`.
+- Icon review set — `assets/variants/icon-B1..B4.svg` — four Concept B iterations for
+  user pick; winner replaces the committed launcher foreground.
+- Sprint 1 plan document: `docs/plans/2026-04-18-sprint-1-foundation.md`.
+- Shared-module foundation (Sprint 1 Phase 1):
+  - Domain types: `Session`, `SessionState`, `Principal`, `Prompt`, `ReachabilityProfile`
+  - Transport: expanded `TransportClient` interface, typed `TransportError` hierarchy,
+    Ktor-based `RestTransport` (health / sessions / start / reply / kill / stats)
+  - Storage: `DatabaseFactory` expect/actual (plaintext placeholder; SQLCipher swap in
+    Phase 2), `ServerProfileRepository`, `SessionRepository`
+  - SQLDelight schema split into `profile.sq` + `session.sq`
+  - Unit tests: `SessionStateTest`, `MappersTest`
 
 ### Changed
 - App display name set to `datawatch` (lowercase) for all user-facing surfaces — Play

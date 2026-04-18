@@ -8,13 +8,13 @@ when work warrants formal planning (3+ files or non-trivial architecture).
 
 ## Active bugs
 
-_None yet. Pre-MVP scaffold — implementation begins Sprint 1 (2026-05-02)._
+_None yet._
 
-## Planned
+## Planned / In Progress
 
 | ID | Title | Plan |
 |----|-------|------|
-| F1 | Sprint 1 — transport REST + session list + encrypted storage | TBD |
+| F1 | Sprint 1 — shared foundation (transport + storage + onboarding) | [2026-04-18-sprint-1-foundation.md](2026-04-18-sprint-1-foundation.md) — Phase 1 in progress |
 | F2 | Sprint 2 — WebSocket + session detail + xterm WebView + push | TBD |
 | F3 | Sprint 3 — voice + MCP SSE + all-servers view | TBD |
 | F4 | Sprint 4 — Wear OS (W1/W3/W4) + Android Auto dual-track | TBD |
@@ -25,13 +25,14 @@ _None yet. Pre-MVP scaffold — implementation begins Sprint 1 (2026-05-02)._
 
 | ID | Title | Notes |
 |----|-------|-------|
-| BL1 | Split consolidated `decisions/README.md` into per-ADR MADR files | Sprint 0 housekeeping; 40 ADRs |
+| BL1 | Split consolidated `decisions/README.md` into per-ADR MADR files | Low priority; 41 ADRs |
 | BL2 | Biometric unlock | Post-v1 |
 | BL3 | Tablet two-pane layout | Post-v1 |
 | BL4 | Wear Tile (W2) | Post-v1 |
 | BL5 | iOS content phase | After Android production |
 | BL6 | Home-screen widget | Post-v1 |
 | BL7 | Foldable layout | Post-v1 |
+| BL8 | SQLCipher Android driver swap (plaintext → encrypted) | Sprint 1 Phase 2 — in-scope |
 
 ## Completed
 

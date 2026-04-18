@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variant B3: handset silhouette reduced to a clean stroked outline (no speaker slit,
+     no home indicator). Eye is bold and centered; two signal arcs at the top. Best
+     signal-to-noise ratio at launcher thumb-size. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="datawatch mobile — variant B3 (minimal phone)">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </radialGradient>
+    <radialGradient id="iris" cx="42%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="45%" stop-color="#7C3AED"/>
+      <stop offset="80%" stop-color="#5B21B6"/>
+      <stop offset="100%" stop-color="#3B0764"/>
+    </radialGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- two signal arcs -->
+  <g fill="none" stroke="#A855F7" stroke-linecap="round" filter="url(#softGlow)">
+    <path d="M 196,150 A 60,60 0 0,1 316,150" stroke-width="12" opacity="0.95"/>
+    <path d="M 156,132 A 100,100 0 0,1 356,132" stroke-width="7" opacity="0.5"/>
+  </g>
+
+  <!-- clean phone outline only, no internals -->
+  <rect x="148" y="186" width="216" height="286" rx="42" ry="42"
+        fill="none" stroke="#7C3AED" stroke-width="5"/>
+  <rect x="160" y="200" width="192" height="258" rx="28" ry="28"
+        fill="#0A0318" stroke="#4C1D95" stroke-width="1"/>
+
+  <!-- bold eye, centered on screen -->
+  <g transform="translate(256, 329)">
+    <ellipse cx="0" cy="0" rx="82" ry="58" fill="#080518"
+             stroke="#7C3AED" stroke-width="2"/>
+    <circle cx="0" cy="0" r="46" fill="url(#iris)"/>
+    <circle cx="0" cy="0" r="44" fill="none" stroke="#A855F7" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="0" cy="0" r="20" fill="#04020E"/>
+    <g stroke="#E879F9" stroke-width="2.5" filter="url(#softGlow)">
+      <line x1="0" y1="-14" x2="0" y2="-6"/>
+      <line x1="0" y1="6" x2="0" y2="14"/>
+      <line x1="-14" y1="0" x2="-6" y2="0"/>
+      <line x1="6" y1="0" x2="14" y2="0"/>
+    </g>
+    <circle cx="0" cy="0" r="3" fill="#F0ABFC"/>
+  </g>
+</svg>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variant B4: the phone outline disappears entirely. A large "screen" frame
+     (rounded square) dominates, with the datawatch eye filling it. Two signal arcs
+     emerge from the screen's top edge as if the screen is transmitting. Most
+     abstract; reads as a modern app icon but loses the explicit handset metaphor. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="datawatch mobile — variant B4 (eye on screen, no phone)">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </radialGradient>
+    <radialGradient id="screen" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#2A1550"/>
+      <stop offset="100%" stop-color="#0A0318"/>
+    </radialGradient>
+    <radialGradient id="iris" cx="42%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="45%" stop-color="#7C3AED"/>
+      <stop offset="80%" stop-color="#5B21B6"/>
+      <stop offset="100%" stop-color="#3B0764"/>
+    </radialGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- signal arcs emerging from screen top -->
+  <g fill="none" stroke="#A855F7" stroke-linecap="round" filter="url(#softGlow)">
+    <path d="M 206,124 A 50,50 0 0,1 306,124" stroke-width="12" opacity="0.95"/>
+    <path d="M 166,106 A 90,90 0 0,1 346,106" stroke-width="8" opacity="0.55"/>
+  </g>
+
+  <!-- big screen/frame dominating the canvas -->
+  <rect x="96" y="156" width="320" height="300" rx="56" ry="56"
+        fill="url(#screen)" stroke="#7C3AED" stroke-width="5"/>
+  <rect x="108" y="168" width="296" height="276" rx="48" ry="48"
+        fill="none" stroke="#4C1D95" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- centered eye, large -->
+  <g transform="translate(256, 306)">
+    <ellipse cx="0" cy="0" rx="112" ry="72" fill="#080518"
+             stroke="#7C3AED" stroke-width="2"/>
+    <circle cx="0" cy="0" r="60" fill="url(#iris)"/>
+    <circle cx="0" cy="0" r="58" fill="none" stroke="#A855F7" stroke-width="1" opacity="0.45"/>
+    <circle cx="0" cy="0" r="44" fill="none" stroke="#C084FC" stroke-width="0.7" opacity="0.35"/>
+    <circle cx="0" cy="0" r="26" fill="#04020E"/>
+    <g stroke="#E879F9" stroke-width="2.8" filter="url(#softGlow)">
+      <line x1="0" y1="-20" x2="0" y2="-10"/>
+      <line x1="0" y1="10" x2="0" y2="20"/>
+      <line x1="-20" y1="0" x2="-10" y2="0"/>
+      <line x1="10" y1="0" x2="20" y2="0"/>
+    </g>
+    <circle cx="0" cy="0" r="4" fill="#F0ABFC"/>
+    <ellipse cx="-26" cy="-16" rx="10" ry="5" fill="#FFFFFF" opacity="0.10"
+             transform="rotate(-30 -26 -16)"/>
+  </g>
+
+  <!-- subtle scan line -->
+  <rect x="108" y="384" width="296" height="2" fill="#7C3AED" opacity="0.30"/>
+</svg>
