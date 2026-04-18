@@ -87,7 +87,11 @@ sqldelight {
     databases {
         create("DatawatchDb") {
             packageName.set("com.dmzs.datawatchclient.db")
-            verifyMigrations.set(true)
+            // verifyMigrations requires a baseline .db file to compare against; no
+            // migrations exist yet at v0.1.0-pre. Re-enable once Sprint 2 lands the
+            // first schema delta and the baseline .db is committed under
+            // shared/src/commonMain/sqldelight/databases/.
+            verifyMigrations.set(false)
         }
     }
 }
