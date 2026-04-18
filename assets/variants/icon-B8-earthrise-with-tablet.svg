@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Variant B8 — Earthrise scene with the tablet re-introduced.
+
+  Builds on B7 (moon foreground + Earth rising + starfield, NO background
+  disc, NO antenna arches) by placing the datawatch-identity objects on the
+  lunar surface: a tablet showing matrix rain, with the datawatch eye at the
+  center. Reads as "a monitoring station on the Moon watching Earth rise."
+
+  Per user: eye = datawatch, tablet = matrix rain on the moon. No
+  transmission elements (antenna arcs, signal lines) — we may add them later.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="datawatch — Earthrise with tablet showing eye and matrix rain on the lunar surface">
+  <defs>
+    <radialGradient id="space" cx="55%" cy="25%" r="70%">
+      <stop offset="0%"   stop-color="#04060F"/>
+      <stop offset="60%"  stop-color="#010207"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <linearGradient id="moonSurface" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#6B5E54"/>
+      <stop offset="20%"  stop-color="#4F463E"/>
+      <stop offset="55%"  stop-color="#332B25"/>
+      <stop offset="100%" stop-color="#16110E"/>
+    </linearGradient>
+
+    <radialGradient id="earth" cx="38%" cy="36%" r="64%">
+      <stop offset="0%"   stop-color="#F4FAFF"/>
+      <stop offset="18%"  stop-color="#A8D4F2"/>
+      <stop offset="40%"  stop-color="#4988C8"/>
+      <stop offset="66%"  stop-color="#1E4B88"/>
+      <stop offset="90%"  stop-color="#0B2A55"/>
+      <stop offset="100%" stop-color="#050F28"/>
+    </radialGradient>
+
+    <radialGradient id="earthHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="64%"  stop-color="#7AB8E8" stop-opacity="0"/>
+      <stop offset="86%"  stop-color="#7AB8E8" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7AB8E8" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="craterShade" cx="50%" cy="40%" r="52%">
+      <stop offset="0%"   stop-color="#6B5E54"/>
+      <stop offset="60%"  stop-color="#1A1310"/>
+      <stop offset="100%" stop-color="#0E0906"/>
+    </radialGradient>
+
+    <!-- Tablet body -->
+    <linearGradient id="bezel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#2A1B40"/>
+      <stop offset="100%" stop-color="#0D0720"/>
+    </linearGradient>
+
+    <radialGradient id="screen" cx="50%" cy="50%" r="70%">
+      <stop offset="0%"   stop-color="#220F42"/>
+      <stop offset="100%" stop-color="#08031A"/>
+    </radialGradient>
+
+    <radialGradient id="iris" cx="42%" cy="42%" r="58%">
+      <stop offset="0%"   stop-color="#A855F7"/>
+      <stop offset="45%"  stop-color="#7C3AED"/>
+      <stop offset="80%"  stop-color="#5B21B6"/>
+      <stop offset="100%" stop-color="#3B0764"/>
+    </radialGradient>
+
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="matrixBlur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
+
+    <clipPath id="iconDisc">
+      <circle cx="256" cy="256" r="256"/>
+    </clipPath>
+
+    <clipPath id="lunarSurfaceClip">
+      <path d="M -2,264 Q 256,240 514,270 L 514,514 L -2,514 Z"/>
+    </clipPath>
+
+    <!-- Clip matrix rain to the tablet screen area. Tablet screen spans
+         x=188..324, y=336..420 (the inner recess after bezel padding). -->
+    <clipPath id="tabletScreenClip">
+      <rect x="188" y="336" width="136" height="84" rx="6" ry="6"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#iconDisc)">
+    <!-- Space background -->
+    <rect width="512" height="512" fill="url(#space)"/>
+
+    <!-- Star field -->
+    <g fill="#FFFFFF">
+      <circle cx="22"  cy="38"  r="0.8" opacity="0.7"/>
+      <circle cx="62"  cy="66"  r="0.5" opacity="0.5"/>
+      <circle cx="98"  cy="28"  r="1.0" opacity="0.8"/>
+      <circle cx="136" cy="76"  r="0.6" opacity="0.55"/>
+      <circle cx="174" cy="22"  r="0.7" opacity="0.65"/>
+      <circle cx="216" cy="54"  r="0.5" opacity="0.5"/>
+      <circle cx="350" cy="40"  r="0.9" opacity="0.75"/>
+      <circle cx="392" cy="72"  r="0.5" opacity="0.5"/>
+      <circle cx="432" cy="30"  r="0.8" opacity="0.7"/>
+      <circle cx="472" cy="82"  r="0.6" opacity="0.6"/>
+      <circle cx="498" cy="110" r="0.9" opacity="0.8"/>
+      <circle cx="18"  cy="132" r="0.6" opacity="0.55"/>
+      <circle cx="50"  cy="182" r="0.7" opacity="0.6"/>
+      <circle cx="430" cy="148" r="0.5" opacity="0.5"/>
+      <circle cx="478" cy="198" r="0.7" opacity="0.6"/>
+      <circle cx="102" cy="148" r="0.4" opacity="0.45"/>
+      <circle cx="362" cy="110" r="0.5" opacity="0.5"/>
+      <circle cx="158" cy="112" r="0.6" opacity="0.6"/>
+      <circle cx="282" cy="66"  r="0.4" opacity="0.45"/>
+    </g>
+
+    <!-- EARTH — centered, 11% canvas diameter, positioned at cy=208 so it
+         reads as rising just above the horizon. -->
+    <g>
+      <circle cx="256" cy="208" r="72" fill="url(#earthHalo)"/>
+      <circle cx="256" cy="208" r="56" fill="url(#earth)"/>
+      <g fill="#2F5E36" opacity="0.85">
+        <path d="M 218,192 C 224,184 232,184 238,192 C 242,202 236,212 230,216 C 222,218 214,212 216,202 Z"/>
+        <path d="M 222,220 C 228,218 232,222 230,230 C 226,236 218,234 218,228 Z"/>
+        <path d="M 262,202 C 274,198 286,206 288,218 C 288,230 280,242 270,246 C 260,246 254,236 256,224 C 258,214 258,206 262,202 Z"/>
+        <path d="M 278,234 C 286,234 290,240 286,248 C 280,252 272,248 274,242 Z"/>
+        <path d="M 250,232 C 258,232 262,238 258,244 C 250,246 246,240 250,232 Z"/>
+      </g>
+      <g fill="#FFFFFF" opacity="0.55">
+        <path d="M 214,214 Q 232,204 254,212 Q 240,222 220,222 Z"/>
+        <path d="M 278,200 Q 292,202 298,214 Q 288,210 276,208 Z"/>
+        <path d="M 242,248 Q 262,240 282,250 Q 262,258 244,256 Z"/>
+        <path d="M 204,234 Q 212,232 218,240 Q 210,244 206,240 Z"/>
+      </g>
+      <ellipse cx="256" cy="160" rx="18" ry="5" fill="#FFFFFF" opacity="0.45"/>
+      <ellipse cx="232" cy="184" rx="16" ry="7" fill="#FFFFFF" opacity="0.22"
+               transform="rotate(-20 232 184)"/>
+    </g>
+
+    <!-- LUNAR SURFACE — from horizon curve down. Craters positioned around
+         (not under) the tablet landing spot so the tablet reads as sitting
+         on a flat regolith patch surrounded by terrain features. -->
+    <g clip-path="url(#lunarSurfaceClip)">
+      <rect x="-4" y="240" width="520" height="280" fill="url(#moonSurface)"/>
+
+      <g>
+        <!-- Far craters (behind tablet plane — smaller, softer) -->
+        <ellipse cx="98"  cy="296" rx="22" ry="7" fill="url(#craterShade)"/>
+        <ellipse cx="400" cy="302" rx="26" ry="8" fill="url(#craterShade)"/>
+        <ellipse cx="464" cy="284" rx="14" ry="4" fill="url(#craterShade)"/>
+        <ellipse cx="48"  cy="290" rx="12" ry="4" fill="url(#craterShade)"/>
+
+        <!-- Mid-plane pronounced craters on the LEFT of tablet -->
+        <ellipse cx="80"  cy="392" rx="46" ry="14" fill="url(#craterShade)"/>
+        <ellipse cx="80"  cy="390" rx="44" ry="12" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.4" opacity="0.70"/>
+        <ellipse cx="68"  cy="387" rx="16" ry="4" fill="#FFFFFF" opacity="0.06"/>
+
+        <ellipse cx="134" cy="450" rx="32" ry="10" fill="url(#craterShade)"/>
+        <ellipse cx="134" cy="448" rx="31" ry="9" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.2" opacity="0.70"/>
+
+        <!-- Mid-plane pronounced craters on the RIGHT of tablet -->
+        <ellipse cx="430" cy="400" rx="48" ry="15" fill="url(#craterShade)"/>
+        <ellipse cx="430" cy="398" rx="46" ry="13" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.4" opacity="0.70"/>
+
+        <ellipse cx="372" cy="464" rx="34" ry="11" fill="url(#craterShade)"/>
+        <ellipse cx="372" cy="462" rx="33" ry="10" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.2" opacity="0.70"/>
+
+        <!-- Foreground small craters — scattered bottom -->
+        <ellipse cx="200" cy="490" rx="18" ry="5" fill="url(#craterShade)"/>
+        <ellipse cx="310" cy="498" rx="22" ry="7" fill="url(#craterShade)"/>
+        <ellipse cx="472" cy="472" rx="14" ry="4" fill="url(#craterShade)"/>
+        <ellipse cx="32"  cy="468" rx="16" ry="5" fill="url(#craterShade)"/>
+      </g>
+
+      <!-- Regolith texture -->
+      <g fill="#6B5E54" opacity="0.35">
+        <circle cx="78"  cy="316" r="1.0"/>
+        <circle cx="124" cy="352" r="0.7"/>
+        <circle cx="158" cy="320" r="0.8"/>
+        <circle cx="224" cy="340" r="0.6"/>
+        <circle cx="268" cy="358" r="0.9"/>
+        <circle cx="302" cy="334" r="0.6"/>
+        <circle cx="348" cy="322" r="0.8"/>
+        <circle cx="402" cy="344" r="0.7"/>
+        <circle cx="442" cy="324" r="0.5"/>
+        <circle cx="480" cy="348" r="0.7"/>
+        <circle cx="42"  cy="458" r="0.6"/>
+        <circle cx="208" cy="448" r="0.8"/>
+        <circle cx="286" cy="488" r="0.9"/>
+        <circle cx="358" cy="492" r="0.7"/>
+      </g>
+
+      <!-- Earthshine rim highlight along horizon. -->
+      <path d="M -2,262 Q 256,238 514,268"
+            fill="none" stroke="#7AB8E8" stroke-width="1.6" opacity="0.40"/>
+    </g>
+
+    <!--
+      TABLET resting on the lunar surface, centered (cx=256). Landscape
+      orientation, moderate size — small enough that the scene still reads
+      as Apollo 8 Earthrise but large enough that the eye + matrix rain
+      are legible. Slight shadow beneath (tablet occludes regolith).
+
+      Geometry:
+        bezel: x=172..340 (168 wide), y=326..430 (104 tall), corner radius 10
+        screen: x=188..324 (136 wide), y=336..420 (84 tall),  corner radius 6
+    -->
+    <!-- Shadow cast onto regolith -->
+    <ellipse cx="256" cy="434" rx="96" ry="7" fill="#000000" opacity="0.45"/>
+
+    <!-- Tablet bezel -->
+    <rect x="172" y="326" width="168" height="104" rx="10" ry="10"
+          fill="url(#bezel)" stroke="#7C3AED" stroke-width="2"/>
+    <!-- Speaker slit top edge -->
+    <rect x="248" y="330" width="16" height="2" rx="1" ry="1" fill="#2D1B4E"/>
+    <!-- Camera dot -->
+    <circle cx="256" cy="335" r="1.2" fill="#4C1D95" opacity="0.8"/>
+
+    <!-- Screen recess -->
+    <rect x="188" y="336" width="136" height="84" rx="6" ry="6"
+          fill="url(#screen)" stroke="#4C1D95" stroke-width="0.8" opacity="0.95"/>
+
+    <!-- Matrix rain clipped to screen -->
+    <g clip-path="url(#tabletScreenClip)" filter="url(#matrixBlur)"
+       font-family="JetBrains Mono, Menlo, monospace" font-size="7"
+       letter-spacing="0.3" text-anchor="middle">
+      <g fill="#A855F7">
+        <text x="198" y="346" opacity="0.4">A</text>
+        <text x="198" y="356" opacity="0.55">3</text>
+        <text x="198" y="366" opacity="0.35">F</text>
+        <text x="198" y="376" opacity="0.50">2</text>
+        <text x="198" y="386" opacity="0.55">9</text>
+        <text x="198" y="396" opacity="0.35">C</text>
+        <text x="198" y="406" opacity="0.50">1</text>
+
+        <text x="218" y="342" opacity="0.35">D</text>
+        <text x="218" y="352" opacity="0.55">E</text>
+        <text x="218" y="362" opacity="0.45">A</text>
+        <text x="218" y="372" opacity="0.4">D</text>
+        <text x="218" y="382" opacity="0.5">B</text>
+        <text x="218" y="392" opacity="0.45">E</text>
+        <text x="218" y="402" opacity="0.35">E</text>
+
+        <text x="238" y="348" opacity="0.5">C</text>
+        <text x="238" y="358" opacity="0.4">A</text>
+        <text x="238" y="368" opacity="0.55">F</text>
+        <text x="238" y="378" opacity="0.45">E</text>
+        <text x="238" y="388" opacity="0.4">B</text>
+
+        <text x="278" y="344" opacity="0.4">0</text>
+        <text x="278" y="354" opacity="0.3">x</text>
+        <text x="278" y="364" opacity="0.55">D</text>
+        <text x="278" y="374" opacity="0.45">E</text>
+        <text x="278" y="384" opacity="0.4">A</text>
+        <text x="278" y="394" opacity="0.5">D</text>
+
+        <text x="298" y="350" opacity="0.4">D</text>
+        <text x="298" y="360" opacity="0.5">A</text>
+        <text x="298" y="370" opacity="0.45">T</text>
+        <text x="298" y="380" opacity="0.55">A</text>
+        <text x="298" y="390" opacity="0.4">W</text>
+
+        <text x="316" y="354" opacity="0.4">F</text>
+        <text x="316" y="364" opacity="0.55">E</text>
+        <text x="316" y="374" opacity="0.45">E</text>
+        <text x="316" y="384" opacity="0.4">D</text>
+      </g>
+    </g>
+
+    <!--
+      EYE on the tablet screen — centered (cx=256), scaled for the 136x84
+      screen. Sclera ellipse, iris, pupil, crosshair, center highlight.
+    -->
+    <g transform="translate(256, 378)">
+      <ellipse cx="0" cy="0" rx="48" ry="28" fill="#080518"
+               stroke="#7C3AED" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="22" fill="url(#iris)"/>
+      <circle cx="0" cy="0" r="20" fill="none" stroke="#A855F7"
+              stroke-width="0.8" opacity="0.5"/>
+      <circle cx="0" cy="0" r="9"  fill="#04020E"/>
+      <g stroke="#E879F9" stroke-width="1.8" filter="url(#softGlow)">
+        <line x1="0" y1="-7" x2="0" y2="-3"/>
+        <line x1="0" y1="3"  x2="0" y2="7"/>
+        <line x1="-7" y1="0" x2="-3" y2="0"/>
+        <line x1="3"  y1="0" x2="7" y2="0"/>
+      </g>
+      <circle cx="0" cy="0" r="1.6" fill="#F0ABFC"/>
+      <ellipse cx="-11" cy="-6" rx="4" ry="2" fill="#FFFFFF" opacity="0.10"
+               transform="rotate(-30 -11 -6)"/>
+    </g>
+
+    <!-- Tiny base/stand hint — a subtle shadow pad suggests the tablet is
+         planted on regolith, not floating. Already drawn above as an
+         ellipse shadow at y=434. -->
+  </g>
+</svg>
