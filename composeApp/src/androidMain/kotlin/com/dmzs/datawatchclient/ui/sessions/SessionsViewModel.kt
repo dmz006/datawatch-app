@@ -5,19 +5,30 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Sessions tab VM. Observes cached sessions for the currently active server profile,
- * and triggers a live refresh over REST when the server is reachable. Multi-server
- * selection UI arrives in Sprint 3; for Phase 3 we show the first enabled profile.
+ * Sessions tab VM. Observes cached sessions for the currently active server profile
+ * and triggers a live refresh over REST when the profile changes or the user taps
+ * refresh. Multi-server selection UI arrives in Sprint 3; for Phase 3 we show the
+ * first enabled profile.
+ *
+ * Uses `flatMapLatest` so switching profile cancels the previous observation — no
+ * leaked collector coroutines.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
 
     public data class UiState(
@@ -27,50 +38,58 @@ public class SessionsViewModel : ViewModel() {
         val banner: String? = null,
     )
 
-    private val _state = MutableStateFlow(UiState())
-    public val state: StateFlow<UiState> = _state.asStateFlow()
+    private val activeProfile: StateFlow<ServerProfile?> = ServiceLocator.profileRepository
+        .observeAll()
+        .map { profiles -> profiles.firstOrNull { it.enabled } }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
 
-    init {
-        ServiceLocator.profileRepository.observeAll()
-            .combine(ServiceLocator.sessionRepository.run {
-                // Phase 3 placeholder: observe nothing when no profile yet.
-                kotlinx.coroutines.flow.flowOf(emptyList<Session>())
-            }) { profiles, _ ->
-                profiles.firstOrNull { it.enabled }
-            }
-            .onEach { active ->
-                _state.value = _state.value.copy(activeProfile = active)
-                if (active != null) {
-                    observeSessions(active)
-                    refresh()
-                }
-            }
-            .launchIn(viewModelScope)
+    private val _refreshing = MutableStateFlow(false)
+    private val _banner = MutableStateFlow<String?>(null)
+
+    public val state: StateFlow<UiState> = combineLatestState()
+
+    private fun combineLatestState(): StateFlow<UiState> {
+        val sessionsFlow = activeProfile.flatMapLatest { profile ->
+            if (profile == null) flowOf(emptyList())
+            else ServiceLocator.sessionRepository.observeForProfile(profile.id)
+        }
+        // Fan-in: combine active profile + sessions + refreshing + banner into a single UiState.
+        return kotlinx.coroutines.flow.combine(
+            activeProfile, sessionsFlow, _refreshing, _banner,
+        ) { profile, sessions, refreshing, banner ->
+            UiState(
+                activeProfile = profile,
+                sessions = sessions,
+                refreshing = refreshing,
+                banner = banner,
+            )
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
 
-    private fun observeSessions(profile: ServerProfile) {
-        ServiceLocator.sessionRepository.observeForProfile(profile.id)
-            .onEach { sessions ->
-                _state.value = _state.value.copy(sessions = sessions)
-            }
+    init {
+        // Auto-refresh whenever the active profile identity changes (non-null).
+        activeProfile
+            .onEach { if (it != null) refresh() }
             .launchIn(viewModelScope)
     }
 
     public fun refresh() {
-        val profile = _state.value.activeProfile ?: return
-        _state.value = _state.value.copy(refreshing = true, banner = null)
+        val profile = activeProfile.value ?: return
+        _refreshing.value = true
+        _banner.value = null
         viewModelScope.launch {
             val transport = ServiceLocator.transportFor(profile)
             transport.listSessions().fold(
                 onSuccess = { sessions ->
                     ServiceLocator.sessionRepository.replaceAll(profile.id, sessions)
-                    _state.value = _state.value.copy(refreshing = false, banner = null)
+                    _refreshing.value = false
+                    _banner.value = null
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        refreshing = false,
-                        banner = "Disconnected — showing cached data. (${err.message ?: err::class.simpleName})",
-                    )
+                    _refreshing.value = false
+                    _banner.value = "Disconnected — showing cached data. " +
+                        "(${err.message ?: err::class.simpleName})"
                 },
             )
         }
