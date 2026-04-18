@@ -46,6 +46,14 @@ kotlin {
                 implementation(libs.turbine)
             }
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+                implementation(libs.mockwebserver)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.okhttp)
+            }
+        }
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okhttp)

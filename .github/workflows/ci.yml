@@ -16,19 +16,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure all three Version locations match
+      - name: Ensure gradle.properties and Version.kt agree
         run: |
           set -euo pipefail
-          if [ ! -f composeApp/build.gradle.kts ]; then
-            echo "Pre-Sprint-1 scaffold — skipping version check until Gradle wrapper lands."
-            exit 0
-          fi
-          app_v=$(grep -oP 'versionName = "\K[^"]+' composeApp/build.gradle.kts || echo "")
-          wear_v=$(grep -oP 'versionName = "\K[^"]+' wear/build.gradle.kts || echo "")
-          shared_v=$(grep -oP 'VERSION = "\K[^"]+' shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt || echo "")
-          echo "app=$app_v wear=$wear_v shared=$shared_v"
-          if [ "$app_v" != "$wear_v" ] || [ "$app_v" != "$shared_v" ]; then
-            echo "::error::Version mismatch across modules"
+          props_v=$(grep -oP '^DATAWATCH_APP_VERSION=\K.+' gradle.properties)
+          props_c=$(grep -oP '^DATAWATCH_APP_VERSION_CODE=\K.+' gradle.properties)
+          shared_v=$(grep -oP 'VERSION\s*:\s*String\s*=\s*"\K[^"]+' shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt)
+          shared_c=$(grep -oP 'VERSION_CODE\s*:\s*Int\s*=\s*\K[0-9]+' shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt)
+          echo "gradle.properties: version=$props_v code=$props_c"
+          echo "Version.kt:        version=$shared_v code=$shared_c"
+          if [ "$props_v" != "$shared_v" ] || [ "$props_c" != "$shared_c" ]; then
+            echo "::error::Version mismatch — gradle.properties and Version.kt must agree. Bump both together."
             exit 1
           fi
 

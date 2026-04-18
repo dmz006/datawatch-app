@@ -13,10 +13,11 @@ gets two levels of validation:
 |---------|---------|--------|-----------|--------|-----------------|-------|
 | Shared | `SessionState.fromWire` mapping | Yes | — | 1 | JVM commonTest | 4 tests: canonical, synonyms, case-insensitive, unknown → Error |
 | Shared | DTO → domain `Session` mapper | Yes | — | 1 | JVM commonTest | 2 tests: happy path + unknown state degrade |
-| Shared | `RestTransport` happy path | No | No | 1 | | Phase 4 — MockWebServer |
-| Shared | `RestTransport` 401 → Unauthorized | No | No | 1 | | Phase 4 |
-| Shared | `RestTransport` 5xx → ServerError | No | No | 1 | | Phase 4 |
-| Shared | `RestTransport` network error → Unreachable | No | No | 1 | | Phase 4 |
+| Shared | `RestTransport` happy path | Yes | No | 1 | androidUnitTest + MockWebServer | `RestTransportTest.pingSucceedsOn200`, `listSessionsDeserializesHappyPath`, `replyPostsExpectedBody`, `startSessionReturnsIdFromResponse`, `statsDeserializesAllFields` |
+| Shared | `RestTransport` 401 → Unauthorized | Yes | No | 1 | androidUnitTest | `unauthorizedMapsTo401Type` |
+| Shared | `RestTransport` 5xx → ServerError | Yes | No | 1 | androidUnitTest | `serverErrorMapsTo5xxType` |
+| Shared | `RestTransport` 429 → RateLimited | Yes | No | 1 | androidUnitTest | `rateLimitedMapsTo429Type` |
+| Shared | `RestTransport` network error → Unreachable | Yes | No | 1 | androidUnitTest | `networkUnreachableMapsToUnreachable` |
 | Shared | `ServerProfileRepository` CRUD | No | No | 1 | | Phase 4 — in-memory SqlDriver |
 | Shared | `SessionRepository` upsert + observe | No | No | 1 | | Phase 4 |
 | Android | SQLCipher open + key unwrap | No | No | 1 | | Phase 4 androidTest — needs instrumented runner |
