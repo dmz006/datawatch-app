@@ -25,15 +25,17 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(libs.kotlin.stdlib)
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.datetime)
-                implementation(libs.ktor.client.core)
+                // api = leak to consumers (types appear in :shared's public signatures).
+                api(libs.kotlin.stdlib)
+                api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.datetime)
+                api(libs.ktor.client.core)
+                api(libs.sqldelight.runtime)
+                api(libs.kotlinx.serialization.json)
+                // implementation = internal-only.
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.ktor.serialization.kotlinx.json)
-                implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutines)
             }
         }
