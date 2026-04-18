@@ -17,14 +17,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Exercises [RestTransport] against a local [MockWebServer]. Every failure
- * mode in [TransportError] gets a dedicated test so UI banner selection stays
+ * Exercises [RestTransport] against a local [MockWebServer]. Every failure mode
+ * in [TransportError] gets a dedicated test so UI banner selection stays
  * deterministic across server-behavior changes.
  *
  * Runs as an Android JVM unit test (`./gradlew :shared:testDebugUnitTest`).
  */
 class RestTransportTest {
-
     private lateinit var server: MockWebServer
     private lateinit var transport: RestTransport
 
@@ -52,9 +51,17 @@ class RestTransportTest {
         runCatching { server.shutdown() }
     }
 
+    /** Helper — MockResponse has no default Content-Type, so Ktor's
+     *  ContentNegotiation skips JSON deserialization without this. */
+    private fun jsonResponse(body: String, code: Int = 200): MockResponse =
+        MockResponse()
+            .setResponseCode(code)
+            .setHeader("Content-Type", "application/json")
+            .setBody(body)
+
     @Test
     fun pingSucceedsOn200() = runTest {
-        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"ok":true}"""))
+        server.enqueue(jsonResponse("""{"ok":true}"""))
         val res = transport.ping()
         assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
         val sent = server.takeRequest()
@@ -65,7 +72,7 @@ class RestTransportTest {
     @Test
     fun listSessionsDeserializesHappyPath() = runTest {
         server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
+            jsonResponse(
                 """
                 {
                   "sessions": [
@@ -78,7 +85,7 @@ class RestTransportTest {
             ),
         )
         val res = transport.listSessions()
-        assertTrue(res.isSuccess)
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
         val sessions = res.getOrThrow()
         assertEquals(1, sessions.size)
         val s = sessions.first()
@@ -133,9 +140,9 @@ class RestTransportTest {
 
     @Test
     fun replyPostsExpectedBody() = runTest {
-        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"ok":true}"""))
+        server.enqueue(jsonResponse("""{"ok":true}"""))
         val res = transport.replyToSession("a3f2", "continue")
-        assertTrue(res.isSuccess)
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
         val sent = server.takeRequest()
         assertEquals("POST", sent.method)
         assertEquals("/api/sessions/reply", sent.path)
@@ -146,20 +153,16 @@ class RestTransportTest {
 
     @Test
     fun startSessionReturnsIdFromResponse() = runTest {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """{"session_id":"b4c9","state":"new"}""",
-            ),
-        )
+        server.enqueue(jsonResponse("""{"session_id":"b4c9","state":"new"}"""))
         val res = transport.startSession("upgrade deps")
-        assertTrue(res.isSuccess)
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
         assertEquals("b4c9", res.getOrThrow())
     }
 
     @Test
     fun statsDeserializesAllFields() = runTest {
         server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
+            jsonResponse(
                 """
                 {"cpu_pct":23.5,"mem_pct":41.2,"sessions_total":4,"sessions_running":2,
                  "sessions_waiting":1,"uptime_seconds":90123}
@@ -167,7 +170,7 @@ class RestTransportTest {
             ),
         )
         val res = transport.stats()
-        assertTrue(res.isSuccess)
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
         val stats = res.getOrThrow()
         assertEquals(23.5, stats.cpuPct!!, 0.001)
         assertEquals(4, stats.sessionsTotal)
