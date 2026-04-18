@@ -12,8 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * Datawatch Client theme. Matches parent datawatch palette per ADR-0030.
+ * datawatch mobile client theme. Matches parent datawatch palette per ADR-0030.
  * Dark default; light + Material You dynamic also supported from MVP.
+ * Public display name is "datawatch" (ADR-0041); internal identifiers remain
+ * com.dmzs.datawatchclient for stability.
  */
 private val AccentPurple = Color(0xFF7C3AED)
 private val AccentPurpleLight = Color(0xFFA855F7)

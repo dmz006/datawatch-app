@@ -33,7 +33,7 @@ public class MainActivity : ComponentActivity() {
 private fun PreMvpPlaceholder() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            text = "Datawatch Client ${Version.VERSION}\n" +
+            text = "datawatch ${Version.VERSION}\n" +
                 "Pre-MVP scaffold — see docs/ for the design package.",
             style = MaterialTheme.typography.bodyLarge,
         )

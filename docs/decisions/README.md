@@ -1,4 +1,4 @@
-# Approved Decisions (ADRs 0001–0036)
+# Approved Decisions (ADRs 0001–0041)
 
 All decisions approved by user on 2026-04-17 during the four-batch design Q&A.
 One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-<slug>.md`
@@ -77,7 +77,7 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
 - **ADR-0006 — Voice pipeline.** Record on device → upload to datawatch server → server
   Whisper transcribes. No on-device STT in v1.
 - **ADR-0025 — Voice invocation.** Four surfaces: global FAB, chat composer mic, Android
-  quick-tile, ASSIST intent for "Hey Google, talk to Datawatch Client."
+  quick-tile, ASSIST intent for "Hey Google, talk to datawatch."
 - **ADR-0026 — Transcript handling.** Default: auto-send for recognized prefixes
   (`new:`, `reply:`, `status:`); preview-before-send for free-text. User-configurable.
 
@@ -107,9 +107,9 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
 
 ### Branding
 
-- **ADR-0030 — Identity.** Play Store app name: "Datawatch Client". Theme ships dark
-  (matching datawatch `#7c3aed` purple) + light + Material You; dark default. Icon direction
-  in `design/branding.md` — 3 concepts for user pick.
+- **ADR-0030 — Identity (partially superseded by ADR-0041).** Theme ships dark (matching
+  datawatch `#7c3aed` purple) + light + Material You; dark default. Icon direction in
+  `branding.md`. App name portion is superseded by ADR-0041 at the bottom of this file.
 - **ADR-0034 — Brand home.** dmzs.com hosts privacy, terms, support links. Source at
   dmz006/datawatch-app.
 
@@ -127,3 +127,33 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
 
 - **ADR-0007 — Closed-loop telemetry.** No Crashlytics, no Sentry SaaS, no Firebase Analytics,
   no Google Analytics. Diagnostics stay local to device + user's datawatch server.
+
+### Final pre-scaffold decisions (batch 5)
+
+- **ADR-0037 — Icon concept B.** Phone silhouette with miniature datawatch eye on the
+  screen and signal arcs above. Old-school handset reference; preserves datawatch purple
+  palette.
+- **ADR-0038 — Wear voice fallback chain.** Priority: (1) phone-proxy via Wearable Data
+  Layer → phone → server Whisper; (2) direct watch-to-server if watch has its own
+  reachability; (3) native Wear RemoteInput STT → send transcript as text command.
+  Never show "Open on phone."
+- **ADR-0039 — Upstream parent coordination.** The three mobile-needed parent endpoints
+  are tracked as upstream issues: [#1](https://github.com/dmz006/datawatch/issues/1)
+  device registration · [#2](https://github.com/dmz006/datawatch/issues/2) voice
+  transcribe · [#3](https://github.com/dmz006/datawatch/issues/3) federation fan-out.
+  Mobile ships MVP workarounds until upstream lands; see `api-parity.md`.
+- **ADR-0040 — Play publisher name.** Display "dmz" if Play Console accepts it; fallback
+  "dmzs" → "dmzs.com" → "Datawatch". Website field points at `https://dmzs.com`.
+
+### Brand naming (adjustment)
+
+- **ADR-0041 — App display name is `datawatch` (lowercase).** Supersedes the name
+  portion of ADR-0030 ("Datawatch Client"). Rationale: align user-facing naming with the
+  parent project brand — Play Store listing, launcher icon label, Wear watchface, Android
+  Auto surface, iOS bundle display, and in-app word mark all read `datawatch`. The dev
+  build reads `datawatch (dev)` to keep the two installs visually distinct. Technical
+  identifiers (Kotlin packages, applicationId `com.dmzs.datawatchclient[.dev]`, GitHub
+  repo name `dmz006/datawatch-app`, keystore file names) are unchanged — renaming those
+  would be expensive busywork without user benefit. In prose docs, "datawatch mobile
+  client" or "the datawatch mobile app" is used when disambiguation from the parent
+  server daemon is needed.

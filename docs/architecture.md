@@ -1,6 +1,6 @@
 # Architecture
 
-Datawatch Client is a thin, multi-surface Kotlin client that exposes a user's datawatch
+datawatch mobile is a thin, multi-surface Kotlin client that exposes a user's datawatch
 server(s) across phone, watch, and car. All domain logic lives in a shared KMP module;
 surface-specific modules (Android phone, Wear OS, Android Auto, iOS skeleton) consume it.
 
@@ -8,10 +8,10 @@ surface-specific modules (Android phone, Wear OS, Android Auto, iOS skeleton) co
 
 ```mermaid
 C4Context
-    title Datawatch Client — System Context
+    title datawatch mobile — System Context
     Person(user, "User", "dmz — single-user v1")
 
-    System(mobile, "Datawatch Client", "KMP mobile app — phone, watch, car, iOS-skel")
+    System(mobile, "datawatch mobile", "KMP mobile app — phone, watch, car, iOS-skel")
     System_Ext(dwServer, "datawatch server(s)", "Go daemon — one or many, may be proxied")
     System_Ext(fcm, "Google FCM", "Push wake transport")
     System_Ext(gdrive, "Google Drive", "Auto Backup of encrypted DB")
@@ -31,10 +31,10 @@ C4Context
 
 ```mermaid
 C4Container
-    title Datawatch Client — Containers
+    title datawatch mobile — Containers
     Person(user, "User")
 
-    Container_Boundary(app, "Datawatch Client") {
+    Container_Boundary(app, "datawatch mobile") {
         Container(phoneApp, "Phone app", "Kotlin + Compose", "Main UI — sessions, chat, terminal, settings")
         Container(wearApp, "Wear app", "Wear Compose", "Rich watch app + complication + notifications")
         Container(autoApp, "Auto messaging surface", "Car App Library", "Public build: TTS + voice reply; Internal build: full UI")

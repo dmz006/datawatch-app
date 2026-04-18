@@ -5,8 +5,11 @@ Drafts for all text fields in Play Console. Final-pass before submission.
 ## App name (50 chars max)
 
 ```
-Datawatch Client
+datawatch
 ```
+
+Lowercase per ADR-0041. Matches parent project brand. Play Store accepts lowercase app
+names; no capitalization enforcement on this field.
 
 ## Short description (80 chars max)
 
@@ -19,8 +22,9 @@ Your datawatch on the go — sessions, prompts, and voice from phone, watch, or 
 ## Full description (4000 chars max)
 
 ```
-Datawatch Client is the official mobile companion for datawatch — the open-source daemon
-that bridges AI coding sessions across machines and messaging platforms.
+datawatch (mobile client) is the official companion app to the datawatch server — the
+open-source daemon that bridges AI coding sessions across machines and messaging
+platforms.
 
 Stay in control of your coding agents from anywhere:
 
@@ -104,7 +108,7 @@ See `branding.md` for the full asset list. At minimum:
 
 First release:
 ```
-Initial public release of Datawatch Client.
+Initial public release of datawatch (mobile client).
 
 • Full session management for one or many datawatch servers.
 • Real-time terminal, memory, and knowledge-graph access.

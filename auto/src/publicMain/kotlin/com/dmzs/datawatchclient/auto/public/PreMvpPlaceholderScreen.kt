@@ -13,7 +13,7 @@ import com.dmzs.datawatchclient.Version
  */
 public class PreMvpPlaceholderScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template =
-        MessageTemplate.Builder("Datawatch Client ${Version.VERSION} — scaffold")
-            .setTitle("Datawatch")
+        MessageTemplate.Builder("datawatch ${Version.VERSION} — scaffold")
+            .setTitle("datawatch")
             .build()
 }

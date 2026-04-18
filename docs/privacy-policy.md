@@ -6,15 +6,15 @@
 
 ---
 
-# Datawatch Client — Privacy Policy
+# datawatch — Privacy Policy
 
-*Last updated: 2026-04-17*
+*Last updated: 2026-04-18*
 
 ## Who we are
 
-Datawatch Client is a mobile application published by dmz
-(`https://dmzs.com`, contact: `davidzendzian@gmail.com`). It is a client app that connects
-to datawatch server instances that you, the user, operate. We are not a cloud service
+`datawatch` (the mobile app listed on Google Play) is published by dmz
+(`https://dmzs.com`, contact: `davidzendzian@gmail.com`). It is the client companion to
+datawatch server instances that you, the user, operate. We are not a cloud service
 provider — all of your data lives on your own infrastructure plus your own device.
 
 Source code: `https://github.com/dmz006/datawatch-app` (public).
@@ -91,8 +91,8 @@ You can disable this at any time in **Android Settings → System → Backup →
 If you configure the app to fall back to an on-device messaging app (Signal, the default
 SMS app, Slack, etc.) when your datawatch server is unreachable, the app hands the
 message off to that other app via an Android Intent. The data then flows through that
-messenger's infrastructure under its own privacy policy. The Datawatch Client never
-uploads that data to our servers (we don't have any).
+messenger's infrastructure under its own privacy policy. This app never uploads that
+data to our servers (we don't have any).
 
 ## What data the app does **not** collect
 
@@ -139,8 +139,8 @@ directed at children.
   for that server is wiped from the device. Server-side data retention is controlled by
   the datawatch server itself (see the datawatch server's own documentation).
 - **Turn off Google Drive backup:** Android Settings → System → Backup → App data → turn
-  off for Datawatch Client.
-- **Turn off push:** Android Settings → Apps → Datawatch Client → Notifications → disable.
+  off for datawatch.
+- **Turn off push:** Android Settings → Apps → datawatch → Notifications → disable.
   You can still open the app to view sessions.
 - **Uninstall:** removes all on-device data. Google Drive Auto Backup archives persist per
   Google's retention policy; you can delete them from

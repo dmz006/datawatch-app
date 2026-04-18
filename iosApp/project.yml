@@ -13,7 +13,7 @@ targets:
     info:
       path: iosApp/Info.plist
       properties:
-        CFBundleDisplayName: Datawatch Client
+        CFBundleDisplayName: datawatch
         UILaunchScreen:
           UIColorName: ""
     settings:

@@ -1,4 +1,7 @@
-# AGENT.md — datawatch-mobile (Datawatch Client) Guardrails
+# AGENT.md — datawatch-app (mobile client) Guardrails
+
+**User-facing product name:** `datawatch` (lowercase, ADR-0041).
+**Repo name:** `dmz006/datawatch-app`. **Technical namespaces:** `com.dmzs.datawatchclient[.dev]`.
 
 This file defines operating rules for Claude when working on the **datawatch-mobile codebase**
 (GH: `dmz006/datawatch-app`, brand home: `dmzs.com`).

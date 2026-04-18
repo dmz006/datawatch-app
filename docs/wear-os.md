@@ -97,7 +97,7 @@ Watch  <--MessageApi response--  Phone
 ## Standalone-mode behavior
 
 If the watch is connected to Wi-Fi but not paired (rare on Wear OS 4+), the app refuses to
-function and shows "Open Datawatch Client on your phone to sync." No token leakage path.
+function and shows "Open datawatch on your phone to sync." No token leakage path.
 
 ## Testing
 

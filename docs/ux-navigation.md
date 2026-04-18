@@ -7,7 +7,7 @@ server tabs (ADR-0022).
 
 ```
 ┌─────────────────────────────────────────┐  header-h 56
-│ [🔽 primary]  Datawatch Client      ⋮   │  ← top bar, server pill on left opens tree drawer
+│ [🔽 primary]  datawatch              ⋮  │  ← top bar, server pill on left opens tree drawer
 ├─────────────────────────────────────────┤
 │                                         │
 │   Current tab's content                 │

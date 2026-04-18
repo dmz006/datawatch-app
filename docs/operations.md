@@ -11,11 +11,11 @@ See [AGENT.md § Release workflow](../AGENT.md#release-workflow-every-version-bu
 
 ## Upload key storage
 
-- **Upload keystore (public variant):** `~/.android/datawatch-client-upload.jks` —
-  generated with `keytool` during Sprint 0 Day 1. Password lives in the personal
-  password manager, never in Git. Backup to offline media recommended.
-- **Upload keystore (dev variant):** `~/.android/datawatch-client-dev-upload.jks` —
-  distinct keystore; distinct alias.
+- **Upload keystore (public variant):** `~/.android/datawatch-upload.jks` — generated
+  with `keytool` during Sprint 0 Day 1. Password lives in the personal password manager,
+  never in Git. Backup to offline media recommended.
+- **Upload keystore (dev variant):** `~/.android/datawatch-dev-upload.jks` — distinct
+  keystore; distinct alias.
 - Base64-encoded copies are loaded into GitHub Actions secrets
   (`UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEY_PASSWORD`, `UPLOAD_KEY_ALIAS`,
   `UPLOAD_KEYSTORE_PASSWORD`) for CI release jobs.

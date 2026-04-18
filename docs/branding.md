@@ -108,7 +108,7 @@ Per ADR-0031 the dev/internal build is a distinct installable. To prevent user c
 
 - **Dev icon:** same concept as chosen, plus a "DEV" badge chip in the lower-right (orange
   warning color), visible in launcher + recents.
-- **Dev app name:** "Datawatch Client (Dev)".
+- **Dev app name:** "datawatch (dev)" — matches ADR-0041 lowercase brand.
 - **Dev app shortcut** on Auto is suppressed unless connected to DHU.
 
 ## Splash / launch
@@ -118,8 +118,11 @@ splash (Material 3 recommends icon-only). First-open onboarding shows the full w
 
 ## Word mark
 
-"DATAWATCH CLIENT" in JetBrains Mono uppercase, letter-spacing 4px, accent color — matches
-the parent's arc text treatment but straight instead of curved.
+The launcher icon label + Play Store name render as **`datawatch`** (lowercase, ADR-0041).
+When a word mark appears in the app itself (splash, about screen, feature graphic), use
+JetBrains Mono, letter-spacing 4px, accent color, matching parent datawatch's arc text
+treatment but rendered straight instead of curved. Lowercase throughout — no "Client"
+suffix, no uppercase stylization.
 
 ## Safe zones
 

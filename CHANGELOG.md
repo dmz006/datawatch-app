@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- App display name set to `datawatch` (lowercase) for all user-facing surfaces — Play
+  Store listing, launcher label, Wear watchface, Android Auto, iOS bundle display
+  (ADR-0041, supersedes name portion of ADR-0030). Dev variant reads `datawatch (dev)`.
+  Technical identifiers (applicationId `com.dmzs.datawatchclient[.dev]`, Kotlin packages,
+  repo name `dmz006/datawatch-app`, keystore file names) are unchanged.
+
 ## [0.1.0-pre] — 2026-04-18
 
 ### Added

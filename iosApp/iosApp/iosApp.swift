@@ -9,7 +9,7 @@ struct DatawatchClientApp: App {
     var body: some Scene {
         WindowGroup {
             VStack {
-                Text("Datawatch Client")
+                Text("datawatch")
                 Text("iOS skeleton — content phase follows Android production")
                     .font(.caption)
             }

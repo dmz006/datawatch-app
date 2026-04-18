@@ -1,7 +1,12 @@
-# Datawatch Client
+# datawatch-app
 
-Mobile companion for [datawatch](https://github.com/dmz006/datawatch) — the daemon that
-bridges AI coding sessions to messaging platforms.
+**Display name:** `datawatch` — the mobile companion for
+[datawatch](https://github.com/dmz006/datawatch), the daemon that bridges AI coding
+sessions to messaging platforms.
+
+> The source repo is `dmz006/datawatch-app`; the Play Store listing, launcher label,
+> Wear watch face, and Android Auto surfaces all read **datawatch** (lowercase) per
+> ADR-0041, matching the parent project's brand.
 
 **Status:** Pre-MVP scaffold (v0.1.0-pre). Design-complete; implementation begins
 Sprint 1 (2026-05-02).

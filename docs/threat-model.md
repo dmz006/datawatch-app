@@ -1,6 +1,6 @@
 # Threat Model — STRIDE
 
-Scope: the Datawatch Client app (phone + Wear + Auto) and its interactions with user-owned
+Scope: the datawatch mobile client app (phone + Wear + Auto) and its interactions with user-owned
 datawatch servers, Google FCM, Google Drive Auto Backup, and on-device messenger apps.
 
 Out of scope: the datawatch server itself (see parent repo `SECURITY.md`), the user's
@@ -37,7 +37,7 @@ operating system, the user's physical device security.
 |---|---|
 | Malicious server impersonating user's datawatch | Cert pinning (opt-in per profile) + user-confirmed trust-anchor fingerprint for self-signed; hostname verification always on |
 | Malicious push impersonating FCM | FCM sender ID verified; payload scheme validated before dispatch; unrecognized schemas dropped silently with telemetry event |
-| Repackaged app masquerading as Datawatch Client | PackageManager integrity check at startup against baked-in signing fingerprint; refuses to unlock DB if signature doesn't match |
+| Repackaged app masquerading as datawatch mobile client | PackageManager integrity check at startup against baked-in signing fingerprint; refuses to unlock DB if signature doesn't match |
 | ASSIST intent hijack by another voice app | Intent filter requires our signature permission; queries to ASSIST dispatcher honor user's default and we don't auto-dispatch |
 | Malicious Wear watch app mimicking ours | Wear Data Layer uses package name + signature; listener only accepts messages from our phone package |
 

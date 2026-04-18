@@ -27,9 +27,9 @@ free-text preview as default (ADR-0026).
 
 - `<intent-filter>` handles `android.intent.action.ASSIST` and
   `android.intent.action.VOICE_COMMAND`.
-- "Hey Google, open Datawatch Client" launches the app; "Hey Google, tell Datawatch Client
-  status on laptop" routes through Google Assistant → app-actions config → invokes the
-  stats quick command on the `laptop` profile.
+- "Hey Google, open datawatch" launches the app; "Hey Google, tell datawatch status on
+  laptop" routes through Google Assistant → app-actions config → invokes the stats quick
+  command on the `laptop` profile.
 - Configured via `app_actions.xml` declaring supported BuiltInIntents:
   - `actions.intent.GET_THING` → query memory/session
   - `actions.intent.CREATE_MESSAGE` → new: … (starts a session)

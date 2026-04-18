@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dev-flavor override per ADR-0031: applicationId com.dmzs.datawatchclient.dev
+     ships with a distinct label so users can tell the internal build apart from the
+     public one when both are installed side-by-side. -->
+<resources>
+    <string name="app_name">datawatch (dev)</string>
+</resources>

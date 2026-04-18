@@ -1,8 +1,8 @@
 # Google Play Console — Account Recreation + App Submission
 
 The previous developer account on `davidzendzian@gmail.com` was closed for inactivity.
-This doc walks through recreating the account, enrolling the Datawatch Client app, and
-shipping to production. Start in Sprint 0 — several items have lead times longer than a
+This doc walks through recreating the account, enrolling the `datawatch` mobile app
+(public build) and `datawatch (dev)` (internal build), and shipping to production. Start in Sprint 0 — several items have lead times longer than a
 sprint.
 
 ## Phase 1 — Account recreation (Sprint 0, Day 1–3)
@@ -64,7 +64,7 @@ Google Play App Signing is the recommended path (ADR-0003):
 Upload key generation (later, in Sprint 0 scaffold):
 ```bash
 keytool -genkey -v \
-  -keystore ~/.android/datawatch-client-upload.jks \
+  -keystore ~/.android/datawatch-upload.jks \
   -alias datawatch-upload \
   -keyalg RSA -keysize 4096 -validity 36500 \
   -storetype PKCS12
@@ -79,7 +79,7 @@ A second, distinct upload key is generated for the `.dev` internal variant.
 
 1. Play Console → **Create app**.
 2. Fields:
-   - **App name:** `Datawatch Client` (ADR-0030).
+   - **App name:** `datawatch` (lowercase per ADR-0041; supersedes the name portion of ADR-0030).
    - **Default language:** English (United States).
    - **App or game:** App.
    - **Free or paid:** Free.
@@ -90,7 +90,7 @@ A second, distinct upload key is generated for the `.dev` internal variant.
 ### Step 9 — Create the internal variant app
 
 Play Console treats each `applicationId` as a separate app. Repeat Step 8 for:
-- **App name:** `Datawatch Client (Dev)`.
+- **App name:** `datawatch (dev)`.
 - **Package name:** `com.dmzs.datawatchclient.dev`.
 - This app stays in Internal Testing track forever (ADR-0031). Do not submit for
   production.

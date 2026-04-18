@@ -1,4 +1,4 @@
-# Datawatch Client proguard rules
+# datawatch (mobile client) proguard rules
 # Per AGENT.md security rules: strip Log.* in release builds (bearer tokens must not leak).
 
 -assumenosideeffects class android.util.Log {
