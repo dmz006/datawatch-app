@@ -3,39 +3,15 @@ package com.dmzs.datawatchclient
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
+import com.dmzs.datawatchclient.ui.AppRoot
 
 /**
- * Placeholder launch Activity — Sprint 1 replaces this with the full navigation host.
+ * Launch Activity. Hands off to the Compose navigation root — see
+ * [com.dmzs.datawatchclient.ui.AppRoot].
  */
 public class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            DatawatchTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    PreMvpPlaceholder()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreMvpPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = "datawatch ${Version.VERSION}\n" +
-                "Pre-MVP scaffold — see docs/ for the design package.",
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        setContent { AppRoot() }
     }
 }

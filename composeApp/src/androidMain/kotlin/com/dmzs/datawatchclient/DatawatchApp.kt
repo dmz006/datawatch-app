@@ -17,5 +17,6 @@ public class DatawatchApp : Application() {
     override fun onCreate() {
         super.onCreate()
         DatabaseFactory.loadNativeLib()
+        com.dmzs.datawatchclient.di.ServiceLocator.init(this)
     }
 }

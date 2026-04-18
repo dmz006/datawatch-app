@@ -63,16 +63,18 @@ Out of scope (explicitly — later sprints handle these):
 
 ### Phase 3 — composeApp onboarding + sessions list
 
-**Status:** Planned.
+**Status:** Done (core flow shipped).
 
-- [ ] Onboarding: welcome → add-server → health-check spinner → enter bottom-nav
-- [ ] `SettingsServerViewModel` — add/remove/edit server profile
-- [ ] `SessionsViewModel` — observe + refresh session list for active server
-- [ ] `SessionsScreen` composable — scrollable list with state pills
-- [ ] `AddServerScreen` composable — URL + token + reachability profile + trust-anchor
-- [ ] Online/offline banner (ADR-0013)
-- [ ] Bottom-nav shell (Sessions / Channels / Stats / Settings)
-- [ ] Deep-link router for `dwclient://server/<id>`
+- [x] Onboarding: welcome → add-server → health-check probe → home shell
+- [x] `AddServerViewModel` — form state + live probe + vault write on success + roll-back on probe failure
+- [x] `SessionsViewModel` — observe + refresh session list for active server; disconnect banner (ADR-0013)
+- [x] `SessionsScreen` composable — list with state pills, refresh action, stale-banner on disconnect
+- [x] `AddServerScreen` composable — display name + URL + token + self-signed toggle
+- [x] Bottom-nav shell (Sessions / Channels / Stats / Settings) with Material 3 `NavigationBar`
+- [x] `ServiceLocator` hand-wired DI for singletons (DB, repos, token vault, HttpClient)
+- [x] `createHttpClient()` expect/actual for Android (OkHttp) + iOS (Darwin)
+- [ ] Deep-link router for `dwclient://server/<id>` — deferred to Sprint 2 with the rest of the URI handling
+- [ ] Cert-pinning opt-in UI — deferred to Sprint 2; trust-anchor input stays on the add-server screen as a toggle only for now
 
 ### Phase 4 — Test + release (end of sprint)
 

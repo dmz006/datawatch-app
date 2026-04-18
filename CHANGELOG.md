@@ -26,6 +26,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
     Phase 2), `ServerProfileRepository`, `SessionRepository`
   - SQLDelight schema split into `profile.sq` + `session.sq`
   - Unit tests: `SessionStateTest`, `MappersTest`
+- Sprint 1 Phase 3 — composeApp onboarding + sessions list (first user-visible flow):
+  - `ServiceLocator` hand-wired DI — DB, repositories, token vault, shared HttpClient
+  - `createHttpClient()` expect/actual: Android OkHttp engine, iOS Darwin engine
+  - `OnboardingScreen` → `AddServerScreen` (form + live health probe + token-vault
+    persistence with roll-back on probe failure)
+  - Home shell: Material 3 `NavigationBar` with Sessions / Channels / Stats / Settings
+  - `SessionsScreen` / `SessionsViewModel` — cached list + live refresh; disconnect
+    banner per ADR-0013
+  - `SettingsScreen` with basic server list + About section
+  - `MainActivity` now launches `AppRoot` (Compose Navigation)
+  - `compose.materialIconsExtended` added for bottom-nav icons
 - Sprint 1 Phase 2 — Android storage + crypto:
   - `KeystoreManager` — AES-256-GCM master key in Android Keystore (StrongBox-preferred
     on capable devices); HMAC-SHA256 derivation of the SQLCipher passphrase.
