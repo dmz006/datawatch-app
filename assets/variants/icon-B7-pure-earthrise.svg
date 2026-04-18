@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Variant B7 — pure Earthrise.
+
+  Big change per user direction:
+    - NO background disc
+    - NO antenna arch on top
+    - NO tablet + eye (yet; we decide on transmission elements AFTER the image
+      reads right)
+
+  What remains: the scene itself. The icon IS the Apollo 8 view: lunar surface
+  in the foreground with pronounced craters + regolith texture, Earth rising
+  above the horizon, star-field space beyond.
+
+  The 512 canvas is clipped to the app-icon circle so the scene fills the icon
+  shape without an additional framing ring. Monochrome/Android-13 themed
+  rendering of this will need a simplified silhouette — deferred until the
+  colored version locks.
+
+  Earth composition referenced against the Apollo 8 "Earthrise" photograph:
+  Earth ~12% of icon diameter, centered horizontally, positioned just above
+  the midline (rising), distinct continent shapes + blue oceans + cloud swirls
+  + atmospheric halo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="datawatch — Earthrise (moon foreground, Earth rising, no disc, no arcs)">
+  <defs>
+    <!-- Space gradient — fills entire canvas; deep near-black, hint of blue. -->
+    <radialGradient id="space" cx="55%" cy="25%" r="70%">
+      <stop offset="0%"   stop-color="#04060F"/>
+      <stop offset="60%"  stop-color="#010207"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Lunar surface gradient: shaded from upper-rim highlight (earthshine)
+         down to darker regolith at bottom. Breaks up visually so the moon
+         doesn't read as a flat tone. -->
+    <linearGradient id="moonSurface" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#6B5E54"/>
+      <stop offset="20%"  stop-color="#4F463E"/>
+      <stop offset="55%"  stop-color="#332B25"/>
+      <stop offset="100%" stop-color="#16110E"/>
+    </linearGradient>
+
+    <!-- Earth — realistic cloud-blue-green-white with a bright sunlit limb. -->
+    <radialGradient id="earth" cx="38%" cy="36%" r="64%">
+      <stop offset="0%"   stop-color="#F4FAFF"/>
+      <stop offset="18%"  stop-color="#A8D4F2"/>
+      <stop offset="40%"  stop-color="#4988C8"/>
+      <stop offset="66%"  stop-color="#1E4B88"/>
+      <stop offset="90%"  stop-color="#0B2A55"/>
+      <stop offset="100%" stop-color="#050F28"/>
+    </radialGradient>
+
+    <!-- Cyan atmospheric halo behind Earth (Rayleigh scatter). -->
+    <radialGradient id="earthHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="64%"  stop-color="#7AB8E8" stop-opacity="0"/>
+      <stop offset="86%"  stop-color="#7AB8E8" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7AB8E8" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Inner-shadow crater gradient: bright rim, dark floor. -->
+    <radialGradient id="craterShade" cx="50%" cy="40%" r="52%">
+      <stop offset="0%"   stop-color="#6B5E54"/>
+      <stop offset="60%"  stop-color="#1A1310"/>
+      <stop offset="100%" stop-color="#0E0906"/>
+    </radialGradient>
+
+    <clipPath id="iconDisc">
+      <circle cx="256" cy="256" r="256"/>
+    </clipPath>
+
+    <!-- Horizon path — curved to hint moon curvature + adds perspective. -->
+    <clipPath id="lunarSurfaceClip">
+      <path d="M -2,264 Q 256,240 514,270 L 514,514 L -2,514 Z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#iconDisc)">
+    <!-- Space background. -->
+    <rect width="512" height="512" fill="url(#space)"/>
+
+    <!-- Star field. Denser than B6 per user "make it feel like the photo". -->
+    <g fill="#FFFFFF">
+      <circle cx="22"  cy="38"  r="0.8" opacity="0.7"/>
+      <circle cx="62"  cy="66"  r="0.5" opacity="0.5"/>
+      <circle cx="98"  cy="28"  r="1.0" opacity="0.8"/>
+      <circle cx="136" cy="76"  r="0.6" opacity="0.55"/>
+      <circle cx="174" cy="22"  r="0.7" opacity="0.65"/>
+      <circle cx="216" cy="54"  r="0.5" opacity="0.5"/>
+      <circle cx="350" cy="40"  r="0.9" opacity="0.75"/>
+      <circle cx="392" cy="72"  r="0.5" opacity="0.5"/>
+      <circle cx="432" cy="30"  r="0.8" opacity="0.7"/>
+      <circle cx="472" cy="82"  r="0.6" opacity="0.6"/>
+      <circle cx="498" cy="110" r="0.9" opacity="0.8"/>
+      <circle cx="18"  cy="132" r="0.6" opacity="0.55"/>
+      <circle cx="50"  cy="182" r="0.7" opacity="0.6"/>
+      <circle cx="430" cy="148" r="0.5" opacity="0.5"/>
+      <circle cx="478" cy="198" r="0.7" opacity="0.6"/>
+      <circle cx="102" cy="148" r="0.4" opacity="0.45"/>
+      <circle cx="362" cy="110" r="0.5" opacity="0.5"/>
+      <circle cx="158" cy="112" r="0.6" opacity="0.6"/>
+      <circle cx="282" cy="66"  r="0.4" opacity="0.45"/>
+    </g>
+
+    <!--
+      EARTH. Centered (cx=256), radius 56 ≈ 11% of canvas diameter.
+      Positioned at cy=208, comfortably above the horizon with ~56px of
+      dark space between Earth's lower limb and the moon's horizon curve.
+    -->
+    <g>
+      <!-- Atmosphere halo -->
+      <circle cx="256" cy="208" r="72" fill="url(#earthHalo)"/>
+      <!-- Earth body (sphere) -->
+      <circle cx="256" cy="208" r="56" fill="url(#earth)"/>
+
+      <!--
+        Continents — impressionistic shapes that read as real landmasses at
+        launcher size. Two larger blobs (Americas/Africa silhouettes) +
+        smaller islands. All tinted muted olive-green with a hint of brown.
+      -->
+      <g fill="#2F5E36" opacity="0.85">
+        <!-- Left landmass (Americas-ish) -->
+        <path d="M 218,192
+                 C 224,184 232,184 238,192
+                 C 242,202 236,212 230,216
+                 C 222,218 214,212 216,202 Z"/>
+        <path d="M 222,220 C 228,218 232,222 230,230 C 226,236 218,234 218,228 Z"/>
+
+        <!-- Right landmass (Africa-ish) -->
+        <path d="M 262,202
+                 C 274,198 286,206 288,218
+                 C 288,230 280,242 270,246
+                 C 260,246 254,236 256,224
+                 C 258,214 258,206 262,202 Z"/>
+        <path d="M 278,234 C 286,234 290,240 286,248 C 280,252 272,248 274,242 Z"/>
+
+        <!-- Central landmass hint -->
+        <path d="M 250,232 C 258,232 262,238 258,244 C 250,246 246,240 250,232 Z"/>
+      </g>
+
+      <!-- Cloud swirls — white wisps over oceans. -->
+      <g fill="#FFFFFF" opacity="0.55">
+        <path d="M 214,214 Q 232,204 254,212 Q 240,222 220,222 Z"/>
+        <path d="M 278,200 Q 292,202 298,214 Q 288,210 276,208 Z"/>
+        <path d="M 242,248 Q 262,240 282,250 Q 262,258 244,256 Z"/>
+        <path d="M 204,234 Q 212,232 218,240 Q 210,244 206,240 Z"/>
+      </g>
+      <!-- Thin ice / pole highlight. -->
+      <ellipse cx="256" cy="160" rx="18" ry="5" fill="#FFFFFF" opacity="0.45"/>
+
+      <!-- Specular highlight — sun angle upper-left. -->
+      <ellipse cx="232" cy="184" rx="16" ry="7" fill="#FFFFFF" opacity="0.22"
+               transform="rotate(-20 232 184)"/>
+    </g>
+
+    <!--
+      LUNAR SURFACE — fills from the horizon curve to the bottom of the icon.
+      Many pronounced craters with inner-shadow gradients for 3D read. Varied
+      crater sizes (small ones form the regolith feel; mid-size ones are the
+      pronounced features).
+    -->
+    <g clip-path="url(#lunarSurfaceClip)">
+      <rect x="-4" y="240" width="520" height="280" fill="url(#moonSurface)"/>
+
+      <!-- Large pronounced craters with shaded interiors. -->
+      <g>
+        <!-- crater A (bottom-left, prominent) -->
+        <ellipse cx="104" cy="430" rx="54" ry="18" fill="url(#craterShade)"/>
+        <ellipse cx="104" cy="428" rx="52" ry="16" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.6" opacity="0.7"/>
+        <ellipse cx="90"  cy="425" rx="18" ry="5"
+                 fill="#FFFFFF" opacity="0.06"/>
+
+        <!-- crater B (mid-left) -->
+        <ellipse cx="186" cy="346" rx="30" ry="10" fill="url(#craterShade)"/>
+        <ellipse cx="186" cy="344" rx="29" ry="9" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.2" opacity="0.7"/>
+
+        <!-- crater C (center-below-earth) -->
+        <ellipse cx="260" cy="320" rx="42" ry="13" fill="url(#craterShade)"/>
+        <ellipse cx="260" cy="318" rx="40" ry="12" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.4" opacity="0.75"/>
+
+        <!-- crater D (right mid) -->
+        <ellipse cx="378" cy="360" rx="36" ry="12" fill="url(#craterShade)"/>
+        <ellipse cx="378" cy="358" rx="35" ry="11" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.2" opacity="0.7"/>
+
+        <!-- crater E (bottom-right large) -->
+        <ellipse cx="416" cy="468" rx="58" ry="20" fill="url(#craterShade)"/>
+        <ellipse cx="416" cy="466" rx="56" ry="18" fill="none"
+                 stroke="#8B7B6E" stroke-width="1.6" opacity="0.7"/>
+
+        <!-- smaller supporting craters -->
+        <ellipse cx="156" cy="480" rx="22" ry="7" fill="url(#craterShade)"/>
+        <ellipse cx="156" cy="478" rx="21" ry="6" fill="none"
+                 stroke="#8B7B6E" stroke-width="1" opacity="0.65"/>
+
+        <ellipse cx="230" cy="412" rx="16" ry="5" fill="url(#craterShade)"/>
+        <ellipse cx="310" cy="384" rx="18" ry="6" fill="url(#craterShade)"/>
+        <ellipse cx="330" cy="430" rx="14" ry="5" fill="url(#craterShade)"/>
+        <ellipse cx="70"  cy="490" rx="20" ry="6" fill="url(#craterShade)"/>
+        <ellipse cx="468" cy="400" rx="14" ry="5" fill="url(#craterShade)"/>
+        <ellipse cx="490" cy="456" rx="18" ry="6" fill="url(#craterShade)"/>
+        <ellipse cx="40"  cy="398" rx="14" ry="4" fill="url(#craterShade)"/>
+      </g>
+
+      <!-- Regolith micro-texture — tiny dots scattered across surface. -->
+      <g fill="#6B5E54" opacity="0.35">
+        <circle cx="78"  cy="316" r="1.0"/>
+        <circle cx="124" cy="352" r="0.7"/>
+        <circle cx="158" cy="320" r="0.8"/>
+        <circle cx="224" cy="340" r="0.6"/>
+        <circle cx="268" cy="358" r="0.9"/>
+        <circle cx="302" cy="334" r="0.6"/>
+        <circle cx="348" cy="322" r="0.8"/>
+        <circle cx="402" cy="344" r="0.7"/>
+        <circle cx="442" cy="324" r="0.5"/>
+        <circle cx="480" cy="348" r="0.7"/>
+        <circle cx="42"  cy="458" r="0.6"/>
+        <circle cx="208" cy="448" r="0.8"/>
+        <circle cx="286" cy="488" r="0.9"/>
+        <circle cx="358" cy="492" r="0.7"/>
+      </g>
+
+      <!-- Horizon rim earthshine highlight (Earthlight grazing crest). -->
+      <path d="M -2,262 Q 256,238 514,268"
+            fill="none" stroke="#7AB8E8" stroke-width="1.6" opacity="0.40"/>
+    </g>
+  </g>
+</svg>
