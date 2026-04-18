@@ -17,6 +17,6 @@ public class DatawatchPassengerService : CarAppService() {
 
     override fun onCreateSession(): Session = object : Session() {
         override fun onCreateScreen(intent: android.content.Intent) =
-            com.dmzs.datawatchclient.auto.public.PreMvpPlaceholderScreen(carContext)
+            com.dmzs.datawatchclient.auto.messaging.PreMvpPlaceholderScreen(carContext)
     }
 }

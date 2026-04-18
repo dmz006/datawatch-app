@@ -1,4 +1,4 @@
-package com.dmzs.datawatchclient.auto.public
+package com.dmzs.datawatchclient.auto.messaging
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
