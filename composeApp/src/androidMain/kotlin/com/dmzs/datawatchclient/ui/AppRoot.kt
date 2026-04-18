@@ -83,15 +83,13 @@ private fun Nav(
             )
         }
         composable(Destinations.Home) {
-            HomeShell(
-                onReplaySplash = { navController.navigate(Destinations.SplashReplay) },
-            )
+            HomeShell()
         }
     }
 }
 
 @Composable
-private fun HomeShell(onReplaySplash: () -> Unit) {
+private fun HomeShell() {
     val tabNav = rememberNavController()
     Scaffold(bottomBar = { BottomNavBar(tabNav) }) { inner ->
         NavHost(
@@ -107,7 +105,7 @@ private fun HomeShell(onReplaySplash: () -> Unit) {
                 PlaceholderTabScreen("Stats", "Sprint 1 Phase 4 adds the live stats dashboard.")
             }
             composable(Destinations.Tabs.Settings) {
-                SettingsScreen(onReplaySplash = onReplaySplash)
+                SettingsScreen(onEditServer = { /* TODO Sprint 2: edit profile */ })
             }
         }
     }

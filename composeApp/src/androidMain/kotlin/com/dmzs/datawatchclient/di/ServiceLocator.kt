@@ -11,6 +11,7 @@ import com.dmzs.datawatchclient.storage.ServerProfileRepository
 import com.dmzs.datawatchclient.storage.SessionRepository
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.createHttpClient
+import com.dmzs.datawatchclient.transport.createTrustAllHttpClient
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
@@ -50,20 +51,28 @@ public object ServiceLocator {
     }
 
     private val httpClient: HttpClient by lazy { createHttpClient() }
+    private val trustAllClient: HttpClient by lazy { createTrustAllHttpClient() }
 
     /**
      * Build a [TransportClient] for a given server profile. Token is unwrapped from
      * the vault on each request via a suspend provider — no plaintext in memory
-     * outside the request scope.
+     * outside the request scope. When the profile has
+     * [ServerProfile.trustAnchorSha256] == [TRUST_ALL_SENTINEL] (set by the
+     * "Server uses a self-signed certificate" checkbox in AddServerScreen), a
+     * trust-all HttpClient is used instead of the system-trust default.
      */
     public fun transportFor(profile: ServerProfile): TransportClient {
-        // Empty bearerTokenRef = "no bearer token" per AddServerViewModel. Builds
-        // the transport without an Authorization header. All other cases resolve
-        // the token from the encrypted vault on each request.
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
         val tokenProvider: (suspend () -> String)? = alias?.let {
             { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
         }
-        return RestTransport(profile, httpClient, tokenProvider)
+        val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
+            trustAllClient
+        } else {
+            httpClient
+        }
+        return RestTransport(profile, client, tokenProvider)
     }
+
+    public const val TRUST_ALL_SENTINEL: String = "ALLOW_ALL_INSECURE"
 }

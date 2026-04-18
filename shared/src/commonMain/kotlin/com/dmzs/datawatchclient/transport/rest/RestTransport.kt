@@ -119,14 +119,20 @@ public class RestTransport(
         _isReachable.value = true
         Result.success(v)
     } catch (e: ClientRequestException) {
+        println("RestTransport: client error ${e.response.status} for ${profile.baseUrl}: ${e.message}")
         Result.failure(mapClientError(e))
     } catch (e: ServerResponseException) {
+        println("RestTransport: server error ${e.response.status} for ${profile.baseUrl}: ${e.message}")
         Result.failure(TransportError.ServerError(e.response.status.value, e.message ?: ""))
     } catch (e: ResponseException) {
+        println("RestTransport: response error ${e.response.status} for ${profile.baseUrl}: ${e.message}")
         Result.failure(TransportError.ServerError(e.response.status.value, e.message ?: ""))
     } catch (e: Throwable) {
+        // Log the actual cause so adb logcat can surface TLS / DNS / routing issues
+        // instead of hiding them behind "Server unreachable" in the UI.
+        println("RestTransport: unreachable for ${profile.baseUrl}: ${e::class.simpleName}: ${e.message}")
+        e.printStackTrace()
         _isReachable.value = false
-        // Ktor wraps connect failures; classify as Unreachable by default.
         Result.failure(TransportError.Unreachable(e))
     }
 

@@ -65,7 +65,14 @@ public class AddServerViewModel : ViewModel() {
                 displayName = snapshot.displayName.trim(),
                 baseUrl = snapshot.baseUrl.trim().trimEnd('/'),
                 bearerTokenRef = alias,
-                trustAnchorSha256 = null,
+                // "Self-signed" checkbox → ServiceLocator picks the trust-all Ktor
+                // client for this profile. Disables TLS identity verification for
+                // this server only.
+                trustAnchorSha256 = if (snapshot.selfSigned) {
+                    ServiceLocator.TRUST_ALL_SENTINEL
+                } else {
+                    null
+                },
                 reachabilityProfileId = "lan-default",
                 enabled = true,
                 createdTs = Clock.System.now().toEpochMilliseconds(),

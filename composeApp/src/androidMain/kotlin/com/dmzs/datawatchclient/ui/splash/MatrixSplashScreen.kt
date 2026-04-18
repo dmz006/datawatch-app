@@ -102,6 +102,21 @@ public fun MatrixSplashScreen(
     }
 }
 
+/**
+ * Embeddable version of the animated artwork — no version text, no "Close"
+ * button. Used in Settings → About so the logo is always visible as a live
+ * visual element instead of hidden behind a replay action.
+ */
+@Composable
+public fun MatrixLogoAnimated(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(Color(0xFF0F1117)),
+        contentAlignment = Alignment.Center,
+    ) {
+        MatrixSplashArtwork()
+    }
+}
+
 // -- artwork ------------------------------------------------------------------
 
 private object SplashPalette {
