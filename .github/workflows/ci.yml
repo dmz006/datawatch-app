@@ -57,7 +57,7 @@ jobs:
       - name: Assemble + test
         if: hashFiles('gradlew') != ''
         run: |
-          ./gradlew build test detekt ktlintCheck android-lintDebug --no-daemon --stacktrace
+          ./gradlew check detekt ktlintCheck --no-daemon --stacktrace
 
   docs-lint:
     name: Docs lint
