@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,7 +49,10 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun SettingsScreen(onEditServer: (String) -> Unit = {}) {
+public fun SettingsScreen(
+    onAddServer: () -> Unit = {},
+    onEditServer: (String) -> Unit = {},
+) {
     val profiles by ServiceLocator.profileRepository.observeAll()
         .collectAsState(initial = emptyList())
 
@@ -61,6 +65,7 @@ public fun SettingsScreen(onEditServer: (String) -> Unit = {}) {
         ) {
             ServersCard(
                 profiles = profiles,
+                onAddServer = onAddServer,
                 onEditServer = onEditServer,
                 onDelete = { profile ->
                     GlobalScope.launch(Dispatchers.IO) {
@@ -80,13 +85,15 @@ public fun SettingsScreen(onEditServer: (String) -> Unit = {}) {
 @Composable
 private fun ServersCard(
     profiles: List<com.dmzs.datawatchclient.domain.ServerProfile>,
+    onAddServer: () -> Unit,
     onEditServer: (String) -> Unit,
     onDelete: (com.dmzs.datawatchclient.domain.ServerProfile) -> Unit,
 ) {
-    Section(title = "Servers") {
+    SectionWithAction(title = "Servers", actionIcon = Icons.Filled.Add,
+                      actionDescription = "Add server", onAction = onAddServer) {
         if (profiles.isEmpty()) {
             Text(
-                "No servers yet — add one from the Sessions tab.",
+                "No servers yet — tap + above to add one.",
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -223,6 +230,33 @@ private fun Section(title: String, content: @Composable () -> Unit) {
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
     )
+    content()
+    HorizontalDivider()
+}
+
+@Composable
+private fun SectionWithAction(
+    title: String,
+    actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    actionDescription: String,
+    onAction: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        IconButton(onClick = onAction) {
+            Icon(actionIcon, contentDescription = actionDescription,
+                 tint = MaterialTheme.colorScheme.primary)
+        }
+    }
     content()
     HorizontalDivider()
 }

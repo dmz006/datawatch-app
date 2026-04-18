@@ -74,22 +74,31 @@ private fun Nav(
         composable(Destinations.AddServer) {
             AddServerScreen(
                 onAdded = {
-                    navController.navigate(Destinations.Home) {
-                        popUpTo(Destinations.Onboarding) { inclusive = true }
-                        launchSingleTop = true
+                    // If coming from Onboarding, land on Home. If coming from Home
+                    // (Settings → Servers → +), just pop back to Settings.
+                    val poppedToOnboarding = navController.popBackStack(
+                        route = Destinations.Onboarding,
+                        inclusive = true,
+                    )
+                    if (poppedToOnboarding) {
+                        navController.navigate(Destinations.Home) {
+                            launchSingleTop = true
+                        }
                     }
                 },
                 onCancel = { navController.popBackStack() },
             )
         }
         composable(Destinations.Home) {
-            HomeShell()
+            HomeShell(
+                onAddServer = { navController.navigate(Destinations.AddServer) },
+            )
         }
     }
 }
 
 @Composable
-private fun HomeShell() {
+private fun HomeShell(onAddServer: () -> Unit) {
     val tabNav = rememberNavController()
     Scaffold(bottomBar = { BottomNavBar(tabNav) }) { inner ->
         NavHost(
@@ -105,7 +114,10 @@ private fun HomeShell() {
                 PlaceholderTabScreen("Stats", "Sprint 1 Phase 4 adds the live stats dashboard.")
             }
             composable(Destinations.Tabs.Settings) {
-                SettingsScreen(onEditServer = { /* TODO Sprint 2: edit profile */ })
+                SettingsScreen(
+                    onAddServer = onAddServer,
+                    onEditServer = { /* TODO Sprint 2: edit profile */ },
+                )
             }
         }
     }
