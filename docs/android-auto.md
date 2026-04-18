@@ -11,7 +11,7 @@ auto/
 ├── build.gradle.kts
 ├── src/publicMain/       # Messaging template, Play-compliant
 │   ├── AndroidManifest.xml
-│   └── kotlin/com/dmzs/datawatchclient/auto/public/
+│   └── kotlin/com/dmzs/datawatchclient/auto/messaging/
 │       └── DatawatchMessagingService.kt
 ├── src/devMain/          # Full passenger UI (com.dmzs.datawatchclient.dev only)
 │   ├── AndroidManifest.xml
@@ -38,7 +38,7 @@ Library's Driver Distraction review approves it for apps surfacing chat-style co
 ```xml
 <application>
     <service
-        android:name=".auto.public.DatawatchMessagingService"
+        android:name=".auto.messaging.DatawatchMessagingService"
         android:exported="true"
         android:foregroundServiceType="connectedDevice">
         <intent-filter>

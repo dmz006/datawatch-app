@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto.dev
 import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
+import com.dmzs.datawatchclient.auto.PreMvpPlaceholderScreen
 
 /**
  * Internal-only full-passenger Auto service per ADR-0031.
@@ -17,6 +18,6 @@ public class DatawatchPassengerService : CarAppService() {
 
     override fun onCreateSession(): Session = object : Session() {
         override fun onCreateScreen(intent: android.content.Intent) =
-            com.dmzs.datawatchclient.auto.messaging.PreMvpPlaceholderScreen(carContext)
+            PreMvpPlaceholderScreen(carContext)
     }
 }
