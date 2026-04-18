@@ -85,14 +85,16 @@ class RestTransportTest {
 
     @Test
     fun listSessionsDeserializesHappyPath() = runTest {
-        // Datawatch returns a bare JSON array for /api/sessions.
+        // Wire format matches the parent datawatch openapi.yaml Session schema:
+        // bare JSON array, RFC3339 string timestamps, fields task / hostname /
+        // created_at / updated_at (NOT task_summary / hostname_prefix / *_ts).
         server.enqueue(
             jsonResponse(
                 """
                 [
-                  {"id":"a3f2","state":"running","task_summary":"fix bug",
-                   "hostname_prefix":"laptop","created_ts":1700000000000,
-                   "last_activity_ts":1700000060000}
+                  {"id":"a3f2","state":"running","task":"fix bug",
+                   "hostname":"laptop","created_at":"2024-11-14T22:13:20Z",
+                   "updated_at":"2024-11-14T22:14:20Z"}
                 ]
                 """.trimIndent(),
             ),

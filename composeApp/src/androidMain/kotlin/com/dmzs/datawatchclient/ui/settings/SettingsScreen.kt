@@ -179,8 +179,12 @@ private fun AboutCard() {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("App version", style = MaterialTheme.typography.bodyMedium)
-                Text(Version.VERSION, style = MaterialTheme.typography.bodyMedium,
-                     color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "${Version.VERSION}  (build ${Version.VERSION_CODE} · " +
+                        "${com.dmzs.datawatchclient.BuildConfig.GIT_SHA})",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),

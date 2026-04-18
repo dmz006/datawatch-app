@@ -47,6 +47,8 @@ android {
     namespace = "com.dmzs.datawatchclient"
     compileSdk = 35
 
+    buildFeatures { buildConfig = true }
+
     defaultConfig {
         applicationId = "com.dmzs.datawatchclient"
         minSdk = 29
@@ -54,6 +56,15 @@ android {
         versionCode = appVersionCode
         versionName = appVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Embed the current commit short SHA so the running app can report
+        // exactly which build the user is testing. Falls back to "dev" when
+        // git isn't available (e.g., a tarball clone in CI).
+        val gitSha: String = providers.exec {
+            commandLine("git", "rev-parse", "--short=8", "HEAD")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { it.trim() }.orElse("dev").get()
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
     }
 
     flavorDimensions += "track"

@@ -11,19 +11,26 @@ import kotlinx.serialization.Serializable
  * DTO → domain conversion lives in `transport/rest/Mappers.kt`.
  */
 
+/**
+ * Matches the `Session` schema in the parent datawatch openapi.yaml exactly.
+ * Field names are RFC3339 / snake_case as the server emits them. Most fields
+ * are nullable / defaulted because not every session populates them
+ * (e.g., a brand-new session has no `last_prompt`).
+ */
 @Serializable
 public data class SessionDto(
     val id: String,
     val state: String,
-    @SerialName("task_summary") val taskSummary: String? = null,
-    @SerialName("hostname_prefix") val hostnamePrefix: String? = null,
-    @SerialName("created_ts") val createdTs: Long,
-    @SerialName("last_activity_ts") val lastActivityTs: Long,
-)
-
-@Serializable
-public data class SessionListDto(
-    val sessions: List<SessionDto> = emptyList(),
+    @SerialName("full_id") val fullId: String? = null,
+    val task: String? = null,
+    @SerialName("tmux_session") val tmuxSession: String? = null,
+    @SerialName("log_file") val logFile: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    val hostname: String? = null,
+    @SerialName("group_id") val groupId: String? = null,
+    @SerialName("pending_input") val pendingInput: String? = null,
+    @SerialName("last_prompt") val lastPrompt: String? = null,
 )
 
 @Serializable

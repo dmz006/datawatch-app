@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.transport.rest
 
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.SessionDto
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -9,13 +10,15 @@ class MappersTest {
 
     @Test
     fun `SessionDto maps to domain Session with correct state and timestamps`() {
+        // Wire format per parent datawatch openapi.yaml: task / hostname /
+        // RFC3339 created_at / updated_at.
         val dto = SessionDto(
             id = "srv-a3f2",
             state = "running",
-            taskSummary = "Upgrade deps",
-            hostnamePrefix = "workstation",
-            createdTs = 1_700_000_000_000L,
-            lastActivityTs = 1_700_000_060_000L,
+            task = "Upgrade deps",
+            hostname = "workstation",
+            createdAt = "2023-11-14T22:13:20Z",
+            updatedAt = "2023-11-14T22:14:20Z",
         )
 
         val session = dto.toDomain(serverProfileId = "srv-1")
@@ -25,18 +28,32 @@ class MappersTest {
         assertEquals("workstation", session.hostnamePrefix)
         assertEquals(SessionState.Running, session.state)
         assertEquals("Upgrade deps", session.taskSummary)
-        assertEquals(1_700_000_000_000L, session.createdAt.toEpochMilliseconds())
-        assertEquals(1_700_000_060_000L, session.lastActivityAt.toEpochMilliseconds())
+        assertEquals(
+            Instant.parse("2023-11-14T22:13:20Z"),
+            session.createdAt,
+        )
+        assertEquals(
+            Instant.parse("2023-11-14T22:14:20Z"),
+            session.lastActivityAt,
+        )
     }
 
     @Test
     fun `unknown state from server maps to Error without throwing`() {
+        val dto = SessionDto(id = "x", state = "freshly_invented_state")
+        assertEquals(SessionState.Error, dto.toDomain("srv-1").state)
+    }
+
+    @Test
+    fun `missing timestamps fall back to DISTANT_PAST instead of crashing`() {
         val dto = SessionDto(
             id = "x",
-            state = "freshly_invented_state",
-            createdTs = 0L,
-            lastActivityTs = 0L,
+            state = "new",
+            createdAt = null,
+            updatedAt = null,
         )
-        assertEquals(SessionState.Error, dto.toDomain("srv-1").state)
+        val session = dto.toDomain("srv-1")
+        assertEquals(Instant.DISTANT_PAST, session.createdAt)
+        assertEquals(Instant.DISTANT_PAST, session.lastActivityAt)
     }
 }
