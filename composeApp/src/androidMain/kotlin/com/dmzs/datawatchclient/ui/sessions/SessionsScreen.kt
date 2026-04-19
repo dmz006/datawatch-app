@@ -127,7 +127,10 @@ public fun SessionsScreen(
                 EmptyState()
             } else {
                 LazyColumn {
-                    items(visible, key = { it.id }) { session ->
+                    // Key = profile:id to avoid LazyColumn duplicate-key crashes
+                    // when the same session id appears under both a server's
+                    // primary list and another server's federation fan-out.
+                    items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
                         SessionRow(
                             session = session,
                             onClick = { onOpenSession(session.id) },

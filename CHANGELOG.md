@@ -8,6 +8,23 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-04-19
+
+### Fixed
+- **Session detail now uses xterm.js as its primary surface.** v1.0.0
+  rendered events as a chat-style spine and tucked the terminal behind
+  an icon; the result looked like scrolling text with no ANSI / cursor /
+  real scrollback. This release swaps the default: the terminal fills
+  the body, prompt + rate-limit notices become an `InlineNotices`
+  banner above the composer, the reply composer stays below. Matches
+  the PWA's session UX.
+
+### Added
+- `docs/parity-plan.md` — complete audit of PWA → mobile gaps grouped
+  by screen, with a v1.1 → v1.4 roadmap. Grounded against the parent
+  repo's `internal/server/web/` and `docs/api/openapi.yaml` at the
+  v3.0.0 tag.
+
 ## [1.0.0] — 2026-04-19
 
 **First production release.** Sprint 6 closes v1.0.0 — every ADR-0042
