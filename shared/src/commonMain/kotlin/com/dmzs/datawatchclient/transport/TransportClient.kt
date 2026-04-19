@@ -7,14 +7,12 @@ import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Sprint-1 expanded contract. This is the primary surface the rest of the app talks
- * to. Per AGENT.md, this interface is load-bearing — changes are breaking; additions
- * are a minor version bump.
+ * Transport contract between the mobile app and a single datawatch server profile.
+ * Per AGENT.md, this interface is load-bearing — breaking changes are breaking
+ * releases; additions are a minor version bump.
  *
  * All operations are suspend functions returning [Result] so call sites can handle
- * [TransportError] without try/catch ceremony. A streaming WebSocket surface arrives
- * in Sprint 2 (`/ws?session=`) and MCP SSE in Sprint 3 — those are deliberately not
- * added here to keep Sprint 1 focused.
+ * [TransportError] without try/catch ceremony.
  */
 public interface TransportClient {
     public val profile: ServerProfile
@@ -50,7 +48,22 @@ public interface TransportClient {
     public suspend fun listBackends(): Result<BackendsView>
 
     /**
-     * POST /api/devices/register — closes parent issue #1.
+     * POST /api/voice/transcribe — parent issue #2 (Whisper-backed).
+     *
+     * Uploads an audio blob (opus/ogg/webm, 16 kHz mono preferred) and returns
+     * the transcript. If [sessionId] is non-null and [autoExec] is false, the
+     * server does NOT auto-reply — the caller places the transcript in the
+     * composer and the user taps Send, matching the PWA voice-button UX.
+     */
+    public suspend fun transcribeAudio(
+        audio: ByteArray,
+        audioMime: String,
+        sessionId: String? = null,
+        autoExec: Boolean = false,
+    ): Result<VoiceTranscript>
+
+    /**
+     * POST /api/devices/register — parent issue #1.
      *
      * Registers a push token (FCM or ntfy) with this datawatch server so it can
      * deliver wake notifications. Returns the server-assigned `device_id` which
@@ -68,7 +81,7 @@ public interface TransportClient {
     public suspend fun unregisterDevice(deviceId: String): Result<Unit>
 
     /**
-     * GET /api/federation/sessions — closes parent issue #3.
+     * GET /api/federation/sessions — parent issue #3.
      *
      * Returns this server's primary sessions plus a parallel fan-out to every
      * remote it federates with. The mobile client uses this for the
@@ -81,6 +94,14 @@ public interface TransportClient {
         includeProxied: Boolean = true,
     ): Result<FederationView>
 }
+
+public data class VoiceTranscript(
+    val transcript: String,
+    val confidence: Double,
+    val action: String?,
+    val sessionId: String?,
+    val latencyMs: Long,
+)
 
 public data class BackendsView(
     val llm: List<String>,

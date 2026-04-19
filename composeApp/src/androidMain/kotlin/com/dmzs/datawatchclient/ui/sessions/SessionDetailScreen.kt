@@ -18,10 +18,15 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -153,6 +158,8 @@ public fun SessionDetailScreen(
                 onTextChange = vm::onReplyTextChange,
                 onSend = vm::sendReply,
                 sending = state.replying,
+                sessionId = sessionId,
+                onTranscribed = { vm.onReplyTextChange(it) },
             )
         }
     }
@@ -321,8 +328,16 @@ private fun ReplyComposer(
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     sending: Boolean,
+    sessionId: String,
+    onTranscribed: (String) -> Unit,
 ) {
     HorizontalDivider()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
+    var transcribing by remember { mutableStateOf(false) }
+    val recording = recorder != null
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -330,12 +345,56 @@ private fun ReplyComposer(
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            placeholder = { Text("Reply…") },
+            placeholder = { Text(if (recording) "Listening…" else "Reply…") },
             modifier = Modifier.weight(1f),
             singleLine = false,
             maxLines = 4,
-            enabled = !sending,
+            enabled = !sending && !recording,
         )
+        IconButton(
+            onClick = {
+                if (recording) {
+                    val r = recorder ?: return@IconButton
+                    recorder = null
+                    val captured = r.stop() ?: return@IconButton
+                    transcribing = true
+                    scope.launch {
+                        val profiles = com.dmzs.datawatchclient.di.ServiceLocator
+                            .profileRepository.observeAll().first()
+                        val profile = profiles.firstOrNull { it.enabled }
+                        if (profile != null) {
+                            com.dmzs.datawatchclient.di.ServiceLocator
+                                .transportFor(profile)
+                                .transcribeAudio(
+                                    audio = captured.first,
+                                    audioMime = captured.second,
+                                    sessionId = sessionId,
+                                    autoExec = false,
+                                ).fold(
+                                    onSuccess = { onTranscribed(it.transcript) },
+                                    onFailure = { /* non-fatal — banner would go here */ },
+                                )
+                        }
+                        transcribing = false
+                    }
+                } else {
+                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                    runCatching { r.start() }.onSuccess { recorder = r }
+                }
+            },
+            enabled = !sending && !transcribing,
+        ) {
+            if (transcribing) {
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
+            } else {
+                Icon(
+                    if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
+                    contentDescription = if (recording) "Stop recording" else "Voice reply",
+                    tint = if (recording) MaterialTheme.colorScheme.error
+                           else MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
         IconButton(onClick = onSend, enabled = !sending && text.isNotBlank()) {
             if (sending) {
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(8.dp))

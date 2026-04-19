@@ -146,6 +146,50 @@ public class RestTransport(
         )
     }
 
+    override suspend fun transcribeAudio(
+        audio: ByteArray,
+        audioMime: String,
+        sessionId: String?,
+        autoExec: Boolean,
+    ): Result<com.dmzs.datawatchclient.transport.VoiceTranscript> = request {
+        val boundary = "dw-${kotlin.random.Random.nextLong()}"
+        val dto: com.dmzs.datawatchclient.transport.dto.VoiceTranscribeResponseDto =
+            client.post("${profile.baseUrl}/api/voice/transcribe") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    io.ktor.client.request.forms.MultiPartFormDataContent(
+                        parts = io.ktor.client.request.forms.formData {
+                            append(
+                                key = "audio",
+                                value = audio,
+                                headers = io.ktor.http.Headers.build {
+                                    append(io.ktor.http.HttpHeaders.ContentType, audioMime)
+                                    append(
+                                        io.ktor.http.HttpHeaders.ContentDisposition,
+                                        "filename=\"voice.${audioMime.substringAfter('/')}\"",
+                                    )
+                                },
+                            )
+                            sessionId?.let { append("session_id", it) }
+                            append("auto_exec", if (autoExec) "true" else "false")
+                            append(
+                                "ts_client",
+                                kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString(),
+                            )
+                        },
+                        boundary = boundary,
+                    ),
+                )
+            }.body()
+        com.dmzs.datawatchclient.transport.VoiceTranscript(
+            transcript = dto.transcript,
+            confidence = dto.confidence,
+            action = dto.action,
+            sessionId = dto.sessionId,
+            latencyMs = dto.latencyMs,
+        )
+    }
+
     override suspend fun registerDevice(
         deviceToken: String,
         kind: DeviceKind,
