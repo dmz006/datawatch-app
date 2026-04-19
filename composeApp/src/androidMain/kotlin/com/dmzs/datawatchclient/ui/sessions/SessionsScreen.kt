@@ -9,9 +9,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import kotlin.math.absoluteValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -105,16 +115,45 @@ public fun SessionsScreen(
                     )
                 }
             }
-            if (state.sessions.isEmpty()) {
+            FilterChipRow(current = state.filter, onSelect = vm::setFilter)
+
+            val visible = state.visibleSessions
+            if (visible.isEmpty()) {
                 EmptyState()
             } else {
                 LazyColumn {
-                    items(state.sessions, key = { it.id }) { session ->
-                        SessionRow(session, onClick = { onOpenSession(session.id) })
+                    items(visible, key = { it.id }) { session ->
+                        SessionRow(
+                            session = session,
+                            onClick = { onOpenSession(session.id) },
+                            onSwipeMute = { vm.toggleMute(session.id, session.muted) },
+                        )
                         HorizontalDivider()
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FilterChipRow(
+    current: SessionsViewModel.Filter,
+    onSelect: (SessionsViewModel.Filter) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        items(SessionsViewModel.Filter.entries.toList()) { f ->
+            FilterChip(
+                selected = current == f,
+                onClick = { onSelect(f) },
+                label = { Text(f.label) },
+                modifier = Modifier.padding(horizontal = 4.dp),
+                colors = FilterChipDefaults.filterChipColors(),
+            )
         }
     }
 }
@@ -132,27 +171,54 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun SessionRow(session: Session, onClick: () -> Unit = {}) {
-    Column(
+private fun SessionRow(
+    session: Session,
+    onClick: () -> Unit = {},
+    onSwipeMute: () -> Unit = {},
+) {
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { 64.dp.toPx() }
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .pointerInput(session.id) {
+                var dx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dx = 0f },
+                    onDragEnd = { if (dx.absoluteValue >= swipeThresholdPx) onSwipeMute() },
+                    onDragCancel = { dx = 0f },
+                ) { _, delta -> dx += delta }
+            }
             .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(session.id, style = MaterialTheme.typography.titleSmall)
-        Text(
-            session.taskSummary ?: "(no summary)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        AssistChip(
-            onClick = {},
-            label = { Text(session.state.name) },
-            colors = AssistChipDefaults.assistChipColors(
-                labelColor = session.state.labelColor(),
-            ),
-            modifier = Modifier.padding(top = 8.dp),
+        Column(modifier = Modifier.weight(1f)) {
+            Text(session.id, style = MaterialTheme.typography.titleSmall)
+            Text(
+                session.taskSummary ?: "(no summary)",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            AssistChip(
+                onClick = {},
+                label = { Text(session.state.name) },
+                colors = AssistChipDefaults.assistChipColors(
+                    labelColor = session.state.labelColor(),
+                ),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        Icon(
+            if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
+            contentDescription = if (session.muted) "Muted" else "Unmuted",
+            tint = if (session.muted) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+            modifier = Modifier.padding(start = 8.dp).size(20.dp),
         )
     }
 }

@@ -21,7 +21,10 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.push.NotificationChannels
 import com.dmzs.datawatchclient.push.NtfyFallbackService
 import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
+import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
@@ -212,7 +215,11 @@ private fun HomeShell(
     onOpenSession: (String) -> Unit,
 ) {
     val tabNav = rememberNavController()
-    Scaffold(bottomBar = { BottomNavBar(tabNav) }) { inner ->
+    val alertsVm: AlertsViewModel = viewModel()
+    val alertsState by alertsVm.state.collectAsState()
+    Scaffold(
+        bottomBar = { BottomNavBar(tabNav, alertsBadge = alertsState.count) },
+    ) { inner ->
         NavHost(
             navController = tabNav,
             startDestination = Destinations.Tabs.Sessions,
@@ -224,6 +231,9 @@ private fun HomeShell(
                     onEditServer = onEditServer,
                     onAddServer = onAddServer,
                 )
+            }
+            composable(Destinations.Tabs.Alerts) {
+                AlertsScreen(onOpenSession = onOpenSession, vm = alertsVm)
             }
             composable(Destinations.Tabs.Channels) {
                 PlaceholderTabScreen("Channels", "Sprint 2 wires the messaging backends tab.")

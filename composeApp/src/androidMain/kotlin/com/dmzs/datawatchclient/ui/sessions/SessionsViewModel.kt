@@ -30,13 +30,31 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
 
+    public enum class Filter(public val label: String) {
+        All("All"), Running("Running"), Waiting("Waiting"),
+        Completed("Completed"), Error("Error")
+    }
+
     public data class UiState(
         val activeProfile: ServerProfile? = null,
         val allProfiles: List<ServerProfile> = emptyList(),
         val sessions: List<Session> = emptyList(),
+        val filter: Filter = Filter.All,
         val refreshing: Boolean = false,
         val banner: String? = null,
-    )
+    ) {
+        public val visibleSessions: List<Session>
+            get() = when (filter) {
+                Filter.All -> sessions
+                Filter.Running -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Running }
+                Filter.Waiting -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting }
+                Filter.Completed -> sessions.filter {
+                    it.state == com.dmzs.datawatchclient.domain.SessionState.Completed ||
+                        it.state == com.dmzs.datawatchclient.domain.SessionState.Killed
+                }
+                Filter.Error -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Error }
+            }
+    }
 
     private val allProfiles: StateFlow<List<ServerProfile>> = ServiceLocator.profileRepository
         .observeAll()
@@ -53,6 +71,7 @@ public class SessionsViewModel : ViewModel() {
 
     private val _refreshing = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
+    private val _filter = MutableStateFlow(Filter.All)
 
     public val state: StateFlow<UiState> = combineLatestState()
 
@@ -62,14 +81,16 @@ public class SessionsViewModel : ViewModel() {
             else ServiceLocator.sessionRepository.observeForProfile(profile.id)
         }
         return combine(
-            activeProfile, allProfiles, sessionsFlow, _refreshing, _banner,
-        ) { profile, profiles, sessions, refreshing, banner ->
+            activeProfile, allProfiles, sessionsFlow, _refreshing, _banner, _filter,
+        ) { args ->
+            @Suppress("UNCHECKED_CAST")
             UiState(
-                activeProfile = profile,
-                allProfiles = profiles,
-                sessions = sessions,
-                refreshing = refreshing,
-                banner = banner,
+                activeProfile = args[0] as ServerProfile?,
+                allProfiles = args[1] as List<ServerProfile>,
+                sessions = args[2] as List<Session>,
+                refreshing = args[3] as Boolean,
+                banner = args[4] as String?,
+                filter = args[5] as Filter,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -83,6 +104,16 @@ public class SessionsViewModel : ViewModel() {
 
     public fun selectProfile(profileId: String) {
         ServiceLocator.activeServerStore.set(profileId)
+    }
+
+    public fun setFilter(filter: Filter) {
+        _filter.value = filter
+    }
+
+    public fun toggleMute(sessionId: String, currentlyMuted: Boolean) {
+        viewModelScope.launch {
+            ServiceLocator.sessionRepository.setMuted(sessionId, !currentlyMuted)
+        }
     }
 
     public fun refresh() {
