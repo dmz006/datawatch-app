@@ -44,6 +44,12 @@ public interface TransportClient {
     public suspend fun stats(): Result<StatsDto>
 
     /**
+     * GET /api/backends — list of registered LLM backends + which is active.
+     * Mobile uses this to populate the Channels / LLM backends tab.
+     */
+    public suspend fun listBackends(): Result<BackendsView>
+
+    /**
      * POST /api/devices/register — closes parent issue #1.
      *
      * Registers a push token (FCM or ntfy) with this datawatch server so it can
@@ -75,6 +81,11 @@ public interface TransportClient {
         includeProxied: Boolean = true,
     ): Result<FederationView>
 }
+
+public data class BackendsView(
+    val llm: List<String>,
+    val active: String?,
+)
 
 public data class FederationView(
     val primary: List<Session>,

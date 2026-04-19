@@ -64,6 +64,12 @@ public data class HealthDto(
 )
 
 @Serializable
+public data class BackendsDto(
+    val llm: List<String> = emptyList(),
+    val active: String? = null,
+)
+
+@Serializable
 public data class StatsDto(
     @SerialName("cpu_pct") val cpuPct: Double? = null,
     @SerialName("mem_pct") val memPct: Double? = null,

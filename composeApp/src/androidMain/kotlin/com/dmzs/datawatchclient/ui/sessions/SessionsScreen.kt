@@ -74,10 +74,15 @@ public fun SessionsScreen(
                 title = {
                     ServerPickerTitle(
                         active = state.activeProfile,
+                        allMode = state.allServersMode,
                         open = pickerOpen,
                         onToggle = { pickerOpen = !pickerOpen },
                         onDismiss = { pickerOpen = false },
                         profiles = state.allProfiles,
+                        onSelectAll = {
+                            vm.selectAllServers()
+                            pickerOpen = false
+                        },
                         onSelect = {
                             vm.selectProfile(it)
                             pickerOpen = false
@@ -226,10 +231,12 @@ private fun SessionRow(
 @Composable
 private fun ServerPickerTitle(
     active: ServerProfile?,
+    allMode: Boolean,
     open: Boolean,
     onToggle: () -> Unit,
     onDismiss: () -> Unit,
     profiles: List<ServerProfile>,
+    onSelectAll: () -> Unit,
     onSelect: (String) -> Unit,
     onEdit: (String) -> Unit,
     onAdd: () -> Unit,
@@ -239,7 +246,7 @@ private fun ServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(active?.displayName ?: "No server")
+            Text(if (allMode) "All servers" else (active?.displayName ?: "No server"))
             Icon(
                 Icons.Filled.ArrowDropDown,
                 contentDescription = "Switch server",
@@ -247,6 +254,22 @@ private fun ServerPickerTitle(
             )
         }
         DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+            if (profiles.size > 1) {
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("All servers", style = MaterialTheme.typography.bodyMedium,
+                                 modifier = Modifier.weight(1f))
+                            if (allMode) {
+                                Icon(Icons.Filled.Check, "Active",
+                                     tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    },
+                    onClick = onSelectAll,
+                )
+                HorizontalDivider()
+            }
             if (profiles.isEmpty()) {
                 DropdownMenuItem(
                     text = { Text("No servers configured") },

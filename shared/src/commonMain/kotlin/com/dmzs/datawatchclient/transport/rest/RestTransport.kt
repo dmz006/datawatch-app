@@ -135,6 +135,17 @@ public class RestTransport(
         }.body()
     }
 
+    override suspend fun listBackends(): Result<com.dmzs.datawatchclient.transport.BackendsView> = request {
+        val dto: com.dmzs.datawatchclient.transport.dto.BackendsDto =
+            client.get("${profile.baseUrl}/api/backends") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        com.dmzs.datawatchclient.transport.BackendsView(
+            llm = dto.llm,
+            active = dto.active,
+        )
+    }
+
     override suspend fun registerDevice(
         deviceToken: String,
         kind: DeviceKind,

@@ -23,6 +23,7 @@ import com.dmzs.datawatchclient.push.NtfyFallbackService
 import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
 import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.channels.ChannelsScreen
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +34,7 @@ import com.dmzs.datawatchclient.ui.servers.ServerPickerSheet
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
+import com.dmzs.datawatchclient.ui.stats.StatsScreen
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.shell.PlaceholderTabScreen
@@ -235,12 +237,8 @@ private fun HomeShell(
             composable(Destinations.Tabs.Alerts) {
                 AlertsScreen(onOpenSession = onOpenSession, vm = alertsVm)
             }
-            composable(Destinations.Tabs.Channels) {
-                PlaceholderTabScreen("Channels", "Sprint 2 wires the messaging backends tab.")
-            }
-            composable(Destinations.Tabs.Stats) {
-                PlaceholderTabScreen("Stats", "Live stats dashboard ships in Sprint 3 (v0.4.0).")
-            }
+            composable(Destinations.Tabs.Channels) { ChannelsScreen() }
+            composable(Destinations.Tabs.Stats) { StatsScreen() }
             composable(Destinations.Tabs.Settings) {
                 SettingsScreen(
                     onAddServer = onAddServer,
