@@ -1,88 +1,115 @@
 # datawatch-app
 
-**Display name:** `datawatch` — the mobile companion for
-[datawatch](https://github.com/dmz006/datawatch), the daemon that bridges AI coding
-sessions to messaging platforms.
+**datawatch** — the Android / Wear OS / Android Auto companion for
+[dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
+AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-> The source repo is `dmz006/datawatch-app`; the Play Store listing, launcher label,
-> Wear watch face, and Android Auto surfaces all read **datawatch** (lowercase) per
-> ADR-0041, matching the parent project's brand.
+**Status:** `v1.0.0` — [first production release](https://github.com/dmz006/datawatch-app/releases/tag/v1.0.0). Pairs with `datawatch v3.0.0`.
 
-**Status:** Pre-MVP scaffold (v0.1.0-pre). Design-complete; implementation begins
-Sprint 1 (2026-05-02).
+## What it does
 
-- Android phone (min SDK 29 / target SDK 35)
-- Wear OS (watchface complication, notification reply, rich app)
-- Android Auto (public Messaging template; internal passenger build)
-- iOS app skeleton (content phase follows Android production)
+Watch every AI coding session running on your datawatch daemon(s) from your
+phone, watch, or car display:
 
-## Quick links
+- **Live session view** — WebSocket-streamed chat + terminal + state events,
+  with reply / kill / state-override actions.
+- **Push when attention is needed** — FCM + ntfy fallback, inline RemoteInput
+  reply straight from the notification shade.
+- **Voice reply** — tap, speak, confirm — no typing on a two-inch keyboard.
+- **Multi-server** — Tailscale, LAN, and public hosts side-by-side; 3-finger
+  swipe to switch; "All servers" fan-out via `/api/federation/sessions`.
+- **Glance surfaces** — home-screen widget (BL6), Wear Tile (BL4), Android
+  Auto list screen (BL10).
+- **Secure at rest** — SQLCipher-backed storage + Android Keystore for bearer
+  tokens + optional biometric unlock (BL2).
 
-- 📘 [Docs index](docs/README.md)
-- 🧭 [Architecture](docs/architecture.md)
-- 🧩 [Decisions (ADRs)](docs/decisions/README.md)
-- 🛡 [Security model](docs/security-model.md) · [Threat model](docs/threat-model.md)
-- 🗺 [Sprint plan](docs/sprint-plan.md)
-- 🤝 [AGENT.md](AGENT.md) — operating rules for contributors (human and AI)
-- 🔐 [SECURITY.md](SECURITY.md)
+Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 
-## Build (Sprint 0+)
+## Platforms
 
-Requires JDK 17 or 21 (AGP 8.5.2 ceiling; JDK 25+ is incompatible as of this writing)
-and the Android SDK. iOS build additionally requires Xcode on a Mac.
+- Android phone / tablet (minSdk 29 — Android 10 — target 35)
+- Wear OS 3+ (minSdk 30)
+- Android Auto (Messaging category — runs on any Auto-enabled head unit)
+- iOS skeleton (post-v1 content work)
+
+## Install
+
+See [docs/installation.md](docs/installation.md) for the full walkthrough.
+Quick version:
 
 ```bash
-./gradlew :composeApp:assembleDebug            # Android phone debug
-./gradlew :composeApp:assembleDevDebug         # Internal dev-flavor debug
-./gradlew :wear:assembleDebug                  # Wear OS debug
-./gradlew :auto:assemblePublicMessagingDebug   # Android Auto — Messaging template
-./gradlew :auto:assembleDevPassengerDebug      # Android Auto — internal passenger UI
-./gradlew test                                 # Shared + common tests
-./gradlew detekt ktlintCheck lintDebug         # Linters
+# Phone (debug APK from the v1.0.0 release)
+adb install -r datawatch-1.0.0.apk
+
+# Wear OS — requires the watch to be paired to this phone or to have debug
+# bridge enabled over Wi-Fi. See below.
+adb -s <watch-serial> install -r datawatch-wear-1.0.0.apk
 ```
 
-Gradle wrapper is committed — no bootstrap step needed on clone.
+First launch:
+1. Onboarding → Add server.
+2. Enter your datawatch server URL (e.g. `https://host.taila1234.ts.net:8080`),
+   bearer token, and the self-signed-TLS toggle if applicable.
+3. Sessions tab shows a live view of every running session on that server.
+
+## Documentation
+
+- 📖 [Installation guide](docs/installation.md) — detailed walkthrough
+  (phone, Wear, Auto, troubleshooting)
+- 🧭 [Architecture](docs/architecture.md) — module layout + dependency graph
+- 🔌 [Data flow](docs/data-flow.md) — REST + WebSocket + FCM/ntfy pipes
+- 🎬 [Usage guide](docs/usage.md) — how every screen behaves
+- 🛡 [Security model](docs/security-model.md) · [Threat model](docs/threat-model.md)
+- 🧩 [Architecture decisions (ADRs)](docs/decisions/README.md)
+- 🔄 [Parity status vs. the PWA](docs/parity-status.md)
+- 🗺 [Sprint plan](docs/sprint-plan.md)
+- 🤝 [AGENT.md](AGENT.md) — operating rules for contributors (human + AI)
+- 🔐 [SECURITY.md](SECURITY.md)
+
+## Build
+
+Requires **JDK 21** (AGP 8.5.2's bundled Kotlin compiler rejects JDK 25+)
+and the Android SDK.
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
+
+./gradlew :composeApp:assemblePublicTrackDebug    # phone debug
+./gradlew :composeApp:assemblePublicTrackRelease  # phone release (needs keystore)
+./gradlew :wear:assembleDebug                     # Wear
+./gradlew :auto:assemblePublicMessagingDebug      # Auto Messaging
+./gradlew :shared:testDebugUnitTest               # shared unit tests (33)
+./gradlew detekt ktlintCheck lintDebug            # linters
+```
+
+Gradle wrapper is committed — no bootstrap step on clone.
 
 ## Project layout
 
 ```
-.
-├── AGENT.md                    # Operating rules (must-read for contributors)
-├── LICENSE                     # Polyform Noncommercial 1.0.0 (matches datawatch)
-├── SECURITY.md
-├── README.md
-├── CHANGELOG.md
-├── CODEOWNERS
-├── .github/                    # CI workflows, issue/PR templates
-├── gradle/libs.versions.toml   # Version catalog
-├── composeApp/                 # Android phone app (com.dmzs.datawatchclient)
-├── wear/                       # Wear OS module
-├── auto/                       # Android Auto (public + dev variants)
-├── shared/                     # KMP shared core (transport, MCP, storage, voice)
-├── iosApp/                     # iOS skeleton (content post-v1)
-└── docs/                       # Design package, ADRs, plans
+composeApp/   phone app — Compose UI, WebView terminal, push, gestures
+wear/         Wear OS app + Tile (BL4)
+auto/         Android Auto (publicMessaging + devPassenger flavors)
+shared/       KMP: transport (REST + WS + MCP-SSE), DTOs, storage, domain
+iosApp/       iOS skeleton
+docs/         design package + ADRs + runbooks
+gradle/       Gradle wrapper + version catalog
 ```
 
-## Upstream dependencies
+## Server requirements
 
-This app targets the datawatch server API. Three endpoints are proposed upstream:
-
-- [dmz006/datawatch#1](https://github.com/dmz006/datawatch/issues/1) — `/api/devices/register`
-- [dmz006/datawatch#2](https://github.com/dmz006/datawatch/issues/2) — `/api/voice/transcribe`
-- [dmz006/datawatch#3](https://github.com/dmz006/datawatch/issues/3) — `/api/federation/sessions`
-
-Each has a documented client-side workaround (see [api-parity.md](docs/api-parity.md)), so
-mobile MVP does not block on upstream.
+- **datawatch** daemon >= v3.0.0 (for `/api/devices/register`,
+  `/api/voice/transcribe`, `/api/federation/sessions`). Earlier versions
+  still work for basic REST + WebSocket flows; voice and FCM wake degrade
+  to the server's ntfy fallback.
+- Reachable over one of: Tailscale, LAN, public DNS + TLS, or the
+  datawatch channel relay.
 
 ## License
 
-[Polyform Noncommercial 1.0.0](LICENSE). Free for personal, educational, open-source, and
-non-commercial use. Not for commercial redistribution. Matches the parent project.
-
-## Contributing
-
-Solo dev + Claude for now. Read [AGENT.md](AGENT.md) before opening an issue or PR —
-the decision-making + security rules bind every change.
+[Polyform Noncommercial 1.0.0](LICENSE). Free for personal, educational,
+open-source, and non-commercial use. Matches the parent project.
 
 ## Contact
 

@@ -4,6 +4,11 @@ datawatch mobile is a thin, multi-surface Kotlin client that exposes a user's da
 server(s) across phone, watch, and car. All domain logic lives in a shared KMP module;
 surface-specific modules (Android phone, Wear OS, Android Auto, iOS skeleton) consume it.
 
+> **v1.0.0 status:** this document is authoritative as of the v1.0.0 ship.
+> Phone, Wear, and Auto surfaces are all implemented and building; the iOS
+> skeleton compiles but has no content yet. All transport layers (REST, WS,
+> MCP-SSE skeleton) are live in `:shared`.
+
 ## C4 — System Context
 
 ```mermaid
