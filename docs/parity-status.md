@@ -26,25 +26,25 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 |---------|-----|--------|--------|--------|
 | List active sessions | ✅ | ✅ | shipped v0.2.1 | 1 |
 | Show session state pills | ✅ | ✅ | shipped v0.2.1 | 1 |
-| Open session detail | ✅ | ⏳ | planned | 2 |
-| Live chat / message stream | ✅ | ⏳ | planned (WebSocket /ws) | 2 |
-| Reply to pending prompt | ✅ | ⏳ | planned | 2 |
-| Kill session | ✅ | ⏳ | planned (REST already has it; wire UI button) | 2 |
-| Override session state | ✅ | ⏳ | planned | 2 |
-| Filter sessions by state | ✅ | ⏳ | planned | 2 |
-| Mute / un-mute session | ✅ | ⏳ | planned | 2 |
-| Bulk delete completed sessions | ✅ | ⏳ | planned | 2 |
+| Open session detail | ✅ | ✅ | shipped v0.3.0 | 2 |
+| Live chat / message stream | ✅ | ✅ | shipped v0.3.0 (WebSocket /ws) | 2 |
+| Reply to pending prompt | ✅ | ✅ | shipped v0.3.0 | 2 |
+| Kill session | ✅ | ✅ | shipped v0.3.0 | 2 |
+| Override session state | ✅ | ✅ | shipped v0.3.0 | 2 |
+| Filter sessions by state | ✅ | ✅ | shipped v0.3.0 (chips above list) | 2 |
+| Mute / un-mute session | ✅ | ✅ | shipped v0.3.0 (swipe-to-mute) | 2 |
+| Bulk delete completed sessions | ✅ | ⏳ | planned | 3 |
 | Pull-to-refresh | ✅ | 🚧 | refresh button shipped; gesture next | 2 |
 
 ### Terminal + scrollback
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| xterm.js terminal view | ✅ | ⏳ | planned (WebView re-use) | 2 |
-| ANSI color rendering | ✅ | ⏳ | bundled with xterm | 2 |
-| Scrollback buffer | ✅ | ⏳ | planned | 2 |
-| Copy text | ✅ | ⏳ | planned | 2 |
-| Search in scrollback | ✅ | ⏳ | planned | 2 |
+| xterm.js terminal view | ✅ | ✅ | shipped v0.3.0 (WebView, vendored xterm@5.3.0) | 2 |
+| ANSI color rendering | ✅ | ✅ | shipped v0.3.0 (xterm built-in) | 2 |
+| Scrollback buffer | ✅ | ✅ | shipped v0.3.0 (5000 lines / xterm + 5000 events / DB) | 2 |
+| Copy text | ✅ | ⏳ | xterm selection works; explicit copy button in 3 | 3 |
+| Search in scrollback | ✅ | ⏳ | xterm-addon-search to wire in 3 | 3 |
 | Adjustable terminal dimensions | ✅ | ⏸ | post-MVP | — |
 
 ### New session creation (PWA tab: New)
@@ -59,11 +59,11 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| Alerts list | ✅ | ⏳ | planned | 3 |
-| Notification badge counter | ✅ | ⏳ | planned | 3 |
-| Mark as read / dismiss | ✅ | ⏳ | planned | 3 |
-| Push wake notification | ✅ (browser push) | ⏳ | planned (FCM) | 2 |
-| Action buttons in notification | partial | ⏳ | Approve/Deny/Reply/Mute (richer than PWA) | 2 |
+| Alerts list | ✅ | ✅ | shipped v0.3.0 (Alerts tab + bottom-nav badge) | 2 |
+| Notification badge counter | ✅ | ✅ | shipped v0.3.0 | 2 |
+| Mark as read / dismiss | ✅ | ⏳ | swipe-to-mute ships; explicit dismiss in 3 | 3 |
+| Push wake notification | ✅ (browser push) | ✅ | shipped v0.3.0 (FCM + ntfy fallback) | 2 |
+| Action buttons in notification | partial | ✅ | shipped v0.3.0 (RemoteInput Reply on input_needed) | 2 |
 
 ### Settings → LLM Backend Configuration
 
@@ -109,10 +109,10 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | List configured servers | n/a (single server) | ✅ | shipped v0.2.1 | 1 |
 | Add server | n/a | ✅ | shipped v0.2.1 (with No-bearer-token + self-signed-trust opt-ins) | 1 |
 | Delete server | n/a | ✅ | shipped v0.2.1 | 1 |
-| Edit server | n/a | ⏳ | planned (tap-to-edit stubbed today) | 2 |
-| Active-server picker (multi-server switching) | n/a | ⏳ | planned | 2 |
-| Per-server status indicator (green/red) | n/a | ⏳ | planned | 2 |
-| 3-finger swipe-up server picker (Home Assistant style) | n/a | ⏸ | post-MVP backlog (BL9) | — |
+| Edit server | n/a | ✅ | shipped v0.3.0 (full form + delete with confirm) | 2 |
+| Active-server picker (multi-server switching) | n/a | ✅ | shipped v0.3.0 (top-bar dropdown + bottom sheet) | 2 |
+| Per-server status indicator (green/red) | n/a | ✅ | shipped v0.3.0 (status dot in picker rows) | 2 |
+| 3-finger swipe-up server picker (Home Assistant style) | n/a | ✅ | shipped v0.3.0 (BL9, ADR-0042) | 2 |
 
 ### Stats (PWA tab: Statistics Panel)
 

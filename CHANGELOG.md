@@ -8,6 +8,55 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-04-19
+
+Sprint 2 — session UX, multi-server, push.
+
+### Added
+- **WebSocket session event stream** (`/ws?session=<id>`) with automatic
+  reconnect + exponential backoff + jitter. New `SessionEvent` sealed
+  hierarchy + `SessionEventRepository` ring buffer (5000 events / session).
+- **Session detail screen** with reply composer, kill confirm, state-override
+  dialog, mute toggle, banner-on-failure.
+- **xterm.js terminal sheet** (vendored xterm@5.3.0) bound to live WS output;
+  dim ANSI markers for state-change / completed / error events.
+- **Multi-server picker** dropdown on Sessions top bar + bottom-sheet variant.
+- **3-finger upward swipe gesture (BL9, ADR-0042)** opens the server picker
+  from any screen; debounced 500 ms.
+- **Edit server screen** with two-step probe + delete confirmation; clears
+  ActiveServerStore if the deleted profile was active.
+- **FCM + ntfy push notifications** (parent issue #1, parent v3.0.0).
+  Five notification channels (input_needed/completed/rate_limited/error/
+  foreground), inline RemoteInput "Reply" action that posts to
+  `/api/sessions/reply`, deep-link tap intent
+  (`dwclient://session/<id>`) → SessionDetail. NTFY foreground service
+  fallback for servers without Firebase.
+- **Filter chips** on Sessions: All / Running / Waiting / Completed / Error.
+- **Swipe-to-mute** on session rows.
+- **Alerts tab** + bottom-nav badge counter for sessions where
+  `needsInput && !muted`.
+- Transport: `registerDevice` / `unregisterDevice` /
+  `overrideSessionState` REST endpoints (matches parent v3.0.0 wire format
+  verbatim).
+- 33 unit tests (12 RestTransport / 10 EventMapper / 4 WebSocketUrl / 4
+  SessionState / 3 Mappers).
+
+### Changed
+- `SessionRepository.db` made `internal` (was private) to enable
+  `observeForProfileAny` extension lookup.
+- `SessionsViewModel` now combines persisted `ActiveServerStore` selection
+  with the live profile list — degrades gracefully on profile delete.
+
+### Scope expansion — ADR-0042
+Promotes five items from post-MVP backlog to v1.0.0 requirements:
+- BL9: 3-finger-swipe-up server picker → Sprint 2 ✅ shipped here
+- BL6: home-screen widget → Sprint 3
+- BL4: Wear Tile → Sprint 4
+- BL10: Android Auto Tile (dev flavor) → Sprint 4
+- BL2: biometric unlock → Sprint 5 (amends ADR-0011)
+
+Timelines hold: MVP 2026-06-12, production 2026-07-10.
+
 ### Changed
 - **Scope expansion — ADR-0042** promotes five items from post-MVP backlog to
   v1.0.0 requirements:
