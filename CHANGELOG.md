@@ -8,6 +8,29 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-04-19
+
+Sprint 4 — Wear OS + Android Auto surfaces.
+
+### Added
+- **Wear OS dashboard** — three-count tiles (running / waiting / total) in
+  the watch app with a waiting accent, paired-server name footer, and a
+  pre-pairing empty state.
+- **Wear Tile (BL4, ADR-0042)** — ProtoLayout 1.2 glance tile mirroring the
+  dashboard counts, registered via TileService intent filter.
+- **Android Auto ListTemplate** — upgraded PreMvpPlaceholderScreen to a
+  proper three-row list (running / waiting / total) with app-icon header;
+  Play-compliant for the Messaging category since rows are static counts.
+- Gradle deps: `androidx.wear.protolayout` (+ expression + material),
+  `com.google.guava` for the Tile ListenableFuture contract.
+
+### Known follow-ups for v0.6.0
+- Wear Data Layer (play-services-wearable) pairing flow — counts on Tile
+  + dashboard are placeholder zeros until this lands.
+- Auto Tile (BL10) — Android Auto API doesn't have a direct "tile" concept;
+  the driving-mode glance is covered by the ListTemplate Auto screen. Keeping
+  BL10 open for dev-flavor passenger experiments.
+
 ## [0.4.0] — 2026-04-19
 
 Sprint 3 — MVP milestone. Voice, all-servers, stats, channels, widget, MCP-SSE bones.
