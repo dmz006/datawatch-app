@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- **Scope expansion — ADR-0042** promotes five items from post-MVP backlog to
+  v1.0.0 requirements:
+    - BL9: 3-finger-swipe-up server picker → Sprint 2
+    - BL6: home-screen widget → Sprint 3
+    - BL4: Wear Tile → Sprint 4
+    - BL10: Android Auto Tile (dev flavor) → Sprint 4
+    - BL2: biometric unlock → Sprint 5 (amends ADR-0011)
+  Timelines hold: MVP 2026-06-12, production 2026-07-10. Full rationale + per-
+  sprint landing in `docs/decisions/README.md#mvp-scope-adjustment` and
+  `docs/sprint-plan.md#scope-change--adr-0042`.
+
 ### Added
 - **Launcher icon promoted to B8** (Earthrise composition): adaptive foreground
   + background + monochrome variants. Old phone-silhouette Concept B is gone;
