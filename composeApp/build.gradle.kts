@@ -34,6 +34,7 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation(libs.firebase.messaging)
+                implementation(libs.androidx.biometric)
                 implementation(libs.kotlinx.coroutines.android)
                 // Material Components for Android — provides the XML Theme.Material3.*
                 // parent styles referenced in res/values/themes.xml.

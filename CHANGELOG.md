@@ -8,6 +8,25 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-04-19
+
+Sprint 5 — hardening + biometric unlock. Release-candidate milestone.
+
+### Added
+- **Biometric unlock (BL2, ADR-0042)** — optional, off by default. When
+  enabled in Settings → Security, app entry prompts for Class-3 biometric
+  (fingerprint/face) before AppRoot composes. Failure leaves the app
+  locked (no bypass). Uses `androidx.biometric` 1.2.0-alpha05.
+- **Security card** in Settings with an enable toggle; greyed out when
+  no Class-3 biometric is enrolled.
+- MainActivity migrates from `ComponentActivity` to `FragmentActivity`
+  (required by BiometricPrompt).
+
+### Known follow-ups for v1.0.0
+- Biometric-bound DB passphrase (wrap `deriveDatabasePassphrase` in a
+  Keystore key that requires biometric auth) — current build gates
+  only the UI, not the underlying passphrase derivation.
+
 ## [0.5.0] — 2026-04-19
 
 Sprint 4 — Wear OS + Android Auto surfaces.

@@ -19,6 +19,7 @@ androidx-wear-compose = "1.4.0"
 androidx-wear-tiles = "1.4.0"
 androidx-wear-protolayout = "1.2.1"
 guava = "33.3.1-android"
+androidx-biometric = "1.2.0-alpha05"
 play-services-wearable = "18.2.0"
 firebase-messaging = "24.0.1"
 detekt = "1.23.7"
@@ -75,6 +76,7 @@ androidx-wear-protolayout = { module = "androidx.wear.protolayout:protolayout", 
 androidx-wear-protolayout-expression = { module = "androidx.wear.protolayout:protolayout-expression", version.ref = "androidx-wear-protolayout" }
 androidx-wear-protolayout-material = { module = "androidx.wear.protolayout:protolayout-material", version.ref = "androidx-wear-protolayout" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
 
 # Firebase (FCM only — no analytics)

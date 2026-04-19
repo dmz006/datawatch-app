@@ -3,8 +3,9 @@ package com.dmzs.datawatchclient
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
+import com.dmzs.datawatchclient.security.BiometricGate
 import com.dmzs.datawatchclient.ui.AppRoot
 import com.dmzs.datawatchclient.ui.DeepLinks
 
@@ -14,11 +15,27 @@ import com.dmzs.datawatchclient.ui.DeepLinks
  * targets from the intent (`dwclient://session/<id>`) and surfaces them via
  * [DeepLinks] for AppRoot to consume.
  */
-public class MainActivity : ComponentActivity() {
+public class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumeDeepLink(intent)
-        setContent { AppRoot() }
+        val gate = BiometricGate(applicationContext)
+        if (gate.enabled() && gate.canAuthenticate(this)) {
+            // Render a minimal holding surface until the prompt resolves; this
+            // prevents AppRoot from composing (and kicking off profile reads)
+            // before the user has authenticated.
+            setContent { /* blank — biometric prompt is over an empty window */ }
+            gate.prompt(
+                activity = this,
+                onSuccess = { setContent { AppRoot() } },
+                onFailure = {
+                    // On cancel/error we finish so the app stays locked.
+                    finish()
+                },
+            )
+        } else {
+            setContent { AppRoot() }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

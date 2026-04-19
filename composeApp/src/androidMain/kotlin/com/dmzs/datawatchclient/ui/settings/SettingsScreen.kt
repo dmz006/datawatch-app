@@ -27,6 +27,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +79,7 @@ public fun SettingsScreen(
                     }
                 },
             )
+            SecurityCard()
             CommsCard()
             AboutCard()
         }
@@ -138,6 +142,39 @@ private fun ServersCard(
                 }
                 HorizontalDivider()
             }
+        }
+    }
+}
+
+@Composable
+private fun SecurityCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val gate = remember { com.dmzs.datawatchclient.security.BiometricGate(context) }
+    var enabled by remember { mutableStateOf(gate.enabled()) }
+    val canAuth = remember { gate.canAuthenticate(context) }
+
+    Section(title = "Security") {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    if (canAuth) "Require fingerprint or face on every app open."
+                    else "Unavailable — no Class-3 biometric enrolled on this device.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            androidx.compose.material3.Switch(
+                checked = enabled,
+                onCheckedChange = {
+                    gate.setEnabled(it)
+                    enabled = it
+                },
+                enabled = canAuth,
+            )
         }
     }
 }
