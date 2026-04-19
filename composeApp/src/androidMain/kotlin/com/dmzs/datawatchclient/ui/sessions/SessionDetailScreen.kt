@@ -18,6 +18,10 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -70,6 +74,7 @@ public fun SessionDetailScreen(
     var killConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
+    var terminalOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -101,6 +106,9 @@ public fun SessionDetailScreen(
                             if (muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
                             contentDescription = if (muted) "Unmute" else "Mute",
                         )
+                    }
+                    IconButton(onClick = { terminalOpen = true }) {
+                        Icon(Icons.Filled.Terminal, contentDescription = "Terminal view")
                     }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "More")
@@ -178,6 +186,22 @@ public fun SessionDetailScreen(
             onDismiss = { stateMenuOpen = false },
             onPick = { s -> stateMenuOpen = false; vm.overrideState(s) },
         )
+    }
+
+    if (terminalOpen) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { terminalOpen = false },
+            sheetState = sheetState,
+        ) {
+            TerminalView(
+                events = state.events,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .padding(8.dp),
+            )
+        }
     }
 }
 

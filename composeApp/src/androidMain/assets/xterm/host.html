@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="xterm.min.css" />
+  <style>
+    html, body { background: #0c0c14; color: #d8d8d8; margin: 0; padding: 0;
+                 height: 100%; overflow: hidden; font-family: monospace; }
+    #term { position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 4px; }
+    .xterm { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="term"></div>
+  <script src="xterm.min.js"></script>
+  <script src="xterm-addon-fit.min.js"></script>
+  <script>
+    // Bridge to Kotlin: window.DwBridge is injected by addJavascriptInterface.
+    // The host calls write(text) for each output frame.
+    var term = new Terminal({
+      cursorBlink: false,
+      fontSize: 13,
+      lineHeight: 1.1,
+      theme: {
+        background: '#0c0c14',
+        foreground: '#d8d8d8',
+        cursor: '#a855f7',
+        selectionBackground: '#3b1d6b'
+      },
+      scrollback: 5000,
+      convertEol: true
+    });
+    var fit = new FitAddon.FitAddon();
+    term.loadAddon(fit);
+    term.open(document.getElementById('term'));
+    fit.fit();
+
+    window.addEventListener('resize', function () {
+      try { fit.fit(); } catch (e) {}
+    });
+
+    // API surface invoked from Kotlin via WebView.evaluateJavascript:
+    window.dwWrite = function (s) {
+      try { term.write(s); } catch (e) {}
+    };
+    window.dwClear = function () {
+      try { term.clear(); } catch (e) {}
+    };
+    window.dwResize = function () {
+      try { fit.fit(); } catch (e) {}
+    };
+
+    // Surface terminal-side input back to Kotlin (Sprint 3 — for now we
+    // discard, since reply happens via the composer, not the terminal).
+    term.onData(function (data) {
+      if (window.DwBridge && DwBridge.onInput) {
+        try { DwBridge.onInput(data); } catch (e) {}
+      }
+    });
+
+    if (window.DwBridge && DwBridge.onReady) {
+      try { DwBridge.onReady(); } catch (e) {}
+    }
+  </script>
+</body>
+</html>
