@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,10 @@ import com.dmzs.datawatchclient.domain.SessionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun SessionsScreen(vm: SessionsViewModel = viewModel()) {
+public fun SessionsScreen(
+    onOpenSession: (String) -> Unit = {},
+    vm: SessionsViewModel = viewModel(),
+) {
     val state by vm.state.collectAsState()
 
     Scaffold(
@@ -73,7 +77,7 @@ public fun SessionsScreen(vm: SessionsViewModel = viewModel()) {
             } else {
                 LazyColumn {
                     items(state.sessions, key = { it.id }) { session ->
-                        SessionRow(session)
+                        SessionRow(session, onClick = { onOpenSession(session.id) })
                         HorizontalDivider()
                     }
                 }
@@ -95,8 +99,13 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun SessionRow(session: Session) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+private fun SessionRow(session: Session, onClick: () -> Unit = {}) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+    ) {
         Text(session.id, style = MaterialTheme.typography.titleSmall)
         Text(
             session.taskSummary ?: "(no summary)",

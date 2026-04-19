@@ -1,0 +1,49 @@
+-- Session event cache. Ring buffer retained per ADR-0016 retention rules.
+-- Used by SessionDetailScreen's scrollback: live WS stream tops it up;
+-- reconnect-after-gap reads from here while the fresh REST paginated
+-- scrollback loads.
+
+CREATE TABLE session_event (
+    id                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    session_id         TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
+    ts                 INTEGER NOT NULL,          -- epoch ms
+    type               TEXT NOT NULL,             -- output | state | prompt | rate | done | error | unknown
+    body               TEXT,
+    stream             TEXT,                      -- stdout | stderr | system (output only)
+    from_state         TEXT,
+    to_state           TEXT,
+    prompt_text        TEXT,
+    prompt_kind        TEXT,
+    retry_after        INTEGER,
+    exit_code          INTEGER,
+    message            TEXT
+);
+CREATE INDEX event_by_session_ts ON session_event(session_id, ts);
+
+-- Queries
+
+insertEvent:
+INSERT INTO session_event(
+    session_id, ts, type, body, stream, from_state, to_state,
+    prompt_text, prompt_kind, retry_after, exit_code, message
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectEventsForSession:
+SELECT * FROM session_event
+WHERE session_id = ?
+ORDER BY ts ASC, id ASC
+LIMIT ?;
+
+deleteEventsForSession:
+DELETE FROM session_event WHERE session_id = ?;
+
+-- Prune oldest events beyond the retention cap.
+pruneOldEvents:
+DELETE FROM session_event
+WHERE session_id = ?
+  AND id NOT IN (
+      SELECT id FROM session_event
+      WHERE session_id = ?
+      ORDER BY ts DESC, id DESC
+      LIMIT ?
+  );

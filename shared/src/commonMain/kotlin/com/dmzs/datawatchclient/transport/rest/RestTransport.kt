@@ -107,6 +107,22 @@ public class RestTransport(
         }
     }
 
+    override suspend fun overrideSessionState(
+        sessionId: String,
+        state: com.dmzs.datawatchclient.domain.SessionState,
+    ): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/sessions/state") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(
+                com.dmzs.datawatchclient.transport.dto.StateOverrideDto(
+                    sessionId = sessionId,
+                    state = state.name.lowercase(),
+                ),
+            )
+        }
+    }
+
     override suspend fun stats(): Result<StatsDto> = request {
         client.get("${profile.baseUrl}/api/stats") {
             bearer()?.let { header(HttpHeaders.Authorization, it) }

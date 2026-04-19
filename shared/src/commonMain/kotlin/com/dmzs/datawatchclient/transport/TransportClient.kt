@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.transport
 
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.flow.Flow
 
@@ -35,6 +36,9 @@ public interface TransportClient {
 
     /** POST /api/sessions/kill. Requires confirm dialog upstream (ADR-0019). */
     public suspend fun killSession(sessionId: String): Result<Unit>
+
+    /** POST /api/sessions/state. Force a session into a given state. */
+    public suspend fun overrideSessionState(sessionId: String, state: SessionState): Result<Unit>
 
     /** GET /api/stats. */
     public suspend fun stats(): Result<StatsDto>

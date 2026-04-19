@@ -15,6 +15,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
+import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
@@ -119,13 +120,33 @@ private fun Nav(
         composable(Destinations.Home) {
             HomeShell(
                 onAddServer = { navController.navigate(Destinations.AddServer) },
+                onOpenSession = { id ->
+                    navController.navigate(Destinations.sessionDetail(id))
+                },
+            )
+        }
+        composable(
+            route = Destinations.SessionDetail,
+            arguments = listOf(
+                androidx.navigation.navArgument("sessionId") {
+                    type = androidx.navigation.NavType.StringType
+                },
+            ),
+        ) { entry ->
+            val id = entry.arguments?.getString("sessionId") ?: return@composable
+            SessionDetailScreen(
+                sessionId = id,
+                onBack = { navController.popBackStack() },
             )
         }
     }
 }
 
 @Composable
-private fun HomeShell(onAddServer: () -> Unit) {
+private fun HomeShell(
+    onAddServer: () -> Unit,
+    onOpenSession: (String) -> Unit,
+) {
     val tabNav = rememberNavController()
     Scaffold(bottomBar = { BottomNavBar(tabNav) }) { inner ->
         NavHost(
@@ -133,7 +154,7 @@ private fun HomeShell(onAddServer: () -> Unit) {
             startDestination = Destinations.Tabs.Sessions,
             modifier = Modifier.padding(inner),
         ) {
-            composable(Destinations.Tabs.Sessions) { SessionsScreen() }
+            composable(Destinations.Tabs.Sessions) { SessionsScreen(onOpenSession = onOpenSession) }
             composable(Destinations.Tabs.Channels) {
                 PlaceholderTabScreen("Channels", "Sprint 2 wires the messaging backends tab.")
             }

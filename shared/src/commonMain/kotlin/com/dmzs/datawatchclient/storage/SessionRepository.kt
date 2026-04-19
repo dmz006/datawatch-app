@@ -17,7 +17,7 @@ import kotlinx.datetime.Instant
  * call resolves.
  */
 public class SessionRepository(
-    private val db: DatawatchDb,
+    internal val db: DatawatchDb,
     private val ioDispatcher: CoroutineDispatcher,
 ) {
     public fun observeForProfile(profileId: String): Flow<List<Session>> =
