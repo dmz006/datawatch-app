@@ -1,11 +1,16 @@
 package com.dmzs.datawatchclient.ui
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -13,8 +18,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
+import com.dmzs.datawatchclient.ui.servers.EditServerScreen
+import com.dmzs.datawatchclient.ui.servers.ServerPickerSheet
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
@@ -42,11 +50,24 @@ public fun AppRoot() {
             .observeAll()
             .collectAsState(initial = null)
         val navController = rememberNavController()
-        Nav(
-            navController = navController,
-            startDestination = Destinations.Splash,
-            profiles = profiles,
-        )
+        var pickerOpen by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .threeFingerSwipeUp(onFired = { pickerOpen = true }),
+        ) {
+            Nav(
+                navController = navController,
+                startDestination = Destinations.Splash,
+                profiles = profiles,
+            )
+            if (pickerOpen) {
+                ServerPickerSheet(
+                    onDismiss = { pickerOpen = false },
+                    onAdd = { navController.navigate(Destinations.AddServer) },
+                )
+            }
+        }
     }
 }
 
@@ -120,9 +141,26 @@ private fun Nav(
         composable(Destinations.Home) {
             HomeShell(
                 onAddServer = { navController.navigate(Destinations.AddServer) },
+                onEditServer = { id -> navController.navigate(Destinations.editServer(id)) },
                 onOpenSession = { id ->
                     navController.navigate(Destinations.sessionDetail(id))
                 },
+            )
+        }
+        composable(
+            route = Destinations.EditServer,
+            arguments = listOf(
+                androidx.navigation.navArgument("profileId") {
+                    type = androidx.navigation.NavType.StringType
+                },
+            ),
+        ) { entry ->
+            val id = entry.arguments?.getString("profileId") ?: return@composable
+            EditServerScreen(
+                profileId = id,
+                onSaved = { navController.popBackStack() },
+                onDeleted = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() },
             )
         }
         composable(
@@ -145,6 +183,7 @@ private fun Nav(
 @Composable
 private fun HomeShell(
     onAddServer: () -> Unit,
+    onEditServer: (String) -> Unit,
     onOpenSession: (String) -> Unit,
 ) {
     val tabNav = rememberNavController()
@@ -154,7 +193,13 @@ private fun HomeShell(
             startDestination = Destinations.Tabs.Sessions,
             modifier = Modifier.padding(inner),
         ) {
-            composable(Destinations.Tabs.Sessions) { SessionsScreen(onOpenSession = onOpenSession) }
+            composable(Destinations.Tabs.Sessions) {
+                SessionsScreen(
+                    onOpenSession = onOpenSession,
+                    onEditServer = onEditServer,
+                    onAddServer = onAddServer,
+                )
+            }
             composable(Destinations.Tabs.Channels) {
                 PlaceholderTabScreen("Channels", "Sprint 2 wires the messaging backends tab.")
             }
@@ -164,7 +209,7 @@ private fun HomeShell(
             composable(Destinations.Tabs.Settings) {
                 SettingsScreen(
                     onAddServer = onAddServer,
-                    onEditServer = { /* TODO Sprint 2: edit profile */ },
+                    onEditServer = onEditServer,
                 )
             }
         }

@@ -10,6 +10,8 @@ public object Destinations {
     public const val SplashReplay: String = "splash/replay"
     public const val Onboarding: String = "onboarding"
     public const val AddServer: String = "servers/add"
+    public const val EditServer: String = "servers/edit/{profileId}"
+    public fun editServer(profileId: String): String = "servers/edit/$profileId"
     public const val Home: String = "home"
     public const val SessionDetail: String = "sessions/{sessionId}"
     public fun sessionDetail(sessionId: String): String = "sessions/$sessionId"
