@@ -17,6 +17,8 @@ androidx-navigation = "2.8.0"
 androidx-car-app = "1.7.0"
 androidx-wear-compose = "1.4.0"
 androidx-wear-tiles = "1.4.0"
+androidx-wear-protolayout = "1.2.1"
+guava = "33.3.1-android"
 play-services-wearable = "18.2.0"
 firebase-messaging = "24.0.1"
 detekt = "1.23.7"
@@ -69,6 +71,10 @@ androidx-wear-compose-material = { module = "androidx.wear.compose:compose-mater
 androidx-wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "androidx-wear-compose" }
 androidx-wear-compose-navigation = { module = "androidx.wear.compose:compose-navigation", version.ref = "androidx-wear-compose" }
 androidx-wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "androidx-wear-tiles" }
+androidx-wear-protolayout = { module = "androidx.wear.protolayout:protolayout", version.ref = "androidx-wear-protolayout" }
+androidx-wear-protolayout-expression = { module = "androidx.wear.protolayout:protolayout-expression", version.ref = "androidx-wear-protolayout" }
+androidx-wear-protolayout-material = { module = "androidx.wear.protolayout:protolayout-material", version.ref = "androidx-wear-protolayout" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
 
 # Firebase (FCM only — no analytics)
