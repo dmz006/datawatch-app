@@ -150,14 +150,31 @@ Goal: public release.
 | xterm.js perf on low-end phones | Sprint 2 slip | Fallback: native Compose text view showing last 200 lines; full xterm behind a toggle |
 | FCM vs ntfy battery drain on Android 15 foreground-service tighten-up | Sprint 3 | Test both; pick per-profile; ntfy is best-effort only |
 
+## Scope change — ADR-0042 (2026-04-18)
+
+Five items **promoted from post-MVP to v1.0.0 requirements** per user
+direction. Each is folded into the nearest-fit sprint; timeline holds:
+
+| Item | Sprint | ID |
+|------|--------|----|
+| 3-finger swipe-up server picker (HA-style gesture) | 2 | BL9 |
+| Home-screen widget (session count + voice quick action) | 3 | BL6 |
+| Wear Tile (W2) — at-a-glance session state | 4 | BL4 |
+| Android Auto Tile — parked-state dashboard (dev flavor only) | 4 | BL10 |
+| Biometric unlock (optional, opt-in) | 5 | BL2 |
+
+If any of the five threatens the 2026-06-12 MVP or 2026-07-10 production
+target, the 3-finger gesture slips back to post-MVP first (it's the most
+easily replaceable — standard tap-to-open tree drawer stays either way).
+
 ## Post-MVP backlog (v1.1+)
 
-- Biometric unlock (optional).
-- Tablet layout with two-pane session list + detail.
-- Wear Tile (W2).
-- iOS app content (using the pre-wired skeleton).
-- Android Auto Tile for parked-state dashboards.
-- Schedule editor (full CRUD in UI).
-- KG Add/Timeline/Research in Memory tab.
-- Foldable support (Pixel Fold / Galaxy Z Fold).
-- Widget for home screen (session count + voice quick action).
+- Tablet layout with two-pane session list + detail (BL3)
+- iOS app content — beyond skeleton (BL5)
+- Foldable support — Pixel Fold / Galaxy Z Fold (BL7)
+- Full schedule editor CRUD (BL11)
+- KG Add / Timeline / Research deeper views (BL12)
+- Adjustable terminal dimensions (BL13)
+- Raw YAML config editor, gated behind biometric + confirm (BL14)
+- Localization — DE, ES, FR, JA (BL15)
+- Split `decisions/README.md` into per-ADR MADR files (BL1)

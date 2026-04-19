@@ -157,3 +157,28 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
   would be expensive busywork without user benefit. In prose docs, "datawatch mobile
   client" or "the datawatch mobile app" is used when disambiguation from the parent
   server daemon is needed.
+
+### MVP scope (adjustment)
+
+- **ADR-0042 — Five items promoted from post-MVP backlog to v1.0.0 scope** (2026-04-18).
+  User decision: the following were previously deferred to post-MVP but are now
+  required for the v1.0.0 production release. Partially supersedes ADR-0011
+  (biometric deferred) and ADR-0028 (Wear Tile deferred):
+    1. **Home-screen widget** — session count + voice quick-action. Lands Sprint 3.
+    2. **Wear Tile (w2)** — at-a-glance session state on the watchface tile surface
+       alongside the already-planned complication + rich app. Lands Sprint 4.
+    3. **Android Auto Tile** — parked-state dashboard for the internal (dev)
+       build; public build stays Messaging-only per ADR-0031 Play compliance.
+       Lands Sprint 4.
+    4. **Biometric unlock** — optional fingerprint / face gate on the token
+       vault + app resume. Disabled by default, user opts in during onboarding
+       or Settings. Single-user model from ADR-0011 stays. Lands Sprint 5
+       (hardening).
+    5. **3-finger-swipe-up server picker** — Home Assistant-style gesture for
+       fast server switching, in addition to the tap-to-open tree drawer.
+       Lands Sprint 2 alongside the multi-server picker work.
+
+  Sprint timeline effect: Sprint 2–5 budgets tightened; MVP target 2026-06-12
+  and production target 2026-07-10 held. If any of the five threatens those
+  dates, the weakest (candidate: 3-finger gesture) slips back to post-MVP
+  rather than pushing the release. User notified at sprint retro.

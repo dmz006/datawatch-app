@@ -157,6 +157,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Notification reply via watch | ⏳ | planned | 4 |
 | Watchface complication | ⏳ | planned | 4 |
 | Rich Wear app | ⏳ | planned | 4 |
+| Wear Tile (BL4) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 4 |
 
 ### Android Auto (mobile-only)
 
@@ -164,6 +165,20 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 |---------|--------|--------|--------|
 | Public messaging template (Play-compliant) | ⏳ | planned | 4 |
 | Internal full passenger UI | ⏳ | planned | 4 |
+| Auto Tile — parked-state dashboard (dev flavor) (BL10) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 4 |
+
+### Home screen + gestures (mobile-only)
+
+| Feature | Mobile | Status | Sprint |
+|---------|--------|--------|--------|
+| Home-screen widget — session count + voice quick action (BL6) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 3 |
+| 3-finger-swipe-up server picker, HA-style (BL9) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 2 |
+
+### Security (mobile-only)
+
+| Feature | Mobile | Status | Sprint |
+|---------|--------|--------|--------|
+| Biometric unlock (optional, opt-in) (BL2) | ⏳ | **promoted to v1.0.0 per ADR-0042** (amends ADR-0011) | 5 |
 
 ## Confidence
 
