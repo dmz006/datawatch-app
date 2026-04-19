@@ -5,6 +5,7 @@ import android.content.Context
 import com.dmzs.datawatchclient.db.DatawatchDb
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.push.PushTokenStore
 import com.dmzs.datawatchclient.security.KeystoreManager
 import com.dmzs.datawatchclient.security.TokenVault
 import com.dmzs.datawatchclient.storage.DatabaseFactory
@@ -46,6 +47,8 @@ public object ServiceLocator {
     public val tokenVault: TokenVault by lazy { TokenVault(appContext) }
 
     public val activeServerStore: ActiveServerStore by lazy { ActiveServerStore(appContext) }
+
+    public val pushTokenStore: PushTokenStore by lazy { PushTokenStore(appContext) }
 
     public val profileRepository: ServerProfileRepository by lazy {
         ServerProfileRepository(database, Dispatchers.IO)

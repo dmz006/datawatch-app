@@ -18,7 +18,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.push.NotificationChannels
+import com.dmzs.datawatchclient.push.NtfyFallbackService
+import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
+import androidx.compose.ui.platform.LocalContext
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
 import com.dmzs.datawatchclient.ui.servers.EditServerScreen
@@ -51,6 +55,27 @@ public fun AppRoot() {
             .collectAsState(initial = null)
         val navController = rememberNavController()
         var pickerOpen by remember { mutableStateOf(false) }
+        val context = LocalContext.current
+
+        // One-shot bootstrap: register notification channels, attempt push
+        // registration against every enabled profile, and start the ntfy
+        // fallback service. The coordinator is idempotent so re-runs are safe.
+        LaunchedEffect(Unit) {
+            NotificationChannels.ensureRegistered(context)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                PushRegistrationCoordinator(context).registerAll()
+            }
+            NtfyFallbackService.start(context)
+        }
+
+        // Deep-link consumer: pop any pending session id off the SharedFlow and
+        // navigate when the nav graph is ready (Home destination present).
+        LaunchedEffect(Unit) {
+            DeepLinks.pendingSessionTarget.collect { sessionId ->
+                navController.navigate(Destinations.sessionDetail(sessionId))
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

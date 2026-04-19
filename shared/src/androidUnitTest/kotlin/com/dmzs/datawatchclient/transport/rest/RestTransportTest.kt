@@ -175,6 +175,40 @@ class RestTransportTest {
     }
 
     @Test
+    fun registerDeviceSendsCorrectPayloadAndParsesId() = runTest {
+        server.enqueue(jsonResponse("""{"device_id":"dev-9f2"}"""))
+        val res = transport.registerDevice(
+            deviceToken = "fcm-tok-abc",
+            kind = com.dmzs.datawatchclient.transport.DeviceKind.Fcm,
+            appVersion = "0.3.0",
+            platform = com.dmzs.datawatchclient.transport.DevicePlatform.Android,
+            profileHint = "primary",
+        )
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        assertEquals("dev-9f2", res.getOrThrow())
+        val sent = server.takeRequest()
+        assertEquals("POST", sent.method)
+        assertEquals("/api/devices/register", sent.path)
+        val body = sent.body.readUtf8()
+        // Wire format must match parent v3.0.0 internal/server/devices.go
+        assertTrue(body.contains("\"device_token\":\"fcm-tok-abc\""), body)
+        assertTrue(body.contains("\"kind\":\"fcm\""), body)
+        assertTrue(body.contains("\"app_version\":\"0.3.0\""), body)
+        assertTrue(body.contains("\"platform\":\"android\""), body)
+        assertTrue(body.contains("\"profile_hint\":\"primary\""), body)
+    }
+
+    @Test
+    fun unregisterDeviceCallsDeleteWithId() = runTest {
+        server.enqueue(jsonResponse("""{"status":"deleted"}"""))
+        val res = transport.unregisterDevice("dev-9f2")
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals("DELETE", sent.method)
+        assertEquals("/api/devices/dev-9f2", sent.path)
+    }
+
+    @Test
     fun statsDeserializesAllFields() = runTest {
         server.enqueue(
             jsonResponse(

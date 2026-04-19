@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         tools:targetApi="34"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+        tools:targetApi="34"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <!-- Phone app only declares features it actually uses. Auto / Wear surfaces
          declare their own features in :auto and :wear manifests. -->
@@ -47,7 +50,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:scheme="dwclient"/>
+                <data android:scheme="dwclient" android:host="session"/>
             </intent-filter>
         </activity>
 
@@ -60,6 +63,19 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
+
+        <!-- ntfy fallback foreground service — runs when at least one profile
+             is configured for ntfy delivery instead of FCM. -->
+        <service
+            android:name=".push.NtfyFallbackService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:ignore="Instantiatable"/>
+
+        <!-- Inline reply receiver for "Input needed" notifications. -->
+        <receiver
+            android:name=".push.ReplyBroadcastReceiver"
+            android:exported="false"/>
 
         <!-- Voice quick-tile. -->
         <service

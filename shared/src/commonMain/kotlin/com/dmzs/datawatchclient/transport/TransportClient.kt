@@ -42,4 +42,26 @@ public interface TransportClient {
 
     /** GET /api/stats. */
     public suspend fun stats(): Result<StatsDto>
+
+    /**
+     * POST /api/devices/register — closes parent issue #1.
+     *
+     * Registers a push token (FCM or ntfy) with this datawatch server so it can
+     * deliver wake notifications. Returns the server-assigned `device_id` which
+     * the caller persists for later un-registration.
+     */
+    public suspend fun registerDevice(
+        deviceToken: String,
+        kind: DeviceKind,
+        appVersion: String,
+        platform: DevicePlatform,
+        profileHint: String,
+    ): Result<String>
+
+    /** DELETE /api/devices/{id} — un-register a previously-registered push token. */
+    public suspend fun unregisterDevice(deviceId: String): Result<Unit>
 }
+
+public enum class DeviceKind(public val wire: String) { Fcm("fcm"), Ntfy("ntfy") }
+
+public enum class DevicePlatform(public val wire: String) { Android("android"), Ios("ios") }

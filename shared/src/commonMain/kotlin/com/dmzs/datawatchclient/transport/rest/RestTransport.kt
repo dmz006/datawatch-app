@@ -2,8 +2,12 @@ package com.dmzs.datawatchclient.transport.rest
 
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.transport.DeviceKind
+import com.dmzs.datawatchclient.transport.DevicePlatform
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.TransportError
+import com.dmzs.datawatchclient.transport.dto.DeviceRegisterDto
+import com.dmzs.datawatchclient.transport.dto.DeviceRegisterResponseDto
 import com.dmzs.datawatchclient.transport.dto.HealthDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
@@ -21,6 +25,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -127,6 +132,36 @@ public class RestTransport(
         client.get("${profile.baseUrl}/api/stats") {
             bearer()?.let { header(HttpHeaders.Authorization, it) }
         }.body()
+    }
+
+    override suspend fun registerDevice(
+        deviceToken: String,
+        kind: DeviceKind,
+        appVersion: String,
+        platform: DevicePlatform,
+        profileHint: String,
+    ): Result<String> = request {
+        val res: DeviceRegisterResponseDto =
+            client.post("${profile.baseUrl}/api/devices/register") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    DeviceRegisterDto(
+                        deviceToken = deviceToken,
+                        kind = kind.wire,
+                        appVersion = appVersion,
+                        platform = platform.wire,
+                        profileHint = profileHint,
+                    ),
+                )
+            }.body()
+        res.deviceId
+    }
+
+    override suspend fun unregisterDevice(deviceId: String): Result<Unit> = request {
+        client.delete("${profile.baseUrl}/api/devices/$deviceId") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }
     }
 
     private suspend fun bearer(): String? =
