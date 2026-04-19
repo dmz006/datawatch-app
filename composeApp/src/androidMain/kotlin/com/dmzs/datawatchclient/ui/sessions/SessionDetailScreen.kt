@@ -79,7 +79,6 @@ public fun SessionDetailScreen(
     var killConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
-    var terminalOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -111,9 +110,6 @@ public fun SessionDetailScreen(
                             if (muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
                             contentDescription = if (muted) "Unmute" else "Mute",
                         )
-                    }
-                    IconButton(onClick = { terminalOpen = true }) {
-                        Icon(Icons.Filled.Terminal, contentDescription = "Terminal view")
                     }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "More")
@@ -151,7 +147,12 @@ public fun SessionDetailScreen(
                 }
             }
 
-            EventList(state.events, modifier = Modifier.weight(1f))
+            TerminalView(
+                events = state.events,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            )
+
+            InlineNotices(state.events)
 
             ReplyComposer(
                 text = state.replyText,
@@ -195,19 +196,40 @@ public fun SessionDetailScreen(
         )
     }
 
-    if (terminalOpen) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { terminalOpen = false },
-            sheetState = sheetState,
-        ) {
-            TerminalView(
-                events = state.events,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.85f)
-                    .padding(8.dp),
-            )
+}
+
+/**
+ * Compact row under the terminal that surfaces non-output events: the most
+ * recent prompt, rate-limit notice, and unknown-type forward-compat entries.
+ * Kept intentionally terse — the terminal carries the main narrative; this
+ * is a status strip.
+ */
+@Composable
+private fun InlineNotices(events: List<SessionEvent>) {
+    val latestPrompt = events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
+        as? SessionEvent.PromptDetected
+    val latestRateLimit = events.asReversed().firstOrNull { it is SessionEvent.RateLimited }
+        as? SessionEvent.RateLimited
+    if (latestPrompt == null && latestRateLimit == null) return
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+            latestPrompt?.let {
+                Text(
+                    "⌨ prompt: ${it.prompt.text.take(120)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+            latestRateLimit?.let {
+                Text(
+                    "⏳ rate-limited" + (it.retryAfter?.let { ts -> " · retry at $ts" } ?: ""),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
         }
     }
 }
