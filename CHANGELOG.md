@@ -8,6 +8,47 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-04-19
+
+**First production release.** Sprint 6 closes v1.0.0 — every ADR-0042
+scope item is shipped. Pairs with parent datawatch v3.0.0.
+
+### What's in v1.0.0 — highlights
+
+- **Live session management.** REST + WebSocket (`/ws?session=<id>`) with
+  auto-reconnect + jittered exponential backoff. Session detail, chat-style
+  event stream, reply composer, kill-with-confirm, state override.
+- **xterm.js terminal** bottom sheet, ANSI-colour, 5000-line scrollback.
+- **Multi-server.** In-app picker + edit server + 3-finger-swipe gesture
+  (BL9) + all-servers mode via `/api/federation/sessions`.
+- **Push notifications.** FCM primary + ntfy fallback; per-event-type
+  channels; inline RemoteInput reply on input-needed prompts;
+  `dwclient://session/<id>` deep link.
+- **Voice reply.** In-composer mic button → `/api/voice/transcribe`
+  (Whisper-backed, parent issue #2).
+- **Stats, Alerts, Channels** tabs with bottom-nav badge counter.
+- **Home-screen widget** (BL6) with running / waiting / total counts.
+- **Wear OS dashboard + Tile** (BL4) with the same glance counters.
+- **Android Auto** Messaging-template list screen (BL10 scaffolding).
+- **Biometric unlock** (BL2) — opt-in Class-3 enforcement at app entry.
+- **Encrypted storage.** SQLCipher-backed SQLDelight DB + Keystore-bound
+  bearer-token vault. Schema migrations verified (1 → 2 backfill for
+  session_event shipped in v0.3.0).
+
+### What moves to v1.1+
+
+- Biometric-bound DB passphrase (wraps Keystore key with biometric auth
+  requirement)
+- Bulk-delete completed sessions
+- Per-channel enable/disable REST (depends on parent exposing channel state)
+- xterm search + copy affordances, quick-tile voice launch wiring
+- Wear Data Layer pairing flow (counts live through phone → watch bridge)
+
+### Notes
+- No app-store release in this commit — APK is a release-candidate
+  artefact. Play submission is a separate manual step per ADR-0019.
+- JDK 21 required for builds (see memory/feedback_build_jdk21.md).
+
 ## [0.9.0] — 2026-04-19
 
 Sprint 5 — hardening + biometric unlock. Release-candidate milestone.
