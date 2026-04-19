@@ -3,4 +3,5 @@
     <!-- Public variant: "datawatch" (lowercase brand per ADR-0041). Dev flavor overrides in flavor-specific strings.xml. -->
     <string name="app_name">datawatch</string>
     <string name="tile_voice_label">Datawatch voice</string>
+    <string name="widget_description">Running / waiting / total session counts at a glance.</string>
 </resources>

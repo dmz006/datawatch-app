@@ -77,6 +77,19 @@
             android:name=".push.ReplyBroadcastReceiver"
             android:exported="false"/>
 
+        <!-- Home-screen widget (BL6, ADR-0042). -->
+        <receiver
+            android:name=".widget.SessionsWidget"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info"/>
+        </receiver>
+
         <!-- Voice quick-tile. -->
         <service
             android:name=".voice.VoiceQuickTileService"
