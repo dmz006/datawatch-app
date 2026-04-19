@@ -1,0 +1,29 @@
+-- Migration 1 → 2 (Sprint 2 Phase 1, v0.3.0).
+--
+-- Adds the session_event ring buffer that backs SessionDetailScreen's
+-- live event stream + scrollback. Pre-v0.3.0 DBs (created by v0.2.x
+-- installs that survived an in-place upgrade because Auto Backup
+-- preserves the encrypted DB across reinstalls) hit
+-- "no such table: session_event" the first time SessionDetailViewModel
+-- subscribes to the event flow — this migration backfills it.
+--
+-- The schema mirrors event.sq verbatim. Keep them in sync if either
+-- changes.
+
+CREATE TABLE IF NOT EXISTS session_event (
+    id                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    session_id         TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
+    ts                 INTEGER NOT NULL,
+    type               TEXT NOT NULL,
+    body               TEXT,
+    stream             TEXT,
+    from_state         TEXT,
+    to_state           TEXT,
+    prompt_text        TEXT,
+    prompt_kind        TEXT,
+    retry_after        INTEGER,
+    exit_code          INTEGER,
+    message            TEXT
+);
+
+CREATE INDEX IF NOT EXISTS event_by_session_ts ON session_event(session_id, ts);

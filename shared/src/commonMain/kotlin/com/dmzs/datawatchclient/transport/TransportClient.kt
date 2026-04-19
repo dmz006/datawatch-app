@@ -60,7 +60,27 @@ public interface TransportClient {
 
     /** DELETE /api/devices/{id} — un-register a previously-registered push token. */
     public suspend fun unregisterDevice(deviceId: String): Result<Unit>
+
+    /**
+     * GET /api/federation/sessions — closes parent issue #3.
+     *
+     * Returns this server's primary sessions plus a parallel fan-out to every
+     * remote it federates with. The mobile client uses this for the
+     * "all servers" view; it still calls per-profile transports for
+     * single-server views to keep behaviour predictable.
+     */
+    public suspend fun federationSessions(
+        sinceEpochMs: Long? = null,
+        states: List<SessionState> = emptyList(),
+        includeProxied: Boolean = true,
+    ): Result<FederationView>
 }
+
+public data class FederationView(
+    val primary: List<Session>,
+    val proxied: Map<String, List<Session>>,
+    val errors: Map<String, String>,
+)
 
 public enum class DeviceKind(public val wire: String) { Fcm("fcm"), Ntfy("ntfy") }
 

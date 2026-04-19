@@ -8,6 +8,7 @@ import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterDto
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterResponseDto
+import com.dmzs.datawatchclient.transport.dto.FederationResponseDto
 import com.dmzs.datawatchclient.transport.dto.HealthDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
@@ -162,6 +163,29 @@ public class RestTransport(
         client.delete("${profile.baseUrl}/api/devices/$deviceId") {
             bearer()?.let { header(HttpHeaders.Authorization, it) }
         }
+    }
+
+    override suspend fun federationSessions(
+        sinceEpochMs: Long?,
+        states: List<com.dmzs.datawatchclient.domain.SessionState>,
+        includeProxied: Boolean,
+    ): Result<com.dmzs.datawatchclient.transport.FederationView> = request {
+        val params = buildList {
+            sinceEpochMs?.let { add("since=$it") }
+            if (states.isNotEmpty()) add("states=" + states.joinToString(",") { it.name.lowercase() })
+            if (!includeProxied) add("include=none")
+        }.joinToString("&")
+        val url = "${profile.baseUrl}/api/federation/sessions" + if (params.isEmpty()) "" else "?$params"
+        val dto: FederationResponseDto = client.get(url) {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        com.dmzs.datawatchclient.transport.FederationView(
+            primary = dto.primary.map { it.toDomain(profile.id) },
+            proxied = dto.proxied.mapValues { entry ->
+                entry.value.map { it.toDomain("${profile.id}:${entry.key}") }
+            },
+            errors = dto.errors,
+        )
     }
 
     private suspend fun bearer(): String? =

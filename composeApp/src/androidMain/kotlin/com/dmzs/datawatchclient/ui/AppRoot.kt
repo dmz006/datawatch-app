@@ -239,7 +239,7 @@ private fun HomeShell(
                 PlaceholderTabScreen("Channels", "Sprint 2 wires the messaging backends tab.")
             }
             composable(Destinations.Tabs.Stats) {
-                PlaceholderTabScreen("Stats", "Sprint 1 Phase 4 adds the live stats dashboard.")
+                PlaceholderTabScreen("Stats", "Live stats dashboard ships in Sprint 3 (v0.4.0).")
             }
             composable(Destinations.Tabs.Settings) {
                 SettingsScreen(

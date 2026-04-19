@@ -38,5 +38,13 @@ public class ActiveServerStore(context: Context) {
     public companion object {
         public const val PREFS_FILE: String = "dw.active_server.v1"
         public const val KEY_ACTIVE_ID: String = "active_profile_id"
+
+        /**
+         * Sentinel value stored in [KEY_ACTIVE_ID] when the user picks the
+         * "All servers" view. SessionsViewModel detects this and fans
+         * `/api/federation/sessions` across every enabled profile rather
+         * than scoping to a single profile.
+         */
+        public const val SENTINEL_ALL_SERVERS: String = "*all"
     }
 }
