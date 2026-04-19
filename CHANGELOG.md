@@ -8,6 +8,36 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-04-19
+
+Sprint 3 — MVP milestone. Voice, all-servers, stats, channels, widget, MCP-SSE bones.
+
+### Added
+- **All-servers mode** backed by `/api/federation/sessions` (parent issue #3).
+  Picker gets an "All servers" row; SessionsViewModel fans out in parallel,
+  merges by most-recent-wins, collates per-server errors into a banner.
+- **Live stats dashboard** at `/api/stats` — CPU/Memory/Disk/GPU bars with
+  colour-coded thresholds, session counts, daemon uptime. Polls every 5 s.
+  Replaces the stale Sprint-1-Phase-4 placeholder.
+- **Channels tab** — live LLM backends from `/api/backends` with active
+  chipped; static note pointing at server-side messaging config (Signal/
+  Telegram/etc. — per-channel REST surface tracked for v0.5.0).
+- **Voice reply** — `POST /api/voice/transcribe` (parent issue #2, Whisper).
+  Mic/Stop button in the session reply composer records AAC/M4A, POSTs
+  multipart with `auto_exec=false` so the transcript lands in the composer
+  rather than auto-sending (PWA parity).
+- **Home-screen widget (BL6, ADR-0042)** — running / waiting / total counts
+  for the active profile; tap opens the app. Resizable, lock-screen allowed.
+- **MCP-SSE transport skeleton** — `McpSseTransport` consumes `text/event-
+  stream` frames with exponential-backoff reconnect. Not yet wired into the
+  UI (post-MVP work turns it into a full MCP client).
+
+### Fixed
+- **SQLDelight migration 1 → 2** backfills the `session_event` table for
+  v0.2.x-origin encrypted DBs; pre-fix, opening any session in v0.3.0
+  crashed with `no such table: session_event` because Auto Backup carried
+  the v0.2.x schema across in-place upgrade.
+
 ## [0.3.0] — 2026-04-19
 
 Sprint 2 — session UX, multi-server, push.

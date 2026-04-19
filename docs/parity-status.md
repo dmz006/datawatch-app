@@ -118,10 +118,10 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| Real-time CPU / memory / disk / GPU | ✅ | ⏳ | placeholder; full dashboard | 3 |
-| Active session counts | ✅ | ⏳ | planned | 3 |
-| Uptime | ✅ | ⏳ | planned | 3 |
-| eBPF per-process network | ✅ | ⏳ | view-only per ADR-0019 | 3 |
+| Real-time CPU / memory / disk / GPU | ✅ | ✅ | shipped v0.4.0 (/api/stats, 5 s poll, threshold colours) | 3 |
+| Active session counts | ✅ | ✅ | shipped v0.4.0 | 3 |
+| Uptime | ✅ | ✅ | shipped v0.4.0 | 3 |
+| eBPF per-process network | ✅ | ⏸ | view-only per ADR-0019 | 4 |
 
 ### About
 
@@ -146,9 +146,10 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | Mobile | Status | Sprint |
 |---------|--------|--------|--------|
-| Push-to-talk on FAB / composer / quick-tile / ASSIST intent | ⏳ | planned | 3 |
-| Server-side Whisper transcription | ⏳ | planned (depends on dmz006/datawatch#2) | 3 |
-| Prefix auto-send (`new:` / `reply:` / `status:`) | ⏳ | planned | 3 |
+| Push-to-talk on composer (in-app button) | ✅ | shipped v0.4.0 (mic button in reply composer) | 3 |
+| Server-side Whisper transcription | ✅ | shipped v0.4.0 (POST /api/voice/transcribe) | 3 |
+| Quick-tile / ASSIST / widget voice launch | ⏳ | quick-tile skeleton exists; full wiring in v0.5.0 | 4 |
+| Prefix auto-send (`new:` / `reply:` / `status:`) | ⏳ | planned (server handles via `auto_exec=true`) | 4 |
 
 ### Wear OS (mobile-only)
 
@@ -171,8 +172,8 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | Mobile | Status | Sprint |
 |---------|--------|--------|--------|
-| Home-screen widget — session count + voice quick action (BL6) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 3 |
-| 3-finger-swipe-up server picker, HA-style (BL9) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 2 |
+| Home-screen widget — session count + voice quick action (BL6) | ✅ | shipped v0.4.0 (counts live; voice quick-action in v0.5.0) | 3 |
+| 3-finger-swipe-up server picker, HA-style (BL9) | ✅ | shipped v0.3.0 | 2 |
 
 ### Security (mobile-only)
 
