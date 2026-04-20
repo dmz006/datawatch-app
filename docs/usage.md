@@ -96,7 +96,13 @@ Opens via tapping a session row, a notification, or a deep link
 ### Terminal
 
 The xterm.js terminal fills most of the screen (ANSI colour, 5000-line
-scrollback). Output events stream in live. Above the terminal sits a
+scrollback) and renders server-side `pane_capture` frames byte-for-byte
+the same way the PWA does: first capture per session resets the
+terminal and writes the full pane; subsequent captures are wiped-and-
+redrawn so TUIs (Claude Code, vim, top) render at their intended
+geometry regardless of the phone's column width. If the server is
+older and only emits `raw_output` frames, the terminal falls back to
+the legacy incremental-append path. Above the terminal sits a
 **terminal toolbar**:
 
 - **Search icon** — expands an inline search bar with an

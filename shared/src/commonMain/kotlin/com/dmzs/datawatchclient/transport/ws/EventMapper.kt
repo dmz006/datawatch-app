@@ -41,6 +41,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
             ?: Clock.System.now()
     val obj = data as? JsonObject
     return when (type) {
+        "pane_capture" -> buildPaneCaptureEvents(obj, ts, forSessionId)
         "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId)
         "needs_input", "prompt", "prompt_detected" ->
             listOfNotNull(
@@ -91,10 +92,55 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
             )
         // Frames we intentionally don't forward to the per-session UI.
         "sessions", "session_aware", "channel_reply", "channel_notify", "response",
-        "pane_capture", "ack",
+        "ack",
         -> emptyList()
         else -> listOf(SessionEvent.Unknown(sessionId = forSessionId, ts = ts, type = type))
     }
+}
+
+/**
+ * Tracks which session ids have already had their first pane_capture
+ * routed to the UI. A WeakHashMap-equivalent isn't available in common
+ * code; a simple MutableSet works because session ids are bounded in
+ * practice (users don't open 10k sessions per app install).
+ */
+private val firstCaptureSeen: MutableSet<String> = mutableSetOf()
+
+/**
+ * Expose a reset entry point so the UI can clear the first-capture flag
+ * on session switch (so the next pane_capture for the newly-visible
+ * session is treated as first — fresh terminal paint).
+ */
+public fun resetPaneCaptureSeen(sessionId: String) {
+    firstCaptureSeen.remove(sessionId)
+}
+
+private fun buildPaneCaptureEvents(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): List<SessionEvent> {
+    if (obj == null) return emptyList()
+    val sid = obj.jsonString("session_id") ?: forSessionId
+    // Filter by the session the UI is currently rendering — same logic as
+    // raw_output so stray frames for other sessions don't land.
+    if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return emptyList()
+    val lines =
+        runCatching {
+            obj["lines"]?.jsonArray?.mapNotNull { el ->
+                runCatching { el.jsonPrimitive.content }.getOrNull()
+            }
+        }.getOrNull().orEmpty()
+    if (lines.isEmpty()) return emptyList()
+    val isFirst = firstCaptureSeen.add(sid)
+    return listOf(
+        SessionEvent.PaneCapture(
+            sessionId = sid,
+            ts = ts,
+            lines = lines,
+            isFirst = isFirst,
+        ),
+    )
 }
 
 private fun buildOutputEvents(

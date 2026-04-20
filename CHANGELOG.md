@@ -8,6 +8,57 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+
+- **Theme was defaulting to Material You dynamic colors** (`DatawatchTheme`
+  had `dynamicColor = true` by default). On Android 12+ that overrode the
+  datawatch purple palette with the user's wallpaper and the whole app
+  stopped looking like the parent PWA. Flipped default to `false`. Also
+  expanded the color scheme + added a `LocalDatawatchColors`
+  CompositionLocal exposing PWA-equivalent `bg/bg2/bg3/border/waiting`
+  slots Material3 doesn't have.
+- **Sticky "server unreachable" on Channels / Schedules / Saved commands
+  / Daemon config cards.** Each VM's `init { refresh() }` was a brittle
+  one-shot that stuck on unreachable forever if the cold-boot probe
+  happened before the network was up. Now each VM observes the active
+  profile's `TransportClient.isReachable` flow and re-fires `refresh()`
+  every time reachability flips to true, so the banner self-clears.
+- **Splash version text was invisible.** Was rendering at `#6D28D9` (dark
+  purple) against the `#0F1117` black splash. Bumped to `#A855F7` at 0.75
+  alpha and added an "AI Session Monitor" subtitle between the name and
+  version to match the PWA splash hierarchy.
+- **Terminal rendering didn't match the PWA.** The PWA uses
+  `pane_capture` frames (authoritative tmux pane snapshot) as its only
+  display source; mobile was routing `raw_output` straight to xterm, so
+  TUIs like Claude Code that cursor-position in a 120-col pane ended up
+  as scattered-garbage on a 39-col mobile viewport. Added
+  `SessionEvent.PaneCapture`, `WsFrame.type == "pane_capture"` mapper,
+  and a host-side `window.dwPaneCapture(lines, isFirst)` that replicates
+  the PWA's `term.reset() + write` (first) / `ESC[2J ESC[3J ESC[H +
+  write` (subsequent) pattern. `raw_output` is suppressed when
+  `pane_capture` is present; legacy fallback kicks in against older
+  servers.
+
+### Added
+
+- **PWA visual primitives** (`ui/theme/PwaComponents.kt`):
+  - `PwaStatePill(state)` — 10sp uppercase state badge with
+    tinted-0.15-alpha background, matching `.state-badge-*` in the PWA.
+  - `Modifier.pwaStateEdge(state)` — 4dp state-coloured left stripe on
+    session cards.
+  - `Modifier.pwaCard()` — 12dp-radius `bg2` surface with 1dp border,
+    matching `.session-card` / `.settings-section`.
+  - `PwaSectionTitle(title)` — 11sp uppercase 0.8sp-letter-spacing
+    section heading.
+- **Sessions tab** — rows rendered as proper cards with the state edge
+  + inline state pill, replacing the old AssistChip + full-width
+  HorizontalDivider layout.
+- **Settings cards** — all sections (`Servers`, `Security`, `Schedules`,
+  `Saved commands`, `Daemon config`, `Comms`, `About`) now wrap in
+  `pwaCard()` with a proper `PwaSectionTitle` header. Also added
+  explicit refresh buttons to the 4 data-bound cards so manual retry
+  is always available.
+
 ## [0.12.0] — 2026-04-20
 
 Schedules + file picker + saved commands + config viewer + terminal

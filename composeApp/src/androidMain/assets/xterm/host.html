@@ -171,6 +171,42 @@
     window.dwResize = function () { safeFit(); };
 
     /**
+     * Authoritative pane-capture write — the PWA's terminal display source.
+     * Per `internal/server/web/app.js` (lines ~263-294, 303-354 in v4.0.3):
+     *
+     *   First capture per session: term.reset() then
+     *     term.write(lines.join('\r\n'))
+     *
+     *   Subsequent captures (redraw): prefix with ESC[2J ESC[3J ESC[H
+     *     (clear screen + clear scrollback + cursor home) then write,
+     *     all batched so xterm renders as one frame.
+     *
+     * Mobile client used to write raw_output bytes directly; that works
+     * for log-mode sessions but breaks TUIs (Claude Code, top, vim) that
+     * use absolute cursor positioning sized for a 120-col tmux pane. The
+     * pane_capture approach renders the server's already-composited frame
+     * so the TUI shows up correctly at any terminal width.
+     */
+    window.dwPaneCapture = function (linesJson, isFirst) {
+      try {
+        var lines;
+        try { lines = JSON.parse(String(linesJson || '[]')); }
+        catch (e) { lines = []; }
+        if (!Array.isArray(lines) || lines.length === 0) return;
+        var joined = lines.join('\r\n');
+        if (isFirst) {
+          term.reset();
+          term.write(joined);
+        } else {
+          // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
+          term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
+        }
+      } catch (e) {
+        log('paneCapture failed: ' + e);
+      }
+    };
+
+    /**
      * v0.11 search + copy bridge.
      *
      * dwSearchNext / dwSearchPrev run the search addon over the scrollback

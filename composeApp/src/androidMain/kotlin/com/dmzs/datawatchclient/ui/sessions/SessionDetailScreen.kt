@@ -399,6 +399,10 @@ private fun EventRow(event: SessionEvent) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelSmall,
             )
+        // Pane captures are rendered directly into the xterm WebView, not
+        // into the event-stream chat surface, so the chat row is intentionally
+        // a no-op here.
+        is SessionEvent.PaneCapture -> Unit
     }
 }
 

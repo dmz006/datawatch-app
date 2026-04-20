@@ -121,12 +121,14 @@ public fun TerminalView(
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     // When the session changes, wipe the xterm DOM so session A's scrollback
-    // doesn't bleed into session B's view.
+    // doesn't bleed into session B's view. Also reset the pane_capture
+    // "seen" flag for the new session so its next capture paints fresh.
     LaunchedEffect(sessionId) {
         webViewRef.value?.evaluateJavascript(
             "window.dwClear && window.dwClear();",
             null,
         )
+        com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
     }
 
     AndroidView(
@@ -210,11 +212,46 @@ public fun TerminalView(
     )
 
     // When new events arrive (or terminal becomes ready), flush any unwritten
-    // suffix into xterm. We never re-render the full backlog after first write
-    // — xterm preserves its own scrollback (5000 lines, see host.html).
+    // suffix into xterm.
+    //
+    // Two paths, chosen per-session at first event:
+    //   1. pane_capture present → authoritative PWA-style rendering.
+    //      raw_output is suppressed; each PaneCapture wipes + writes the
+    //      full pane. No lastWrittenIndex arithmetic needed.
+    //   2. pane_capture absent (older server) → fall back to the legacy
+    //      raw_output incremental-append path.
     LaunchedEffect(events.size, ready) {
         if (!ready) return@LaunchedEffect
         val webView = webViewRef.value ?: return@LaunchedEffect
+        val hasPaneCapture = events.any { it is SessionEvent.PaneCapture }
+        if (hasPaneCapture) {
+            // Pane-capture mode: only replay pane captures we haven't
+            // written yet; skip Output entirely (log-mode).
+            if (events.size > lastWrittenIndex) {
+                val newOnes = events.subList(lastWrittenIndex, events.size)
+                newOnes.filterIsInstance<SessionEvent.PaneCapture>().forEach { pc ->
+                    // Build a JSON array string by JSON-quoting each line
+                    // (JSONObject.quote handles all string escape rules) and
+                    // joining with commas. Then JSON-quote the whole thing
+                    // again because dwPaneCapture takes a JSON string that it
+                    // JSON.parse()'s — nested quoting is intentional.
+                    val arrayLiteral =
+                        pc.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
+                    val linesJson = JSONObject.quote(arrayLiteral)
+                    webView.evaluateJavascript(
+                        "window.dwPaneCapture($linesJson, ${pc.isFirst});",
+                        null,
+                    )
+                    Log.d(
+                        "DwTerm",
+                        "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})",
+                    )
+                }
+                lastWrittenIndex = events.size
+            }
+            return@LaunchedEffect
+        }
+        // Legacy raw_output path (server doesn't send pane_capture yet).
         if (lastWrittenIndex == 0 && events.isNotEmpty()) {
             val joined = events.mapNotNull { it.terminalText() }.joinToString("")
             if (joined.isNotEmpty()) {

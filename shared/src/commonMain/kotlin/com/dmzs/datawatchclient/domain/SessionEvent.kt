@@ -61,6 +61,20 @@ public sealed interface SessionEvent {
         val message: String,
     ) : SessionEvent
 
+    /**
+     * Full tmux pane snapshot from the server. The PWA treats this as the
+     * authoritative terminal display source — `raw_output` is log-mode only.
+     * [lines] is the pane contents as the server rendered it (ANSI + cursor
+     * escapes preserved); [isFirst] distinguishes the first capture after
+     * subscribe (write-from-scratch) from incremental redraws (clear + write).
+     */
+    public data class PaneCapture(
+        override val sessionId: String,
+        override val ts: Instant,
+        val lines: List<String>,
+        val isFirst: Boolean = false,
+    ) : SessionEvent
+
     /** Unknown event kind. Forward-compat for future server versions. */
     public data class Unknown(
         override val sessionId: String,

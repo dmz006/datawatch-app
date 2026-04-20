@@ -145,6 +145,13 @@ public class SessionEventRepository(
                         exit_code = null,
                         message = null,
                     )
+                is SessionEvent.PaneCapture ->
+                    // Pane captures are live-display-only. They're the whole
+                    // pane state at a point in time, not an event-log entry —
+                    // persisting them would bloat the DB and mis-order with
+                    // Output events on replay. The live VM re-fetches the
+                    // latest capture from the server on resume.
+                    Unit
             }
             // Prune oldest after each insert so the ring buffer stays bounded.
             db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)
