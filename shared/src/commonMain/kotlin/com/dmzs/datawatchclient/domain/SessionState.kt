@@ -16,16 +16,28 @@ public enum class SessionState {
     ;
 
     public companion object {
+        /**
+         * Map the parent server's wire value (per `app.js` — `running`,
+         * `waiting_input`, `rate_limited`, `complete`, `failed`, `killed`)
+         * to the mobile enum. Accepts legacy aliases for forward-compat
+         * across server versions. Falls back to [New] on unknown values
+         * rather than [Error] so a new server-side state doesn't make
+         * every unrecognised session look like it failed.
+         */
         public fun fromWire(value: String): SessionState =
             when (value.lowercase()) {
                 "new" -> New
                 "running" -> Running
-                "waiting", "waiting_for_prompt", "needs_input" -> Waiting
+                // Parent emits `waiting_input`; mobile accepts aliases for
+                // forward- and backward-compat across server versions.
+                "waiting_input", "waiting", "waiting_for_prompt", "needs_input" -> Waiting
                 "rate_limited", "rate-limited" -> RateLimited
-                "completed", "done" -> Completed
+                // Parent emits `complete`; legacy server builds sent `completed` / `done`.
+                "complete", "completed", "done" -> Completed
                 "killed", "stopped" -> Killed
-                "error", "failed" -> Error
-                else -> Error
+                // Parent emits `failed`; legacy sent `error`.
+                "failed", "error" -> Error
+                else -> New
             }
     }
 }

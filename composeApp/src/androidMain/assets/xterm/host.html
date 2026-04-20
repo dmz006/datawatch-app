@@ -171,6 +171,23 @@
     window.dwResize = function () { safeFit(); };
 
     /**
+     * Set xterm font size in CSS px and re-fit. Mirrors PWA's
+     * `changeTermFontSize(delta)` (app.js ~line 1714). Clamped to
+     * a sensible range at the caller (Kotlin side).
+     */
+    window.dwSetFontSize = function (px) {
+      try {
+        var n = parseFloat(px);
+        if (!isFinite(n) || n <= 0) return;
+        term.options.fontSize = n;
+        // Row heights are style-bound; nudge xterm + re-fit.
+        safeFit();
+      } catch (e) {
+        log('setFontSize failed: ' + e);
+      }
+    };
+
+    /**
      * Authoritative pane-capture write — the PWA's terminal display source.
      * Per `internal/server/web/app.js` (lines ~263-294, 303-354 in v4.0.3):
      *

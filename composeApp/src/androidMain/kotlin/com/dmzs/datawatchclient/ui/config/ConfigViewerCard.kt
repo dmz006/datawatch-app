@@ -87,7 +87,6 @@ private fun ConfigViewerBody(
     state: ConfigViewerViewModel.UiState,
     vm: ConfigViewerViewModel,
 ) {
-
     state.banner?.let { banner ->
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
             Row(

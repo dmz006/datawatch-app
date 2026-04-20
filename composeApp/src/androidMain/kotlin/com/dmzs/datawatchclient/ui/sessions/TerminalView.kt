@@ -99,6 +99,19 @@ public class TerminalController internal constructor() {
             null,
         )
     }
+
+    /**
+     * Set xterm font size in CSS px. Mirrors PWA's
+     * `changeTermFontSize(delta)` — caller is responsible for
+     * persistence + clamping (same contract the PWA has with
+     * localStorage).
+     */
+    public fun setFontSize(px: Int) {
+        webView?.evaluateJavascript(
+            "window.dwSetFontSize && window.dwSetFontSize($px);",
+            null,
+        )
+    }
 }
 
 @Composable

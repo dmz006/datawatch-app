@@ -34,6 +34,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -56,6 +60,7 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.Dispatchers
@@ -73,15 +78,21 @@ import java.io.FileOutputStream
  * Feature-parity with PWA is tracked upstream in
  * [dmz006/datawatch#4](https://github.com/dmz006/datawatch/issues/4).
  */
+
 /**
- * Sub-tabs mirroring the parent PWA's Settings view layout. Kept short
- * so 5 of them fit in a ScrollableTabRow even on narrow displays.
+ * Sub-tabs mirroring the parent PWA's Settings view layout:
+ *   General — app-wide + automation (security + schedules)
+ *   Comms   — servers (per PWA — "Servers" lives inside Comms)
+ *   LLM     — active backend + saved command library
+ *   Monitor — live host stats (was a separate bottom-nav tab; PWA puts
+ *             it under Settings)
+ *   About   — app version + daemon info + daemon config viewer
  */
 private enum class SettingsTab(val label: String) {
-    Servers("Servers"),
-    Schedules("Schedules"),
-    Commands("Commands"),
-    Config("Config"),
+    General("General"),
+    Comms("Comms"),
+    Llm("LLM"),
+    Monitor("Monitor"),
     About("About"),
 }
 
@@ -105,7 +116,7 @@ public fun SettingsScreen(
             }
         }
 
-    var activeTab by remember { mutableStateOf(SettingsTab.Servers) }
+    var activeTab by remember { mutableStateOf(SettingsTab.General) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
@@ -114,16 +125,29 @@ public fun SettingsScreen(
                     .padding(padding)
                     .fillMaxWidth(),
         ) {
-            androidx.compose.material3.ScrollableTabRow(
+            val dw = LocalDatawatchColors.current
+            ScrollableTabRow(
                 selectedTabIndex = activeTab.ordinal,
                 edgePadding = 8.dp,
                 containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.primary,
+                contentColor = dw.accent2,
+                // Underline the selected tab in PWA accent2, matching
+                // `.nav-btn.active` border-top-color.
+                indicator = { tabPositions ->
+                    if (activeTab.ordinal < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[activeTab.ordinal]),
+                            color = dw.accent2,
+                        )
+                    }
+                },
             ) {
                 SettingsTab.entries.forEach { tab ->
-                    androidx.compose.material3.Tab(
+                    Tab(
                         selected = activeTab == tab,
                         onClick = { activeTab = tab },
+                        selectedContentColor = dw.accent2,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         text = { Text(tab.label, style = MaterialTheme.typography.labelMedium) },
                     )
                 }
@@ -136,7 +160,16 @@ public fun SettingsScreen(
                         .fillMaxWidth(),
             ) {
                 when (activeTab) {
-                    SettingsTab.Servers -> {
+                    SettingsTab.General -> {
+                        // App-level + automation. Security card first (biometric
+                        // toggle), then schedules (server-side recurring tasks).
+                        SecurityCard()
+                        com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                    }
+                    SettingsTab.Comms -> {
+                        // PWA's Comms section owns server list (datawatch
+                        // servers + messaging-backend servers share the
+                        // concept). Mobile's server list lives here.
                         ServersCard(
                             profiles = profiles,
                             onAddServer = onAddServer,
@@ -150,20 +183,22 @@ public fun SettingsScreen(
                                 }
                             },
                         )
-                        SecurityCard()
                     }
-                    SettingsTab.Schedules -> {
-                        com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                    }
-                    SettingsTab.Commands -> {
+                    SettingsTab.Llm -> {
+                        // LLM backend picker (was the old Channels tab content)
+                        // + saved command library (PWA groups commands under LLM).
+                        com.dmzs.datawatchclient.ui.channels.LlmBackendCard()
                         com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                     }
-                    SettingsTab.Config -> {
-                        com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
-                        CommsCard()
+                    SettingsTab.Monitor -> {
+                        // Live host stats — moved here from the old bottom-nav
+                        // Stats tab so the layout matches the PWA's
+                        // Settings/Monitor.
+                        com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                     }
                     SettingsTab.About -> {
                         AboutCard(activeProfile = activeProfile)
+                        com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }
             }

@@ -13,7 +13,9 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.TextIncrease
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +57,22 @@ public fun TerminalToolbar(
     val context: Context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Persisted terminal font size. PWA uses localStorage; mobile uses
+    // SharedPreferences under `dw.terminal.v1` so the user's zoom-level
+    // survives session re-opens. Clamp to a sensible range (8 … 24 sp).
+    val fontPrefs =
+        remember(context) {
+            context.getSharedPreferences("dw.terminal.v1", Context.MODE_PRIVATE)
+        }
+    var fontSize by remember {
+        mutableStateOf(fontPrefs.getInt("font_size_px", DEFAULT_TERM_FONT_PX))
+    }
+    // Apply on first composition and whenever the user bumps the size.
+    androidx.compose.runtime.LaunchedEffect(fontSize) {
+        controller.setFontSize(fontSize)
+        fontPrefs.edit().putInt("font_size_px", fontSize).apply()
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxWidth(),
@@ -71,6 +89,22 @@ public fun TerminalToolbar(
                     onClick = { controller.copyToClipboard(context) },
                 ) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = "Copy selection")
+                }
+                IconButton(
+                    onClick = {
+                        if (fontSize > MIN_TERM_FONT_PX) fontSize -= FONT_STEP_PX
+                    },
+                    enabled = fontSize > MIN_TERM_FONT_PX,
+                ) {
+                    Icon(Icons.Filled.Remove, contentDescription = "Smaller font")
+                }
+                IconButton(
+                    onClick = {
+                        if (fontSize < MAX_TERM_FONT_PX) fontSize += FONT_STEP_PX
+                    },
+                    enabled = fontSize < MAX_TERM_FONT_PX,
+                ) {
+                    Icon(Icons.Filled.TextIncrease, contentDescription = "Larger font")
                 }
                 if (sessionId != null) {
                     IconButton(
@@ -192,3 +226,11 @@ private fun Text(text: String) {
     // without importing Text at the top — keeps the import list minimal.
     androidx.compose.material3.Text(text)
 }
+
+// PWA changeTermFontSize clamps [5, 20]; mobile goes slightly larger
+// since phone users zoom up to read from arm's length. Default matches
+// the existing host.html `fontSize: 15` baseline.
+private const val DEFAULT_TERM_FONT_PX: Int = 15
+private const val MIN_TERM_FONT_PX: Int = 10
+private const val MAX_TERM_FONT_PX: Int = 28
+private const val FONT_STEP_PX: Int = 2

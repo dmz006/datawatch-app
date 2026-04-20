@@ -96,7 +96,6 @@ private fun SavedCommandsBody(
     addOpen: Boolean,
     setAddOpen: (Boolean) -> Unit,
 ) {
-
     state.banner?.let { banner ->
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
             Row(

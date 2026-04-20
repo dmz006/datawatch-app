@@ -3,27 +3,18 @@ package com.dmzs.datawatchclient.ui.channels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,54 +33,32 @@ import androidx.lifecycle.viewmodel.compose.viewModel
  * Sprint 4 promotes the LLM backend row to a tap-to-switch action once
  * the parent ships POST /api/backends/active.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
+/**
+ * Embedded LLM backend card — used from Settings/LLM sub-tab.
+ * (The old bottom-nav "Channels" screen is gone per PWA parity; its
+ * content lives here now.)
+ */
 @Composable
-public fun ChannelsScreen(vm: ChannelsViewModel = viewModel()) {
+public fun LlmBackendCard(vm: ChannelsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Channels" + (state.serverName?.let { " — $it" } ?: "")) },
-                actions = {
-                    IconButton(onClick = vm::refresh) {
-                        if (state.refreshing) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(12.dp))
-                        } else {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                        }
-                    }
-                },
+    state.banner?.let {
+        Surface(color = MaterialTheme.colorScheme.errorContainer) {
+            Text(
+                it,
+                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodySmall,
             )
-        },
-    ) { padding ->
-        Column(
-            modifier =
-                Modifier
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxSize(),
-        ) {
-            state.banner?.let {
-                Surface(color = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        it,
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-
-            BackendsCard(
-                llm = state.llm,
-                active = state.activeBackend,
-                setActiveSupported = state.setActiveSupported,
-                onSelect = vm::setActive,
-            )
-            MessagingNoteCard()
         }
     }
+    BackendsCard(
+        llm = state.llm,
+        active = state.activeBackend,
+        setActiveSupported = state.setActiveSupported,
+        onSelect = vm::setActive,
+    )
 }
 
 @Composable
@@ -159,29 +128,6 @@ private fun BackendsCard(
                     HorizontalDivider()
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun MessagingNoteCard() {
-    Card(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Messaging channels",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                "Messaging backends (Signal, Telegram, Slack, Matrix, Discord, " +
-                    "Twilio, ntfy, webhooks, DNS) are configured server-side in " +
-                    "`datawatch.yaml`. Per-channel enable/disable + test-send from " +
-                    "mobile is tracked for v0.5.0 once the parent exposes a REST " +
-                    "surface for channel state.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
         }
     }
 }

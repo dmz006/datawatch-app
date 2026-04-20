@@ -65,42 +65,49 @@ public class SavedCommandsViewModel : ViewModel() {
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
             ServiceLocator.transportFor(profile).listCommands().fold(
                 onSuccess = { list ->
-                    _state.value = _state.value.copy(
-                        commands = list.sortedBy { it.name.lowercase() },
-                        refreshing = false,
-                        banner = null,
-                        supported = true,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            commands = list.sortedBy { it.name.lowercase() },
+                            refreshing = false,
+                            banner = null,
+                            supported = true,
+                        )
                 },
                 onFailure = { err ->
                     if (err is TransportError.NotFound) {
-                        _state.value = _state.value.copy(
-                            refreshing = false,
-                            supported = false,
-                            banner =
-                                "This server doesn't expose /api/commands. Upgrade datawatch to v4.0.3+.",
-                        )
+                        _state.value =
+                            _state.value.copy(
+                                refreshing = false,
+                                supported = false,
+                                banner =
+                                    "This server doesn't expose /api/commands. Upgrade datawatch to v4.0.3+.",
+                            )
                     } else {
-                        _state.value = _state.value.copy(
-                            refreshing = false,
-                            banner =
-                                "Couldn't load saved commands — ${err.message ?: err::class.simpleName}",
-                        )
+                        _state.value =
+                            _state.value.copy(
+                                refreshing = false,
+                                banner =
+                                    "Couldn't load saved commands — ${err.message ?: err::class.simpleName}",
+                            )
                     }
                 },
             )
         }
     }
 
-    public fun save(name: String, command: String) {
+    public fun save(
+        name: String,
+        command: String,
+    ) {
         viewModelScope.launch {
             val profile = resolveActiveProfile() ?: return@launch
             ServiceLocator.transportFor(profile).saveCommand(name, command).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Save failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Save failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -112,9 +119,10 @@ public class SavedCommandsViewModel : ViewModel() {
             ServiceLocator.transportFor(profile).deleteCommand(name).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Delete failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Delete failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }

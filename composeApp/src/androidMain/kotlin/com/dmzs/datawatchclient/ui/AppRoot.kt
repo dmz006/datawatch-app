@@ -25,7 +25,6 @@ import com.dmzs.datawatchclient.push.NtfyFallbackService
 import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
 import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
-import com.dmzs.datawatchclient.ui.channels.ChannelsScreen
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
@@ -38,7 +37,6 @@ import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
-import com.dmzs.datawatchclient.ui.stats.StatsScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 import kotlinx.coroutines.delay
 
@@ -256,8 +254,6 @@ private fun HomeShell(
             composable(Destinations.Tabs.Alerts) {
                 AlertsScreen(onOpenSession = onOpenSession, vm = alertsVm)
             }
-            composable(Destinations.Tabs.Channels) { ChannelsScreen() }
-            composable(Destinations.Tabs.Stats) { StatsScreen() }
             composable(Destinations.Tabs.Settings) {
                 SettingsScreen(
                     onAddServer = onAddServer,

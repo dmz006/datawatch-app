@@ -117,7 +117,8 @@ public fun DatawatchTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    @Suppress("UNUSED_VARIABLE") val dyn = dynamicColor
+    @Suppress("UNUSED_VARIABLE")
+    val dyn = dynamicColor
     val colorScheme =
         when {
             darkTheme -> DatawatchDarkScheme

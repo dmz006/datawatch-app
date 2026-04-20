@@ -35,7 +35,9 @@ public class FilePickerViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
-    init { browse(null) }
+    init {
+        browse(null)
+    }
 
     public fun browse(path: String?) {
         viewModelScope.launch {

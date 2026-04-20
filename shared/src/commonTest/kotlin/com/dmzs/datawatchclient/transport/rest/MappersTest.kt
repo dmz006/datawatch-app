@@ -39,9 +39,12 @@ class MappersTest {
     }
 
     @Test
-    fun `unknown state from server maps to Error without throwing`() {
+    fun `unknown state from server maps to New without throwing`() {
+        // Forward-compat: unknown server states are neutral, not Error. The
+        // old Error fallback made `waiting_input` (which the mapper didn't
+        // list) render as FAILED badges — user-reported regression.
         val dto = SessionDto(id = "x", state = "freshly_invented_state")
-        assertEquals(SessionState.Error, dto.toDomain("srv-1").state)
+        assertEquals(SessionState.New, dto.toDomain("srv-1").state)
     }
 
     @Test

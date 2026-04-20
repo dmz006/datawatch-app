@@ -4,25 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,62 +35,43 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
  * (cheap, changes rarely). Renders as a column of `pwaCard()` sections
  * with the PWA's dark palette + bar-colour threshold behaviour.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
+/**
+ * Embedded Monitor content — used from Settings/Monitor sub-tab. The old
+ * bottom-nav Stats tab is gone per PWA parity; all this content renders
+ * inside Settings now. No Scaffold / TopAppBar — caller provides its own
+ * chrome.
+ */
 @Composable
-public fun StatsScreen(vm: StatsViewModel = viewModel()) {
+public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Monitor" + (state.serverName?.let { " — $it" } ?: "")) },
-                actions = {
-                    IconButton(onClick = vm::refresh) {
-                        if (state.refreshing) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(12.dp))
-                        } else {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                        }
-                    }
-                },
+    state.banner?.let {
+        Surface(color = MaterialTheme.colorScheme.errorContainer) {
+            Text(
+                it,
+                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodySmall,
             )
-        },
-    ) { padding ->
-        Column(
-            modifier =
-                Modifier
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxSize(),
-        ) {
-            state.banner?.let {
-                Surface(color = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        it,
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-
-            val s = state.stats
-            val info = state.info
-
-            if (s == null && info == null && state.banner == null) {
-                Box(modifier = Modifier.fillMaxSize().padding(48.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                return@Column
-            }
-
-            info?.let { ServerInfoCard(it) }
-            s?.let {
-                SessionCountsCard(it)
-                ResourceCard(it)
-                UptimeCard(it, info)
-            }
         }
+    }
+
+    val s = state.stats
+    val info = state.info
+
+    if (s == null && info == null && state.banner == null) {
+        Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    info?.let { ServerInfoCard(it) }
+    s?.let {
+        SessionCountsCard(it)
+        ResourceCard(it)
+        UptimeCard(it, info)
     }
 }
 
