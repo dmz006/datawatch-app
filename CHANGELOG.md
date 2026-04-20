@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Docs
+- `docs/plans/README.md` — backlog reconciliation. F1–F6 flipped to Completed
+  (ship versions recorded), BL2/BL4/BL6/BL9/BL10 moved to Completed backlog
+  with shipped-in versions, and the Planned section now points at
+  `docs/parity-plan.md` as the authoritative v1.1 → v1.4 roadmap. Two new
+  permanent BL IDs added for follow-ups called out in v1.0.0 release notes:
+  BL16 (biometric-bound DB passphrase) and BL17 (Wear Data Layer pairing).
+
 ## [1.0.1] — 2026-04-19
 
 ### Fixed
