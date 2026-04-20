@@ -33,7 +33,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Override session state | ✅ | ✅ | shipped v0.3.0 | 2 |
 | Filter sessions by state | ✅ | ✅ | shipped v0.3.0 (chips above list) | 2 |
 | Mute / un-mute session | ✅ | ✅ | shipped v0.3.0 (swipe-to-mute) | 2 |
-| Bulk delete completed sessions | ✅ | ✅ | shipped v0.11.0 (long-press multi-select, NotFound → greyed) | 7 |
+| Bulk delete completed sessions | ✅ | ✅ | shipped v0.11.0 (long-press multi-select); parent landed `/api/sessions/delete` in v4.0.3 | 7 |
 | Pull-to-refresh | ✅ | 🚧 | refresh button shipped; gesture next | 2 |
 
 ### Terminal + scrollback
@@ -69,7 +69,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| Pick LLM backend (Claude/Codex/Ollama/etc.) | ✅ | ✅ (client) | shipped v0.11.0 (Channels radio picker, `POST /api/backends/active`). Parent endpoint not yet in v3.0.0 openapi.yaml — list greys out on `TransportError.NotFound` | 7 |
+| Pick LLM backend (Claude/Codex/Ollama/etc.) | ✅ | ✅ | shipped v0.11.0 (Channels radio picker, `POST /api/backends/active`); parent landed the endpoint in v4.0.3 | 7 |
 | Pick model variant | ✅ | ⏳ | planned | 3 |
 | Edit endpoint URL / API token | ✅ | ⏳ | planned (structured form, raw YAML blocked per ADR-0019) | 3 |
 
@@ -81,7 +81,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Add Signal / Telegram / Slack / Matrix / Twilio / ntfy | ✅ | ⏳ | planned | 3 |
 | Test message round-trip | ✅ | ⏳ | planned | 3 |
 | Per-channel enable / disable | ✅ | ⏳ | planned | 3 |
-| Download CA certificate (Web Server card) | ✅ | ✅ (client) | shipped v0.11.0 (Settings → Servers overflow → save to Downloads → OS install-cert intent). Parent `/api/cert` endpoint pending; toast on `TransportError.NotFound` | 7 |
+| Download CA certificate (Web Server card) | ✅ | ✅ | shipped v0.11.0 (Settings → Servers overflow → save to Downloads → OS install-cert intent); parent landed `/api/cert` in v4.0.3 | 7 |
 
 ### Settings → Session Preferences
 

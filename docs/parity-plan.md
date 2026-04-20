@@ -27,7 +27,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row swipe-to-mute | ✅ | |
 | Session rename (`/api/sessions/rename`) | ✅ | v0.11.0 — overflow menu on Sessions rows |
 | Session restart (`/api/sessions/restart`) | ✅ | v0.11.0 — overflow menu, confirm dialog |
-| Bulk delete completed (`/api/sessions/delete`) | ✅ (client) | v0.11.0 — single + long-press multi-select. Parent endpoint not in v3.0.0 openapi.yaml; client greys out the button on `TransportError.NotFound`. Upstream: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5) |
+| Bulk delete completed (`/api/sessions/delete`) | ✅ | v0.11.0 — single + long-press multi-select. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5)) |
 | Per-row timeline view (`/api/sessions/timeline`) | ❌ | v0.12 |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
@@ -47,7 +47,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Mute per-session | ✅ | |
 | Rename session | ✅ | v0.11.0 — Sessions overflow menu |
 | Restart session | ✅ | v0.11.0 — Sessions overflow menu |
-| Delete session | ✅ (client) | v0.11.0 — overflow + bulk. Parent endpoint gate as above. Upstream: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5) |
+| Delete session | ✅ | v0.11.0 — overflow + bulk. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5)) |
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
 | Inline schedule actions (create scheduled reply) | ❌ | v0.12 |
@@ -93,7 +93,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Pick active backend | ✅ (client) | v0.11.0 — Channels-tab radio picker calls `POST /api/backends/active`. Parent endpoint not in v3.0.0 openapi.yaml; client greys out the list on `TransportError.NotFound`. Upstream: [dmz006/datawatch#7](https://github.com/dmz006/datawatch/issues/7) |
+| Pick active backend | ✅ | v0.11.0 — Channels-tab radio picker calls `POST /api/backends/active`. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#7](https://github.com/dmz006/datawatch/issues/7)) |
 | Edit endpoint URL / API key per backend | ❌ | v0.12 — structured form per ADR-0019 |
 | Pick Ollama model (`/api/ollama/models`) | ❌ | v0.12 |
 | Pick OpenWebUI model (`/api/openwebui/models`) | ❌ | v0.12 |
@@ -106,7 +106,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Add / remove channel | ❌ | v0.12 |
 | Test message round-trip (`/api/channel/send`) | ❌ | v0.12 |
 | Per-channel enable / disable | ❌ | v0.12 |
-| Download CA cert (`/api/cert`) | ✅ (client) | v0.11.0 — Settings → Servers overflow menu → save to Downloads → OS install-cert intent. Parent endpoint not in v3.0.0 openapi.yaml; client surfaces a toast pointing at the upstream issue on `TransportError.NotFound`. Upstream: [dmz006/datawatch#6](https://github.com/dmz006/datawatch/issues/6) |
+| Download CA cert (`/api/cert`) | ✅ | v0.11.0 — Settings → Servers overflow menu → save to Downloads → OS install-cert intent. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#6](https://github.com/dmz006/datawatch/issues/6)) |
 
 ### 5d. Daemon control + introspection
 
