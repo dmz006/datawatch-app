@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +79,16 @@ public fun MatrixSplashScreen(
         MatrixSplashArtwork()
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    // System nav-bar inset first so gesture / 3-button bars
+                    // don't swallow the bottom of our text column on phones
+                    // with edge-to-edge display.
+                    .systemBarsPadding()
+                    // Then a generous bottom margin so the version is still
+                    // clear of the gesture indicator without hugging the edge.
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 56.dp),
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -97,7 +107,7 @@ public fun MatrixSplashScreen(
             Text(
                 "v${Version.VERSION}",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFFA855F7).copy(alpha = 0.75f),
+                color = Color(0xFFA855F7).copy(alpha = 0.85f),
                 modifier = Modifier.padding(top = 8.dp),
             )
             if (replay) {

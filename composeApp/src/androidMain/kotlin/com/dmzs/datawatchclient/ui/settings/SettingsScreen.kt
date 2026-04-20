@@ -73,6 +73,18 @@ import java.io.FileOutputStream
  * Feature-parity with PWA is tracked upstream in
  * [dmz006/datawatch#4](https://github.com/dmz006/datawatch/issues/4).
  */
+/**
+ * Sub-tabs mirroring the parent PWA's Settings view layout. Kept short
+ * so 5 of them fit in a ScrollableTabRow even on narrow displays.
+ */
+private enum class SettingsTab(val label: String) {
+    Servers("Servers"),
+    Schedules("Schedules"),
+    Commands("Commands"),
+    Config("Config"),
+    About("About"),
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun SettingsScreen(
@@ -93,33 +105,68 @@ public fun SettingsScreen(
             }
         }
 
+    var activeTab by remember { mutableStateOf(SettingsTab.Servers) }
+
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
             modifier =
                 Modifier
                     .padding(padding)
-                    .verticalScroll(rememberScrollState())
                     .fillMaxWidth(),
         ) {
-            ServersCard(
-                profiles = profiles,
-                onAddServer = onAddServer,
-                onEditServer = onEditServer,
-                onDelete = { profile ->
-                    GlobalScope.launch(Dispatchers.IO) {
-                        if (profile.bearerTokenRef.isNotBlank()) {
-                            ServiceLocator.tokenVault.remove(profile.bearerTokenRef)
-                        }
-                        ServiceLocator.profileRepository.delete(profile.id)
+            androidx.compose.material3.ScrollableTabRow(
+                selectedTabIndex = activeTab.ordinal,
+                edgePadding = 8.dp,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ) {
+                SettingsTab.entries.forEach { tab ->
+                    androidx.compose.material3.Tab(
+                        selected = activeTab == tab,
+                        onClick = { activeTab = tab },
+                        text = { Text(tab.label, style = MaterialTheme.typography.labelMedium) },
+                    )
+                }
+            }
+
+            Column(
+                modifier =
+                    Modifier
+                        .verticalScroll(rememberScrollState())
+                        .fillMaxWidth(),
+            ) {
+                when (activeTab) {
+                    SettingsTab.Servers -> {
+                        ServersCard(
+                            profiles = profiles,
+                            onAddServer = onAddServer,
+                            onEditServer = onEditServer,
+                            onDelete = { profile ->
+                                GlobalScope.launch(Dispatchers.IO) {
+                                    if (profile.bearerTokenRef.isNotBlank()) {
+                                        ServiceLocator.tokenVault.remove(profile.bearerTokenRef)
+                                    }
+                                    ServiceLocator.profileRepository.delete(profile.id)
+                                }
+                            },
+                        )
+                        SecurityCard()
                     }
-                },
-            )
-            SecurityCard()
-            com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-            com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
-            com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
-            CommsCard()
-            AboutCard(activeProfile = activeProfile)
+                    SettingsTab.Schedules -> {
+                        com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                    }
+                    SettingsTab.Commands -> {
+                        com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
+                    }
+                    SettingsTab.Config -> {
+                        com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
+                        CommsCard()
+                    }
+                    SettingsTab.About -> {
+                        AboutCard(activeProfile = activeProfile)
+                    }
+                }
+            }
         }
     }
 }
