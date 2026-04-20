@@ -33,12 +33,26 @@ import org.json.JSONObject
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 public fun TerminalView(
+    sessionId: String,
     events: List<SessionEvent>,
     modifier: Modifier = Modifier,
 ) {
     var ready by remember { mutableStateOf(false) }
-    var lastWrittenIndex by remember { mutableStateOf(0) }
+    // Keyed to sessionId so navigating A → B resets the write cursor. Without
+    // this, the LaunchedEffect's initial-flush branch (lastWrittenIndex == 0)
+    // fails to fire for session B and nothing is ever written into xterm —
+    // the WebView keeps session A's DOM and looks frozen. See B1.
+    var lastWrittenIndex by remember(sessionId) { mutableStateOf(0) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
+
+    // When the session changes, wipe the xterm DOM so session A's scrollback
+    // doesn't bleed into session B's view.
+    LaunchedEffect(sessionId) {
+        webViewRef.value?.evaluateJavascript(
+            "window.dwClear && window.dwClear();",
+            null,
+        )
+    }
 
     AndroidView(
         modifier = modifier,
@@ -60,6 +74,10 @@ public fun TerminalView(
                         // WebView reports `term.open()` success before the
                         // container has a stable layout in AndroidView.
                         view?.evaluateJavascript("window.dwResize && window.dwResize();", null)
+                        // Belt-and-braces: flip `ready` from Kotlin so the
+                        // initial flush still happens if DwBridge.onReady() was
+                        // swallowed by a JS error before line 168 of host.html.
+                        view?.post { ready = true }
                     }
                 }
                 webChromeClient = object : WebChromeClient() {

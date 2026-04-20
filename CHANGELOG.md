@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Fixed
+- **B1 — terminal freeze on session open.** `TerminalView` held its write
+  cursor (`lastWrittenIndex`) and `ready` flag in `remember {}` unkeyed to
+  `sessionId`, so opening session B after session A reused the WebView with
+  a stale cursor and the LaunchedEffect's initial-flush branch never fired
+  — session B's backlog was never written into xterm, leaving the user on
+  session A's frozen DOM. Keyed the write cursor to `sessionId`, added a
+  `LaunchedEffect(sessionId)` that calls `window.dwClear()` on switch, and
+  flipped `ready = true` from `onPageFinished` as a belt-and-braces path if
+  the JS-side `DwBridge.onReady()` call is swallowed. Also extended the
+  FitAddon retry ladder to 1200 ms / 2500 ms so the viewport has more
+  chances to capture real dimensions on slow devices. Plan:
+  [docs/plans/2026-04-19-terminal-hardening.md](docs/plans/2026-04-19-terminal-hardening.md).
+  Live validation on a connected phone is the next step.
+
 ### Docs
 - `docs/plans/README.md` — backlog reconciliation. F1–F6 flipped to Completed
   (ship versions recorded), BL2/BL4/BL6/BL9/BL10 moved to Completed backlog

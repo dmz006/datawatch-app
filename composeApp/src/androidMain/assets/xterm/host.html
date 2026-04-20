@@ -101,12 +101,16 @@
     }
 
     // Multi-shot fit — WebView layout isn't stable at `term.open()` time,
-    // so retry on rAF + a few delayed ticks until the container has a size.
+    // so retry on rAF + a ladder of delayed ticks until the container has
+    // a size. Two extra retries (1200 ms, 2500 ms) cover slow devices where
+    // AndroidView reflow hasn't settled by 600 ms.
     requestAnimationFrame(function () {
       safeFit();
       setTimeout(safeFit, 50);
       setTimeout(safeFit, 200);
       setTimeout(safeFit, 600);
+      setTimeout(safeFit, 1200);
+      setTimeout(safeFit, 2500);
     });
 
     // Respond to every resize signal the platform gives us.

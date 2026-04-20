@@ -148,6 +148,7 @@ public fun SessionDetailScreen(
             }
 
             TerminalView(
+                sessionId = sessionId,
                 events = state.events,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
