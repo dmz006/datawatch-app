@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +20,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,31 +81,69 @@ public fun ChannelsScreen(vm: ChannelsViewModel = viewModel()) {
                 }
             }
 
-            BackendsCard(state.llm, state.activeBackend)
+            BackendsCard(
+                llm = state.llm,
+                active = state.activeBackend,
+                setActiveSupported = state.setActiveSupported,
+                onSelect = vm::setActive,
+            )
             MessagingNoteCard()
         }
     }
 }
 
 @Composable
-private fun BackendsCard(llm: List<String>, active: String?) {
+private fun BackendsCard(
+    llm: List<String>,
+    active: String?,
+    setActiveSupported: Boolean,
+    onSelect: (String) -> Unit,
+) {
     Card(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("LLM backends", style = MaterialTheme.typography.labelLarge,
-                 color = MaterialTheme.colorScheme.primary)
+            Text(
+                "LLM backends",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            if (!setActiveSupported) {
+                Text(
+                    "Read-only — the server doesn't expose POST /api/backends/active.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
             if (llm.isEmpty()) {
-                Text("No backends reported.",
-                     style = MaterialTheme.typography.bodyMedium,
-                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                     modifier = Modifier.padding(top = 8.dp))
+                Text(
+                    "No backends reported.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             } else {
                 llm.forEach { name ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = setActiveSupported && name != active) {
+                                onSelect(name)
+                            }
+                            .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(name, style = MaterialTheme.typography.bodyMedium)
+                        RadioButton(
+                            selected = name == active,
+                            onClick = if (setActiveSupported && name != active) {
+                                { onSelect(name) }
+                            } else null,
+                            enabled = setActiveSupported,
+                        )
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp),
+                        )
                         if (name == active) {
                             AssistChip(
                                 onClick = {},

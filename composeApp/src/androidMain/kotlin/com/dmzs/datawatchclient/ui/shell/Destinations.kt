@@ -15,6 +15,7 @@ public object Destinations {
     public const val Home: String = "home"
     public const val SessionDetail: String = "sessions/{sessionId}"
     public fun sessionDetail(sessionId: String): String = "sessions/$sessionId"
+    public const val NewSession: String = "sessions/new"
 
     // Bottom-nav tabs under Home.
     public object Tabs {

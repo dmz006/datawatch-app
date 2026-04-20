@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.channels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.TransportError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,12 +23,51 @@ public class ChannelsViewModel : ViewModel() {
         val refreshing: Boolean = false,
         val banner: String? = null,
         val serverName: String? = null,
+        /**
+         * True while the parent server's support for `POST /api/backends/active`
+         * is unconfirmed or positive. Flipped to false on a [TransportError.NotFound]
+         * so the radio list greys out — users can still see the active backend
+         * but cannot switch from the mobile client until the parent lands the
+         * endpoint.
+         */
+        val setActiveSupported: Boolean = true,
     )
 
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init { refresh() }
+
+    /**
+     * Switch the active LLM backend on the server, then refresh. The UI gates
+     * on [UiState.setActiveSupported] — a NotFound from the parent flips that
+     * flag off and surfaces a banner pointing at dmz006/datawatch.
+     */
+    public fun setActive(name: String) {
+        viewModelScope.launch {
+            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val activeId = ServiceLocator.activeServerStore.get()
+            val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
+                ?: return@launch
+            ServiceLocator.transportFor(profile).setActiveBackend(name).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    if (err is TransportError.NotFound) {
+                        _state.value = _state.value.copy(
+                            setActiveSupported = false,
+                            banner = "This server doesn't expose POST /api/backends/active " +
+                                "yet. Tracked upstream at dmz006/datawatch.",
+                        )
+                    } else {
+                        _state.value = _state.value.copy(
+                            banner = "Backend switch failed — ${err.message ?: err::class.simpleName}",
+                        )
+                    }
+                },
+            )
+        }
+    }
 
     public fun refresh() {
         viewModelScope.launch {
@@ -42,11 +82,12 @@ public class ChannelsViewModel : ViewModel() {
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
             ServiceLocator.transportFor(profile).listBackends().fold(
                 onSuccess = { v ->
-                    _state.value = UiState(
+                    _state.value = _state.value.copy(
                         llm = v.llm,
                         activeBackend = v.active,
                         refreshing = false,
                         serverName = profile.displayName,
+                        banner = null,
                     )
                 },
                 onFailure = { err ->

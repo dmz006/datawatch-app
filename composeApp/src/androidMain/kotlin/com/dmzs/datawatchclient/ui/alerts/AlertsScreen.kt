@@ -1,6 +1,8 @@
 package com.dmzs.datawatchclient.ui.alerts
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,9 +21,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Session
+import kotlin.math.absoluteValue
 
 /**
  * Alerts tab — surfaces sessions that need user input. The list is the same
@@ -29,7 +34,10 @@ import com.dmzs.datawatchclient.domain.Session
  * agrees with what's renderable here.
  *
  * Tap a row to jump straight into that session's detail screen (where the
- * reply composer is pre-focused if the prompt is current).
+ * reply composer is pre-focused if the prompt is current). Swipe **left** on
+ * a row to dismiss it — dismissal mutes the underlying session, which drops
+ * it from the `needsInput && !muted` projection without destroying the
+ * session itself. Matches Gmail / Discord left-swipe conventions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +60,11 @@ public fun AlertsScreen(
             } else {
                 LazyColumn {
                     items(state.alerts, key = { it.id }) { session ->
-                        AlertRow(session = session, onClick = { onOpenSession(session.id) })
+                        AlertRow(
+                            session = session,
+                            onClick = { onOpenSession(session.id) },
+                            onDismiss = { vm.dismiss(session.id) },
+                        )
                         HorizontalDivider()
                     }
                 }
@@ -62,25 +74,52 @@ public fun AlertsScreen(
 }
 
 @Composable
-private fun AlertRow(session: Session, onClick: () -> Unit) {
-    Column(
+private fun AlertRow(
+    session: Session,
+    onClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { 80.dp.toPx() }
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp),
+            .pointerInput(session.id) {
+                var dx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dx = 0f },
+                    onDragEnd = {
+                        // Left swipe (negative dx) past threshold → dismiss.
+                        // Right swipe is reserved — matches SessionsScreen's
+                        // swipe-to-mute convention on the opposite direction.
+                        if (dx < -swipeThresholdPx) onDismiss()
+                    },
+                    onDragCancel = { dx = 0f },
+                ) { _, delta -> dx += delta }
+            },
     ) {
-        Text(session.id, style = MaterialTheme.typography.titleSmall)
-        Text(
-            session.taskSummary ?: "(no summary)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        Text(
-            "Waiting on input · " + (session.hostnamePrefix ?: ""),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+        ) {
+            Column {
+                Text(session.id, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    session.taskSummary ?: "(no summary)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Text(
+                    "Waiting on input · " + (session.hostnamePrefix ?: ""),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
     }
 }

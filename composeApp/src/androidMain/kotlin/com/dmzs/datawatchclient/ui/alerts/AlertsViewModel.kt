@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Drives the Alerts tab list and the bottom-nav alert badge. Sources sessions
@@ -38,4 +39,18 @@ public class AlertsViewModel : ViewModel() {
             UiState(alerts = alerts, count = alerts.size)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+
+    /**
+     * Dismisses an alert by muting the underlying session — the
+     * `needsInput && !muted` projection immediately drops the row, and the
+     * bottom-nav badge re-counts. The session itself is preserved; the user
+     * can unmute from Sessions-tab swipe-to-mute. v0.12+ may migrate to the
+     * parent's `POST /api/alerts` (`markAlertRead`) once the /api/alerts
+     * wire shape is fully confirmed — the transport method already exists.
+     */
+    public fun dismiss(sessionId: String) {
+        viewModelScope.launch {
+            ServiceLocator.sessionRepository.setMuted(sessionId, muted = true)
+        }
+    }
 }

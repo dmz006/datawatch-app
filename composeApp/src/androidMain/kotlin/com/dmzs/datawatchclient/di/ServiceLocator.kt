@@ -72,12 +72,26 @@ public object ServiceLocator {
     public const val TRUST_ALL_SENTINEL: String = "ALLOW_ALL_INSECURE"
 
     /**
+     * Per-profile [TransportClient] cache. Reused so downstream observers of
+     * [TransportClient.isReachable] see a stable Flow across refreshes instead
+     * of a fresh `false` initial state every call. Keyed on profile.id +
+     * baseUrl + trust-anchor so a profile edit invalidates the cached instance.
+     */
+    private val transportCache: MutableMap<String, Pair<TransportClient, String>> = mutableMapOf()
+
+    /**
      * Build a [TransportClient] for a given server profile. When the profile has
      * [ServerProfile.trustAnchorSha256] == [TRUST_ALL_SENTINEL], a trust-all
      * HttpClient is used instead of the system-trust default.
+     *
+     * Returns the cached instance when the profile's base URL + trust-anchor +
+     * bearer-ref have not changed — so `isReachable` flows are stable.
      */
     public fun transportFor(profile: ServerProfile): TransportClient {
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
+        val signature = "${profile.baseUrl}|${profile.trustAnchorSha256 ?: ""}|${alias ?: ""}"
+        val cached = transportCache[profile.id]
+        if (cached != null && cached.second == signature) return cached.first
         val tokenProvider: (suspend () -> String)? = alias?.let {
             { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
         }
@@ -86,7 +100,9 @@ public object ServiceLocator {
         } else {
             httpClient
         }
-        return RestTransport(profile, client, tokenProvider)
+        val transport = RestTransport(profile, client, tokenProvider)
+        transportCache[profile.id] = transport to signature
+        return transport
     }
 
     /**

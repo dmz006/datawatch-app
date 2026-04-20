@@ -31,6 +31,7 @@ import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
 import com.dmzs.datawatchclient.ui.servers.EditServerScreen
 import com.dmzs.datawatchclient.ui.servers.ServerPickerSheet
+import com.dmzs.datawatchclient.ui.sessions.NewSessionScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
@@ -175,6 +176,18 @@ private fun Nav(
                 onOpenSession = { id ->
                     navController.navigate(Destinations.sessionDetail(id))
                 },
+                onNewSession = { navController.navigate(Destinations.NewSession) },
+            )
+        }
+        composable(Destinations.NewSession) {
+            NewSessionScreen(
+                onStarted = { sessionId ->
+                    navController.navigate(Destinations.sessionDetail(sessionId)) {
+                        popUpTo(Destinations.NewSession) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onCancel = { navController.popBackStack() },
             )
         }
         composable(
@@ -215,6 +228,7 @@ private fun HomeShell(
     onAddServer: () -> Unit,
     onEditServer: (String) -> Unit,
     onOpenSession: (String) -> Unit,
+    onNewSession: () -> Unit,
 ) {
     val tabNav = rememberNavController()
     val alertsVm: AlertsViewModel = viewModel()
@@ -232,6 +246,7 @@ private fun HomeShell(
                     onOpenSession = onOpenSession,
                     onEditServer = onEditServer,
                     onAddServer = onAddServer,
+                    onNewSession = onNewSession,
                 )
             }
             composable(Destinations.Tabs.Alerts) {
