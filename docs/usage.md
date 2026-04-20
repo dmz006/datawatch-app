@@ -107,6 +107,12 @@ scrollback). Output events stream in live. Above the terminal sits a
   long-press + drag on the terminal) and writes it to the Android
   clipboard. A toast confirms the character count; an empty selection
   toasts "No selection to copy".
+- **Load backlog icon (history)** — fetches up to 1000 lines of the
+  session's pre-subscription PTY output via `GET /api/output?id=&n=`
+  and prepends them into the terminal buffer. Useful when you join a
+  long-running session and want to see what happened before you
+  subscribed. Disables itself after first use per session to prevent
+  double-prepending; open a fresh session to re-enable.
 
 ### Event stream
 

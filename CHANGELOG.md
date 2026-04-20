@@ -45,6 +45,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
   `*secret*`, `*key*`, `password`, `passphrase`, etc.) in case the
   parent's mask misses one. Write is explicitly deferred to v0.13 per
   ADR-0019 (structured form).
+- **Terminal backlog pager** (Phase 6) — third button in the terminal
+  toolbar (history icon) fetches up to 1000 lines of pre-subscription
+  PTY output via `GET /api/output` and prepends them into xterm.
+  Host bridge: `window.dwPrependBacklog(s)`; controller method
+  `TerminalController.prepend(text)`. Button disables after first use
+  per session to prevent double-prepending.
 
 ### Fixed
 

@@ -82,6 +82,23 @@ public class TerminalController internal constructor() {
             onResult(unwrapped)
         }
     }
+
+    /**
+     * Fetch the server-side session output backlog (N lines of PTY text)
+     * and prepend it into xterm. Idempotent per session via an internal
+     * already-loaded-for flag; toolbar button should disable itself after
+     * first click to mirror this at the UI level.
+     *
+     * The fetch and the write live off-thread inside the provided
+     * [scope.launch] at the call site — this method just writes to JS.
+     * Caller passes the already-fetched text to [prepend].
+     */
+    public fun prepend(text: String) {
+        webView?.evaluateJavascript(
+            "window.dwPrependBacklog && window.dwPrependBacklog(${jsonString(text)});",
+            null,
+        )
+    }
 }
 
 @Composable

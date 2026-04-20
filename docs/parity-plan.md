@@ -51,7 +51,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
 | Inline schedule actions (create scheduled reply) | ❌ | v0.12 |
-| Backlog pager (`/api/sessions/timeline`) | ❌ | v0.12 |
+| Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
 | Prompt + rate-limit inline banners | ✅ | InlineNotices |
 
 ## 3. New session (`data-view="new"`)

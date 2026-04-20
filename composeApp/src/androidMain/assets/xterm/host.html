@@ -201,6 +201,33 @@
       try { search.clearDecorations(); } catch (e) { log('searchClear failed: ' + e); }
     };
 
+    /**
+     * Prepend pre-subscription backlog into xterm — used by the v0.12
+     * "Load backlog" button. We can't literally insert lines before
+     * existing ones (xterm doesn't support inserting above the current
+     * cursor position), so we reset the scrollback, write the backlog
+     * first, then the live buffer is rewritten by the next incremental
+     * flush. In practice the write path after a reset starts from
+     * lastWrittenIndex = 0 on the Kotlin side via its own LaunchedEffect
+     * retrigger, so this is safe as long as callers invoke it immediately
+     * after opening a session — which is the UX we expose.
+     *
+     * Returns the char count written for log/debug.
+     */
+    window.dwPrependBacklog = function (s) {
+      try {
+        term.reset();
+        var str = String(s || '');
+        // Normalise newlines to CRLF so xterm gives us distinct rows.
+        str = str.replace(/\r?\n/g, '\r\n');
+        term.write(str);
+        return str.length;
+      } catch (e) {
+        log('prependBacklog failed: ' + e);
+        return 0;
+      }
+    };
+
     window.dwCopySelection = function () {
       try {
         var sel = term.getSelection();

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,11 +23,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * Terminal toolbar — v0.11 parity affordance. Shows a search button and a
@@ -40,10 +46,14 @@ import androidx.compose.ui.unit.dp
 public fun TerminalToolbar(
     controller: TerminalController,
     modifier: Modifier = Modifier,
+    sessionId: String? = null,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    // Keyed to sessionId so switching sessions re-enables the button.
+    var backlogLoaded by remember(sessionId) { mutableStateOf(false) }
     val context: Context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -61,6 +71,63 @@ public fun TerminalToolbar(
                     onClick = { controller.copyToClipboard(context) },
                 ) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = "Copy selection")
+                }
+                if (sessionId != null) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                val profiles =
+                                    ServiceLocator.profileRepository.observeAll().first()
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val profile =
+                                    profiles.firstOrNull {
+                                        it.id == activeId && it.enabled &&
+                                            activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+                                    }
+                                        ?: profiles.firstOrNull { it.enabled }
+                                if (profile == null) {
+                                    Toast.makeText(
+                                        context,
+                                        "No active server",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                    return@launch
+                                }
+                                ServiceLocator.transportFor(profile)
+                                    .fetchOutput(sessionId, lines = 1000)
+                                    .fold(
+                                        onSuccess = { backlog ->
+                                            controller.prepend(backlog)
+                                            backlogLoaded = true
+                                            Toast.makeText(
+                                                context,
+                                                "Loaded backlog (${backlog.length} chars)",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        },
+                                        onFailure = { err ->
+                                            Toast.makeText(
+                                                context,
+                                                "Backlog load failed — ${err.message ?: err::class.simpleName}",
+                                                Toast.LENGTH_LONG,
+                                            ).show()
+                                        },
+                                    )
+                            }
+                        },
+                        enabled = !backlogLoaded,
+                    ) {
+                        Icon(
+                            Icons.Filled.History,
+                            contentDescription = "Load backlog",
+                            tint =
+                                if (backlogLoaded) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                        )
+                    }
                 }
             } else {
                 OutlinedTextField(

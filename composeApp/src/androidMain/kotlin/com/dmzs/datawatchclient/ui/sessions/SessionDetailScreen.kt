@@ -160,7 +160,7 @@ public fun SessionDetailScreen(
             }
 
             val terminalController = rememberTerminalController()
-            TerminalToolbar(controller = terminalController)
+            TerminalToolbar(controller = terminalController, sessionId = sessionId)
             TerminalView(
                 sessionId = sessionId,
                 events = state.events,
