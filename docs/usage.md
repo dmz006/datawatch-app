@@ -64,6 +64,11 @@ is active). Opens the **New Session** screen — a form with:
 
 - **Task** — multi-line text; what you want the session to do.
 - **Server** — picker; defaults to the current active server.
+- **Working directory (optional)** — server-side path. Type it or tap
+  **Browse…** to open the server-side directory picker (breadcrumb,
+  `..` to go up, tap a folder to descend, "Pick this folder" to
+  select). Lands on `/api/sessions/start` as the `cwd` field; older
+  server builds ignore the field and start in their default dir.
 - **Start** — posts `/api/sessions/start`, then navigates straight into
   the new session's detail view.
 
@@ -175,7 +180,16 @@ Live polling of `GET /api/stats` every 5 seconds for the active profile.
     toast pointing at the upstream issue instead.
   - **Delete server** — removes the profile and its bearer token.
 - **Security card** — biometric unlock toggle.
-- **Comms card** — placeholder for full channel config (v0.12+).
+- **Schedules card** — lists every scheduled command on the active
+  server (`GET /api/schedule`). Each row shows task + cron +
+  enabled/disabled chip with a delete icon. The **+** in the card
+  header opens a **New schedule** dialog with fields for task
+  (multi-line), cron expression (free-form — the server validates;
+  inline hint shows common patterns like `0 9 * * *`), and enabled
+  toggle. Also reachable from any session detail screen's overflow
+  menu as **Schedule reply** — pre-seeds the task with the current
+  detected prompt so you can turn a reply into a recurring nudge.
+- **Comms card** — placeholder for full channel config (v0.13+).
 - **About card** — live animated logo, app version + build SHA, license,
   package id, source + parent project links. Also a **Connected to**
   row showing `<hostname> · datawatch vX.Y.Z` read live from

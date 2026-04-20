@@ -62,6 +62,8 @@ public fun NewSessionScreen(
 
     var task by remember { mutableStateOf("") }
     var selectedProfileId by remember { mutableStateOf<String?>(null) }
+    var workingDir by remember { mutableStateOf("") }
+    var filePickerOpen by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
 
@@ -140,6 +142,30 @@ public fun NewSessionScreen(
                 onSelect = { selectedProfileId = it },
             )
 
+            Text(
+                "Working directory (optional)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = workingDir,
+                    onValueChange = { workingDir = it },
+                    placeholder = { Text("Server path — e.g. /home/user/code") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    onClick = { filePickerOpen = true },
+                    enabled = selectedProfileId != null,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("Browse…") }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 horizontalArrangement = Arrangement.End,
@@ -159,7 +185,10 @@ public fun NewSessionScreen(
                             banner = null
                             scope.launch {
                                 ServiceLocator.transportFor(profile)
-                                    .startSession(task = task.trim())
+                                    .startSession(
+                                        task = task.trim(),
+                                        workingDir = workingDir.trim().ifBlank { null },
+                                    )
                                     .fold(
                                         onSuccess = { sessionId ->
                                             submitting = false
@@ -187,6 +216,16 @@ public fun NewSessionScreen(
                 }
             }
         }
+    }
+
+    if (filePickerOpen) {
+        com.dmzs.datawatchclient.ui.files.FilePickerDialog(
+            pickerMode = com.dmzs.datawatchclient.ui.files.PickerMode.FolderOnly,
+            onPicked = { picked ->
+                filePickerOpen = false
+                if (picked != null) workingDir = picked
+            },
+        )
     }
 }
 

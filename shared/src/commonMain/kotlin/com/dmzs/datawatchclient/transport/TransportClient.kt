@@ -32,10 +32,14 @@ public interface TransportClient {
     /** GET /api/sessions. */
     public suspend fun listSessions(): Result<List<Session>>
 
-    /** POST /api/sessions/start. Returns new session id. */
+    /**
+     * POST /api/sessions/start. Returns new session id. [workingDir] is an
+     * optional server-side directory path (v0.12 file-picker integration).
+     */
     public suspend fun startSession(
         task: String,
         serverHint: String? = null,
+        workingDir: String? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */

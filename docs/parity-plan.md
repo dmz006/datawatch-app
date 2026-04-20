@@ -62,7 +62,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Pick LLM backend (`/api/backends`) | ✅ (read-only) | Channels tab; per-session backend selection during start is v0.11 |
 | Pick model variant | ❌ | v0.11 — needs `/api/ollama/models` + `/api/openwebui/models` |
 | Pick profile (`/api/profiles`) | ❌ | v0.11 — F10 ephemeral-agent profiles |
-| Directory picker (`/api/files`) | ❌ | v0.12 |
+| Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
 | Voice-to-new-session | ❌ | v0.12 — composer mic exists; "new:" prefix auto-exec wiring needed |
 
 ## 4. Alerts (`data-view="alerts"`)

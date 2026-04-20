@@ -111,13 +111,20 @@ public class RestTransport(
     override suspend fun startSession(
         task: String,
         serverHint: String?,
+        workingDir: String?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
                 client.post("${profile.baseUrl}/api/sessions/start") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
-                    setBody(StartSessionDto(task = task, serverHint = serverHint))
+                    setBody(
+                        StartSessionDto(
+                            task = task,
+                            serverHint = serverHint,
+                            workingDir = workingDir,
+                        ),
+                    )
                 }.body()
             res.sessionId
         }

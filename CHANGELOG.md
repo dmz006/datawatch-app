@@ -8,6 +8,50 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added — v0.12 sprint (in progress)
+
+- **Transport layer** for v0.12 scope (shipped `93351fa`) — 8 new
+  `TransportClient` methods:
+  `listSchedules` / `createSchedule` / `deleteSchedule` (`/api/schedule`),
+  `browseFiles` (`/api/files?path=`),
+  `listCommands` / `saveCommand` / `deleteCommand` (`/api/commands`),
+  `fetchConfig` (`/api/config`). 4 new domain types
+  (`Schedule`, `FileEntry`/`FileList`, `SavedCommand`, `ConfigView`).
+  9 new MockWebServer tests.
+- **Schedules UI** (shipped `cdf01ea`) — new Settings → Schedules card
+  lists scheduled commands with per-row task/cron/enabled chip +
+  delete, plus a **+ New schedule** dialog (task multi-line, cron
+  free-form with inline hint, enabled toggle). Session detail
+  overflow menu gets a **Schedule reply…** action that pre-seeds the
+  dialog with the current prompt's text.
+- **Server-side file picker** (this commit) — reusable
+  `FilePickerDialog` under `ui/files/`. Breadcrumb path, `..` to
+  go up, dirs-first sort, "Pick this folder" for dir-mode, tap-a-file
+  for file-mode. Modes: `FolderOnly` / `FileOnly` / `FolderOrFile`.
+  Wired into `NewSessionScreen` as the new optional
+  **Working directory** field (lands on `/api/sessions/start` as
+  `cwd` — server ignores the field on pre-v4.0.3 builds).
+
+### Fixed
+
+- **B7 — CI `ktlintCheck` parse failure on `FederationDtos.kt`**
+  (shipped `c4f003f`). Every CI run since 2026-04-20 was red.
+  Root cause: `ktlint-plugin` 12.1.1 bundled ktlint 1.1, pre-Kotlin-2.0.
+  Bumped to 12.3.0 (ktlint 1.5.0). Added `.editorconfig` and
+  `config/detekt/detekt.yml` with Compose-friendly rule exemptions
+  (`@Composable` escapes `function-naming`; `MagicNumber` excludes
+  UI packages). Rewrote 3 KDocs that contained parser-tripping
+  `{ ... }` / `<name>` / `[Foo...]` tokens. CI green again.
+
+### Changed
+
+- **Parent `dmz006/datawatch` v4.0.3 landed** the 9 endpoints filed
+  (#5–#13 closed). Docs/parity-plan + parity-status rows for the v0.11
+  `(client)`-gated features flipped to plain ✅ with "shipped in
+  parent v4.0.3" annotation. The v0.11 client-side
+  `TransportError.NotFound` grey-out fallbacks auto-unstick against
+  any v4.0.3+ server; no mobile code change needed.
+
 ## [0.11.0] — 2026-04-20
 
 Session power-user parity sprint — closes the 8 items in

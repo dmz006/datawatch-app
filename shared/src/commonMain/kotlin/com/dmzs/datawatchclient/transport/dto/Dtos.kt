@@ -38,6 +38,11 @@ public data class StartSessionDto(
     val task: String,
     @SerialName("server") val serverHint: String? = null,
     @SerialName("profile") val profile: String? = null,
+    /**
+     * Optional server-side working directory. Populated from the v0.12
+     * mobile file-picker. Older server builds ignore unknown fields.
+     */
+    @SerialName("cwd") val workingDir: String? = null,
 )
 
 @Serializable
