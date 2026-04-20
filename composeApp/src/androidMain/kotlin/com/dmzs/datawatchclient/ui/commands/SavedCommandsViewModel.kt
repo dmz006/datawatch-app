@@ -7,10 +7,18 @@ import com.dmzs.datawatchclient.domain.SavedCommand
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportError
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -21,6 +29,7 @@ import kotlinx.coroutines.launch
  * which keeps selection state (NewSessionScreen) independent of list
  * state (Settings). Both talk to the same server endpoint.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 public class SavedCommandsViewModel : ViewModel() {
     public data class UiState(
         val commands: List<SavedCommand> = emptyList(),
@@ -34,7 +43,21 @@ public class SavedCommandsViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
-    init { refresh() }
+    init {
+        // Auto-refresh when the active profile becomes reachable. Replaces
+        // a brittle one-shot init refresh that stuck on "server unreachable"
+        // forever if the cold-boot probe failed.
+        ServiceLocator.profileRepository.observeAll()
+            .flatMapLatest { profiles ->
+                val profile = profiles.firstOrNull { it.enabled } ?: return@flatMapLatest flowOf(null)
+                ServiceLocator.transportFor(profile).isReachable
+                    .map { reachable -> if (reachable) profile else null }
+            }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .onEach { refresh() }
+            .launchIn(viewModelScope)
+    }
 
     public fun refresh() {
         viewModelScope.launch {

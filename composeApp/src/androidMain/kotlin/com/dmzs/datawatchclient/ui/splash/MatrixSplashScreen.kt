@@ -89,10 +89,16 @@ public fun MatrixSplashScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
+                "AI Session Monitor",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFF94A3B8),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Text(
                 "v${Version.VERSION}",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF6D28D9),
-                modifier = Modifier.padding(top = 4.dp),
+                color = Color(0xFFA855F7).copy(alpha = 0.75f),
+                modifier = Modifier.padding(top = 8.dp),
             )
             if (replay) {
                 TextButton(

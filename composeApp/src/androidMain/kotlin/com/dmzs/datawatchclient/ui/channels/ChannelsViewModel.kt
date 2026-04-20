@@ -4,10 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.TransportError
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -15,6 +23,7 @@ import kotlinx.coroutines.launch
  * once on init plus on user-triggered refresh. Sprint 4 will add a poll loop
  * once backend changes can be observed via WS.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 public class ChannelsViewModel : ViewModel() {
     public data class UiState(
         val llm: List<String> = emptyList(),
@@ -36,7 +45,20 @@ public class ChannelsViewModel : ViewModel() {
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
-        refresh()
+        // Re-fetch whenever the active profile becomes reachable. Fixes the
+        // sticky "server unreachable" banner the user reported: on cold boot
+        // the first probe sometimes fails before the network is up, and
+        // without this observer the banner never clears until a manual tap.
+        ServiceLocator.profileRepository.observeAll()
+            .flatMapLatest { profiles ->
+                val profile = profiles.firstOrNull { it.enabled } ?: return@flatMapLatest flowOf(null)
+                ServiceLocator.transportFor(profile).isReachable
+                    .map { reachable -> if (reachable) profile else null }
+            }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .onEach { refresh() }
+            .launchIn(viewModelScope)
     }
 
     /**
