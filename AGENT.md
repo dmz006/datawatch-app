@@ -113,11 +113,19 @@ parallel implementation.
 
 ## Versioning
 
+**1.0.0 is reserved (ADR-0043).** The v1.0.0 tag labels the release that
+reaches 100 % client-side parity with the parent PWA at
+[dmz006/datawatch](https://github.com/dmz006/datawatch/) — every row in
+`docs/parity-status.md` flipped to ✅. Do NOT bump to 1.0.0 for any
+other reason. Until parity is reached, all releases are 0.x. Minor
+bumps inside 0.x still follow the rules below.
+
 **Version bump rules:**
 - **Every completed feature** (new screen, new transport, new Wear/Auto surface) = **minor**
   (e.g. `0.7.4` → `0.8.0`) unless user designates otherwise.
 - **Bug fixes, docs, refactors, config changes** = **patch** (e.g. `0.7.4` → `0.7.5`).
-- **Breaking changes** (user must explicitly request) = **major** (e.g. `0.7.4` → `1.0.0`).
+- **Breaking changes** (user must explicitly request) = **major** — but in this project,
+  major (1.0.0) is gated on PWA parity per ADR-0043, not on breakage alone.
 
 **Version string lives in THREE places — update together in every release commit:**
 - `composeApp/build.gradle.kts` — `versionName = "X.Y.Z"` and `versionCode` monotonic
@@ -384,3 +392,31 @@ skip this.
 
 *These guardrails apply when Claude operates on this repository. They do not restrict what
 datawatch sessions run from this app can do on the server side.*
+
+
+# Memory & Knowledge (datawatch)
+
+Use the datawatch memory system proactively during this session.
+
+## Before starting work
+- Use `memory_recall` to check if similar work has been done
+- Use `kg_query` to understand entity relationships
+- Use `research_sessions` for deep cross-session search
+
+## During work
+- Use `memory_remember` to save key decisions and patterns
+- Use `kg_add` to record relationships
+
+## When asked about project history
+Always check memory first with `memory_recall` before answering from training data.
+
+## Available tools
+| Tool | Purpose |
+|------|---------|
+| `memory_recall` | Semantic search across project memories |
+| `memory_remember` | Save decisions, patterns, context |
+| `kg_query` | Entity relationship queries |
+| `kg_add` | Record new relationships |
+| `research_sessions` | Cross-session research |
+| `copy_response` | Last LLM response from any session |
+| `get_prompt` | Last user prompt from any session |

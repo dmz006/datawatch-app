@@ -2,10 +2,9 @@
 
 ## Supported versions
 
-Pre-MVP (v0.x): no security support commitment. Report issues but expect best-effort
-response.
-
-MVP (v1.0.0) onward: the latest released version receives patches. Older versions do not.
+Pre-parity (v0.x): the latest released version receives patches. Older
+versions do not. (Per ADR-0043, v1.0.0 is reserved for the release that
+reaches full PWA parity — there is no separate "pre-MVP" tier.)
 
 ## Reporting a vulnerability
 

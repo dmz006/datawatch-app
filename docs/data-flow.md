@@ -3,7 +3,7 @@
 Sequence diagrams for every interaction the app performs. Numbering matches the feature
 rollout in `sprint-plan.md`.
 
-> **v1.0.0 note:** every flow documented below is implemented. The parent
+> **v0.10.0 note:** every flow documented below is implemented. The parent
 > endpoints referenced as "proposed" in earlier revisions shipped in
 > datawatch v3.0.0 (`/api/devices/register`, `/api/voice/transcribe`,
 > `/api/federation/sessions`) and are now the real transport targets.

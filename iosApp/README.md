@@ -22,7 +22,7 @@ This module exists so that:
 2. The KMP shared module's `iosMain` source set has a real target to export to.
 3. Future iOS work can begin without a stack migration.
 
-## Not in scope pre-v1.0.0 (Android)
+## Not in scope pre-1.0 parity (Android)
 
 - Actual Swift UI, networking bootstrap, push integration, voice capture.
 - App Store Connect registration (see

@@ -1,4 +1,4 @@
-# Approved Decisions (ADRs 0001–0041)
+# Approved Decisions (ADRs 0001–0043)
 
 All decisions approved by user on 2026-04-17 during the four-batch design Q&A.
 One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-<slug>.md`
@@ -160,9 +160,11 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
 
 ### MVP scope (adjustment)
 
-- **ADR-0042 — Five items promoted from post-MVP backlog to v1.0.0 scope** (2026-04-18).
+- **ADR-0042 — Five items promoted from post-MVP backlog to v0.10.0 scope** (2026-04-18;
+  originally written as "v1.0.0" — see ADR-0043 for the version-label correction).
   User decision: the following were previously deferred to post-MVP but are now
-  required for the v1.0.0 production release. Partially supersedes ADR-0011
+  required for the ADR-0042 scope-close release (shipped as v0.10.0 2026-04-19).
+  Partially supersedes ADR-0011
   (biometric deferred) and ADR-0028 (Wear Tile deferred):
     1. **Home-screen widget** — session count + voice quick-action. Lands Sprint 3.
     2. **Wear Tile (w2)** — at-a-glance session state on the watchface tile surface
@@ -182,3 +184,18 @@ One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-
   and production target 2026-07-10 held. If any of the five threatens those
   dates, the weakest (candidate: 3-finger gesture) slips back to post-MVP
   rather than pushing the release. User notified at sprint retro.
+
+### Version-label correction (2026-04-20)
+
+- **ADR-0043 — 1.0.0 is reserved for full PWA parity.** User direction
+  2026-04-20: the v1.0.0 tag created 2026-04-19 on the ADR-0042 scope-close
+  commit was mislabelled. 1.0.0 labels only the release that reaches 100 %
+  client-side parity with the PWA at
+  [dmz006/datawatch](https://github.com/dmz006/datawatch/) —
+  i.e. every row in `docs/parity-status.md` flipped to ✅. The earlier
+  v1.0.0/v1.0.1 tags are renumbered to v0.10.0/v0.10.1 (same commits, same
+  artefacts). The v1.1 → v1.4 roadmap in `docs/parity-plan.md` is
+  renumbered v0.11 → v0.14 accordingly. ADR-0042 keeps its original text
+  (the scope-close decision stands) but every "v1.0.0" reference in that
+  ADR now reads v0.10.0. No functional change to scope, timeline, or
+  release artefacts — this is a labelling correction only.

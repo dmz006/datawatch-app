@@ -1,8 +1,8 @@
 # Terminal hardening (B1)
 
 - **Date started:** 2026-04-19
-- **Version at plan time:** v1.0.1
-- **Target ship version:** v1.0.2 (patch)
+- **Version at plan time:** v0.10.1
+- **Target ship version:** v0.10.2 (patch)
 - **Bug:** B1 — terminal freezes on session open; no scroll, no font adjust, no ANSI colour render
 - **Scope:** `composeApp/src/androidMain/kotlin/com/dmzs/datawatchclient/ui/sessions/TerminalView.kt`, `composeApp/src/androidMain/assets/xterm/host.html`, optional `SessionDetailScreen.kt` for wiring.
 
@@ -46,5 +46,5 @@
 ## Out of scope for this patch
 
 - Adjustable font size / pinch-to-zoom — tracked as BL13.
-- xterm search + copy affordances — v1.1 per `docs/parity-plan.md`.
+- xterm search + copy affordances — v0.11 per `docs/parity-plan.md`.
 - Input echo from terminal back to the WS reply lane — still Sprint-3 era no-op; not a regression.

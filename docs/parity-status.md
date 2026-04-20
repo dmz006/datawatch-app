@@ -158,7 +158,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Notification reply via watch | ⏳ | planned | 4 |
 | Watchface complication | ⏳ | planned | 4 |
 | Rich Wear app | ⏳ | planned | 4 |
-| Wear Tile (BL4) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 4 |
+| Wear Tile (BL4) | ⏳ | **promoted to v0.10.0 per ADR-0042** | 4 |
 
 ### Android Auto (mobile-only)
 
@@ -166,7 +166,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 |---------|--------|--------|--------|
 | Public messaging template (Play-compliant) | ⏳ | planned | 4 |
 | Internal full passenger UI | ⏳ | planned | 4 |
-| Auto Tile — parked-state dashboard (dev flavor) (BL10) | ⏳ | **promoted to v1.0.0 per ADR-0042** | 4 |
+| Auto Tile — parked-state dashboard (dev flavor) (BL10) | ⏳ | **promoted to v0.10.0 per ADR-0042** | 4 |
 
 ### Home screen + gestures (mobile-only)
 
@@ -179,7 +179,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | Mobile | Status | Sprint |
 |---------|--------|--------|--------|
-| Biometric unlock (optional, opt-in) (BL2) | ⏳ | **promoted to v1.0.0 per ADR-0042** (amends ADR-0011) | 5 |
+| Biometric unlock (optional, opt-in) (BL2) | ⏳ | **promoted to v0.10.0 per ADR-0042** (amends ADR-0011) | 5 |
 
 ## Confidence
 
@@ -213,7 +213,8 @@ Play Store review.
 | 3 | 2026-05-30 → 2026-06-12 | v0.4.0 | Voice, MCP SSE, all-servers, channels, stats, memory/KG → MVP |
 | 4 | 2026-06-13 → 2026-06-26 | v0.5.0 | Wear OS + Android Auto |
 | 5 | 2026-06-27 → 2026-07-03 | v0.9.0 | Harden, Play submission, Auto Driver Distraction review |
-| 6 | 2026-07-04 → 2026-07-10 | **v1.0.0** | Open testing → Production |
+| 6 | 2026-07-04 → 2026-07-10 | **v0.10.0** | ADR-0042 scope close (was mis-tagged v1.0.0) |
+| post-Sprint 6 | TBD | **v1.0.0** | 100 % PWA parity — every row in this matrix ✅ |
 
 This document is reviewed at the close of every sprint and re-validated
 against the current PWA at every release.

@@ -1,9 +1,10 @@
 # Installation
 
 How to get the datawatch mobile app onto a phone, a Wear OS watch, or an
-Android Auto head unit. v1.0.0 is distributed as APK artefacts on the
-[GitHub release page](https://github.com/dmz006/datawatch-app/releases/tag/v1.0.0)
-until the Play Store listing goes live.
+Android Auto head unit. v0.10.0 is distributed as APK artefacts on the
+[GitHub release page](https://github.com/dmz006/datawatch-app/releases/tag/v0.10.0)
+until the Play Store listing goes live. (v1.0.0 is reserved for the
+release that reaches full PWA parity — see ADR-0043.)
 
 ## Before you start
 
@@ -32,12 +33,12 @@ v3.0.0 or newer. Make a note of:
 
 ### Installation
 
-Download `datawatch-1.0.0.apk` from the v1.0.0 release.
+Download `datawatch-0.10.0.apk` from the v0.10.0 release.
 
 **Option A — ADB (recommended)**
 
 ```bash
-adb install -r datawatch-1.0.0.apk
+adb install -r datawatch-0.10.0.apk
 ```
 
 **Option B — Sideload**
@@ -48,10 +49,10 @@ adb install -r datawatch-1.0.0.apk
    (or browser) permission, then install.
 4. Remove that permission afterwards.
 
-Signature: SHA-256 in `datawatch-1.0.0-SHA256SUMS.txt`. Verify before installing:
+Signature: SHA-256 in `datawatch-0.10.0-SHA256SUMS.txt`. Verify before installing:
 
 ```bash
-sha256sum -c datawatch-1.0.0-SHA256SUMS.txt
+sha256sum -c datawatch-0.10.0-SHA256SUMS.txt
 ```
 
 ### First launch
@@ -116,7 +117,7 @@ reloads.
 5. Install:
 
    ```bash
-   adb -s 127.0.0.1:4444 install -r datawatch-wear-1.0.0.apk
+   adb -s 127.0.0.1:4444 install -r datawatch-wear-0.10.0.apk
    ```
 
 ### Installation via Wi-Fi ADB (watch with Wi-Fi)
@@ -126,7 +127,7 @@ reloads.
 
    ```bash
    adb connect <watch-ip>:5555
-   adb -s <watch-ip>:5555 install -r datawatch-wear-1.0.0.apk
+   adb -s <watch-ip>:5555 install -r datawatch-wear-0.10.0.apk
    ```
 
 ### Add the Wear Tile
@@ -135,10 +136,10 @@ reloads.
 2. Select **datawatch** from the list. The tile now shows running /
    waiting / total counts.
 
-> The v1.0.0 Wear build shows zeros until the phone ↔ watch Data Layer pair
-> flow ships in v1.1 — it needs the phone app to forward the live counts
+> The v0.10.0 Wear build shows zeros until the phone ↔ watch Data Layer pair
+> flow ships in v0.11 — it needs the phone app to forward the live counts
 > because the watch itself doesn't yet have a transport to datawatch. The
-> Wear app and Tile are installed and ready; the pipe light turns on in v1.1.
+> Wear app and Tile are installed and ready; the pipe light turns on in v0.11.
 
 ---
 
@@ -181,7 +182,7 @@ Developers can verify the Auto surface without a real car:
   retry.
 
 ### Opening a session crashes (pre-v0.3.0 regression)
-- v1.0.0 carries the SQLDelight 1 → 2 migration, so this should never
+- v0.10.0 carries the SQLDelight 1 → 2 migration, so this should never
   happen. If it does, uninstall + reinstall to rebuild the encrypted DB
   fresh.
 
@@ -200,7 +201,7 @@ Developers can verify the Auto surface without a real car:
   or `push.ntfy_server` server-side in `~/.datawatch/config.yaml`.
 
 ### APK install rejected as "corrupt"
-- Check the SHA-256 against `datawatch-1.0.0-SHA256SUMS.txt`. A mismatch
+- Check the SHA-256 against `datawatch-0.10.0-SHA256SUMS.txt`. A mismatch
   means a download problem, not a packaging problem.
 
 ---

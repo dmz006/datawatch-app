@@ -1,8 +1,8 @@
 # Terminal — 1:1 PWA parity (B1 re-baseline)
 
 - **Date:** 2026-04-20
-- **Version at plan time:** v1.0.1
-- **Target ship version:** v1.0.2 (behaviour fix) + v1.1.0 (font-size + toolbar UX)
+- **Version at plan time:** v0.10.1
+- **Target ship version:** v0.10.2 (behaviour fix) + v0.11.0 (font-size + toolbar UX)
 - **Supersedes:** `docs/plans/2026-04-19-terminal-hardening.md` (that plan addressed a symptom — write-cursor reset — and got it wrong as the primary cause)
 - **Source of truth:** `dmz006/datawatch` parent repo PWA — `internal/server/web/app.js`. Snapshot pulled live from `https://&lt;datawatch-server&gt;:8443/app.js` 2026-04-20 00:17.
 
@@ -36,11 +36,11 @@ The mobile client writes `raw_output` directly to xterm, which dumps cursor-posi
 
 ## Scope
 
-`:shared` transport + `:composeApp` terminal + `:composeApp` viewmodel. Plan implements Phase 1–3 for v1.0.2 (the fix ships behaviour parity). Phase 4 is v1.1.0 (UX affordances — font toolbar, horizontal scroll gesture, retry watchdog).
+`:shared` transport + `:composeApp` terminal + `:composeApp` viewmodel. Plan implements Phase 1–3 for v0.10.2 (the fix ships behaviour parity). Phase 4 is v0.11.0 (UX affordances — font toolbar, horizontal scroll gesture, retry watchdog).
 
 ## Phases
 
-### Phase 1 — `pane_capture` frame handling (v1.0.2)
+### Phase 1 — `pane_capture` frame handling (v0.10.2)
 
 1. **DTO.** Add a `pane_capture` case to `WsFrameDto`:
    - `data.session_id: String`
@@ -55,7 +55,7 @@ The mobile client writes `raw_output` directly to xterm, which dumps cursor-posi
 
 **Acceptance:** opening session `787e*` renders the Claude Code TUI at its intended geometry (distorted by column-count mismatch but structurally intact — the spinner sits on one line, not scattered across 20).
 
-### Phase 2 — outbound `resize_term` (v1.0.2)
+### Phase 2 — outbound `resize_term` (v0.10.2)
 
 1. **Transport.** `WebSocketTransport` gains an outbound channel: `fun sendResize(sessionId, cols, rows)` exposed via `SharedFlow<OutboundFrame>` or a `Channel<OutboundFrame>` consumed inside the `webSocket { }` block. Frame shape: `{"type":"resize_term","data":{"session_id":"...","cols":N,"rows":M}}`.
 2. **Host bridge.** After FitAddon converges, host.html calls a new `DwBridge.onFit(cols, rows)` with the current dimensions.
@@ -64,7 +64,7 @@ The mobile client writes `raw_output` directly to xterm, which dumps cursor-posi
 
 **Acceptance:** `tcpdump`/logcat shows a `{"type":"resize_term",...}` frame leaves the device within 1 s of opening a session, and a `pane_capture` frame arrives in response with geometry matching our xterm cols/rows.
 
-### Phase 3 — minCols enforcement (v1.0.2)
+### Phase 3 — minCols enforcement (v0.10.2)
 
 1. Read `session.console_cols` from REST `GET /api/sessions` (already in our `Session` domain model? Verify — add if missing).
 2. In TerminalView: after fit, if `term.cols < minCols`, call `term.resize(minCols, term.rows)` (via new host-side `dwForceCols(cols)`).
@@ -73,7 +73,7 @@ The mobile client writes `raw_output` directly to xterm, which dumps cursor-posi
 
 **Acceptance:** for session `787e*` (llm_backend=claude-code, console_cols≥120), xterm renders at 120 cols, container scrolls horizontally on drag, spinner frames land on one logical line.
 
-### Phase 4 — UX affordances (v1.1.0)
+### Phase 4 — UX affordances (v0.11.0)
 
 1. **Font-size toolbar.** `−` / `+` buttons above the terminal. Clamp 5–20 px. Persist in DataStore. Call `term.options.fontSize = N; fit()` through `dwSetFontSize(N)`.
 2. **Retry watchdog.** If no `pane_capture` arrives within 5 s of subscribe, re-subscribe up to 3 times; surface "Unable to connect" with retry button after that.

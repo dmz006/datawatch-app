@@ -202,7 +202,7 @@ Not applicable.
 ## Other Google programs (optional, not required for launch)
 
 - **App Actions console:** needed for ASSIST-intent quality certification. Submit after
-  v1.0.0 is stable.
+  v0.10.0 is stable.
 - **Pre-launch report opt-out:** do NOT opt out. The crawler catches layout and security
   issues before live users do.
 - **Google Play Developer API:** enable if using `fastlane supply` for automated AAB

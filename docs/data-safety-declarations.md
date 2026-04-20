@@ -74,7 +74,7 @@ Check the following boxes on the form:
 ## Section 6 — Independent security review
 
 Not claimed. The app is open-source (`github.com/dmz006/datawatch-app`) — community audit
-welcome. No third-party security audit has been commissioned for v1.0.0.
+welcome. No third-party security audit has been commissioned for v0.10.0.
 
 ## Section 7 — Ads declaration
 

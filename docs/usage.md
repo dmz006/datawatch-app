@@ -1,6 +1,6 @@
 # Usage guide
 
-A screen-by-screen walkthrough of the datawatch mobile app at v1.0.0.
+A screen-by-screen walkthrough of the datawatch mobile app at v0.10.0.
 
 ## Launch flow
 
@@ -112,7 +112,7 @@ Live polling of `GET /api/stats` every 5 seconds for the active profile.
 - **Servers card** — list configured profiles with status badges
   (no-auth, trust-all-TLS). Add (+), edit (tap row), delete (trash icon).
 - **Security card** — biometric unlock toggle.
-- **Comms card** — placeholder for full channel config (v1.1+).
+- **Comms card** — placeholder for full channel config (v0.11+).
 - **About card** — live animated logo, app version + build SHA, license,
   package id, source + parent project links.
 
@@ -171,6 +171,6 @@ Deep interaction stays on the phone.
 
 ## Keyboard shortcut / voice
 
-No on-device voice assistant wiring yet in v1.0.0 — voice is limited to
+No on-device voice assistant wiring yet in v0.10.0 — voice is limited to
 the mic button in the session detail composer. Quick-tile and ASSIST
-intent wiring arrive in v1.1 when the Wear Data Layer pair lands.
+intent wiring arrive in v0.11 when the Wear Data Layer pair lands.

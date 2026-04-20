@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Changed
+- **Version correction — v1.0.0/v1.0.1 renumbered to v0.10.0/v0.10.1.**
+  The 1.0 label is reserved for the milestone where the Android app
+  reaches 100% client-side parity with the PWA at
+  [dmz006/datawatch](https://github.com/dmz006/datawatch/). The
+  "first production release" framing used for the earlier v1.0.0 tag
+  was incorrect — the shipped feature set is the end of Sprint 6
+  (ADR-0042 scope), not PWA parity. The parity-plan's v1.1 → v1.4
+  roadmap is renumbered v0.11 → v0.14 accordingly. 1.0.0 will tag the
+  release that flips every row in `docs/parity-status.md` to ✅.
+  gradle.properties, Version.kt, CHANGELOG headings, and every
+  doc/plan/ADR reference updated in this commit. Git tags v1.0.0 and
+  v1.0.1 are being removed (local + remote) and retagged at the same
+  commits as v0.10.0 / v0.10.1. GitHub releases renamed to match.
+
 ### Fixed
 - **B1 — terminal freeze on session open.** `TerminalView` held its write
   cursor (`lastWrittenIndex`) and `ready` flag in `remember {}` unkeyed to
@@ -27,14 +42,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - `docs/plans/README.md` — backlog reconciliation. F1–F6 flipped to Completed
   (ship versions recorded), BL2/BL4/BL6/BL9/BL10 moved to Completed backlog
   with shipped-in versions, and the Planned section now points at
-  `docs/parity-plan.md` as the authoritative v1.1 → v1.4 roadmap. Two new
-  permanent BL IDs added for follow-ups called out in v1.0.0 release notes:
+  `docs/parity-plan.md` as the authoritative v0.11 → v0.14 roadmap. Two new
+  permanent BL IDs added for follow-ups called out in v0.10.0 release notes:
   BL16 (biometric-bound DB passphrase) and BL17 (Wear Data Layer pairing).
 
-## [1.0.1] — 2026-04-19
+## [0.10.1] — 2026-04-19
+
+Previously tagged **v1.0.1**; renumbered 2026-04-20 — the 1.0 label
+is reserved for the full-PWA-parity milestone.
 
 ### Fixed
-- **Session detail now uses xterm.js as its primary surface.** v1.0.0
+- **Session detail now uses xterm.js as its primary surface.** v0.10.0
   rendered events as a chat-style spine and tucked the terminal behind
   an icon; the result looked like scrolling text with no ANSI / cursor /
   real scrollback. This release swaps the default: the terminal fills
@@ -44,16 +62,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 - `docs/parity-plan.md` — complete audit of PWA → mobile gaps grouped
-  by screen, with a v1.1 → v1.4 roadmap. Grounded against the parent
+  by screen, with a v0.11 → v0.14 roadmap. Grounded against the parent
   repo's `internal/server/web/` and `docs/api/openapi.yaml` at the
   v3.0.0 tag.
 
-## [1.0.0] — 2026-04-19
+## [0.10.0] — 2026-04-19
 
-**First production release.** Sprint 6 closes v1.0.0 — every ADR-0042
-scope item is shipped. Pairs with parent datawatch v3.0.0.
+Previously tagged **v1.0.0** as "first production release";
+renumbered 2026-04-20 — v1.0 is reserved for the milestone where
+every row in `docs/parity-status.md` flips to ✅. v0.10.0 closes
+Sprint 6 (every ADR-0042 scope item shipped) and pairs with parent
+datawatch v3.0.0.
 
-### What's in v1.0.0 — highlights
+### What's in v0.10.0 — highlights
 
 - **Live session management.** REST + WebSocket (`/ws?session=<id>`) with
   auto-reconnect + jittered exponential backoff. Session detail, chat-style
@@ -75,7 +96,7 @@ scope item is shipped. Pairs with parent datawatch v3.0.0.
   bearer-token vault. Schema migrations verified (1 → 2 backfill for
   session_event shipped in v0.3.0).
 
-### What moves to v1.1+
+### What moves to v0.11+
 
 - Biometric-bound DB passphrase (wraps Keystore key with biometric auth
   requirement)
@@ -103,7 +124,7 @@ Sprint 5 — hardening + biometric unlock. Release-candidate milestone.
 - MainActivity migrates from `ComponentActivity` to `FragmentActivity`
   (required by BiometricPrompt).
 
-### Known follow-ups for v1.0.0
+### Known follow-ups for v0.10.0
 - Biometric-bound DB passphrase (wrap `deriveDatabasePassphrase` in a
   Keystore key that requires biometric auth) — current build gates
   only the UI, not the underlying passphrase derivation.
@@ -201,7 +222,9 @@ Sprint 2 — session UX, multi-server, push.
   with the live profile list — degrades gracefully on profile delete.
 
 ### Scope expansion — ADR-0042
-Promotes five items from post-MVP backlog to v1.0.0 requirements:
+Promotes five items from post-MVP backlog to v0.10.0 requirements (the
+release originally mislabelled v1.0.0; the 1.0 label is now reserved for
+full PWA parity):
 - BL9: 3-finger-swipe-up server picker → Sprint 2 ✅ shipped here
 - BL6: home-screen widget → Sprint 3
 - BL4: Wear Tile → Sprint 4
@@ -212,7 +235,7 @@ Timelines hold: MVP 2026-06-12, production 2026-07-10.
 
 ### Changed
 - **Scope expansion — ADR-0042** promotes five items from post-MVP backlog to
-  v1.0.0 requirements:
+  v0.10.0 requirements:
     - BL9: 3-finger-swipe-up server picker → Sprint 2
     - BL6: home-screen widget → Sprint 3
     - BL4: Wear Tile → Sprint 4
@@ -351,6 +374,12 @@ MCP SSE, voice capture, Wear OS live app, Android Auto live surface.
 - Pre-MVP. Implementation begins Sprint 1 (2026-05-02). MVP target 2026-06-12; public
   production 2026-07-10.
 
-[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/dmz006/datawatch-app/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/dmz006/datawatch-app/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/dmz006/datawatch-app/compare/v0.5.0...v0.9.0
+[0.5.0]: https://github.com/dmz006/datawatch-app/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/dmz006/datawatch-app/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/dmz006/datawatch-app/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/dmz006/datawatch-app/compare/v0.1.0-pre...v0.2.0
 [0.1.0-pre]: https://github.com/dmz006/datawatch-app/releases/tag/v0.1.0-pre

@@ -8,7 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
 /**
- * Biometric unlock gate per ADR-0042 (BL2 promoted to v1.0.0). Optional —
+ * Biometric unlock gate per ADR-0042 (BL2 promoted to v0.10.0). Optional —
  * off by default. When on, app entry shows a BiometricPrompt before
  * AppRoot composes; failure leaves the user at the prompt (no bypass).
  *

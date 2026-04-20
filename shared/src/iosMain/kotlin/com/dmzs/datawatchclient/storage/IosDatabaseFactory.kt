@@ -5,7 +5,7 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.dmzs.datawatchclient.db.DatawatchDb
 
 /**
- * iOS [DatabaseFactory] actual. iOS skeleton — post-v1.0.0 Android scope — will
+ * iOS [DatabaseFactory] actual. iOS skeleton — post-v0.10.0 Android scope — will
  * revisit native encryption options (SQLCipher Objective-C wrapper or Apple
  * Keychain + EncryptedContainer) when the iOS content phase begins.
  */

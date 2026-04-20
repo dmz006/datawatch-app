@@ -122,7 +122,7 @@ CHANGELOG.md between the previous and new version.
 
 ## Localization (v1)
 
-English only in v1.0.0. Backlog: locale files for DE, ES, FR, JA (post-launch).
+English only in v0.10.0. Backlog: locale files for DE, ES, FR, JA (post-launch).
 
 ## Promotional text — Android Auto feature
 

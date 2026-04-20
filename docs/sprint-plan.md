@@ -137,13 +137,14 @@ Goal: public release.
 - [ ] Auto review signed off by Google (if running long, ship phone+Wear to Production
       and stage Auto behind a feature flag).
 - [ ] Production track release at 1% → 10% → 100% rollout over 72 hours.
-- [ ] Version: `v1.0.0`.
+- [ ] Version: `v0.10.0` (ADR-0042 scope close; **v1.0.0 is reserved
+      for the release that reaches full PWA parity — see ADR-0043**).
 
 ## Risks + mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Google Driver Distraction review takes > 3 weeks | Auto not in v1.0.0 | Phone + Wear ship; Auto behind feature flag, promoted in v1.0.1 |
+| Google Driver Distraction review takes > 3 weeks | Auto not in v0.10.0 | Phone + Wear ship; Auto behind feature flag, promoted in v0.10.1 |
 | Parent datawatch endpoints not ready (dmz006/datawatch#1, #2, #3) | MVP blocked | Workarounds pre-Sprint 2: ntfy fallback for #1, Telegram-path reuse for #2, per-profile loop for #3 |
 | Play Console $25 fee + ID verification delay | Sprint 0 slip | Start immediately in Sprint 0 day 1; do not block scaffolding on it |
 | Icon review ambiguity | Sprint 0 slip | Pick Concept A as default — parent-identity-preserving; re-theme if user prefers B/C |
@@ -152,8 +153,9 @@ Goal: public release.
 
 ## Scope change — ADR-0042 (2026-04-18)
 
-Five items **promoted from post-MVP to v1.0.0 requirements** per user
-direction. Each is folded into the nearest-fit sprint; timeline holds:
+Five items **promoted from post-MVP to v0.10.0 requirements** per user
+direction (originally labelled "v1.0.0" before ADR-0043's label
+correction). Each is folded into the nearest-fit sprint; timeline holds:
 
 | Item | Sprint | ID |
 |------|--------|----|
@@ -167,7 +169,7 @@ If any of the five threatens the 2026-06-12 MVP or 2026-07-10 production
 target, the 3-finger gesture slips back to post-MVP first (it's the most
 easily replaceable — standard tap-to-open tree drawer stays either way).
 
-## Post-MVP backlog (v1.1+)
+## Post-ADR-0042-scope backlog (v0.11+)
 
 - Tablet layout with two-pane session list + detail (BL3)
 - iOS app content — beyond skeleton (BL5)
