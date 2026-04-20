@@ -56,6 +56,8 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -528,14 +530,18 @@ private fun Section(
     title: String,
     content: @Composable () -> Unit,
 ) {
-    Text(
-        title,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-    )
-    content()
-    HorizontalDivider()
+    androidx.compose.foundation.layout.Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            PwaSectionTitle(title)
+            content()
+        }
+    }
 }
 
 @Composable
@@ -546,24 +552,31 @@ private fun SectionWithAction(
     onAction: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    androidx.compose.foundation.layout.Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
-        Text(
-            title,
-            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        IconButton(onClick = onAction) {
-            Icon(
-                actionIcon,
-                contentDescription = actionDescription,
-                tint = MaterialTheme.colorScheme.primary,
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PwaSectionTitle(
+                    title,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onAction) {
+                    Icon(
+                        actionIcon,
+                        contentDescription = actionDescription,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            content()
         }
     }
-    content()
-    HorizontalDivider()
 }

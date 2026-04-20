@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.config
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
@@ -44,33 +47,46 @@ import kotlinx.serialization.json.JsonElement
 public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
     val state by vm.state.collectAsState()
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
-        Text(
-            "Daemon config",
-            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        IconButton(onClick = vm::refresh, enabled = state.supported) {
-            if (state.loading) {
-                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
-            } else {
-                Icon(
-                    Icons.Filled.Refresh,
-                    contentDescription = "Refresh config",
-                    tint =
-                        if (state.supported) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PwaSectionTitle("Daemon config", modifier = Modifier.weight(1f))
+                IconButton(onClick = vm::refresh, enabled = state.supported) {
+                    if (state.loading) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
+                    } else {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Refresh config",
+                            tint =
+                                if (state.supported) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                    }
+                }
             }
+            ConfigViewerBody(state = state, vm = vm)
         }
     }
+}
+
+@Composable
+private fun ConfigViewerBody(
+    state: ConfigViewerViewModel.UiState,
+    vm: ConfigViewerViewModel,
+) {
 
     state.banner?.let { banner ->
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -97,22 +113,20 @@ public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        state.config.raw.toSortedMap().forEach { (key, value) ->
-            ConfigRow(key = key, value = value)
-            HorizontalDivider()
+        state.config.raw.toSortedMap().entries.forEachIndexed { idx, entry ->
+            if (idx > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ConfigRow(key = entry.key, value = entry.value)
         }
     }
 
     if (state.config.raw.isNotEmpty()) {
         Text(
             "Read-only. Write lands in v0.13 via a structured form (ADR-0019).",
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-
-    HorizontalDivider()
 }
 
 @Composable

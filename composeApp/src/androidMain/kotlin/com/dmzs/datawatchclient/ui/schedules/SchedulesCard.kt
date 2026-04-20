@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.schedules
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -28,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Schedule
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 
 /**
  * Settings → Schedules card. Lists `/api/schedule` entries for the active
@@ -44,30 +48,63 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var addOpen by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
-        Text(
-            "Schedules",
-            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        IconButton(onClick = { addOpen = true }, enabled = state.supported) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = "New schedule",
-                tint =
-                    if (state.supported) {
-                        MaterialTheme.colorScheme.primary
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PwaSectionTitle("Schedules", modifier = Modifier.weight(1f))
+                IconButton(onClick = vm::refresh, enabled = state.supported && !state.refreshing) {
+                    if (state.refreshing) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.padding(6.dp),
+                        )
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Refresh",
+                            tint =
+                                if (state.supported) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                    }
+                }
+                IconButton(onClick = { addOpen = true }, enabled = state.supported) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "New schedule",
+                        tint =
+                            if (state.supported) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
+            }
+            SchedulesCardBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
         }
     }
+}
 
+@Composable
+private fun SchedulesCardBody(
+    state: SchedulesViewModel.UiState,
+    vm: SchedulesViewModel,
+    addOpen: Boolean,
+    setAddOpen: (Boolean) -> Unit,
+) {
     state.banner?.let { banner ->
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
             Row(
@@ -93,24 +130,22 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        state.schedules.forEach { schedule ->
+        state.schedules.forEachIndexed { idx, schedule ->
+            if (idx > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ScheduleRow(
                 schedule = schedule,
                 onDelete = { vm.delete(schedule.id) },
             )
-            HorizontalDivider()
         }
     }
-
-    HorizontalDivider()
 
     if (addOpen) {
         ScheduleDialog(
             onConfirm = { task, cron, enabled ->
                 vm.create(task, cron, enabled)
-                addOpen = false
+                setAddOpen(false)
             },
-            onDismiss = { addOpen = false },
+            onDismiss = { setAddOpen(false) },
         )
     }
 }

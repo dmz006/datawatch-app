@@ -67,6 +67,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.ui.theme.PwaStatePill
+import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
 import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -200,7 +203,6 @@ public fun SessionsScreen(
                             onRestart = { vm.restart(session.id) },
                             onDelete = { vm.delete(session.id) },
                         )
-                        HorizontalDivider()
                     }
                 }
             }
@@ -339,7 +341,9 @@ private fun SessionRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(rowBg)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard()
+                .pwaStateEdge(session.state)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongPress,
@@ -353,25 +357,23 @@ private fun SessionRow(
                         onDragCancel = { dx = 0f },
                     ) { _, delta -> dx += delta }
                 }
-                .padding(16.dp),
+                .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(session.id, style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    session.id,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                )
+                PwaStatePill(session.state)
+            }
             Text(
                 session.taskSummary ?: "(no summary)",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-            AssistChip(
-                onClick = {},
-                label = { Text(session.state.name) },
-                colors =
-                    AssistChipDefaults.assistChipColors(
-                        labelColor = session.state.labelColor(),
-                    ),
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
         Icon(

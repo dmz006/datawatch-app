@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.commands
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.SavedCommand
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 
 /**
  * Settings → Saved commands card. Name + command snippet persistence via
@@ -42,29 +46,56 @@ public fun SavedCommandsCard(vm: SavedCommandsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var addOpen by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
-        Text(
-            "Saved commands",
-            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        IconButton(onClick = { addOpen = true }, enabled = state.supported) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = "New saved command",
-                tint =
-                    if (state.supported) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PwaSectionTitle("Saved commands", modifier = Modifier.weight(1f))
+                IconButton(onClick = vm::refresh, enabled = state.supported) {
+                    Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = "Refresh",
+                        tint =
+                            if (state.supported) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
+                IconButton(onClick = { addOpen = true }, enabled = state.supported) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "New saved command",
+                        tint =
+                            if (state.supported) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
+            }
+            SavedCommandsBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
         }
     }
+}
+
+@Composable
+private fun SavedCommandsBody(
+    state: SavedCommandsViewModel.UiState,
+    vm: SavedCommandsViewModel,
+    addOpen: Boolean,
+    setAddOpen: (Boolean) -> Unit,
+) {
 
     state.banner?.let { banner ->
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -91,21 +122,19 @@ public fun SavedCommandsCard(vm: SavedCommandsViewModel = viewModel()) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        state.commands.forEach { cmd ->
+        state.commands.forEachIndexed { idx, cmd ->
+            if (idx > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             SavedCommandRow(cmd = cmd, onDelete = { vm.delete(cmd.name) })
-            HorizontalDivider()
         }
     }
-
-    HorizontalDivider()
 
     if (addOpen) {
         SaveCommandDialog(
             onConfirm = { name, command ->
                 vm.save(name, command)
-                addOpen = false
+                setAddOpen(false)
             },
-            onDismiss = { addOpen = false },
+            onDismiss = { setAddOpen(false) },
         )
     }
 }
