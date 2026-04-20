@@ -94,8 +94,22 @@ public class SessionDetailViewModel(
 
     private suspend fun resolveProfile(): ServerProfile? {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
-        // Sprint 2 Phase 1: assume the currently-enabled profile owns the session.
-        // Sprint 3 adds cross-profile session addressing via federation fan-out.
+        // Prefer the profile that actually owns this session (its cached row in
+        // SessionRepository has the server_profile_id). Falls back to the
+        // user's active-server selection, then to the first enabled profile.
+        // Without this, opening a session on profile B while profile A is
+        // "active" would connect WS to A and silently receive zero frames.
+        val owningId = runCatching {
+            val s = ServiceLocator.sessionRepository.observeForProfileAny(sessionId).first()
+            s?.serverProfileId
+        }.getOrNull()
+        if (owningId != null) {
+            profiles.firstOrNull { it.id == owningId }?.let { return it }
+        }
+        val activeId = ServiceLocator.activeServerStore.get()
+        if (activeId != null) {
+            profiles.firstOrNull { it.id == activeId && it.enabled }?.let { return it }
+        }
         return profiles.firstOrNull { it.enabled }
     }
 

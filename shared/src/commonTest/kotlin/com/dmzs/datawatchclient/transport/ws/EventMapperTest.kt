@@ -1,108 +1,125 @@
 package com.dmzs.datawatchclient.transport.ws
 
 import com.dmzs.datawatchclient.domain.SessionEvent
-import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.WsFrameDto
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class EventMapperTest {
 
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    private fun decodeData(raw: String): JsonElement = json.parseToJsonElement(raw)
+
     @Test
-    fun `output frame maps to Output event`() {
+    fun `raw_output with lines yields one Output event per line`() {
         val dto = WsFrameDto(
-            type = "output",
-            sessionId = "s1",
-            ts = "2024-11-14T22:13:20Z",
-            body = "hello",
-            stream = "stdout",
+            type = "raw_output",
+            data = decodeData("""{"session_id":"s1","lines":["foo","bar"]}"""),
+            timestamp = "2024-11-14T22:13:20Z",
         )
-        val e = dto.toDomain("fallback") as SessionEvent.Output
-        assertEquals("s1", e.sessionId)
-        assertEquals("hello", e.body)
-        assertEquals(SessionEvent.Output.Stream.Stdout, e.stream)
-        assertEquals(Instant.parse("2024-11-14T22:13:20Z"), e.ts)
+        val events = dto.toDomainEvents("s1")
+        assertEquals(2, events.size)
+        val first = events[0] as SessionEvent.Output
+        assertEquals("s1", first.sessionId)
+        assertTrue(first.body.startsWith("foo"), "body was ${first.body}")
+        assertEquals(Instant.parse("2024-11-14T22:13:20Z"), first.ts)
     }
 
     @Test
-    fun `stderr stream tag is honored`() {
-        val dto = WsFrameDto(type = "output", sessionId = "s1", body = "err", stream = "stderr")
-        assertEquals(
-            SessionEvent.Output.Stream.Stderr,
-            (dto.toDomain("f") as SessionEvent.Output).stream,
-        )
-    }
-
-    @Test
-    fun `state change frame maps both states`() {
-        val dto = WsFrameDto(type = "state_change", sessionId = "s1", from = "running", to = "waiting")
-        val e = dto.toDomain("f") as SessionEvent.StateChange
-        assertEquals(SessionState.Running, e.from)
-        assertEquals(SessionState.Waiting, e.to)
-    }
-
-    @Test
-    fun `prompt detected frame carries prompt text and kind`() {
+    fun `output frames are scoped to the current session`() {
         val dto = WsFrameDto(
-            type = "prompt", sessionId = "s1", prompt = "continue?", promptKind = "approval",
+            type = "raw_output",
+            data = decodeData("""{"session_id":"other","lines":["nope"]}"""),
         )
-        val e = dto.toDomain("f") as SessionEvent.PromptDetected
+        assertEquals(0, dto.toDomainEvents("s1").size)
+    }
+
+    @Test
+    fun `needs_input yields a PromptDetected`() {
+        val dto = WsFrameDto(
+            type = "needs_input",
+            data = decodeData("""{"session_id":"s1","prompt":"continue?"}"""),
+        )
+        val e = dto.toDomainEvents("s1").single() as SessionEvent.PromptDetected
         assertEquals("continue?", e.prompt.text)
-        assertEquals(
-            com.dmzs.datawatchclient.domain.Prompt.Kind.Approval,
-            e.prompt.kind,
-        )
     }
 
     @Test
-    fun `rate_limited frame carries retry-after when present`() {
+    fun `notification becomes a styled Output event`() {
         val dto = WsFrameDto(
-            type = "rate_limited", sessionId = "s1",
-            retryAfter = "2024-11-14T22:20:00Z",
+            type = "notification",
+            data = decodeData("""{"session_id":"s1","message":"hello"}"""),
         )
-        val e = dto.toDomain("f") as SessionEvent.RateLimited
-        assertNotNull(e.retryAfter)
-        assertEquals(Instant.parse("2024-11-14T22:20:00Z"), e.retryAfter)
+        val e = dto.toDomainEvents("s1").single() as SessionEvent.Output
+        assertTrue(e.body.contains("[notify] hello"), e.body)
     }
 
     @Test
-    fun `completed frame with exit code`() {
-        val dto = WsFrameDto(type = "completed", sessionId = "s1", exitCode = 0)
-        val e = dto.toDomain("f") as SessionEvent.Completed
-        assertEquals(0, e.exitCode)
+    fun `alert becomes a styled Output event`() {
+        val dto = WsFrameDto(
+            type = "alert",
+            data = decodeData("""{"session_id":"s1","message":"look"}"""),
+        )
+        val e = dto.toDomainEvents("s1").single() as SessionEvent.Output
+        assertTrue(e.body.contains("[alert] look"), e.body)
     }
 
     @Test
-    fun `error frame carries message`() {
-        val dto = WsFrameDto(type = "error", sessionId = "s1", message = "boom")
-        val e = dto.toDomain("f") as SessionEvent.Error
+    fun `error frame carries the server message`() {
+        val dto = WsFrameDto(
+            type = "error",
+            data = decodeData("""{"message":"boom"}"""),
+        )
+        val e = dto.toDomainEvents("s1").single() as SessionEvent.Error
         assertEquals("boom", e.message)
     }
 
     @Test
     fun `unknown type falls back to Unknown event (forward-compat)`() {
-        val dto = WsFrameDto(type = "future_type_xyz", sessionId = "s1")
-        val e = dto.toDomain("f")
+        val dto = WsFrameDto(
+            type = "future_type_xyz",
+            data = decodeData("""{"any":"thing"}"""),
+        )
+        val e = dto.toDomainEvents("s1").single()
         assertIs<SessionEvent.Unknown>(e)
         assertEquals("future_type_xyz", e.type)
     }
 
     @Test
-    fun `missing session_id uses fallback`() {
-        val dto = WsFrameDto(type = "output", sessionId = null, body = "x")
-        assertEquals("fallback-sid", dto.toDomain("fallback-sid").sessionId)
+    fun `sessions frame is skipped (UI sources it from REST)`() {
+        val dto = WsFrameDto(
+            type = "sessions",
+            data = decodeData("""{"sessions":[{"id":"s1","state":"running"}]}"""),
+        )
+        assertEquals(0, dto.toDomainEvents("s1").size)
     }
 
     @Test
-    fun `missing or bad timestamp falls back to now`() {
-        val dto = WsFrameDto(type = "output", sessionId = "s1", body = "x", ts = "nonsense")
-        val e = dto.toDomain("s1")
-        // ts defaults to Clock.System.now; we can't assert exact value, but
-        // it must not be DISTANT_PAST (which would signal "parse failed + no
-        // fallback").
-        assert(e.ts > Instant.DISTANT_PAST) { "ts fell through to DISTANT_PAST" }
+    fun `missing timestamp falls back to now`() {
+        val dto = WsFrameDto(
+            type = "raw_output",
+            data = decodeData("""{"session_id":"s1","lines":["x"]}"""),
+            timestamp = null,
+        )
+        // Not asserting an exact time — just that it parses without throwing
+        // and produces an event with a non-epoch-0 instant.
+        val e = dto.toDomainEvents("s1").first()
+        assertTrue(e.ts.toEpochMilliseconds() > 0)
+    }
+
+    @Test
+    fun `lines without trailing newline are normalised to CRLF`() {
+        val dto = WsFrameDto(
+            type = "raw_output",
+            data = decodeData("""{"session_id":"s1","lines":["bare"]}"""),
+        )
+        val e = dto.toDomainEvents("s1").first() as SessionEvent.Output
+        assertTrue(e.body.endsWith("\r\n"), "expected CRLF tail, got: ${e.body}")
     }
 }

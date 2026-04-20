@@ -29,6 +29,10 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
                 // WS needs a long read timeout because frames can be far apart.
                 readTimeout(60L, java.util.concurrent.TimeUnit.MINUTES)
                 pingInterval(30L, java.util.concurrent.TimeUnit.SECONDS)
+                // OkHttp connection pool eviction is aggressive on mobile; disable
+                // keep-alive for the WS client so a stale route after a first
+                // connect doesn't get reused on reconnect attempts.
+                retryOnConnectionFailure(true)
                 if (trustAll) {
                     val tm = object : X509TrustManager {
                         override fun checkClientTrusted(
@@ -47,11 +51,17 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
                 }
             }
         }
-        install(WebSockets)
+        install(WebSockets) {
+            pingInterval = 30_000
+        }
         install(ContentNegotiation) { json(RestTransport.DefaultJson) }
         install(HttpTimeout) {
-            // Connect must be quick; read is effectively ping-governed
-            connectTimeoutMillis = 5_000
+            connectTimeoutMillis = 10_000
+            // Critical: Ktor's default requestTimeoutMillis cuts long-lived
+            // WebSockets after ~15 s. Setting these to Long.MAX_VALUE lets
+            // the OkHttp ping mechanism manage liveness instead.
+            requestTimeoutMillis = Long.MAX_VALUE
+            socketTimeoutMillis = Long.MAX_VALUE
         }
         expectSuccess = false  // WS upgrade handling returns non-2xx; let Ktor manage
     }

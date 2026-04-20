@@ -69,3 +69,4 @@ design/
 # Session-local Claude state (not part of the published repo)
 CLAUDE.md
 .claude/
+.mcp.json

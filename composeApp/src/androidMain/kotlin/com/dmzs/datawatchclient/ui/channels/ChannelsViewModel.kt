@@ -32,10 +32,13 @@ public class ChannelsViewModel : ViewModel() {
     public fun refresh() {
         viewModelScope.launch {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
-            val profile = profiles.firstOrNull { it.enabled } ?: run {
-                _state.value = UiState(banner = "No enabled server. Add or enable one in Settings.")
-                return@launch
-            }
+            val activeId = ServiceLocator.activeServerStore.get()
+            val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
+                ?: run {
+                    _state.value = UiState(banner = "No enabled server. Add or enable one in Settings.")
+                    return@launch
+                }
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
             ServiceLocator.transportFor(profile).listBackends().fold(
                 onSuccess = { v ->
@@ -47,9 +50,14 @@ public class ChannelsViewModel : ViewModel() {
                     )
                 },
                 onFailure = { err ->
+                    android.util.Log.w(
+                        "ChannelsVM",
+                        "listBackends failed on ${profile.baseUrl}: ${err::class.simpleName}: ${err.message}",
+                    )
                     _state.value = _state.value.copy(
                         refreshing = false,
-                        banner = "Couldn't load backends — ${err.message ?: err::class.simpleName}",
+                        banner = "Couldn't load backends on ${profile.displayName} — " +
+                            (err.message ?: err::class.simpleName),
                     )
                 },
             )

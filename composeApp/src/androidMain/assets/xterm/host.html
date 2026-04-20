@@ -5,10 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="xterm.min.css" />
   <style>
-    html, body { background: #0c0c14; color: #d8d8d8; margin: 0; padding: 0;
-                 height: 100%; overflow: hidden; font-family: monospace; }
-    #term { position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 4px; }
+    html, body {
+      background: #000000;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Roboto Mono", "Droid Sans Mono", monospace;
+    }
+    #term {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 6px;
+    }
     .xterm { height: 100%; }
+    .xterm-viewport { background-color: #000000 !important; }
+    .xterm-rows { font-size: 15px !important; }
   </style>
 </head>
 <body>
@@ -16,52 +33,141 @@
   <script src="xterm.min.js"></script>
   <script src="xterm-addon-fit.min.js"></script>
   <script>
-    // Bridge to Kotlin: window.DwBridge is injected by addJavascriptInterface.
-    // The host calls write(text) for each output frame.
+    function log(msg) {
+      try { console.log('[dw]', msg); } catch (e) {}
+    }
+
     var term = new Terminal({
-      cursorBlink: false,
-      fontSize: 13,
-      lineHeight: 1.1,
+      cursorBlink: true,
+      fontSize: 15,
+      lineHeight: 1.2,
+      fontFamily: '"Roboto Mono", "Droid Sans Mono", monospace',
+      rows: 24,
+      cols: 80,
       theme: {
-        background: '#0c0c14',
-        foreground: '#d8d8d8',
+        background: '#000000',
+        foreground: '#ffffff',
         cursor: '#a855f7',
-        selectionBackground: '#3b1d6b'
+        cursorAccent: '#000000',
+        selectionBackground: '#3b1d6b',
+        // ANSI colour palette — tuned for contrast on pure black.
+        black:         '#000000',
+        red:           '#ff6d6d',
+        green:         '#8aff80',
+        yellow:        '#ffe66d',
+        blue:          '#8ab6ff',
+        magenta:       '#d080ff',
+        cyan:          '#88f0ff',
+        white:         '#ffffff',
+        brightBlack:   '#888888',
+        brightRed:     '#ff9b9b',
+        brightGreen:   '#b5ffa8',
+        brightYellow:  '#fff19a',
+        brightBlue:    '#abc7ff',
+        brightMagenta: '#e6a9ff',
+        brightCyan:    '#b2f6ff',
+        brightWhite:   '#ffffff'
       },
       scrollback: 5000,
-      convertEol: true
-    });
-    var fit = new FitAddon.FitAddon();
-    term.loadAddon(fit);
-    term.open(document.getElementById('term'));
-    fit.fit();
-
-    window.addEventListener('resize', function () {
-      try { fit.fit(); } catch (e) {}
+      convertEol: true,
+      allowProposedApi: true
     });
 
-    // API surface invoked from Kotlin via WebView.evaluateJavascript:
+    var fit;
+    try {
+      fit = new FitAddon.FitAddon();
+      term.loadAddon(fit);
+    } catch (e) {
+      log('FitAddon load failed: ' + e);
+    }
+
+    var container = document.getElementById('term');
+    term.open(container);
+
+    function safeFit() {
+      if (!fit) return;
+      try {
+        // Bail if the container hasn't been laid out yet.
+        var r = container.getBoundingClientRect();
+        if (r.width < 40 || r.height < 40) {
+          log('skip fit: container ' + r.width + 'x' + r.height);
+          return;
+        }
+        fit.fit();
+        log('fit ok: ' + term.cols + 'x' + term.rows + ' (px ' + r.width + 'x' + r.height + ')');
+      } catch (e) {
+        log('fit error: ' + e);
+      }
+    }
+
+    // Multi-shot fit — WebView layout isn't stable at `term.open()` time,
+    // so retry on rAF + a few delayed ticks until the container has a size.
+    requestAnimationFrame(function () {
+      safeFit();
+      setTimeout(safeFit, 50);
+      setTimeout(safeFit, 200);
+      setTimeout(safeFit, 600);
+    });
+
+    // Respond to every resize signal the platform gives us.
+    window.addEventListener('resize', safeFit);
+    window.addEventListener('load', safeFit);
+    if (window.ResizeObserver) {
+      try { new ResizeObserver(safeFit).observe(container); }
+      catch (e) { log('ResizeObserver failed: ' + e); }
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', safeFit);
+    }
+
+    // Writes may arrive from Kotlin before xterm opens; buffer them so nothing
+    // gets lost.
+    var pendingWrites = [];
+    var opened = true; // term.open already called above
+
     window.dwWrite = function (s) {
-      try { term.write(s); } catch (e) {}
+      try {
+        term.write(s);
+      } catch (e) {
+        log('write failed, buffering: ' + e);
+        pendingWrites.push(s);
+      }
     };
+
     window.dwClear = function () {
       try { term.clear(); } catch (e) {}
     };
-    window.dwResize = function () {
-      try { fit.fit(); } catch (e) {}
-    };
 
-    // Surface terminal-side input back to Kotlin (Sprint 3 — for now we
-    // discard, since reply happens via the composer, not the terminal).
+    window.dwResize = function () { safeFit(); };
+
+    // Flush anything that was buffered (defensive; unreachable today).
+    function flushPending() {
+      while (pendingWrites.length > 0) {
+        var s = pendingWrites.shift();
+        try { term.write(s); } catch (e) { pendingWrites.unshift(s); break; }
+      }
+    }
+    setTimeout(flushPending, 100);
+
+    // Surface terminal-side input back to Kotlin (Sprint 3 — no-op today).
     term.onData(function (data) {
       if (window.DwBridge && DwBridge.onInput) {
         try { DwBridge.onInput(data); } catch (e) {}
       }
     });
 
+    // Paint a visible banner so the user sees the terminal is alive even
+    // before any output frames arrive. Uses bright-white on a black bg,
+    // no dim/italic, so it is unmistakably visible.
+    try {
+      term.write('\u001b[1;97m datawatch terminal ready \u001b[0m\r\n');
+      term.write('\u001b[90m waiting for session output… \u001b[0m\r\n');
+    } catch (e) { log('initial write failed: ' + e); }
+
     if (window.DwBridge && DwBridge.onReady) {
       try { DwBridge.onReady(); } catch (e) {}
     }
+    log('host.html loaded');
   </script>
 </body>
 </html>

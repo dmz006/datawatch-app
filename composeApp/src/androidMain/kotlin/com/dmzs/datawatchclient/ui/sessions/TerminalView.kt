@@ -1,7 +1,11 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import android.annotation.SuppressLint
+import android.util.Log
+import android.view.ViewGroup
+import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
@@ -21,9 +25,10 @@ import org.json.JSONObject
  * host page (`assets/xterm/host.html`) exposes `dwWrite(text)`, `dwClear()`,
  * and `dwResize()` which we drive via `evaluateJavascript`.
  *
- * Only output / state-change events that contribute terminal text are written;
- * everything else (rate-limit banners, prompt detection) shows in the chat
- * spine, not the terminal.
+ * WebView console messages are forwarded to Android logcat under the tag
+ * `DwTerm`, so `adb logcat DwTerm:V *:S` shows xterm's own diagnostic
+ * output (fit dimensions, buffered writes, etc.) — invaluable for debugging
+ * the "terminal opens as a tiny black square" class of WebView layout races.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -39,16 +44,41 @@ public fun TerminalView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false
                 settings.domStorageEnabled = true
-                webViewClient = WebViewClient()
+                settings.useWideViewPort = false
+                settings.loadWithOverviewMode = false
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        // Force a fit right after the HTML finishes loading —
+                        // WebView reports `term.open()` success before the
+                        // container has a stable layout in AndroidView.
+                        view?.evaluateJavascript("window.dwResize && window.dwResize();", null)
+                    }
+                }
+                webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                        Log.d(
+                            "DwTerm",
+                            "${consoleMessage.messageLevel()} " +
+                                "${consoleMessage.message()} " +
+                                "(line ${consoleMessage.lineNumber()})",
+                        )
+                        return true
+                    }
+                }
                 setBackgroundColor(0xFF0C0C14.toInt())
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun onReady() {
                         post { ready = true }
+                        Log.d("DwTerm", "onReady")
                     }
 
                     @JavascriptInterface
@@ -60,7 +90,10 @@ public fun TerminalView(
                 webViewRef.value = this
             }
         },
-        update = { /* updates handled via LaunchedEffect below */ },
+        update = { webView ->
+            // Compose may resize us across configuration changes; nudge xterm.
+            webView.evaluateJavascript("window.dwResize && window.dwResize();", null)
+        },
     )
 
     // When new events arrive (or terminal becomes ready), flush any unwritten
@@ -70,10 +103,10 @@ public fun TerminalView(
         if (!ready) return@LaunchedEffect
         val webView = webViewRef.value ?: return@LaunchedEffect
         if (lastWrittenIndex == 0 && events.isNotEmpty()) {
-            // First flush — render entire backlog.
             val joined = events.mapNotNull { it.terminalText() }.joinToString("")
             if (joined.isNotEmpty()) {
                 webView.evaluateJavascript("window.dwWrite(${jsonString(joined)});", null)
+                Log.d("DwTerm", "initial flush: ${joined.length} chars")
             }
             lastWrittenIndex = events.size
             return@LaunchedEffect
@@ -83,6 +116,7 @@ public fun TerminalView(
             val joined = newOnes.mapNotNull { it.terminalText() }.joinToString("")
             if (joined.isNotEmpty()) {
                 webView.evaluateJavascript("window.dwWrite(${jsonString(joined)});", null)
+                Log.d("DwTerm", "incremental: ${joined.length} chars (${newOnes.size} events)")
             }
             lastWrittenIndex = events.size
         }

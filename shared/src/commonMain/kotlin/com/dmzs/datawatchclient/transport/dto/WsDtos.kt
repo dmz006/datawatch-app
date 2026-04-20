@@ -2,32 +2,33 @@ package com.dmzs.datawatchclient.transport.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /**
- * Wire-level DTO for WebSocket `/ws?session=<id>` frames. Permissive (unknown
- * kinds survive) so server-side evolution doesn't break the mobile decoder.
- * All timestamps are RFC3339 strings.
+ * Generic wire shape of a datawatch WebSocket frame. The server's frames are
+ * `{ "type": "<kind>", "data": <arbitrary object>, "timestamp": "RFC3339" }`
+ * — the `data` payload varies per type so we keep it as a raw [JsonElement]
+ * and decode in [com.dmzs.datawatchclient.transport.ws.EventMapper].
+ *
+ * Known types (from parent `internal/server/web/app.js` handleMessage):
+ *   sessions · session_update · output · raw_output · response · notification
+ *   alert · needs_input · session_aware · channel_reply · channel_notify
+ *   error
  */
 @Serializable
 public data class WsFrameDto(
     val type: String,
-    @SerialName("session_id") val sessionId: String? = null,
-    val ts: String? = null,
-    // Output frames
-    val body: String? = null,
-    val stream: String? = null, // "stdout" | "stderr" | "system"
-    // State change frames
-    val from: String? = null,
-    val to: String? = null,
-    // Prompt detected
-    val prompt: String? = null,
-    @SerialName("prompt_kind") val promptKind: String? = null,
-    // Rate limited
-    @SerialName("retry_after") val retryAfter: String? = null,
-    // Completed
-    @SerialName("exit_code") val exitCode: Int? = null,
-    // Error
-    val message: String? = null,
+    val data: JsonElement? = null,
+    @SerialName("timestamp") val timestamp: String? = null,
+)
+
+/**
+ * Body of an outbound `subscribe` / `unsubscribe` frame we send to the
+ * server after WS upgrade to start receiving output for a given session.
+ */
+@Serializable
+public data class WsSubscribeDto(
+    @SerialName("session_id") val sessionId: String,
 )
 
 /**
