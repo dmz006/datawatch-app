@@ -62,7 +62,11 @@ includes Killed so you don't have to hunt through two buckets.
 A floating "+" button on the Sessions tab (visible only when a server
 is active). Opens the **New Session** screen — a form with:
 
-- **Task** — multi-line text; what you want the session to do.
+- **Task** — multi-line text; what you want the session to do. The
+  **From library ▾** dropdown next to the heading inlines a saved
+  command into the field for quick editing before you hit Start.
+  Hidden until at least one command is saved (Settings → Saved
+  commands).
 - **Server** — picker; defaults to the current active server.
 - **Working directory (optional)** — server-side path. Type it or tap
   **Browse…** to open the server-side directory picker (breadcrumb,
@@ -180,6 +184,11 @@ Live polling of `GET /api/stats` every 5 seconds for the active profile.
     toast pointing at the upstream issue instead.
   - **Delete server** — removes the profile and its bearer token.
 - **Security card** — biometric unlock toggle.
+- **Saved commands card** — lists named command snippets from
+  `GET /api/commands`. Tap a row to expand long commands; delete icon
+  removes one. **+** opens a "Save a command" dialog with name +
+  command fields. Recalled in New Session via the "From library ▾"
+  dropdown next to the Task heading.
 - **Schedules card** — lists every scheduled command on the active
   server (`GET /api/schedule`). Each row shows task + cron +
   enabled/disabled chip with a delete icon. The **+** in the card

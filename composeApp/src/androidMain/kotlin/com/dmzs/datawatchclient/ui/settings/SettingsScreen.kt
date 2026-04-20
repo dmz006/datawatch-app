@@ -114,6 +114,7 @@ public fun SettingsScreen(
             )
             SecurityCard()
             com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+            com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
             CommsCard()
             AboutCard(activeProfile = activeProfile)
         }

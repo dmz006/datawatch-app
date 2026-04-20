@@ -113,12 +113,20 @@ public fun NewSessionScreen(
                 }
             }
 
-            Text(
-                "Task",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Task",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                SavedCommandLibraryDropdown(
+                    onPick = { task = it },
+                )
+            }
             OutlinedTextField(
                 value = task,
                 onValueChange = { task = it },
@@ -226,6 +234,51 @@ public fun NewSessionScreen(
                 if (picked != null) workingDir = picked
             },
         )
+    }
+}
+
+/**
+ * "From library" dropdown that pulls saved commands from /api/commands
+ * on the active server and inlines the picked command's body into the
+ * caller's task text field. Silently hides itself when there are no
+ * saved commands (first-time-use state) so it doesn't clutter the form.
+ */
+@Composable
+private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
+    val vm: com.dmzs.datawatchclient.ui.commands.SavedCommandsViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
+    val state by vm.state.collectAsState()
+    if (state.commands.isEmpty()) return
+
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }) {
+            Text("From library ▾", style = MaterialTheme.typography.labelMedium)
+        }
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            state.commands.forEach { cmd ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(cmd.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                cmd.command,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onPick(cmd.command)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 

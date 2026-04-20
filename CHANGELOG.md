@@ -24,13 +24,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
   free-form with inline hint, enabled toggle). Session detail
   overflow menu gets a **Schedule reply…** action that pre-seeds the
   dialog with the current prompt's text.
-- **Server-side file picker** (this commit) — reusable
+- **Server-side file picker** (Phase 3) — reusable
   `FilePickerDialog` under `ui/files/`. Breadcrumb path, `..` to
   go up, dirs-first sort, "Pick this folder" for dir-mode, tap-a-file
   for file-mode. Modes: `FolderOnly` / `FileOnly` / `FolderOrFile`.
   Wired into `NewSessionScreen` as the new optional
   **Working directory** field (lands on `/api/sessions/start` as
   `cwd` — server ignores the field on pre-v4.0.3 builds).
+- **Saved command library** (Phase 4, closes BL20) — Settings →
+  Saved commands card lists name + command snippets from
+  `/api/commands`, with tap-to-expand for long commands and delete
+  icon. **+** opens a save dialog. `NewSessionScreen` gains a
+  "From library ▾" dropdown next to the Task heading that inlines
+  the picked command into the field; hidden entirely when no
+  commands are saved so first-time use isn't cluttered.
 
 ### Fixed
 
