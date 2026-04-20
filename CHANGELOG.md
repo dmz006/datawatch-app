@@ -38,6 +38,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
   "From library ▾" dropdown next to the Task heading that inlines
   the picked command into the field; hidden entirely when no
   commands are saved so first-time use isn't cluttered.
+- **Daemon config viewer (read-only)** (Phase 5) — Settings → Daemon
+  config card shows `GET /api/config` as collapsible top-level rows
+  that expand into pretty-printed JSON. Belt-and-braces client-side
+  secondary mask catches common secret field names (`*token*`,
+  `*secret*`, `*key*`, `password`, `passphrase`, etc.) in case the
+  parent's mask misses one. Write is explicitly deferred to v0.13 per
+  ADR-0019 (structured form).
 
 ### Fixed
 

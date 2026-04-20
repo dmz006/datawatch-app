@@ -189,6 +189,13 @@ Live polling of `GET /api/stats` every 5 seconds for the active profile.
   removes one. **+** opens a "Save a command" dialog with name +
   command fields. Recalled in New Session via the "From library ▾"
   dropdown next to the Task heading.
+- **Daemon config card** — read-only view of `GET /api/config`. Each
+  top-level key is a collapsible row; tap to expand a pretty-printed
+  JSON snippet of that section. Sensitive fields (`token`, `secret`,
+  `key`, `password`, etc.) render as `***` — first the parent server
+  masks, then mobile applies a belt-and-braces second mask in case
+  the parent misses one. Write-access (`PUT /api/config`) lands in
+  v0.13 behind a structured form per ADR-0019.
 - **Schedules card** — lists every scheduled command on the active
   server (`GET /api/schedule`). Each row shows task + cron +
   enabled/disabled chip with a delete icon. The **+** in the card
