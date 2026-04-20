@@ -73,9 +73,11 @@ public fun SessionDetailScreen(
         ),
 ) {
     val state by vm.state.collectAsState()
+    val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel = viewModel()
     var killConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
+    var scheduleOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -125,6 +127,13 @@ public fun SessionDetailScreen(
                             onClick = {
                                 menuOpen = false
                                 stateMenuOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Schedule reply…") },
+                            onClick = {
+                                menuOpen = false
+                                scheduleOpen = true
                             },
                         )
                     }
@@ -206,6 +215,30 @@ public fun SessionDetailScreen(
                 stateMenuOpen = false
                 vm.overrideState(s)
             },
+        )
+    }
+
+    if (scheduleOpen) {
+        // Pre-seed the task with the latest prompt text when one is open —
+        // the common "schedule reply" intent is to auto-answer whatever the
+        // session is currently blocking on. Fallback: task summary, then id.
+        val seededTask =
+            remember(state.events) {
+                val latestPrompt =
+                    state.events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
+                        as? SessionEvent.PromptDetected
+                latestPrompt?.prompt?.text
+                    ?: state.session?.taskSummary
+                    ?: sessionId
+            }
+        com.dmzs.datawatchclient.ui.schedules.ScheduleDialog(
+            initialTask = seededTask,
+            title = "Schedule reply",
+            onConfirm = { task, cron, enabled ->
+                schedulesVm.create(task, cron, enabled)
+                scheduleOpen = false
+            },
+            onDismiss = { scheduleOpen = false },
         )
     }
 }
