@@ -51,6 +51,26 @@ violate them, stop and confirm with the user:
   is needed (e.g., new server endpoint for mobile device registration), open an issue in
   `dmz006/datawatch` and wait for a release before depending on it.
 
+## Replicate, don't reinvent (parent-first rule)
+
+Before designing any behaviour that the parent PWA already implements — terminal handling,
+WebSocket framing, session lifecycle, notification channels, voice capture, etc. — **check
+`dmz006/datawatch` first** and replicate the parent's approach. The PWA is the source of
+truth for user-facing behaviour; mobile is a client of the same hub protocol, not a
+parallel implementation.
+
+- Look at `internal/server/web/app.js`, `internal/server/web/index.html`, and
+  `docs/api/openapi.yaml` in the parent repo (or fetch them live from a running server at
+  `https://<host>/app.js`, `https://<host>/api/openapi.yaml`).
+- Copy message-type names, frame shapes, throttle values, retry intervals, and state
+  transitions verbatim. Deviations require an ADR recording *why* mobile needs to differ
+  (e.g. platform-specific constraint).
+- If the parent PWA has not solved the problem, open a `dmz006/datawatch` issue and
+  coordinate — do not invent a mobile-only protocol extension that the hub won't honour.
+- When in doubt, re-read the PWA source. It has already paid the debugging tax for edge
+  cases (frame throttling, transitional-frame skip, minCols enforcement, reconnect
+  watchdog); re-paying it here is waste.
+
 ## Code Quality Rules
 
 - All Kotlin code must compile with `./gradlew build` and pass `detekt`, `ktlint`, and

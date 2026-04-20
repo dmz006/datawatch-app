@@ -9,6 +9,7 @@ import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 /**
@@ -30,7 +31,10 @@ public class SessionEventRepository(
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
 
-    public suspend fun insert(event: SessionEvent) {
+    // Encrypted SQLCipher inserts are 5–50 ms each on a mobile SoC; running
+    // them on the caller's dispatcher is what blocked main and triggered the
+    // "Input dispatching timed out" ANR we saw on B1 bursts. Force IO.
+    public suspend fun insert(event: SessionEvent): Unit = withContext(ioDispatcher) {
         when (event) {
             is SessionEvent.Output -> db.eventQueries.insertEvent(
                 session_id = event.sessionId,
@@ -135,7 +139,7 @@ public class SessionEventRepository(
         db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)
     }
 
-    public suspend fun deleteForSession(sessionId: String) {
+    public suspend fun deleteForSession(sessionId: String): Unit = withContext(ioDispatcher) {
         db.eventQueries.deleteEventsForSession(sessionId)
     }
 
