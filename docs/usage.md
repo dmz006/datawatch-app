@@ -1,6 +1,6 @@
 # Usage guide
 
-A screen-by-screen walkthrough of the datawatch mobile app at v0.10.0.
+A screen-by-screen walkthrough of the datawatch mobile app at v0.11.0.
 
 ## Launch flow
 
@@ -23,6 +23,11 @@ The default tab. Lists every session for the currently-active profile.
   configured profile. Tap a row to switch; tap "Edit" next to a row to
   modify it; the "All servers" row aggregates across every enabled
   profile via `/api/federation/sessions`.
+- **Connection dot** (next to the server name, single-server mode only)
+  — observes the active profile's reachability. **Green** = last probe
+  succeeded. **Grey** = probing / unknown. **Red** = last probe failed.
+  Tap the dot for a bottom sheet with the last-success timestamp and a
+  Retry button.
 - **Refresh icon** — pulls `/api/sessions` now (or parallel fan-out in
   All-servers mode).
 
@@ -33,9 +38,34 @@ includes Killed so you don't have to hunt through two buckets.
 
 ### Session rows
 
-- **Tap** — open the session detail screen.
+- **Tap** — open the session detail screen (or toggle selection while
+  in multi-select mode).
 - **Horizontal swipe** (either direction, ≥64 dp) — toggle mute/unmute
   for that row. The notification bell on the right reflects the state.
+- **Three-dot overflow** — Rename / Restart / Delete.
+  - **Rename** — dialog with a text field. Renames via
+    `POST /api/sessions/rename`.
+  - **Restart** — confirm dialog, then warm-resume via
+    `POST /api/sessions/restart`. Disruptive if the PTY is mid-stream,
+    hence the confirm.
+  - **Delete** — destructive confirm, then `POST /api/sessions/delete`.
+    Item greys out if the server doesn't support the endpoint (the
+    mobile client surfaces `TransportError.NotFound` that way) and is
+    always disabled for Running sessions.
+- **Long-press** — enters multi-select mode. The top bar flips to show
+  "N selected" with a Cancel arrow and a bulk-Delete action. Tap other
+  rows to toggle their selection. Confirm with the destructive delete
+  dialog.
+
+### New Session FAB
+
+A floating "+" button on the Sessions tab (visible only when a server
+is active). Opens the **New Session** screen — a form with:
+
+- **Task** — multi-line text; what you want the session to do.
+- **Server** — picker; defaults to the current active server.
+- **Start** — posts `/api/sessions/start`, then navigates straight into
+  the new session's detail view.
 
 ### 3-finger swipe up
 
@@ -50,11 +80,24 @@ Opens via tapping a session row, a notification, or a deep link
 ### Top bar
 
 - Task summary / session id as title, state pill subtitle.
-- **Terminal icon** — opens the xterm.js bottom sheet (ANSI colour, 5000-
-  line scrollback). Output events stream in live.
 - **Bell icon** — mute / unmute.
 - **Overflow menu** — kill session (with confirm dialog), override state
   (picker for Running / Waiting / Completed / Error / etc.).
+
+### Terminal
+
+The xterm.js terminal fills most of the screen (ANSI colour, 5000-line
+scrollback). Output events stream in live. Above the terminal sits a
+**terminal toolbar**:
+
+- **Search icon** — expands an inline search bar with an
+  `OutlinedTextField`, **↑** (previous match), **↓** (next match), and
+  **✕** (close + clear highlights). Matches are highlighted in
+  datawatch purple. Clearing the query drops the decorations.
+- **Copy icon** — pulls the current xterm text selection (highlight by
+  long-press + drag on the terminal) and writes it to the Android
+  clipboard. A toast confirms the character count; an empty selection
+  toasts "No selection to copy".
 
 ### Event stream
 
@@ -90,13 +133,24 @@ A badge on the bottom-nav Alerts icon shows the count. Tap a row to jump
 straight into that session's detail (the reply composer is focused if
 the server still has the prompt open).
 
+- **Swipe left** on any alert row to dismiss it. Dismiss mutes the
+  underlying session, which immediately drops the row from the
+  projection and decrements the bottom-nav badge. The session itself
+  is preserved — you can unmute from the Sessions tab via the same
+  horizontal-swipe gesture. (A future release may migrate to the
+  parent's `POST /api/alerts` for a true dismiss that doesn't touch
+  mute state.)
+
 ## Channels tab
 
-- **LLM backends** card — live from `GET /api/backends`. Active backend
-  gets a "active" chip.
+- **LLM backends** card — live from `GET /api/backends`. Each backend
+  has a radio button; tap to switch active via
+  `POST /api/backends/active`. If the server doesn't expose that
+  endpoint yet, the list goes read-only and a note explains (the
+  upstream issue is tracked in dmz006/datawatch).
 - **Messaging channels** card — read-only note pointing at server-side
   config (`~/.datawatch/config.yaml`). Per-channel enable/disable from the
-  phone arrives once the parent exposes that REST surface.
+  phone arrives in v0.12 once the parent exposes that REST surface.
 
 ## Stats tab
 
@@ -110,11 +164,22 @@ Live polling of `GET /api/stats` every 5 seconds for the active profile.
 ## Settings tab
 
 - **Servers card** — list configured profiles with status badges
-  (no-auth, trust-all-TLS). Add (+), edit (tap row), delete (trash icon).
+  (no-auth, trust-all-TLS). Add (+), edit (tap row). Each row has a
+  three-dot overflow menu with:
+  - **Download CA cert** — fetches `GET /api/cert` from that server,
+    saves the PEM under `Download/datawatch/` in the system Downloads
+    directory, and opens the Android **Security** settings screen so
+    you can complete trust-anchor install via the OS flow. (Unrooted
+    Android doesn't allow the app itself to install CA certs — by
+    design.) If the server doesn't support `/api/cert`, you get a
+    toast pointing at the upstream issue instead.
+  - **Delete server** — removes the profile and its bearer token.
 - **Security card** — biometric unlock toggle.
-- **Comms card** — placeholder for full channel config (v0.11+).
+- **Comms card** — placeholder for full channel config (v0.12+).
 - **About card** — live animated logo, app version + build SHA, license,
-  package id, source + parent project links.
+  package id, source + parent project links. Also a **Connected to**
+  row showing `<hostname> · datawatch vX.Y.Z` read live from
+  `GET /api/info` against the active server.
 
 ## Notifications
 

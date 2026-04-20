@@ -8,43 +8,68 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-04-20
+
+Session power-user parity sprint — closes the 8 items in
+`docs/parity-plan.md` §6 v0.11 plus two opportunistic pickups from the
+2026-04-20 PWA re-audit. Plan:
+[docs/plans/2026-04-20-v0.11-session-power-user.md](docs/plans/2026-04-20-v0.11-session-power-user.md).
+
+### Added
+
+- **`:shared` transport — 10 new methods** (`renameSession`,
+  `restartSession`, `deleteSession` + bulk `deleteSessions`, `fetchCert`,
+  `setActiveBackend`, `listAlerts`, `markAlertRead`, `fetchInfo`,
+  `fetchOutput`). New domain types `Alert` / `AlertSeverity` /
+  `ServerInfo`. 14 new MockWebServer tests.
+- **Session row overflow menu** — Rename, Restart, Delete dialogs on
+  every row in the Sessions tab.
+- **Bulk multi-select** — long-press a row to enter selection mode;
+  TopAppBar flips to "N selected" with Cancel + bulk-Delete.
+- **Connection-status dot** in Sessions TopAppBar — green/grey/red
+  against `TransportClient.isReachable`. Tap for a bottom sheet with
+  last-probe time and Retry.
+- **About card "Connected to" row** — hostname + daemon version from
+  `GET /api/info`.
+- **Settings → Servers overflow menu** — per-server "Download CA cert"
+  (saves PEM under `Download/datawatch/` and fires the Android
+  install-cert intent) + "Delete server".
+- **New Session screen** — floating "+" button on Sessions tab →
+  form with task text + server picker → `startSession`.
+- **Active-backend radio picker** in the Channels tab —
+  `POST /api/backends/active`.
+- **Swipe-left alerts dismiss** — mutes the underlying session so the
+  projection drops the row and the badge re-counts.
+- **Terminal toolbar** above the xterm view — inline search bar
+  (prev/next/close) plus a clipboard button. Uses vendored
+  `xterm-addon-search@0.13.0` (12.2 KB) in
+  `composeApp/src/androidMain/assets/xterm/`.
+
 ### Changed
-- **Version correction — v1.0.0/v1.0.1 renumbered to v0.10.0/v0.10.1.**
-  The 1.0 label is reserved for the milestone where the Android app
-  reaches 100% client-side parity with the PWA at
-  [dmz006/datawatch](https://github.com/dmz006/datawatch/). The
-  "first production release" framing used for the earlier v1.0.0 tag
-  was incorrect — the shipped feature set is the end of Sprint 6
-  (ADR-0042 scope), not PWA parity. The parity-plan's v1.1 → v1.4
-  roadmap is renumbered v0.11 → v0.14 accordingly. 1.0.0 will tag the
-  release that flips every row in `docs/parity-status.md` to ✅.
-  gradle.properties, Version.kt, CHANGELOG headings, and every
-  doc/plan/ADR reference updated in this commit. Git tags v1.0.0 and
-  v1.0.1 are being removed (local + remote) and retagged at the same
-  commits as v0.10.0 / v0.10.1. GitHub releases renamed to match.
 
-### Fixed
-- **B1 — terminal freeze on session open.** `TerminalView` held its write
-  cursor (`lastWrittenIndex`) and `ready` flag in `remember {}` unkeyed to
-  `sessionId`, so opening session B after session A reused the WebView with
-  a stale cursor and the LaunchedEffect's initial-flush branch never fired
-  — session B's backlog was never written into xterm, leaving the user on
-  session A's frozen DOM. Keyed the write cursor to `sessionId`, added a
-  `LaunchedEffect(sessionId)` that calls `window.dwClear()` on switch, and
-  flipped `ready = true` from `onPageFinished` as a belt-and-braces path if
-  the JS-side `DwBridge.onReady()` call is swallowed. Also extended the
-  FitAddon retry ladder to 1200 ms / 2500 ms so the viewport has more
-  chances to capture real dimensions on slow devices. Plan:
-  [docs/plans/2026-04-19-terminal-hardening.md](docs/plans/2026-04-19-terminal-hardening.md).
-  Live validation on a connected phone is the next step.
+- `ServiceLocator.transportFor(profile)` now caches a
+  `TransportClient` per profile (keyed on `baseUrl + trustAnchor +
+  bearerRef`) so downstream observers of `isReachable` see a stable
+  Flow across refreshes.
 
-### Docs
-- `docs/plans/README.md` — backlog reconciliation. F1–F6 flipped to Completed
-  (ship versions recorded), BL2/BL4/BL6/BL9/BL10 moved to Completed backlog
-  with shipped-in versions, and the Planned section now points at
-  `docs/parity-plan.md` as the authoritative v0.11 → v0.14 roadmap. Two new
-  permanent BL IDs added for follow-ups called out in v0.10.0 release notes:
-  BL16 (biometric-bound DB passphrase) and BL17 (Wear Data Layer pairing).
+### Parent-confirmation gates
+
+- `POST /api/sessions/delete`, `GET /api/cert`, and
+  `POST /api/backends/active` are not in the parent's v3.0.0
+  `openapi.yaml`. Client transport calls them anyway; each returns
+  `TransportError.NotFound` on pre-parity servers, at which point the
+  Android UI greys the affected control and surfaces a toast / banner
+  pointing at the upstream gap. Users can still run every other flow.
+
+### Known follow-ups for v0.12+
+
+- Wire `AlertsScreen` directly to `GET /api/alerts` + `POST /api/alerts`
+  once the parent's Alert wire shape is fully locked (transport methods
+  already exist).
+- Compose UI test infrastructure in `composeApp` (no `androidTest`
+  sourceset today).
+- Saved command library — `GET/POST/DELETE /api/commands` — BL20.
+- Signal device linking — `/api/link/*` with SSE QR stream — BL21.
 
 ## [0.10.1] — 2026-04-19
 
@@ -374,7 +399,8 @@ MCP SSE, voice capture, Wear OS live app, Android Auto live surface.
 - Pre-MVP. Implementation begins Sprint 1 (2026-05-02). MVP target 2026-06-12; public
   production 2026-07-10.
 
-[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/dmz006/datawatch-app/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/dmz006/datawatch-app/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/dmz006/datawatch-app/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/dmz006/datawatch-app/compare/v0.5.0...v0.9.0

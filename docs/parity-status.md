@@ -33,7 +33,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Override session state | ✅ | ✅ | shipped v0.3.0 | 2 |
 | Filter sessions by state | ✅ | ✅ | shipped v0.3.0 (chips above list) | 2 |
 | Mute / un-mute session | ✅ | ✅ | shipped v0.3.0 (swipe-to-mute) | 2 |
-| Bulk delete completed sessions | ✅ | ⏳ | planned | 3 |
+| Bulk delete completed sessions | ✅ | ✅ | shipped v0.11.0 (long-press multi-select, NotFound → greyed) | 7 |
 | Pull-to-refresh | ✅ | 🚧 | refresh button shipped; gesture next | 2 |
 
 ### Terminal + scrollback
@@ -43,15 +43,15 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | xterm.js terminal view | ✅ | ✅ | shipped v0.3.0 (WebView, vendored xterm@5.3.0) | 2 |
 | ANSI color rendering | ✅ | ✅ | shipped v0.3.0 (xterm built-in) | 2 |
 | Scrollback buffer | ✅ | ✅ | shipped v0.3.0 (5000 lines / xterm + 5000 events / DB) | 2 |
-| Copy text | ✅ | ⏳ | xterm selection works; explicit copy button in 3 | 3 |
-| Search in scrollback | ✅ | ⏳ | xterm-addon-search to wire in 3 | 3 |
+| Copy text | ✅ | ✅ | shipped v0.11.0 (terminal toolbar copy button → ClipboardManager) | 7 |
+| Search in scrollback | ✅ | ✅ | shipped v0.11.0 (vendored `xterm-addon-search@0.13.0` + inline search bar) | 7 |
 | Adjustable terminal dimensions | ✅ | ⏸ | post-MVP | — |
 
 ### New session creation (PWA tab: New)
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| Start session from form | ✅ | ⏳ | planned | 2 |
+| Start session from form | ✅ | ✅ | shipped v0.11.0 (Sessions FAB → NewSessionScreen) | 7 |
 | `new: <task>` quick command | ✅ | ⏳ | planned (MCP SSE) | 3 |
 | Voice → new session | n/a | ⏳ | planned | 3 |
 
@@ -61,7 +61,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 |---------|-----|--------|--------|--------|
 | Alerts list | ✅ | ✅ | shipped v0.3.0 (Alerts tab + bottom-nav badge) | 2 |
 | Notification badge counter | ✅ | ✅ | shipped v0.3.0 | 2 |
-| Mark as read / dismiss | ✅ | ⏳ | swipe-to-mute ships; explicit dismiss in 3 | 3 |
+| Mark as read / dismiss | ✅ | ✅ | shipped v0.11.0 (swipe-left on Alerts row → mutes underlying session) | 7 |
 | Push wake notification | ✅ (browser push) | ✅ | shipped v0.3.0 (FCM + ntfy fallback) | 2 |
 | Action buttons in notification | partial | ✅ | shipped v0.3.0 (RemoteInput Reply on input_needed) | 2 |
 
@@ -69,7 +69,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
-| Pick LLM backend (Claude/Codex/Ollama/etc.) | ✅ | ⏳ | planned | 3 |
+| Pick LLM backend (Claude/Codex/Ollama/etc.) | ✅ | ✅ (client) | shipped v0.11.0 (Channels radio picker, `POST /api/backends/active`). Parent endpoint not yet in v3.0.0 openapi.yaml — list greys out on `TransportError.NotFound` | 7 |
 | Pick model variant | ✅ | ⏳ | planned | 3 |
 | Edit endpoint URL / API token | ✅ | ⏳ | planned (structured form, raw YAML blocked per ADR-0019) | 3 |
 
@@ -81,7 +81,7 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Add Signal / Telegram / Slack / Matrix / Twilio / ntfy | ✅ | ⏳ | planned | 3 |
 | Test message round-trip | ✅ | ⏳ | planned | 3 |
 | Per-channel enable / disable | ✅ | ⏳ | planned | 3 |
-| Download CA certificate (Web Server card) | ✅ | ⏳ | planned (mobile-side: import cert into trust store) | 3 |
+| Download CA certificate (Web Server card) | ✅ | ✅ (client) | shipped v0.11.0 (Settings → Servers overflow → save to Downloads → OS install-cert intent). Parent `/api/cert` endpoint pending; toast on `TransportError.NotFound` | 7 |
 
 ### Settings → Session Preferences
 
@@ -128,10 +128,10 @@ The shipping plan: **MVP into Play Console internal testing 2026-06-12**,
 | Feature | PWA | Mobile | Status | Sprint |
 |---------|-----|--------|--------|--------|
 | App version | ✅ | ✅ | shipped (with build code + git SHA per build) | 1 |
-| Daemon version | ✅ | ⏳ | planned (call /api/health and display) | 2 |
+| Daemon version | ✅ | ✅ | shipped v0.11.0 (About card "Connected to" row from `GET /api/info` — hostname + version) | 7 |
 | License attribution | ✅ | ✅ | shipped | 1 |
 | Browser/env details | ✅ | ✅ | shipped (package id, source link, parent project link) | 1 |
-| Connection status indicator | ✅ | ⏳ | planned | 2 |
+| Connection status indicator | ✅ | ✅ | shipped v0.11.0 (green/grey/red dot in Sessions TopAppBar + retry bottom sheet) | 7 |
 
 ### Memory + Knowledge graph
 
@@ -214,7 +214,8 @@ Play Store review.
 | 4 | 2026-06-13 → 2026-06-26 | v0.5.0 | Wear OS + Android Auto |
 | 5 | 2026-06-27 → 2026-07-03 | v0.9.0 | Harden, Play submission, Auto Driver Distraction review |
 | 6 | 2026-07-04 → 2026-07-10 | **v0.10.0** | ADR-0042 scope close (was mis-tagged v1.0.0) |
-| post-Sprint 6 | TBD | **v1.0.0** | 100 % PWA parity — every row in this matrix ✅ |
+| 7 | 2026-04-20 | **v0.11.0** | Session power-user parity — rename/restart/delete, connection dot, About hostname, CA cert, terminal search+copy, new-session form, backend picker, alerts dismiss |
+| post-Sprint 7 | TBD | **v1.0.0** | 100 % PWA parity — every row in this matrix ✅ |
 
 This document is reviewed at the close of every sprint and re-validated
 against the current PWA at every release.

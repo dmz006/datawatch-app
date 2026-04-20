@@ -89,6 +89,38 @@ On any screen, swipe **three fingers upward** to summon the bottom-sheet
 server picker. Tap a server to switch; the Sessions tab immediately
 reloads.
 
+### Self-signed TLS: downloading the server's CA cert
+
+If your datawatch server uses a self-signed cert (typical for LAN or
+Tailscale deployments), you have two paths:
+
+1. **"Self-signed certificate" toggle** during add-server — bypasses
+   Android's system trust store entirely for that profile. Simplest,
+   works immediately. Stored as the `ALLOW_ALL_INSECURE` trust-anchor
+   sentinel in the profile record.
+
+2. **Install the server's CA cert** into your device's user trust
+   store — stricter, survives roaming between networks. In v0.11+:
+
+   - **Settings → Servers**, tap the three-dot menu on the server row →
+     **Download CA cert**.
+   - The app fetches `GET /api/cert` and writes the PEM to
+     `Download/datawatch/datawatch-<server>-ca.pem`.
+   - Android then opens the system **Security** settings screen. Tap
+     **Encryption & credentials → Install a certificate → CA
+     certificate → Install anyway**, then pick the PEM from Downloads.
+   - Some OEMs hide the Install-Certificate entry one level deeper
+     (Samsung: **Biometrics and security → Other security settings →
+     Install from device storage**).
+
+   Once installed under **User credentials**, the datawatch app (with
+   the "Self-signed certificate" toggle **off**) will trust the server
+   without additional configuration.
+
+> Requires parent datawatch to expose `GET /api/cert`. If you get a
+> toast saying the endpoint isn't supported, use the "Self-signed
+> certificate" toggle instead until the server is upgraded.
+
 ---
 
 ## Wear OS

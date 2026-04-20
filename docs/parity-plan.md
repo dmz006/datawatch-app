@@ -25,9 +25,9 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Multi-server picker | ✅ | Top-bar dropdown + 3-finger gesture |
 | All-servers fan-out (`/api/federation/sessions`) | ✅ | "All servers" row |
 | Per-row swipe-to-mute | ✅ | |
-| Session rename (`/api/sessions/rename`) | ❌ | v0.11 |
-| Session restart (`/api/sessions/restart`) | ❌ | v0.11 |
-| Bulk delete completed (`/api/sessions/delete`) | ❌ | v0.11 |
+| Session rename (`/api/sessions/rename`) | ✅ | v0.11.0 — overflow menu on Sessions rows |
+| Session restart (`/api/sessions/restart`) | ✅ | v0.11.0 — overflow menu, confirm dialog |
+| Bulk delete completed (`/api/sessions/delete`) | ✅ (client) | v0.11.0 — single + long-press multi-select. Parent endpoint not in v3.0.0 openapi.yaml; client greys out the button on `TransportError.NotFound` |
 | Per-row timeline view (`/api/sessions/timeline`) | ❌ | v0.12 |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
@@ -45,11 +45,11 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Kill session (confirm dialog) | ✅ | |
 | State override | ✅ | |
 | Mute per-session | ✅ | |
-| Rename session | ❌ | v0.11 |
-| Restart session | ❌ | v0.11 |
-| Delete session | ❌ | v0.11 |
-| Terminal copy action | ❌ | xterm selection works but no clipboard button |
-| Terminal search (`xterm-addon-search`) | ❌ | v0.11 |
+| Rename session | ✅ | v0.11.0 — Sessions overflow menu |
+| Restart session | ✅ | v0.11.0 — Sessions overflow menu |
+| Delete session | ✅ (client) | v0.11.0 — overflow + bulk. Parent endpoint gate as above |
+| Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
+| Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
 | Inline schedule actions (create scheduled reply) | ❌ | v0.12 |
 | Backlog pager (`/api/sessions/timeline`) | ❌ | v0.12 |
 | Prompt + rate-limit inline banners | ✅ | InlineNotices |
@@ -58,7 +58,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 
 | PWA capability | Mobile | Notes |
 |---|---|---|
-| Start session from form (`/api/sessions/start`) | ❌ | v0.11 — transport has `startSession`, UI missing |
+| Start session from form (`/api/sessions/start`) | ✅ | v0.11.0 — Sessions-tab FAB → `NewSessionScreen` |
 | Pick LLM backend (`/api/backends`) | ✅ (read-only) | Channels tab; per-session backend selection during start is v0.11 |
 | Pick model variant | ❌ | v0.11 — needs `/api/ollama/models` + `/api/openwebui/models` |
 | Pick profile (`/api/profiles`) | ❌ | v0.11 — F10 ephemeral-agent profiles |
@@ -71,8 +71,8 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 |---|---|---|
 | Pending-prompt list | ✅ | AlertsScreen |
 | Badge count on nav icon | ✅ | |
-| Mark-as-read / dismiss | ❌ | v0.11 — swipe-to-mute exists; explicit dismiss missing |
-| `/api/alerts` read | ❌ | v0.11 — mobile currently derives from session list; PWA reads a dedicated endpoint for richer metadata |
+| Mark-as-read / dismiss | ✅ | v0.11.0 — swipe-left on Alerts row dismisses (mutes the underlying session) |
+| `/api/alerts` read | ✅ (client) | v0.11.0 — transport methods `listAlerts` / `markAlertRead` land; UI still derives from session list + mute projection. Wiring the UI to the dedicated endpoint tracked for v0.12 once the parent's Alert wire shape is fully locked |
 | Schedule actions from alerts | ❌ | v0.12 |
 
 ## 5. Settings (`data-view="settings"`)
@@ -93,7 +93,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Pick active backend | ❌ | v0.11 — `POST /api/backends/active` (parent to confirm shape) |
+| Pick active backend | ✅ (client) | v0.11.0 — Channels-tab radio picker calls `POST /api/backends/active`. Parent endpoint not in v3.0.0 openapi.yaml; client greys out the list on `TransportError.NotFound` |
 | Edit endpoint URL / API key per backend | ❌ | v0.12 — structured form per ADR-0019 |
 | Pick Ollama model (`/api/ollama/models`) | ❌ | v0.12 |
 | Pick OpenWebUI model (`/api/openwebui/models`) | ❌ | v0.12 |
@@ -106,14 +106,14 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Add / remove channel | ❌ | v0.12 |
 | Test message round-trip (`/api/channel/send`) | ❌ | v0.12 |
 | Per-channel enable / disable | ❌ | v0.12 |
-| Download CA cert (`/api/cert`) | ❌ | v0.11 — drives self-signed TLS trust |
+| Download CA cert (`/api/cert`) | ✅ (client) | v0.11.0 — Settings → Servers overflow menu → save to Downloads → OS install-cert intent. Parent endpoint not in v3.0.0 openapi.yaml; client surfaces a toast pointing at the upstream issue on `TransportError.NotFound` |
 
 ### 5d. Daemon control + introspection
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Show daemon version (`/api/health`) | ❌ | v0.11 — trivial; add to About card |
-| Connection status indicator | ❌ | v0.11 — transport already has `isReachable` Flow |
+| Show daemon version (`/api/health`) | ✅ | v0.11.0 — uses `GET /api/info` for richer data (hostname + version + backends). About card "Connected to" row |
+| Connection status indicator | ✅ | v0.11.0 — 8 dp dot in Sessions TopAppBar + tap-to-open retry sheet |
 | Config read (`GET /api/config`) | ❌ | v0.12 — read-only view |
 | Config write (`PUT /api/config`) | ❌ | v0.13 — guarded per ADR-0019 |
 | Recent logs (`/api/logs`) | ❌ | v0.12 — streaming viewer |
