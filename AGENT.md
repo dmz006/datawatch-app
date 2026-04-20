@@ -290,6 +290,15 @@ After any functional change (new feature, bug fix, behavior change — not docs-
 
 ## Security Rules
 
+- **Never commit internal hostnames, IP addresses, or Tailscale node names** — anything that
+  identifies a specific user's infrastructure. This includes: short machine names / ring
+  names, `*.ts.net` / `*.taila*.ts.net` Tailscale magic-DNS names, CIDR-specific IP
+  addresses (LAN, CGNAT, or Tailscale ranges), custom internal-TLD hostnames
+  (`*.internal`, `*.lab.*`, user-specific subdomains), and any URL derived from those.
+  Docs, ADRs, plans, tests, CHANGELOG entries, commit messages, and source comments all
+  apply. Use generic placeholders instead: `<your datawatch server>`, `host.example.com`,
+  `datawatch.example`, `https://<host>:<port>`. Live-debug artifacts (logs, screenshots)
+  are staging-only — scrub before they land in docs.
 - Never log or commit API keys, tokens, bearer tokens, server URLs, or user identifiers.
 - Never write code that sends data to services not in the allowlist (`docs/security-model.md`).
   Allowlist today: (1) user-configured datawatch servers, (2) Google FCM (push wake only),

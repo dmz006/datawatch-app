@@ -4,7 +4,7 @@
 - **Version at plan time:** v1.0.1
 - **Target ship version:** v1.0.2 (behaviour fix) + v1.1.0 (font-size + toolbar UX)
 - **Supersedes:** `docs/plans/2026-04-19-terminal-hardening.md` (that plan addressed a symptom — write-cursor reset — and got it wrong as the primary cause)
-- **Source of truth:** `dmz006/datawatch` parent repo PWA — `internal/server/web/app.js`. Snapshot pulled live from `https://ralfthewise:8443/app.js` 2026-04-20 00:17.
+- **Source of truth:** `dmz006/datawatch` parent repo PWA — `internal/server/web/app.js`. Snapshot pulled live from `https://&lt;datawatch-server&gt;:8443/app.js` 2026-04-20 00:17.
 
 ## Root cause — correctly diagnosed this time
 
@@ -89,7 +89,7 @@ The mobile client writes `raw_output` directly to xterm, which dumps cursor-posi
 ## Validation
 
 - `:shared` unit tests for the new `pane_capture` decoder + outbound `resize_term` encoder (MockWebServer test).
-- Live test on `787e*` against `ralfthewise`. Evidence: screenshot + `adb logcat DwTerm:V` showing `resize_term` → `pane_capture` round-trip.
+- Live test on `787e*` against `&lt;datawatch-server&gt;`. Evidence: screenshot + `adb logcat DwTerm:V` showing `resize_term` → `pane_capture` round-trip.
 
 ## Why the earlier "Phase 1 — write-cursor reset" (`aff6e19`) still stays
 

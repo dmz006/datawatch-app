@@ -22,8 +22,8 @@ class WebSocketUrlTest {
     @Test
     fun `https base becomes wss URL with explicit port preserved`() {
         assertEquals(
-            "wss://ralfthewise:8443/ws",
-            transport("https://ralfthewise:8443").buildWsUrl("https://ralfthewise:8443"),
+            "wss://datawatch.example:8443/ws",
+            transport("https://datawatch.example:8443").buildWsUrl("https://datawatch.example:8443"),
         )
     }
 
