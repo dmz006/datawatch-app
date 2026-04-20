@@ -30,11 +30,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,9 +69,10 @@ public fun MatrixSplashScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F1117)),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0F1117)),
         contentAlignment = Alignment.Center,
     ) {
         MatrixSplashArtwork()
@@ -141,15 +142,16 @@ private object SplashPalette {
 }
 
 private const val MATRIX_COLUMNS = 9
-private val MATRIX_CHARS = ('A'..'F').toList() + ('0'..'9').toList() +
-    listOf('x', 'W', 'T', 'C', 'H', 'R')
+private val MATRIX_CHARS =
+    ('A'..'F').toList() + ('0'..'9').toList() +
+        listOf('x', 'W', 'T', 'C', 'H', 'R')
 
 /** Stable per-column animation timing, computed once so recomposition doesn't
  *  jitter the rain. */
 private data class ColumnSpec(
-    val xFrac: Float,       // 0..1 across the screen width
+    val xFrac: Float, // 0..1 across the screen width
     val durMs: Int,
-    val delayFrac: Float,   // 0..1 phase offset
+    val delayFrac: Float, // 0..1 phase offset
     val charCount: Int,
 )
 
@@ -168,10 +170,11 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
     val pupilScale by infinite.animateFloat(
         initialValue = 0.90f,
         targetValue = 1.10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "pupil",
     )
 
@@ -179,10 +182,11 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
     val rainTime by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(5000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
         label = "rain",
     )
 
@@ -190,52 +194,58 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
     val scanY by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(9000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(9000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
         label = "scan",
     )
 
     // Per-character opacity flicker — 64 staggered flicker tracks, each column
     // consumes N of them. rememberInfiniteTransition only gives us one value per
     // call so we build a list.
-    val flickers: List<Float> = (0 until 32).map { i ->
-        infinite.animateFloat(
-            initialValue = 0.25f,
-            targetValue = 0.85f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 900 + (i * 73 % 900),
-                    delayMillis = (i * 41) % 500,
-                    easing = FastOutSlowInEasing,
-                ),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "flicker-$i",
-        ).value
-    }
+    val flickers: List<Float> =
+        (0 until 32).map { i ->
+            infinite.animateFloat(
+                initialValue = 0.25f,
+                targetValue = 0.85f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation =
+                            tween(
+                                durationMillis = 900 + (i * 73 % 900),
+                                delayMillis = (i * 41) % 500,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "flicker-$i",
+            ).value
+        }
 
     // Deterministic column specs (seeded so the pattern is reproducible build-to-build).
-    val columns: List<ColumnSpec> = remember {
-        val rng = Random(4242)
-        List(MATRIX_COLUMNS) {
-            ColumnSpec(
-                xFrac = 0.12f + it * (0.76f / (MATRIX_COLUMNS - 1)),
-                durMs = 4000 + rng.nextInt(2800),
-                delayFrac = rng.nextFloat(),
-                charCount = 7 + rng.nextInt(4),
-            )
+    val columns: List<ColumnSpec> =
+        remember {
+            val rng = Random(4242)
+            List(MATRIX_COLUMNS) {
+                ColumnSpec(
+                    xFrac = 0.12f + it * (0.76f / (MATRIX_COLUMNS - 1)),
+                    durMs = 4000 + rng.nextInt(2800),
+                    delayFrac = rng.nextFloat(),
+                    charCount = 7 + rng.nextInt(4),
+                )
+            }
         }
-    }
 
     // Deterministic character assignments per (column, row).
-    val columnChars: List<List<Char>> = remember(columns) {
-        val rng = Random(13)
-        columns.map { col ->
-            List(col.charCount) { MATRIX_CHARS[rng.nextInt(MATRIX_CHARS.size)] }
+    val columnChars: List<List<Char>> =
+        remember(columns) {
+            val rng = Random(13)
+            columns.map { col ->
+                List(col.charCount) { MATRIX_CHARS[rng.nextInt(MATRIX_CHARS.size)] }
+            }
         }
-    }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val cx = size.width / 2f
@@ -249,12 +259,13 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         //   • Tablet on lunar surface (showing matrix + eye)
 
         // Subtle starfield in upper area (deterministic positions).
-        val starPositions = listOf(
-            0.05f to 0.06f, 0.12f to 0.10f, 0.20f to 0.04f, 0.32f to 0.08f,
-            0.42f to 0.05f, 0.62f to 0.07f, 0.72f to 0.04f, 0.84f to 0.10f,
-            0.92f to 0.06f, 0.08f to 0.18f, 0.94f to 0.20f, 0.34f to 0.16f,
-            0.66f to 0.18f,
-        )
+        val starPositions =
+            listOf(
+                0.05f to 0.06f, 0.12f to 0.10f, 0.20f to 0.04f, 0.32f to 0.08f,
+                0.42f to 0.05f, 0.62f to 0.07f, 0.72f to 0.04f, 0.84f to 0.10f,
+                0.92f to 0.06f, 0.08f to 0.18f, 0.94f to 0.20f, 0.34f to 0.16f,
+                0.66f to 0.18f,
+            )
         starPositions.forEach { (xf, yf) ->
             drawCircle(
                 color = Color.White.copy(alpha = 0.55f),
@@ -312,15 +323,17 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         )
         // Moon gradient overlay for depth
         drawRect(
-            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFF7A6B5F),
-                    Color(0xFF332B25),
-                    Color(0xFF0F0A08),
+            brush =
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors =
+                        listOf(
+                            Color(0xFF7A6B5F),
+                            Color(0xFF332B25),
+                            Color(0xFF0F0A08),
+                        ),
+                    startY = horizonY,
+                    endY = size.height,
                 ),
-                startY = horizonY,
-                endY = size.height,
-            ),
             topLeft = Offset(0f, horizonY),
             size = Size(size.width, size.height - horizonY),
         )
@@ -333,17 +346,18 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         )
 
         // Pronounced craters on moon surface
-        val craters = listOf(
-            // x_frac, y_frac (within bottom 60%), rx_frac, ry_frac
-            Triple(0.12f, 0.78f, 0.08f),
-            Triple(0.88f, 0.80f, 0.09f),
-            Triple(0.32f, 0.55f, 0.06f),
-            Triple(0.68f, 0.55f, 0.06f),
-            Triple(0.06f, 0.58f, 0.05f),
-            Triple(0.94f, 0.58f, 0.04f),
-            Triple(0.22f, 0.94f, 0.04f),
-            Triple(0.78f, 0.94f, 0.05f),
-        )
+        val craters =
+            listOf(
+                // x_frac, y_frac (within bottom 60%), rx_frac, ry_frac
+                Triple(0.12f, 0.78f, 0.08f),
+                Triple(0.88f, 0.80f, 0.09f),
+                Triple(0.32f, 0.55f, 0.06f),
+                Triple(0.68f, 0.55f, 0.06f),
+                Triple(0.06f, 0.58f, 0.05f),
+                Triple(0.94f, 0.58f, 0.04f),
+                Triple(0.22f, 0.94f, 0.04f),
+                Triple(0.78f, 0.94f, 0.05f),
+            )
         craters.forEach { (xf, yf, sizeFrac) ->
             val crCx = size.width * xf
             val crCy = size.height * yf
@@ -373,11 +387,12 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         val tabletHeight = discRadius * 1.4f
         val tabletLeft = cx - tabletWidth / 2f
         val moonAreaCenter = (horizonY + size.height) / 2f
-        val tabletTop = if (compact) {
-            moonAreaCenter - tabletHeight / 2f
-        } else {
-            cy - tabletHeight / 2f
-        }
+        val tabletTop =
+            if (compact) {
+                moonAreaCenter - tabletHeight / 2f
+            } else {
+                cy - tabletHeight / 2f
+            }
         // Shadow on regolith
         drawOval(
             color = Color.Black.copy(alpha = 0.5f),
@@ -385,14 +400,23 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
             size = Size(tabletWidth + 12f, 18f),
         )
         drawRoundedRect(
-            tabletLeft, tabletTop, tabletWidth, tabletHeight,
-            cornerRadius = 28f, fillColor = SplashPalette.BezelDark,
-            strokeColor = SplashPalette.Border, strokeWidth = 3f,
+            tabletLeft,
+            tabletTop,
+            tabletWidth,
+            tabletHeight,
+            cornerRadius = 28f,
+            fillColor = SplashPalette.BezelDark,
+            strokeColor = SplashPalette.Border,
+            strokeWidth = 3f,
         )
         // Speaker slit
         drawRoundedRect(
-            cx - 20f, tabletTop + 8f, 40f, 4f,
-            cornerRadius = 2f, fillColor = Color(0xFF2D1B4E),
+            cx - 20f,
+            tabletTop + 8f,
+            40f,
+            4f,
+            cornerRadius = 2f,
+            fillColor = Color(0xFF2D1B4E),
         )
 
         // 4. Screen recess — clipped matrix rain + eye go inside.
@@ -402,14 +426,21 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         val screenWidth = tabletWidth - 2 * padding
         val screenHeight = tabletHeight - 2 * padding - 14f
         drawRoundedRect(
-            screenLeft, screenTop, screenWidth, screenHeight,
-            cornerRadius = 18f, fillColor = SplashPalette.ScreenDark,
-            strokeColor = Color(0xFF4C1D95).copy(alpha = 0.8f), strokeWidth = 1f,
+            screenLeft,
+            screenTop,
+            screenWidth,
+            screenHeight,
+            cornerRadius = 18f,
+            fillColor = SplashPalette.ScreenDark,
+            strokeColor = Color(0xFF4C1D95).copy(alpha = 0.8f),
+            strokeWidth = 1f,
         )
 
         clipRect(
-            left = screenLeft, top = screenTop,
-            right = screenLeft + screenWidth, bottom = screenTop + screenHeight,
+            left = screenLeft,
+            top = screenTop,
+            right = screenLeft + screenWidth,
+            bottom = screenTop + screenHeight,
         ) {
             // Matrix rain — each column offset by its own phase.
             columns.forEachIndexed { colIdx, col ->
@@ -426,20 +457,23 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
                     // Head of the column is brighter, tail fades.
                     val positionWeight = 1f - rowIdx.toFloat() / col.charCount
                     val alpha = (baseAlpha * (0.45f + 0.55f * positionWeight)).coerceIn(0f, 1f)
-                    val tint = when {
-                        rowIdx == 0 -> SplashPalette.MatrixLead
-                        rowIdx % 3 == 0 -> SplashPalette.MatrixBright
-                        else -> SplashPalette.Matrix
-                    }
-                    val measured = textMeasurer.measure(
-                        text = ch.toString(),
-                        style = TextStyle(
-                            color = tint.copy(alpha = alpha),
-                            fontSize = fontSize,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    )
+                    val tint =
+                        when {
+                            rowIdx == 0 -> SplashPalette.MatrixLead
+                            rowIdx % 3 == 0 -> SplashPalette.MatrixBright
+                            else -> SplashPalette.Matrix
+                        }
+                    val measured =
+                        textMeasurer.measure(
+                            text = ch.toString(),
+                            style =
+                                TextStyle(
+                                    color = tint.copy(alpha = alpha),
+                                    fontSize = fontSize,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                        )
                     drawText(
                         textLayoutResult = measured,
                         topLeft = Offset(colX - measured.size.width / 2f, y),
@@ -461,8 +495,11 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         // the screen rectangle ensures the eye lands inside the device-screen
         // area rather than overlapping the bezel chrome above it.
         val eyeCenterY = screenTop + screenHeight / 2f
-        drawEye(center = Offset(cx, eyeCenterY), radius = discRadius * 0.34f,
-                pupilScale = pupilScale)
+        drawEye(
+            center = Offset(cx, eyeCenterY),
+            radius = discRadius * 0.34f,
+            pupilScale = pupilScale,
+        )
     }
 }
 
@@ -472,23 +509,28 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawArcGroup(
     center: Offset,
     baseRadius: Float,
 ) {
-    val arcs = listOf(
-        Triple(baseRadius * 1.7f, 0.45f, 6f),
-        Triple(baseRadius * 1.3f, 0.70f, 8f),
-        Triple(baseRadius * 0.9f, 0.95f, 10f),
-    )
+    val arcs =
+        listOf(
+            Triple(baseRadius * 1.7f, 0.45f, 6f),
+            Triple(baseRadius * 1.3f, 0.70f, 8f),
+            Triple(baseRadius * 0.9f, 0.95f, 10f),
+        )
     arcs.forEach { (r, alpha, strokeWidth) ->
-        val path = Path().apply {
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(
-                    left = center.x - r, top = center.y - r,
-                    right = center.x + r, bottom = center.y + r,
-                ),
-                startAngleDegrees = 200f,
-                sweepAngleDegrees = 140f,
-                forceMoveTo = true,
-            )
-        }
+        val path =
+            Path().apply {
+                arcTo(
+                    rect =
+                        androidx.compose.ui.geometry.Rect(
+                            left = center.x - r,
+                            top = center.y - r,
+                            right = center.x + r,
+                            bottom = center.y + r,
+                        ),
+                    startAngleDegrees = 200f,
+                    sweepAngleDegrees = 140f,
+                    forceMoveTo = true,
+                )
+            }
         drawPath(
             path = path,
             color = SplashPalette.Border.copy(alpha = alpha),

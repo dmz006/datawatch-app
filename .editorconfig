@@ -1,0 +1,27 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# ktlint defers to this file for both rule config and disables. See
+# https://pinterest.github.io/ktlint/latest/rules/configuration-ktlint/.
+
+# Compose @Composable functions use PascalCase; ktlint's `function-naming`
+# rule doesn't understand the annotation. Keep the rule on for everything
+# else but exempt PascalCase @Composable fns via the standard ignore list.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Allow trailing commas consistently — idiomatic Kotlin 1.4+.
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+[*.md]
+# Preserve Markdown whitespace.
+trim_trailing_whitespace = false

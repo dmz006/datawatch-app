@@ -39,65 +39,66 @@ public class McpSseTransport(
     private val client: HttpClient,
     private val json: Json = RestTransport.DefaultJson,
 ) {
-
-    public fun listen(): Flow<McpEvent> = callbackFlow {
-        val producer = this
-        var backoff = INITIAL_BACKOFF_MS
-        while (!isClosedForSend) {
-            try {
-                client.get(endpoint.sseUrl) {
-                    endpoint.bearerToken?.let {
-                        header(HttpHeaders.Authorization, "Bearer $it")
-                    }
-                    header(HttpHeaders.Accept, "text/event-stream")
-                    header(HttpHeaders.CacheControl, "no-cache")
-                }.bodyAsChannel().let { channel ->
-                    var event: String? = null
-                    var data = StringBuilder()
-                    while (!channel.isClosedForRead) {
-                        val line = channel.readUTF8Line() ?: break
-                        when {
-                            line.isBlank() -> {
-                                if (data.isNotEmpty()) {
-                                    val payload = runCatching {
-                                        json.parseToJsonElement(data.toString())
-                                    }.getOrNull()
-                                    producer.trySend(
-                                        McpEvent(
-                                            name = event ?: "message",
-                                            rawData = data.toString(),
-                                            payload = payload,
-                                        ),
-                                    )
+    public fun listen(): Flow<McpEvent> =
+        callbackFlow {
+            val producer = this
+            var backoff = INITIAL_BACKOFF_MS
+            while (!isClosedForSend) {
+                try {
+                    client.get(endpoint.sseUrl) {
+                        endpoint.bearerToken?.let {
+                            header(HttpHeaders.Authorization, "Bearer $it")
+                        }
+                        header(HttpHeaders.Accept, "text/event-stream")
+                        header(HttpHeaders.CacheControl, "no-cache")
+                    }.bodyAsChannel().let { channel ->
+                        var event: String? = null
+                        var data = StringBuilder()
+                        while (!channel.isClosedForRead) {
+                            val line = channel.readUTF8Line() ?: break
+                            when {
+                                line.isBlank() -> {
+                                    if (data.isNotEmpty()) {
+                                        val payload =
+                                            runCatching {
+                                                json.parseToJsonElement(data.toString())
+                                            }.getOrNull()
+                                        producer.trySend(
+                                            McpEvent(
+                                                name = event ?: "message",
+                                                rawData = data.toString(),
+                                                payload = payload,
+                                            ),
+                                        )
+                                    }
+                                    event = null
+                                    data = StringBuilder()
                                 }
-                                event = null
-                                data = StringBuilder()
+                                line.startsWith("event:") -> event = line.removePrefix("event:").trim()
+                                line.startsWith("data:") -> {
+                                    if (data.isNotEmpty()) data.append('\n')
+                                    data.append(line.removePrefix("data:").trimStart())
+                                }
+                                // ":" = comment, ignore.
                             }
-                            line.startsWith("event:") -> event = line.removePrefix("event:").trim()
-                            line.startsWith("data:") -> {
-                                if (data.isNotEmpty()) data.append('\n')
-                                data.append(line.removePrefix("data:").trimStart())
-                            }
-                            // ":" = comment, ignore.
                         }
                     }
+                    backoff = INITIAL_BACKOFF_MS
+                } catch (e: Throwable) {
+                    producer.trySend(
+                        McpEvent(
+                            name = "error",
+                            rawData = e.message ?: "unknown",
+                            payload = null,
+                        ),
+                    )
                 }
-                backoff = INITIAL_BACKOFF_MS
-            } catch (e: Throwable) {
-                producer.trySend(
-                    McpEvent(
-                        name = "error",
-                        rawData = e.message ?: "unknown",
-                        payload = null,
-                    ),
-                )
+                if (isClosedForSend) break
+                delay(backoff)
+                backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
             }
-            if (isClosedForSend) break
-            delay(backoff)
-            backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
+            awaitClose { }
         }
-        awaitClose { }
-    }
 
     public companion object {
         internal const val INITIAL_BACKOFF_MS: Long = 1_000

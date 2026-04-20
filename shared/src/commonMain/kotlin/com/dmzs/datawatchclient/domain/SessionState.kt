@@ -16,15 +16,16 @@ public enum class SessionState {
     ;
 
     public companion object {
-        public fun fromWire(value: String): SessionState = when (value.lowercase()) {
-            "new" -> New
-            "running" -> Running
-            "waiting", "waiting_for_prompt", "needs_input" -> Waiting
-            "rate_limited", "rate-limited" -> RateLimited
-            "completed", "done" -> Completed
-            "killed", "stopped" -> Killed
-            "error", "failed" -> Error
-            else -> Error
-        }
+        public fun fromWire(value: String): SessionState =
+            when (value.lowercase()) {
+                "new" -> New
+                "running" -> Running
+                "waiting", "waiting_for_prompt", "needs_input" -> Waiting
+                "rate_limited", "rate-limited" -> RateLimited
+                "completed", "done" -> Completed
+                "killed", "stopped" -> Killed
+                "error", "failed" -> Error
+                else -> Error
+            }
     }
 }

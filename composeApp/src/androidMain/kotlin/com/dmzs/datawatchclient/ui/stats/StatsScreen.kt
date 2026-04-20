@@ -1,6 +1,5 @@
 package com.dmzs.datawatchclient.ui.stats
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,10 +62,11 @@ public fun StatsScreen(vm: StatsViewModel = viewModel()) {
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .fillMaxSize(),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize(),
         ) {
             state.banner?.let {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -96,7 +96,10 @@ public fun StatsScreen(vm: StatsViewModel = viewModel()) {
 }
 
 @Composable
-private fun ResourceCard(title: String, s: StatsDto) {
+private fun ResourceCard(
+    title: String,
+    s: StatsDto,
+) {
     SectionCard(title) {
         ResourceRow("CPU", s.cpuPct)
         ResourceRow("Memory", s.memPct)
@@ -106,7 +109,10 @@ private fun ResourceCard(title: String, s: StatsDto) {
 }
 
 @Composable
-private fun ResourceRow(label: String, pct: Double?) {
+private fun ResourceRow(
+    label: String,
+    pct: Double?,
+) {
     if (pct == null) return
     Column(modifier = Modifier.padding(vertical = 6.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -122,11 +128,12 @@ private fun ResourceRow(label: String, pct: Double?) {
 }
 
 @Composable
-private fun pctColor(pct: Double): Color = when {
-    pct >= 90 -> MaterialTheme.colorScheme.error
-    pct >= 70 -> MaterialTheme.colorScheme.tertiary
-    else -> MaterialTheme.colorScheme.primary
-}
+private fun pctColor(pct: Double): Color =
+    when {
+        pct >= 90 -> MaterialTheme.colorScheme.error
+        pct >= 70 -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.primary
+    }
 
 @Composable
 private fun SessionCountsCard(s: StatsDto) {
@@ -143,7 +150,11 @@ private fun SessionCountsCard(s: StatsDto) {
 }
 
 @Composable
-private fun Stat(label: String, value: String, color: Color = MaterialTheme.colorScheme.onSurface) {
+private fun Stat(
+    label: String,
+    value: String,
+    color: Color = MaterialTheme.colorScheme.onSurface,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.headlineMedium, color = color)
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -176,11 +187,15 @@ private fun formatUptime(seconds: Long): String {
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
+private fun SectionCard(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     Card(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .fillMaxWidth(),
+        modifier =
+            Modifier
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .fillMaxWidth(),
         colors = CardDefaults.cardColors(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

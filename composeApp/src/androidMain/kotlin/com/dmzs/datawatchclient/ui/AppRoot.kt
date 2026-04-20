@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -10,8 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,8 +27,6 @@ import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.channels.ChannelsScreen
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.LocalContext
 import com.dmzs.datawatchclient.ui.onboarding.OnboardingScreen
 import com.dmzs.datawatchclient.ui.servers.AddServerScreen
 import com.dmzs.datawatchclient.ui.servers.EditServerScreen
@@ -35,11 +35,10 @@ import com.dmzs.datawatchclient.ui.sessions.NewSessionScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
-import com.dmzs.datawatchclient.ui.stats.StatsScreen
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
-import com.dmzs.datawatchclient.ui.shell.PlaceholderTabScreen
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
+import com.dmzs.datawatchclient.ui.stats.StatsScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 import kotlinx.coroutines.delay
 
@@ -83,9 +82,10 @@ public fun AppRoot() {
         }
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .threeFingerSwipeUp(onFired = { pickerOpen = true }),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .threeFingerSwipeUp(onFired = { pickerOpen = true }),
         ) {
             Nav(
                 navController = navController,
@@ -126,11 +126,12 @@ private fun Nav(
                     waited += 100L
                     resolved = profiles
                 }
-                val next = if (resolved?.isNotEmpty() == true) {
-                    Destinations.Home
-                } else {
-                    Destinations.Onboarding
-                }
+                val next =
+                    if (resolved?.isNotEmpty() == true) {
+                        Destinations.Home
+                    } else {
+                        Destinations.Onboarding
+                    }
                 navController.navigate(next) {
                     popUpTo(Destinations.Splash) { inclusive = true }
                     launchSingleTop = true
@@ -155,10 +156,11 @@ private fun Nav(
                     // in a single transactional navigate(). Previous impl
                     // used inclusive-pop which briefly emptied the back stack
                     // and rendered a blank composition.
-                    val poppedToHome = navController.popBackStack(
-                        route = Destinations.Home,
-                        inclusive = false,
-                    )
+                    val poppedToHome =
+                        navController.popBackStack(
+                            route = Destinations.Home,
+                            inclusive = false,
+                        )
                     if (!poppedToHome) {
                         navController.navigate(Destinations.Home) {
                             popUpTo(Destinations.Onboarding) { inclusive = true }
@@ -192,11 +194,12 @@ private fun Nav(
         }
         composable(
             route = Destinations.EditServer,
-            arguments = listOf(
-                androidx.navigation.navArgument("profileId") {
-                    type = androidx.navigation.NavType.StringType
-                },
-            ),
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("profileId") {
+                        type = androidx.navigation.NavType.StringType
+                    },
+                ),
         ) { entry ->
             val id = entry.arguments?.getString("profileId") ?: return@composable
             EditServerScreen(
@@ -208,11 +211,12 @@ private fun Nav(
         }
         composable(
             route = Destinations.SessionDetail,
-            arguments = listOf(
-                androidx.navigation.navArgument("sessionId") {
-                    type = androidx.navigation.NavType.StringType
-                },
-            ),
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("sessionId") {
+                        type = androidx.navigation.NavType.StringType
+                    },
+                ),
         ) { entry ->
             val id = entry.arguments?.getString("sessionId") ?: return@composable
             SessionDetailScreen(

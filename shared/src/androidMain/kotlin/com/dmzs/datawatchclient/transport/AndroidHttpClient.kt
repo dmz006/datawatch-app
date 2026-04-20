@@ -11,15 +11,16 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 
-public actual fun createHttpClient(): HttpClient = HttpClient(OkHttp) {
-    install(HttpTimeout) {
-        requestTimeoutMillis = 15_000
-        connectTimeoutMillis = 5_000
-        socketTimeoutMillis = 30_000
+public actual fun createHttpClient(): HttpClient =
+    HttpClient(OkHttp) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15_000
+            connectTimeoutMillis = 5_000
+            socketTimeoutMillis = 30_000
+        }
+        install(ContentNegotiation) { json(RestTransport.DefaultJson) }
+        expectSuccess = true
     }
-    install(ContentNegotiation) { json(RestTransport.DefaultJson) }
-    expectSuccess = true
-}
 
 /**
  * Variant of [createHttpClient] that accepts ANY TLS certificate and any
@@ -32,26 +33,37 @@ public actual fun createHttpClient(): HttpClient = HttpClient(OkHttp) {
  * server can present any certificate and we'll accept it. For a user's
  * personal tailnet this is acceptable. Do NOT use for public-internet servers.
  */
-public fun createTrustAllHttpClient(): HttpClient = HttpClient(OkHttp) {
-    engine {
-        config {
-            val trustAll = object : X509TrustManager {
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) = Unit
-                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+public fun createTrustAllHttpClient(): HttpClient =
+    HttpClient(OkHttp) {
+        engine {
+            config {
+                val trustAll =
+                    object : X509TrustManager {
+                        override fun checkClientTrusted(
+                            chain: Array<X509Certificate>,
+                            authType: String,
+                        ) = Unit
+
+                        override fun checkServerTrusted(
+                            chain: Array<X509Certificate>,
+                            authType: String,
+                        ) = Unit
+
+                        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+                    }
+                val ctx =
+                    SSLContext.getInstance("TLS").apply {
+                        init(null, arrayOf(trustAll), SecureRandom())
+                    }
+                sslSocketFactory(ctx.socketFactory, trustAll)
+                hostnameVerifier { _, _ -> true }
             }
-            val ctx = SSLContext.getInstance("TLS").apply {
-                init(null, arrayOf(trustAll), SecureRandom())
-            }
-            sslSocketFactory(ctx.socketFactory, trustAll)
-            hostnameVerifier { _, _ -> true }
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15_000
+            connectTimeoutMillis = 5_000
+            socketTimeoutMillis = 30_000
+        }
+        install(ContentNegotiation) { json(RestTransport.DefaultJson) }
+        expectSuccess = true
     }
-    install(HttpTimeout) {
-        requestTimeoutMillis = 15_000
-        connectTimeoutMillis = 5_000
-        socketTimeoutMillis = 30_000
-    }
-    install(ContentNegotiation) { json(RestTransport.DefaultJson) }
-    expectSuccess = true
-}

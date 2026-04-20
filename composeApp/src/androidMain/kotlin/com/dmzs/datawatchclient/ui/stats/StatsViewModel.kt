@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
  * banner string explaining the disconnect.
  */
 public class StatsViewModel : ViewModel() {
-
     public data class UiState(
         val stats: StatsDto? = null,
         val refreshing: Boolean = false,
@@ -46,29 +45,32 @@ public class StatsViewModel : ViewModel() {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
             val profile = profiles.firstOrNull { it.enabled }
             if (profile == null) {
-                _state.value = _state.value.copy(
-                    stats = null,
-                    refreshing = false,
-                    banner = "No enabled server. Add or enable one in Settings.",
-                    serverName = null,
-                )
+                _state.value =
+                    _state.value.copy(
+                        stats = null,
+                        refreshing = false,
+                        banner = "No enabled server. Add or enable one in Settings.",
+                        serverName = null,
+                    )
                 return@launch
             }
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
             ServiceLocator.transportFor(profile).stats().fold(
                 onSuccess = { dto ->
-                    _state.value = UiState(
-                        stats = dto,
-                        refreshing = false,
-                        banner = null,
-                        serverName = profile.displayName,
-                    )
+                    _state.value =
+                        UiState(
+                            stats = dto,
+                            refreshing = false,
+                            banner = null,
+                            serverName = profile.displayName,
+                        )
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        refreshing = false,
-                        banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            refreshing = false,
+                            banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
+                        )
                 },
             )
         }

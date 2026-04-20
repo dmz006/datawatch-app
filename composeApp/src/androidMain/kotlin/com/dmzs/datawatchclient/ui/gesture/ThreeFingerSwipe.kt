@@ -20,33 +20,34 @@ public fun Modifier.threeFingerSwipeUp(
     thresholdDp: Dp = 64.dp,
     debounceMs: Long = 500L,
     onFired: () -> Unit,
-): Modifier = composed {
-    pointerInput(Unit) {
-        val thresholdPx = thresholdDp.toPx()
-        var startY: Float? = null
-        var lastFireTs = 0L
-        awaitPointerEventScope {
-            while (true) {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                val active = event.changes.filter { it.pressed }
-                if (active.size >= 3) {
-                    val avgY = active.map { it.position.y }.average().toFloat()
-                    val anchor = startY
-                    if (anchor == null) {
-                        startY = avgY
-                    } else {
-                        val dy = avgY - anchor
-                        val now = System.currentTimeMillis()
-                        if (-dy >= thresholdPx && (now - lastFireTs) > debounceMs) {
-                            lastFireTs = now
-                            startY = null
-                            onFired()
+): Modifier =
+    composed {
+        pointerInput(Unit) {
+            val thresholdPx = thresholdDp.toPx()
+            var startY: Float? = null
+            var lastFireTs = 0L
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val active = event.changes.filter { it.pressed }
+                    if (active.size >= 3) {
+                        val avgY = active.map { it.position.y }.average().toFloat()
+                        val anchor = startY
+                        if (anchor == null) {
+                            startY = avgY
+                        } else {
+                            val dy = avgY - anchor
+                            val now = System.currentTimeMillis()
+                            if (-dy >= thresholdPx && (now - lastFireTs) > debounceMs) {
+                                lastFireTs = now
+                                startY = null
+                                onFired()
+                            }
                         }
+                    } else {
+                        startY = null
                     }
-                } else {
-                    startY = null
                 }
             }
         }
     }
-}

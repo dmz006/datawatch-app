@@ -8,7 +8,7 @@ plugins {
 }
 
 val appVersion: String by rootProject.extra(
-    providers.gradleProperty("DATAWATCH_APP_VERSION").get()
+    providers.gradleProperty("DATAWATCH_APP_VERSION").get(),
 )
 
 kotlin {

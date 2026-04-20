@@ -14,10 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -90,11 +90,12 @@ public fun NewSessionScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
         ) {
             banner?.let {
                 Surface(
@@ -120,9 +121,10 @@ public fun NewSessionScreen(
                 value = task,
                 onValueChange = { task = it },
                 placeholder = { Text("e.g. refactor payments module to use new auth") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp),
                 maxLines = 8,
             )
 
@@ -146,8 +148,9 @@ public fun NewSessionScreen(
                 Box(modifier = Modifier.padding(start = 8.dp)) {
                     Button(
                         onClick = {
-                            val profile = profiles.firstOrNull { it.id == selectedProfileId }
-                                ?: return@Button
+                            val profile =
+                                profiles.firstOrNull { it.id == selectedProfileId }
+                                    ?: return@Button
                             if (task.isBlank()) {
                                 banner = "Task cannot be empty."
                                 return@Button
@@ -213,9 +216,10 @@ private fun ServerPickerDropdown(
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
         )
         androidx.compose.material3.DropdownMenu(
             expanded = expanded,

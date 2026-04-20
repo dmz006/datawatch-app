@@ -31,6 +31,7 @@ import org.json.JSONObject
  * output (fit dimensions, buffered writes, etc.) — invaluable for debugging
  * the "terminal opens as a tiny black square" class of WebView layout races.
  */
+
 /**
  * Controller handle surfaced to callers of [TerminalView] so sibling UI
  * (toolbar, FAB, etc.) can drive xterm search + clipboard without owning
@@ -75,16 +76,16 @@ public class TerminalController internal constructor() {
         ) { raw ->
             // evaluateJavascript returns the JS value as a JSON string —
             // unwrap the outer quotes before handing to the caller.
-            val unwrapped = runCatching { JSONObject("{\"v\":$raw}").optString("v", "") }
-                .getOrDefault("")
+            val unwrapped =
+                runCatching { JSONObject("{\"v\":$raw}").optString("v", "") }
+                    .getOrDefault("")
             onResult(unwrapped)
         }
     }
 }
 
 @Composable
-public fun rememberTerminalController(): TerminalController =
-    remember { TerminalController() }
+public fun rememberTerminalController(): TerminalController = remember { TerminalController() }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -115,10 +116,11 @@ public fun TerminalView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
+                layoutParams =
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false
@@ -132,42 +134,52 @@ public fun TerminalView(
                 settings.setSupportZoom(true)
                 settings.builtInZoomControls = true
                 settings.displayZoomControls = false
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        // Force a fit right after the HTML finishes loading —
-                        // WebView reports `term.open()` success before the
-                        // container has a stable layout in AndroidView.
-                        view?.evaluateJavascript("window.dwResize && window.dwResize();", null)
-                        // Belt-and-braces: flip `ready` from Kotlin so the
-                        // initial flush still happens if DwBridge.onReady() was
-                        // swallowed by a JS error before line 168 of host.html.
-                        view?.post { ready = true }
+                webViewClient =
+                    object : WebViewClient() {
+                        override fun onPageFinished(
+                            view: WebView?,
+                            url: String?,
+                        ) {
+                            // Force a fit right after the HTML finishes loading —
+                            // WebView reports `term.open()` success before the
+                            // container has a stable layout in AndroidView.
+                            view?.evaluateJavascript("window.dwResize && window.dwResize();", null)
+                            // Belt-and-braces: flip `ready` from Kotlin so the
+                            // initial flush still happens if DwBridge.onReady() was
+                            // swallowed by a JS error before line 168 of host.html.
+                            view?.post { ready = true }
+                        }
                     }
-                }
-                webChromeClient = object : WebChromeClient() {
-                    override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                        Log.d(
-                            "DwTerm",
-                            "${consoleMessage.messageLevel()} " +
-                                "${consoleMessage.message()} " +
-                                "(line ${consoleMessage.lineNumber()})",
-                        )
-                        return true
+                webChromeClient =
+                    object : WebChromeClient() {
+                        override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                            Log.d(
+                                "DwTerm",
+                                "${consoleMessage.messageLevel()} " +
+                                    "${consoleMessage.message()} " +
+                                    "(line ${consoleMessage.lineNumber()})",
+                            )
+                            return true
+                        }
                     }
-                }
                 setBackgroundColor(0xFF0C0C14.toInt())
-                addJavascriptInterface(object {
-                    @JavascriptInterface
-                    fun onReady() {
-                        post { ready = true }
-                        Log.d("DwTerm", "onReady")
-                    }
+                addJavascriptInterface(
+                    object {
+                        @JavascriptInterface
+                        fun onReady() {
+                            post { ready = true }
+                            Log.d("DwTerm", "onReady")
+                        }
 
-                    @JavascriptInterface
-                    fun onInput(@Suppress("UNUSED_PARAMETER") data: String) {
-                        // Sprint 3: bridge typed input back to the WS reply lane.
-                    }
-                }, "DwBridge")
+                        @JavascriptInterface
+                        fun onInput(
+                            @Suppress("UNUSED_PARAMETER") data: String,
+                        ) {
+                            // Sprint 3: bridge typed input back to the WS reply lane.
+                        }
+                    },
+                    "DwBridge",
+                )
                 loadUrl("file:///android_asset/xterm/host.html")
                 webViewRef.value = this
                 controller?.webView = this
@@ -221,13 +233,14 @@ public fun TerminalView(
  * endings); state changes get a system marker line; everything else is `null`
  * so the chat surface (not the terminal) renders it.
  */
-internal fun SessionEvent.terminalText(): String? = when (this) {
-    is SessionEvent.Output -> body
-    is SessionEvent.StateChange -> "\u001b[2m[state] $from → $to\u001b[0m\n"
-    is SessionEvent.Completed -> "\u001b[2m[completed] exit ${exitCode ?: ""}\u001b[0m\n"
-    is SessionEvent.Error -> "\u001b[31m[error] $message\u001b[0m\n"
-    else -> null
-}
+internal fun SessionEvent.terminalText(): String? =
+    when (this) {
+        is SessionEvent.Output -> body
+        is SessionEvent.StateChange -> "\u001b[2m[state] $from → $to\u001b[0m\n"
+        is SessionEvent.Completed -> "\u001b[2m[completed] exit ${exitCode ?: ""}\u001b[0m\n"
+        is SessionEvent.Error -> "\u001b[31m[error] $message\u001b[0m\n"
+        else -> null
+    }
 
 /** Quote a string as a JS literal — JSONObject handles all the escaping rules. */
 internal fun jsonString(s: String): String = JSONObject.quote(s)

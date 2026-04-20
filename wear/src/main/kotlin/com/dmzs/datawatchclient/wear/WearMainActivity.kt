@@ -90,7 +90,11 @@ private fun WearRoot(vm: WearSessionCountsViewModel = viewModel()) {
 }
 
 @Composable
-private fun CountTile(value: Int, label: String, highlight: Boolean = false) {
+private fun CountTile(
+    value: Int,
+    label: String,
+    highlight: Boolean = false,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             value.toString(),
@@ -106,7 +110,6 @@ private fun CountTile(value: Int, label: String, highlight: Boolean = false) {
 }
 
 public class WearSessionCountsViewModel : ViewModel() {
-
     public data class UiState(
         val loading: Boolean = true,
         val pairedServer: String? = null,

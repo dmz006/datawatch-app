@@ -1,0 +1,33 @@
+build:
+  maxIssues: 0
+
+naming:
+  FunctionNaming:
+    active: true
+    # @Composable functions use PascalCase by convention; exempt them from the
+    # camelCase rule. Everything else still lints.
+    ignoreAnnotated:
+      - 'Composable'
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2']
+    # Compose UI code is full of dp literals (8.dp, 16.dp, 24.dp). Treating
+    # these as "magic" creates noise without safety. Scope the rule to
+    # non-UI packages.
+    excludes:
+      - '**/wear/**'
+      - '**/ui/**'
+      - '**/compose/**'
+  ReturnCount:
+    max: 4
+  MaxLineLength:
+    maxLineLength: 140
+
+complexity:
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 8

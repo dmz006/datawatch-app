@@ -14,11 +14,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,7 +34,6 @@ import kotlinx.coroutines.launch
 public class SessionDetailViewModel(
     public val sessionId: String,
 ) : ViewModel() {
-
     public data class UiState(
         val session: Session? = null,
         val events: List<SessionEvent> = emptyList(),
@@ -46,9 +43,10 @@ public class SessionDetailViewModel(
         val replyText: String = "",
     ) {
         public val needsInput: Boolean
-            get() = events.asReversed().firstOrNull {
-                it is SessionEvent.PromptDetected
-            } != null && session?.needsInput == true
+            get() =
+                events.asReversed().firstOrNull {
+                    it is SessionEvent.PromptDetected
+                } != null && session?.needsInput == true
     }
 
     private val _replyText = MutableStateFlow("")
@@ -62,23 +60,34 @@ public class SessionDetailViewModel(
     public val state: StateFlow<UiState> by lazy { buildState() }
 
     private fun buildState(): StateFlow<UiState> {
-        val sessionsFlow = ServiceLocator.sessionRepository
-            .observeForProfileAny(sessionId)
+        val sessionsFlow =
+            ServiceLocator.sessionRepository
+                .observeForProfileAny(sessionId)
         val eventsFlow = ServiceLocator.sessionEventRepository.observe(sessionId)
 
         return combine(
-            sessionsFlow, eventsFlow, _replyText, _replying, _killing, _banner,
+            sessionsFlow,
+            eventsFlow,
+            _replyText,
+            _replying,
+            _killing,
+            _banner,
         ) { args ->
             val session = args[0] as Session?
-            val events = @Suppress("UNCHECKED_CAST") (args[1] as List<SessionEvent>)
+            val events =
+                @Suppress("UNCHECKED_CAST")
+                (args[1] as List<SessionEvent>)
             val replyText = args[2] as String
             val replying = args[3] as Boolean
             val killing = args[4] as Boolean
             val banner = args[5] as String?
             UiState(
-                session = session, events = events,
-                replyText = replyText, replying = replying,
-                killing = killing, banner = banner,
+                session = session,
+                events = events,
+                replyText = replyText,
+                replying = replying,
+                killing = killing,
+                banner = banner,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -99,10 +108,11 @@ public class SessionDetailViewModel(
         // user's active-server selection, then to the first enabled profile.
         // Without this, opening a session on profile B while profile A is
         // "active" would connect WS to A and silently receive zero frames.
-        val owningId = runCatching {
-            val s = ServiceLocator.sessionRepository.observeForProfileAny(sessionId).first()
-            s?.serverProfileId
-        }.getOrNull()
+        val owningId =
+            runCatching {
+                val s = ServiceLocator.sessionRepository.observeForProfileAny(sessionId).first()
+                s?.serverProfileId
+            }.getOrNull()
         if (owningId != null) {
             profiles.firstOrNull { it.id == owningId }?.let { return it }
         }
@@ -116,9 +126,10 @@ public class SessionDetailViewModel(
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         val transport = ServiceLocator.wsTransportFor(profile)
-        streamJob = transport.events(sessionId)
-            .onEach { ev -> ServiceLocator.sessionEventRepository.insert(ev) }
-            .launchIn(viewModelScope)
+        streamJob =
+            transport.events(sessionId)
+                .onEach { ev -> ServiceLocator.sessionEventRepository.insert(ev) }
+                .launchIn(viewModelScope)
     }
 
     public fun onReplyTextChange(v: String) {
@@ -193,10 +204,11 @@ public class SessionDetailViewModel(
     }
 }
 
-private fun Throwable.describe(): String = when (this) {
-    is TransportError.Unauthorized -> "unauthorized"
-    is TransportError.Unreachable -> "server unreachable"
-    is TransportError.RateLimited -> "rate-limited"
-    is TransportError.ServerError -> "server error $status"
-    else -> message ?: this::class.simpleName ?: "unknown"
-}
+private fun Throwable.describe(): String =
+    when (this) {
+        is TransportError.Unauthorized -> "unauthorized"
+        is TransportError.Unreachable -> "server unreachable"
+        is TransportError.RateLimited -> "rate-limited"
+        is TransportError.ServerError -> "server error $status"
+        else -> message ?: this::class.simpleName ?: "unknown"
+    }

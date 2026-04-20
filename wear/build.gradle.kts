@@ -44,6 +44,11 @@ ktlint {
     ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
 }
 
+detekt {
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
 dependencies {
     implementation(project(":shared"))
     implementation(libs.androidx.wear.compose.material)

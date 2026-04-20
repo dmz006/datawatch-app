@@ -11,9 +11,10 @@ import android.service.quicksettings.TileService
 public class VoiceQuickTileService : TileService() {
     override fun onClick() {
         super.onClick()
-        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("dwclient://voice/new")).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        val intent =
+            Intent(Intent.ACTION_VIEW, android.net.Uri.parse("dwclient://voice/new")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
         startActivityAndCollapse(intent)
     }
 }

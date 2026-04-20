@@ -16,6 +16,9 @@ public sealed interface Principal {
     }
 
     public enum class Role {
-        Owner, Admin, Operator, Viewer,
+        Owner,
+        Admin,
+        Operator,
+        Viewer,
     }
 }

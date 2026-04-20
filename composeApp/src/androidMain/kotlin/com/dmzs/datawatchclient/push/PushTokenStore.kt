@@ -16,38 +16,47 @@ import android.content.SharedPreferences
  * token used to call the registration endpoint stays in TokenVault.
  */
 public class PushTokenStore(context: Context) {
-
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
     public fun fcmToken(): String? = prefs.getString(KEY_FCM_TOKEN, null)
+
     public fun setFcmToken(token: String?) {
         prefs.edit().apply {
             if (token == null) remove(KEY_FCM_TOKEN) else putString(KEY_FCM_TOKEN, token)
         }.apply()
     }
 
-    public fun deviceIdFor(profileId: String): String? =
-        prefs.getString("$KEY_DEVICE_ID_PREFIX$profileId", null)
-    public fun setDeviceIdFor(profileId: String, deviceId: String?) {
+    public fun deviceIdFor(profileId: String): String? = prefs.getString("$KEY_DEVICE_ID_PREFIX$profileId", null)
+
+    public fun setDeviceIdFor(
+        profileId: String,
+        deviceId: String?,
+    ) {
         prefs.edit().apply {
             val k = "$KEY_DEVICE_ID_PREFIX$profileId"
             if (deviceId == null) remove(k) else putString(k, deviceId)
         }.apply()
     }
 
-    public fun ntfyTopicFor(profileId: String): String? =
-        prefs.getString("$KEY_NTFY_TOPIC_PREFIX$profileId", null)
-    public fun setNtfyTopicFor(profileId: String, topic: String?) {
+    public fun ntfyTopicFor(profileId: String): String? = prefs.getString("$KEY_NTFY_TOPIC_PREFIX$profileId", null)
+
+    public fun setNtfyTopicFor(
+        profileId: String,
+        topic: String?,
+    ) {
         prefs.edit().apply {
             val k = "$KEY_NTFY_TOPIC_PREFIX$profileId"
             if (topic == null) remove(k) else putString(k, topic)
         }.apply()
     }
 
-    public fun ntfyServerFor(profileId: String): String? =
-        prefs.getString("$KEY_NTFY_SERVER_PREFIX$profileId", null)
-    public fun setNtfyServerFor(profileId: String, server: String?) {
+    public fun ntfyServerFor(profileId: String): String? = prefs.getString("$KEY_NTFY_SERVER_PREFIX$profileId", null)
+
+    public fun setNtfyServerFor(
+        profileId: String,
+        server: String?,
+    ) {
         prefs.edit().apply {
             val k = "$KEY_NTFY_SERVER_PREFIX$profileId"
             if (server == null) remove(k) else putString(k, server)

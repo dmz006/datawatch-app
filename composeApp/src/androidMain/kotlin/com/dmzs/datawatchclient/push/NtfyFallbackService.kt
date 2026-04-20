@@ -35,9 +35,9 @@ import kotlinx.serialization.json.Json
  * trade-off the user opted into when they chose ntfy over FCM.
  */
 public class NtfyFallbackService : Service() {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = mutableMapOf<String, Job>()
+
     // Reuse the shared module's pre-configured HttpClient (OkHttp engine on
     // Android) — keeps engine selection in one place. The shared client already
     // disables `expectSuccess`, which is what we want here.
@@ -50,7 +50,11 @@ public class NtfyFallbackService : Service() {
         startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         scope.launch { reconcile() }
         return START_STICKY
     }
@@ -65,8 +69,9 @@ public class NtfyFallbackService : Service() {
 
     private suspend fun reconcile() {
         val store = ServiceLocator.pushTokenStore
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
-            .filter { it.enabled }
+        val profiles =
+            ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
         for (profile in profiles) {
             val topic = store.ntfyTopicFor(profile.id) ?: continue
             val server = store.ntfyServerFor(profile.id) ?: PushTokenStore.DEFAULT_NTFY_SERVER
@@ -74,7 +79,10 @@ public class NtfyFallbackService : Service() {
         }
     }
 
-    private suspend fun subscribe(server: String, topic: String) {
+    private suspend fun subscribe(
+        server: String,
+        topic: String,
+    ) {
         val url = "$server/$topic/json"
         var backoff = 2_000L
         while (true) {
@@ -96,11 +104,13 @@ public class NtfyFallbackService : Service() {
     }
 
     private fun handleNtfyLine(line: String) {
-        val msg = runCatching { Json { ignoreUnknownKeys = true }.decodeFromString(NtfyMessage.serializer(), line) }
-            .getOrNull() ?: return
+        val msg =
+            runCatching { Json { ignoreUnknownKeys = true }.decodeFromString(NtfyMessage.serializer(), line) }
+                .getOrNull() ?: return
         if (msg.event != "message") return
-        val sessionId = msg.title?.substringAfter("session ")?.substringBefore(" ")?.takeIf { it.isNotBlank() }
-            ?: msg.id
+        val sessionId =
+            msg.title?.substringAfter("session ")?.substringBefore(" ")?.takeIf { it.isNotBlank() }
+                ?: msg.id
         NotificationPoster(applicationContext).post(
             NotificationPoster.Event(
                 sessionId = sessionId,
@@ -111,12 +121,13 @@ public class NtfyFallbackService : Service() {
         )
     }
 
-    private fun inferType(title: String): NotificationPoster.Event.Type = when {
-        title.contains("input", ignoreCase = true) -> NotificationPoster.Event.Type.InputNeeded
-        title.contains("error", ignoreCase = true) -> NotificationPoster.Event.Type.Error
-        title.contains("rate", ignoreCase = true) -> NotificationPoster.Event.Type.RateLimited
-        else -> NotificationPoster.Event.Type.Completed
-    }
+    private fun inferType(title: String): NotificationPoster.Event.Type =
+        when {
+            title.contains("input", ignoreCase = true) -> NotificationPoster.Event.Type.InputNeeded
+            title.contains("error", ignoreCase = true) -> NotificationPoster.Event.Type.Error
+            title.contains("rate", ignoreCase = true) -> NotificationPoster.Event.Type.RateLimited
+            else -> NotificationPoster.Event.Type.Completed
+        }
 
     private fun foregroundNotification(): Notification =
         NotificationCompat.Builder(this, NotificationChannels.FOREGROUND)

@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 /**
  * DTOs introduced for the v0.11 session-power-user sprint. Grouped in one file
  * to keep the v0.10-era Dtos.kt stable. Field names match the parent datawatch
- * openapi.yaml as of the 2026-04-20 audit — see `docs/plans/2026-04-20-v0.11-session-power-user.md`.
+ * openapi.yaml as of the 2026-04-20 audit — see
+ * `docs/plans/2026-04-20-v0.11-session-power-user.md`.
  */
 
 @Serializable
@@ -21,10 +22,8 @@ public data class RestartSessionDto(
 )
 
 /**
- * `POST /api/sessions/delete` is not in the parent's v3.0.0 openapi.yaml.
- * The mobile transport still encodes the expected body shape so when parent
- * lands the endpoint, no client code changes — only the 404 handling
- * in the UI layer goes away.
+ * Wire body for `POST /api/sessions/delete`. Caller populates either `id`
+ * (single) or `ids` (bulk), never both.
  */
 @Serializable
 public data class DeleteSessionDto(
@@ -33,8 +32,8 @@ public data class DeleteSessionDto(
 )
 
 /**
- * `POST /api/alerts` accepts either a single id or `all=true` to dismiss all.
- * Mobile emits one or the other, never both.
+ * Wire body for `POST /api/alerts`. Caller populates either `id` (single
+ * alert) or sets `all` to true to dismiss every alert. Never both.
  */
 @Serializable
 public data class MarkAlertReadDto(
@@ -43,8 +42,8 @@ public data class MarkAlertReadDto(
 )
 
 /**
- * Response shape for `GET /api/alerts` per the parent spec:
- * { "alerts": [Alert...], "unread_count": int }.
+ * Response shape for `GET /api/alerts` — an `alerts` array plus an
+ * `unread_count` integer.
  */
 @Serializable
 public data class AlertsListResponseDto(
@@ -69,8 +68,13 @@ public data class AlertDto(
 )
 
 /**
- * Response shape for `GET /api/info` per the parent spec:
- * { hostname, version, llm_backend, messaging_backend, session_count, server: { host, port } }.
+ * Response shape for `GET /api/info` per the parent spec.
+ *
+ * - `hostname` — server's host name
+ * - `version` — daemon semver
+ * - `llm_backend` / `messaging_backend` — currently-active backend names
+ * - `session_count` — live session total
+ * - `server` — bound host + port as a nested object
  */
 @Serializable
 public data class ServerInfoDto(
@@ -89,10 +93,8 @@ public data class ServerBindingDto(
 )
 
 /**
- * `POST /api/backends/active` is not in the parent's v3.0.0 openapi.yaml.
- * Mobile transport sends `{"name": "<backend>"}` on the assumption the parent
- * adopts the same minimal body shape as other backends-* endpoints. If the
- * parent picks a different wire shape when it lands, update here.
+ * Wire body for `POST /api/backends/active`. Single `name` field taking a
+ * backend identifier from `GET /api/backends` `.llm`.
  */
 @Serializable
 public data class SetActiveBackendDto(

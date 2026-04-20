@@ -26,10 +26,10 @@ import kotlinx.coroutines.flow.first
  * the user from interacting with sessions over REST.
  */
 public class PushRegistrationCoordinator(private val context: Context) {
-
     public suspend fun registerAll(force: Boolean = false) {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
-            .filter { it.enabled }
+        val profiles =
+            ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
         val store = ServiceLocator.pushTokenStore
         val token = ensureFcmToken() ?: store.fcmToken()
         for (profile in profiles) {
@@ -38,20 +38,25 @@ public class PushRegistrationCoordinator(private val context: Context) {
         }
     }
 
-    public suspend fun registerOne(profile: ServerProfile, fcmToken: String?) {
+    public suspend fun registerOne(
+        profile: ServerProfile,
+        fcmToken: String?,
+    ) {
         val store = ServiceLocator.pushTokenStore
         val transport = ServiceLocator.transportFor(profile)
 
-        val (kind, deliveryToken) = if (fcmToken != null) {
-            DeviceKind.Fcm to fcmToken
-        } else {
-            // ntfy fallback — synthesise a topic per profile so different profiles
-            // don't share a delivery channel.
-            val topic = store.ntfyTopicFor(profile.id) ?: ntfyTopicFor(profile.id).also {
-                store.setNtfyTopicFor(profile.id, it)
+        val (kind, deliveryToken) =
+            if (fcmToken != null) {
+                DeviceKind.Fcm to fcmToken
+            } else {
+                // ntfy fallback — synthesise a topic per profile so different profiles
+                // don't share a delivery channel.
+                val topic =
+                    store.ntfyTopicFor(profile.id) ?: ntfyTopicFor(profile.id).also {
+                        store.setNtfyTopicFor(profile.id, it)
+                    }
+                DeviceKind.Ntfy to topic
             }
-            DeviceKind.Ntfy to topic
-        }
 
         transport.registerDevice(
             deviceToken = deliveryToken,

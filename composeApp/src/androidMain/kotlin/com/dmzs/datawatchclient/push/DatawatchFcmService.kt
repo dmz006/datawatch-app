@@ -27,20 +27,20 @@ import kotlinx.coroutines.launch
  * being dropped — keeps server-side evolution forward-compatible.
  */
 public class DatawatchFcmService : FirebaseMessagingService() {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
         val sessionId = data["session_id"] ?: return
         val typeWire = data["type"].orEmpty()
-        val event = NotificationPoster.Event(
-            sessionId = sessionId,
-            type = parseType(typeWire),
-            title = data["title"] ?: "Datawatch",
-            body = data["body"] ?: typeWire.replace('_', ' '),
-            profileHint = data["profile_hint"],
-        )
+        val event =
+            NotificationPoster.Event(
+                sessionId = sessionId,
+                type = parseType(typeWire),
+                title = data["title"] ?: "Datawatch",
+                body = data["body"] ?: typeWire.replace('_', ' '),
+                profileHint = data["profile_hint"],
+            )
         NotificationPoster(applicationContext).post(event)
     }
 
@@ -52,12 +52,13 @@ public class DatawatchFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun parseType(wire: String): NotificationPoster.Event.Type = when (wire) {
-        "input_needed" -> NotificationPoster.Event.Type.InputNeeded
-        "rate_limited" -> NotificationPoster.Event.Type.RateLimited
-        "completed" -> NotificationPoster.Event.Type.Completed
-        "error" -> NotificationPoster.Event.Type.Error
-        "state_change" -> NotificationPoster.Event.Type.StateChange
-        else -> NotificationPoster.Event.Type.Completed
-    }
+    private fun parseType(wire: String): NotificationPoster.Event.Type =
+        when (wire) {
+            "input_needed" -> NotificationPoster.Event.Type.InputNeeded
+            "rate_limited" -> NotificationPoster.Event.Type.RateLimited
+            "completed" -> NotificationPoster.Event.Type.Completed
+            "error" -> NotificationPoster.Event.Type.Error
+            "state_change" -> NotificationPoster.Event.Type.StateChange
+            else -> NotificationPoster.Event.Type.Completed
+        }
 }

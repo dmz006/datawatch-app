@@ -43,14 +43,16 @@ public fun EditServerScreen(
     onDeleted: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val vm: EditServerViewModel = viewModel(
-        key = "edit-$profileId",
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                EditServerViewModel(profileId) as T
-        },
-    )
+    val vm: EditServerViewModel =
+        viewModel(
+            key = "edit-$profileId",
+            factory =
+                object : ViewModelProvider.Factory {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                        EditServerViewModel(profileId) as T
+                },
+        )
     val state by vm.state.collectAsState()
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -95,9 +97,13 @@ public fun EditServerScreen(
                 label = { Text("Bearer token") },
                 placeholder = {
                     Text(
-                        if (state.noToken) "(no auth)"
-                        else if (state.tokenPlaceholder.isNotEmpty()) "Leave blank to keep current"
-                        else "(no token set)",
+                        if (state.noToken) {
+                            "(no auth)"
+                        } else if (state.tokenPlaceholder.isNotEmpty()) {
+                            "Leave blank to keep current"
+                        } else {
+                            "(no token set)"
+                        },
                     )
                 },
                 visualTransformation = PasswordVisualTransformation(),
@@ -110,8 +116,12 @@ public fun EditServerScreen(
                 Text(
                     "No bearer token  (insecure — only for test servers)",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (state.noToken) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurface,
+                    color =
+                        if (state.noToken) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,9 +142,10 @@ public fun EditServerScreen(
                 OutlinedButton(
                     onClick = { confirmDelete = true },
                     enabled = !state.probing && !state.deleting,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) { Text("Delete") }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (state.probing) {
@@ -156,7 +167,11 @@ public fun EditServerScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete this server?") },
-            text = { Text("This removes the profile and its bearer token from this device. The daemon itself is not affected.") },
+            text = {
+                Text(
+                    "This removes the profile and its bearer token from this device. The daemon itself is not affected.",
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false

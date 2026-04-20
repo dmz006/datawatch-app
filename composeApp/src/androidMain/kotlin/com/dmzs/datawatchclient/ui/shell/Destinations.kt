@@ -11,10 +11,14 @@ public object Destinations {
     public const val Onboarding: String = "onboarding"
     public const val AddServer: String = "servers/add"
     public const val EditServer: String = "servers/edit/{profileId}"
+
     public fun editServer(profileId: String): String = "servers/edit/$profileId"
+
     public const val Home: String = "home"
     public const val SessionDetail: String = "sessions/{sessionId}"
+
     public fun sessionDetail(sessionId: String): String = "sessions/$sessionId"
+
     public const val NewSession: String = "sessions/new"
 
     // Bottom-nav tabs under Home.

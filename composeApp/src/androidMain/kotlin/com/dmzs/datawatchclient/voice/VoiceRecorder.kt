@@ -14,7 +14,6 @@ import java.io.File
  * Single-use: construct, [start], [stop] (→ File), discard.
  */
 public class VoiceRecorder(private val context: Context) {
-
     private var recorder: MediaRecorder? = null
     private var outputFile: File? = null
 
@@ -22,21 +21,24 @@ public class VoiceRecorder(private val context: Context) {
         val file = File.createTempFile("dw-voice-", ".m4a", context.cacheDir)
         outputFile = file
         @Suppress("DEPRECATION")
-        recorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
-        } else {
-            MediaRecorder()
-        }).apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setAudioSamplingRate(16_000)
-            setAudioChannels(1)
-            setAudioEncodingBitRate(48_000)
-            setOutputFile(file.absolutePath)
-            prepare()
-            start()
-        }
+        recorder =
+            (
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    MediaRecorder(context)
+                } else {
+                    MediaRecorder()
+                }
+            ).apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16_000)
+                setAudioChannels(1)
+                setAudioEncodingBitRate(48_000)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
     }
 
     /** Stops recording and returns the captured bytes + MIME type. */

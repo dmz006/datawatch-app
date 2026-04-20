@@ -16,8 +16,8 @@ public class DatawatchMessagingService : CarAppService() {
     override fun createHostValidator(): HostValidator =
         HostValidator.ALLOW_ALL_HOSTS_VALIDATOR // Sprint 4: replace with strict allowlist
 
-    override fun onCreateSession(): Session = object : Session() {
-        override fun onCreateScreen(intent: android.content.Intent) =
-            PreMvpPlaceholderScreen(carContext)
-    }
+    override fun onCreateSession(): Session =
+        object : Session() {
+            override fun onCreateScreen(intent: android.content.Intent) = PreMvpPlaceholderScreen(carContext)
+        }
 }

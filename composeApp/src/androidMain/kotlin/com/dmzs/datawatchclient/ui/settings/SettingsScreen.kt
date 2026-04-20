@@ -44,10 +44,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.di.ServiceLocator
@@ -81,18 +81,23 @@ public fun SettingsScreen(
         .collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)
-    val activeProfile: ServerProfile? = remember(profiles, activeId) {
-        val enabled = profiles.filter { it.enabled }
-        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()
-        else enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull()
-    }
+    val activeProfile: ServerProfile? =
+        remember(profiles, activeId) {
+            val enabled = profiles.filter { it.enabled }
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                enabled.firstOrNull()
+            } else {
+                enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull()
+            }
+        }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth(),
         ) {
             ServersCard(
                 profiles = profiles,
@@ -121,8 +126,12 @@ private fun ServersCard(
     onEditServer: (String) -> Unit,
     onDelete: (com.dmzs.datawatchclient.domain.ServerProfile) -> Unit,
 ) {
-    SectionWithAction(title = "Servers", actionIcon = Icons.Filled.Add,
-                      actionDescription = "Add server", onAction = onAddServer) {
+    SectionWithAction(
+        title = "Servers",
+        actionIcon = Icons.Filled.Add,
+        actionDescription = "Add server",
+        onAction = onAddServer,
+    ) {
         if (profiles.isEmpty()) {
             Text(
                 "No servers yet — tap + above to add one.",
@@ -154,10 +163,11 @@ private fun ServerRow(
     var menuOpen by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEdit)
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onEdit)
+                .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -167,12 +177,13 @@ private fun ServerRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            val badges = buildList {
-                if (profile.bearerTokenRef.isBlank()) add("no auth")
-                if (profile.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL) {
-                    add("trust-all TLS")
+            val badges =
+                buildList {
+                    if (profile.bearerTokenRef.isBlank()) add("no auth")
+                    if (profile.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL) {
+                        add("trust-all TLS")
+                    }
                 }
-            }
             if (badges.isNotEmpty()) {
                 Text(
                     badges.joinToString("  ·  "),
@@ -234,7 +245,10 @@ private fun ServerRow(
  * NotFound → toast "Server doesn't support /api/cert". Other errors surface as
  * a short toast with the underlying message.
  */
-private suspend fun downloadAndInstallCert(context: Context, profile: ServerProfile) {
+private suspend fun downloadAndInstallCert(
+    context: Context,
+    profile: ServerProfile,
+) {
     val transport = ServiceLocator.transportFor(profile)
     val result = transport.fetchCert()
     result.fold(
@@ -248,8 +262,9 @@ private suspend fun downloadAndInstallCert(context: Context, profile: ServerProf
                     Toast.LENGTH_LONG,
                 ).show()
                 // Hand off to the OS flow. User picks the PEM from Downloads.
-                val intent = Intent(Settings.ACTION_SECURITY_SETTINGS)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val intent =
+                    Intent(Settings.ACTION_SECURITY_SETTINGS)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                     .onFailure {
                         Toast.makeText(
@@ -267,42 +282,49 @@ private suspend fun downloadAndInstallCert(context: Context, profile: ServerProf
             }
         },
         onFailure = { err ->
-            val msg = when (err) {
-                is TransportError.NotFound ->
-                    "Server doesn't expose /api/cert (parent-repo support pending)."
-                else -> "Cert download failed — ${err.message ?: err::class.simpleName}"
-            }
+            val msg =
+                when (err) {
+                    is TransportError.NotFound ->
+                        "Server doesn't expose /api/cert (parent-repo support pending)."
+                    else -> "Cert download failed — ${err.message ?: err::class.simpleName}"
+                }
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
         },
     )
 }
 
-private fun String.sanitizeForFilename(): String =
-    replace(Regex("[^A-Za-z0-9._-]+"), "_").take(48).ifBlank { "server" }
+private fun String.sanitizeForFilename(): String = replace(Regex("[^A-Za-z0-9._-]+"), "_").take(48).ifBlank { "server" }
 
 /**
  * Save PEM bytes to the public Downloads folder under `Download/datawatch/`.
  * Android Q+ goes through MediaStore (scoped storage); pre-Q falls back to
  * direct write against [Environment.DIRECTORY_DOWNLOADS].
  */
-private fun savePemToDownloads(context: Context, filename: String, bytes: ByteArray): Boolean {
+private fun savePemToDownloads(
+    context: Context,
+    filename: String,
+    bytes: ByteArray,
+): Boolean {
     return runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, filename)
-                put(MediaStore.Downloads.MIME_TYPE, "application/x-pem-file")
-                put(MediaStore.Downloads.RELATIVE_PATH, "Download/datawatch")
-            }
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: return@runCatching false
+            val values =
+                ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, filename)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/x-pem-file")
+                    put(MediaStore.Downloads.RELATIVE_PATH, "Download/datawatch")
+                }
+            val uri =
+                resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: return@runCatching false
             resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: return@runCatching false
             true
         } else {
             @Suppress("DEPRECATION")
-            val downloads = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS,
-            )
+            val downloads =
+                Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS,
+                )
             val dir = File(downloads, "datawatch").apply { mkdirs() }
             FileOutputStream(File(dir, filename)).use { it.write(bytes) }
             true
@@ -325,8 +347,11 @@ private fun SecurityCard() {
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    if (canAuth) "Require fingerprint or face on every app open."
-                    else "Unavailable — no Class-3 biometric enrolled on this device.",
+                    if (canAuth) {
+                        "Require fingerprint or face on every app open."
+                    } else {
+                        "Unavailable — no Class-3 biometric enrolled on this device."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -383,15 +408,18 @@ private fun AboutCard(activeProfile: ServerProfile?) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             // Live animated logo (matrix rain + eye + arcs + tablet frame).
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .padding(bottom = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-                    MatrixLogoAnimated(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)))
+                    MatrixLogoAnimated(
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)),
+                    )
                 }
             }
 
@@ -417,36 +445,44 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("Package", style = MaterialTheme.typography.bodyMedium)
-                Text("com.dmzs.datawatchclient",
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "com.dmzs.datawatchclient",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("License", style = MaterialTheme.typography.bodyMedium)
-                Text("Polyform Noncommercial 1.0.0",
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Polyform Noncommercial 1.0.0",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("Source", style = MaterialTheme.typography.bodyMedium)
-                Text("github.com/dmz006/datawatch-app",
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "github.com/dmz006/datawatch-app",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("Parent project", style = MaterialTheme.typography.bodyMedium)
-                Text("github.com/dmz006/datawatch",
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "github.com/dmz006/datawatch",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
@@ -464,12 +500,13 @@ private fun DaemonInfoRow(
     serverInfo: ServerInfo?,
     error: String?,
 ) {
-    val label = when {
-        activeProfile == null -> "No active server"
-        serverInfo != null -> "${serverInfo.hostname} · datawatch v${serverInfo.version}"
-        error != null -> "— (${activeProfile.displayName} unreachable)"
-        else -> "Loading…"
-    }
+    val label =
+        when {
+            activeProfile == null -> "No active server"
+            serverInfo != null -> "${serverInfo.hostname} · datawatch v${serverInfo.version}"
+            error != null -> "— (${activeProfile.displayName} unreachable)"
+            else -> "Loading…"
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -484,7 +521,10 @@ private fun DaemonInfoRow(
 }
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
+private fun Section(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     Text(
         title,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -514,8 +554,11 @@ private fun SectionWithAction(
             color = MaterialTheme.colorScheme.primary,
         )
         IconButton(onClick = onAction) {
-            Icon(actionIcon, contentDescription = actionDescription,
-                 tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                actionIcon,
+                contentDescription = actionDescription,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
     content()

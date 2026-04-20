@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.callbackFlow
  * Plain [SharedPreferences] — the value is just a non-secret identifier.
  */
 public class ActiveServerStore(context: Context) {
-
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
     public fun get(): String? = prefs.getString(KEY_ACTIVE_ID, null)
@@ -26,14 +25,16 @@ public class ActiveServerStore(context: Context) {
         }.apply()
     }
 
-    public fun observe(): Flow<String?> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
-            if (key == KEY_ACTIVE_ID) trySend(sp.getString(KEY_ACTIVE_ID, null))
+    public fun observe(): Flow<String?> =
+        callbackFlow {
+            val listener =
+                SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+                    if (key == KEY_ACTIVE_ID) trySend(sp.getString(KEY_ACTIVE_ID, null))
+                }
+            trySend(get())
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
         }
-        trySend(get())
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
 
     public companion object {
         public const val PREFS_FILE: String = "dw.active_server.v1"

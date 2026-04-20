@@ -17,8 +17,8 @@ public data class Prompt(
 ) {
     public enum class Kind {
         FreeForm,
-        Approval,    // yes/no style
-        Choice,      // enumerated options
-        RateLimit,   // informational, no reply needed
+        Approval, // yes/no style
+        Choice, // enumerated options
+        RateLimit, // informational, no reply needed
     }
 }

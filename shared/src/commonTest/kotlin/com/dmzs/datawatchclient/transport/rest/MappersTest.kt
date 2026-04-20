@@ -7,19 +7,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MappersTest {
-
     @Test
     fun `SessionDto maps to domain Session with correct state and timestamps`() {
         // Wire format per parent datawatch openapi.yaml: task / hostname /
         // RFC3339 created_at / updated_at.
-        val dto = SessionDto(
-            id = "srv-a3f2",
-            state = "running",
-            task = "Upgrade deps",
-            hostname = "workstation",
-            createdAt = "2023-11-14T22:13:20Z",
-            updatedAt = "2023-11-14T22:14:20Z",
-        )
+        val dto =
+            SessionDto(
+                id = "srv-a3f2",
+                state = "running",
+                task = "Upgrade deps",
+                hostname = "workstation",
+                createdAt = "2023-11-14T22:13:20Z",
+                updatedAt = "2023-11-14T22:14:20Z",
+            )
 
         val session = dto.toDomain(serverProfileId = "srv-1")
 
@@ -46,12 +46,13 @@ class MappersTest {
 
     @Test
     fun `missing timestamps fall back to DISTANT_PAST instead of crashing`() {
-        val dto = SessionDto(
-            id = "x",
-            state = "new",
-            createdAt = null,
-            updatedAt = null,
-        )
+        val dto =
+            SessionDto(
+                id = "x",
+                state = "new",
+                createdAt = null,
+                updatedAt = null,
+            )
         val session = dto.toDomain("srv-1")
         assertEquals(Instant.DISTANT_PAST, session.createdAt)
         assertEquals(Instant.DISTANT_PAST, session.lastActivityAt)

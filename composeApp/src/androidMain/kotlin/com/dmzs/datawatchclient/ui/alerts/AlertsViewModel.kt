@@ -20,25 +20,29 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class AlertsViewModel : ViewModel() {
-
     public data class UiState(
         val alerts: List<Session> = emptyList(),
         val count: Int = 0,
     )
 
-    private val activeProfileFlow = ServiceLocator.profileRepository.observeAll()
-        .map { profiles -> profiles.firstOrNull { it.enabled } }
+    private val activeProfileFlow =
+        ServiceLocator.profileRepository.observeAll()
+            .map { profiles -> profiles.firstOrNull { it.enabled } }
 
-    public val state: StateFlow<UiState> = activeProfileFlow
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf(emptyList())
-            else ServiceLocator.sessionRepository.observeForProfile(profile.id)
-        }
-        .map { sessions ->
-            val alerts = sessions.filter { it.needsInput && !it.muted }
-            UiState(alerts = alerts, count = alerts.size)
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+    public val state: StateFlow<UiState> =
+        activeProfileFlow
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(emptyList())
+                } else {
+                    ServiceLocator.sessionRepository.observeForProfile(profile.id)
+                }
+            }
+            .map { sessions ->
+                val alerts = sessions.filter { it.needsInput && !it.muted }
+                UiState(alerts = alerts, count = alerts.size)
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     /**
      * Dismisses an alert by muting the underlying session — the

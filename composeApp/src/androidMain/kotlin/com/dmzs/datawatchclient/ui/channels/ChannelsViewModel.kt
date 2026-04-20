@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
  * once backend changes can be observed via WS.
  */
 public class ChannelsViewModel : ViewModel() {
-
     public data class UiState(
         val llm: List<String> = emptyList(),
         val activeBackend: String? = null,
@@ -36,7 +35,9 @@ public class ChannelsViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
-    init { refresh() }
+    init {
+        refresh()
+    }
 
     /**
      * Switch the active LLM backend on the server, then refresh. The UI gates
@@ -47,22 +48,26 @@ public class ChannelsViewModel : ViewModel() {
         viewModelScope.launch {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
             val activeId = ServiceLocator.activeServerStore.get()
-            val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-                ?: return@launch
+            val profile =
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+                    ?: return@launch
             ServiceLocator.transportFor(profile).setActiveBackend(name).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     if (err is TransportError.NotFound) {
-                        _state.value = _state.value.copy(
-                            setActiveSupported = false,
-                            banner = "This server doesn't expose POST /api/backends/active " +
-                                "yet. Tracked upstream at dmz006/datawatch.",
-                        )
+                        _state.value =
+                            _state.value.copy(
+                                setActiveSupported = false,
+                                banner =
+                                    "This server doesn't expose POST /api/backends/active " +
+                                        "yet. Tracked upstream at dmz006/datawatch.",
+                            )
                     } else {
-                        _state.value = _state.value.copy(
-                            banner = "Backend switch failed — ${err.message ?: err::class.simpleName}",
-                        )
+                        _state.value =
+                            _state.value.copy(
+                                banner = "Backend switch failed — ${err.message ?: err::class.simpleName}",
+                            )
                     }
                 },
             )
@@ -73,33 +78,37 @@ public class ChannelsViewModel : ViewModel() {
         viewModelScope.launch {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
             val activeId = ServiceLocator.activeServerStore.get()
-            val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-                ?: run {
-                    _state.value = UiState(banner = "No enabled server. Add or enable one in Settings.")
-                    return@launch
-                }
+            val profile =
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+                    ?: run {
+                        _state.value = UiState(banner = "No enabled server. Add or enable one in Settings.")
+                        return@launch
+                    }
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
             ServiceLocator.transportFor(profile).listBackends().fold(
                 onSuccess = { v ->
-                    _state.value = _state.value.copy(
-                        llm = v.llm,
-                        activeBackend = v.active,
-                        refreshing = false,
-                        serverName = profile.displayName,
-                        banner = null,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            llm = v.llm,
+                            activeBackend = v.active,
+                            refreshing = false,
+                            serverName = profile.displayName,
+                            banner = null,
+                        )
                 },
                 onFailure = { err ->
                     android.util.Log.w(
                         "ChannelsVM",
                         "listBackends failed on ${profile.baseUrl}: ${err::class.simpleName}: ${err.message}",
                     )
-                    _state.value = _state.value.copy(
-                        refreshing = false,
-                        banner = "Couldn't load backends on ${profile.displayName} — " +
-                            (err.message ?: err::class.simpleName),
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            refreshing = false,
+                            banner =
+                                "Couldn't load backends on ${profile.displayName} — " +
+                                    (err.message ?: err::class.simpleName),
+                        )
                 },
             )
         }

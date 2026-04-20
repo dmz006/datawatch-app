@@ -34,18 +34,24 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
                 // connect doesn't get reused on reconnect attempts.
                 retryOnConnectionFailure(true)
                 if (trustAll) {
-                    val tm = object : X509TrustManager {
-                        override fun checkClientTrusted(
-                            chain: Array<X509Certificate>, authType: String,
-                        ) = Unit
-                        override fun checkServerTrusted(
-                            chain: Array<X509Certificate>, authType: String,
-                        ) = Unit
-                        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-                    }
-                    val ctx = SSLContext.getInstance("TLS").apply {
-                        init(null, arrayOf(tm), SecureRandom())
-                    }
+                    val tm =
+                        object : X509TrustManager {
+                            override fun checkClientTrusted(
+                                chain: Array<X509Certificate>,
+                                authType: String,
+                            ) = Unit
+
+                            override fun checkServerTrusted(
+                                chain: Array<X509Certificate>,
+                                authType: String,
+                            ) = Unit
+
+                            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+                        }
+                    val ctx =
+                        SSLContext.getInstance("TLS").apply {
+                            init(null, arrayOf(tm), SecureRandom())
+                        }
                     sslSocketFactory(ctx.socketFactory, tm)
                     hostnameVerifier { _, _ -> true }
                 }
@@ -63,5 +69,5 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
             requestTimeoutMillis = Long.MAX_VALUE
             socketTimeoutMillis = Long.MAX_VALUE
         }
-        expectSuccess = false  // WS upgrade handling returns non-2xx; let Ktor manage
+        expectSuccess = false // WS upgrade handling returns non-2xx; let Ktor manage
     }

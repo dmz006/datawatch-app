@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
  * modifies the vault.
  */
 public class EditServerViewModel(private val profileId: String) : ViewModel() {
-
     public data class UiState(
         val loading: Boolean = true,
         val displayName: String = "",
@@ -48,10 +47,11 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
     init {
         viewModelScope.launch {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
-            val p = profiles.firstOrNull { it.id == profileId } ?: run {
-                _state.update { it.copy(loading = false, error = "Profile not found.") }
-                return@launch
-            }
+            val p =
+                profiles.firstOrNull { it.id == profileId } ?: run {
+                    _state.update { it.copy(loading = false, error = "Profile not found.") }
+                    return@launch
+                }
             original = p
             _state.update {
                 it.copy(
@@ -67,11 +67,16 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
     }
 
     public fun onDisplayName(v: String): Unit = _state.update { it.copy(displayName = v).recompute() }
+
     public fun onBaseUrl(v: String): Unit = _state.update { it.copy(baseUrl = v).recompute() }
+
     public fun onNewToken(v: String): Unit = _state.update { it.copy(newToken = v).recompute() }
-    public fun onNoToken(v: Boolean): Unit = _state.update {
-        it.copy(noToken = v, newToken = if (v) "" else it.newToken).recompute()
-    }
+
+    public fun onNoToken(v: Boolean): Unit =
+        _state.update {
+            it.copy(noToken = v, newToken = if (v) "" else it.newToken).recompute()
+        }
+
     public fun onSelfSigned(v: Boolean): Unit = _state.update { it.copy(selfSigned = v).recompute() }
 
     public fun save() {
@@ -91,9 +96,10 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
                     newTokenValue = null
                 }
                 snapshot.newToken.isNotBlank() -> {
-                    newAlias = orig.bearerTokenRef.ifBlank {
-                        com.dmzs.datawatchclient.security.TokenVault.aliasFor(orig.id)
-                    }
+                    newAlias =
+                        orig.bearerTokenRef.ifBlank {
+                            com.dmzs.datawatchclient.security.TokenVault.aliasFor(orig.id)
+                        }
                     newTokenValue = snapshot.newToken
                 }
                 else -> {
@@ -105,27 +111,30 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
             // Preview-persist the token in the vault before the probe so that
             // transportFor's tokenProvider reads the right value. We roll back
             // on probe failure.
-            val prevTokenBackup = newTokenValue?.let { _ ->
-                ServiceLocator.tokenVault.get(newAlias)
-            }
+            val prevTokenBackup =
+                newTokenValue?.let { _ ->
+                    ServiceLocator.tokenVault.get(newAlias)
+                }
             if (newTokenValue != null) {
                 ServiceLocator.tokenVault.put(orig.id, newTokenValue)
             } else if (snapshot.noToken && orig.bearerTokenRef.isNotBlank()) {
                 ServiceLocator.tokenVault.remove(orig.bearerTokenRef)
             }
 
-            val updated = orig.copy(
-                displayName = snapshot.displayName.trim(),
-                baseUrl = snapshot.baseUrl.trim().trimEnd('/'),
-                bearerTokenRef = newAlias,
-                trustAnchorSha256 = if (snapshot.selfSigned) ServiceLocator.TRUST_ALL_SENTINEL else null,
-            )
+            val updated =
+                orig.copy(
+                    displayName = snapshot.displayName.trim(),
+                    baseUrl = snapshot.baseUrl.trim().trimEnd('/'),
+                    bearerTokenRef = newAlias,
+                    trustAnchorSha256 = if (snapshot.selfSigned) ServiceLocator.TRUST_ALL_SENTINEL else null,
+                )
 
             val transport = ServiceLocator.transportFor(updated)
-            val probe = transport.ping().fold(
-                onSuccess = { transport.listSessions().map { } },
-                onFailure = { Result.failure(it) },
-            )
+            val probe =
+                transport.ping().fold(
+                    onSuccess = { transport.listSessions().map { } },
+                    onFailure = { Result.failure(it) },
+                )
             probe.fold(
                 onSuccess = {
                     ServiceLocator.profileRepository.upsert(updated)
@@ -162,18 +171,27 @@ public class EditServerViewModel(private val profileId: String) : ViewModel() {
         }
     }
 
-    private fun describe(err: Throwable, noToken: Boolean): String = when (err) {
-        is TransportError.Unauthorized ->
-            if (noToken) "Server requires a bearer token — uncheck \"No bearer token\"."
-            else "Token rejected by server."
-        is TransportError.Unreachable -> "Server not reachable. Check URL, Tailscale, or VPN."
-        is TransportError.TrustFailure -> "Certificate not trusted. Import your self-signed CA first."
-        is TransportError -> err.message ?: "Probe failed."
-        else -> "Probe failed: ${err.message ?: err::class.simpleName}"
-    }
+    private fun describe(
+        err: Throwable,
+        noToken: Boolean,
+    ): String =
+        when (err) {
+            is TransportError.Unauthorized ->
+                if (noToken) {
+                    "Server requires a bearer token — uncheck \"No bearer token\"."
+                } else {
+                    "Token rejected by server."
+                }
+            is TransportError.Unreachable -> "Server not reachable. Check URL, Tailscale, or VPN."
+            is TransportError.TrustFailure -> "Certificate not trusted. Import your self-signed CA first."
+            is TransportError -> err.message ?: "Probe failed."
+            else -> "Probe failed: ${err.message ?: err::class.simpleName}"
+        }
 
-    private fun UiState.recompute(): UiState = copy(
-        canSubmit = displayName.isNotBlank() &&
-            baseUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") },
-    )
+    private fun UiState.recompute(): UiState =
+        copy(
+            canSubmit =
+                displayName.isNotBlank() &&
+                    baseUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") },
+        )
 }

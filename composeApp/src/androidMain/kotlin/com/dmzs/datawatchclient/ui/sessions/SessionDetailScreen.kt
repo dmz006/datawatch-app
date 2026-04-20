@@ -13,20 +13,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -50,30 +42,35 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun SessionDetailScreen(
     sessionId: String,
     onBack: () -> Unit,
-    vm: SessionDetailViewModel = viewModel(
-        key = sessionId,
-        factory = viewModelFactory {
-            initializer { SessionDetailViewModel(sessionId) }
-        },
-    ),
+    vm: SessionDetailViewModel =
+        viewModel(
+            key = sessionId,
+            factory =
+                viewModelFactory {
+                    initializer { SessionDetailViewModel(sessionId) }
+                },
+        ),
 ) {
     val state by vm.state.collectAsState()
     var killConfirm by remember { mutableStateOf(false) }
@@ -118,11 +115,17 @@ public fun SessionDetailScreen(
                         DropdownMenuItem(
                             text = { Text("Kill session") },
                             leadingIcon = { Icon(Icons.Filled.Stop, null) },
-                            onClick = { menuOpen = false; killConfirm = true },
+                            onClick = {
+                                menuOpen = false
+                                killConfirm = true
+                            },
                         )
                         DropdownMenuItem(
                             text = { Text("Override state…") },
-                            onClick = { menuOpen = false; stateMenuOpen = true },
+                            onClick = {
+                                menuOpen = false
+                                stateMenuOpen = true
+                            },
                         )
                     }
                 },
@@ -180,7 +183,10 @@ public fun SessionDetailScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { killConfirm = false; vm.kill() }) {
+                TextButton(onClick = {
+                    killConfirm = false
+                    vm.kill()
+                }) {
                     Text(
                         "Kill",
                         color = MaterialTheme.colorScheme.error,
@@ -196,10 +202,12 @@ public fun SessionDetailScreen(
     if (stateMenuOpen) {
         StateOverrideDialog(
             onDismiss = { stateMenuOpen = false },
-            onPick = { s -> stateMenuOpen = false; vm.overrideState(s) },
+            onPick = { s ->
+                stateMenuOpen = false
+                vm.overrideState(s)
+            },
         )
     }
-
 }
 
 /**
@@ -210,10 +218,12 @@ public fun SessionDetailScreen(
  */
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
-    val latestPrompt = events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
-        as? SessionEvent.PromptDetected
-    val latestRateLimit = events.asReversed().firstOrNull { it is SessionEvent.RateLimited }
-        as? SessionEvent.RateLimited
+    val latestPrompt =
+        events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
+            as? SessionEvent.PromptDetected
+    val latestRateLimit =
+        events.asReversed().firstOrNull { it is SessionEvent.RateLimited }
+            as? SessionEvent.RateLimited
     if (latestPrompt == null && latestRateLimit == null) return
     Surface(
         color = MaterialTheme.colorScheme.tertiaryContainer,
@@ -240,15 +250,16 @@ private fun InlineNotices(events: List<SessionEvent>) {
 
 @Composable
 private fun StatePill(state: SessionState) {
-    val (label, color) = when (state) {
-        SessionState.New -> "new" to MaterialTheme.colorScheme.onSurfaceVariant
-        SessionState.Running -> "running" to MaterialTheme.colorScheme.primary
-        SessionState.Waiting -> "waiting" to MaterialTheme.colorScheme.tertiary
-        SessionState.RateLimited -> "rate-limited" to MaterialTheme.colorScheme.secondary
-        SessionState.Completed -> "completed" to MaterialTheme.colorScheme.onSurfaceVariant
-        SessionState.Killed -> "killed" to MaterialTheme.colorScheme.onSurfaceVariant
-        SessionState.Error -> "error" to MaterialTheme.colorScheme.error
-    }
+    val (label, color) =
+        when (state) {
+            SessionState.New -> "new" to MaterialTheme.colorScheme.onSurfaceVariant
+            SessionState.Running -> "running" to MaterialTheme.colorScheme.primary
+            SessionState.Waiting -> "waiting" to MaterialTheme.colorScheme.tertiary
+            SessionState.RateLimited -> "rate-limited" to MaterialTheme.colorScheme.secondary
+            SessionState.Completed -> "completed" to MaterialTheme.colorScheme.onSurfaceVariant
+            SessionState.Killed -> "killed" to MaterialTheme.colorScheme.onSurfaceVariant
+            SessionState.Error -> "error" to MaterialTheme.colorScheme.error
+        }
     AssistChip(
         onClick = {},
         label = { Text(label) },
@@ -258,7 +269,10 @@ private fun StatePill(state: SessionState) {
 }
 
 @Composable
-private fun EventList(events: List<SessionEvent>, modifier: Modifier = Modifier) {
+private fun EventList(
+    events: List<SessionEvent>,
+    modifier: Modifier = Modifier,
+) {
     val listState = rememberLazyListState()
     LaunchedEffect(events.size) {
         if (events.isNotEmpty()) listState.animateScrollToItem(events.size - 1)
@@ -284,67 +298,74 @@ private fun EventList(events: List<SessionEvent>, modifier: Modifier = Modifier)
 @Composable
 private fun EventRow(event: SessionEvent) {
     when (event) {
-        is SessionEvent.Output -> Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Text(
-                when (event.stream) {
-                    SessionEvent.Output.Stream.Stdout -> "llm "
-                    SessionEvent.Output.Stream.Stderr -> "err "
-                    SessionEvent.Output.Stream.System -> "sys "
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-                event.body,
-                fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        is SessionEvent.StateChange -> Text(
-            "state: ${event.from.name.lowercase()} → ${event.to.name.lowercase()}",
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-        is SessionEvent.PromptDetected -> Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            modifier = Modifier.padding(8.dp).fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+        is SessionEvent.Output ->
+            Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                 Text(
-                    "⚡ prompt awaiting reply",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    when (event.stream) {
+                        SessionEvent.Output.Stream.Stdout -> "llm "
+                        SessionEvent.Output.Stream.Stderr -> "err "
+                        SessionEvent.Output.Stream.System -> "sys "
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall,
                 )
-                Text(event.prompt.text, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    event.body,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
-        }
-        is SessionEvent.RateLimited -> Text(
-            "⏳ rate-limited" + (event.retryAfter?.let { " — retry at ${it}" } ?: ""),
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.secondary,
-            style = MaterialTheme.typography.labelMedium,
-        )
-        is SessionEvent.Completed -> Text(
-            "✓ completed" + (event.exitCode?.let { " (exit $it)" } ?: ""),
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelMedium,
-        )
-        is SessionEvent.Error -> Text(
-            "✕ ${event.message}",
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.labelMedium,
-        )
-        is SessionEvent.Unknown -> Text(
-            "(${event.type})",
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall,
-        )
+        is SessionEvent.StateChange ->
+            Text(
+                "state: ${event.from.name.lowercase()} → ${event.to.name.lowercase()}",
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+        is SessionEvent.PromptDetected ->
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.padding(8.dp).fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        "⚡ prompt awaiting reply",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(event.prompt.text, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        is SessionEvent.RateLimited ->
+            Text(
+                "⏳ rate-limited" + (event.retryAfter?.let { " — retry at $it" } ?: ""),
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        is SessionEvent.Completed ->
+            Text(
+                "✓ completed" + (event.exitCode?.let { " (exit $it)" } ?: ""),
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        is SessionEvent.Error ->
+            Text(
+                "✕ ${event.message}",
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        is SessionEvent.Unknown ->
+            Text(
+                "(${event.type})",
+                modifier = Modifier.padding(12.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+            )
     }
 }
 
@@ -385,8 +406,9 @@ private fun ReplyComposer(
                     val captured = r.stop() ?: return@IconButton
                     transcribing = true
                     scope.launch {
-                        val profiles = com.dmzs.datawatchclient.di.ServiceLocator
-                            .profileRepository.observeAll().first()
+                        val profiles =
+                            com.dmzs.datawatchclient.di.ServiceLocator
+                                .profileRepository.observeAll().first()
                         val profile = profiles.firstOrNull { it.enabled }
                         if (profile != null) {
                             com.dmzs.datawatchclient.di.ServiceLocator
@@ -416,8 +438,12 @@ private fun ReplyComposer(
                 Icon(
                     if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
                     contentDescription = if (recording) "Stop recording" else "Voice reply",
-                    tint = if (recording) MaterialTheme.colorScheme.error
-                           else MaterialTheme.colorScheme.primary,
+                    tint =
+                        if (recording) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                 )
             }
         }
@@ -436,7 +462,10 @@ private fun ReplyComposer(
 }
 
 @Composable
-private fun StateOverrideDialog(onDismiss: () -> Unit, onPick: (SessionState) -> Unit) {
+private fun StateOverrideDialog(
+    onDismiss: () -> Unit,
+    onPick: (SessionState) -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Override state") },

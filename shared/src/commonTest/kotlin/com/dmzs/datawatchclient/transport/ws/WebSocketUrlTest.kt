@@ -6,18 +6,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class WebSocketUrlTest {
+    private fun profile(base: String) =
+        ServerProfile(
+            id = "p1",
+            displayName = "t",
+            baseUrl = base,
+            bearerTokenRef = "",
+            reachabilityProfileId = "lan",
+            createdTs = 0L,
+        )
 
-    private fun profile(base: String) = ServerProfile(
-        id = "p1",
-        displayName = "t",
-        baseUrl = base,
-        bearerTokenRef = "",
-        reachabilityProfileId = "lan",
-        createdTs = 0L,
-    )
-
-    private fun transport(base: String): WebSocketTransport =
-        WebSocketTransport(profile(base), HttpClient())
+    private fun transport(base: String): WebSocketTransport = WebSocketTransport(profile(base), HttpClient())
 
     @Test
     fun `https base becomes wss URL with explicit port preserved`() {

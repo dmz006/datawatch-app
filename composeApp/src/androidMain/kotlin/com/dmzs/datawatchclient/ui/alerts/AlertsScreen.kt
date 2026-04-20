@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Session
-import kotlin.math.absoluteValue
 
 /**
  * Alerts tab — surfaces sessions that need user input. The list is the same
@@ -82,28 +81,30 @@ private fun AlertRow(
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 80.dp.toPx() }
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(session.id) {
-                var dx = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { dx = 0f },
-                    onDragEnd = {
-                        // Left swipe (negative dx) past threshold → dismiss.
-                        // Right swipe is reserved — matches SessionsScreen's
-                        // swipe-to-mute convention on the opposite direction.
-                        if (dx < -swipeThresholdPx) onDismiss()
-                    },
-                    onDragCancel = { dx = 0f },
-                ) { _, delta -> dx += delta }
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .pointerInput(session.id) {
+                    var dx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dx = 0f },
+                        onDragEnd = {
+                            // Left swipe (negative dx) past threshold → dismiss.
+                            // Right swipe is reserved — matches SessionsScreen's
+                            // swipe-to-mute convention on the opposite direction.
+                            if (dx < -swipeThresholdPx) onDismiss()
+                        },
+                        onDragCancel = { dx = 0f },
+                    ) { _, delta -> dx += delta }
+                },
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onClick)
+                    .padding(16.dp),
         ) {
             Column {
                 Text(session.id, style = MaterialTheme.typography.titleSmall)

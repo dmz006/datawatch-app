@@ -20,11 +20,12 @@ import com.dmzs.datawatchclient.Version
  */
 public class PreMvpPlaceholderScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
-        val list = ItemList.Builder()
-            .addItem(Row.Builder().setTitle("Running").addText("0 sessions").build())
-            .addItem(Row.Builder().setTitle("Waiting input").addText("0 sessions").build())
-            .addItem(Row.Builder().setTitle("Total").addText("0 sessions").build())
-            .build()
+        val list =
+            ItemList.Builder()
+                .addItem(Row.Builder().setTitle("Running").addText("0 sessions").build())
+                .addItem(Row.Builder().setTitle("Waiting input").addText("0 sessions").build())
+                .addItem(Row.Builder().setTitle("Total").addText("0 sessions").build())
+                .build()
         return ListTemplate.Builder()
             .setTitle("datawatch ${Version.VERSION}")
             .setHeaderAction(Action.APP_ICON)

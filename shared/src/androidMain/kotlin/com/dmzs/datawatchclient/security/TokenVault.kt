@@ -16,22 +16,26 @@ import androidx.security.crypto.MasterKey
  * necessary). Separate XML file per app install; wiped by uninstall.
  */
 public class TokenVault(context: Context) {
+    private val masterKey =
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        PREFS_FILE,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
+    private val prefs: SharedPreferences =
+        EncryptedSharedPreferences.create(
+            context,
+            PREFS_FILE,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
 
     /** Store the bearer token for a given server profile. Returns the opaque alias
      *  that should be written into `ServerProfile.bearerTokenRef`. */
-    public fun put(profileId: String, token: String): String {
+    public fun put(
+        profileId: String,
+        token: String,
+    ): String {
         val alias = aliasFor(profileId)
         prefs.edit().putString(alias, token).apply()
         return alias

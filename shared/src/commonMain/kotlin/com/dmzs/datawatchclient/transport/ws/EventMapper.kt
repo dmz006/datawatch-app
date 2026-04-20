@@ -6,12 +6,8 @@ import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.WsFrameDto
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
@@ -19,73 +15,84 @@ import kotlinx.serialization.json.longOrNull
  * Converts a [WsFrameDto] from the datawatch `/ws` hub into zero-or-more
  * domain [SessionEvent]s.
  *
- * Server frame format: `{ "type": "<kind>", "data": { ... }, "timestamp": "..." }`.
- * Per-type `data` shapes (source: parent `internal/server/web/app.js`):
+ * Server frame format, loosely: a `type` string, a `data` object, and a
+ * `timestamp` string. Per-type data shapes (source: parent
+ * `internal/server/web/app.js`):
  *
- *   sessions       : { sessions: [...], version: "x" }        → skipped (REST has it)
- *   session_update : { ...Session... }                        → skipped (REST refresh)
- *   raw_output     : { session_id, lines: [string...] }       → one Output per line
- *   output         : { session_id, lines: [string...] }       → one Output per line (fallback if no raw)
- *   needs_input    : { session_id, prompt: "..." }            → PromptDetected
- *   notification   : { session_id, message: "..." }           → Output(system)
- *   alert          : { session_id, ... }                      → Output(system)
- *   error          : { message: "..." }                       → Error
+ * - `sessions` — skipped, REST has the authoritative session list
+ * - `session_update` — skipped, REST refresh covers it
+ * - `raw_output` — one SessionEvent.Output per line in data.lines
+ * - `output` — same as raw_output, fallback when raw isn't used
+ * - `needs_input` — SessionEvent.PromptDetected
+ * - `notification` — SessionEvent.Output (system-colored)
+ * - `alert` — SessionEvent.Output (system-colored)
+ * - `error` — SessionEvent.Error
  *
- * Frames whose type we don't know become [SessionEvent.Unknown] so forward-
- * compat server additions survive a round-trip through this client.
+ * Frames whose type we don't know become [SessionEvent.Unknown] so
+ * forward-compat server additions survive a round-trip through this client.
  *
- * @param forSessionId filters [raw_output] / [output] frames to the session
- *   the UI is currently showing. Non-session-filtered frames (global errors,
+ * @param forSessionId filters raw_output / output frames to the session the
+ *   UI is currently showing. Non-session-filtered frames (global errors,
  *   alerts) pass through unconditionally.
  */
 internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent> {
-    val ts = timestamp?.let { runCatching { Instant.parse(it) }.getOrNull() }
-        ?: Clock.System.now()
+    val ts =
+        timestamp?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            ?: Clock.System.now()
     val obj = data as? JsonObject
     return when (type) {
         "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId)
-        "needs_input", "prompt", "prompt_detected" -> listOfNotNull(
-            buildPrompt(obj, ts, forSessionId),
-        )
+        "needs_input", "prompt", "prompt_detected" ->
+            listOfNotNull(
+                buildPrompt(obj, ts, forSessionId),
+            )
         "notification" -> listOfNotNull(buildNotification(obj, ts, forSessionId))
         "alert" -> listOfNotNull(buildAlert(obj, ts, forSessionId))
-        "error" -> listOf(
-            SessionEvent.Error(
-                sessionId = obj?.jsonString("session_id") ?: forSessionId,
-                ts = ts,
-                message = obj?.jsonString("message") ?: "server error",
-            ),
-        )
-        "session_update" -> {
-            val from = obj?.jsonString("state")?.let { SessionState.fromWire(it) }
-            if (from == null) emptyList()
-            else listOf(
-                SessionEvent.StateChange(
-                    sessionId = obj.jsonString("id") ?: forSessionId,
+        "error" ->
+            listOf(
+                SessionEvent.Error(
+                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
                     ts = ts,
-                    from = SessionState.New,
-                    to = from,
+                    message = obj?.jsonString("message") ?: "server error",
                 ),
             )
+        "session_update" -> {
+            val from = obj?.jsonString("state")?.let { SessionState.fromWire(it) }
+            if (from == null) {
+                emptyList()
+            } else {
+                listOf(
+                    SessionEvent.StateChange(
+                        sessionId = obj.jsonString("id") ?: forSessionId,
+                        ts = ts,
+                        from = SessionState.New,
+                        to = from,
+                    ),
+                )
+            }
         }
-        "rate_limited", "rate_limit" -> listOf(
-            SessionEvent.RateLimited(
-                sessionId = obj?.jsonString("session_id") ?: forSessionId,
-                ts = ts,
-                retryAfter = obj?.jsonString("retry_after")
-                    ?.let { runCatching { Instant.parse(it) }.getOrNull() },
-            ),
-        )
-        "completed", "done" -> listOf(
-            SessionEvent.Completed(
-                sessionId = obj?.jsonString("session_id") ?: forSessionId,
-                ts = ts,
-                exitCode = obj?.get("exit_code")?.jsonPrimitive?.longOrNull?.toInt(),
-            ),
-        )
+        "rate_limited", "rate_limit" ->
+            listOf(
+                SessionEvent.RateLimited(
+                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
+                    ts = ts,
+                    retryAfter =
+                        obj?.jsonString("retry_after")
+                            ?.let { runCatching { Instant.parse(it) }.getOrNull() },
+                ),
+            )
+        "completed", "done" ->
+            listOf(
+                SessionEvent.Completed(
+                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
+                    ts = ts,
+                    exitCode = obj?.get("exit_code")?.jsonPrimitive?.longOrNull?.toInt(),
+                ),
+            )
         // Frames we intentionally don't forward to the per-session UI.
         "sessions", "session_aware", "channel_reply", "channel_notify", "response",
-        "pane_capture", "ack" -> emptyList()
+        "pane_capture", "ack",
+        -> emptyList()
         else -> listOf(SessionEvent.Unknown(sessionId = forSessionId, ts = ts, type = type))
     }
 }
@@ -99,11 +106,12 @@ private fun buildOutputEvents(
     val sid = obj.jsonString("session_id") ?: forSessionId
     // Only render frames that belong to the session the UI is showing.
     if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return emptyList()
-    val lines = runCatching {
-        obj["lines"]?.jsonArray?.mapNotNull { el ->
-            runCatching { el.jsonPrimitive.content }.getOrNull()
-        }
-    }.getOrNull().orEmpty()
+    val lines =
+        runCatching {
+            obj["lines"]?.jsonArray?.mapNotNull { el ->
+                runCatching { el.jsonPrimitive.content }.getOrNull()
+            }
+        }.getOrNull().orEmpty()
     if (lines.isEmpty()) {
         // Some server frames put a single line under "body" or "text" or "data".
         val single = obj.jsonString("body") ?: obj.jsonString("text") ?: obj.jsonString("data")
@@ -115,7 +123,11 @@ private fun buildOutputEvents(
     return lines.map { line -> outputEvent(sid, ts, line) }
 }
 
-private fun outputEvent(sid: String, ts: Instant, line: String): SessionEvent.Output =
+private fun outputEvent(
+    sid: String,
+    ts: Instant,
+    line: String,
+): SessionEvent.Output =
     SessionEvent.Output(
         sessionId = sid,
         ts = ts,
@@ -125,39 +137,52 @@ private fun outputEvent(sid: String, ts: Instant, line: String): SessionEvent.Ou
         stream = SessionEvent.Output.Stream.Stdout,
     )
 
-private fun buildPrompt(obj: JsonObject?, ts: Instant, forSessionId: String): SessionEvent? {
+private fun buildPrompt(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): SessionEvent? {
     if (obj == null) return null
     val sid = obj.jsonString("session_id") ?: forSessionId
     val text = obj.jsonString("prompt") ?: obj.jsonString("message") ?: return null
     return SessionEvent.PromptDetected(
         sessionId = sid,
         ts = ts,
-        prompt = Prompt(
-            sessionId = sid,
-            text = text,
-            detectedAt = ts,
-            kind = when (obj.jsonString("prompt_kind")?.lowercase()) {
-                "approval", "yes_no" -> Prompt.Kind.Approval
-                "choice" -> Prompt.Kind.Choice
-                "rate_limit" -> Prompt.Kind.RateLimit
-                else -> Prompt.Kind.FreeForm
-            },
-        ),
+        prompt =
+            Prompt(
+                sessionId = sid,
+                text = text,
+                detectedAt = ts,
+                kind =
+                    when (obj.jsonString("prompt_kind")?.lowercase()) {
+                        "approval", "yes_no" -> Prompt.Kind.Approval
+                        "choice" -> Prompt.Kind.Choice
+                        "rate_limit" -> Prompt.Kind.RateLimit
+                        else -> Prompt.Kind.FreeForm
+                    },
+            ),
     )
 }
 
-private fun buildNotification(obj: JsonObject?, ts: Instant, forSessionId: String): SessionEvent? {
+private fun buildNotification(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): SessionEvent? {
     val msg = obj?.jsonString("message") ?: return null
     val sid = obj.jsonString("session_id") ?: forSessionId
     return outputEvent(sid, ts, "\u001b[36m[notify] $msg\u001b[0m")
 }
 
-private fun buildAlert(obj: JsonObject?, ts: Instant, forSessionId: String): SessionEvent? {
+private fun buildAlert(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): SessionEvent? {
     if (obj == null) return null
     val sid = obj.jsonString("session_id") ?: forSessionId
     val msg = obj.jsonString("message") ?: obj.jsonString("summary") ?: return null
     return outputEvent(sid, ts, "\u001b[33m[alert] $msg\u001b[0m")
 }
 
-private fun JsonObject.jsonString(key: String): String? =
-    runCatching { get(key)?.jsonPrimitive?.content }.getOrNull()
+private fun JsonObject.jsonString(key: String): String? = runCatching { get(key)?.jsonPrimitive?.content }.getOrNull()

@@ -26,7 +26,10 @@ public class SessionRepository(
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
 
-    public suspend fun replaceAll(profileId: String, sessions: List<Session>) {
+    public suspend fun replaceAll(
+        profileId: String,
+        sessions: List<Session>,
+    ) {
         db.transaction {
             db.sessionQueries.deleteSessionsForProfile(profileId)
             sessions.forEach { upsertInternal(it) }
@@ -37,7 +40,10 @@ public class SessionRepository(
         upsertInternal(session)
     }
 
-    public suspend fun setMuted(sessionId: String, muted: Boolean) {
+    public suspend fun setMuted(
+        sessionId: String,
+        muted: Boolean,
+    ) {
         db.sessionQueries.setSessionMuted(if (muted) 1L else 0L, sessionId)
     }
 
@@ -54,14 +60,15 @@ public class SessionRepository(
         )
     }
 
-    private fun com.dmzs.datawatchclient.db.Session.toDomain(): Session = Session(
-        id = id,
-        serverProfileId = server_profile_id,
-        hostnamePrefix = hostname_prefix,
-        state = SessionState.fromWire(state),
-        taskSummary = task_summary,
-        createdAt = Instant.fromEpochMilliseconds(created_ts),
-        lastActivityAt = Instant.fromEpochMilliseconds(last_activity_ts),
-        muted = muted != 0L,
-    )
+    private fun com.dmzs.datawatchclient.db.Session.toDomain(): Session =
+        Session(
+            id = id,
+            serverProfileId = server_profile_id,
+            hostnamePrefix = hostname_prefix,
+            state = SessionState.fromWire(state),
+            taskSummary = task_summary,
+            createdAt = Instant.fromEpochMilliseconds(created_ts),
+            lastActivityAt = Instant.fromEpochMilliseconds(last_activity_ts),
+            muted = muted != 0L,
+        )
 }

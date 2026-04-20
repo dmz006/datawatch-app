@@ -27,7 +27,6 @@ public actual class DatabaseFactory(
     private val context: Context,
     private val keystore: KeystoreManager = KeystoreManager(context),
 ) {
-
     public actual fun driver(): SqlDriver {
         keystore.ensureMasterKey()
         val passphrase = keystore.deriveDatabasePassphrase()

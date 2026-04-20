@@ -11,11 +11,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -34,10 +34,12 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
-
     public enum class Filter(public val label: String) {
-        All("All"), Running("Running"), Waiting("Waiting"),
-        Completed("Completed"), Error("Error")
+        All("All"),
+        Running("Running"),
+        Waiting("Waiting"),
+        Completed("Completed"),
+        Error("Error"),
     }
 
     public data class UiState(
@@ -67,39 +69,46 @@ public class SessionsViewModel : ViewModel() {
         val deleteSupported: Boolean = true,
     ) {
         public val visibleSessions: List<Session>
-            get() = when (filter) {
-                Filter.All -> sessions
-                Filter.Running -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Running }
-                Filter.Waiting -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting }
-                Filter.Completed -> sessions.filter {
-                    it.state == com.dmzs.datawatchclient.domain.SessionState.Completed ||
-                        it.state == com.dmzs.datawatchclient.domain.SessionState.Killed
+            get() =
+                when (filter) {
+                    Filter.All -> sessions
+                    Filter.Running -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Running }
+                    Filter.Waiting -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting }
+                    Filter.Completed ->
+                        sessions.filter {
+                            it.state == com.dmzs.datawatchclient.domain.SessionState.Completed ||
+                                it.state == com.dmzs.datawatchclient.domain.SessionState.Killed
+                        }
+                    Filter.Error -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Error }
                 }
-                Filter.Error -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Error }
-            }
     }
 
-    private val allProfiles: StateFlow<List<ServerProfile>> = ServiceLocator.profileRepository
-        .observeAll()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = emptyList())
+    private val allProfiles: StateFlow<List<ServerProfile>> =
+        ServiceLocator.profileRepository
+            .observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = emptyList())
 
-    private val activeId: StateFlow<String?> = ServiceLocator.activeServerStore.observe()
-        .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
+    private val activeId: StateFlow<String?> =
+        ServiceLocator.activeServerStore.observe()
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
 
-    private val activeProfile: StateFlow<ServerProfile?> = combine(
-        allProfiles, activeId,
-    ) { profiles, storedId ->
-        val enabled = profiles.filter { it.enabled }
-        if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
-        storedId?.let { id -> enabled.firstOrNull { it.id == id } }
-            ?: enabled.firstOrNull()
-    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
+    private val activeProfile: StateFlow<ServerProfile?> =
+        combine(
+            allProfiles,
+            activeId,
+        ) { profiles, storedId ->
+            val enabled = profiles.filter { it.enabled }
+            if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
+            storedId?.let { id -> enabled.firstOrNull { it.id == id } }
+                ?: enabled.firstOrNull()
+        }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
 
-    private val allServersMode: StateFlow<Boolean> = activeId
-        .map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
-        .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
+    private val allServersMode: StateFlow<Boolean> =
+        activeId
+            .map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
     private val _refreshing = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
@@ -114,27 +123,38 @@ public class SessionsViewModel : ViewModel() {
      * mode — the TopAppBar indicator hides in those cases rather than
      * misrepresenting any one server's state.
      */
-    private val activeReachable: StateFlow<Boolean?> = activeProfile
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf<Boolean?>(null)
-            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
+    private val activeReachable: StateFlow<Boolean?> =
+        activeProfile
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf<Boolean?>(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
 
     public val state: StateFlow<UiState> = combineLatestState()
 
     private fun combineLatestState(): StateFlow<UiState> {
-        val perProfileSessionsFlow = activeProfile.flatMapLatest { profile ->
-            if (profile == null) flowOf(emptyList())
-            else ServiceLocator.sessionRepository.observeForProfile(profile.id)
-        }
+        val perProfileSessionsFlow =
+            activeProfile.flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(emptyList())
+                } else {
+                    ServiceLocator.sessionRepository.observeForProfile(profile.id)
+                }
+            }
         // Choose source by mode — the all-servers list is fed by refresh()
         // since there's no per-profile cache merge layer.
-        val sessionsFlow = combine(
-            allServersMode, perProfileSessionsFlow, _allServersSessions,
-        ) { all, single, federated ->
-            if (all) federated else single
-        }
+        val sessionsFlow =
+            combine(
+                allServersMode,
+                perProfileSessionsFlow,
+                _allServersSessions,
+            ) { all, single, federated ->
+                if (all) federated else single
+            }
         return combine(
             activeProfile,
             allProfiles,
@@ -182,14 +202,20 @@ public class SessionsViewModel : ViewModel() {
         _filter.value = filter
     }
 
-    public fun toggleMute(sessionId: String, currentlyMuted: Boolean) {
+    public fun toggleMute(
+        sessionId: String,
+        currentlyMuted: Boolean,
+    ) {
         viewModelScope.launch {
             ServiceLocator.sessionRepository.setMuted(sessionId, !currentlyMuted)
         }
     }
 
     /** Rename a session on the server; refresh the list on success. */
-    public fun rename(sessionId: String, newName: String) {
+    public fun rename(
+        sessionId: String,
+        newName: String,
+    ) {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
             ServiceLocator.transportFor(profile).renameSession(sessionId, newName).fold(
@@ -303,8 +329,9 @@ public class SessionsViewModel : ViewModel() {
         _refreshing.value = true
         _banner.value = null
         viewModelScope.launch {
-            val profiles = ServiceLocator.profileRepository.observeAll()
-                .first().filter { it.enabled }
+            val profiles =
+                ServiceLocator.profileRepository.observeAll()
+                    .first().filter { it.enabled }
             val errors = mutableListOf<String>()
             val merged = linkedMapOf<String, Session>()
             kotlinx.coroutines.coroutineScope {
@@ -312,8 +339,9 @@ public class SessionsViewModel : ViewModel() {
                     async {
                         ServiceLocator.transportFor(p).federationSessions().fold(
                             onSuccess = { view ->
-                                val combined = view.primary +
-                                    view.proxied.values.flatten()
+                                val combined =
+                                    view.primary +
+                                        view.proxied.values.flatten()
                                 synchronized(merged) {
                                     combined.forEach { s ->
                                         val existing = merged[s.id]
@@ -337,8 +365,12 @@ public class SessionsViewModel : ViewModel() {
             }
             _allServersSessions.value = merged.values.sortedByDescending { it.lastActivityAt }
             _refreshing.value = false
-            _banner.value = if (errors.isEmpty()) null
-                else "Some servers unreachable: " + errors.take(3).joinToString("; ")
+            _banner.value =
+                if (errors.isEmpty()) {
+                    null
+                } else {
+                    "Some servers unreachable: " + errors.take(3).joinToString("; ")
+                }
         }
     }
 }

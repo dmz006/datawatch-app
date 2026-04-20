@@ -33,16 +33,25 @@ public interface TransportClient {
     public suspend fun listSessions(): Result<List<Session>>
 
     /** POST /api/sessions/start. Returns new session id. */
-    public suspend fun startSession(task: String, serverHint: String? = null): Result<String>
+    public suspend fun startSession(
+        task: String,
+        serverHint: String? = null,
+    ): Result<String>
 
     /** POST /api/sessions/reply. */
-    public suspend fun replyToSession(sessionId: String, text: String): Result<Unit>
+    public suspend fun replyToSession(
+        sessionId: String,
+        text: String,
+    ): Result<Unit>
 
     /** POST /api/sessions/kill. Requires confirm dialog upstream (ADR-0019). */
     public suspend fun killSession(sessionId: String): Result<Unit>
 
     /** POST /api/sessions/state. Force a session into a given state. */
-    public suspend fun overrideSessionState(sessionId: String, state: SessionState): Result<Unit>
+    public suspend fun overrideSessionState(
+        sessionId: String,
+        state: SessionState,
+    ): Result<Unit>
 
     /** GET /api/stats. */
     public suspend fun stats(): Result<StatsDto>
@@ -103,7 +112,10 @@ public interface TransportClient {
     // ---- v0.11 session power-user parity (see docs/plans/2026-04-20-v0.11-session-power-user.md) ----
 
     /** POST /api/sessions/rename — set a human-readable name on a session. */
-    public suspend fun renameSession(sessionId: String, name: String): Result<Unit>
+    public suspend fun renameSession(
+        sessionId: String,
+        name: String,
+    ): Result<Unit>
 
     /**
      * POST /api/sessions/restart — warm-resume a completed/failed session.
@@ -149,7 +161,10 @@ public interface TransportClient {
      * POST /api/alerts — mark an alert read/dismissed. Pass [sessionId]=null
      * and [all]=true to dismiss every alert at once.
      */
-    public suspend fun markAlertRead(alertId: String? = null, all: Boolean = false): Result<Unit>
+    public suspend fun markAlertRead(
+        alertId: String? = null,
+        all: Boolean = false,
+    ): Result<Unit>
 
     /**
      * GET /api/info — hostname, daemon version, active backends, session
@@ -164,7 +179,10 @@ public interface TransportClient {
      * predate the current WebSocket subscription. [lines] clamped server-side
      * to 1000; client passes through without extra clamping.
      */
-    public suspend fun fetchOutput(sessionId: String, lines: Int = 500): Result<String>
+    public suspend fun fetchOutput(
+        sessionId: String,
+        lines: Int = 500,
+    ): Result<String>
 
     // ---- v0.12 schedules + files + saved commands + config (read) ----
     // (see docs/plans/2026-04-20-v0.12-schedules-files-config.md)
@@ -193,7 +211,10 @@ public interface TransportClient {
     public suspend fun listCommands(): Result<List<SavedCommand>>
 
     /** POST /api/commands — save or update a named command snippet. */
-    public suspend fun saveCommand(name: String, command: String): Result<Unit>
+    public suspend fun saveCommand(
+        name: String,
+        command: String,
+    ): Result<Unit>
 
     /** DELETE /api/commands?name=<name> — remove a saved command snippet. */
     public suspend fun deleteCommand(name: String): Result<Unit>

@@ -23,7 +23,6 @@ import com.dmzs.datawatchclient.R
  * SessionDetail.
  */
 public class NotificationPoster(private val context: Context) {
-
     public data class Event(
         val sessionId: String,
         val type: Type,
@@ -39,21 +38,23 @@ public class NotificationPoster(private val context: Context) {
         if (!nm.areNotificationsEnabled()) return
         NotificationChannels.ensureRegistered(context)
 
-        val (channel, importance) = when (event.type) {
-            Event.Type.InputNeeded -> NotificationChannels.INPUT_NEEDED to NotificationCompat.PRIORITY_HIGH
-            Event.Type.Error -> NotificationChannels.ERROR to NotificationCompat.PRIORITY_HIGH
-            Event.Type.RateLimited -> NotificationChannels.RATE_LIMITED to NotificationCompat.PRIORITY_DEFAULT
-            else -> NotificationChannels.COMPLETED to NotificationCompat.PRIORITY_DEFAULT
-        }
+        val (channel, importance) =
+            when (event.type) {
+                Event.Type.InputNeeded -> NotificationChannels.INPUT_NEEDED to NotificationCompat.PRIORITY_HIGH
+                Event.Type.Error -> NotificationChannels.ERROR to NotificationCompat.PRIORITY_HIGH
+                Event.Type.RateLimited -> NotificationChannels.RATE_LIMITED to NotificationCompat.PRIORITY_DEFAULT
+                else -> NotificationChannels.COMPLETED to NotificationCompat.PRIORITY_DEFAULT
+            }
 
-        val builder = NotificationCompat.Builder(context, channel)
-            .setSmallIcon(R.drawable.ic_stat_dw)
-            .setContentTitle(event.title)
-            .setContentText(event.body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
-            .setPriority(importance)
-            .setAutoCancel(true)
-            .setContentIntent(deepLinkIntent(event.sessionId))
+        val builder =
+            NotificationCompat.Builder(context, channel)
+                .setSmallIcon(R.drawable.ic_stat_dw)
+                .setContentTitle(event.title)
+                .setContentText(event.body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
+                .setPriority(importance)
+                .setAutoCancel(true)
+                .setContentIntent(deepLinkIntent(event.sessionId))
 
         if (event.type == Event.Type.InputNeeded) {
             builder.addAction(buildReplyAction(event.sessionId))
@@ -69,12 +70,13 @@ public class NotificationPoster(private val context: Context) {
 
     private fun deepLinkIntent(sessionId: String): PendingIntent {
         val uri = Uri.parse("dwclient://session/$sessionId")
-        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-            setPackage(context.packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            // Ensure the app opens to MainActivity; the deep-link `data` URI carries the routing.
-            setClass(context, MainActivity::class.java)
-        }
+        val intent =
+            Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage(context.packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                // Ensure the app opens to MainActivity; the deep-link `data` URI carries the routing.
+                setClass(context, MainActivity::class.java)
+            }
         return PendingIntent.getActivity(
             context,
             sessionId.hashCode(),
@@ -84,20 +86,23 @@ public class NotificationPoster(private val context: Context) {
     }
 
     private fun buildReplyAction(sessionId: String): NotificationCompat.Action {
-        val remoteInput = RemoteInput.Builder(REPLY_REMOTE_INPUT_KEY)
-            .setLabel("Reply")
-            .build()
+        val remoteInput =
+            RemoteInput.Builder(REPLY_REMOTE_INPUT_KEY)
+                .setLabel("Reply")
+                .build()
 
-        val replyIntent = Intent(context, ReplyBroadcastReceiver::class.java).apply {
-            action = ReplyBroadcastReceiver.ACTION_REPLY
-            putExtra(ReplyBroadcastReceiver.EXTRA_SESSION_ID, sessionId)
-        }
-        val replyPi = PendingIntent.getBroadcast(
-            context,
-            sessionId.hashCode() xor REPLY_REQUEST_CODE_SALT,
-            replyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-        )
+        val replyIntent =
+            Intent(context, ReplyBroadcastReceiver::class.java).apply {
+                action = ReplyBroadcastReceiver.ACTION_REPLY
+                putExtra(ReplyBroadcastReceiver.EXTRA_SESSION_ID, sessionId)
+            }
+        val replyPi =
+            PendingIntent.getBroadcast(
+                context,
+                sessionId.hashCode() xor REPLY_REQUEST_CODE_SALT,
+                replyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
 
         return NotificationCompat.Action.Builder(
             R.drawable.ic_stat_dw,
@@ -118,7 +123,6 @@ public class NotificationPoster(private val context: Context) {
         // sessionId hashCode).
         private const val REPLY_REQUEST_CODE_SALT: Int = 0x5250_4C59
 
-        public fun notificationIdFor(sessionId: String): Int =
-            ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
+        public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
 }

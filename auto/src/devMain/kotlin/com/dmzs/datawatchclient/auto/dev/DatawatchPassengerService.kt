@@ -13,11 +13,10 @@ import com.dmzs.datawatchclient.auto.PreMvpPlaceholderScreen
  * Sprint 4 implements the full surface (session list, terminal mirror, stats, voice).
  */
 public class DatawatchPassengerService : CarAppService() {
-    override fun createHostValidator(): HostValidator =
-        HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+    override fun createHostValidator(): HostValidator = HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
 
-    override fun onCreateSession(): Session = object : Session() {
-        override fun onCreateScreen(intent: android.content.Intent) =
-            PreMvpPlaceholderScreen(carContext)
-    }
+    override fun onCreateSession(): Session =
+        object : Session() {
+            override fun onCreateScreen(intent: android.content.Intent) = PreMvpPlaceholderScreen(carContext)
+        }
 }

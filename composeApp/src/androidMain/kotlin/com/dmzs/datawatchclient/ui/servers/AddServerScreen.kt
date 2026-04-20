@@ -81,11 +81,12 @@ public fun AddServerScreen(
                 Text(
                     "No bearer token  (insecure — only for test servers)",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (state.noToken) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    color =
+                        if (state.noToken) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

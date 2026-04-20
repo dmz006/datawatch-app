@@ -24,10 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture
  * Tiles 1.2+; androidx.wear.tiles still owns the [TileService] lifecycle.
  */
 public class SessionsTileService : TileService() {
-
-    override fun onTileRequest(
-        requestParams: RequestBuilders.TileRequest,
-    ): ListenableFuture<TileBuilders.Tile> = Futures.immediateFuture(buildTile())
+    override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> =
+        Futures.immediateFuture(buildTile())
 
     override fun onTileResourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest,
@@ -56,13 +54,14 @@ public class SessionsTileService : TileService() {
         waiting: Int,
         total: Int,
     ): LayoutElementBuilders.LayoutElement {
-        val row = LayoutElementBuilders.Row.Builder()
-            .addContent(countColumn("run", running, COLOR_FG))
-            .addContent(spacer())
-            .addContent(countColumn("wait", waiting, COLOR_ACCENT))
-            .addContent(spacer())
-            .addContent(countColumn("total", total, COLOR_FG))
-            .build()
+        val row =
+            LayoutElementBuilders.Row.Builder()
+                .addContent(countColumn("run", running, COLOR_FG))
+                .addContent(spacer())
+                .addContent(countColumn("wait", waiting, COLOR_ACCENT))
+                .addContent(spacer())
+                .addContent(countColumn("total", total, COLOR_FG))
+                .build()
 
         return LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
@@ -95,7 +94,10 @@ public class SessionsTileService : TileService() {
             )
             .build()
 
-    private fun numText(text: String, color: Int): LayoutElementBuilders.Text =
+    private fun numText(
+        text: String,
+        color: Int,
+    ): LayoutElementBuilders.Text =
         LayoutElementBuilders.Text.Builder()
             .setText(TypeBuilders.StringProp.Builder(text).build())
             .setFontStyle(

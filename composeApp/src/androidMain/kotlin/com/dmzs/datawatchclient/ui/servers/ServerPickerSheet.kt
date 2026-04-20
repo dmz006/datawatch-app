@@ -70,10 +70,11 @@ public fun ServerPickerSheet(
                 HorizontalDivider()
             }
             Row(
-                modifier = Modifier.fillMaxWidth().clickable {
-                    onAdd()
-                    onDismiss()
-                }.padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier.fillMaxWidth().clickable {
+                        onAdd()
+                        onDismiss()
+                    }.padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = {
@@ -87,7 +88,11 @@ public fun ServerPickerSheet(
 }
 
 @Composable
-private fun ProfileRow(profile: ServerProfile, isActive: Boolean, onSelect: () -> Unit) {
+private fun ProfileRow(
+    profile: ServerProfile,
+    isActive: Boolean,
+    onSelect: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect).padding(24.dp),
         verticalAlignment = Alignment.CenterVertically,

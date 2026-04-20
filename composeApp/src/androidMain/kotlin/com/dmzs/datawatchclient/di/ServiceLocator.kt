@@ -29,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
  * member is read.
  */
 public object ServiceLocator {
-
     private lateinit var appContext: Context
 
     public fun init(app: Application) {
@@ -92,14 +91,16 @@ public object ServiceLocator {
         val signature = "${profile.baseUrl}|${profile.trustAnchorSha256 ?: ""}|${alias ?: ""}"
         val cached = transportCache[profile.id]
         if (cached != null && cached.second == signature) return cached.first
-        val tokenProvider: (suspend () -> String)? = alias?.let {
-            { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
-        }
-        val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
-            trustAllClient
-        } else {
-            httpClient
-        }
+        val tokenProvider: (suspend () -> String)? =
+            alias?.let {
+                { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
+            }
+        val client =
+            if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
+                trustAllClient
+            } else {
+                httpClient
+            }
         val transport = RestTransport(profile, client, tokenProvider)
         transportCache[profile.id] = transport to signature
         return transport
@@ -112,14 +113,16 @@ public object ServiceLocator {
      */
     public fun wsTransportFor(profile: ServerProfile): WebSocketTransport {
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
-        val tokenProvider: (suspend () -> String)? = alias?.let {
-            { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
-        }
-        val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
-            wsTrustAllClient
-        } else {
-            wsClient
-        }
+        val tokenProvider: (suspend () -> String)? =
+            alias?.let {
+                { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") }
+            }
+        val client =
+            if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) {
+                wsTrustAllClient
+            } else {
+                wsClient
+            }
         return WebSocketTransport(profile, client, tokenProvider)
     }
 }

@@ -1,6 +1,6 @@
 package com.dmzs.datawatchclient.ui.channels
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.foundation.clickable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,10 +64,11 @@ public fun ChannelsScreen(vm: ChannelsViewModel = viewModel()) {
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .fillMaxSize(),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize(),
         ) {
             state.banner?.let {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -124,19 +124,23 @@ private fun BackendsCard(
             } else {
                 llm.forEach { name ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = setActiveSupported && name != active) {
-                                onSelect(name)
-                            }
-                            .padding(vertical = 8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = setActiveSupported && name != active) {
+                                    onSelect(name)
+                                }
+                                .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = name == active,
-                            onClick = if (setActiveSupported && name != active) {
-                                { onSelect(name) }
-                            } else null,
+                            onClick =
+                                if (setActiveSupported && name != active) {
+                                    { onSelect(name) }
+                                } else {
+                                    null
+                                },
                             enabled = setActiveSupported,
                         )
                         Text(
@@ -163,8 +167,11 @@ private fun BackendsCard(
 private fun MessagingNoteCard() {
     Card(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Messaging channels", style = MaterialTheme.typography.labelLarge,
-                 color = MaterialTheme.colorScheme.primary)
+            Text(
+                "Messaging channels",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Text(
                 "Messaging backends (Signal, Telegram, Slack, Matrix, Discord, " +
                     "Twilio, ntfy, webhooks, DNS) are configured server-side in " +

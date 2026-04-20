@@ -10,6 +10,5 @@ import com.dmzs.datawatchclient.db.DatawatchDb
  * Keychain + EncryptedContainer) when the iOS content phase begins.
  */
 public actual class DatabaseFactory {
-    public actual fun driver(): SqlDriver =
-        NativeSqliteDriver(DatawatchDb.Schema, "datawatch.db")
+    public actual fun driver(): SqlDriver = NativeSqliteDriver(DatawatchDb.Schema, "datawatch.db")
 }

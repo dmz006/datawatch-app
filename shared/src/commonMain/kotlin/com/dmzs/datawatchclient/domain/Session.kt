@@ -20,6 +20,7 @@ public data class Session(
     val muted: Boolean = false,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
-    public val isTerminal: Boolean get() = state == SessionState.Completed ||
-        state == SessionState.Killed || state == SessionState.Error
+    public val isTerminal: Boolean get() =
+        state == SessionState.Completed ||
+            state == SessionState.Killed || state == SessionState.Error
 }

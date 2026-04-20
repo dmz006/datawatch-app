@@ -7,7 +7,6 @@ package com.dmzs.datawatchclient.transport
  */
 public sealed class TransportError(message: String, cause: Throwable? = null) :
     Exception(message, cause) {
-
     /** DNS / connect / TLS / read timeout — the server wasn't reachable at all. */
     public class Unreachable(cause: Throwable? = null) :
         TransportError("Server unreachable", cause)

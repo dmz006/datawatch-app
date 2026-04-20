@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
  * Tap anywhere on the widget launches MainActivity.
  */
 public class SessionsWidget : AppWidgetProvider() {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onUpdate(
@@ -52,29 +51,33 @@ public class SessionsWidget : AppWidgetProvider() {
     private suspend fun refresh(context: Context) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val profile = profiles.firstOrNull { it.enabled }
-        val counts = if (profile == null) {
-            Counts(0, 0, 0, null, "No servers")
-        } else {
-            val r = ServiceLocator.transportFor(profile).listSessions()
-            r.fold(
-                onSuccess = { list ->
-                    Counts(
-                        running = list.count { it.state.name == "Running" },
-                        waiting = list.count { it.state.name == "Waiting" },
-                        total = list.size,
-                        profileName = profile.displayName,
-                        error = null,
-                    )
-                },
-                onFailure = {
-                    Counts(0, 0, 0, profile.displayName, "offline")
-                },
-            )
-        }
+        val counts =
+            if (profile == null) {
+                Counts(0, 0, 0, null, "No servers")
+            } else {
+                val r = ServiceLocator.transportFor(profile).listSessions()
+                r.fold(
+                    onSuccess = { list ->
+                        Counts(
+                            running = list.count { it.state.name == "Running" },
+                            waiting = list.count { it.state.name == "Waiting" },
+                            total = list.size,
+                            profileName = profile.displayName,
+                            error = null,
+                        )
+                    },
+                    onFailure = {
+                        Counts(0, 0, 0, profile.displayName, "offline")
+                    },
+                )
+            }
         updateAll(context, counts)
     }
 
-    private fun updateAll(context: Context, counts: Counts) {
+    private fun updateAll(
+        context: Context,
+        counts: Counts,
+    ) {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(ComponentName(context, SessionsWidget::class.java))
         val views = RemoteViews(context.packageName, R.layout.widget_sessions)
@@ -90,16 +93,21 @@ public class SessionsWidget : AppWidgetProvider() {
         ids.forEach { manager.updateAppWidget(it, views) }
     }
 
-    private fun attachTapIntent(context: Context, views: RemoteViews) {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val pi = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+    private fun attachTapIntent(
+        context: Context,
+        views: RemoteViews,
+    ) {
+        val intent =
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        val pi =
+            PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         views.setOnClickPendingIntent(R.id.widget_root, pi)
     }
 
@@ -114,15 +122,16 @@ public class SessionsWidget : AppWidgetProvider() {
     public companion object {
         /** Force-refresh all active instances. Called from the app after a successful list pull. */
         public fun requestUpdate(context: Context) {
-            val intent = Intent(context, SessionsWidget::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                putExtra(
-                    AppWidgetManager.EXTRA_APPWIDGET_IDS,
-                    AppWidgetManager.getInstance(context).getAppWidgetIds(
-                        ComponentName(context, SessionsWidget::class.java),
-                    ),
-                )
-            }
+            val intent =
+                Intent(context, SessionsWidget::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(
+                        AppWidgetManager.EXTRA_APPWIDGET_IDS,
+                        AppWidgetManager.getInstance(context).getAppWidgetIds(
+                            ComponentName(context, SessionsWidget::class.java),
+                        ),
+                    )
+                }
             context.sendBroadcast(intent)
         }
     }

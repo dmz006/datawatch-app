@@ -33,24 +33,25 @@ import java.security.SecureRandom
  *   honors the device's strongest available scheme).
  */
 public class KeystoreManager(context: Context) {
-
     public companion object {
         public const val PREFS_FILE: String = "dw.cipher.keys"
         internal const val KEY_DB_PASSPHRASE: String = "dw.db.passphrase.v1"
         internal const val PASSPHRASE_BYTES: Int = 32 // 256-bit SQLCipher key
     }
 
-    private val masterKey: MasterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val masterKey: MasterKey =
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
 
-    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        PREFS_FILE,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
+    private val prefs: SharedPreferences =
+        EncryptedSharedPreferences.create(
+            context,
+            PREFS_FILE,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
 
     /** Ensures the SQLCipher passphrase exists, generating on first call. */
     public fun ensureMasterKey() {
@@ -67,8 +68,9 @@ public class KeystoreManager(context: Context) {
     /** Returns the 32-byte SQLCipher passphrase, lazily generating it first. */
     public fun deriveDatabasePassphrase(): ByteArray {
         ensureMasterKey()
-        val encoded = prefs.getString(KEY_DB_PASSPHRASE, null)
-            ?: error("SQLCipher passphrase unexpectedly absent after ensure")
+        val encoded =
+            prefs.getString(KEY_DB_PASSPHRASE, null)
+                ?: error("SQLCipher passphrase unexpectedly absent after ensure")
         return Base64.decode(encoded, Base64.NO_WRAP)
     }
 }

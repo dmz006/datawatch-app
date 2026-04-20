@@ -23,7 +23,6 @@ import androidx.fragment.app.FragmentActivity
  * in a biometric-bound key to tie the two together.
  */
 public class BiometricGate(context: Context) {
-
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
@@ -46,26 +45,33 @@ public class BiometricGate(context: Context) {
         onFailure: (String) -> Unit,
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
-        val callback = object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                onSuccess()
+        val callback =
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    onSuccess()
+                }
+
+                override fun onAuthenticationError(
+                    errorCode: Int,
+                    errString: CharSequence,
+                ) {
+                    // Error = user cancelled / lockout / hardware — surface the
+                    // string but don't auto-retry; let AppRoot decide to prompt again.
+                    onFailure(errString.toString())
+                }
+
+                override fun onAuthenticationFailed() {
+                    // One failed attempt — BiometricPrompt handles retry internally.
+                }
             }
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                // Error = user cancelled / lockout / hardware — surface the
-                // string but don't auto-retry; let AppRoot decide to prompt again.
-                onFailure(errString.toString())
-            }
-            override fun onAuthenticationFailed() {
-                // One failed attempt — BiometricPrompt handles retry internally.
-            }
-        }
         val prompt = BiometricPrompt(activity, executor, callback)
-        val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock datawatch")
-            .setSubtitle("Confirm it's you to open sessions and tokens")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .setNegativeButtonText("Cancel")
-            .build()
+        val info =
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Unlock datawatch")
+                .setSubtitle("Confirm it's you to open sessions and tokens")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .setNegativeButtonText("Cancel")
+                .build()
         prompt.authenticate(info)
     }
 

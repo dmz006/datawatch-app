@@ -28,25 +28,27 @@ private val SuccessGreen = Color(0xFF10B981)
 private val WarningAmber = Color(0xFFF59E0B)
 private val ErrorRed = Color(0xFFEF4444)
 
-private val DatawatchDarkScheme = darkColorScheme(
-    primary = AccentPurple,
-    onPrimary = Color.White,
-    primaryContainer = AccentPurpleLight,
-    secondary = AccentPurpleLight,
-    background = BgDark,
-    onBackground = TextPrimary,
-    surface = SurfaceDark,
-    onSurface = TextPrimary,
-    surfaceVariant = Bg2Dark,
-    onSurfaceVariant = TextSecondary,
-    error = ErrorRed,
-)
+private val DatawatchDarkScheme =
+    darkColorScheme(
+        primary = AccentPurple,
+        onPrimary = Color.White,
+        primaryContainer = AccentPurpleLight,
+        secondary = AccentPurpleLight,
+        background = BgDark,
+        onBackground = TextPrimary,
+        surface = SurfaceDark,
+        onSurface = TextPrimary,
+        surfaceVariant = Bg2Dark,
+        onSurfaceVariant = TextSecondary,
+        error = ErrorRed,
+    )
 
-private val DatawatchLightScheme = lightColorScheme(
-    primary = AccentPurple,
-    secondary = AccentPurpleLight,
-    error = ErrorRed,
-)
+private val DatawatchLightScheme =
+    lightColorScheme(
+        primary = AccentPurple,
+        secondary = AccentPurpleLight,
+        error = ErrorRed,
+    )
 
 @Composable
 public fun DatawatchTheme(
@@ -54,13 +56,14 @@ public fun DatawatchTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val ctx = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+    val colorScheme =
+        when {
+            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val ctx = LocalContext.current
+                if (darkTheme) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+            }
+            darkTheme -> DatawatchDarkScheme
+            else -> DatawatchLightScheme
         }
-        darkTheme -> DatawatchDarkScheme
-        else -> DatawatchLightScheme
-    }
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

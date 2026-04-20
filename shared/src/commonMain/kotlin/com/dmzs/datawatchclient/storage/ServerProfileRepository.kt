@@ -44,8 +44,9 @@ public class ServerProfileRepository(
 
     public suspend fun touchLastSeen(id: String) {
         // Read-modify-write; single-user v1 means no contention.
-        val existing = db.profileQueries.selectAllProfiles().executeAsList()
-            .firstOrNull { it.id == id } ?: return
+        val existing =
+            db.profileQueries.selectAllProfiles().executeAsList()
+                .firstOrNull { it.id == id } ?: return
         upsert(existing.toDomain().copy(lastSeenTs = clock.now().toEpochMilliseconds()))
     }
 

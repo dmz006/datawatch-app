@@ -19,15 +19,18 @@ import kotlinx.coroutines.launch
  * success; updates with an error string on failure.
  */
 public class ReplyBroadcastReceiver : BroadcastReceiver() {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action != ACTION_REPLY) return
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
-        val text = RemoteInput.getResultsFromIntent(intent)
-            ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
-            ?.toString()?.trim().orEmpty()
+        val text =
+            RemoteInput.getResultsFromIntent(intent)
+                ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
+                ?.toString()?.trim().orEmpty()
         if (text.isEmpty()) return
 
         scope.launch {

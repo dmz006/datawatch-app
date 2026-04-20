@@ -26,13 +26,14 @@ internal fun BottomNavBar(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.hierarchy?.firstOrNull()?.route
 
-    val items = listOf(
-        BottomNavItem(Destinations.Tabs.Sessions, "Sessions", Icons.Filled.Chat),
-        BottomNavItem(Destinations.Tabs.Alerts, "Alerts", Icons.Filled.NotificationsActive),
-        BottomNavItem(Destinations.Tabs.Channels, "Channels", Icons.Filled.Forum),
-        BottomNavItem(Destinations.Tabs.Stats, "Stats", Icons.Filled.Insights),
-        BottomNavItem(Destinations.Tabs.Settings, "Settings", Icons.Filled.Settings),
-    )
+    val items =
+        listOf(
+            BottomNavItem(Destinations.Tabs.Sessions, "Sessions", Icons.Filled.Chat),
+            BottomNavItem(Destinations.Tabs.Alerts, "Alerts", Icons.Filled.NotificationsActive),
+            BottomNavItem(Destinations.Tabs.Channels, "Channels", Icons.Filled.Forum),
+            BottomNavItem(Destinations.Tabs.Stats, "Stats", Icons.Filled.Insights),
+            BottomNavItem(Destinations.Tabs.Settings, "Settings", Icons.Filled.Settings),
+        )
 
     NavigationBar {
         items.forEach { item ->

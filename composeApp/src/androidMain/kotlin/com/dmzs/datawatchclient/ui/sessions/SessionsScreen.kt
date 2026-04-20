@@ -2,9 +2,9 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,19 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import kotlin.math.absoluteValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -32,23 +23,27 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -65,11 +60,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,55 +94,55 @@ public fun SessionsScreen(
                     onDelete = { bulkDeleteConfirmOpen = true },
                 )
             } else {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ServerPickerTitle(
-                            active = state.activeProfile,
-                            allMode = state.allServersMode,
-                            open = pickerOpen,
-                            onToggle = { pickerOpen = !pickerOpen },
-                            onDismiss = { pickerOpen = false },
-                            profiles = state.allProfiles,
-                            onSelectAll = {
-                                vm.selectAllServers()
-                                pickerOpen = false
-                            },
-                            onSelect = {
-                                vm.selectProfile(it)
-                                pickerOpen = false
-                            },
-                            onEdit = {
-                                pickerOpen = false
-                                onEditServer(it)
-                            },
-                            onAdd = {
-                                pickerOpen = false
-                                onAddServer()
-                            },
-                        )
-                        // ADR-0013 — reachability is a visible state, never hidden.
-                        // Shown for single-server mode only; all-servers mode
-                        // deliberately hides it since we track many profiles.
-                        if (!state.allServersMode && state.activeProfile != null) {
-                            ReachabilityDot(
-                                reachable = state.activeReachable,
-                                lastProbeEpochMs = state.lastProbeEpochMs,
-                                onRetry = vm::refresh,
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ServerPickerTitle(
+                                active = state.activeProfile,
+                                allMode = state.allServersMode,
+                                open = pickerOpen,
+                                onToggle = { pickerOpen = !pickerOpen },
+                                onDismiss = { pickerOpen = false },
+                                profiles = state.allProfiles,
+                                onSelectAll = {
+                                    vm.selectAllServers()
+                                    pickerOpen = false
+                                },
+                                onSelect = {
+                                    vm.selectProfile(it)
+                                    pickerOpen = false
+                                },
+                                onEdit = {
+                                    pickerOpen = false
+                                    onEditServer(it)
+                                },
+                                onAdd = {
+                                    pickerOpen = false
+                                    onAddServer()
+                                },
                             )
+                            // ADR-0013 — reachability is a visible state, never hidden.
+                            // Shown for single-server mode only; all-servers mode
+                            // deliberately hides it since we track many profiles.
+                            if (!state.allServersMode && state.activeProfile != null) {
+                                ReachabilityDot(
+                                    reachable = state.activeReachable,
+                                    lastProbeEpochMs = state.lastProbeEpochMs,
+                                    onRetry = vm::refresh,
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = vm::refresh) {
-                        if (state.refreshing) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(12.dp))
-                        } else {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                    },
+                    actions = {
+                        IconButton(onClick = vm::refresh) {
+                            if (state.refreshing) {
+                                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(12.dp))
+                            } else {
+                                Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
             }
         },
         floatingActionButton = {
@@ -226,10 +224,11 @@ public fun SessionsScreen(
                         selectedIds = emptySet()
                         bulkDeleteConfirmOpen = false
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
                 ) { Text("Delete") }
             },
             dismissButton = {
@@ -239,8 +238,7 @@ public fun SessionsScreen(
     }
 }
 
-private fun <T> Set<T>.toggle(item: T): Set<T> =
-    if (contains(item)) this - item else this + item
+private fun <T> Set<T>.toggle(item: T): Set<T> = if (contains(item)) this - item else this + item
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,8 +260,12 @@ private fun SelectionTopAppBar(
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "Delete selected",
-                    tint = if (canDelete) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint =
+                        if (canDelete) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
         },
@@ -276,9 +278,10 @@ private fun FilterChipRow(
     onSelect: (SessionsViewModel.Filter) -> Unit,
 ) {
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         items(SessionsViewModel.Filter.entries.toList()) { f ->
             FilterChip(
@@ -325,30 +328,32 @@ private fun SessionRow(
     var restartConfirmOpen by remember { mutableStateOf(false) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
 
-    val rowBg = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    val rowBg =
+        if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(rowBg)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongPress,
-            )
-            .pointerInput(session.id, selectionMode) {
-                if (selectionMode) return@pointerInput
-                var dx = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { dx = 0f },
-                    onDragEnd = { if (dx.absoluteValue >= swipeThresholdPx) onSwipeMute() },
-                    onDragCancel = { dx = 0f },
-                ) { _, delta -> dx += delta }
-            }
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(rowBg)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongPress,
+                )
+                .pointerInput(session.id, selectionMode) {
+                    if (selectionMode) return@pointerInput
+                    var dx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dx = 0f },
+                        onDragEnd = { if (dx.absoluteValue >= swipeThresholdPx) onSwipeMute() },
+                        onDragCancel = { dx = 0f },
+                    ) { _, delta -> dx += delta }
+                }
+                .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -362,20 +367,22 @@ private fun SessionRow(
             AssistChip(
                 onClick = {},
                 label = { Text(session.state.name) },
-                colors = AssistChipDefaults.assistChipColors(
-                    labelColor = session.state.labelColor(),
-                ),
+                colors =
+                    AssistChipDefaults.assistChipColors(
+                        labelColor = session.state.labelColor(),
+                    ),
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
         Icon(
             if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
             contentDescription = if (session.muted) "Muted" else "Unmuted",
-            tint = if (session.muted) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.primary
-            },
+            tint =
+                if (session.muted) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
             modifier = Modifier.padding(start = 8.dp).size(20.dp),
         )
         if (!selectionMode) {
@@ -405,11 +412,12 @@ private fun SessionRow(
                         text = {
                             Text(
                                 "Delete",
-                                color = if (deleteSupported && session.state != SessionState.Running) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
+                                color =
+                                    if (deleteSupported && session.state != SessionState.Running) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
                             )
                         },
                         enabled = deleteSupported && session.state != SessionState.Running,
@@ -436,8 +444,9 @@ private fun SessionRow(
     if (restartConfirmOpen) {
         ConfirmDialog(
             title = "Restart session?",
-            body = "Warm-resume this session on the server. Any in-progress " +
-                "prompt may be interrupted.",
+            body =
+                "Warm-resume this session on the server. Any in-progress " +
+                    "prompt may be interrupted.",
             confirmLabel = "Restart",
             onConfirm = {
                 restartConfirmOpen = false
@@ -450,8 +459,9 @@ private fun SessionRow(
     if (deleteConfirmOpen) {
         ConfirmDialog(
             title = "Delete session?",
-            body = "The session history will be removed from the server. " +
-                "This cannot be undone.",
+            body =
+                "The session history will be removed from the server. " +
+                    "This cannot be undone.",
             confirmLabel = "Delete",
             onConfirm = {
                 deleteConfirmOpen = false
@@ -510,10 +520,11 @@ private fun ConfirmDialog(
             if (destructive) {
                 Button(
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
                 ) { Text(confirmLabel) }
             } else {
                 TextButton(onClick = onConfirm) { Text(confirmLabel) }
@@ -555,11 +566,17 @@ private fun ServerPickerTitle(
                 DropdownMenuItem(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("All servers", style = MaterialTheme.typography.bodyMedium,
-                                 modifier = Modifier.weight(1f))
+                            Text(
+                                "All servers",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
                             if (allMode) {
-                                Icon(Icons.Filled.Check, "Active",
-                                     tint = MaterialTheme.colorScheme.primary)
+                                Icon(
+                                    Icons.Filled.Check,
+                                    "Active",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
                     },
@@ -628,21 +645,24 @@ private fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
-    val color = when (reachable) {
-        true -> MaterialTheme.colorScheme.primary
-        false -> MaterialTheme.colorScheme.error
-        null -> MaterialTheme.colorScheme.outline
-    }
-    val description = when (reachable) {
-        true -> "Reachable"
-        false -> "Unreachable"
-        null -> "Probing"
-    }
+    val color =
+        when (reachable) {
+            true -> MaterialTheme.colorScheme.primary
+            false -> MaterialTheme.colorScheme.error
+            null -> MaterialTheme.colorScheme.outline
+        }
+    val description =
+        when (reachable) {
+            true -> "Reachable"
+            false -> "Unreachable"
+            null -> "Probing"
+        }
     Box(
-        modifier = Modifier
-            .padding(start = 8.dp)
-            .size(24.dp)
-            .clickable(onClick = { sheetOpen = true }),
+        modifier =
+            Modifier
+                .padding(start = 8.dp)
+                .size(24.dp)
+                .clickable(onClick = { sheetOpen = true }),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -695,22 +715,24 @@ private fun relativeTimeLabel(epochMs: Long): String {
 private fun StatusDot(enabled: Boolean) {
     val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     Box(
-        modifier = Modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .padding(0.dp),
+        modifier =
+            Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .padding(0.dp),
     ) {
         Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
     }
 }
 
 @Composable
-private fun SessionState.labelColor(): Color = when (this) {
-    SessionState.Running -> MaterialTheme.colorScheme.primary
-    SessionState.Waiting -> MaterialTheme.colorScheme.tertiary
-    SessionState.RateLimited -> MaterialTheme.colorScheme.secondary
-    SessionState.Completed -> MaterialTheme.colorScheme.onSurfaceVariant
-    SessionState.Killed -> MaterialTheme.colorScheme.onSurfaceVariant
-    SessionState.Error -> MaterialTheme.colorScheme.error
-    SessionState.New -> MaterialTheme.colorScheme.onSurfaceVariant
-}
+private fun SessionState.labelColor(): Color =
+    when (this) {
+        SessionState.Running -> MaterialTheme.colorScheme.primary
+        SessionState.Waiting -> MaterialTheme.colorScheme.tertiary
+        SessionState.RateLimited -> MaterialTheme.colorScheme.secondary
+        SessionState.Completed -> MaterialTheme.colorScheme.onSurfaceVariant
+        SessionState.Killed -> MaterialTheme.colorScheme.onSurfaceVariant
+        SessionState.Error -> MaterialTheme.colorScheme.error
+        SessionState.New -> MaterialTheme.colorScheme.onSurfaceVariant
+    }

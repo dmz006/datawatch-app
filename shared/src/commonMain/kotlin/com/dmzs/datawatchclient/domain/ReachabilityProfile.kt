@@ -39,6 +39,13 @@ public sealed interface ReachabilityProfile {
     ) : ReachabilityProfile
 
     public enum class RelayKind {
-        Signal, Sms, Slack, Discord, Matrix, Telegram, Ntfy, Email,
+        Signal,
+        Sms,
+        Slack,
+        Discord,
+        Matrix,
+        Telegram,
+        Ntfy,
+        Email,
     }
 }

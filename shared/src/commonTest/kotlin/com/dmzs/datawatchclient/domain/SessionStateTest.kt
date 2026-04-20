@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SessionStateTest {
-
     @Test
     fun `maps canonical wire states`() {
         assertEquals(SessionState.New, SessionState.fromWire("new"))
