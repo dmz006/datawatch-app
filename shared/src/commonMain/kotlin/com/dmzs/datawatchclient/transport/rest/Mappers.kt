@@ -1,7 +1,12 @@
 package com.dmzs.datawatchclient.transport.rest
 
+import com.dmzs.datawatchclient.domain.Alert
+import com.dmzs.datawatchclient.domain.AlertSeverity
+import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.AlertDto
+import com.dmzs.datawatchclient.transport.dto.ServerInfoDto
 import com.dmzs.datawatchclient.transport.dto.SessionDto
 import kotlinx.datetime.Instant
 
@@ -20,6 +25,33 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session = Session(
     createdAt = createdAt.toInstantOrEpoch(),
     lastActivityAt = updatedAt.toInstantOrEpoch(),
 )
+
+internal fun AlertDto.toDomain(serverProfileId: String): Alert = Alert(
+    id = id,
+    serverProfileId = serverProfileId,
+    type = type,
+    severity = severity.toAlertSeverity(),
+    message = message,
+    sessionId = sessionId,
+    createdAt = createdAt.toInstantOrEpoch(),
+    read = read,
+)
+
+internal fun ServerInfoDto.toDomain(): ServerInfo = ServerInfo(
+    hostname = hostname,
+    version = version,
+    llmBackend = llmBackend,
+    messagingBackend = messagingBackend,
+    sessionCount = sessionCount,
+    serverHost = server?.host,
+    serverPort = server?.port,
+)
+
+private fun String?.toAlertSeverity(): AlertSeverity = when (this?.lowercase()) {
+    "error", "critical", "fatal" -> AlertSeverity.Error
+    "warn", "warning" -> AlertSeverity.Warning
+    else -> AlertSeverity.Info
+}
 
 private fun String?.toInstantOrEpoch(): Instant =
     this?.let { runCatching { Instant.parse(it) }.getOrNull() }

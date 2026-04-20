@@ -1,18 +1,27 @@
 package com.dmzs.datawatchclient.transport.rest
 
+import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.transport.AlertsView
 import com.dmzs.datawatchclient.transport.DeviceKind
 import com.dmzs.datawatchclient.transport.DevicePlatform
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.TransportError
+import com.dmzs.datawatchclient.transport.dto.AlertsListResponseDto
+import com.dmzs.datawatchclient.transport.dto.DeleteSessionDto
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterDto
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterResponseDto
 import com.dmzs.datawatchclient.transport.dto.FederationResponseDto
 import com.dmzs.datawatchclient.transport.dto.HealthDto
+import com.dmzs.datawatchclient.transport.dto.MarkAlertReadDto
+import com.dmzs.datawatchclient.transport.dto.RenameSessionDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
+import com.dmzs.datawatchclient.transport.dto.RestartSessionDto
+import com.dmzs.datawatchclient.transport.dto.ServerInfoDto
 import com.dmzs.datawatchclient.transport.dto.SessionDto
+import com.dmzs.datawatchclient.transport.dto.SetActiveBackendDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionResponseDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
@@ -27,8 +36,11 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.delete
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readBytes
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -241,6 +253,91 @@ public class RestTransport(
             },
             errors = dto.errors,
         )
+    }
+
+    // ---- v0.11 session power-user parity ----
+
+    override suspend fun renameSession(sessionId: String, name: String): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/sessions/rename") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(RenameSessionDto(id = sessionId, name = name))
+        }
+    }
+
+    override suspend fun restartSession(sessionId: String): Result<Session> = request {
+        val dto: SessionDto = client.post("${profile.baseUrl}/api/sessions/restart") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(RestartSessionDto(id = sessionId))
+        }.body()
+        dto.toDomain(profile.id)
+    }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/sessions/delete") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(DeleteSessionDto(id = sessionId))
+        }
+    }
+
+    override suspend fun deleteSessions(sessionIds: List<String>): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/sessions/delete") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(DeleteSessionDto(ids = sessionIds))
+        }
+    }
+
+    override suspend fun fetchCert(): Result<ByteArray> = request {
+        client.get("${profile.baseUrl}/api/cert") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.readBytes()
+    }
+
+    override suspend fun setActiveBackend(name: String): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/backends/active") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(SetActiveBackendDto(name = name))
+        }
+    }
+
+    override suspend fun listAlerts(): Result<AlertsView> = request {
+        val dto: AlertsListResponseDto = client.get("${profile.baseUrl}/api/alerts") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        AlertsView(
+            alerts = dto.alerts.map { it.toDomain(profile.id) },
+            unreadCount = dto.unreadCount,
+        )
+    }
+
+    override suspend fun markAlertRead(alertId: String?, all: Boolean): Result<Unit> = request {
+        require(alertId != null || all) {
+            "markAlertRead requires either alertId or all=true"
+        }
+        client.post("${profile.baseUrl}/api/alerts") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(MarkAlertReadDto(id = alertId, all = if (all) true else null))
+        }
+    }
+
+    override suspend fun fetchInfo(): Result<ServerInfo> = request {
+        val dto: ServerInfoDto = client.get("${profile.baseUrl}/api/info") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        dto.toDomain()
+    }
+
+    override suspend fun fetchOutput(sessionId: String, lines: Int): Result<String> = request {
+        client.get("${profile.baseUrl}/api/output") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            parameter("id", sessionId)
+            parameter("n", lines)
+        }.bodyAsText()
     }
 
     private suspend fun bearer(): String? =

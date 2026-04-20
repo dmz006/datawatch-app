@@ -1,5 +1,7 @@
 package com.dmzs.datawatchclient.transport
 
+import com.dmzs.datawatchclient.domain.Alert
+import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
@@ -93,7 +95,83 @@ public interface TransportClient {
         states: List<SessionState> = emptyList(),
         includeProxied: Boolean = true,
     ): Result<FederationView>
+
+    // ---- v0.11 session power-user parity (see docs/plans/2026-04-20-v0.11-session-power-user.md) ----
+
+    /** POST /api/sessions/rename — set a human-readable name on a session. */
+    public suspend fun renameSession(sessionId: String, name: String): Result<Unit>
+
+    /**
+     * POST /api/sessions/restart — warm-resume a completed/failed session.
+     * Returns the updated [Session] (state flips back to Running).
+     */
+    public suspend fun restartSession(sessionId: String): Result<Session>
+
+    /**
+     * POST /api/sessions/delete — parent-confirmation gate. The parent v3.0.0
+     * openapi.yaml does not expose this endpoint today. Mobile sends the
+     * expected `{"id": "..."}` body; callers receive [TransportError.NotFound]
+     * if the server doesn't support it yet and grey out the UI control.
+     */
+    public suspend fun deleteSession(sessionId: String): Result<Unit>
+
+    /**
+     * POST /api/sessions/delete with `{"ids": [...]}` body for bulk. Same
+     * parent-confirmation gate as [deleteSession]; falls back to parallel
+     * single-id calls at the caller's discretion if the server supports only
+     * the single-id variant.
+     */
+    public suspend fun deleteSessions(sessionIds: List<String>): Result<Unit>
+
+    /**
+     * GET /api/cert — parent-confirmation gate. PEM-encoded CA cert bytes for
+     * servers that use a self-signed TLS chain. Mobile hands this off to the
+     * OS "Install a certificate" flow — we do not silently trust-anchor on
+     * unrooted Android.
+     */
+    public suspend fun fetchCert(): Result<ByteArray>
+
+    /**
+     * POST /api/backends/active — parent-confirmation gate. Sets the active
+     * LLM backend for new sessions on this server. UI is greyed out if this
+     * returns [TransportError.NotFound].
+     */
+    public suspend fun setActiveBackend(name: String): Result<Unit>
+
+    /** GET /api/alerts — returns the alerts list plus the unread count. */
+    public suspend fun listAlerts(): Result<AlertsView>
+
+    /**
+     * POST /api/alerts — mark an alert read/dismissed. Pass [sessionId]=null
+     * and [all]=true to dismiss every alert at once.
+     */
+    public suspend fun markAlertRead(alertId: String? = null, all: Boolean = false): Result<Unit>
+
+    /**
+     * GET /api/info — hostname, daemon version, active backends, session
+     * count, bound server host+port. Used by the About card and
+     * connection-status affordances.
+     */
+    public suspend fun fetchInfo(): Result<ServerInfo>
+
+    /**
+     * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
+     * PTY output as plain text. Useful as a backlog pager for sessions that
+     * predate the current WebSocket subscription. [lines] clamped server-side
+     * to 1000; client passes through without extra clamping.
+     */
+    public suspend fun fetchOutput(sessionId: String, lines: Int = 500): Result<String>
 }
+
+/**
+ * Combined view returned by [TransportClient.listAlerts] — the list plus the
+ * server's authoritative unread count (which may differ from the list if
+ * alerts were trimmed by pagination).
+ */
+public data class AlertsView(
+    val alerts: List<Alert>,
+    val unreadCount: Int,
+)
 
 public data class VoiceTranscript(
     val transcript: String,

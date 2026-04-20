@@ -16,6 +16,7 @@ when work warrants formal planning (3+ files or non-trivial architecture).
 | B4 | Channels tab shows "server unreachable" | 2026-04-19 | Open | `ChannelsScreen` reads `/api/backends` on the active profile. "Server unreachable" is the generic unreachable banner from `TransportError.Unreachable`. Likely causes: (a) active profile has a stale URL; (b) `/api/backends` is not exposed on the server version the user is pointing at; (c) bearer token rejected; (d) the screen is retrying a cached profile after the active profile was swapped. Confirm by tapping a session in the same session — if Sessions works but Channels fails, it's endpoint-specific. |
 | B5 | Stats screen is minimal compared to PWA | 2026-04-19 | Open | `StatsScreen` shows CPU / Memory / Disk / GPU bars + session counts + uptime (`/api/stats`, 5 s poll). PWA exposes more (eBPF per-process network, disk-partition breakdowns, GPU detail). Extended metrics are out-of-scope per ADR-0019 and are view-only on the parity-plan (v1.3). This bug tracks the **UX perception** — title, density, legend — not the server data contract. Decide: is this a bug (fix layout/density) or a BL (re-scope)? Needs user triage. |
 | B6 | Push notifications not confirmed working | 2026-04-19 | Open | `PushRegistrar` fires `POST /api/devices/register` on first successful connection (FCM token preferred, ntfy fallback). Diagnostic steps: (1) Settings → Diagnostics → last push registration result; (2) `adb logcat PushRegistrar:V NtfyFallbackService:V`; (3) server-side `GET /api/devices` to confirm the phone's registration; (4) trigger a test from the server. No code change made until a failure mode is isolated. |
+| B7 | CI ktlintCheck fails with "KtLint failed to parse file: FederationDtos.kt" | 2026-04-20 | Open | Pre-existing on `main` since at least the `ca2bd90` commit — every recent CI run shows the same failure. File content is plain Kotlin with no BOM / weird chars (verified via `od -c`). Looks like a ktlint / Kotlin version skew triggered by the `Map<String, List<SessionDto>>` default-valued field. AGENT.md says "ktlint flipped from warnings-only to failure in Sprint 5" but the setting already flipped earlier. Fix options: (a) bump ktlint-gradle, (b) revert to warnings-only until Sprint-5-equivalent hardening, (c) restructure FederationDtos.kt to sidestep the parser bug. Deferred — blocks green CI but is orthogonal to v0.11. |
 
 ## Planned / In Progress
 
@@ -30,7 +31,7 @@ that closes that audit with every row ✅.
 
 | Release | Theme | Parity-plan anchor |
 |---------|-------|--------------------|
-| v0.11.0 | Session power-user parity (rename / restart / delete, terminal search+copy, start-session form, active backend picker, CA cert, connection status) | [parity-plan §6 v0.11.0](../parity-plan.md#v0110--session-power-user-parity) |
+| v0.11.0 | Session power-user parity (rename / restart / delete, terminal search+copy, start-session form, active backend picker, CA cert, connection status) | [plan](2026-04-20-v0.11-session-power-user.md) · [parity-plan §6 v0.11.0](../parity-plan.md#v0110--session-power-user-parity) |
 | v0.12.0 | Channels + schedules + file picker + session prefs + timeline + per-session model pickers + daemon log viewer | [parity-plan §6 v0.12.0](../parity-plan.md#v0120--channels--schedules--file-picker) |
 | v0.13.0 | Memory / KG panel + structured daemon config editor + eBPF view + daemon update | [parity-plan §6 v0.13.0](../parity-plan.md#v0130--memory--kg--daemon-config) |
 | v0.14.0 | Federation polish (federated servers view, cross-server memory diff, peer broker status) | [parity-plan §6 v0.14.0](../parity-plan.md#v0140--federation-polish) |
@@ -56,6 +57,9 @@ leave the BL# row here until it ships, then move it to Completed backlog.
 | BL16 | Biometric-bound DB passphrase | v0.10.0 gates only the UI with BiometricPrompt; `deriveDatabasePassphrase` still runs unconditionally. Wrap the Keystore key with an auth-required spec so the DB cannot open without a biometric challenge. v0.11 candidate. |
 | BL17 | Wear Data Layer pairing (phone ↔ watch counts) | Wear Tile + dashboard show placeholder zeros in v0.10.0. Needs `play-services-wearable` MessageClient bridge from phone `WearBridgeService` to watch `TileService`. v0.11 candidate. |
 | BL18 | WebSocket PTY-resize negotiation | Client needs to announce its xterm cols/rows to the datawatch hub so the server-side PTY resizes to match. Without this, Claude Code TUIs are unreadable on mobile (see B1). Requires a new outbound `resize` frame on `WebSocketTransport` (currently send-path only carries `subscribe`) and a parent-repo issue to confirm the hub's frame shape. v0.11 candidate. |
+| BL19 | Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | User vision (2026-04-20): author a PRD or high-level design inside the mobile app, fire it off as a new datawatch session, and let a local Ollama backend (via the server's `/api/backends` indirection, or potentially direct if the user's Ollama is network-reachable) drive task orchestration. Lands explicitly **after 1.0 (full PWA parity)** — this is a mobile-first feature that the PWA does not yet have, so it needs its own ADR capturing the orchestration model (session-as-PRD, backend-selection UX, how PRD artefacts persist) before scoping into a sprint. |
+| BL20 | Saved command library (`/api/commands` CRUD) | PWA exposes `GET/POST/DELETE /api/commands` for named command snippets. Mobile QoL: save `new: refactor X to Y` and recall. v0.12 candidate — bundle with the file picker + session-prefs work. |
+| BL21 | Signal device-linking flow (`/api/link/*` + QR SSE) | PWA exposes `POST /api/link/start` + `GET /api/link/stream` (SSE) + `GET /api/link/status` for Signal device linking. Belongs with Channels tab work (v0.12) — mobile can show the QR on-screen or hand off to the phone's Signal app via intent. Requires design pass on the authentication flow. v0.12 candidate. |
 
 ## Completed features
 
@@ -67,6 +71,9 @@ leave the BL# row here until it ships, then move it to Completed backlog.
 | F4 | Sprint 4 — Wear OS dashboard + Wear Tile (BL4) + Android Auto ListTemplate (BL10) | v0.5.0 | — |
 | F5 | Sprint 5 — hardening + biometric unlock (BL2) | v0.9.0 | — |
 | F6 | Sprint 6 — ADR-0042 scope closed (every promoted item shipped) | v0.10.0 | — |
+
+(F7 reserved for v0.11 session power-user parity once it ships — see plan
+[2026-04-20-v0.11-session-power-user.md](2026-04-20-v0.11-session-power-user.md).)
 
 ## Completed backlog
 
