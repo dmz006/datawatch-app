@@ -66,8 +66,15 @@ public fun TerminalView(
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false
                 settings.domStorageEnabled = true
-                settings.useWideViewPort = false
-                settings.loadWithOverviewMode = false
+                // Let user pinch-zoom into an 80-col TUI rendered on a
+                // 39-col mobile viewport. Server-side PTY resize to our
+                // actual cols is the proper fix (v1.1) and requires a
+                // protocol addition; zoom is the interim escape hatch.
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
+                settings.setSupportZoom(true)
+                settings.builtInZoomControls = true
+                settings.displayZoomControls = false
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         // Force a fit right after the HTML finishes loading —
