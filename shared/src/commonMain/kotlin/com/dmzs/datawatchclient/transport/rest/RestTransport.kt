@@ -1,5 +1,9 @@
 package com.dmzs.datawatchclient.transport.rest
 
+import com.dmzs.datawatchclient.domain.ConfigView
+import com.dmzs.datawatchclient.domain.FileList
+import com.dmzs.datawatchclient.domain.SavedCommand
+import com.dmzs.datawatchclient.domain.Schedule
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
@@ -9,22 +13,28 @@ import com.dmzs.datawatchclient.transport.DevicePlatform
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.AlertsListResponseDto
+import com.dmzs.datawatchclient.transport.dto.CreateScheduleDto
 import com.dmzs.datawatchclient.transport.dto.DeleteSessionDto
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterDto
 import com.dmzs.datawatchclient.transport.dto.DeviceRegisterResponseDto
 import com.dmzs.datawatchclient.transport.dto.FederationResponseDto
+import com.dmzs.datawatchclient.transport.dto.FilesListResponseDto
 import com.dmzs.datawatchclient.transport.dto.HealthDto
 import com.dmzs.datawatchclient.transport.dto.MarkAlertReadDto
 import com.dmzs.datawatchclient.transport.dto.RenameSessionDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
 import com.dmzs.datawatchclient.transport.dto.RestartSessionDto
+import com.dmzs.datawatchclient.transport.dto.SaveCommandDto
+import com.dmzs.datawatchclient.transport.dto.SavedCommandDto
+import com.dmzs.datawatchclient.transport.dto.ScheduleDto
 import com.dmzs.datawatchclient.transport.dto.ServerInfoDto
 import com.dmzs.datawatchclient.transport.dto.SessionDto
 import com.dmzs.datawatchclient.transport.dto.SetActiveBackendDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionResponseDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
+import kotlinx.serialization.json.JsonElement
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -338,6 +348,72 @@ public class RestTransport(
             parameter("id", sessionId)
             parameter("n", lines)
         }.bodyAsText()
+    }
+
+    // ---- v0.12 schedules + files + saved commands + config (read) ----
+
+    override suspend fun listSchedules(): Result<List<Schedule>> = request {
+        val dto: List<ScheduleDto> = client.get("${profile.baseUrl}/api/schedule") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        dto.map { it.toDomain(profile.id) }
+    }
+
+    override suspend fun createSchedule(
+        task: String,
+        cron: String,
+        enabled: Boolean,
+    ): Result<Schedule> = request {
+        val dto: ScheduleDto = client.post("${profile.baseUrl}/api/schedule") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(CreateScheduleDto(task = task, cron = cron, enabled = enabled))
+        }.body()
+        dto.toDomain(profile.id)
+    }
+
+    override suspend fun deleteSchedule(scheduleId: String): Result<Unit> = request {
+        client.delete("${profile.baseUrl}/api/schedule") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            parameter("id", scheduleId)
+        }
+    }
+
+    override suspend fun browseFiles(path: String?): Result<FileList> = request {
+        val dto: FilesListResponseDto = client.get("${profile.baseUrl}/api/files") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            path?.let { parameter("path", it) }
+        }.body()
+        dto.toDomain()
+    }
+
+    override suspend fun listCommands(): Result<List<SavedCommand>> = request {
+        val dto: List<SavedCommandDto> = client.get("${profile.baseUrl}/api/commands") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        dto.map { it.toDomain() }
+    }
+
+    override suspend fun saveCommand(name: String, command: String): Result<Unit> = request {
+        client.post("${profile.baseUrl}/api/commands") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            contentType(ContentType.Application.Json)
+            setBody(SaveCommandDto(name = name, command = command))
+        }
+    }
+
+    override suspend fun deleteCommand(name: String): Result<Unit> = request {
+        client.delete("${profile.baseUrl}/api/commands") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+            parameter("name", name)
+        }
+    }
+
+    override suspend fun fetchConfig(): Result<ConfigView> = request {
+        val raw: Map<String, JsonElement> = client.get("${profile.baseUrl}/api/config") {
+            bearer()?.let { header(HttpHeaders.Authorization, it) }
+        }.body()
+        ConfigView(raw = raw)
     }
 
     private suspend fun bearer(): String? =

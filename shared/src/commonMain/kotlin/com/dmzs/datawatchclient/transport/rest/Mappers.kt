@@ -2,10 +2,18 @@ package com.dmzs.datawatchclient.transport.rest
 
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
+import com.dmzs.datawatchclient.domain.FileEntry
+import com.dmzs.datawatchclient.domain.FileList
+import com.dmzs.datawatchclient.domain.SavedCommand
+import com.dmzs.datawatchclient.domain.Schedule
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.AlertDto
+import com.dmzs.datawatchclient.transport.dto.FileEntryDto
+import com.dmzs.datawatchclient.transport.dto.FilesListResponseDto
+import com.dmzs.datawatchclient.transport.dto.SavedCommandDto
+import com.dmzs.datawatchclient.transport.dto.ScheduleDto
 import com.dmzs.datawatchclient.transport.dto.ServerInfoDto
 import com.dmzs.datawatchclient.transport.dto.SessionDto
 import kotlinx.datetime.Instant
@@ -45,6 +53,31 @@ internal fun ServerInfoDto.toDomain(): ServerInfo = ServerInfo(
     sessionCount = sessionCount,
     serverHost = server?.host,
     serverPort = server?.port,
+)
+
+internal fun ScheduleDto.toDomain(serverProfileId: String): Schedule = Schedule(
+    id = id,
+    serverProfileId = serverProfileId,
+    task = task,
+    cron = cron,
+    enabled = enabled,
+    createdAt = createdAt.toInstantOrEpoch(),
+)
+
+internal fun FileEntryDto.toDomain(): FileEntry = FileEntry(
+    name = name,
+    path = path,
+    isDirectory = isDir,
+)
+
+internal fun FilesListResponseDto.toDomain(): FileList = FileList(
+    path = path,
+    entries = entries.map { it.toDomain() },
+)
+
+internal fun SavedCommandDto.toDomain(): SavedCommand = SavedCommand(
+    name = name,
+    command = command,
 )
 
 private fun String?.toAlertSeverity(): AlertSeverity = when (this?.lowercase()) {

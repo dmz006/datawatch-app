@@ -1,6 +1,10 @@
 package com.dmzs.datawatchclient.transport
 
 import com.dmzs.datawatchclient.domain.Alert
+import com.dmzs.datawatchclient.domain.ConfigView
+import com.dmzs.datawatchclient.domain.FileList
+import com.dmzs.datawatchclient.domain.SavedCommand
+import com.dmzs.datawatchclient.domain.Schedule
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
@@ -161,6 +165,45 @@ public interface TransportClient {
      * to 1000; client passes through without extra clamping.
      */
     public suspend fun fetchOutput(sessionId: String, lines: Int = 500): Result<String>
+
+    // ---- v0.12 schedules + files + saved commands + config (read) ----
+    // (see docs/plans/2026-04-20-v0.12-schedules-files-config.md)
+
+    /** GET /api/schedule — list every scheduled command on this server. */
+    public suspend fun listSchedules(): Result<List<Schedule>>
+
+    /** POST /api/schedule — create a scheduled command. Returns the created [Schedule]. */
+    public suspend fun createSchedule(
+        task: String,
+        cron: String,
+        enabled: Boolean = true,
+    ): Result<Schedule>
+
+    /** DELETE /api/schedule?id=<id> — cancel a scheduled command. */
+    public suspend fun deleteSchedule(scheduleId: String): Result<Unit>
+
+    /**
+     * GET /api/files?path=<path> — directory listing for the file picker.
+     * [path] null lists the server's default root (whatever the daemon
+     * chooses to expose; typically the user's home).
+     */
+    public suspend fun browseFiles(path: String? = null): Result<FileList>
+
+    /** GET /api/commands — list saved command snippets. */
+    public suspend fun listCommands(): Result<List<SavedCommand>>
+
+    /** POST /api/commands — save or update a named command snippet. */
+    public suspend fun saveCommand(name: String, command: String): Result<Unit>
+
+    /** DELETE /api/commands?name=<name> — remove a saved command snippet. */
+    public suspend fun deleteCommand(name: String): Result<Unit>
+
+    /**
+     * GET /api/config — masked daemon config. Sensitive fields arrive as
+     * "***"; we render them verbatim. PUT is deliberately out of scope until
+     * a structured form lands per ADR-0019.
+     */
+    public suspend fun fetchConfig(): Result<ConfigView>
 }
 
 /**

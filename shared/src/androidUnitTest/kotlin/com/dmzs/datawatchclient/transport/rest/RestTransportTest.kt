@@ -454,4 +454,168 @@ class RestTransportTest {
         val sent = server.takeRequest()
         assertEquals("/api/output?id=a3f2&n=200", sent.path)
     }
+
+    // ---- v0.12 schedules + files + saved commands + config (read) ----
+
+    @Test
+    fun listSchedulesParsesArray() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                [
+                  {"id":"sch-1","task":"nightly backup","cron":"0 3 * * *",
+                   "enabled":true,"created_at":"2026-04-20T08:00:00Z"},
+                  {"id":"sch-2","task":"morning status","cron":"0 9 * * *",
+                   "enabled":false}
+                ]
+                """.trimIndent(),
+            ),
+        )
+        val res = transport.listSchedules()
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val list = res.getOrThrow()
+        assertEquals(2, list.size)
+        assertEquals("sch-1", list[0].id)
+        assertEquals("nightly backup", list[0].task)
+        assertEquals("0 3 * * *", list[0].cron)
+        assertEquals(true, list[0].enabled)
+        assertEquals(false, list[1].enabled)
+        assertEquals("/api/schedule", server.takeRequest().path)
+    }
+
+    @Test
+    fun createSchedulePostsBodyAndReturnsDomain() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                {"id":"sch-9","task":"weekly","cron":"0 0 * * 0",
+                 "enabled":true,"created_at":"2026-04-20T12:00:00Z"}
+                """.trimIndent(),
+            ),
+        )
+        val res = transport.createSchedule(
+            task = "weekly",
+            cron = "0 0 * * 0",
+            enabled = true,
+        )
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        assertEquals("sch-9", res.getOrThrow().id)
+        val sent = server.takeRequest()
+        assertEquals("POST", sent.method)
+        assertEquals("/api/schedule", sent.path)
+        val body = sent.body.readUtf8()
+        assertTrue(body.contains("\"task\":\"weekly\""), body)
+        assertTrue(body.contains("\"cron\":\"0 0 * * 0\""), body)
+        assertTrue(body.contains("\"enabled\":true"), body)
+    }
+
+    @Test
+    fun deleteSchedulePassesIdAsQueryParam() = runTest {
+        server.enqueue(jsonResponse("""{"status":"ok"}"""))
+        val res = transport.deleteSchedule("sch-1")
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals("DELETE", sent.method)
+        assertEquals("/api/schedule?id=sch-1", sent.path)
+    }
+
+    @Test
+    fun browseFilesDefaultPathOmitsQuery() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                {"path":"/home/user","entries":[
+                  {"name":"code","path":"/home/user/code","is_dir":true},
+                  {"name":"notes.md","path":"/home/user/notes.md","is_dir":false}
+                ]}
+                """.trimIndent(),
+            ),
+        )
+        val res = transport.browseFiles(path = null)
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val list = res.getOrThrow()
+        assertEquals("/home/user", list.path)
+        assertEquals(2, list.entries.size)
+        assertEquals(true, list.entries[0].isDirectory)
+        assertEquals(false, list.entries[1].isDirectory)
+        assertEquals("/api/files", server.takeRequest().path)
+    }
+
+    @Test
+    fun browseFilesWithPathPassesQueryParam() = runTest {
+        server.enqueue(
+            jsonResponse("""{"path":"/etc","entries":[]}"""),
+        )
+        val res = transport.browseFiles("/etc")
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals("/api/files?path=%2Fetc", sent.path)
+    }
+
+    @Test
+    fun listCommandsReturnsArray() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                [
+                  {"name":"deploy","command":"new: deploy to staging"},
+                  {"name":"test","command":"new: run integration tests"}
+                ]
+                """.trimIndent(),
+            ),
+        )
+        val res = transport.listCommands()
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val list = res.getOrThrow()
+        assertEquals(2, list.size)
+        assertEquals("deploy", list[0].name)
+        assertEquals("new: run integration tests", list[1].command)
+        assertEquals("/api/commands", server.takeRequest().path)
+    }
+
+    @Test
+    fun saveCommandPostsNameAndBody() = runTest {
+        server.enqueue(jsonResponse("""{"status":"ok"}"""))
+        val res = transport.saveCommand("deploy", "new: deploy to staging")
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals("POST", sent.method)
+        assertEquals("/api/commands", sent.path)
+        val body = sent.body.readUtf8()
+        assertTrue(body.contains("\"name\":\"deploy\""), body)
+        assertTrue(body.contains("\"command\":\"new: deploy to staging\""), body)
+    }
+
+    @Test
+    fun deleteCommandPassesNameAsQueryParam() = runTest {
+        server.enqueue(jsonResponse("""{"status":"ok"}"""))
+        val res = transport.deleteCommand("deploy")
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val sent = server.takeRequest()
+        assertEquals("DELETE", sent.method)
+        assertEquals("/api/commands?name=deploy", sent.path)
+    }
+
+    @Test
+    fun fetchConfigReturnsRawMap() = runTest {
+        server.enqueue(
+            jsonResponse(
+                """
+                {"server":{"host":"0.0.0.0","port":8443},
+                 "telegram":{"enabled":true,"token":"***"},
+                 "tailscale":{"magicdns":true}}
+                """.trimIndent(),
+            ),
+        )
+        val res = transport.fetchConfig()
+        assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+        val raw = res.getOrThrow().raw
+        assertEquals(3, raw.size)
+        assertTrue(raw.containsKey("server"))
+        assertTrue(raw.containsKey("telegram"))
+        // Masked secret field stays as the server sent it — mobile does NOT
+        // deserialize into a typed config shape; viewer renders raw JSON.
+        assertTrue(raw["telegram"].toString().contains("\"***\""))
+        assertEquals("/api/config", server.takeRequest().path)
+    }
 }
