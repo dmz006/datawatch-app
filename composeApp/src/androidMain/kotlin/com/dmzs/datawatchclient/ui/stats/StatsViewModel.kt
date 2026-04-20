@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 public class StatsViewModel : ViewModel() {
     public data class UiState(
         val stats: StatsDto? = null,
+        val info: ServerInfo? = null,
         val refreshing: Boolean = false,
         val banner: String? = null,
         val serverName: String? = null,
@@ -55,11 +57,16 @@ public class StatsViewModel : ViewModel() {
                 return@launch
             }
             _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
-            ServiceLocator.transportFor(profile).stats().fold(
+            val transport = ServiceLocator.transportFor(profile)
+            // /api/info is cheap and rarely changes; fetch alongside /api/stats
+            // so the server-identity header is populated.
+            val infoResult = transport.fetchInfo()
+            transport.stats().fold(
                 onSuccess = { dto ->
                     _state.value =
                         UiState(
                             stats = dto,
+                            info = infoResult.getOrNull() ?: _state.value.info,
                             refreshing = false,
                             banner = null,
                             serverName = profile.displayName,
@@ -69,6 +76,7 @@ public class StatsViewModel : ViewModel() {
                     _state.value =
                         _state.value.copy(
                             refreshing = false,
+                            info = infoResult.getOrNull() ?: _state.value.info,
                             banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
                         )
                 },
