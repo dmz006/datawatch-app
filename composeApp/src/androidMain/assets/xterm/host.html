@@ -32,6 +32,7 @@
   <div id="term"></div>
   <script src="xterm.min.js"></script>
   <script src="xterm-addon-fit.min.js"></script>
+  <script src="xterm-addon-search.min.js"></script>
   <script>
     function log(msg) {
       try { console.log('[dw]', msg); } catch (e) {}
@@ -80,6 +81,31 @@
     } catch (e) {
       log('FitAddon load failed: ' + e);
     }
+
+    // Search addon — v0.11 session power-user parity. Vendored
+    // xterm-addon-search@0.13.0 (compatible with xterm@5.3.0 at runtime
+    // despite the declared peerDependencies "xterm":"^4.0.0" — the
+    // addon API is stable across v4↔v5). See
+    // docs/plans/2026-04-20-v0.11-session-power-user.md §Phase 3.
+    var search;
+    try {
+      search = new SearchAddon.SearchAddon();
+      term.loadAddon(search);
+    } catch (e) {
+      log('SearchAddon load failed: ' + e);
+    }
+
+    // Default highlight style for search matches.
+    var SEARCH_OPTS = {
+      decorations: {
+        matchBackground: '#7c3aed',
+        matchBorder: '#a855f7',
+        matchOverviewRuler: '#a855f7',
+        activeMatchBackground: '#a855f7',
+        activeMatchBorder: '#ffffff',
+        activeMatchColorOverviewRuler: '#ffffff'
+      }
+    };
 
     var container = document.getElementById('term');
     term.open(container);
@@ -143,6 +169,47 @@
     };
 
     window.dwResize = function () { safeFit(); };
+
+    /**
+     * v0.11 search + copy bridge.
+     *
+     * dwSearchNext / dwSearchPrev run the search addon over the scrollback
+     * buffer. Repeat calls with the same query cycle through matches. The
+     * addon itself keeps the iterator state; the host bridge is stateless.
+     *
+     * dwSearchClear removes the highlight decorations so the terminal goes
+     * back to normal rendering.
+     *
+     * dwCopySelection returns the currently-selected text so Kotlin can
+     * write it to the Android clipboard — xterm's own `term.getSelection()`
+     * is synchronous and inexpensive.
+     */
+    window.dwSearchNext = function (query) {
+      if (!search) return false;
+      try { return !!search.findNext(String(query || ''), SEARCH_OPTS); }
+      catch (e) { log('searchNext failed: ' + e); return false; }
+    };
+
+    window.dwSearchPrev = function (query) {
+      if (!search) return false;
+      try { return !!search.findPrevious(String(query || ''), SEARCH_OPTS); }
+      catch (e) { log('searchPrev failed: ' + e); return false; }
+    };
+
+    window.dwSearchClear = function () {
+      if (!search) return;
+      try { search.clearDecorations(); } catch (e) { log('searchClear failed: ' + e); }
+    };
+
+    window.dwCopySelection = function () {
+      try {
+        var sel = term.getSelection();
+        return sel == null ? '' : String(sel);
+      } catch (e) {
+        log('getSelection failed: ' + e);
+        return '';
+      }
+    };
 
     // Flush anything that was buffered (defensive; unreachable today).
     function flushPending() {

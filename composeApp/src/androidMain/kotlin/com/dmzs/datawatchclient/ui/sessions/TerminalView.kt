@@ -11,6 +11,7 @@ import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,12 +31,68 @@ import org.json.JSONObject
  * output (fit dimensions, buffered writes, etc.) — invaluable for debugging
  * the "terminal opens as a tiny black square" class of WebView layout races.
  */
+/**
+ * Controller handle surfaced to callers of [TerminalView] so sibling UI
+ * (toolbar, FAB, etc.) can drive xterm search + clipboard without owning
+ * the WebView reference.
+ *
+ * Stable across recompositions — the underlying [WebView] reference is
+ * swapped in/out by TerminalView's AndroidView factory/dispose cycle.
+ */
+@Stable
+public class TerminalController internal constructor() {
+    internal var webView: WebView? = null
+
+    /** Search forward for [query]. Highlights matches and cycles on repeat. */
+    public fun searchNext(query: String) {
+        webView?.evaluateJavascript(
+            "window.dwSearchNext && window.dwSearchNext(${jsonString(query)});",
+            null,
+        )
+    }
+
+    /** Search backward for [query]. */
+    public fun searchPrev(query: String) {
+        webView?.evaluateJavascript(
+            "window.dwSearchPrev && window.dwSearchPrev(${jsonString(query)});",
+            null,
+        )
+    }
+
+    /** Drop all search-match decorations. */
+    public fun searchClear() {
+        webView?.evaluateJavascript("window.dwSearchClear && window.dwSearchClear();", null)
+    }
+
+    /**
+     * Pull the currently-selected text out of xterm and deliver it to [onResult]
+     * on the main thread. Empty string when there is no selection.
+     */
+    public fun copySelection(onResult: (String) -> Unit) {
+        val wv = webView ?: return onResult("")
+        wv.evaluateJavascript(
+            "(window.dwCopySelection && window.dwCopySelection()) || '';",
+        ) { raw ->
+            // evaluateJavascript returns the JS value as a JSON string —
+            // unwrap the outer quotes before handing to the caller.
+            val unwrapped = runCatching { JSONObject("{\"v\":$raw}").optString("v", "") }
+                .getOrDefault("")
+            onResult(unwrapped)
+        }
+    }
+}
+
+@Composable
+public fun rememberTerminalController(): TerminalController =
+    remember { TerminalController() }
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 public fun TerminalView(
     sessionId: String,
     events: List<SessionEvent>,
     modifier: Modifier = Modifier,
+    controller: TerminalController? = null,
 ) {
     var ready by remember { mutableStateOf(false) }
     // Keyed to sessionId so navigating A → B resets the write cursor. Without
@@ -113,11 +170,13 @@ public fun TerminalView(
                 }, "DwBridge")
                 loadUrl("file:///android_asset/xterm/host.html")
                 webViewRef.value = this
+                controller?.webView = this
             }
         },
         update = { webView ->
             // Compose may resize us across configuration changes; nudge xterm.
             webView.evaluateJavascript("window.dwResize && window.dwResize();", null)
+            controller?.webView = webView
         },
     )
 
@@ -149,6 +208,7 @@ public fun TerminalView(
 
     DisposableEffect(Unit) {
         onDispose {
+            controller?.webView = null
             webViewRef.value?.destroy()
             webViewRef.value = null
         }
@@ -170,4 +230,4 @@ internal fun SessionEvent.terminalText(): String? = when (this) {
 }
 
 /** Quote a string as a JS literal — JSONObject handles all the escaping rules. */
-private fun jsonString(s: String): String = JSONObject.quote(s)
+internal fun jsonString(s: String): String = JSONObject.quote(s)

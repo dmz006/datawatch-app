@@ -147,10 +147,13 @@ public fun SessionDetailScreen(
                 }
             }
 
+            val terminalController = rememberTerminalController()
+            TerminalToolbar(controller = terminalController)
             TerminalView(
                 sessionId = sessionId,
                 events = state.events,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
+                controller = terminalController,
             )
 
             InlineNotices(state.events)
