@@ -4,7 +4,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Status:** `v0.11.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/tag/v0.11.0). Pairs with `datawatch v3.0.0`. **v1.0.0 is reserved for the release that reaches 100% client-side parity with the parent [PWA](https://github.com/dmz006/datawatch)** — tracked in [`docs/parity-status.md`](docs/parity-status.md) and ADR-0043.
+**Status:** `v0.12.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/tag/v0.12.0). Pairs with `datawatch v4.0.3+`. **v1.0.0 is reserved for the release that reaches 100% client-side parity with the parent [PWA](https://github.com/dmz006/datawatch)** — tracked in [`docs/parity-status.md`](docs/parity-status.md) and ADR-0043.
 
 ## What it does
 
@@ -38,12 +38,12 @@ See [docs/installation.md](docs/installation.md) for the full walkthrough.
 Quick version:
 
 ```bash
-# Phone (debug APK from the v0.11.0 release)
-adb install -r datawatch-0.11.0.apk
+# Phone (debug APK from the v0.12.0 release)
+adb install -r datawatch-0.12.0.apk
 
 # Wear OS — requires the watch to be paired to this phone or to have debug
 # bridge enabled over Wi-Fi. See below.
-adb -s <watch-serial> install -r datawatch-wear-0.11.0.apk
+adb -s <watch-serial> install -r datawatch-wear-0.12.0.apk
 ```
 
 First launch:

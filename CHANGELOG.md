@@ -8,9 +8,22 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
-### Added — v0.12 sprint (in progress)
+## [0.12.0] — 2026-04-20
 
-- **Transport layer** for v0.12 scope (shipped `93351fa`) — 8 new
+Schedules + file picker + saved commands + config viewer + terminal
+backlog pager. 6 phases across 5 UI surfaces, all against endpoints
+confirmed in parent v4.0.3+. Plan:
+[docs/plans/2026-04-20-v0.12-schedules-files-config.md](docs/plans/2026-04-20-v0.12-schedules-files-config.md).
+
+Paired with parent `dmz006/datawatch` v4.0.3+ which shipped nine new
+endpoints (#5–#13 closed) — all v0.11 `(client)`-gated flows (session
+delete/rename/restart, `/api/cert`, `/api/backends/active`) now work
+against a real server without the NotFound grey-out fallback kicking
+in.
+
+### Added — v0.12 sprint
+
+- **Transport layer** (shipped `93351fa`) — 8 new
   `TransportClient` methods:
   `listSchedules` / `createSchedule` / `deleteSchedule` (`/api/schedule`),
   `browseFiles` (`/api/files?path=`),
@@ -463,7 +476,8 @@ MCP SSE, voice capture, Wear OS live app, Android Auto live surface.
 - Pre-MVP. Implementation begins Sprint 1 (2026-05-02). MVP target 2026-06-12; public
   production 2026-07-10.
 
-[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/dmz006/datawatch-app/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/dmz006/datawatch-app/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/dmz006/datawatch-app/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/dmz006/datawatch-app/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/dmz006/datawatch-app/compare/v0.9.0...v0.10.0
