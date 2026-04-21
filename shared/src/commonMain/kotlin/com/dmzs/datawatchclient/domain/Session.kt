@@ -18,6 +18,12 @@ public data class Session(
     val createdAt: Instant,
     val lastActivityAt: Instant,
     val muted: Boolean = false,
+    /**
+     * Server-emitted prompt that triggered the current `waiting_input` state.
+     * Populated from `SessionDto.last_prompt`. Nullable for non-waiting
+     * sessions and for servers that predate the field.
+     */
+    val lastPrompt: String? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

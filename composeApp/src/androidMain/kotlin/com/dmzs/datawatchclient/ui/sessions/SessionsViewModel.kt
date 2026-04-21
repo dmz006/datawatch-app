@@ -47,6 +47,13 @@ public class SessionsViewModel : ViewModel() {
         val allProfiles: List<ServerProfile> = emptyList(),
         val allServersMode: Boolean = false,
         val sessions: List<Session> = emptyList(),
+        /**
+         * Backend badge text keyed by server-profile id. Populated from
+         * `/api/info` on refresh — the session-row composable reads this
+         * to show the `claude-code` / `ollama` / etc. chip alongside the
+         * state pill. Missing keys fall back to no badge.
+         */
+        val backendByProfileId: Map<String, String> = emptyMap(),
         val filter: Filter = Filter.All,
         val refreshing: Boolean = false,
         val banner: String? = null,
@@ -116,6 +123,7 @@ public class SessionsViewModel : ViewModel() {
     private val _allServersSessions = MutableStateFlow<List<Session>>(emptyList())
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
     private val _deleteSupported = MutableStateFlow(true)
+    private val _backendByProfileId = MutableStateFlow<Map<String, String>>(emptyMap())
 
     /**
      * Per-active-profile reachability. Flattens into `null` when the active
@@ -166,6 +174,7 @@ public class SessionsViewModel : ViewModel() {
             activeReachable,
             _lastProbeEpochMs,
             _deleteSupported,
+            _backendByProfileId,
         ) { args ->
             @Suppress("UNCHECKED_CAST")
             UiState(
@@ -179,6 +188,7 @@ public class SessionsViewModel : ViewModel() {
                 activeReachable = args[7] as Boolean?,
                 lastProbeEpochMs = args[8] as Long?,
                 deleteSupported = args[9] as Boolean,
+                backendByProfileId = args[10] as Map<String, String>,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -222,6 +232,23 @@ public class SessionsViewModel : ViewModel() {
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _banner.value = "Rename failed — ${err.message ?: err::class.simpleName}"
+                },
+            )
+        }
+    }
+
+    /**
+     * Signal the server to kill a running session. Uses the same confirm-
+     * path as the detail screen (ADR-0019), but surfaced inline so the
+     * list-row quick-action button doesn't force a detail navigation.
+     */
+    public fun kill(sessionId: String) {
+        val profile = profileForSession(sessionId) ?: return
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).killSession(sessionId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _banner.value = "Kill failed — ${err.message ?: err::class.simpleName}"
                 },
             )
         }
@@ -316,6 +343,13 @@ public class SessionsViewModel : ViewModel() {
                         "(${err.message ?: err::class.simpleName})"
                 },
             )
+            // Refresh the backend badge alongside — best-effort, silent on
+            // failure (a stale chip is better than a blocking banner).
+            transport.fetchInfo().onSuccess { info ->
+                info.llmBackend?.takeIf { it.isNotBlank() }?.let { backend ->
+                    _backendByProfileId.value = _backendByProfileId.value + (profile.id to backend)
+                }
+            }
         }
     }
 
@@ -337,6 +371,16 @@ public class SessionsViewModel : ViewModel() {
             kotlinx.coroutines.coroutineScope {
                 profiles.map { p ->
                     async {
+                        // Also fan out /api/info so each server's backend chip
+                        // is available to the row composable.
+                        ServiceLocator.transportFor(p).fetchInfo().onSuccess { info ->
+                            info.llmBackend?.takeIf { it.isNotBlank() }?.let { backend ->
+                                synchronized(_backendByProfileId) {
+                                    _backendByProfileId.value =
+                                        _backendByProfileId.value + (p.id to backend)
+                                }
+                            }
+                        }
                         ServiceLocator.transportFor(p).federationSessions().fold(
                             onSuccess = { view ->
                                 val combined =

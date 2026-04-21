@@ -48,6 +48,22 @@ class MappersTest {
     }
 
     @Test
+    fun `lastPrompt prefers last_prompt then falls back to pending_input`() {
+        // PWA monitor's "waiting" badge body shows last_prompt; on older
+        // server builds that emit only pending_input, fall back so the
+        // session-row context preview still renders.
+        val withPrompt =
+            SessionDto(id = "a", state = "waiting_input", lastPrompt = "Run tests?", pendingInput = "ignored")
+        val onlyPending =
+            SessionDto(id = "b", state = "waiting_input", pendingInput = "Need confirm")
+        val neither = SessionDto(id = "c", state = "waiting_input")
+
+        assertEquals("Run tests?", withPrompt.toDomain("srv-1").lastPrompt)
+        assertEquals("Need confirm", onlyPending.toDomain("srv-1").lastPrompt)
+        assertEquals(null, neither.toDomain("srv-1").lastPrompt)
+    }
+
+    @Test
     fun `missing timestamps fall back to DISTANT_PAST instead of crashing`() {
         val dto =
             SessionDto(

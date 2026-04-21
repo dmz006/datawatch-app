@@ -1,0 +1,9 @@
+-- Migration 2 → 3 (session-row PWA parity batch).
+--
+-- Adds session.last_prompt so the sessions list row can render the
+-- "waiting for input" context preview matching the PWA monitor view.
+-- The parent openapi Session schema exposes last_prompt on GET
+-- /api/sessions; we persist it so a cold open from cache (before the
+-- first successful refresh) still shows the preview for waiting rows.
+
+ALTER TABLE session ADD COLUMN last_prompt TEXT;

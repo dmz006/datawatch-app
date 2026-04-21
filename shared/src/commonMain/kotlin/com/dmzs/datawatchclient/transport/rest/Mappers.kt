@@ -33,6 +33,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         taskSummary = task,
         createdAt = createdAt.toInstantOrEpoch(),
         lastActivityAt = updatedAt.toInstantOrEpoch(),
+        lastPrompt = lastPrompt ?: pendingInput,
     )
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert =

@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+### Added
+
+- **Session list rows now match the PWA monitor view.** Each card surfaces
+  the active LLM backend chip alongside the state pill (sourced from
+  `/api/info` per server), the hostname + relative time meta line, an
+  inline "Stop" button on running/waiting rows and "Restart" on
+  terminal rows so the most-common actions skip the overflow menu, and
+  — for `waiting_input` rows — a two-line quote preview of the
+  `last_prompt` so you can triage from the list without opening the
+  detail screen. Persistence: added `session.last_prompt` column via
+  migration `2.sqm` so the preview survives cold starts.
+
 ### Fixed
 
 - **Theme was defaulting to Material You dynamic colors** (`DatawatchTheme`

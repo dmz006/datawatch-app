@@ -32,6 +32,7 @@ public fun SessionRepository.observeForProfileAny(
                     createdAt = Instant.fromEpochMilliseconds(it.created_ts),
                     lastActivityAt = Instant.fromEpochMilliseconds(it.last_activity_ts),
                     muted = it.muted != 0L,
+                    lastPrompt = it.last_prompt,
                 )
             }
         }

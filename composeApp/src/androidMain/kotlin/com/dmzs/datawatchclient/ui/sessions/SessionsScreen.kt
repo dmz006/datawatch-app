@@ -1,16 +1,20 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -24,7 +28,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +70,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
@@ -177,6 +184,7 @@ public fun SessionsScreen(
                     items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
                         SessionRow(
                             session = session,
+                            backend = state.backendByProfileId[session.serverProfileId],
                             deleteSupported = state.deleteSupported,
                             selectionMode = selectionMode,
                             isSelected = session.id in selectedIds,
@@ -198,6 +206,7 @@ public fun SessionsScreen(
                             },
                             onRename = { newName -> vm.rename(session.id, newName) },
                             onRestart = { vm.restart(session.id) },
+                            onKill = { vm.kill(session.id) },
                             onDelete = { vm.delete(session.id) },
                         )
                     }
@@ -310,6 +319,7 @@ private fun EmptyState() {
 @Composable
 private fun SessionRow(
     session: Session,
+    backend: String?,
     deleteSupported: Boolean,
     selectionMode: Boolean = false,
     isSelected: Boolean = false,
@@ -318,6 +328,7 @@ private fun SessionRow(
     onSwipeMute: () -> Unit = {},
     onRename: (String) -> Unit = {},
     onRestart: () -> Unit = {},
+    onKill: () -> Unit = {},
     onDelete: () -> Unit = {},
 ) {
     val density = LocalDensity.current
@@ -325,22 +336,27 @@ private fun SessionRow(
     var menuOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
     var restartConfirmOpen by remember { mutableStateOf(false) }
+    var killConfirmOpen by remember { mutableStateOf(false) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
+    val colors = LocalDatawatchColors.current
+    val timeLabel = relativeTimeLabel(session.lastActivityAt.toEpochMilliseconds())
 
-    val rowBg =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .pwaCard()
                 .pwaStateEdge(session.state)
+                .then(
+                    if (isSelected) {
+                        Modifier.background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongPress,
@@ -355,76 +371,187 @@ private fun SessionRow(
                     ) { _, delta -> dx += delta }
                 }
                 .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        // Header row: id + state pill + mute/more actions.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                session.id,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            PwaStatePill(session.state)
+            if (!backend.isNullOrBlank()) {
+                Spacer(modifier = Modifier.width(6.dp))
+                PwaMetaBadge(text = backend)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
+                contentDescription = if (session.muted) "Muted" else "Unmuted",
+                tint =
+                    if (session.muted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                modifier = Modifier.padding(start = 4.dp).size(18.dp),
+            )
+            if (!selectionMode) {
+                Box {
+                    IconButton(
+                        onClick = { menuOpen = true },
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                    }
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = {
+                                menuOpen = false
+                                renameOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Restart") },
+                            onClick = {
+                                menuOpen = false
+                                restartConfirmOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Delete",
+                                    color =
+                                        if (deleteSupported && session.state != SessionState.Running) {
+                                            MaterialTheme.colorScheme.error
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                )
+                            },
+                            enabled = deleteSupported && session.state != SessionState.Running,
+                            onClick = {
+                                menuOpen = false
+                                deleteConfirmOpen = true
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        // Task summary — the big-fish line users scan first.
+        Text(
+            session.taskSummary ?: "(no summary)",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+
+        // Meta row: hostname · time ago. Small, muted, PWA-style.
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val hostname = session.hostnamePrefix
+            if (!hostname.isNullOrBlank()) {
                 Text(
-                    session.id,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                    hostname,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                PwaStatePill(session.state)
+                Text(
+                    "  ·  ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Text(
-                session.taskSummary ?: "(no summary)",
-                style = MaterialTheme.typography.bodyMedium,
+                timeLabel,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
             )
         }
-        Icon(
-            if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
-            contentDescription = if (session.muted) "Muted" else "Unmuted",
-            tint =
-                if (session.muted) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-            modifier = Modifier.padding(start = 8.dp).size(20.dp),
-        )
-        if (!selectionMode) {
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "More")
-                }
-                DropdownMenu(
-                    expanded = menuOpen,
-                    onDismissRequest = { menuOpen = false },
+
+        // Waiting-input context preview — PWA-style quote block under rows
+        // that block on user input. Two-line clamp keeps list density sane.
+        val prompt = session.lastPrompt?.trim()
+        if (session.state == SessionState.Waiting && !prompt.isNullOrBlank()) {
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(3.dp)
+                            .wrapContentHeight()
+                            .padding(end = 8.dp),
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Rename") },
-                        onClick = {
-                            menuOpen = false
-                            renameOpen = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Restart") },
-                        onClick = {
-                            menuOpen = false
-                            restartConfirmOpen = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                "Delete",
-                                color =
-                                    if (deleteSupported && session.state != SessionState.Running) {
-                                        MaterialTheme.colorScheme.error
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
+                    Surface(
+                        color = colors.waiting,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {}
+                }
+                Text(
+                    prompt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+            }
+        }
+
+        // Inline quick-actions — Stop for running, Restart for terminal.
+        if (!selectionMode) {
+            Row(
+                modifier = Modifier.padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                when (session.state) {
+                    SessionState.Running, SessionState.Waiting -> {
+                        TextButton(
+                            onClick = { killConfirmOpen = true },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
+                        ) {
+                            Icon(
+                                Icons.Filled.Stop,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.error,
                             )
-                        },
-                        enabled = deleteSupported && session.state != SessionState.Running,
-                        onClick = {
-                            menuOpen = false
-                            deleteConfirmOpen = true
-                        },
-                    )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Stop", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    SessionState.Completed,
+                    SessionState.Killed,
+                    SessionState.Error,
+                    -> {
+                        TextButton(
+                            onClick = { restartConfirmOpen = true },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
+                        ) {
+                            Icon(
+                                Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Restart")
+                        }
+                    }
+                    else -> Unit
                 }
             }
         }
@@ -453,6 +580,21 @@ private fun SessionRow(
             },
             onDismiss = { restartConfirmOpen = false },
             destructive = false,
+        )
+    }
+    if (killConfirmOpen) {
+        ConfirmDialog(
+            title = "Stop session?",
+            body =
+                "Signal the server to terminate this running session. " +
+                    "Unsaved in-flight work may be lost.",
+            confirmLabel = "Stop",
+            onConfirm = {
+                killConfirmOpen = false
+                onKill()
+            },
+            onDismiss = { killConfirmOpen = false },
+            destructive = true,
         )
     }
     if (deleteConfirmOpen) {
@@ -707,6 +849,28 @@ private fun relativeTimeLabel(epochMs: Long): String {
         seconds < 3600 -> "${seconds / 60}m ago"
         seconds < 86400 -> "${seconds / 3600}h ago"
         else -> "${seconds / 86400}d ago"
+    }
+}
+
+/**
+ * Small uppercase meta-chip used for the per-row backend badge
+ * (e.g. "claude-code"). Pill matches [PwaStatePill]'s metrics but uses
+ * the neutral `accent2`-tinted bg so it reads as informational rather
+ * than state-bearing.
+ */
+@Composable
+private fun PwaMetaBadge(text: String) {
+    val colors = LocalDatawatchColors.current
+    Surface(
+        color = colors.accent2.copy(alpha = 0.12f),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+    ) {
+        Text(
+            text.uppercase(),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.accent2,
+        )
     }
 }
 
