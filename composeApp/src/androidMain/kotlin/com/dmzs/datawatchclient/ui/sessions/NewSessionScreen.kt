@@ -61,11 +61,33 @@ public fun NewSessionScreen(
     val scope = rememberCoroutineScope()
 
     var task by remember { mutableStateOf("") }
+    var sessionName by remember { mutableStateOf("") }
     var selectedProfileId by remember { mutableStateOf<String?>(null) }
     var workingDir by remember { mutableStateOf("") }
     var filePickerOpen by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
+    var resumeId by remember { mutableStateOf<String?>(null) }
+    var autoGitInit by remember { mutableStateOf(false) }
+    var autoGitCommit by remember { mutableStateOf(true) }
+
+    // Recent done sessions for the Resume dropdown — matches PWA's
+    // populateResumeDropdown: 30 most-recent completed/failed/killed.
+    var recentDone by remember {
+        mutableStateOf<List<com.dmzs.datawatchclient.domain.Session>>(emptyList())
+    }
+    LaunchedEffect(selectedProfileId) {
+        recentDone = emptyList()
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+            recentDone =
+                list.filter {
+                    it.state == com.dmzs.datawatchclient.domain.SessionState.Completed ||
+                        it.state == com.dmzs.datawatchclient.domain.SessionState.Killed ||
+                        it.state == com.dmzs.datawatchclient.domain.SessionState.Error
+                }.sortedByDescending { it.lastActivityAt }.take(30)
+        }
+    }
 
     // Available LLM backends on the selected server (from /api/backends).
     // Refreshed whenever the user picks a different server. The picker
@@ -183,8 +205,22 @@ public fun NewSessionScreen(
                 }
             }
 
+            Text(
+                "Session name",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            OutlinedTextField(
+                value = sessionName,
+                onValueChange = { sessionName = it },
+                placeholder = { Text("e.g. Auth refactor") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
                 Text(
@@ -308,6 +344,54 @@ public fun NewSessionScreen(
                 ) { Text("Browse…") }
             }
 
+            // Resume previous session dropdown — PWA matches this with
+            // populateResumeDropdown (last 30 done sessions). Selecting
+            // sets `resumeId`, which the server uses to warm-restart
+            // rather than start fresh.
+            if (recentDone.isNotEmpty()) {
+                Text(
+                    "Resume previous (optional)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                ResumePickerDropdown(
+                    sessions = recentDone,
+                    selectedId = resumeId,
+                    onSelect = { resumeId = it },
+                )
+            }
+
+            Text(
+                "Git",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                androidx.compose.material3.Switch(
+                    checked = autoGitInit,
+                    onCheckedChange = { autoGitInit = it },
+                )
+                Text(
+                    "Auto git init",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 8.dp, end = 16.dp),
+                )
+                androidx.compose.material3.Switch(
+                    checked = autoGitCommit,
+                    onCheckedChange = { autoGitCommit = it },
+                )
+                Text(
+                    "Auto git commit",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 horizontalArrangement = Arrangement.End,
@@ -345,6 +429,11 @@ public fun NewSessionScreen(
                                         task = task.trim(),
                                         workingDir = workingDir.trim().ifBlank { null },
                                         profileName = pickedServerProfile,
+                                        name = sessionName.trim().ifBlank { null },
+                                        backend = pickedBackend,
+                                        resumeId = resumeId,
+                                        autoGitInit = autoGitInit,
+                                        autoGitCommit = autoGitCommit,
                                     )
                                     .fold(
                                         onSuccess = { sessionId ->
@@ -423,6 +512,71 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
                     },
                     onClick = {
                         onPick(cmd.command)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ResumePickerDropdown(
+    sessions: List<com.dmzs.datawatchclient.domain.Session>,
+    selectedId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = sessions.firstOrNull { it.id == selectedId }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value =
+                when {
+                    selectedId == null -> "Start fresh"
+                    selected == null -> selectedId
+                    else ->
+                        (selected.name ?: selected.taskSummary?.take(60) ?: selected.id)
+                },
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Start fresh") },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
+            )
+            sessions.forEach { s ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                s.name ?: s.id,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                s.taskSummary?.take(60) ?: "(no task)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelect(s.id)
                         expanded = false
                     },
                 )

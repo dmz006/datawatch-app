@@ -8,6 +8,35 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-04-21 (Sprint W — filters CRUD + New Session form fields)
+
+### Added
+
+- **Output filters card under Settings → LLM.** Pattern (regex)
+  + action (`send_input` / `alert` / `schedule` /
+  `detect_prompt`) + value (optional) per row. Per-row enable
+  switch flips the rule; red ✕ deletes. Add-filter form at the
+  bottom. Matches PWA `loadFilters` / `createFilter` /
+  `toggleFilter` / `deleteFilter` in app.js lines 6284–6396.
+- **New Session form PWA-parity fields.** Four additions on top
+  of the existing task / profile / directory inputs:
+  - `Session name` — distinct from the task prompt (sent as
+    `name` on POST /api/sessions/start).
+  - `Resume previous` dropdown — up to 30 most-recent done
+    sessions; picking sets `resume_id` so the server warm-
+    restarts that session's state instead of starting fresh.
+  - `Auto git init` toggle (default off).
+  - `Auto git commit` toggle (default on, matches PWA default).
+
+### Transport
+
+- `listFilters()`, `createFilter(pattern, action, value, enabled)`,
+  `updateFilter(id, pattern, action, value, enabled)` (nullable
+  args for partial updates), `deleteFilter(id)`.
+- `startSession` gains `name`, `backend`, `resumeId`,
+  `autoGitInit`, `autoGitCommit` optional parameters. DTO
+  extended to match PWA payload.
+
 ## [0.26.0] — 2026-04-21 (Sprint V — ConfigFieldsPanel + 12 PWA Settings sections)
 
 Ports the biggest PWA-parity gap flagged in the Settings audit:

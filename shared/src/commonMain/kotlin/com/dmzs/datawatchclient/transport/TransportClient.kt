@@ -41,6 +41,11 @@ public interface TransportClient {
         serverHint: String? = null,
         workingDir: String? = null,
         profileName: String? = null,
+        name: String? = null,
+        backend: String? = null,
+        resumeId: String? = null,
+        autoGitInit: Boolean? = null,
+        autoGitCommit: Boolean? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */
@@ -338,6 +343,38 @@ public interface TransportClient {
      * Returns a status object; PWA shows success/fail toast.
      */
     public suspend fun memoryTest(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * GET /api/filters — output / detection filter rules. Shape
+     * (PWA-observed): `[{id, pattern, action, value, enabled}, ...]`.
+     * `action` is one of `send_input`, `alert`, `schedule`,
+     * `detect_prompt` per PWA `loadFilters`.
+     */
+    public suspend fun listFilters(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** POST /api/filters — create a new filter rule. */
+    public suspend fun createFilter(
+        pattern: String,
+        action: String,
+        value: String? = null,
+        enabled: Boolean = true,
+    ): Result<Unit>
+
+    /**
+     * PATCH /api/filters — toggle or edit an existing filter. Nulls
+     * preserve the server-side value so callers can send a partial
+     * update (e.g. just flip `enabled`).
+     */
+    public suspend fun updateFilter(
+        id: String,
+        pattern: String? = null,
+        action: String? = null,
+        value: String? = null,
+        enabled: Boolean? = null,
+    ): Result<Unit>
+
+    /** DELETE /api/filters?id=<id>. */
+    public suspend fun deleteFilter(id: String): Result<Unit>
 
     /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's

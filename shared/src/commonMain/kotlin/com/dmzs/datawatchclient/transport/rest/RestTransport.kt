@@ -116,6 +116,11 @@ public class RestTransport(
         serverHint: String?,
         workingDir: String?,
         profileName: String?,
+        name: String?,
+        backend: String?,
+        resumeId: String?,
+        autoGitInit: Boolean?,
+        autoGitCommit: Boolean?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
@@ -128,6 +133,11 @@ public class RestTransport(
                             serverHint = serverHint,
                             workingDir = workingDir,
                             profile = profileName,
+                            name = name,
+                            backend = backend,
+                            resumeId = resumeId,
+                            autoGitInit = autoGitInit,
+                            autoGitCommit = autoGitCommit,
                         ),
                     )
                 }.body()
@@ -636,6 +646,67 @@ public class RestTransport(
             client.get("${profile.baseUrl}/api/memory/test") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
+        }
+
+    override suspend fun listFilters(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/filters") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun createFilter(
+        pattern: String,
+        action: String,
+        value: String?,
+        enabled: Boolean,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/filters") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("pattern", kotlinx.serialization.json.JsonPrimitive(pattern))
+                        put("action", kotlinx.serialization.json.JsonPrimitive(action))
+                        value?.let { put("value", kotlinx.serialization.json.JsonPrimitive(it)) }
+                        put("enabled", kotlinx.serialization.json.JsonPrimitive(enabled))
+                    },
+                )
+            }
+        }
+
+    override suspend fun updateFilter(
+        id: String,
+        pattern: String?,
+        action: String?,
+        value: String?,
+        enabled: Boolean?,
+    ): Result<Unit> =
+        request {
+            client.patch("${profile.baseUrl}/api/filters") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("id", kotlinx.serialization.json.JsonPrimitive(id))
+                        pattern?.let { put("pattern", kotlinx.serialization.json.JsonPrimitive(it)) }
+                        action?.let { put("action", kotlinx.serialization.json.JsonPrimitive(it)) }
+                        value?.let { put("value", kotlinx.serialization.json.JsonPrimitive(it)) }
+                        enabled?.let { put("enabled", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    },
+                )
+            }
+        }
+
+    override suspend fun deleteFilter(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/filters") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("id", id)
+            }
         }
 
     // ---- v0.12 schedules + files + saved commands + config (read) ----

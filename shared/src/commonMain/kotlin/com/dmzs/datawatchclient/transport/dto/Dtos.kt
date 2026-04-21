@@ -71,6 +71,21 @@ public data class StartSessionDto(
      * mobile file-picker. Older server builds ignore unknown fields.
      */
     @SerialName("cwd") val workingDir: String? = null,
+    /**
+     * User-assigned session name (distinct from the task prompt).
+     * Matches PWA `submitNewSession` payload. Older servers ignore.
+     */
+    val name: String? = null,
+    /** Backend override — PWA passes the picked /api/backends name. */
+    val backend: String? = null,
+    /**
+     * Resume a previous session by full id (matches PWA
+     * `resume_id`). Server warm-restarts the named session rather
+     * than starting fresh.
+     */
+    @SerialName("resume_id") val resumeId: String? = null,
+    @SerialName("auto_git_init") val autoGitInit: Boolean? = null,
+    @SerialName("auto_git_commit") val autoGitCommit: Boolean? = null,
 )
 
 @Serializable
