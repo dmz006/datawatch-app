@@ -36,6 +36,21 @@ public class NotificationPoster(private val context: Context) {
     public fun post(event: Event) {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) return
+        // Active-session suppression — skip notifications for a
+        // session the user is already looking at in the foreground.
+        // Matches PWA behaviour where no bell rings for the visible
+        // session. State-change notifications pass through since
+        // the user may want a haptic for state transitions even
+        // with the session visible.
+        if (event.type == Event.Type.InputNeeded &&
+            ForegroundSessionTracker.isForeground(event.sessionId)
+        ) {
+            android.util.Log.d(
+                "NotificationPoster",
+                "suppressed InputNeeded for foreground session ${event.sessionId}",
+            )
+            return
+        }
         NotificationChannels.ensureRegistered(context)
 
         val (channel, importance) =

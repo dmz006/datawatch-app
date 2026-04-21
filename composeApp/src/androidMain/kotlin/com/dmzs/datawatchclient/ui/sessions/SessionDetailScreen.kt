@@ -85,6 +85,15 @@ public fun SessionDetailScreen(
         ),
 ) {
     val state by vm.state.collectAsState()
+    // Mark this session as foreground while the detail screen is
+    // composed; NotificationPoster uses this to suppress redundant
+    // wake notifications for the session the user is already viewing.
+    androidx.compose.runtime.DisposableEffect(sessionId) {
+        com.dmzs.datawatchclient.push.ForegroundSessionTracker.enter(sessionId)
+        onDispose {
+            com.dmzs.datawatchclient.push.ForegroundSessionTracker.leave(sessionId)
+        }
+    }
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel = viewModel()
     val sessionSchedulesVm: SessionSchedulesViewModel =
         viewModel(

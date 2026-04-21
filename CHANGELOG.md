@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-04-20 (Sprint G — Alerts schedule + foreground suppression)
+
+### Added
+
+- **"Schedule reply…" action on Alert rows.** Each row now has an
+  inline button that opens the existing ScheduleDialog, seeded
+  with the session's last prompt text so users can answer a
+  blocking question on a cron rather than dropping everything.
+- **Foreground-session suppression for input-needed
+  notifications.** A new `ForegroundSessionTracker` records which
+  session is visible via `DisposableEffect` on the detail screen
+  and watches process lifecycle. `NotificationPoster` consults it
+  before posting an `InputNeeded` wake notification — matches the
+  PWA's "don't ring the bell for the tab you're already on".
+- Alert rows now prefer `session.name` over `id` for the header
+  title, matching the Sessions list and detail screen.
+
+### Dependencies
+
+- Adds `androidx.lifecycle:lifecycle-process:2.8.4` for
+  `ProcessLifecycleOwner`.
+
 ## [0.18.0] — 2026-04-20 (Sprint F — Channels/Comms Settings)
 
 ### Added

@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,10 +17,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -46,6 +52,10 @@ public fun AlertsScreen(
 ) {
     val state by vm.state.collectAsState()
 
+    val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
+    var scheduleFor by remember { mutableStateOf<Session?>(null) }
+
     Scaffold(topBar = { TopAppBar(title = { Text("Alerts") }) }) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (state.alerts.isEmpty()) {
@@ -63,12 +73,26 @@ public fun AlertsScreen(
                             session = session,
                             onClick = { onOpenSession(session.id) },
                             onDismiss = { vm.dismiss(session.id) },
+                            onSchedule = { scheduleFor = session },
                         )
                         HorizontalDivider()
                     }
                 }
             }
         }
+    }
+
+    scheduleFor?.let { s ->
+        val seed = s.lastPrompt?.take(200) ?: s.taskSummary ?: s.id
+        com.dmzs.datawatchclient.ui.schedules.ScheduleDialog(
+            initialTask = seed,
+            title = "Schedule reply to ${s.name ?: s.id}",
+            onConfirm = { task, cron, enabled ->
+                schedulesVm.create(task, cron, enabled, sessionId = s.id)
+                scheduleFor = null
+            },
+            onDismiss = { scheduleFor = null },
+        )
     }
 }
 
@@ -77,6 +101,7 @@ private fun AlertRow(
     session: Session,
     onClick: () -> Unit,
     onDismiss: () -> Unit,
+    onSchedule: () -> Unit,
 ) {
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 80.dp.toPx() }
@@ -107,7 +132,10 @@ private fun AlertRow(
                     .padding(16.dp),
         ) {
             Column {
-                Text(session.id, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    session.name ?: session.id,
+                    style = MaterialTheme.typography.titleSmall,
+                )
                 Text(
                     session.taskSummary ?: "(no summary)",
                     style = MaterialTheme.typography.bodyMedium,
@@ -120,6 +148,18 @@ private fun AlertRow(
                     color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = {
+                        // Suppress outer row click propagation by *not*
+                        // invoking onClick here; the button is a child
+                        // of the clickable row but clicks on buttons
+                        // consume pointer events so this is safe.
+                        onSchedule()
+                    }) { Text("Schedule reply…") }
+                }
             }
         }
     }
