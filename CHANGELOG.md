@@ -10,6 +10,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **Terminal toolbar: Fit + Jump-to-bottom buttons.** Two new icons next
+  to font ± / Backlog: a Fit button forces a manual `safeFit()` pass
+  (helps after a pinch-zoom or rotation that didn't fire a resize
+  callback), and a Jump-to-bottom button calls
+  `term.scrollToBottom()` to snap back to the live tail after
+  scrolling up to read backlog. JS-side bridges `dwFit` and
+  `dwScrollToBottom` added to host.html.
+- **pane_capture: regression test locking the first/redraw frame
+  contract.** The end-to-end path (WS frame → EventMapper →
+  SessionEvent.PaneCapture → TerminalView → `dwPaneCapture`) is
+  audited; `EventMapperTest` now asserts isFirst flips correctly
+  across reset boundaries so the next refactor can't silently break
+  TUI rendering.
+
 - **Schedule-from-composer in session detail.** A new clock icon next to
   Mic/Send opens the existing schedule dialog pre-seeded with the
   typed reply text — turns "draft a reply, then schedule it for

@@ -112,6 +112,26 @@ public class TerminalController internal constructor() {
             null,
         )
     }
+
+    /**
+     * User-driven fit-to-width. The container already auto-fits on
+     * layout changes; this is the manual nudge users want after a
+     * pinch-zoom or rotation that didn't trigger a resize callback.
+     */
+    public fun fit() {
+        webView?.evaluateJavascript("window.dwFit && window.dwFit();", null)
+    }
+
+    /**
+     * Snap viewport to the live tail. Maps to PWA's
+     * `term.scrollToBottom()`.
+     */
+    public fun scrollToBottom() {
+        webView?.evaluateJavascript(
+            "window.dwScrollToBottom && window.dwScrollToBottom();",
+            null,
+        )
+    }
 }
 
 @Composable

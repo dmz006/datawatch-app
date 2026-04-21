@@ -59,6 +59,8 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Inline schedule actions (create scheduled reply) | ✅ | post-v0.12 — composer "Schedule" button + overflow "Schedule reply…" both seed the schedule dialog with typed text → live prompt → task summary |
 | Per-session schedules list | ❌ | **upstream-blocked** — parent `ScheduledCommand` lacks `session_id`. Needs upstream schema change before mobile can filter accurately. |
 | Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
+| Terminal Fit + Jump-to-bottom toolbar | ✅ | post-v0.12 — manual fit (after pinch-zoom) + scroll-to-tail buttons via `dwFit` / `dwScrollToBottom` JS bridges |
+| Pane-capture authoritative TUI rendering | ✅ | shipped earlier; mapper-level regression test added post-v0.12 to lock first/redraw frame contract |
 | Prompt + rate-limit inline banners | ✅ | InlineNotices |
 
 ## 3. New session (`data-view="new"`)

@@ -171,6 +171,28 @@
     window.dwResize = function () { safeFit(); };
 
     /**
+     * Explicit user-driven fit. Distinct from `dwResize` only in
+     * intent — both currently delegate to safeFit. Exposed as its own
+     * function so the toolbar's "Fit" button can log + future-proof
+     * any extra logic (e.g. font-size-aware fit) without changing the
+     * resize-observer path.
+     */
+    window.dwFit = function () {
+      safeFit();
+      log('user-fit');
+    };
+
+    /**
+     * Snap the viewport to the bottom of the scrollback. Mirrors PWA
+     * `term.scrollToBottom()` — used by the toolbar "Jump to bottom"
+     * button when the user scrolled up to read backlog and wants to
+     * return to live tail.
+     */
+    window.dwScrollToBottom = function () {
+      try { term.scrollToBottom(); } catch (e) { log('scrollToBottom failed: ' + e); }
+    };
+
+    /**
      * Set xterm font size in CSS px and re-fit. Mirrors PWA's
      * `changeTermFontSize(delta)` (app.js ~line 1714). Clamped to
      * a sensible range at the caller (Kotlin side).

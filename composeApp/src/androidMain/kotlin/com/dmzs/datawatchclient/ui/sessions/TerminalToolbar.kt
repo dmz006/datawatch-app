@@ -12,10 +12,12 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TextIncrease
+import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -105,6 +107,15 @@ public fun TerminalToolbar(
                     enabled = fontSize < MAX_TERM_FONT_PX,
                 ) {
                     Icon(Icons.Filled.TextIncrease, contentDescription = "Larger font")
+                }
+                IconButton(onClick = { controller.fit() }) {
+                    Icon(Icons.Filled.FitScreen, contentDescription = "Fit terminal")
+                }
+                IconButton(onClick = { controller.scrollToBottom() }) {
+                    Icon(
+                        Icons.Filled.VerticalAlignBottom,
+                        contentDescription = "Jump to live tail",
+                    )
                 }
                 if (sessionId != null) {
                     IconButton(

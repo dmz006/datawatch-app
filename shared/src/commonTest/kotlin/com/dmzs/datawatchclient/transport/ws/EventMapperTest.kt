@@ -126,6 +126,43 @@ class EventMapperTest {
     }
 
     @Test
+    fun `pane_capture frame yields one PaneCapture event with first-flag once per session`() {
+        // First capture for a session marks isFirst=true so xterm does
+        // term.reset() before write; subsequent captures isFirst=false so
+        // xterm batches \x1b[2J\x1b[3J\x1b[H + write — both behaviours
+        // mirror the PWA's app.js pane_capture rendering.
+        resetPaneCaptureSeen("s-pane")
+        val first =
+            WsFrameDto(
+                type = "pane_capture",
+                data = decodeData("""{"session_id":"s-pane","lines":["alpha","beta"]}"""),
+            ).toDomainEvents("s-pane")
+        assertEquals(1, first.size)
+        val cap = assertIs<SessionEvent.PaneCapture>(first.single())
+        assertEquals(listOf("alpha", "beta"), cap.lines)
+        assertTrue(cap.isFirst, "first frame for new session must be isFirst=true")
+
+        val second =
+            WsFrameDto(
+                type = "pane_capture",
+                data = decodeData("""{"session_id":"s-pane","lines":["gamma"]}"""),
+            ).toDomainEvents("s-pane")
+        val cap2 = assertIs<SessionEvent.PaneCapture>(second.single())
+        assertTrue(!cap2.isFirst, "second frame must be isFirst=false")
+
+        // resetPaneCaptureSeen flips the next frame back to isFirst=true,
+        // covering the session-switch path where TerminalView calls reset.
+        resetPaneCaptureSeen("s-pane")
+        val afterReset =
+            WsFrameDto(
+                type = "pane_capture",
+                data = decodeData("""{"session_id":"s-pane","lines":["delta"]}"""),
+            ).toDomainEvents("s-pane")
+        val cap3 = assertIs<SessionEvent.PaneCapture>(afterReset.single())
+        assertTrue(cap3.isFirst, "after reset, first frame must be isFirst=true again")
+    }
+
+    @Test
     fun `lines without trailing newline are normalised to CRLF`() {
         val dto =
             WsFrameDto(
