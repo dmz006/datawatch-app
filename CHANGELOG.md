@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-04-20 (Sprint H — Behaviour preferences + federation peers)
+
+### Added
+
+- **Behaviour preferences card under Settings → General.** Reads
+  `recent_window_minutes`, `max_concurrent`, and
+  `scrollback_lines` from `/api/config` and exposes them as integer
+  inputs. Save merges the edited values back into the full config
+  object and writes via `PUT /api/config`, preserving every other
+  field the parent returned (per ADR-0019 — we never touch raw
+  YAML, only specific structured fields we understand).
+- **Federation peers card under Settings → Comms.** Read-only
+  list of remote datawatch servers the active server is
+  federated with, from `GET /api/servers`. Shows name / base URL
+  / enabled flag so users can verify the parent's federation
+  config without opening the web UI.
+
+### Transport
+
+- `listRemoteServers()` → raw `List<JsonObject>` so the UI can
+  pick fields as the schema evolves.
+
 ## [0.19.0] — 2026-04-20 (Sprint G — Alerts schedule + foreground suppression)
 
 ### Added

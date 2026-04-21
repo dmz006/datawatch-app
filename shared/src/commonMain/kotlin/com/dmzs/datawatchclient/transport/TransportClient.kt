@@ -292,6 +292,15 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * GET /api/servers — list of remote datawatch server
+     * connections (federation peers) this server knows about.
+     * Mobile uses this to render a read-only "Federated peers"
+     * list under Settings → Comms; adding a peer is done via the
+     * PWA config UI today.
+     */
+    public suspend fun listRemoteServers(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side

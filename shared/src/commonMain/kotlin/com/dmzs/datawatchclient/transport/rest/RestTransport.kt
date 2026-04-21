@@ -592,6 +592,15 @@ public class RestTransport(
             }
         }
 
+    override suspend fun listRemoteServers(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/servers") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
     // ---- v0.12 schedules + files + saved commands + config (read) ----
 
     override suspend fun listSchedules(

@@ -199,6 +199,7 @@ public fun SettingsScreen(
                         // then the episodic memory browser.
                         SecurityCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                        com.dmzs.datawatchclient.ui.prefs.BehaviourPreferencesCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
@@ -219,6 +220,7 @@ public fun SettingsScreen(
                             },
                         )
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
+                        com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                     }
                     SettingsTab.Llm -> {
                         // LLM backend picker (was the old Channels tab content)
