@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto.messaging
 import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
+import com.dmzs.datawatchclient.auto.AutoServiceLocator
 import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 
 /**
@@ -15,6 +16,11 @@ import com.dmzs.datawatchclient.auto.AutoSummaryScreen
  * session reply with Yes / No / Continue / Stop quick actions.
  */
 public class DatawatchMessagingService : CarAppService() {
+    override fun onCreate() {
+        super.onCreate()
+        AutoServiceLocator.init(applicationContext)
+    }
+
     override fun createHostValidator(): HostValidator =
         HostValidator.ALLOW_ALL_HOSTS_VALIDATOR // TODO: strict allowlist pre-Play-submit
 

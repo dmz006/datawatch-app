@@ -7,37 +7,94 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
+import com.dmzs.datawatchclient.domain.SessionState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
- * Glanceable Auto session summary. Current state (v0.24.0):
- * placeholder counts — the phone app's ServiceLocator lives in
- * `composeApp/androidMain` and is not visible to this `:auto`
- * library module. A proper Sprint T migration needs either
- *  (a) move ServiceLocator / DatabaseFactory / RestTransport
- *      construction to `:shared`, or
- *  (b) add an Auto-only slim DI reader that opens SQLCipher with
- *      the same key + instantiates RestTransport from the first
- *      enabled profile.
+ * Driver-safe session summary for Android Auto. Reads live
+ * session counts from the first enabled [AutoServiceLocator]
+ * profile every 15 s. Tapping "Waiting input" opens
+ * [WaitingSessionsScreen] for per-session reply.
  *
- * Both options are scoped for a Sprint T follow-up. The
- * Messaging-template service and screen navigation is ready; only
- * the data source is stubbed.
+ * ADR-0031 Play-compliance: static ListTemplate only.
  */
 public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
+    private var running: Int = 0
+    private var waiting: Int = 0
+    private var total: Int = 0
+    private var error: String? = null
+    private var pollJob: Job? = null
+    private val scope = CoroutineScope(Dispatchers.Main)
+
+    init {
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = scope.launch { pollLoop() }
+                }
+                override fun onStop(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = null
+                }
+            },
+        )
+    }
+
+    private suspend fun pollLoop() {
+        while (scope.isActive) {
+            refresh()
+            invalidate()
+            delay(15_000L)
+        }
+    }
+
+    private suspend fun refresh() {
+        try {
+            val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+            val profile = profiles.firstOrNull { it.enabled } ?: run {
+                error = "No enabled server (configure on phone)"
+                running = 0; waiting = 0; total = 0
+                return
+            }
+            AutoServiceLocator.transportFor(profile).listSessions().fold(
+                onSuccess = { list ->
+                    error = null
+                    running = list.count { it.state == SessionState.Running }
+                    waiting = list.count { it.state == SessionState.Waiting }
+                    total = list.size
+                },
+                onFailure = { err ->
+                    error = "Unreachable: ${err.message ?: err::class.simpleName}"
+                },
+            )
+        } catch (e: Throwable) {
+            error = "Error: ${e.message ?: e::class.simpleName}"
+        }
+    }
+
     override fun onGetTemplate(): Template {
-        val list =
+        val items =
             ItemList.Builder()
                 .addItem(
                     Row.Builder()
                         .setTitle("Running")
-                        .addText("— (open phone)")
+                        .addText("$running sessions")
                         .build(),
                 )
                 .addItem(
                     Row.Builder()
                         .setTitle("Waiting input")
-                        .addText("— (open phone)")
+                        .addText("$waiting sessions")
                         .setOnClickListener {
                             screenManager.push(WaitingSessionsScreen(carContext))
                         }
@@ -46,23 +103,15 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .addItem(
                     Row.Builder()
                         .setTitle("Total")
-                        .addText("— (open phone)")
-                        .build(),
-                )
-                .addItem(
-                    Row.Builder()
-                        .setTitle("Status")
-                        .addText(
-                            "datawatch-app ${Version.VERSION}. Auto integration placeholder " +
-                                "pending DI migration — see docs/plans/2026-04-21-auto-audit.md.",
-                        )
+                        .addText("$total sessions")
                         .build(),
                 )
                 .build()
+        val title = "datawatch ${Version.VERSION}"
         return ListTemplate.Builder()
-            .setTitle("datawatch ${Version.VERSION}")
+            .setTitle(error?.let { "$title · $it" } ?: title)
             .setHeaderAction(Action.APP_ICON)
-            .setSingleList(list)
+            .setSingleList(items)
             .build()
     }
 }

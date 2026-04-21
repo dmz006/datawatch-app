@@ -8,6 +8,30 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-04-21 (Sprint Z — Android Auto live data)
+
+### Added
+
+- **`AutoServiceLocator`** — mirrors phone-side `ServiceLocator`
+  but lives in `:auto`. Reuses `:shared`'s `KeystoreManager` +
+  `DatabaseFactory` + `ServerProfileRepository` +
+  `SessionRepository` + `RestTransport` + `createHttpClient()`
+  so the Auto module reads the same SQLCipher DB and hits the
+  same server without touching `:composeApp` (library-to-app
+  dep rule). Initialised from
+  `DatawatchMessagingService.onCreate()`.
+- **Auto screens now show live session counts** — Summary polls
+  `TransportClient.listSessions()` every 15 s for the first
+  enabled profile; Waiting list filters to `waiting_input`;
+  Reply screen POSTs to `/api/sessions/reply`. All three screens
+  show real data rather than placeholder.
+
+### Play-compliance
+
+- Templates stay ListTemplate / MessageTemplate; no free-form UI
+  per ADR-0031. Quick-reply strip (Yes / No / Continue / Stop)
+  is the sole action surface.
+
 ## [0.29.0] — 2026-04-21 (Sprint Y — About API links + Notifications card + cleanup)
 
 ### Added
