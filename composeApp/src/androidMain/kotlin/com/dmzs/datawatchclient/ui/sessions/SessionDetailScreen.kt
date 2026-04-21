@@ -308,6 +308,27 @@ public fun SessionDetailScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     controller = terminalController,
                 )
+                // Backend-specific minimum cols/rows. Matches parent
+                // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
+                // Without this, claude's TUI wraps on phone widths.
+                androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
+                    val backend = state.session?.backend?.lowercase()
+                    when (backend) {
+                        "claude-code", "claude" -> terminalController.setMinSize(120, 40)
+                        else -> terminalController.setMinSize(0, 0)
+                    }
+                }
+                // Freeze writes when session reaches a terminal state so
+                // the final screenshot isn't overpainted by subsequent
+                // shell-prompt pane_captures (PWA behaviour).
+                androidx.compose.runtime.LaunchedEffect(state.session?.state) {
+                    val st = state.session?.state
+                    val frozen =
+                        st == SessionState.Completed ||
+                            st == SessionState.Killed ||
+                            st == SessionState.Error
+                    terminalController.setFrozen(frozen)
+                }
                 InlineNotices(state.events)
             }
 

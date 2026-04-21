@@ -8,6 +8,67 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-04-21 (Sprint S — terminal functional parity: resize_term + throttle + freeze)
+
+Closes the biggest terminal-emulation gap flagged in the
+2026-04-21 terminal audit: mobile never told the server its xterm
+cols/rows, so claude-code (120-col TUI) rendered broken on phone
+widths. Five behavioural fixes this release, matching PWA
+accumulated terminal corrections from v0.13.0 through v4.0.7.
+
+### Added
+
+- **Outbound WS channel.** New `WsOutbound` object with
+  `sendResizeTerm(sessionId, cols, rows)` and
+  `sendCommand(sessionId, text)`. `WebSocketTransport.events()`
+  now launches a per-session writer that relays queued frames
+  onto the live socket. Previously WS was read-only.
+- **resize_term WS frame** on every xterm fit-settle.
+  `host.html` safeFit() fires `DwBridge.onResize(cols, rows)` when
+  dimensions change; the JS bridge hands off to Kotlin, which
+  emits `{type:"resize_term", data:{session_id, cols, rows}}`.
+  Server resizes the tmux pane and the next pane_capture arrives
+  at the new width.
+- **configCols / configRows enforcement.** `TerminalController.
+  setMinSize(cols, rows)`; `SessionDetailScreen` reads
+  `session.backend` and calls `setMinSize(120, 40)` when it's
+  claude-code (per parent v0.14.1). xterm resizes to at least
+  that dimension; the container scrolls horizontally when phone
+  width is narrower. TUIs now render at their intended widths.
+- **30 fps pane_capture throttle.** `dwPaneCapture` in host.html
+  skips frames arriving < 33 ms apart — mirrors PWA app.js line
+  328 protection against xterm buffer overload when the server
+  drains aggressively.
+- **Skip DATAWATCH_COMPLETE transitional frames.** host.html
+  checks each line for the marker; skipping prevents the
+  shell-prompt flash between LLM exit and session-state update.
+- **Freeze on terminal state.** `TerminalController.setFrozen`
+  called from SessionDetailScreen when session transitions to
+  complete/killed/failed. Further pane_captures are ignored so
+  the final screenshot persists.
+
+### Docs
+
+- New `docs/plans/2026-04-21-terminal-audit.md` — catalogue of
+  22 parent datawatch commits shaping terminal behaviour,
+  behavioural lessons from each, side-by-side PWA-vs-mobile
+  capability table, and breakdown of remaining gaps (scroll-mode
+  + watchdog + auto fit-to-width + send_input WS).
+- New `docs/plans/2026-04-21-auto-audit.md` — current Auto module
+  state (Sprint 4 placeholder), Play-compliance constraints per
+  ADR-0031, minimum-viable scope for testability.
+- Expanded `docs/plans/2026-04-21-pwa-audit-sprint.md` (Sprint K
+  commit) with full Settings surface catalog — ~25 sections /
+  ~70 config fields — and the ConfigFieldsPanel renderer
+  strategy that avoids hand-coding each one.
+
+### Remaining terminal gaps (tracked, not shipped this sprint)
+
+- Scroll-mode (tmux copy-mode + PageUp/Down/ESC bar)
+- 5-second no-pane_capture watchdog with auto re-subscribe
+- Auto fit-to-width (shrink font until no horizontal scroll)
+- send_input WS (composer's REST reply is functionally adequate)
+
 ## [0.23.0] — 2026-04-21 (Sprint K — terminal palette aligned byte-for-byte to PWA)
 
 ### Changed

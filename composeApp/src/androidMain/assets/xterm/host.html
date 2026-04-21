@@ -115,6 +115,21 @@
     var container = document.getElementById('term');
     term.open(container);
 
+    // configCols — minimum terminal width required by the active
+    // backend (120 for claude-code per parent v0.14.1). When the
+    // container is narrower, we still force `term.resize(configCols,
+    // rows)` so claude/TUIs lay out correctly; the container scrolls
+    // horizontally. Kotlin side calls `dwSetMinCols()` after reading
+    // the session's backend.
+    var _configCols = 0;
+    var _configRows = 0;
+    var _lastCols = 0, _lastRows = 0;
+    window.dwSetMinCols = function (cols, rows) {
+      _configCols = (typeof cols === 'number' && cols > 0) ? cols : 0;
+      _configRows = (typeof rows === 'number' && rows > 0) ? rows : 0;
+      safeFit();
+    };
+
     function safeFit() {
       if (!fit) return;
       try {
@@ -125,7 +140,25 @@
           return;
         }
         fit.fit();
+        // Enforce minimum cols when the backend requires it (e.g.
+        // claude-code 120). Matches PWA's initXterm resize logic.
+        if (_configCols > 0 && term.cols < _configCols) {
+          term.resize(_configCols, term.rows);
+        }
+        if (_configRows > 0 && term.rows < _configRows) {
+          term.resize(term.cols, _configRows);
+        }
         log('fit ok: ' + term.cols + 'x' + term.rows + ' (px ' + r.width + 'x' + r.height + ')');
+        // Notify Kotlin so it can send a `resize_term` WS frame to
+        // sync the tmux pane. Only fire when the dimensions actually
+        // changed — Kotlin debounces too but filtering here saves
+        // cross-boundary traffic.
+        if ((term.cols !== _lastCols || term.rows !== _lastRows) &&
+            window.DwBridge && DwBridge.onResize) {
+          _lastCols = term.cols;
+          _lastRows = term.rows;
+          try { DwBridge.onResize(term.cols, term.rows); } catch (e) {}
+        }
       } catch (e) {
         log('fit error: ' + e);
       }
@@ -231,12 +264,33 @@
      * pane_capture approach renders the server's already-composited frame
      * so the TUI shows up correctly at any terminal width.
      */
+    // pane_capture write pipeline — mirrors PWA app.js lines 316-356:
+    //
+    //  * 30 fps throttle (skip frames < 33 ms apart) — prevents xterm
+    //    buffer overload when the server drains aggressively.
+    //  * Skip DATAWATCH_COMPLETE marker frames — transitional state
+    //    where the echo fires before the session moves to `complete`;
+    //    rendering it flashes the shell prompt.
+    //  * Freeze on terminal states — callers can call
+    //    `dwSetFrozen(true)` when the session completes/fails/is
+    //    killed so further pane_captures don't paint over the final
+    //    screenshot.
+    var _lastPaneWrite = 0;
+    var _frozen = false;
+    window.dwSetFrozen = function (frozen) { _frozen = !!frozen; };
     window.dwPaneCapture = function (linesJson, isFirst) {
       try {
+        if (_frozen) return;
+        var now = (performance && performance.now) ? performance.now() : Date.now();
+        if (_lastPaneWrite && (now - _lastPaneWrite) < 33) return;
         var lines;
         try { lines = JSON.parse(String(linesJson || '[]')); }
         catch (e) { lines = []; }
         if (!Array.isArray(lines) || lines.length === 0) return;
+        for (var i = 0; i < lines.length; i++) {
+          if (String(lines[i]).indexOf('DATAWATCH_COMPLETE:') !== -1) return;
+        }
+        _lastPaneWrite = now;
         var joined = lines.join('\r\n');
         if (isFirst) {
           term.reset();

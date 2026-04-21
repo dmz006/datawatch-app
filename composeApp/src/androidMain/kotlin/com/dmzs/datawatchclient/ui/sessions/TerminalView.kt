@@ -132,6 +132,31 @@ public class TerminalController internal constructor() {
             null,
         )
     }
+
+    /**
+     * Set the per-backend minimum cols / rows (e.g. claude-code
+     * wants 120×40 per parent v0.14.1). xterm will be resized to
+     * at least these dimensions; container scrolls horizontally
+     * when narrower.
+     */
+    public fun setMinSize(cols: Int, rows: Int) {
+        webView?.evaluateJavascript(
+            "window.dwSetMinCols && window.dwSetMinCols($cols, $rows);",
+            null,
+        )
+    }
+
+    /**
+     * Freeze further pane_capture writes. Called when the session
+     * transitions to complete/failed/killed so the final screenshot
+     * isn't overwritten by subsequent shell-prompt frames.
+     */
+    public fun setFrozen(frozen: Boolean) {
+        webView?.evaluateJavascript(
+            "window.dwSetFrozen && window.dwSetFrozen($frozen);",
+            null,
+        )
+    }
 }
 
 @Composable
@@ -230,6 +255,20 @@ public fun TerminalView(
                             @Suppress("UNUSED_PARAMETER") data: String,
                         ) {
                             // Sprint 3: bridge typed input back to the WS reply lane.
+                        }
+
+                        /**
+                         * Called by host.html safeFit() whenever xterm's
+                         * cols/rows actually change. We turn around and fire
+                         * a `resize_term` WS frame so the server resizes the
+                         * tmux pane to match; the next pane_capture arrives
+                         * at the new dimensions. Matches PWA `syncTmuxSize`.
+                         */
+                        @JavascriptInterface
+                        fun onResize(cols: Int, rows: Int) {
+                            com.dmzs.datawatchclient.transport.ws.WsOutbound
+                                .sendResizeTerm(sessionId, cols, rows)
+                            Log.d("DwTerm", "resize_term → $cols×$rows")
                         }
                     },
                     "DwBridge",

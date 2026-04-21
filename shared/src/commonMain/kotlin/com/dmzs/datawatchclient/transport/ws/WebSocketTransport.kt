@@ -17,6 +17,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -93,6 +95,18 @@ public class WebSocketTransport(
                             }
                         send(json.encodeToString(JsonObject.serializer(), subscribeFrame))
 
+                        // Outbound relay — forward any WsOutbound frames
+                        // tagged for this session to the open WS connection.
+                        // `resize_term`, `send_input`, `command` (scroll-mode,
+                        // sendkey) all reach the server through this hook.
+                        // Matches PWA's app.js `send(...)` helper.
+                        val writerJob =
+                            launch {
+                                WsOutbound.frames
+                                    .filter { it.sessionId == sessionId }
+                                    .collect { env -> send(env.text) }
+                            }
+
                         for (frame in incoming) {
                             when (frame) {
                                 is Frame.Text -> {
@@ -112,11 +126,13 @@ public class WebSocketTransport(
                                 }
                                 is Frame.Close -> {
                                     println("WsTransport: server closed WS")
+                                    writerJob.cancel()
                                     return@webSocket
                                 }
                                 else -> { /* ignore binary / ping / pong */ }
                             }
                         }
+                        writerJob.cancel()
                     }
                     backoff = INITIAL_BACKOFF_MS
                 } catch (e: Throwable) {
