@@ -40,6 +40,7 @@ public class SessionsViewModel : ViewModel() {
         RecentActivity("Recent activity"),
         StartedAt("Started"),
         Name("Name"),
+        Custom("Custom"),
     }
 
     public data class UiState(
@@ -73,6 +74,19 @@ public class SessionsViewModel : ViewModel() {
          * When true, every session including deep history is shown.
          */
         val showHistory: Boolean = false,
+        /**
+         * In-memory user-arranged ordering for sessions on the
+         * current profile. Only consulted when [sortOrder] is
+         * [SortOrder.Custom]. Session ids not in the list fall to
+         * the tail (sorted by lastActivityAt among themselves).
+         */
+        val customOrder: List<String> = emptyList(),
+        /**
+         * True while the user is in reorder-mode — the list row
+         * composable swaps its action bar for up / down arrows
+         * that shift session position in the [customOrder] list.
+         */
+        val reorderMode: Boolean = false,
         val refreshing: Boolean = false,
         val banner: String? = null,
         /**
@@ -170,6 +184,11 @@ public class SessionsViewModel : ViewModel() {
                                 (it.name?.takeIf { n -> n.isNotBlank() } ?: it.taskSummary ?: it.id)
                                     .lowercase()
                             }
+                        SortOrder.Custom -> {
+                            val orderIx = customOrder.withIndex().associate { (i, id) -> id to i }
+                            compareBy<Session> { orderIx[it.id] ?: Int.MAX_VALUE }
+                                .thenByDescending { it.lastActivityAt }
+                        }
                     }
                 return filtered.sortedWith(stateBucket.then(withinBucket))
             }
@@ -223,6 +242,17 @@ public class SessionsViewModel : ViewModel() {
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
     private val _sortOrder = MutableStateFlow(SortOrder.RecentActivity)
+
+    /**
+     * Per-profile custom ordering: list of session ids in the order
+     * the user arranged them. In-memory only for now (Compose doesn't
+     * ship a drag-reorder LazyColumn; we add up/down arrow mode
+     * activated from the toolbar). Persistence across app restarts
+     * TBD.
+     */
+    private val _customOrder: MutableStateFlow<List<String>> =
+        MutableStateFlow(emptyList())
+    private val _reorderMode = MutableStateFlow(false)
     private val _allServersSessions = MutableStateFlow<List<Session>>(emptyList())
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
     private val _deleteSupported = MutableStateFlow(true)
@@ -281,6 +311,8 @@ public class SessionsViewModel : ViewModel() {
             _lastProbeEpochMs,
             _deleteSupported,
             _backendByProfileId,
+            _customOrder,
+            _reorderMode,
         ) { args ->
             @Suppress("UNCHECKED_CAST")
             UiState(
@@ -298,6 +330,8 @@ public class SessionsViewModel : ViewModel() {
                 lastProbeEpochMs = args[11] as Long?,
                 deleteSupported = args[12] as Boolean,
                 backendByProfileId = args[13] as Map<String, String>,
+                customOrder = args[14] as List<String>,
+                reorderMode = args[15] as Boolean,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -350,6 +384,38 @@ public class SessionsViewModel : ViewModel() {
 
     public fun setSortOrder(order: SortOrder) {
         _sortOrder.value = order
+    }
+
+    public fun toggleReorderMode() {
+        _reorderMode.value = !_reorderMode.value
+        // Entering reorder snaps sort to Custom so the ordering the
+        // user produces is what shows next. Seed customOrder with
+        // the current visible order so the first moves work.
+        if (_reorderMode.value && _sortOrder.value != SortOrder.Custom) {
+            val snap = state.value.visibleSessions.map { it.id }
+            _customOrder.value = snap
+            _sortOrder.value = SortOrder.Custom
+        }
+    }
+
+    /** Move the session [sessionId] one slot toward the top of the custom ordering. */
+    public fun moveUp(sessionId: String) {
+        val list = _customOrder.value.toMutableList()
+        val idx = list.indexOf(sessionId)
+        if (idx <= 0) return
+        list.removeAt(idx)
+        list.add(idx - 1, sessionId)
+        _customOrder.value = list
+    }
+
+    /** Move the session [sessionId] one slot toward the bottom. */
+    public fun moveDown(sessionId: String) {
+        val list = _customOrder.value.toMutableList()
+        val idx = list.indexOf(sessionId)
+        if (idx < 0 || idx >= list.size - 1) return
+        list.removeAt(idx)
+        list.add(idx + 1, sessionId)
+        _customOrder.value = list
     }
 
     public fun toggleMute(

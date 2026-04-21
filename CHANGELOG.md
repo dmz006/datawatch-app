@@ -8,6 +8,29 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.31.0] — 2026-04-21 (Sprint AA — session reorder mode + Custom sort)
+
+### Added
+
+- **Reorder mode** on the Sessions tab. A new ⇅ icon in the top
+  app bar toggles an arrangement mode where each row swaps its
+  overflow menu for ↑ / ↓ buttons. Tap moves the session one
+  slot. Entering reorder mode auto-sets the Sort dropdown to
+  `Custom` (new value) so what the user arranged is what gets
+  shown.
+- **`SortOrder.Custom`** — fourth sort option alongside Recent /
+  Started / Name. Uses the user's reorder-mode arrangement; ids
+  not in the custom list fall to the tail sorted by
+  last-activity.
+
+### Notes
+
+- Compose doesn't ship a drag-reorder LazyColumn; the up/down
+  arrow pattern avoids the pointerInput + animated-offset
+  complexity of a hand-rolled drag implementation while still
+  letting users arrange the list. Custom ordering is
+  in-memory — cross-restart persistence is a post-1.0 polish.
+
 ## [0.30.0] — 2026-04-21 (Sprint Z — Android Auto live data)
 
 ### Added

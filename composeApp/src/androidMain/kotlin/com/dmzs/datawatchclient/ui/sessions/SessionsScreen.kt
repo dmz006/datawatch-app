@@ -31,9 +31,12 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -156,6 +159,19 @@ public fun SessionsScreen(
                                 modifier = Modifier.padding(12.dp).size(20.dp),
                             )
                         }
+                        IconButton(onClick = vm::toggleReorderMode) {
+                            Icon(
+                                Icons.Filled.Reorder,
+                                contentDescription =
+                                    if (state.reorderMode) "Exit reorder mode" else "Reorder sessions",
+                                tint =
+                                    if (state.reorderMode) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                            )
+                        }
                     },
                 )
             }
@@ -206,6 +222,9 @@ public fun SessionsScreen(
                         SessionRow(
                             session = session,
                             backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
+                            reorderMode = state.reorderMode,
+                            onMoveUp = { vm.moveUp(session.id) },
+                            onMoveDown = { vm.moveDown(session.id) },
                             onQuickReply = { text -> vm.quickReply(session.id, text) },
                             fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                             deleteSupported = state.deleteSupported,
@@ -438,6 +457,9 @@ private fun SessionRow(
     onDelete: () -> Unit = {},
     onQuickReply: (String) -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
+    reorderMode: Boolean = false,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
     var responseOpen by remember { mutableStateOf(false) }
@@ -506,7 +528,14 @@ private fun SessionRow(
                     },
                 modifier = Modifier.padding(start = 4.dp).size(18.dp),
             )
-            if (!selectionMode) {
+            if (reorderMode) {
+                IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.ArrowUpward, contentDescription = "Move up")
+                }
+                IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.ArrowDownward, contentDescription = "Move down")
+                }
+            } else if (!selectionMode) {
                 Box {
                     IconButton(
                         onClick = { menuOpen = true },
