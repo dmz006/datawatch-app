@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -145,12 +147,14 @@ public fun SessionsScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = vm::refresh) {
-                            if (state.refreshing) {
-                                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(12.dp))
-                            } else {
-                                Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                            }
+                        // Inline refresh-in-progress spinner; explicit
+                        // refresh button removed in v0.14.2 since the
+                        // Sessions tab auto-polls every 5 s.
+                        if (state.refreshing) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.padding(12.dp).size(20.dp),
+                            )
                         }
                     },
                 )
@@ -185,6 +189,8 @@ public fun SessionsScreen(
                     showHistory = state.showHistory,
                     historyCount = state.historyCount,
                     onToggleShowHistory = vm::toggleShowHistory,
+                    sortOrder = state.sortOrder,
+                    onSortOrderChange = vm::setSortOrder,
                 )
             }
 
@@ -322,7 +328,10 @@ private fun SessionsToolbar(
     showHistory: Boolean,
     historyCount: Int,
     onToggleShowHistory: () -> Unit,
+    sortOrder: SessionsViewModel.SortOrder,
+    onSortOrderChange: (SessionsViewModel.SortOrder) -> Unit,
 ) {
+    var sortMenuOpen by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         OutlinedTextField(
             value = filterText,
@@ -353,16 +362,47 @@ private fun SessionsToolbar(
                 }
             }
         }
-        if (historyCount > 0) {
-            Row(
-                modifier = Modifier.padding(top = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        Row(
+            modifier = Modifier.padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        ) {
+            if (historyCount > 0) {
                 OutlinedButton(onClick = onToggleShowHistory) {
                     Text(
                         if (showHistory) "Hide history ($historyCount)" else "Show history ($historyCount)",
                         style = MaterialTheme.typography.labelMedium,
                     )
+                }
+            }
+            Box {
+                OutlinedButton(onClick = { sortMenuOpen = true }) {
+                    Text("Sort: ${sortOrder.label}", style = MaterialTheme.typography.labelMedium)
+                }
+                DropdownMenu(
+                    expanded = sortMenuOpen,
+                    onDismissRequest = { sortMenuOpen = false },
+                ) {
+                    SessionsViewModel.SortOrder.entries.forEach { o ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(o.label, modifier = Modifier.weight(1f))
+                                    if (o == sortOrder) {
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            "selected",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                onSortOrderChange(o)
+                                sortMenuOpen = false
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -400,6 +440,7 @@ private fun SessionRow(
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
+    var responseOpen by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var menuOpen by remember { mutableStateOf(false) }
@@ -539,7 +580,7 @@ private fun SessionRow(
             // 📄 icon next to the task body.
             if (!session.lastResponse.isNullOrBlank()) {
                 IconButton(
-                    onClick = { /* Response viewer wires in a follow-up batch */ },
+                    onClick = { responseOpen = true },
                     modifier = Modifier.size(24.dp),
                 ) {
                     Icon(
@@ -701,6 +742,12 @@ private fun SessionRow(
                 onRename(newName)
             },
             onDismiss = { renameOpen = false },
+        )
+    }
+    if (responseOpen) {
+        LastResponseSheet(
+            response = session.lastResponse.orEmpty(),
+            onDismiss = { responseOpen = false },
         )
     }
     if (quickCmdsOpen) {
@@ -932,17 +979,20 @@ private fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
+    // Explicit traffic-light palette so "is the server up" is
+    // unmistakable at a glance. User asked for green/red rather than
+    // theme-primary/error which looked too subtle on some devices.
     val color =
         when (reachable) {
-            true -> MaterialTheme.colorScheme.primary
-            false -> MaterialTheme.colorScheme.error
-            null -> MaterialTheme.colorScheme.outline
+            true -> Color(0xFF22C55E) // success green (PWA --success)
+            false -> Color(0xFFEF4444) // error red (PWA --error)
+            null -> Color(0xFFF59E0B) // amber — probing, haven't heard yet
         }
     val description =
         when (reachable) {
-            true -> "Reachable"
-            false -> "Unreachable"
-            null -> "Probing"
+            true -> "Server online"
+            false -> "Server unreachable"
+            null -> "Probing…"
         }
     Box(
         modifier =
@@ -954,7 +1004,7 @@ private fun ReachabilityDot(
     ) {
         Surface(
             color = color,
-            modifier = Modifier.size(8.dp),
+            modifier = Modifier.size(12.dp),
             shape = CircleShape,
         ) {}
     }
@@ -995,6 +1045,39 @@ private fun relativeTimeLabel(epochMs: Long): String {
         seconds < 3600 -> "${seconds / 60}m ago"
         seconds < 86400 -> "${seconds / 3600}h ago"
         else -> "${seconds / 86400}d ago"
+    }
+}
+
+/**
+ * Last-response viewer. PWA renders the most-recent LLM response
+ * in a modal overlay when the user taps the 📄 icon on a session
+ * row. Mobile mirrors the behaviour with a ModalBottomSheet —
+ * scrollable for long responses, monospace to preserve code
+ * indentation.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LastResponseSheet(
+    response: String,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+        ) {
+            Text("Last response", style = MaterialTheme.typography.titleMedium)
+            Text(
+                response,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
     }
 }
 

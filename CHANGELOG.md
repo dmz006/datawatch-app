@@ -8,6 +8,39 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.14.2] — 2026-04-20 (Sprint A — Sessions list auto-refresh + sort + last-response viewer)
+
+### Fixed
+
+- **Reachability dot is now an unmistakable traffic light.** Theme
+  primary/error swapped for explicit green (#22C55E) / red (#EF4444)
+  / amber (#F59E0B), and the dot is 12 dp (was 8 dp). Users asked
+  for green/red so "is the server up" reads at a glance.
+
+### Changed
+
+- **Sessions tab auto-refreshes every 5 s** (mirrors the StatsVM
+  cadence). The explicit Refresh IconButton is removed; a small
+  spinner appears inline in the app bar while a refresh is in
+  flight so users can tell the poll is live.
+
+### Added
+
+- **Sort order dropdown in Sessions toolbar.** Three orders matching
+  the PWA: Recent activity (default), Started, Name. State-bucket
+  ordering (waiting → running → …) still wins at the top; the
+  user's pick governs within-bucket ordering.
+- **Last-response viewer.** Tapping the 📄 icon on a session row
+  opens a ModalBottomSheet with the full `last_response` payload
+  (scrollable, monospace, PWA-matching).
+
+### Deferred
+
+- Drag-to-reorder sessions — non-trivial in Compose without an
+  external library; tracked for a later sprint. The Name / Started
+  / Recent-activity sort covers most of the "I want different
+  ordering" cases meanwhile.
+
 ## [0.14.1] — 2026-04-20 (Session-detail header + composer PWA parity)
 
 Second round of PWA parity fixes after a side-by-side walkthrough

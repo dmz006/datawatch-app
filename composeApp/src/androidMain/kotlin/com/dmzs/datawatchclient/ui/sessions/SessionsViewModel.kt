@@ -10,6 +10,8 @@ import com.dmzs.datawatchclient.transport.TransportError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,11 +36,18 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
+    public enum class SortOrder(public val label: String) {
+        RecentActivity("Recent activity"),
+        StartedAt("Started"),
+        Name("Name"),
+    }
+
     public data class UiState(
         val activeProfile: ServerProfile? = null,
         val allProfiles: List<ServerProfile> = emptyList(),
         val allServersMode: Boolean = false,
         val sessions: List<Session> = emptyList(),
+        val sortOrder: SortOrder = SortOrder.RecentActivity,
         /**
          * Backend chip text keyed by server-profile id. Per-session
          * backend now comes from [Session.backend] directly; this map
@@ -137,7 +146,9 @@ public class SessionsViewModel : ViewModel() {
                         }
                         .filter { s -> backendFilter == null || s.backend == backendFilter }
                         .toList()
-                return filtered.sortedWith(
+                // State-bucket sort always wins (waiting → running → …)
+                // then within-bucket applies the user-selected sort order.
+                val stateBucket =
                     compareBy<Session> { s ->
                         when (s.state) {
                             com.dmzs.datawatchclient.domain.SessionState.Waiting -> 0
@@ -149,8 +160,18 @@ public class SessionsViewModel : ViewModel() {
                             com.dmzs.datawatchclient.domain.SessionState.Error,
                             -> 4
                         }
-                    }.thenByDescending { it.lastActivityAt },
-                )
+                    }
+                val withinBucket: Comparator<Session> =
+                    when (sortOrder) {
+                        SortOrder.RecentActivity -> compareByDescending { it.lastActivityAt }
+                        SortOrder.StartedAt -> compareByDescending { it.createdAt }
+                        SortOrder.Name ->
+                            compareBy {
+                                (it.name?.takeIf { n -> n.isNotBlank() } ?: it.taskSummary ?: it.id)
+                                    .lowercase()
+                            }
+                    }
+                return filtered.sortedWith(stateBucket.then(withinBucket))
             }
 
         public val historyCount: Int
@@ -201,6 +222,7 @@ public class SessionsViewModel : ViewModel() {
     private val _filterText = MutableStateFlow("")
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
+    private val _sortOrder = MutableStateFlow(SortOrder.RecentActivity)
     private val _allServersSessions = MutableStateFlow<List<Session>>(emptyList())
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
     private val _deleteSupported = MutableStateFlow(true)
@@ -253,6 +275,7 @@ public class SessionsViewModel : ViewModel() {
             _filterText,
             _backendFilter,
             _showHistory,
+            _sortOrder,
             allServersMode,
             activeReachable,
             _lastProbeEpochMs,
@@ -269,11 +292,12 @@ public class SessionsViewModel : ViewModel() {
                 filterText = args[5] as String,
                 backendFilter = args[6] as String?,
                 showHistory = args[7] as Boolean,
-                allServersMode = args[8] as Boolean,
-                activeReachable = args[9] as Boolean?,
-                lastProbeEpochMs = args[10] as Long?,
-                deleteSupported = args[11] as Boolean,
-                backendByProfileId = args[12] as Map<String, String>,
+                sortOrder = args[8] as SortOrder,
+                allServersMode = args[9] as Boolean,
+                activeReachable = args[10] as Boolean?,
+                lastProbeEpochMs = args[11] as Long?,
+                deleteSupported = args[12] as Boolean,
+                backendByProfileId = args[13] as Map<String, String>,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -283,6 +307,21 @@ public class SessionsViewModel : ViewModel() {
         activeProfile
             .onEach { if (it != null) refresh() }
             .launchIn(viewModelScope)
+        // Periodic poll — PWA refreshes on every WS `session_update` tick;
+        // mobile doesn't subscribe to WS at the list level yet, so we poll
+        // REST instead. 5 s matches the StatsViewModel cadence and keeps
+        // the reachability dot + state pills live-ish without draining
+        // battery. Ref: `internal/server/web/app.js` loadSessions().
+        viewModelScope.launch {
+            while (currentCoroutineContext().isActive) {
+                kotlinx.coroutines.delay(AUTO_REFRESH_MS)
+                if (!_refreshing.value) refresh()
+            }
+        }
+    }
+
+    private companion object {
+        const val AUTO_REFRESH_MS: Long = 5_000L
     }
 
     public fun selectProfile(profileId: String) {
@@ -307,6 +346,10 @@ public class SessionsViewModel : ViewModel() {
 
     public fun toggleShowHistory() {
         _showHistory.value = !_showHistory.value
+    }
+
+    public fun setSortOrder(order: SortOrder) {
+        _sortOrder.value = order
     }
 
     public fun toggleMute(
