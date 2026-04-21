@@ -214,7 +214,9 @@ public fun TerminalView(
                             return true
                         }
                     }
-                setBackgroundColor(0xFF0C0C14.toInt())
+                // Match PWA terminal bg (#0f1117) so WebView layout flashes
+                // look identical to web users during reflow.
+                setBackgroundColor(0xFF0F1117.toInt())
                 addJavascriptInterface(
                     object {
                         @JavascriptInterface

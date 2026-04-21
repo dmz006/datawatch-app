@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, maximum-scale=5" />
   <link rel="stylesheet" href="xterm.min.css" />
   <style>
+    /* Palette matches PWA internal/server/web/app.js terminal init:
+       background #0f1117 (charcoal), foreground #e2e8f0 (slate). */
     html, body {
-      background: #000000;
-      color: #ffffff;
+      background: #0f1117;
+      color: #e2e8f0;
       margin: 0;
       padding: 0;
       width: 100%;
@@ -24,7 +26,7 @@
       padding: 6px;
     }
     .xterm { height: 100%; }
-    .xterm-viewport { background-color: #000000 !important; }
+    .xterm-viewport { background-color: #0f1117 !important; }
     .xterm-rows { font-size: 15px !important; }
   </style>
 </head>
@@ -38,6 +40,10 @@
       try { console.log('[dw]', msg); } catch (e) {}
     }
 
+    // Terminal options byte-for-byte aligned with PWA app.js line 2010+
+    // so TUIs (Claude Code, top, vim) render identically across web and
+    // phone. Keep the palette literally the same — diverging even one
+    // colour breaks syntax-highlighted output's consistency.
     var term = new Terminal({
       cursorBlink: true,
       fontSize: 15,
@@ -46,28 +52,27 @@
       rows: 24,
       cols: 80,
       theme: {
-        background: '#000000',
-        foreground: '#ffffff',
+        background: '#0f1117',
+        foreground: '#e2e8f0',
         cursor: '#a855f7',
-        cursorAccent: '#000000',
-        selectionBackground: '#3b1d6b',
-        // ANSI colour palette — tuned for contrast on pure black.
-        black:         '#000000',
-        red:           '#ff6d6d',
-        green:         '#8aff80',
-        yellow:        '#ffe66d',
-        blue:          '#8ab6ff',
-        magenta:       '#d080ff',
-        cyan:          '#88f0ff',
-        white:         '#ffffff',
-        brightBlack:   '#888888',
-        brightRed:     '#ff9b9b',
-        brightGreen:   '#b5ffa8',
-        brightYellow:  '#fff19a',
-        brightBlue:    '#abc7ff',
-        brightMagenta: '#e6a9ff',
-        brightCyan:    '#b2f6ff',
-        brightWhite:   '#ffffff'
+        cursorAccent: '#0f1117',
+        selectionBackground: 'rgba(168,85,247,0.3)',
+        black:         '#1a1d27',
+        red:           '#ef4444',
+        green:         '#10b981',
+        yellow:        '#f59e0b',
+        blue:          '#3b82f6',
+        magenta:       '#a855f7',
+        cyan:          '#06b6d4',
+        white:         '#e2e8f0',
+        brightBlack:   '#94a3b8',
+        brightRed:     '#f87171',
+        brightGreen:   '#34d399',
+        brightYellow:  '#fbbf24',
+        brightBlue:    '#60a5fa',
+        brightMagenta: '#c084fc',
+        brightCyan:    '#22d3ee',
+        brightWhite:   '#f8fafc'
       },
       scrollback: 5000,
       convertEol: true,

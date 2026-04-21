@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-04-21 (Sprint K — terminal palette aligned byte-for-byte to PWA)
+
+### Changed
+
+- **Terminal palette now exactly matches the PWA** (`app.js` line 2010+).
+  Background `#0f1117` (charcoal, was pure black), foreground `#e2e8f0`,
+  cursor `#a855f7` with accent `#0f1117`, selection
+  `rgba(168,85,247,0.3)`. Full 16-colour ANSI palette replaced to
+  PWA's tailwind-based mapping (ef4444 red, 10b981 green,
+  3b82f6 blue, a855f7 magenta, …). WebView background colour in
+  `TerminalView.kt` also flipped to `#0F1117` so the flash during
+  WebView reflow doesn't strobe black.
+
+### Docs
+
+- New sprint plan `docs/plans/2026-04-21-pwa-audit-sprint.md`
+  enumerating the full PWA API surface, cross-referencing mobile
+  coverage, listing the 8 remaining REST gaps + 1 WS gap
+  (`resize_term`), and breaking remaining work into sprints K–R
+  targeting v1.0.0-rc1. Written at user's directive: "document and
+  make a plan so you don't forget."
+
 ## [0.22.1] — 2026-04-21 (daemon /api/update wiring + version-drift fix)
 
 ### Fixed
