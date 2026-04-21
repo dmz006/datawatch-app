@@ -239,6 +239,31 @@ public interface TransportClient {
     public suspend fun listInterfaces(): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /**
+     * GET /api/memory/stats — episodic memory counters. Shape (PWA-
+     * observed): `{enabled, total_count, manual_count, session_count,
+     * learning_count, chunk_count, db_size_bytes}`.
+     */
+    public suspend fun memoryStats(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * GET /api/memory/list?n=&role=&since= — browse stored memories.
+     * Shape: array of `{id, role, content, created_at, similarity?}`.
+     */
+    public suspend fun memoryList(
+        limit: Int = 50,
+        role: String? = null,
+        sinceIso: String? = null,
+    ): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** GET /api/memory/search?q=<query> — semantic search over memories. */
+    public suspend fun memorySearch(
+        query: String,
+    ): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** POST /api/memory/delete {id} — delete a single memory by id. */
+    public suspend fun memoryDelete(id: Long): Result<Unit>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side

@@ -498,6 +498,50 @@ public class RestTransport(
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
+    override suspend fun memoryStats(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun memoryList(
+        limit: Int,
+        role: String?,
+        sinceIso: String?,
+    ): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/memory/list") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("n", limit)
+                    role?.let { parameter("role", it) }
+                    sinceIso?.let { parameter("since", it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun memorySearch(
+        query: String,
+    ): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/memory/search") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("q", query)
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun memoryDelete(id: Long): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/delete") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject { put("id", kotlinx.serialization.json.JsonPrimitive(id)) })
+            }
+        }
+
     // ---- v0.12 schedules + files + saved commands + config (read) ----
 
     override suspend fun listSchedules(

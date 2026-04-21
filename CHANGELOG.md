@@ -8,6 +8,27 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-04-20 (Sprint E — Memory tab)
+
+### Added
+
+- **Episodic memory browser under Settings → General.** Stats grid
+  (total / manual / session / learnings / chunks / DB size),
+  searchable + deletable list of stored memories. Matches the PWA
+  memory panel. Shows a helpful fallback when the server's
+  memory subsystem is disabled.
+- Transport: `memoryStats()`, `memoryList(limit, role, sinceIso)`,
+  `memorySearch(q)`, `memoryDelete(id)`.
+
+### Deferred
+
+- **Memory export** — parent exposes `GET /api/memory/export` as a
+  downloadable blob; mobile needs a SAF intent-launcher wiring,
+  tracked for a follow-up sprint.
+- **Memory remember** (create from UI) — PWA surfaces this inside
+  session chat, not in the standalone panel; follows when the
+  session-detail memory wiring lands.
+
 ## [0.16.0] — 2026-04-20 (Sprint D — Ops: logs viewer + interfaces + restart)
 
 ### Added

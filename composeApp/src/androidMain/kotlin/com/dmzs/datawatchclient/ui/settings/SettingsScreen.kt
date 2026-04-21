@@ -195,9 +195,11 @@ public fun SettingsScreen(
                 when (activeTab) {
                     SettingsTab.General -> {
                         // App-level + automation. Security card first (biometric
-                        // toggle), then schedules (server-side recurring tasks).
+                        // toggle), schedules (server-side recurring tasks),
+                        // then the episodic memory browser.
                         SecurityCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                        com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
                         // PWA's Comms section owns server list (datawatch
