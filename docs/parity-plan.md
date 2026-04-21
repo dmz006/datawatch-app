@@ -21,7 +21,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | PWA capability | Mobile | Notes |
 |---|---|---|
 | Live session list | ✅ | SessionsScreen + WS stream |
-| State filter chips | ✅ | All / Running / Waiting / Completed / Error |
+| Text filter + per-backend filter chips + Show/Hide history | ✅ | v0.14.0 — matches PWA toolbar. Previous state-quick-filter chip row was removed per user direction. |
 | Multi-server picker | ✅ | Top-bar dropdown + 3-finger gesture |
 | All-servers fan-out (`/api/federation/sessions`) | ✅ | "All servers" row |
 | Per-row swipe-to-mute | ✅ | |
@@ -30,7 +30,9 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Bulk delete completed (`/api/sessions/delete`) | ✅ | v0.11.0 — single + long-press multi-select. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5)) |
 | Per-row backend chip + hostname + time meta | ✅ | post-v0.12 — backend resolved from `/api/info` per profile; chip styled to match PWA monitor pills |
 | Per-row inline Stop / Restart quick-actions | ✅ | post-v0.12 — Stop on running/waiting (confirm dialog), Restart on terminal states. Overflow menu still hosts Rename + Delete |
-| Per-row waiting-input context preview | ✅ | post-v0.12 — two-line clamp of `last_prompt` under waiting rows, persisted via `session.last_prompt` (migration `2.sqm`) |
+| Per-row waiting-input context preview | ✅ | v0.14.0 — multi-line `prompt_context` (4-line clamp), falls back to `last_prompt`. Persisted via migration `3.sqm`. |
+| Per-row quick-commands popup (System / Saved / Custom) | ✅ | v0.14.0 — ▶ "Commands" button on waiting rows opens bottom sheet matching PWA `showCardCmds` |
+| "View last response" icon on rows | 🚧 | v0.14.0 — icon shown when `last_response` non-empty; response-viewer modal lands next batch |
 | Per-row timeline view (`/api/sessions/timeline`) | ✅ | v0.13.1 — timeline sheet now prefers server feed (pipe-delimited lines), falls back to local WS filter. |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |

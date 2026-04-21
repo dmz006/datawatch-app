@@ -25,11 +25,14 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -171,7 +175,18 @@ public fun SessionsScreen(
                     )
                 }
             }
-            if (!selectionMode) FilterChipRow(current = state.filter, onSelect = vm::setFilter)
+            if (!selectionMode) {
+                SessionsToolbar(
+                    filterText = state.filterText,
+                    onFilterTextChange = vm::setFilterText,
+                    backendCounts = state.backendCounts,
+                    activeBackendFilter = state.backendFilter,
+                    onToggleBackend = vm::toggleBackendFilter,
+                    showHistory = state.showHistory,
+                    historyCount = state.historyCount,
+                    onToggleShowHistory = vm::toggleShowHistory,
+                )
+            }
 
             val visible = state.visibleSessions
             if (visible.isEmpty()) {
@@ -184,7 +199,9 @@ public fun SessionsScreen(
                     items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
                         SessionRow(
                             session = session,
-                            backend = state.backendByProfileId[session.serverProfileId],
+                            backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
+                            onQuickReply = { text -> vm.quickReply(session.id, text) },
+                            fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                             deleteSupported = state.deleteSupported,
                             selectionMode = selectionMode,
                             isSelected = session.id in selectedIds,
@@ -280,25 +297,74 @@ private fun SelectionTopAppBar(
     )
 }
 
+/**
+ * PWA-matching Sessions toolbar. Three stacked rows (when present):
+ *   1. Free-text filter input (search by name/task/id/backend).
+ *   2. Backend chip row — one `FilterChip` per unique backend across
+ *      the session pool with an inline count. Tap to filter; tap
+ *      again to clear.
+ *   3. Show/Hide history toggle button labelled with the done-session
+ *      count.
+ *
+ * The old v0.11 quick-state filter chips (All / Running / Waiting /
+ * Completed / Error) were dropped — the PWA doesn't have them and
+ * the partitioned pool (active + recent → full history) covers the
+ * same use case.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterChipRow(
-    current: SessionsViewModel.Filter,
-    onSelect: (SessionsViewModel.Filter) -> Unit,
+private fun SessionsToolbar(
+    filterText: String,
+    onFilterTextChange: (String) -> Unit,
+    backendCounts: List<Pair<String, Int>>,
+    activeBackendFilter: String?,
+    onToggleBackend: (String) -> Unit,
+    showHistory: Boolean,
+    historyCount: Int,
+    onToggleShowHistory: () -> Unit,
 ) {
-    LazyRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-    ) {
-        items(SessionsViewModel.Filter.entries.toList()) { f ->
-            FilterChip(
-                selected = current == f,
-                onClick = { onSelect(f) },
-                label = { Text(f.label) },
-                modifier = Modifier.padding(horizontal = 4.dp),
-                colors = FilterChipDefaults.filterChipColors(),
-            )
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        OutlinedTextField(
+            value = filterText,
+            onValueChange = onFilterTextChange,
+            placeholder = { Text("Filter sessions…") },
+            singleLine = true,
+            trailingIcon = {
+                if (filterText.isNotEmpty()) {
+                    IconButton(onClick = { onFilterTextChange("") }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Clear filter")
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (backendCounts.size > 1) {
+            LazyRow(
+                modifier = Modifier.padding(top = 6.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+            ) {
+                items(backendCounts) { (backend, count) ->
+                    FilterChip(
+                        selected = activeBackendFilter == backend,
+                        onClick = { onToggleBackend(backend) },
+                        label = { Text("$backend · $count", style = MaterialTheme.typography.labelSmall) },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
+                }
+            }
+        }
+        if (historyCount > 0) {
+            Row(
+                modifier = Modifier.padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(onClick = onToggleShowHistory) {
+                    Text(
+                        if (showHistory) "Hide history ($historyCount)" else "Show history ($historyCount)",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
         }
     }
 }
@@ -330,7 +396,10 @@ private fun SessionRow(
     onRestart: () -> Unit = {},
     onKill: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onQuickReply: (String) -> Unit = {},
+    fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
 ) {
+    var quickCmdsOpen by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var menuOpen by remember { mutableStateOf(false) }
@@ -445,13 +514,43 @@ private fun SessionRow(
             }
         }
 
-        // Task summary — the big-fish line users scan first.
-        Text(
-            session.taskSummary ?: "(no summary)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        // Task / display text — row body. PWA prefers `name` (user-
+        // assigned label from rename) over `task` (original prompt); we
+        // do the same. Truncate matches the PWA's 80-char cap.
+        val displayText = session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary
+        val taskText =
+            when {
+                displayText == null -> "(no task)"
+                displayText.length > 80 -> displayText.take(80) + "…"
+                else -> displayText
+            }
+        Row(
             modifier = Modifier.padding(top = 6.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                taskText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            // "View last response" icon — only when the server has
+            // captured a response for this session. Mirrors the PWA's
+            // 📄 icon next to the task body.
+            if (!session.lastResponse.isNullOrBlank()) {
+                IconButton(
+                    onClick = { /* Response viewer wires in a follow-up batch */ },
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = "View last response",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
 
         // Meta row: hostname · time ago. Small, muted, PWA-style.
         Row(
@@ -479,9 +578,21 @@ private fun SessionRow(
         }
 
         // Waiting-input context preview — PWA-style quote block under rows
-        // that block on user input. Two-line clamp keeps list density sane.
-        val prompt = session.lastPrompt?.trim()
-        if (session.state == SessionState.Waiting && !prompt.isNullOrBlank()) {
+        // that block on user input. Prefers the multi-line
+        // `prompt_context` payload (PWA behaviour) so trust prompts show
+        // the imperative line *and* the action line; falls back to
+        // `last_prompt` on older servers. Last 4 lines, 100 chars per.
+        val ctxLines: List<String> =
+            when {
+                !session.promptContext.isNullOrBlank() ->
+                    session.promptContext!!.lines()
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                !session.lastPrompt.isNullOrBlank() ->
+                    listOf(session.lastPrompt!!.trim())
+                else -> emptyList()
+            }
+        if (session.state == SessionState.Waiting && ctxLines.isNotEmpty()) {
             Row(
                 modifier = Modifier.padding(top = 8.dp),
             ) {
@@ -497,12 +608,16 @@ private fun SessionRow(
                         modifier = Modifier.fillMaxSize(),
                     ) {}
                 }
-                Text(
-                    prompt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                )
+                Column {
+                    ctxLines.takeLast(4).forEach { line ->
+                        Text(
+                            if (line.length > 100) line.take(100) + "…" else line,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
 
@@ -529,6 +644,27 @@ private fun SessionRow(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Stop", color = MaterialTheme.colorScheme.error)
+                        }
+                        // Quick commands — only visible on waiting_input
+                        // rows (PWA shows the ▶ triangle only when a
+                        // prompt is actually blocking).
+                        if (session.state == SessionState.Waiting) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            TextButton(
+                                onClick = { quickCmdsOpen = true },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Keyboard,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Commands")
+                            }
                         }
                     }
                     SessionState.Completed,
@@ -559,12 +695,22 @@ private fun SessionRow(
 
     if (renameOpen) {
         RenameSessionDialog(
-            initial = session.taskSummary ?: session.id,
+            initial = session.name ?: session.taskSummary ?: session.id,
             onConfirm = { newName ->
                 renameOpen = false
                 onRename(newName)
             },
             onDismiss = { renameOpen = false },
+        )
+    }
+    if (quickCmdsOpen) {
+        QuickCommandsSheet(
+            fetchSavedCommands = fetchSavedCommands,
+            onSend = { text ->
+                onQuickReply(text)
+                quickCmdsOpen = false
+            },
+            onDismiss = { quickCmdsOpen = false },
         )
     }
     if (restartConfirmOpen) {
@@ -849,6 +995,116 @@ private fun relativeTimeLabel(epochMs: Long): String {
         seconds < 3600 -> "${seconds / 60}m ago"
         seconds < 86400 -> "${seconds / 3600}h ago"
         else -> "${seconds / 86400}d ago"
+    }
+}
+
+/**
+ * PWA-parity quick-commands sheet. Opens from the ▶ "Commands"
+ * button on waiting_input rows. Mirrors
+ * `showCardCmds(fullId)` / `cardHandleQuickCmd` / `cardSendCustom`
+ * in `internal/server/web/app.js`.
+ *
+ * Three stacks:
+ *   1. **System** — yes / no / continue / skip / /exit.
+ *   2. **Saved** — server's saved-command library from
+ *      `GET /api/commands`, lazy-loaded when the sheet opens.
+ *   3. **Custom** — free-form text input with Send.
+ *
+ * ESC and Ctrl-b (tmux prefix) are deferred — they need the WS
+ * `command` channel which the Sessions tab doesn't subscribe to
+ * today; users needing those open the session detail. Tracked for
+ * a later batch.
+ */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun QuickCommandsSheet(
+    fetchSavedCommands: suspend () -> List<Pair<String, String>>,
+    onSend: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var customText by remember { mutableStateOf("") }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        saved = fetchSavedCommands()
+    }
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            Text("Quick commands", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "System",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+            )
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+            ) {
+                listOf(
+                    "yes" to "approve",
+                    "no" to "reject",
+                    "continue" to "continue",
+                    "skip" to "skip",
+                    "/exit" to "quit",
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = false,
+                        onClick = { onSend(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            if (saved.isNotEmpty()) {
+                Text(
+                    "Saved",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                Column {
+                    saved.forEach { (name, cmd) ->
+                        TextButton(
+                            onClick = { onSend(cmd) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(name, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    cmd.take(80),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Text(
+                "Custom",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = customText,
+                    onValueChange = { customText = it },
+                    placeholder = { Text("Type a reply…") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = {
+                        val t = customText.trim()
+                        if (t.isNotEmpty()) onSend(t)
+                    },
+                    enabled = customText.isNotBlank(),
+                ) {
+                    Icon(Icons.Filled.Send, contentDescription = "Send")
+                }
+            }
+        }
     }
 }
 

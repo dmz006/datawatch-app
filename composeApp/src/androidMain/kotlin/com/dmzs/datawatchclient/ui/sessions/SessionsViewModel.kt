@@ -34,27 +34,36 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class SessionsViewModel : ViewModel() {
-    public enum class Filter(public val label: String) {
-        All("All"),
-        Running("Running"),
-        Waiting("Waiting"),
-        Completed("Completed"),
-        Error("Error"),
-    }
-
     public data class UiState(
         val activeProfile: ServerProfile? = null,
         val allProfiles: List<ServerProfile> = emptyList(),
         val allServersMode: Boolean = false,
         val sessions: List<Session> = emptyList(),
         /**
-         * Backend badge text keyed by server-profile id. Populated from
-         * `/api/info` on refresh — the session-row composable reads this
-         * to show the `claude-code` / `ollama` / etc. chip alongside the
-         * state pill. Missing keys fall back to no badge.
+         * Backend chip text keyed by server-profile id. Per-session
+         * backend now comes from [Session.backend] directly; this map
+         * is retained only as a per-server fallback for rows whose
+         * session payload omitted the field.
          */
         val backendByProfileId: Map<String, String> = emptyMap(),
-        val filter: Filter = Filter.All,
+        /**
+         * Free-text filter applied on top of [partitionedSessions].
+         * Matches PWA: case-insensitive substring across name / task /
+         * id / backend.
+         */
+        val filterText: String = "",
+        /**
+         * Optional backend-name chip filter. Null means no backend
+         * filter; otherwise only rows where `session.backend == it`
+         * show. Populated by the backend badges in the toolbar.
+         */
+        val backendFilter: String? = null,
+        /**
+         * When false (default), the list shows only active + recently-
+         * completed sessions (done within [RECENT_WINDOW_MINUTES]).
+         * When true, every session including deep history is shown.
+         */
+        val showHistory: Boolean = false,
         val refreshing: Boolean = false,
         val banner: String? = null,
         /**
@@ -75,19 +84,89 @@ public class SessionsViewModel : ViewModel() {
          */
         val deleteSupported: Boolean = true,
     ) {
-        public val visibleSessions: List<Session>
+        /**
+         * Unique backend names across the current session pool, with
+         * their counts, used to render the PWA-style backend filter
+         * badges in the toolbar. Sorted for stable layout.
+         */
+        public val backendCounts: List<Pair<String, Int>>
             get() =
-                when (filter) {
-                    Filter.All -> sessions
-                    Filter.Running -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Running }
-                    Filter.Waiting -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Waiting }
-                    Filter.Completed ->
-                        sessions.filter {
-                            it.state == com.dmzs.datawatchclient.domain.SessionState.Completed ||
-                                it.state == com.dmzs.datawatchclient.domain.SessionState.Killed
+                sessions.mapNotNull { it.backend?.takeIf { b -> b.isNotBlank() } }
+                    .groupingBy { it }
+                    .eachCount()
+                    .toList()
+                    .sortedBy { it.first }
+
+        /**
+         * Sessions after partitioning + filter application. Matches the
+         * PWA's `renderSessionsView` pool computation:
+         *   1. Compute active / recent / history buckets;
+         *   2. Default pool = active + recent; `showHistory` swaps in everything;
+         *   3. Apply text + backend filters;
+         *   4. Order: active → waiting_input first (PWA sorts by state),
+         *      then most-recent activity.
+         */
+        public val visibleSessions: List<Session>
+            get() {
+                val nowMs = System.currentTimeMillis()
+                val doneStates =
+                    setOf(
+                        com.dmzs.datawatchclient.domain.SessionState.Completed,
+                        com.dmzs.datawatchclient.domain.SessionState.Killed,
+                        com.dmzs.datawatchclient.domain.SessionState.Error,
+                    )
+                val recentWindowMs = RECENT_WINDOW_MINUTES * 60_000L
+                val pool =
+                    if (showHistory) {
+                        sessions
+                    } else {
+                        sessions.filter { s ->
+                            s.state !in doneStates ||
+                                (nowMs - s.lastActivityAt.toEpochMilliseconds()) < recentWindowMs
                         }
-                    Filter.Error -> sessions.filter { it.state == com.dmzs.datawatchclient.domain.SessionState.Error }
-                }
+                    }
+                val q = filterText.trim().lowercase()
+                val filtered =
+                    pool.asSequence()
+                        .filter { s ->
+                            q.isEmpty() ||
+                                (s.name?.lowercase()?.contains(q) == true) ||
+                                (s.taskSummary?.lowercase()?.contains(q) == true) ||
+                                s.id.lowercase().contains(q) ||
+                                (s.backend?.lowercase()?.contains(q) == true)
+                        }
+                        .filter { s -> backendFilter == null || s.backend == backendFilter }
+                        .toList()
+                return filtered.sortedWith(
+                    compareBy<Session> { s ->
+                        when (s.state) {
+                            com.dmzs.datawatchclient.domain.SessionState.Waiting -> 0
+                            com.dmzs.datawatchclient.domain.SessionState.Running -> 1
+                            com.dmzs.datawatchclient.domain.SessionState.RateLimited -> 2
+                            com.dmzs.datawatchclient.domain.SessionState.New -> 3
+                            com.dmzs.datawatchclient.domain.SessionState.Completed,
+                            com.dmzs.datawatchclient.domain.SessionState.Killed,
+                            com.dmzs.datawatchclient.domain.SessionState.Error,
+                            -> 4
+                        }
+                    }.thenByDescending { it.lastActivityAt },
+                )
+            }
+
+        public val historyCount: Int
+            get() {
+                val doneStates =
+                    setOf(
+                        com.dmzs.datawatchclient.domain.SessionState.Completed,
+                        com.dmzs.datawatchclient.domain.SessionState.Killed,
+                        com.dmzs.datawatchclient.domain.SessionState.Error,
+                    )
+                return sessions.count { it.state in doneStates }
+            }
+
+        private companion object {
+            const val RECENT_WINDOW_MINUTES: Long = 5
+        }
     }
 
     private val allProfiles: StateFlow<List<ServerProfile>> =
@@ -119,7 +198,9 @@ public class SessionsViewModel : ViewModel() {
 
     private val _refreshing = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
-    private val _filter = MutableStateFlow(Filter.All)
+    private val _filterText = MutableStateFlow("")
+    private val _backendFilter = MutableStateFlow<String?>(null)
+    private val _showHistory = MutableStateFlow(false)
     private val _allServersSessions = MutableStateFlow<List<Session>>(emptyList())
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
     private val _deleteSupported = MutableStateFlow(true)
@@ -169,7 +250,9 @@ public class SessionsViewModel : ViewModel() {
             sessionsFlow,
             _refreshing,
             _banner,
-            _filter,
+            _filterText,
+            _backendFilter,
+            _showHistory,
             allServersMode,
             activeReachable,
             _lastProbeEpochMs,
@@ -183,12 +266,14 @@ public class SessionsViewModel : ViewModel() {
                 sessions = args[2] as List<Session>,
                 refreshing = args[3] as Boolean,
                 banner = args[4] as String?,
-                filter = args[5] as Filter,
-                allServersMode = args[6] as Boolean,
-                activeReachable = args[7] as Boolean?,
-                lastProbeEpochMs = args[8] as Long?,
-                deleteSupported = args[9] as Boolean,
-                backendByProfileId = args[10] as Map<String, String>,
+                filterText = args[5] as String,
+                backendFilter = args[6] as String?,
+                showHistory = args[7] as Boolean,
+                allServersMode = args[8] as Boolean,
+                activeReachable = args[9] as Boolean?,
+                lastProbeEpochMs = args[10] as Long?,
+                deleteSupported = args[11] as Boolean,
+                backendByProfileId = args[12] as Map<String, String>,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -208,8 +293,20 @@ public class SessionsViewModel : ViewModel() {
         ServiceLocator.activeServerStore.set(ActiveServerStore.SENTINEL_ALL_SERVERS)
     }
 
-    public fun setFilter(filter: Filter) {
-        _filter.value = filter
+    public fun setFilterText(text: String) {
+        _filterText.value = text
+    }
+
+    /**
+     * Toggles the backend chip filter — tapping the same chip twice
+     * clears it, matching the PWA's `setBackendFilter` behaviour.
+     */
+    public fun toggleBackendFilter(backend: String) {
+        _backendFilter.value = if (_backendFilter.value == backend) null else backend
+    }
+
+    public fun toggleShowHistory() {
+        _showHistory.value = !_showHistory.value
     }
 
     public fun toggleMute(
@@ -235,6 +332,45 @@ public class SessionsViewModel : ViewModel() {
                 },
             )
         }
+    }
+
+    /**
+     * Send a plain-text reply to a session without opening detail.
+     * Powers the Sessions-list quick-commands popup (System / Saved /
+     * Custom) on waiting_input rows. ESC / Ctrl-b special keys are
+     * out of scope here — they need the WS `command` channel which
+     * the list view doesn't currently subscribe to; users needing
+     * those open the session detail.
+     */
+    public fun quickReply(
+        sessionId: String,
+        text: String,
+    ) {
+        val profile = profileForSession(sessionId) ?: return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).replyToSession(sessionId, trimmed).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _banner.value = "Reply failed — ${err.message ?: err::class.simpleName}"
+                },
+            )
+        }
+    }
+
+    /**
+     * Load the server's saved-command list so the Sessions-list
+     * quick-commands popup can render the "Saved" optgroup matching
+     * the PWA. Cached per-profile; resolves null on fetch failure so
+     * the popup just hides the Saved section.
+     */
+    public suspend fun fetchSavedCommands(sessionId: String): List<Pair<String, String>> {
+        val profile = profileForSession(sessionId) ?: return emptyList()
+        return ServiceLocator.transportFor(profile).listCommands().fold(
+            onSuccess = { list -> list.map { it.name to it.command } },
+            onFailure = { emptyList() },
+        )
     }
 
     /**

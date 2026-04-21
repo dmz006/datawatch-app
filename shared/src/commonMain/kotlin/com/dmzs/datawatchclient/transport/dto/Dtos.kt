@@ -23,6 +23,11 @@ public data class SessionDto(
     val state: String,
     @SerialName("full_id") val fullId: String? = null,
     val task: String? = null,
+    /**
+     * User-assigned display name (via rename). Parent PWA prefers this over
+     * [task] for the row header. When null, the row falls back to [task].
+     */
+    val name: String? = null,
     @SerialName("tmux_session") val tmuxSession: String? = null,
     @SerialName("log_file") val logFile: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
@@ -31,6 +36,29 @@ public data class SessionDto(
     @SerialName("group_id") val groupId: String? = null,
     @SerialName("pending_input") val pendingInput: String? = null,
     @SerialName("last_prompt") val lastPrompt: String? = null,
+    /**
+     * Multi-line prompt context surfaced by the server when a session is in
+     * `waiting_input`. PWA renders the last 4 lines under the card so users
+     * know what the LLM is actually asking before they tap through.
+     * Overrides [lastPrompt] when present.
+     */
+    @SerialName("prompt_context") val promptContext: String? = null,
+    /**
+     * Most-recent LLM response snippet. When present, the PWA shows a
+     * "View last response" icon on the row; mobile does the same.
+     */
+    @SerialName("last_response") val lastResponse: String? = null,
+    /**
+     * Active backend name for this session. Populates the per-row
+     * backend badge; was previously fetched from `/api/info` which only
+     * returns the server's current backend, not the session's.
+     */
+    @SerialName("llm_backend") val llmBackend: String? = null,
+    /**
+     * Federation-only: source server name when the row came from a
+     * proxied fan-out call. `"local"` for rows on the user's own server.
+     */
+    val server: String? = null,
 )
 
 @Serializable

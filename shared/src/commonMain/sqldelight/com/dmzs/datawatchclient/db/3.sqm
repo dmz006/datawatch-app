@@ -1,0 +1,18 @@
+-- Migration 3 → 4 (Sessions-tab PWA parity batch).
+--
+-- Adds the remaining session-level fields the parent server already
+-- returns and the PWA uses, so mobile can render matching row chrome
+-- even on a cold-open from cache (before the first REST refresh).
+--   * name             — user-assigned rename target; row header prefers
+--     this over task_summary.
+--   * backend          — active LLM backend per session (claude-code,
+--     ollama, ...). Populates the per-row backend badge.
+--   * prompt_context   — multi-line prompt payload for waiting_input
+--     rows; trumps last_prompt when present.
+--   * last_response    — most-recent LLM response snippet; when set,
+--     the row shows a "View last response" icon.
+
+ALTER TABLE session ADD COLUMN name TEXT;
+ALTER TABLE session ADD COLUMN backend TEXT;
+ALTER TABLE session ADD COLUMN prompt_context TEXT;
+ALTER TABLE session ADD COLUMN last_response TEXT;

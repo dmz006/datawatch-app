@@ -8,6 +8,55 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-04-20 (Sessions tab matches PWA)
+
+Ripped the state-quick-filters the user explicitly called out ("the
+current quick filters on the sessions tab should not be there") and
+rebuilt the Sessions tab to match the PWA monitor's shape in
+`internal/server/web/app.js` row-for-row.
+
+### Changed
+
+- **Sessions toolbar now matches the PWA.** The old `FilterChipRow`
+  (All / Running / Waiting / Completed / Error) is gone. Replaced
+  with the PWA's three-row toolbar: a free-text filter input
+  (search by name / task / id / backend), per-backend filter
+  chips with inline counts (only shown when the pool spans >1
+  backend), and a Show/Hide history toggle with the done-session
+  count. Default pool: active + recently-completed
+  (< 5 min); hit Show History to see everything. Row ordering
+  mirrors the PWA — waiting → running → rate-limited → new →
+  terminal, then most-recent activity within each bucket.
+- **Session rows render name over task in the body, matching PWA.**
+  When the user has renamed a session, the row shows the assigned
+  name; falls back to the original task prompt, then to `(no task)`.
+  Row header still shows the short id + state + backend chip.
+
+### Added
+
+- **Quick commands sheet on waiting_input rows.** New ▶ "Commands"
+  button next to Stop opens a PWA-style bottom sheet with three
+  stacks: System chips (yes / no / continue / skip / /exit), Saved
+  commands lazily pulled from `GET /api/commands`, and a Custom
+  text input. Taps fire `POST /api/sessions/reply` without
+  navigating into the session. ESC / Ctrl-b keys deferred — they
+  need the WS `command` channel which the Sessions tab doesn't
+  subscribe to.
+- **Multi-line `prompt_context` preview under waiting rows.** When
+  the server emits `prompt_context`, the row now renders the last
+  4 lines (100-char clamp per line), matching the PWA's trust-
+  prompt rendering so users see both the imperative ("press 1") and
+  the action ("Enter to confirm"). Falls back to single-line
+  `last_prompt` on older servers.
+- **"View last response" icon inline with the task body.** Shows
+  only when `session.last_response` is non-empty. Click handler is
+  a TODO placeholder — the response-viewer modal lands in the next
+  batch (tracked with the existing #112 follow-up).
+- **Per-session `backend` / `name` / `promptContext` / `lastResponse`
+  persisted to DB via migration `3.sqm`** so the PWA-matching row
+  chrome renders on cold-open from cache, not just after the first
+  REST refresh.
+
 ## [0.13.1] — 2026-04-20 (follow-up — correct stale spec paths + wire shipped endpoints)
 
 Discovered that three parity-plan rows previously tagged

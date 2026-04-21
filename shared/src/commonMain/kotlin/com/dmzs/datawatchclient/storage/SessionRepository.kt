@@ -58,6 +58,10 @@ public class SessionRepository(
             last_activity_ts = session.lastActivityAt.toEpochMilliseconds(),
             muted = if (session.muted) 1L else 0L,
             last_prompt = session.lastPrompt,
+            name = session.name,
+            backend = session.backend,
+            prompt_context = session.promptContext,
+            last_response = session.lastResponse,
         )
     }
 
@@ -72,5 +76,9 @@ public class SessionRepository(
             lastActivityAt = Instant.fromEpochMilliseconds(last_activity_ts),
             muted = muted != 0L,
             lastPrompt = last_prompt,
+            name = name,
+            backend = backend,
+            promptContext = prompt_context,
+            lastResponse = last_response,
         )
 }

@@ -34,6 +34,10 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         createdAt = createdAt.toInstantOrEpoch(),
         lastActivityAt = updatedAt.toInstantOrEpoch(),
         lastPrompt = lastPrompt ?: pendingInput,
+        name = name,
+        promptContext = promptContext,
+        lastResponse = lastResponse,
+        backend = llmBackend,
     )
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert =
