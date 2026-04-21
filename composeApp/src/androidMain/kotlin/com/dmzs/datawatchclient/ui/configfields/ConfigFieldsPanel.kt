@@ -116,16 +116,15 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
     ) {
         PwaSectionTitle(section.title)
         banner?.let {
+            // Only error banners fire after the autosave switch (S4). Drop
+            // the old "Saved." success path — the inline "Saving…" label
+            // is the sole positive indicator, matching PWA which doesn't
+            // toast on successful save either.
             Text(
                 it,
                 modifier = Modifier.padding(horizontal = 12.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color =
-                    if (it.startsWith("Saved")) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
+                color = MaterialTheme.colorScheme.error,
             )
         }
         if (rawConfig == null && banner == null) {
@@ -378,76 +377,3 @@ internal fun buildDotPatch(
     return buildJsonObject { changed.forEach { (k, v) -> put(k, v) } }
 }
 
-/**
- * Merge [values] back into [base] at their dotted-key locations.
- * Unknown / blank password fields preserve the original value
- * (ADR-0019 empty-preserving rule).
- *
- * **Deprecated** — retained only for compatibility with legacy call
- * sites (BackendConfigDialog, DetectionFiltersCard) until they move
- * to [buildDotPatch]. New code should prefer the flat patch path.
- */
-internal fun mergeValues(
-    base: JsonObject,
-    fields: List<ConfigField>,
-    values: Map<String, String>,
-): JsonObject {
-    val fieldByKey = fields.associateBy { it.key }
-    // Build a map of (dotted path) → new JsonElement, skipping
-    // blanks for password fields to preserve server-side secrets.
-    val updates = mutableMapOf<List<String>, JsonElement>()
-    for ((key, raw) in values) {
-        val field = fieldByKey[key] ?: continue
-        val trimmed = raw.trim()
-        if (field is ConfigField.TextField && field.password && trimmed.isEmpty()) continue
-        val el: JsonElement =
-            when (field) {
-                is ConfigField.Toggle -> JsonPrimitive(trimmed.toBooleanStrictOrNull() ?: false)
-                is ConfigField.NumberField -> JsonPrimitive(trimmed.toIntOrNull() ?: 0)
-                is ConfigField.TextField -> JsonPrimitive(trimmed)
-                is ConfigField.Select,
-                is ConfigField.InterfaceSelect,
-                is ConfigField.LlmSelect,
-                -> JsonPrimitive(trimmed)
-            }
-        updates[key.split('.')] = el
-    }
-    // Deep-merge updates into base, preserving sibling keys.
-    fun merge(
-        cur: JsonObject,
-        path: List<String>,
-        value: JsonElement,
-    ): JsonObject {
-        if (path.isEmpty()) return cur
-        val head = path.first()
-        val rest = path.drop(1)
-        return buildJsonObject {
-            var wrote = false
-            cur.forEach { (k, v) ->
-                if (k == head) {
-                    wrote = true
-                    if (rest.isEmpty()) {
-                        put(k, value)
-                    } else {
-                        val child = (v as? JsonObject) ?: JsonObject(emptyMap())
-                        put(k, merge(child, rest, value))
-                    }
-                } else {
-                    put(k, v)
-                }
-            }
-            if (!wrote) {
-                if (rest.isEmpty()) {
-                    put(head, value)
-                } else {
-                    put(head, merge(JsonObject(emptyMap()), rest, value))
-                }
-            }
-        }
-    }
-    var result = base
-    for ((path, el) in updates) {
-        result = merge(result, path, el)
-    }
-    return result
-}
