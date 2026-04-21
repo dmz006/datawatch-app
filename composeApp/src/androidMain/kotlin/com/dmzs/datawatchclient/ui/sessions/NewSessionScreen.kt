@@ -67,6 +67,33 @@ public fun NewSessionScreen(
     var submitting by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
 
+    // Available LLM backends on the selected server (from /api/backends).
+    // Refreshed whenever the user picks a different server. The picker
+    // also remembers the server's currently-active backend so we can
+    // skip the setActiveBackend call when the user keeps the default.
+    var backends by remember { mutableStateOf<List<String>>(emptyList()) }
+    var activeBackend by remember { mutableStateOf<String?>(null) }
+    var pickedBackend by remember { mutableStateOf<String?>(null) }
+    var backendsBlocked by remember { mutableStateOf(false) }
+    LaunchedEffect(selectedProfileId) {
+        backends = emptyList()
+        activeBackend = null
+        pickedBackend = null
+        backendsBlocked = false
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listBackends().fold(
+            onSuccess = { v ->
+                backends = v.llm
+                activeBackend = v.active
+                pickedBackend = v.active
+            },
+            onFailure = {
+                // Server doesn't expose /api/backends — picker is hidden.
+                backendsBlocked = true
+            },
+        )
+    }
+
     // Default-select active profile (or the first enabled one) on first composition.
     LaunchedEffect(profiles, activeId) {
         if (selectedProfileId == null) {
@@ -150,6 +177,24 @@ public fun NewSessionScreen(
                 onSelect = { selectedProfileId = it },
             )
 
+            // Backend picker — populated from /api/backends. Only renders
+            // when the server actually exposes the endpoint (avoids a
+            // confusing "no backends" state on older parents).
+            if (!backendsBlocked && backends.isNotEmpty()) {
+                Text(
+                    "LLM backend",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                BackendPickerDropdown(
+                    backends = backends,
+                    selected = pickedBackend,
+                    active = activeBackend,
+                    onSelect = { pickedBackend = it },
+                )
+            }
+
             Text(
                 "Working directory (optional)",
                 style = MaterialTheme.typography.labelLarge,
@@ -192,7 +237,21 @@ public fun NewSessionScreen(
                             submitting = true
                             banner = null
                             scope.launch {
-                                ServiceLocator.transportFor(profile)
+                                val transport = ServiceLocator.transportFor(profile)
+                                // If user picked a non-active backend, switch
+                                // it server-wide first. Parent has no per-
+                                // session backend param on /api/sessions/start,
+                                // so this is the closest mobile can get today.
+                                val backendToUse = pickedBackend
+                                if (backendToUse != null && backendToUse != activeBackend) {
+                                    transport.setActiveBackend(backendToUse).onFailure { err ->
+                                        banner =
+                                            "Couldn't switch backend to $backendToUse — " +
+                                                "${err.message ?: err::class.simpleName}. " +
+                                                "Starting with server's current backend."
+                                    }
+                                }
+                                transport
                                     .startSession(
                                         task = task.trim(),
                                         workingDir = workingDir.trim().ifBlank { null },
@@ -274,6 +333,60 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
                     },
                     onClick = {
                         onPick(cmd.command)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BackendPickerDropdown(
+    backends: List<String>,
+    selected: String?,
+    active: String?,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val display = selected ?: active ?: backends.first()
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = display,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            backends.forEach { name ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            Text(name, modifier = Modifier.weight(1f))
+                            if (name == active) {
+                                Text(
+                                    "active",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onSelect(name)
                         expanded = false
                     },
                 )

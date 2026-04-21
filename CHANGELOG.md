@@ -10,6 +10,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **New Session: LLM backend picker.** The Start-session form now shows
+  a Backend dropdown populated from `/api/backends` for the selected
+  server. The currently-active backend is annotated `active` in the
+  list; picking a different one calls `setActiveBackend` server-wide
+  before posting `/api/sessions/start` (parent has no per-session
+  backend param yet, so this is the closest mobile can get today). If
+  the server doesn't expose `/api/backends`, the picker is hidden
+  entirely. Mode + model-variant pickers stay parked on
+  upstream-blocked rows in parity-plan (`/api/profiles`,
+  `/api/ollama/models`, `/api/openwebui/models` not in parent
+  openapi).
+
 - **Session timeline bottom-sheet overlay.** A new "Timeline…" entry
   in the session-detail overflow opens a modal sheet that filters the
   cached event stream to non-Output entries (state changes, prompts,

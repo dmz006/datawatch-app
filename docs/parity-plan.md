@@ -70,9 +70,9 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | PWA capability | Mobile | Notes |
 |---|---|---|
 | Start session from form (`/api/sessions/start`) | ✅ | v0.11.0 — Sessions-tab FAB → `NewSessionScreen` |
-| Pick LLM backend (`/api/backends`) | ✅ (read-only) | Channels tab; per-session backend selection during start is v0.11 |
-| Pick model variant | ❌ | v0.11 — needs `/api/ollama/models` + `/api/openwebui/models` |
-| Pick profile (`/api/profiles`) | ❌ | v0.11 — F10 ephemeral-agent profiles |
+| Pick LLM backend (`/api/backends`) | ✅ | Settings → LLM read; New Session form has a Backend dropdown that calls `setActiveBackend` server-wide before start (parent lacks per-session backend param) |
+| Pick model variant | ❌ | **upstream-blocked** — needs `/api/ollama/models` + `/api/openwebui/models` (not in parent openapi) |
+| Pick profile (`/api/profiles`) | ❌ | **upstream-blocked** — F10 ephemeral-agent profiles (not in parent openapi) |
 | Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
 | Voice-to-new-session | ❌ | v0.12 — composer mic exists; "new:" prefix auto-exec wiring needed |
 
