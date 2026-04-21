@@ -709,6 +709,13 @@ public class RestTransport(
             }
         }
 
+    override suspend fun fetchMcpDocs(): Result<kotlinx.serialization.json.JsonElement> =
+        request {
+            client.get("${profile.baseUrl}/api/mcp/docs") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listKindProfiles(
         kind: String,
     ): Result<List<kotlinx.serialization.json.JsonObject>> =
@@ -740,6 +747,19 @@ public class RestTransport(
             client.post("${profile.baseUrl}/api/profiles/${kind}s/$name/smoke") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
+        }
+
+    override suspend fun putKindProfile(
+        kind: String,
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/profiles/${kind}s/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
         }
 
     // ---- v0.12 schedules + files + saved commands + config (read) ----

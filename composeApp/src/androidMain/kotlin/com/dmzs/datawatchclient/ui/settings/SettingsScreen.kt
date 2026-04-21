@@ -266,6 +266,7 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
                         )
+                        com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                         com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                     }
@@ -278,6 +279,7 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
                         )
+                        com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
                         com.dmzs.datawatchclient.ui.filters.FiltersCard()
                         com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                     }
@@ -295,6 +297,7 @@ public fun SettingsScreen(
                     SettingsTab.About -> {
                         AboutCard(activeProfile = activeProfile)
                         com.dmzs.datawatchclient.ui.about.ApiLinksCard()
+                        com.dmzs.datawatchclient.ui.about.McpToolsCard()
                         com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }

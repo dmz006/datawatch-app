@@ -8,6 +8,59 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.32.0] — 2026-04-22 (Sprint BB — close the PWA-parity gap list)
+
+Closes every concrete PWA-parity gap the 2026-04-21 honest-audit
+surfaced.
+
+### Added
+
+- **Detection filters card** under Settings → LLM. Mirrors PWA
+  `loadDetectionFilters` — four pattern lists (prompt /
+  completion / rate-limit / input-needed) plus two timing
+  fields (prompt_debounce, notify_cooldown). Distinct from
+  Output Filters (`/api/filters` CRUD) — these live in
+  `config.detection.*_patterns`.
+- **Arrow keys + Tab + PageUp/Down in the Quick Commands sheet.**
+  Seven new chips send the raw ANSI control sequences
+  (`\x1B[A`/`B`/`C`/`D`, `\x1B[5~`/`[6~`, `\t`) via the existing
+  reply path. Matches PWA f00f534.
+- **MCP tools in-app viewer** under Settings → About. Reads
+  `/api/mcp/docs` and renders tool catalogues whether the server
+  emits a flat array or grouped categories.
+- **CA cert install card** under Settings → Comms. Download
+  button + system-security-settings shortcut + expandable
+  Android and iPhone step-by-step instructions verbatim from
+  the PWA install block.
+- **Project + Cluster profile create + edit dialogs**. Minimal
+  fields (name + description) exposed; nested blocks
+  (image_pair / git / memory / kubernetes context) preserved
+  from server response so mobile round-trips without nuking the
+  schema. Full deep edits still happen on the PWA.
+- **Update daemon progress bar** — indeterminate
+  `LinearProgressIndicator` shows while the update call is in
+  flight, matching PWA v4.0.6's "Downloading update…" strip.
+- **Chat-mode bubble rendering** — session-detail chat tab now
+  renders events as avatar + role + body bubbles with role-
+  tinted surface colours instead of plain flat rows. Mirrors
+  PWA `renderChatBubble` styling (markdown rendering is a
+  post-1.0 polish).
+- **Session backlog grid** at the bottom of the New Session
+  form — up to 20 most-recent done sessions with per-row
+  Restart button. Matches PWA `renderSessionBacklog`.
+
+### Changed
+
+- **Auto HostValidator is now strict on release builds** — debug
+  APKs keep `ALLOW_ALL_HOSTS_VALIDATOR` so the Desktop Head Unit
+  simulator binds freely; release builds consult a new
+  `R.array.hosts_allowlist` with the Google-published Auto /
+  DHU / emulator signing-cert pairs (ADR-0031 compliance).
+
+### Transport
+
+- `putKindProfile(kind, name, body)`, `fetchMcpDocs()`.
+
 ## [0.31.0] — 2026-04-21 (Sprint AA — session reorder mode + Custom sort)
 
 ### Added

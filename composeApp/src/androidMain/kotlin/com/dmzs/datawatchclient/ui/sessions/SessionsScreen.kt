@@ -1167,6 +1167,15 @@ private fun QuickCommandsSheet(
                     "/exit" to "quit",
                     "\u001B" to "ESC",
                     "\u0002" to "Ctrl-b",
+                    // Arrow keys + PageUp/Down as ANSI escape sequences.
+                    // Matches PWA f00f534 (v0.13.6 seed esc/up/down keys).
+                    "\u001B[A" to "↑",
+                    "\u001B[B" to "↓",
+                    "\u001B[C" to "→",
+                    "\u001B[D" to "←",
+                    "\u001B[5~" to "PgUp",
+                    "\u001B[6~" to "PgDn",
+                    "\u0009" to "Tab",
                 ).forEach { (value, label) ->
                     FilterChip(
                         selected = false,

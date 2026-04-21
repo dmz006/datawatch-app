@@ -377,6 +377,13 @@ public interface TransportClient {
     public suspend fun deleteFilter(id: String): Result<Unit>
 
     /**
+     * GET /api/mcp/docs — MCP tool catalogue. Returns an object of
+     * tool groups or a flat array depending on parent version;
+     * mobile viewer renders whatever structured form comes back.
+     */
+    public suspend fun fetchMcpDocs(): Result<kotlinx.serialization.json.JsonElement>
+
+    /**
      * GET /api/profiles/<kind>s — list project or cluster profiles.
      * [kind] is `"project"` or `"cluster"`. Returns the raw
      * `profiles` array from the `{profiles: [...]}` response so
@@ -400,6 +407,19 @@ public interface TransportClient {
         kind: String,
         name: String,
     ): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * PUT /api/profiles/<kind>s/<name> — create or update a profile.
+     * [body] is the full profile object per PWA schema (image_pair,
+     * git, memory, kubernetes, etc.). Mobile MVP ships a minimal
+     * name + description + kind editor; full nested-field editing
+     * stays on the PWA for now.
+     */
+    public suspend fun putKindProfile(
+        kind: String,
+        name: String,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit>
 
     /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's

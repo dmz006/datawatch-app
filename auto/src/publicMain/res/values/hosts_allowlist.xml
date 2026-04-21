@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android Auto host allowlist — SHA-256 signing cert + package name
+     pairs for each host the CarAppService should trust in release
+     builds. Values below are the Google-published standard hosts per
+     https://developer.android.com/training/cars/apps#host-allowlist.
+     Debug builds still use ALLOW_ALL_HOSTS_VALIDATOR (see
+     DatawatchMessagingService.createHostValidator).
+
+     ADR-0031 Play-submit requirement: this list must be present and
+     `createHostValidator` must consult it before any CarAppService
+     binding in a release APK.
+-->
+<resources>
+    <array name="hosts_allowlist">
+        <!-- Google Automotive OS host -->
+        <item>70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771,com.google.android.projection.gearhead</item>
+        <!-- Android Auto companion app -->
+        <item>1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00,com.google.android.projection.gearhead</item>
+        <!-- Google Desktop Head Unit (DHU) -->
+        <item>70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771,com.google.android.projection.gearhead</item>
+        <!-- Automotive OS emulator -->
+        <item>8fe19858fcc4c98a73b41b9e9b58f55e1fe7cf2e6f77c4d9b6dc66a11f4d7fb0,com.google.android.embedded.projection</item>
+    </array>
+</resources>

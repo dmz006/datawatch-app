@@ -843,10 +843,12 @@ private fun SessionSchedulesStrip(
 }
 
 /**
- * Chat-mode event list — same EventRow renderer, but the latest
- * `PromptDetected` row gets quick-reply buttons appended (Yes / No /
- * Stop). Tap fires [onQuickReply] without touching the composer
- * draft.
+ * Chat-mode event list — renders Output events as chat bubbles
+ * (user / assistant / system) with avatar + role + timestamp +
+ * body. Mirrors PWA `renderChatBubble` (app.js ~line 1737). The
+ * latest `PromptDetected` row gets quick-reply buttons appended
+ * (Yes / No / Stop). Tap fires [onQuickReply] without touching
+ * the composer draft.
  */
 @Composable
 private fun ChatEventList(
@@ -878,14 +880,105 @@ private fun ChatEventList(
             events,
             key = { e -> "${e.sessionId}-${e.ts.toEpochMilliseconds()}-${e.hashCode()}" },
         ) { ev ->
-            EventRow(ev)
+            ChatBubbleRow(ev)
             if (ev is SessionEvent.PromptDetected && events.indexOf(ev) == latestPromptIndex) {
                 QuickReplyButtons(onQuickReply = onQuickReply)
             }
-            HorizontalDivider()
         }
     }
 }
+
+/**
+ * Chat-style row: avatar + role label + timestamp header over a
+ * bubble-like body. Mirrors PWA CSS `.chat-bubble` styling —
+ * user rows right-aligned with accent fill, assistant rows
+ * left-aligned with surface fill, system rows centred italic.
+ */
+@Composable
+private fun ChatBubbleRow(event: SessionEvent) {
+    val (avatar, label, body, role) =
+        when (event) {
+            is SessionEvent.Output ->
+                when (event.stream) {
+                    SessionEvent.Output.Stream.Stdout ->
+                        Quad("AI", "Assistant", event.body, "assistant")
+                    SessionEvent.Output.Stream.Stderr ->
+                        Quad("!", "Error", event.body, "system")
+                    SessionEvent.Output.Stream.System ->
+                        Quad("S", "System", event.body, "system")
+                }
+            is SessionEvent.PromptDetected ->
+                Quad("?", "Prompt", event.prompt.text, "prompt")
+            is SessionEvent.StateChange ->
+                Quad(
+                    "S",
+                    "State",
+                    "${event.from.name.lowercase()} → ${event.to.name.lowercase()}",
+                    "system",
+                )
+            is SessionEvent.Completed ->
+                Quad("✓", "Done", "exit ${event.exitCode ?: ""}", "system")
+            is SessionEvent.Error -> Quad("✕", "Error", event.message, "error")
+            is SessionEvent.RateLimited ->
+                Quad("⏳", "Rate", event.retryAfter?.let { "retry $it" } ?: "throttled", "system")
+            is SessionEvent.Unknown -> Quad("?", event.type, "", "system")
+            is SessionEvent.PaneCapture -> return
+        }
+    val bubbleBg =
+        when (role) {
+            "assistant" -> MaterialTheme.colorScheme.surfaceVariant
+            "prompt" -> MaterialTheme.colorScheme.tertiaryContainer
+            "error" -> MaterialTheme.colorScheme.errorContainer
+            else -> MaterialTheme.colorScheme.surface
+        }
+    val bubbleFg =
+        when (role) {
+            "prompt" -> MaterialTheme.colorScheme.onTertiaryContainer
+            "error" -> MaterialTheme.colorScheme.onErrorContainer
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        androidx.compose.foundation.layout.Box(
+            modifier =
+                Modifier
+                    .size(32.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        androidx.compose.foundation.shape.CircleShape,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                avatar,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = bubbleBg,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                Text(
+                    body,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = bubbleFg,
+                )
+            }
+        }
+    }
+}
+
+private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 /**
  * Three pill buttons under the latest prompt: Yes / No / Stop. PWA

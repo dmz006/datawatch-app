@@ -392,6 +392,49 @@ public fun NewSessionScreen(
                 )
             }
 
+            // PWA `renderSessionBacklog` — up to 20 most-recent done
+            // sessions with a Restart button per row. Lets users warm-
+            // resume without digging through the Sessions tab history
+            // toggle.
+            if (recentDone.isNotEmpty()) {
+                Text(
+                    "Recent sessions",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
+                )
+                recentDone.take(20).forEach { s ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            val display = s.name ?: s.taskSummary ?: s.id
+                            Text(
+                                if (display.length > 60) display.take(60) + "…" else display,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                "${s.state.name.lowercase()} · ${s.backend ?: "?"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                val profile = profiles.firstOrNull { it.id == selectedProfileId }
+                                    ?: return@TextButton
+                                scope.launch {
+                                    ServiceLocator.transportFor(profile)
+                                        .restartSession(s.id)
+                                        .onSuccess { onStarted(s.id) }
+                                }
+                            },
+                        ) { Text("Restart", style = MaterialTheme.typography.labelSmall) }
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 horizontalArrangement = Arrangement.End,

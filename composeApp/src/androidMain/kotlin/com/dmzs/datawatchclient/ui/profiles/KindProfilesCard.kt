@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,6 +50,8 @@ public fun KindProfilesCard(
     val scope = rememberCoroutineScope()
     var profiles by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
     var banner by remember { mutableStateOf<String?>(null) }
+    var editing by remember { mutableStateOf<JsonObject?>(null) }
+    var creating by remember { mutableStateOf(false) }
 
     suspend fun refresh() {
         val profilesList = ServiceLocator.profileRepository.observeAll().first()
@@ -72,7 +76,16 @@ public fun KindProfilesCard(
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle(title)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PwaSectionTitle(title)
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = { creating = true }) {
+                Text("+ Add", style = MaterialTheme.typography.labelSmall)
+            }
+        }
         banner?.let {
             Text(
                 it,
@@ -143,6 +156,9 @@ public fun KindProfilesCard(
                     modifier = Modifier.width(80.dp),
                 ) { Text("Smoke", style = MaterialTheme.typography.labelSmall) }
                 Spacer(modifier = Modifier.width(6.dp))
+                TextButton(onClick = { editing = p }) {
+                    Text("Edit", style = MaterialTheme.typography.labelSmall)
+                }
                 TextButton(
                     onClick = {
                         scope.launch {
@@ -172,7 +188,120 @@ public fun KindProfilesCard(
             HorizontalDivider()
         }
     }
+
+    if (creating || editing != null) {
+        ProfileEditDialog(
+            kind = kind,
+            existing = editing,
+            onDismiss = {
+                creating = false
+                editing = null
+            },
+            onSave = { name, body ->
+                creating = false
+                editing = null
+                scope.launch {
+                    val profile =
+                        ServiceLocator.profileRepository.observeAll().first()
+                            .firstOrNull { it.enabled } ?: return@launch
+                    ServiceLocator.transportFor(profile)
+                        .putKindProfile(kind, name, body).fold(
+                            onSuccess = {
+                                banner = "Saved $name"
+                                refresh()
+                            },
+                            onFailure = {
+                                banner = "Save failed — ${it.message ?: it::class.simpleName}"
+                            },
+                        )
+                }
+            },
+        )
+    }
 }
 
 private fun JsonObject.stringField(key: String): String? =
     (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+/**
+ * Minimal profile-edit dialog. Mobile exposes the most-common
+ * top-level fields — name + description + any primitive
+ * string/number fields the server already emits — and preserves
+ * nested objects (image_pair, git, memory, kubernetes) verbatim.
+ * Users needing deep edits still go through the PWA or raw YAML.
+ */
+@androidx.compose.runtime.Composable
+internal fun ProfileEditDialog(
+    kind: String,
+    existing: JsonObject?,
+    onDismiss: () -> Unit,
+    onSave: (String, JsonObject) -> Unit,
+) {
+    var nameInput by remember { mutableStateOf(existing?.stringField("name").orEmpty()) }
+    var description by remember { mutableStateOf(existing?.stringField("description").orEmpty()) }
+    val isCreating = existing == null
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(if (isCreating) "New $kind profile" else "Edit ${existing?.stringField("name") ?: kind}")
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    label = { Text("Name") },
+                    singleLine = true,
+                    enabled = isCreating,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    singleLine = false,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
+                Text(
+                    "Nested fields (image_pair / git / memory / " +
+                        "kubernetes context) aren't editable on mobile — " +
+                        "they're preserved from the existing profile on " +
+                        "Save. Edit those on the PWA.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val n = nameInput.trim()
+                    if (n.isBlank()) return@TextButton
+                    val body =
+                        kotlinx.serialization.json.buildJsonObject {
+                            existing?.forEach { (k, v) ->
+                                when (k) {
+                                    "name" -> put(k, JsonPrimitive(n))
+                                    "description" -> put(k, JsonPrimitive(description.trim()))
+                                    else -> put(k, v)
+                                }
+                            }
+                            if (existing == null || !existing.containsKey("name")) {
+                                put("name", JsonPrimitive(n))
+                            }
+                            if (existing == null || !existing.containsKey("description")) {
+                                if (description.isNotBlank()) {
+                                    put("description", JsonPrimitive(description.trim()))
+                                }
+                            }
+                        }
+                    onSave(n, body)
+                },
+                enabled = nameInput.isNotBlank(),
+            ) { Text(if (isCreating) "Create" else "Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}

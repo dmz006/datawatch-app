@@ -314,6 +314,10 @@ public fun UpdateDaemonCard() {
     var banner by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    // Progress indicator while the server downloads + re-execs.
+    // We don't get mid-flight progress events from the parent so
+    // the bar is indeterminate — matches PWA v4.0.6's "Downloading
+    // update…" strip.
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
@@ -341,6 +345,11 @@ public fun UpdateDaemonCard() {
                         else ->
                             MaterialTheme.colorScheme.error
                     },
+            )
+        }
+        if (checking) {
+            androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
         Row(
