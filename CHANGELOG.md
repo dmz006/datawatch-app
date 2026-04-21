@@ -8,6 +8,44 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.33.11] — 2026-04-22 (Sprint FF — upstream fixes integrated)
+
+Both outstanding upstream issues closed. Mobile wiring landed.
+
+### Added
+
+- **Channel create / delete (S9 + dmz006/datawatch#18).**
+  ChannelsCard now has a + Add button that opens an
+  AddChannelDialog (type dropdown over the 10 known backends:
+  signal / telegram / discord / slack / matrix / ntfy / email /
+  twilio / webhook / github_webhook; channel-id text; enabled
+  toggle). Confirms via `POST /api/channels` which returns the
+  created object. Each existing row picks up a Delete icon that
+  fires `DELETE /api/channels/{id}`. Backend-specific config
+  still flows through the existing BackendConfigDialog after
+  create, matching PWA's two-step UX.
+
+  Transport: new `createChannel(type, id, enabled, config?)`
+  and `deleteChannel(channelId)` on `TransportClient` +
+  `RestTransport`.
+
+### Changed
+
+- **Autonomous section schema (dmz006/datawatch#19).** Server
+  added case branches for `autonomous.decomposition_effort`,
+  `autonomous.verification_effort`, `autonomous.stale_task_seconds`
+  alongside the existing autonomous/plugins/orchestrator keys.
+  Mobile schema updated to expose all three new fields so
+  autosave actually persists them. S9 closed: every rendered
+  field in General, LLM, Comms, and Monitor writes to a server
+  key that `applyConfigPatch` recognises.
+
+### Docs
+
+- parity-plan.md Add/remove-channel row flipped 🚧 → ✅.
+- api-parity.md upstream-tracking table updated — both #18 and
+  #19 marked closed with the mobile integration version noted.
+
 ## [0.33.10] — 2026-04-22 (Sprint EE — on-device triage)
 
 Every fix in the 0.33.2 → 0.33.10 patch stream is ground-truthed

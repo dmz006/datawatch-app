@@ -112,6 +112,12 @@ public object ConfigFieldSchemas {
                     NumberField("autonomous.max_parallel_tasks", "Max parallel tasks", "3"),
                     TextField("autonomous.decomposition_backend", "Decomposition backend (empty = inherit)"),
                     TextField("autonomous.verification_backend", "Verification backend (empty = inherit)"),
+                    // v0.33.11 — three extra server-writable keys
+                    // landed upstream with the #19 fix. Keeps mobile
+                    // schema in lockstep with the parent switch.
+                    TextField("autonomous.decomposition_effort", "Decomposition effort (quick/normal/thorough)"),
+                    TextField("autonomous.verification_effort", "Verification effort (quick/normal/thorough)"),
+                    NumberField("autonomous.stale_task_seconds", "Stale task timeout (sec)", "600"),
                     NumberField("autonomous.auto_fix_retries", "Auto-fix retries", "1"),
                     Toggle("autonomous.security_scan", "Run security scan before commit"),
                 ),

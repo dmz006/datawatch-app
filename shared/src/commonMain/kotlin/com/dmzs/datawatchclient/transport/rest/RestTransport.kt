@@ -601,6 +601,35 @@ public class RestTransport(
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
+    override suspend fun createChannel(
+        type: String,
+        id: String,
+        enabled: Boolean,
+        config: kotlinx.serialization.json.JsonObject?,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("type", kotlinx.serialization.json.JsonPrimitive(type))
+                    put("id", kotlinx.serialization.json.JsonPrimitive(id))
+                    put("enabled", kotlinx.serialization.json.JsonPrimitive(enabled))
+                    config?.let { put("config", it) }
+                }
+            client.post("${profile.baseUrl}/api/channels") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<kotlinx.serialization.json.JsonObject>()
+        }
+
+    override suspend fun deleteChannel(channelId: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/channels/${channelId.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     override suspend fun setChannelEnabled(
         channelId: String,
         enabled: Boolean,

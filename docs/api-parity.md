@@ -131,14 +131,12 @@ new server endpoints are required for relay fallback.
 
 ## Upstream-tracked parity items (ADR-0039)
 
-As of v0.33.10:
+As of v0.33.11 there are no open upstream items blocking mobile parity:
 
-| # | Issue | Status | Mobile workaround |
+| # | Issue | Status | Mobile integration |
 |---|---|---|---|
-| 18 | [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) — `POST /api/channels` for inline channel create | ✅ Closed 2026-04-21 | Mobile wiring to invoke POST is a post-v0.33.10 task; BackendConfigDialog edit path works today |
-| 19 | [dmz006/datawatch#19](https://github.com/dmz006/datawatch/issues/19) — `applyConfigPatch` missing cases for `autonomous.*` / `plugins.*` / `orchestrator.*` | Open | Mobile renders the PWA-parity sections; saves silently no-op per upstream. Tracked as S9 in [dmz006/datawatch-app#1](https://github.com/dmz006/datawatch-app/issues/1) |
+| 18 | [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) — `POST /api/channels` | ✅ Closed | Wired in v0.33.11: ChannelsCard + Add button + AddChannelDialog + DELETE per-row |
+| 19 | [dmz006/datawatch#19](https://github.com/dmz006/datawatch/issues/19) — `applyConfigPatch` `autonomous.*` / `plugins.*` / `orchestrator.*` cases | ✅ Closed | v0.33.11 schema updated to match all new server-writable keys. Autosave now actually persists those fields (S9 closed). |
 
-When an upstream issue is merged + released, the mobile app's
-corresponding transport switches to the new endpoint in the next
-minor version and the workaround stays behind a feature flag for
-a release cycle.
+Upstream gaps will continue to be filed as issues on
+`dmz006/datawatch` per ADR-0039 when discovered.

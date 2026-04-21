@@ -294,9 +294,26 @@ public interface TransportClient {
     public suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /**
+     * POST /api/channels — create a new channel. Shipped upstream
+     * in [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18)
+     * on 2026-04-21. Server returns the created object so callers
+     * can refresh their list without a second GET.
+     */
+    public suspend fun createChannel(
+        type: String,
+        id: String,
+        enabled: Boolean,
+        config: kotlinx.serialization.json.JsonObject? = null,
+    ): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * DELETE /api/channels/{id} — remove a channel. Paired with
+     * [createChannel] so the Add form has a symmetric Remove.
+     */
+    public suspend fun deleteChannel(channelId: String): Result<Unit>
+
+    /**
      * PATCH /api/channels/{id} — flip a channel's enabled state.
-     * Parent doesn't expose add/remove; config edits for channel
-     * *type* go via [writeConfig].
      */
     public suspend fun setChannelEnabled(
         channelId: String,
