@@ -55,11 +55,17 @@
     .xterm-viewport {
       background-color: #0f1117 !important;
       scrollbar-width: none;         /* Firefox */
+      /* Lock vertical swipe so users can't scroll through scrollback
+         unless they've explicitly entered tmux scroll mode. Parent
+         PWA doesn't need this because mouse wheel on desktop is
+         opt-in; on mobile, swipe-up consumes scrollback too easily. */
+      touch-action: pan-x;
+      overflow-y: hidden !important;
     }
     .xterm-viewport::-webkit-scrollbar {
       display: none;                 /* Chromium / WebView */
     }
-    .xterm-rows { font-size: 9px !important; }
+    .xterm-rows { font-size: 11px !important; }
   </style>
 </head>
 <body>
@@ -78,10 +84,13 @@
     // colour breaks syntax-highlighted output's consistency.
     var term = new Terminal({
       cursorBlink: true,
-      // PWA default (app.js line 2002): fontSize starts at 9px; user can
-      // grow via pinch-zoom or the toolbar A+. 15 was our own invention and
-      // was the root of "font is huge / terminal only shows 40 cols" reports.
-      fontSize: 9,
+      // PWA defaults to 9px which is a desktop/web size — on a
+      // 440-dp phone screen that renders single-pixel text that's
+      // unreadable without zoom. 11 is the mobile-friendly default
+      // we land at; user can still step up/down via the toolbar A+
+      // which persists to localStorage (persisted key mirrors PWA's
+      // `cs_term_font_size`).
+      fontSize: 11,
       lineHeight: 1.2,
       fontFamily: '"Roboto Mono", "Droid Sans Mono", monospace',
       rows: 24,

@@ -44,6 +44,31 @@ import org.json.JSONObject
 public class TerminalController internal constructor() {
     internal var webView: WebView? = null
 
+    // Buffered state applied whenever a fresh WebView reaches
+    // `onReady` — prevents re-entry races where Kotlin calls
+    // `setMinSize(120, 40)` before host.html's script has defined
+    // `window.dwSetMinCols`, causing the claude-code 120-col
+    // enforcement to silently drop on the second session open (T2).
+    internal var pendingMinCols: Int = 0
+    internal var pendingMinRows: Int = 0
+    internal var pendingFrozen: Boolean = false
+
+    /** Replays every deferred directive once host.html fires onReady. */
+    internal fun applyPending(wv: WebView) {
+        if (pendingMinCols > 0 || pendingMinRows > 0) {
+            wv.evaluateJavascript(
+                "window.dwSetMinCols && window.dwSetMinCols($pendingMinCols, $pendingMinRows);",
+                null,
+            )
+        }
+        if (pendingFrozen) {
+            wv.evaluateJavascript(
+                "window.dwSetFrozen && window.dwSetFrozen(true);",
+                null,
+            )
+        }
+    }
+
     /** Search forward for [query]. Highlights matches and cycles on repeat. */
     public fun searchNext(query: String) {
         webView?.evaluateJavascript(
@@ -140,6 +165,8 @@ public class TerminalController internal constructor() {
      * when narrower.
      */
     public fun setMinSize(cols: Int, rows: Int) {
+        pendingMinCols = cols
+        pendingMinRows = rows
         webView?.evaluateJavascript(
             "window.dwSetMinCols && window.dwSetMinCols($cols, $rows);",
             null,
@@ -152,6 +179,7 @@ public class TerminalController internal constructor() {
      * isn't overwritten by subsequent shell-prompt frames.
      */
     public fun setFrozen(frozen: Boolean) {
+        pendingFrozen = frozen
         webView?.evaluateJavascript(
             "window.dwSetFrozen && window.dwSetFrozen($frozen);",
             null,
@@ -253,6 +281,12 @@ public fun TerminalView(
                             // WebView reports `term.open()` success before the
                             // container has a stable layout in AndroidView.
                             view?.evaluateJavascript("window.dwResize && window.dwResize();", null)
+                            // Replay any deferred controller directives
+                            // (setMinSize, setFrozen) — required for T2 so the
+                            // re-opened session still gets claude-code's 120×40
+                            // enforcement instead of falling back to the fit-to-
+                            // container width.
+                            view?.let { controller?.applyPending(it) }
                             // Belt-and-braces: flip `ready` from Kotlin so the
                             // initial flush still happens if DwBridge.onReady() was
                             // swallowed by a JS error before line 168 of host.html.
@@ -317,73 +351,33 @@ public fun TerminalView(
         },
     )
 
-    // When new events arrive (or terminal becomes ready), flush any unwritten
-    // suffix into xterm.
+    // Single display source (T3): pane_capture only — raw_output is
+    // never written to xterm. Parent killed the "incremental append"
+    // path in `dmz006/datawatch@0393e262` ("single display source")
+    // because raw_output bytes contain fragmentary ANSI state that
+    // garbles the TUI and fills scrollback with no way to clear
+    // cleanly. Datawatch server v3.0+ always emits pane_capture for
+    // terminal-mode sessions; older servers need the chat mode toggle.
     //
-    // Two paths, chosen per-session at first event:
-    //   1. pane_capture present → authoritative PWA-style rendering.
-    //      raw_output is suppressed; each PaneCapture wipes + writes the
-    //      full pane. No lastWrittenIndex arithmetic needed.
-    //   2. pane_capture absent (older server) → fall back to the legacy
-    //      raw_output incremental-append path.
-    //
-    // Keying on `events.size` alone misses **replacement** pane captures (the
-    // live store holds only the latest, so the list is re-emitted with the
-    // same size but different content when a new capture arrives). Keying on
-    // the latest capture's timestamp makes every live frame trigger the
-    // effect — matches PWA app.js which re-renders on every pane_capture WS
-    // message regardless of list identity.
-    val latestPaneCaptureTs =
-        events.lastOrNull { it is SessionEvent.PaneCapture }
-            ?.let { (it as SessionEvent.PaneCapture).ts }
-    LaunchedEffect(events.size, latestPaneCaptureTs, ready) {
+    // Keying on latestPaneCaptureTs (not size) lets replacement
+    // captures still fire — our in-memory LivePaneCapture StateFlow
+    // holds only the latest snapshot, so the emitted events list has
+    // constant size while content changes. Timestamp grows per frame.
+    val latestPaneCapture =
+        events.lastOrNull { it is SessionEvent.PaneCapture } as? SessionEvent.PaneCapture
+    LaunchedEffect(latestPaneCapture?.ts, ready) {
         if (!ready) return@LaunchedEffect
         val webView = webViewRef.value ?: return@LaunchedEffect
-        val hasPaneCapture = events.any { it is SessionEvent.PaneCapture }
-        if (hasPaneCapture) {
-            // Pane-capture mode: always render the *latest* capture —
-            // captures are whole-screen replacements, so rendering one is
-            // idempotent. Skip Output entirely (log-mode).
-            val latest =
-                events.lastOrNull { it is SessionEvent.PaneCapture } as? SessionEvent.PaneCapture
-            if (latest != null) {
-                // JSON-quote each line → "[\"line1\",\"line2\"]"; then
-                // JSON-quote that whole string because dwPaneCapture does
-                // JSON.parse() internally (nested quoting is intentional).
-                val arrayLiteral =
-                    latest.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
-                val linesJson = JSONObject.quote(arrayLiteral)
-                webView.evaluateJavascript(
-                    "window.dwPaneCapture($linesJson, ${latest.isFirst});",
-                    null,
-                )
-                Log.d(
-                    "DwTerm",
-                    "pane_capture: ${latest.lines.size} lines (first=${latest.isFirst})",
-                )
-                lastWrittenIndex = events.size
-            }
-            return@LaunchedEffect
-        }
-        // Legacy raw_output path (server doesn't send pane_capture yet).
-        if (lastWrittenIndex == 0 && events.isNotEmpty()) {
-            val joined = events.mapNotNull { it.terminalText() }.joinToString("")
-            if (joined.isNotEmpty()) {
-                webView.evaluateJavascript("window.dwWrite(${jsonString(joined)});", null)
-                Log.d("DwTerm", "initial flush: ${joined.length} chars")
-            }
-            lastWrittenIndex = events.size
-            return@LaunchedEffect
-        }
-        if (events.size > lastWrittenIndex) {
-            val newOnes = events.subList(lastWrittenIndex, events.size)
-            val joined = newOnes.mapNotNull { it.terminalText() }.joinToString("")
-            if (joined.isNotEmpty()) {
-                webView.evaluateJavascript("window.dwWrite(${jsonString(joined)});", null)
-                Log.d("DwTerm", "incremental: ${joined.length} chars (${newOnes.size} events)")
-            }
-            lastWrittenIndex = events.size
-        }
+        val pc = latestPaneCapture ?: return@LaunchedEffect
+        val arrayLiteral =
+            pc.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
+        val linesJson = JSONObject.quote(arrayLiteral)
+        webView.evaluateJavascript(
+            "window.dwPaneCapture($linesJson, ${pc.isFirst});",
+            null,
+        )
+        Log.d("DwTerm", "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})")
+        lastWrittenIndex = events.size
     }
 
     DisposableEffect(Unit) {

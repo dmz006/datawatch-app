@@ -9,6 +9,8 @@
 
     <application
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
 
@@ -16,8 +18,18 @@
 
         <meta-data android:name="com.google.android.wearable.standalone" android:value="false"/>
 
+        <!--
+            Explicit icon on the activity too, because the Galaxy
+            Watch launcher on One UI Watch reads activity-level icon
+            when drawing the app-drawer grid rather than falling back
+            to the application-level one. Without this, the Wear APK
+            installs but the app never appears in the drawer (W1).
+        -->
         <activity
             android:name=".WearMainActivity"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

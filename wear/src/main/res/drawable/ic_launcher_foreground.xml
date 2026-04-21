@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launcher icon foreground — per user direction:
+      "the application icon was supposed to just be the datawatch eye with
+       the screen only (matrix rain) in background. not the moon or
+       anything else."
+
+    No moon, no Earth, no tablet bezel. The icon IS the device screen:
+    matrix rain texture covers the icon area; the datawatch eye sits
+    centered on top. Background drawable provides the dark purple "screen"
+    fill; this foreground holds the matrix rain + eye.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        Matrix rain — denser than the previous variant since it now covers the
+        whole icon, not just a small tablet screen. Each "column" is a vertical
+        stripe of small purple-tinted squares (text would be invisible at icon
+        size, so we use shapes that suggest data without trying to render
+        characters).
+
+        Six columns, varied phase. Stays inside the inner 66dp safe zone so
+        the launcher's mask shape doesn't crop critical content.
+    -->
+    <path android:pathData="M 22,16 h 1 v 1 h -1 z M 22,20 h 1 v 1 h -1 z M 22,24 h 1 v 1 h -1 z M 22,28 h 1 v 1 h -1 z M 22,40 h 1 v 1 h -1 z M 22,44 h 1 v 1 h -1 z M 22,48 h 1 v 1 h -1 z M 22,72 h 1 v 1 h -1 z M 22,76 h 1 v 1 h -1 z M 22,80 h 1 v 1 h -1 z M 22,84 h 1 v 1 h -1 z M 22,88 h 1 v 1 h -1 z
+                            M 32,18 h 1 v 1 h -1 z M 32,22 h 1 v 1 h -1 z M 32,26 h 1 v 1 h -1 z M 32,30 h 1 v 1 h -1 z M 32,34 h 1 v 1 h -1 z M 32,38 h 1 v 1 h -1 z M 32,72 h 1 v 1 h -1 z M 32,76 h 1 v 1 h -1 z M 32,80 h 1 v 1 h -1 z M 32,84 h 1 v 1 h -1 z M 32,88 h 1 v 1 h -1 z M 32,92 h 1 v 1 h -1 z
+                            M 42,16 h 1 v 1 h -1 z M 42,20 h 1 v 1 h -1 z M 42,24 h 1 v 1 h -1 z M 42,28 h 1 v 1 h -1 z M 42,32 h 1 v 1 h -1 z M 42,36 h 1 v 1 h -1 z M 42,76 h 1 v 1 h -1 z M 42,80 h 1 v 1 h -1 z M 42,84 h 1 v 1 h -1 z M 42,88 h 1 v 1 h -1 z M 42,92 h 1 v 1 h -1 z
+                            M 65,18 h 1 v 1 h -1 z M 65,22 h 1 v 1 h -1 z M 65,26 h 1 v 1 h -1 z M 65,30 h 1 v 1 h -1 z M 65,34 h 1 v 1 h -1 z M 65,38 h 1 v 1 h -1 z M 65,76 h 1 v 1 h -1 z M 65,80 h 1 v 1 h -1 z M 65,84 h 1 v 1 h -1 z M 65,88 h 1 v 1 h -1 z M 65,92 h 1 v 1 h -1 z
+                            M 75,16 h 1 v 1 h -1 z M 75,20 h 1 v 1 h -1 z M 75,24 h 1 v 1 h -1 z M 75,28 h 1 v 1 h -1 z M 75,32 h 1 v 1 h -1 z M 75,36 h 1 v 1 h -1 z M 75,72 h 1 v 1 h -1 z M 75,76 h 1 v 1 h -1 z M 75,80 h 1 v 1 h -1 z M 75,84 h 1 v 1 h -1 z M 75,88 h 1 v 1 h -1 z
+                            M 85,18 h 1 v 1 h -1 z M 85,22 h 1 v 1 h -1 z M 85,26 h 1 v 1 h -1 z M 85,30 h 1 v 1 h -1 z M 85,34 h 1 v 1 h -1 z M 85,38 h 1 v 1 h -1 z M 85,72 h 1 v 1 h -1 z M 85,76 h 1 v 1 h -1 z M 85,80 h 1 v 1 h -1 z M 85,84 h 1 v 1 h -1 z M 85,88 h 1 v 1 h -1 z M 85,92 h 1 v 1 h -1 z"
+        android:fillColor="#A855F7"
+        android:fillAlpha="0.5"/>
+
+    <!--
+        EYE — the datawatch identity. Centered on the icon (54, 54) and
+        sized to dominate visually but stay inside the 66dp safe zone (radius
+        ~20 from center max).
+
+        Sclera ellipse + iris gradient + pupil + crosshair + center highlight,
+        same constructional pattern as the splash version, scaled to the
+        108-unit canvas.
+    -->
+
+    <!-- Sclera (almond-shaped dark eye background) -->
+    <path android:pathData="M 54,54 m -22,0 a 22,14 0 1 0 44,0 a 22,14 0 1 0 -44,0 z"
+        android:fillColor="#080518"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="0.6"/>
+
+    <!-- Iris with radial gradient (purple lit from upper-left) -->
+    <path android:pathData="M 54,54 m -12,0 a 12,12 0 1 0 24,0 a 12,12 0 1 0 -24,0 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial"
+                android:centerX="50" android:centerY="50"
+                android:gradientRadius="13"
+                android:startColor="#A855F7"
+                android:centerColor="#7C3AED"
+                android:endColor="#3B0764"/>
+        </aapt:attr>
+    </path>
+
+    <!-- Iris ring detail -->
+    <path android:pathData="M 54,54 m -11.4,0 a 11.4,11.4 0 1 0 22.8,0 a 11.4,11.4 0 1 0 -22.8,0 z"
+        android:strokeColor="#A855F7"
+        android:strokeWidth="0.4"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000"/>
+    <path android:pathData="M 54,54 m -8.5,0 a 8.5,8.5 0 1 0 17,0 a 8.5,8.5 0 1 0 -17,0 z"
+        android:strokeColor="#C084FC"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.4"
+        android:fillColor="#00000000"/>
+
+    <!-- Pupil -->
+    <path android:pathData="M 54,54 m -5,0 a 5,5 0 1 0 10,0 a 5,5 0 1 0 -10,0 z"
+        android:fillColor="#04020E"/>
+    <path android:pathData="M 54,54 m -4.6,0 a 4.6,4.6 0 1 0 9.2,0 a 4.6,4.6 0 1 0 -9.2,0 z"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000"/>
+
+    <!-- Crosshair (datawatch surveillance signature) -->
+    <path android:pathData="M 54,49 v 2 M 54,57 v 2 M 49,54 h 2 M 57,54 h 2"
+        android:strokeColor="#E879F9"
+        android:strokeWidth="0.7"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Center highlight -->
+    <path android:pathData="M 54,54 m -0.9,0 a 0.9,0.9 0 1 0 1.8,0 a 0.9,0.9 0 1 0 -1.8,0 z"
+        android:fillColor="#F0ABFC"/>
+
+    <!-- Lens highlight (subtle bright spec, upper-left of iris) -->
+    <path android:pathData="M 49,49 m -2.2,-1 a 2.2,1 0 1 0 4.4,0 a 2.2,1 0 1 0 -4.4,0 z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.20"/>
+</vector>

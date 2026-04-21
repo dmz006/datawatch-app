@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive icon background — solid screen-fill (dark purple radial gradient
+    matching the device-screen recess color from the design system). The
+    foreground draws the matrix rain + eye on top of this.
+
+    No starfield, no Earth, no moon — per user direction the launcher icon
+    is just the screen with eye, nothing else.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path android:pathData="M 0,0 h 108 v 108 h -108 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial"
+                android:centerX="54" android:centerY="54"
+                android:gradientRadius="78"
+                android:startColor="#220F42"
+                android:centerColor="#13072A"
+                android:endColor="#08031A"/>
+        </aapt:attr>
+    </path>
+</vector>
