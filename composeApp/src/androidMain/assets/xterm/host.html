@@ -17,17 +17,49 @@
       overflow: hidden;
       font-family: "Roboto Mono", "Droid Sans Mono", monospace;
     }
+    /* Outer scroll container. Horizontal scroll lets a 120-col Claude
+       pane display on a 40-char phone viewport (the TUI stays laid out
+       at 120 cols; user swipes to see the rest). Vertical scroll is
+       suppressed — xterm handles its own scrollback. Matches PWA's
+       .output-area rules and fixes parent issue 0393e262 / v0.14.0. */
     #term {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 6px;
+      padding: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
-    .xterm { height: 100%; }
-    .xterm-viewport { background-color: #0f1117 !important; }
-    .xterm-rows { font-size: 15px !important; }
+    /* Box-sizing reset override — known xterm.js issue #1283 when a
+       global `* { box-sizing: border-box }` is active. Even though we
+       don't set such a reset, assert content-box here defensively so
+       future style additions can't break xterm's internal metrics. */
+    #term .xterm,
+    #term .xterm *,
+    #term .xterm *::before,
+    #term .xterm *::after {
+      box-sizing: content-box;
+      margin: initial;
+      padding: initial;
+    }
+    /* width: fit-content lets horizontal scroll expose content past
+       the container width; min-width: 100% keeps the background fill
+       when content is narrower. Mirrors PWA app.js terminal layout. */
+    #term .xterm {
+      height: 100%;
+      min-width: 100%;
+      width: fit-content;
+    }
+    .xterm-viewport {
+      background-color: #0f1117 !important;
+      scrollbar-width: none;         /* Firefox */
+    }
+    .xterm-viewport::-webkit-scrollbar {
+      display: none;                 /* Chromium / WebView */
+    }
+    .xterm-rows { font-size: 9px !important; }
   </style>
 </head>
 <body>
@@ -46,7 +78,10 @@
     // colour breaks syntax-highlighted output's consistency.
     var term = new Terminal({
       cursorBlink: true,
-      fontSize: 15,
+      // PWA default (app.js line 2002): fontSize starts at 9px; user can
+      // grow via pinch-zoom or the toolbar A+. 15 was our own invention and
+      // was the root of "font is huge / terminal only shows 40 cols" reports.
+      fontSize: 9,
       lineHeight: 1.2,
       fontFamily: '"Roboto Mono", "Droid Sans Mono", monospace',
       rows: 24,

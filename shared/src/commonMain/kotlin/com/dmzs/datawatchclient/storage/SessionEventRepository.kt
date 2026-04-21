@@ -8,6 +8,8 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -25,14 +27,35 @@ public class SessionEventRepository(
         public const val RETAIN_PER_SESSION: Long = 5_000L
     }
 
+    /**
+     * In-memory latest [SessionEvent.PaneCapture] per session id. Pane captures
+     * are not persisted to SQLite (whole-screen snapshots, not event-log rows),
+     * but they **must** reach the live terminal view — so we keep the newest
+     * capture here and merge it into [observe]'s flow. Previously the insert
+     * path silently dropped captures and TerminalView fell back to the legacy
+     * `raw_output` renderer, which parent `dmz006/datawatch` killed off in
+     * commit `0393e262` (garbles TUIs).
+     */
+    private val liveCaptures: MutableMap<String, MutableStateFlow<SessionEvent.PaneCapture?>> =
+        mutableMapOf()
+
+    private fun captureFlowFor(sessionId: String): MutableStateFlow<SessionEvent.PaneCapture?> =
+        liveCaptures.getOrPut(sessionId) { MutableStateFlow(null) }
+
     public fun observe(
         sessionId: String,
         limit: Long = RETAIN_PER_SESSION,
-    ): Flow<List<SessionEvent>> =
-        db.eventQueries.selectEventsForSession(sessionId, limit)
-            .asFlow()
-            .mapToList(ioDispatcher)
-            .map { rows -> rows.map { it.toDomain() } }
+    ): Flow<List<SessionEvent>> {
+        val dbFlow =
+            db.eventQueries.selectEventsForSession(sessionId, limit)
+                .asFlow()
+                .mapToList(ioDispatcher)
+                .map { rows -> rows.map { it.toDomain() } }
+        val liveFlow = captureFlowFor(sessionId)
+        return combine(dbFlow, liveFlow) { dbEvents, liveCapture ->
+            if (liveCapture == null) dbEvents else dbEvents + liveCapture
+        }
+    }
 
     // Encrypted SQLCipher inserts are 5–50 ms each on a mobile SoC; running
     // them on the caller's dispatcher is what blocked main and triggered the
@@ -146,12 +169,13 @@ public class SessionEventRepository(
                         message = null,
                     )
                 is SessionEvent.PaneCapture ->
-                    // Pane captures are live-display-only. They're the whole
-                    // pane state at a point in time, not an event-log entry —
-                    // persisting them would bloat the DB and mis-order with
-                    // Output events on replay. The live VM re-fetches the
-                    // latest capture from the server on resume.
-                    Unit
+                    // Pane captures are live-display-only — whole-screen snapshots,
+                    // not event-log rows. Keep the newest in the in-memory live bus
+                    // so [observe] merges it into the emitted list; TerminalView
+                    // keys off `hasPaneCapture` to pick the pane-capture render path
+                    // instead of the legacy raw_output fallback (parent killed that
+                    // path in `0393e262` as broken for TUIs).
+                    captureFlowFor(event.sessionId).value = event
             }
             // Prune oldest after each insert so the ring buffer stays bounded.
             db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)

@@ -131,24 +131,30 @@ public fun SessionDetailScreen(
             TopAppBar(
                 title = {
                     // Tap title to rename — same wire as Sessions-list overflow.
+                    // Every Text uses softWrap=false + TextOverflow.Ellipsis so
+                    // a narrow title column truncates instead of wrapping each
+                    // character onto its own line.
                     Column(
                         modifier =
                             Modifier
                                 .clickable { renameOpen = true }
                                 .padding(vertical = 4.dp),
                     ) {
-                        // Prefer user-assigned name over the raw task
-                        // prompt, matching PWA sessionCard displayText.
                         Text(
                             state.session?.name?.takeIf { it.isNotBlank() }
                                 ?: state.session?.taskSummary
                                 ?: sessionId,
                             maxLines = 1,
+                            softWrap = false,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 sessionId,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -156,6 +162,9 @@ public fun SessionDetailScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     b.uppercase(),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
@@ -164,6 +173,9 @@ public fun SessionDetailScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     "· $ch",
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.secondary,
                                 )
@@ -172,6 +184,9 @@ public fun SessionDetailScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     "· $h",
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -204,22 +219,28 @@ public fun SessionDetailScreen(
                             )
                         }
                     }
-                    // Timeline — promoted from overflow so users don't
-                    // have to tap-then-pick to see session history.
-                    IconButton(onClick = { timelineOpen = true }) {
-                        Icon(Icons.Filled.Timeline, contentDescription = "Timeline")
-                    }
-                    IconButton(onClick = vm::toggleMute) {
-                        val muted = state.session?.muted == true
-                        Icon(
-                            if (muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
-                            contentDescription = if (muted) "Unmute" else "Mute",
-                        )
-                    }
+                    // Phones can't fit five icons + title + chip. Keep one
+                    // utility action (overflow) — Timeline, Mute, Override,
+                    // Schedule live inside the menu to free title width.
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "More")
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Timeline") },
+                            onClick = {
+                                menuOpen = false
+                                timelineOpen = true
+                            },
+                        )
+                        val muted = state.session?.muted == true
+                        DropdownMenuItem(
+                            text = { Text(if (muted) "Unmute" else "Mute") },
+                            onClick = {
+                                menuOpen = false
+                                vm.toggleMute()
+                            },
+                        )
                         DropdownMenuItem(
                             text = { Text("Override state…") },
                             onClick = {

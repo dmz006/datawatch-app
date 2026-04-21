@@ -193,14 +193,29 @@ public class RestTransport(
 
     override suspend fun listBackends(): Result<com.dmzs.datawatchclient.transport.BackendsView> =
         request {
-            val dto: com.dmzs.datawatchclient.transport.dto.BackendsDto =
+            // PWA ships `{llm: [{name, ...}, ...], active}`; older servers
+            // sent `{llm: ["ollama", ...]}`. Accept both without a DTO.
+            val root: kotlinx.serialization.json.JsonObject =
                 client.get("${profile.baseUrl}/api/backends") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                 }.body()
-            com.dmzs.datawatchclient.transport.BackendsView(
-                llm = dto.llm,
-                active = dto.active,
-            )
+            val llm =
+                (root["llm"] as? kotlinx.serialization.json.JsonArray)
+                    .orEmpty()
+                    .mapNotNull { el ->
+                        when (el) {
+                            is kotlinx.serialization.json.JsonPrimitive ->
+                                el.content
+                            is kotlinx.serialization.json.JsonObject ->
+                                (el["name"] as? kotlinx.serialization.json.JsonPrimitive)
+                                    ?.content
+                            else -> null
+                        }
+                    }
+            val active =
+                (root["active"] as? kotlinx.serialization.json.JsonPrimitive)
+                    ?.takeIf { it.isString }?.content
+            com.dmzs.datawatchclient.transport.BackendsView(llm = llm, active = active)
         }
 
     override suspend fun transcribeAudio(
@@ -569,10 +584,20 @@ public class RestTransport(
 
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
-            val arr: kotlinx.serialization.json.JsonArray =
+            // PWA ships `{channels: [{id, type, enabled, ...}, ...]}`;
+            // some older builds returned a bare array. Accept both.
+            val root: kotlinx.serialization.json.JsonElement =
                 client.get("${profile.baseUrl}/api/channels") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                 }.body()
+            val arr =
+                when (root) {
+                    is kotlinx.serialization.json.JsonArray -> root
+                    is kotlinx.serialization.json.JsonObject ->
+                        (root["channels"] as? kotlinx.serialization.json.JsonArray)
+                            ?: kotlinx.serialization.json.JsonArray(emptyList())
+                    else -> kotlinx.serialization.json.JsonArray(emptyList())
+                }
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
@@ -873,6 +898,21 @@ public class RestTransport(
         } catch (e: ResponseException) {
             println("RestTransport: response error ${e.response.status} for ${profile.baseUrl}: ${e.message}")
             Result.failure(TransportError.ServerError(e.response.status.value, e.message ?: ""))
+        } catch (e: kotlinx.serialization.SerializationException) {
+            // Parse error means the *server answered* — don't flip the
+            // reachability flag or show "server unreachable", which misled
+            // both user and debugger when backends/channels DTOs drifted
+            // from the shipped PWA shape.
+            println(
+                "RestTransport: parse error for ${profile.baseUrl}: " +
+                    "${e::class.simpleName}: ${e.message}",
+            )
+            Result.failure(
+                TransportError.ServerError(
+                    status = 0,
+                    message = "Unexpected response shape — ${e.message ?: e::class.simpleName}",
+                ),
+            )
         } catch (e: Throwable) {
             // Log the actual cause so adb logcat can surface TLS / DNS / routing issues
             // instead of hiding them behind "Server unreachable" in the UI.

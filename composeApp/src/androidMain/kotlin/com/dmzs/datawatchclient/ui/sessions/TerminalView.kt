@@ -326,33 +326,41 @@ public fun TerminalView(
     //      full pane. No lastWrittenIndex arithmetic needed.
     //   2. pane_capture absent (older server) → fall back to the legacy
     //      raw_output incremental-append path.
-    LaunchedEffect(events.size, ready) {
+    //
+    // Keying on `events.size` alone misses **replacement** pane captures (the
+    // live store holds only the latest, so the list is re-emitted with the
+    // same size but different content when a new capture arrives). Keying on
+    // the latest capture's timestamp makes every live frame trigger the
+    // effect — matches PWA app.js which re-renders on every pane_capture WS
+    // message regardless of list identity.
+    val latestPaneCaptureTs =
+        events.lastOrNull { it is SessionEvent.PaneCapture }
+            ?.let { (it as SessionEvent.PaneCapture).ts }
+    LaunchedEffect(events.size, latestPaneCaptureTs, ready) {
         if (!ready) return@LaunchedEffect
         val webView = webViewRef.value ?: return@LaunchedEffect
         val hasPaneCapture = events.any { it is SessionEvent.PaneCapture }
         if (hasPaneCapture) {
-            // Pane-capture mode: only replay pane captures we haven't
-            // written yet; skip Output entirely (log-mode).
-            if (events.size > lastWrittenIndex) {
-                val newOnes = events.subList(lastWrittenIndex, events.size)
-                newOnes.filterIsInstance<SessionEvent.PaneCapture>().forEach { pc ->
-                    // Build a JSON array string by JSON-quoting each line
-                    // (JSONObject.quote handles all string escape rules) and
-                    // joining with commas. Then JSON-quote the whole thing
-                    // again because dwPaneCapture takes a JSON string that it
-                    // JSON.parse()'s — nested quoting is intentional.
-                    val arrayLiteral =
-                        pc.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
-                    val linesJson = JSONObject.quote(arrayLiteral)
-                    webView.evaluateJavascript(
-                        "window.dwPaneCapture($linesJson, ${pc.isFirst});",
-                        null,
-                    )
-                    Log.d(
-                        "DwTerm",
-                        "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})",
-                    )
-                }
+            // Pane-capture mode: always render the *latest* capture —
+            // captures are whole-screen replacements, so rendering one is
+            // idempotent. Skip Output entirely (log-mode).
+            val latest =
+                events.lastOrNull { it is SessionEvent.PaneCapture } as? SessionEvent.PaneCapture
+            if (latest != null) {
+                // JSON-quote each line → "[\"line1\",\"line2\"]"; then
+                // JSON-quote that whole string because dwPaneCapture does
+                // JSON.parse() internally (nested quoting is intentional).
+                val arrayLiteral =
+                    latest.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
+                val linesJson = JSONObject.quote(arrayLiteral)
+                webView.evaluateJavascript(
+                    "window.dwPaneCapture($linesJson, ${latest.isFirst});",
+                    null,
+                )
+                Log.d(
+                    "DwTerm",
+                    "pane_capture: ${latest.lines.size} lines (first=${latest.isFirst})",
+                )
                 lastWrittenIndex = events.size
             }
             return@LaunchedEffect
