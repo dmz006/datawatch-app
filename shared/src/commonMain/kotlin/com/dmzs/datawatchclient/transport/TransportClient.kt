@@ -264,6 +264,34 @@ public interface TransportClient {
     public suspend fun memoryDelete(id: Long): Result<Unit>
 
     /**
+     * GET /api/channels — list configured messaging channels with
+     * their enabled state. Shape is per-channel `{id, type,
+     * enabled, ...}` so the UI lists them with a toggle.
+     */
+    public suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /**
+     * PATCH /api/channels/{id} — flip a channel's enabled state.
+     * Parent doesn't expose add/remove; config edits for channel
+     * *type* go via [writeConfig].
+     */
+    public suspend fun setChannelEnabled(
+        channelId: String,
+        enabled: Boolean,
+    ): Result<Unit>
+
+    /**
+     * POST /api/channel/send — fire a test-roundtrip message
+     * through a named channel. Used by the Comms → "Send test"
+     * button; lets users confirm the messaging backend is wired
+     * before relying on it for alerts.
+     */
+    public suspend fun sendChannelTest(
+        channelId: String,
+        text: String,
+    ): Result<Unit>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side

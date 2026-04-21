@@ -218,6 +218,7 @@ public fun SettingsScreen(
                                 }
                             },
                         )
+                        com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                     }
                     SettingsTab.Llm -> {
                         // LLM backend picker (was the old Channels tab content)

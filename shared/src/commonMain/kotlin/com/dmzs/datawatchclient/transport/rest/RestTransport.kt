@@ -45,6 +45,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -539,6 +540,55 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(kotlinx.serialization.json.buildJsonObject { put("id", kotlinx.serialization.json.JsonPrimitive(id)) })
+            }
+        }
+
+    override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/channels") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun setChannelEnabled(
+        channelId: String,
+        enabled: Boolean,
+    ): Result<Unit> =
+        request {
+            // Channel ids are server-emitted tokens (e.g. "signal",
+            // "telegram") — per parent openapi they're safe URL path
+            // segments, so no encoding is strictly needed; we still
+            // swap literal spaces defensively.
+            client.patch("${profile.baseUrl}/api/channels/${channelId.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put(
+                            "enabled",
+                            kotlinx.serialization.json.JsonPrimitive(enabled),
+                        )
+                    },
+                )
+            }
+        }
+
+    override suspend fun sendChannelTest(
+        channelId: String,
+        text: String,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/channel/send") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("channel", kotlinx.serialization.json.JsonPrimitive(channelId))
+                        put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                    },
+                )
             }
         }
 

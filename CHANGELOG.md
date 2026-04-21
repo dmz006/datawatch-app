@@ -8,6 +8,23 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-04-20 (Sprint F — Channels/Comms Settings)
+
+### Added
+
+- **ChannelsCard under Settings → Comms.** Lists configured
+  messaging channels from `GET /api/channels`. Each row has a
+  per-channel enable/disable switch (PATCH /api/channels/{id})
+  and a "Test" button that opens a prompt dialog for a test
+  message body and fires `POST /api/channel/send`. Empty-state
+  hint steers users toward the server-side config UI for adds
+  since the parent still 501s on `POST /api/channels`.
+
+### Transport
+
+- `listChannels()`, `setChannelEnabled(id, enabled)`,
+  `sendChannelTest(channelId, text)`.
+
 ## [0.17.0] — 2026-04-20 (Sprint E — Memory tab)
 
 ### Added
