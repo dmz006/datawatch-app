@@ -45,7 +45,7 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
         while (scope.isActive) {
             refresh()
             invalidate()
-            delay(15_000L)
+            delay(POLL_MS)
         }
     }
 
@@ -89,8 +89,8 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
                         ?.lineSequence()
                         ?.map { it.trim() }
                         ?.firstOrNull { it.isNotEmpty() }
-                        ?: s.lastPrompt?.take(80)
-                        ?: s.taskSummary?.take(80)
+                        ?: s.lastPrompt?.take(PREVIEW_CHARS)
+                        ?: s.taskSummary?.take(PREVIEW_CHARS)
                         ?: "(no context)"
                 builder.addItem(
                     Row.Builder()
@@ -110,5 +110,10 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
             .setHeaderAction(Action.BACK)
             .setSingleList(builder.build())
             .build()
+    }
+
+    private companion object {
+        const val POLL_MS: Long = 15_000L
+        const val PREVIEW_CHARS: Int = 80
     }
 }

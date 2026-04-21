@@ -54,8 +54,12 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         while (scope.isActive) {
             refresh()
             invalidate()
-            delay(15_000L)
+            delay(POLL_MS)
         }
+    }
+
+    private companion object {
+        const val POLL_MS: Long = 15_000L
     }
 
     private suspend fun refresh() {
