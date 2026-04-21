@@ -116,7 +116,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | PWA | Mobile | Notes |
 |---|---|---|
 | List configured channels | ✅ | v0.18.0 — ChannelsCard in Settings → Comms |
-| Add / remove channel | 🚧 | parent returns 501 on POST /api/channels; tracked upstream at [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18). Edits still work via BackendConfigDialog in the meantime. |
+| Add / remove channel | 🚧 | Server `POST /api/channels` **shipped** in parent [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) (closed 2026-04-21). Mobile wiring of the Add-channel form is post-v0.33.10 — ChannelsCard currently still prefers the BackendConfigDialog edit path. |
 | Test message round-trip (`/api/channel/send`) | ✅ | v0.18.0 — "Test" button per row opens prompt dialog + POSTs |
 | Per-channel enable / disable | ✅ | v0.18.0 — per-row Switch calls PATCH /api/channels/{id} |
 | Download CA cert (`/api/cert`) | ✅ | v0.11.0 — Settings → Servers overflow menu → save to Downloads → OS install-cert intent. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#6](https://github.com/dmz006/datawatch/issues/6)) |

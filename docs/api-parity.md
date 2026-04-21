@@ -131,14 +131,14 @@ new server endpoints are required for relay fallback.
 
 ## Upstream-tracked parity items (ADR-0039)
 
-As of v0.33.0, all of #1–#17 are closed — either the upstream
-endpoint shipped and mobile integrated, or the "missing" endpoint was
-found to already exist in `app.js` (the openapi.yaml spec had drifted
-behind shipped reality). The only still-open upstream item:
+As of v0.33.10:
 
 | # | Issue | Status | Mobile workaround |
 |---|---|---|---|
-| 18 | [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) — `POST /api/channels` returns 501 | Open | Channels add/remove deferred; edit + enable/disable work via existing PATCH |
+| 18 | [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) — `POST /api/channels` for inline channel create | ✅ Closed 2026-04-21 | Mobile wiring to invoke POST is a post-v0.33.10 task; BackendConfigDialog edit path works today |
+| 19 | [dmz006/datawatch#19](https://github.com/dmz006/datawatch/issues/19) — `applyConfigPatch` missing cases for `autonomous.*` / `plugins.*` / `orchestrator.*` | Open | Mobile renders the PWA-parity sections; saves silently no-op per upstream. Tracked as S9 in [dmz006/datawatch-app#1](https://github.com/dmz006/datawatch-app/issues/1) |
 
-When the upstream issue lands, ChannelsCard gets an "Add channel" row
-and the 🚧 row in parity-plan.md flips to ✅.
+When an upstream issue is merged + released, the mobile app's
+corresponding transport switches to the new endpoint in the next
+minor version and the workaround stays behind a feature flag for
+a release cycle.
