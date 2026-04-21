@@ -36,10 +36,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,9 +53,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerInfo
@@ -81,19 +86,17 @@ import java.io.FileOutputStream
  */
 
 /**
- * Sub-tabs mirroring the parent PWA's Settings view layout:
- *   General — app-wide + automation (security + schedules)
- *   Comms   — servers (per PWA — "Servers" lives inside Comms)
- *   LLM     — active backend + saved command library
- *   Monitor — live host stats (was a separate bottom-nav tab; PWA puts
- *             it under Settings)
- *   About   — app version + daemon info + daemon config viewer
+ * Sub-tabs — order matches PWA `app.js:3089`:
+ * **Monitor, General, Comms, LLM, About**. Keeping this ordering is
+ * load-bearing for user muscle memory; the PWA stashes the default
+ * active tab in `localStorage.cs_settings_tab = 'monitor'` so users
+ * land on Monitor first.
  */
 private enum class SettingsTab(val label: String) {
+    Monitor("Monitor"),
     General("General"),
     Comms("Comms"),
     Llm("LLM"),
-    Monitor("Monitor"),
     About("About"),
 }
 
@@ -117,7 +120,7 @@ public fun SettingsScreen(
             }
         }
 
-    var activeTab by remember { mutableStateOf(SettingsTab.General) }
+    var activeTab by remember { mutableStateOf(SettingsTab.Monitor) }
     var serverPickerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -186,6 +189,18 @@ public fun SettingsScreen(
                 }
             }
 
+            // Shrink Settings typography to match PWA's dense
+            // 13px / 11px `.settings-row` rhythm. Default
+            // MaterialTheme bodyLarge/titleMedium render at 16sp
+            // which looks oversized vs the web UI (S3 report).
+            // Isolated to Settings — doesn't shift typography in
+            // Sessions / Chat / Terminal.
+            val settingsTypography =
+                pwaSettingsTypography(MaterialTheme.typography)
+            androidx.compose.material3.MaterialTheme(
+                colorScheme = MaterialTheme.colorScheme,
+                typography = settingsTypography,
+            ) {
             Column(
                 modifier =
                     Modifier
@@ -193,12 +208,30 @@ public fun SettingsScreen(
                         .fillMaxWidth(),
             ) {
                 when (activeTab) {
-                    SettingsTab.General -> {
-                        // App-level + automation + server-config. Security + schedules
-                        // + the generic ConfigFieldsPanel per PWA-mirrored section.
-                        SecurityCard()
+                    SettingsTab.Monitor -> {
+                        // Matches PWA `data-group="monitor"` sections at
+                        // app.js:3238-3295: System Statistics → Memory
+                        // Browser → Scheduled Events → Daemon Log.
+                        // Interfaces / KillOrphans / Update / Restart
+                        // are mobile-added admin actions that don't have
+                        // a PWA surface; keep them here so the daemon
+                        // management surface is one tap away.
+                        com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+                        com.dmzs.datawatchclient.ui.memory.MemoryCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                        // All PWA General sections, byte-for-byte schema match.
+                        com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                        com.dmzs.datawatchclient.ui.ops.InterfacesCard()
+                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
+                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
+                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
+                    }
+                    SettingsTab.General -> {
+                        // Matches PWA `data-group="general"`: gc_* config
+                        // sections, Project Profiles, Cluster Profiles,
+                        // Notifications. Active-LLM picker lives here too
+                        // (session.llm_backend is a LlmSelect on the
+                        // Datawatch card — not on the LLM tab, per S8).
+                        SecurityCard()
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
                         )
@@ -235,12 +268,14 @@ public fun SettingsScreen(
                             title = "Cluster profiles",
                         )
                         com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
-                        com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
-                        // PWA's Comms section owns server list (datawatch
-                        // servers + messaging-backend servers share the
-                        // concept). Mobile's server list lives here.
+                        // Matches PWA `data-group="comms"` order:
+                        // Authentication → Servers → cc_* → Proxy →
+                        // Communication Configuration (channels).
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.CommsAuth,
+                        )
                         ServersCard(
                             profiles = profiles,
                             onAddServer = onAddServer,
@@ -255,9 +290,6 @@ public fun SettingsScreen(
                             },
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.CommsAuth,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebServer,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
@@ -266,13 +298,17 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
                         )
-                        com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                         com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
+                        com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                     }
                     SettingsTab.Llm -> {
-                        // LLM backend picker + saved commands + memory / rtk config.
-                        com.dmzs.datawatchclient.ui.channels.LlmBackendCard()
+                        // Matches PWA `data-group="llm"`: LLM
+                        // Configuration → lc_* (Memory, LlmRtk) →
+                        // Detection Filters → Saved Commands →
+                        // Output Filters. The active-LLM picker used to
+                        // live here as a radio list but moved to General
+                        // (S8) — LLM tab is per-backend config only.
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                         )
@@ -280,19 +316,8 @@ public fun SettingsScreen(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
                         )
                         com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
-                        com.dmzs.datawatchclient.ui.filters.FiltersCard()
                         com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
-                    }
-                    SettingsTab.Monitor -> {
-                        // Live host stats — moved here from the old bottom-nav
-                        // Stats tab so the layout matches the PWA's
-                        // Settings/Monitor.
-                        com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                        com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
-                        com.dmzs.datawatchclient.ui.ops.InterfacesCard()
-                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
-                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
-                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
+                        com.dmzs.datawatchclient.ui.filters.FiltersCard()
                     }
                     SettingsTab.About -> {
                         AboutCard(activeProfile = activeProfile)
@@ -302,6 +327,7 @@ public fun SettingsScreen(
                     }
                 }
             }
+            } // end settings-scale MaterialTheme
         }
     }
 
@@ -315,6 +341,25 @@ public fun SettingsScreen(
         )
     }
 }
+
+/**
+ * Dense Settings typography — bodyLarge / bodyMedium / titleMedium
+ * each drop ~2-3sp from Material3 defaults. Matches the PWA's
+ * `.settings-row` 13px rhythm. Other scales (label / display /
+ * headline) inherit unchanged so banners, chips, and app-bar text
+ * still feel right. Kept inline to avoid leaking into non-Settings
+ * surfaces (sessions / chat use the app-wide typography).
+ */
+private fun pwaSettingsTypography(base: Typography): Typography =
+    base.copy(
+        bodyLarge = base.bodyLarge.copy(fontSize = 14.sp, lineHeight = 20.sp),
+        bodyMedium = base.bodyMedium.copy(fontSize = 13.sp, lineHeight = 18.sp),
+        bodySmall = base.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        titleLarge = base.titleLarge.copy(fontSize = 18.sp, lineHeight = 22.sp),
+        titleMedium = base.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp),
+        titleSmall = base.titleSmall.copy(fontSize = 13.sp, lineHeight = 17.sp),
+        labelLarge = base.labelLarge.copy(fontSize = 13.sp, lineHeight = 17.sp),
+    )
 
 @Composable
 private fun ServersCard(

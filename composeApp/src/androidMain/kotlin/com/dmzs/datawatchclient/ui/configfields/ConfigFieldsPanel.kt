@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -192,6 +193,26 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
 
 private const val SAVE_DEBOUNCE_MS: Long = 500
 
+/**
+ * Tight phone-sized widget rhythm — every settings row uses the
+ * same `ROW_PADDING`, `INPUT_WIDTH`, and `INPUT_TEXT_STYLE` so
+ * labels and inputs align across the whole Settings surface.
+ * Matches PWA's 13px / 11px `.settings-row` density rather than
+ * Material3's default 16sp body text which looked oversized on
+ * real devices (S1/S2/S3).
+ */
+private val ROW_PADDING_H = 12.dp
+private val ROW_PADDING_V = 4.dp
+private val INPUT_WIDTH = 160.dp
+
+@Composable
+private fun rowLabelStyle() =
+    MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
+
+@Composable
+private fun inputTextStyle() =
+    MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
+
 @Composable
 private fun FieldRow(
     field: ConfigField,
@@ -203,10 +224,10 @@ private fun FieldRow(
     when (field) {
         is ConfigField.Toggle -> {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(field.label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                Text(field.label, modifier = Modifier.weight(1f), style = rowLabelStyle())
                 Switch(
                     checked = value.toBooleanStrictOrNull() ?: false,
                     onCheckedChange = { on -> onChange(on.toString()) },
@@ -218,9 +239,12 @@ private fun FieldRow(
                 value = value,
                 onValueChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
                 singleLine = true,
-                placeholder = field.placeholder?.let { { Text(it) } },
+                placeholder = field.placeholder?.let {
+                    { Text(it, style = inputTextStyle()) }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.width(140.dp),
+                textStyle = inputTextStyle(),
+                modifier = Modifier.width(INPUT_WIDTH),
             )
         }
         is ConfigField.TextField -> InputRow(field.label) {
@@ -228,10 +252,13 @@ private fun FieldRow(
                 value = value,
                 onValueChange = onChange,
                 singleLine = true,
-                placeholder = field.placeholder?.let { { Text(it) } },
+                placeholder = field.placeholder?.let {
+                    { Text(it, style = inputTextStyle()) }
+                },
                 visualTransformation =
                     if (field.password) PasswordVisualTransformation() else VisualTransformation.None,
-                modifier = Modifier.width(220.dp),
+                textStyle = inputTextStyle(),
+                modifier = Modifier.width(INPUT_WIDTH),
             )
         }
         is ConfigField.Select -> SelectRow(field.label, field.options, value, onChange)
@@ -243,10 +270,10 @@ private fun FieldRow(
 @Composable
 private fun InputRow(label: String, trailing: @Composable () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Text(label, modifier = Modifier.weight(1f), style = rowLabelStyle())
         trailing()
     }
 }
@@ -260,16 +287,16 @@ private fun SelectRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Text(label, modifier = Modifier.weight(1f), style = rowLabelStyle())
         Box {
             OutlinedButton(
                 onClick = { expanded = true },
-                modifier = Modifier.width(160.dp),
+                modifier = Modifier.width(INPUT_WIDTH),
             ) {
-                Text(value.ifBlank { "(default)" }, style = MaterialTheme.typography.labelMedium)
+                Text(value.ifBlank { "(default)" }, style = inputTextStyle())
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 if (options.isEmpty()) {
