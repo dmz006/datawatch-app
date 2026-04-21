@@ -615,6 +615,29 @@ public class RestTransport(
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
+    override suspend fun listRemoteServerHealth(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/servers/health") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun killOrphans(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/stats/kill-orphans") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun memoryTest(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- v0.12 schedules + files + saved commands + config (read) ----
 
     override suspend fun listSchedules(

@@ -157,6 +157,18 @@ public class TerminalController internal constructor() {
             null,
         )
     }
+
+    /**
+     * Auto-shrink font until xterm fits the container horizontally.
+     * Mirrors PWA `termFitToWidth`. Useful on phone width when
+     * `setMinSize(120, _)` forces a wide terminal.
+     */
+    public fun autoFitToWidth() {
+        webView?.evaluateJavascript(
+            "window.dwAutoFitToWidth && window.dwAutoFitToWidth();",
+            null,
+        )
+    }
 }
 
 @Composable
@@ -187,6 +199,26 @@ public fun TerminalView(
             null,
         )
         com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
+    }
+
+    // Watchdog — if no pane_capture arrives within 5 seconds of the
+    // session opening, reset the first-capture flag so the next
+    // frame (whenever it arrives) is treated as a fresh reset-and-
+    // write. Mirrors PWA's `startTermConnectWatchdog` (app.js ~line
+    // 1723). We don't force a WS reconnect — the underlying
+    // WebSocketTransport already reconnects on error — but we do
+    // un-freeze and clear the "initial seen" state.
+    LaunchedEffect(sessionId) {
+        kotlinx.coroutines.delay(5_000L)
+        val sawAny = events.any { it is SessionEvent.PaneCapture }
+        if (!sawAny) {
+            Log.w("DwTerm", "watchdog: no pane_capture in 5s for $sessionId; resetting")
+            com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
+            webViewRef.value?.evaluateJavascript(
+                "window.dwClear && window.dwClear();",
+                null,
+            )
+        }
     }
 
     AndroidView(

@@ -8,6 +8,49 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-04-21 (Sprint U — terminal extras + kill-orphans + memory test + Auto scaffolding)
+
+### Added
+
+- **Terminal scroll-mode toggle.** Two new buttons on the terminal
+  toolbar: enter tmux copy-mode (`⇈`) sends
+  `command:tmux-copy-mode <sid>` over WS; exit (`⇊`) sends
+  `sendkey <sid>: Escape`. Matches PWA v2.3.2 scroll-mode flow.
+- **Terminal auto-fit-to-width** (`⇅`). Shrinks xterm font size
+  iteratively until the viewport fits the container horizontally,
+  mirroring PWA `termFitToWidth` (app.js line 1890). Useful when
+  `setMinSize(120, 40)` forces a wide terminal.
+- **Terminal 5 s watchdog.** If no pane_capture event arrives
+  within 5 seconds of a session open, the `resetPaneCaptureSeen`
+  marker is cleared and the WebView cleared so whichever frame
+  arrives next is treated as a fresh first-frame. Logs under
+  `DwTerm` tag.
+- **Kill-orphans card** under Settings → Monitor. Red "Kill
+  orphans" button opens a confirm dialog, POSTs
+  `/api/stats/kill-orphans`, reports `killed: N`.
+- **Memory test button** on the Memory card. Calls
+  `GET /api/memory/test`; green "Memory connection OK." or red
+  error message inline.
+- **Android Auto screen scaffolding.** Replaced the pre-MVP
+  single-screen placeholder with a three-screen nav graph:
+  AutoSummaryScreen → WaitingSessionsScreen → SessionReplyScreen.
+  Templates wired; data is still placeholder pending a Sprint T
+  ServiceLocator migration (auto module can't see composeApp's
+  DI today — detailed in `docs/plans/2026-04-21-auto-audit.md`).
+
+### Transport
+
+- `listRemoteServerHealth()`, `killOrphans()`, `memoryTest()`.
+- `WsOutbound.sendCommand(sessionId, text)` — generic `command`
+  WS frame sender (used by the scroll-mode toolbar and the ESC
+  exit).
+
+### Deferred
+
+- **Android Auto live session counts** — requires DI unification.
+- **Scroll-mode PageUp / PageDown chip bar** — current sprint has
+  toggle + ESC but not the on-screen navigation chips PWA shows.
+
 ## [0.24.0] — 2026-04-21 (Sprint S — terminal functional parity: resize_term + throttle + freeze)
 
 Closes the biggest terminal-emulation gap flagged in the

@@ -319,6 +319,27 @@ public interface TransportClient {
     public suspend fun listRemoteServers(): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /**
+     * GET /api/servers/health — per-peer health snapshot. Shape
+     * is loose; PWA renders colour-coded dots per remote server.
+     */
+    public suspend fun listRemoteServerHealth(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /**
+     * POST /api/stats/kill-orphans — kill orphaned tmux sessions
+     * (those not tracked by datawatch). Returns `{killed: N,
+     * orphaned_tmux: [...]}` or similar. Destructive; caller owns
+     * the confirm dialog.
+     */
+    public suspend fun killOrphans(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * POST /api/memory/test — end-to-end smoke test of the
+     * memory subsystem (embedder + store + query round-trip).
+     * Returns a status object; PWA shows success/fail toast.
+     */
+    public suspend fun memoryTest(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side

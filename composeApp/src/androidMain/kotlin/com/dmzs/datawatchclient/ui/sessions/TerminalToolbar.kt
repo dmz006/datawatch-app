@@ -14,8 +14,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.TextIncrease
 import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material3.Icon
@@ -112,11 +115,45 @@ public fun TerminalToolbar(
                 IconButton(onClick = { controller.fit() }) {
                     Icon(Icons.Filled.FitScreen, contentDescription = "Fit terminal")
                 }
+                IconButton(onClick = { controller.autoFitToWidth() }) {
+                    Icon(
+                        Icons.Filled.SwapVert,
+                        contentDescription = "Auto-fit width (shrink font)",
+                    )
+                }
                 IconButton(onClick = { controller.scrollToBottom() }) {
                     Icon(
                         Icons.Filled.VerticalAlignBottom,
                         contentDescription = "Jump to live tail",
                     )
+                }
+                // Scroll-mode toggle — enters tmux copy-mode on the
+                // server, surfacing history scrollback. PWA toggles
+                // between this and normal input per v2.3.2.
+                if (sessionId != null) {
+                    IconButton(
+                        onClick = {
+                            com.dmzs.datawatchclient.transport.ws.WsOutbound
+                                .sendCommand(sessionId, "tmux-copy-mode $sessionId")
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardDoubleArrowUp,
+                            contentDescription = "Scroll mode (tmux copy-mode)",
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            // Exit scroll mode: tmux copy-mode leaves on Escape.
+                            com.dmzs.datawatchclient.transport.ws.WsOutbound
+                                .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardDoubleArrowDown,
+                            contentDescription = "Exit scroll mode",
+                        )
+                    }
                 }
                 if (sessionId != null) {
                     IconButton(

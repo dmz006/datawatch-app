@@ -231,6 +231,33 @@
     };
 
     /**
+     * Auto fit-to-width — PWA termFitToWidth (app.js line 1890):
+     * shrink font size until no horizontal overflow. Iterates from
+     * current font size down to a floor of 5. Useful when container
+     * is narrower than the enforced configCols (claude 120 on a
+     * 39-char phone).
+     */
+    window.dwAutoFitToWidth = function () {
+      try {
+        var floor = 5;
+        var fs = parseFloat(term.options.fontSize) || 15;
+        while (fs > floor) {
+          term.options.fontSize = fs;
+          safeFit();
+          var vp = document.querySelector('.xterm-viewport');
+          if (!vp) break;
+          if (vp.scrollWidth <= vp.clientWidth + 2) break;
+          fs -= 1;
+        }
+        if (window.DwBridge && DwBridge.onAutoFontSize) {
+          try { DwBridge.onAutoFontSize(fs); } catch (e) {}
+        }
+      } catch (e) {
+        log('autoFit failed: ' + e);
+      }
+    };
+
+    /**
      * Set xterm font size in CSS px and re-fit. Mirrors PWA's
      * `changeTermFontSize(delta)` (app.js ~line 1714). Clamped to
      * a sensible range at the caller (Kotlin side).

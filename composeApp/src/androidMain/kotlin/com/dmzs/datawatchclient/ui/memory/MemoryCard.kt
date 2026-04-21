@@ -157,6 +157,21 @@ public fun MemoryCard() {
                 onClick = {
                     scope.launch {
                         val profile = resolveProfile() ?: return@launch
+                        ServiceLocator.transportFor(profile).memoryTest().fold(
+                            onSuccess = { banner = "Memory connection OK." },
+                            onFailure = {
+                                banner =
+                                    "Memory test failed — ${it.message ?: it::class.simpleName}"
+                            },
+                        )
+                    }
+                },
+            ) { Text("Test", style = MaterialTheme.typography.labelMedium) }
+            Spacer(modifier = Modifier.width(6.dp))
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val profile = resolveProfile() ?: return@launch
                         ServiceLocator.transportFor(profile).memoryExport().fold(
                             onSuccess = { bytes ->
                                 pendingBytes = bytes

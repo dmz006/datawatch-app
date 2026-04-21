@@ -225,6 +225,91 @@ private fun kotlinx.serialization.json.JsonObject.stringField(key: String): Stri
     (get(key) as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
 
 @Composable
+public fun KillOrphansCard() {
+    var confirmOpen by remember { mutableStateOf(false) }
+    var banner by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    ) {
+        PwaSectionTitle("Kill orphaned tmux sessions")
+        Text(
+            "Terminate tmux sessions on the server that datawatch isn't " +
+                "tracking. Useful after a crash or migration when tmux " +
+                "panes were left behind.",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        banner?.let {
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    if (it.startsWith("Killed")) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+            )
+        }
+        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+            Button(
+                onClick = { confirmOpen = true },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+            ) { Text("Kill orphans") }
+        }
+    }
+    if (confirmOpen) {
+        AlertDialog(
+            onDismissRequest = { confirmOpen = false },
+            title = { Text("Kill orphaned tmux sessions?") },
+            text = {
+                Text(
+                    "Every tmux session on this host that datawatch doesn't " +
+                        "know about will be terminated. Active datawatch " +
+                        "sessions are safe.",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmOpen = false
+                        scope.launch {
+                            val profile = resolveActiveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).killOrphans().fold(
+                                onSuccess = { obj ->
+                                    val n =
+                                        (obj["killed"] as? kotlinx.serialization.json.JsonPrimitive)
+                                            ?.content?.toIntOrNull() ?: 0
+                                    banner = "Killed $n orphan session(s)."
+                                },
+                                onFailure = {
+                                    banner = "Kill failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
+                ) { Text("Kill") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
+@Composable
 public fun UpdateDaemonCard() {
     var banner by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
