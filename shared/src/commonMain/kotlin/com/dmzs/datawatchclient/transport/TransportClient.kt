@@ -377,6 +377,31 @@ public interface TransportClient {
     public suspend fun deleteFilter(id: String): Result<Unit>
 
     /**
+     * GET /api/profiles/<kind>s — list project or cluster profiles.
+     * [kind] is `"project"` or `"cluster"`. Returns the raw
+     * `profiles` array from the `{profiles: [...]}` response so
+     * callers can render fields as the schema evolves.
+     */
+    public suspend fun listKindProfiles(
+        kind: String,
+    ): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** DELETE /api/profiles/<kind>s/<name>. */
+    public suspend fun deleteKindProfile(
+        kind: String,
+        name: String,
+    ): Result<Unit>
+
+    /**
+     * POST /api/profiles/<kind>s/<name>/smoke — validation round-trip.
+     * Returns a status object; PWA surfaces success/error as a toast.
+     */
+    public suspend fun smokeKindProfile(
+        kind: String,
+        name: String,
+    ): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side

@@ -8,6 +8,29 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-04-21 (Sprint X — Project + Cluster profile CRUD + Proxy Resilience)
+
+### Added
+
+- **Project Profiles + Cluster Profiles cards** under Settings →
+  General. Shared `KindProfilesCard` renderer keyed on
+  `kind ∈ {project, cluster}`; each row shows name + summary
+  (image_pair/git for project, k8s kind/context/namespace for
+  cluster), with per-row **Smoke** test + **Delete** actions.
+  Create / edit stays on the PWA per ADR-0019 (nested
+  image_pair / git / memory / kubernetes schema is too rich
+  for a mobile dialog).
+- **Proxy Resilience** section under Settings → Comms via the
+  generic `ConfigFieldsPanel`. Exposes the six `proxy.*` fields
+  PWA `loadProxySettings` shows: enabled, health_interval,
+  request_timeout, offline_queue_size, circuit_breaker_threshold,
+  circuit_breaker_reset.
+
+### Transport
+
+- `listKindProfiles(kind)`, `deleteKindProfile(kind, name)`,
+  `smokeKindProfile(kind, name)`.
+
 ## [0.27.0] — 2026-04-21 (Sprint W — filters CRUD + New Session form fields)
 
 ### Added

@@ -709,6 +709,39 @@ public class RestTransport(
             }
         }
 
+    override suspend fun listKindProfiles(
+        kind: String,
+    ): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val raw: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/profiles/${kind}s") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            (raw["profiles"] as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+                ?: emptyList()
+        }
+
+    override suspend fun deleteKindProfile(
+        kind: String,
+        name: String,
+    ): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/profiles/${kind}s/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+        }
+
+    override suspend fun smokeKindProfile(
+        kind: String,
+        name: String,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/profiles/${kind}s/$name/smoke") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- v0.12 schedules + files + saved commands + config (read) ----
 
     override suspend fun listSchedules(

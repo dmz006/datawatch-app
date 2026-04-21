@@ -226,6 +226,14 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                         )
+                        com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                            kind = "project",
+                            title = "Project profiles",
+                        )
+                        com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                            kind = "cluster",
+                            title = "Cluster profiles",
+                        )
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
@@ -253,6 +261,9 @@ public fun SettingsScreen(
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.McpServer,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
                         )
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                         com.dmzs.datawatchclient.ui.federation.FederationPeersCard()

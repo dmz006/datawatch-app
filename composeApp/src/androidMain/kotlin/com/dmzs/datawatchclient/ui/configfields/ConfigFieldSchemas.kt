@@ -250,4 +250,19 @@ public object ConfigFieldSchemas {
                     TextField("mcp.token", "MCP SSE bearer token", password = true),
                 ),
         )
+
+    public val Proxy: ConfigSection =
+        ConfigSection(
+            id = "proxy",
+            title = "Proxy Resilience",
+            fields =
+                listOf(
+                    Toggle("proxy.enabled", "Enabled"),
+                    NumberField("proxy.health_interval", "Health interval (sec)", "30"),
+                    NumberField("proxy.request_timeout", "Request timeout (sec)", "10"),
+                    NumberField("proxy.offline_queue_size", "Offline queue size", "100"),
+                    NumberField("proxy.circuit_breaker_threshold", "Circuit-breaker threshold", "3"),
+                    NumberField("proxy.circuit_breaker_reset", "Circuit-breaker reset (sec)", "30"),
+                ),
+        )
 }
