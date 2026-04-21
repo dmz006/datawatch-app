@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -127,16 +128,38 @@ public fun SessionDetailScreen(
                                 .clickable { renameOpen = true }
                                 .padding(vertical = 4.dp),
                     ) {
+                        // Prefer user-assigned name over the raw task
+                        // prompt, matching PWA sessionCard displayText.
                         Text(
-                            state.session?.taskSummary ?: sessionId,
+                            state.session?.name?.takeIf { it.isNotBlank() }
+                                ?: state.session?.taskSummary
+                                ?: sessionId,
                             maxLines = 1,
                             style = MaterialTheme.typography.titleMedium,
                         )
-                        Text(
-                            sessionId,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                sessionId,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            state.session?.backend?.takeIf { it.isNotBlank() }?.let { b ->
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    b.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            state.session?.hostnamePrefix?.takeIf { it.isNotBlank() }?.let { h ->
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "· $h",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -149,12 +172,25 @@ public fun SessionDetailScreen(
                         // PWA: tap state pill → state-override menu.
                         StatePill(s, onClick = { stateMenuOpen = true })
                     }
-                    IconButton(onClick = { chatMode = !chatMode }) {
-                        Icon(
-                            if (chatMode) Icons.Filled.Terminal else Icons.Filled.Chat,
-                            contentDescription =
-                                if (chatMode) "Switch to terminal" else "Switch to chat",
-                        )
+                    // Stop — promoted from the overflow menu so it's
+                    // one tap for a running/waiting session, matching
+                    // the PWA header Stop button.
+                    val isActive =
+                        state.session?.state == SessionState.Running ||
+                            state.session?.state == SessionState.Waiting
+                    if (isActive) {
+                        IconButton(onClick = { killConfirm = true }) {
+                            Icon(
+                                Icons.Filled.Stop,
+                                contentDescription = "Stop session",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                    // Timeline — promoted from overflow so users don't
+                    // have to tap-then-pick to see session history.
+                    IconButton(onClick = { timelineOpen = true }) {
+                        Icon(Icons.Filled.Timeline, contentDescription = "Timeline")
                     }
                     IconButton(onClick = vm::toggleMute) {
                         val muted = state.session?.muted == true
@@ -167,14 +203,6 @@ public fun SessionDetailScreen(
                         Icon(Icons.Filled.MoreVert, contentDescription = "More")
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Kill session") },
-                            leadingIcon = { Icon(Icons.Filled.Stop, null) },
-                            onClick = {
-                                menuOpen = false
-                                killConfirm = true
-                            },
-                        )
                         DropdownMenuItem(
                             text = { Text("Override state…") },
                             onClick = {
@@ -189,20 +217,30 @@ public fun SessionDetailScreen(
                                 scheduleOpen = true
                             },
                         )
-                        DropdownMenuItem(
-                            text = { Text("Timeline…") },
-                            leadingIcon = { Icon(Icons.Filled.Timeline, null) },
-                            onClick = {
-                                menuOpen = false
-                                timelineOpen = true
-                            },
-                        )
                     }
                 },
             )
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            // PWA-style output-surface tabs: tmux (terminal) / chat.
+            // Replaces the v0.14 icon-toggle with proper tabs so the
+            // active surface is always visible at a glance.
+            androidx.compose.material3.TabRow(
+                selectedTabIndex = if (chatMode) 1 else 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                androidx.compose.material3.Tab(
+                    selected = !chatMode,
+                    onClick = { chatMode = false },
+                    text = { Text("tmux") },
+                )
+                androidx.compose.material3.Tab(
+                    selected = chatMode,
+                    onClick = { chatMode = true },
+                    text = { Text("channel") },
+                )
+            }
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -274,6 +312,8 @@ public fun SessionDetailScreen(
                 sessionId = sessionId,
                 onTranscribed = { vm.onReplyTextChange(it) },
                 onSchedule = { scheduleOpen = true },
+                waitingInput = state.session?.state == SessionState.Waiting,
+                onQuickReply = vm::sendQuickReply,
             )
         }
     }
@@ -409,15 +449,16 @@ private fun InlineNotices(events: List<SessionEvent>) {
 
 @Composable
 private fun StatePill(state: SessionState, onClick: () -> Unit = {}) {
+    // Wire-format labels matching PWA (see PwaComponents.label()).
     val (label, color) =
         when (state) {
             SessionState.New -> "new" to MaterialTheme.colorScheme.onSurfaceVariant
             SessionState.Running -> "running" to MaterialTheme.colorScheme.primary
-            SessionState.Waiting -> "waiting" to MaterialTheme.colorScheme.tertiary
-            SessionState.RateLimited -> "rate-limited" to MaterialTheme.colorScheme.secondary
-            SessionState.Completed -> "completed" to MaterialTheme.colorScheme.onSurfaceVariant
+            SessionState.Waiting -> "waiting_input" to MaterialTheme.colorScheme.tertiary
+            SessionState.RateLimited -> "rate_limited" to MaterialTheme.colorScheme.secondary
+            SessionState.Completed -> "complete" to MaterialTheme.colorScheme.onSurfaceVariant
             SessionState.Killed -> "killed" to MaterialTheme.colorScheme.onSurfaceVariant
-            SessionState.Error -> "error" to MaterialTheme.colorScheme.error
+            SessionState.Error -> "failed" to MaterialTheme.colorScheme.error
         }
     AssistChip(
         onClick = onClick,
@@ -949,6 +990,8 @@ private fun ReplyComposer(
     sessionId: String,
     onTranscribed: (String) -> Unit,
     onSchedule: () -> Unit,
+    waitingInput: Boolean = false,
+    onQuickReply: (String) -> Unit = {},
 ) {
     HorizontalDivider()
     val context = LocalContext.current
@@ -957,6 +1000,33 @@ private fun ReplyComposer(
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
 
+    // When the session is waiting_input, show a compact row of quick-
+    // reply chips above the text field — PWA composer shows the same
+    // yes/no/continue/skip shortcuts so users can answer a prompt
+    // without typing.
+    if (waitingInput) {
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        ) {
+            items(listOf("yes", "no", "continue", "skip", "/exit")) { cmd ->
+                androidx.compose.material3.AssistChip(
+                    onClick = { onQuickReply(cmd) },
+                    label = {
+                        Text(
+                            when (cmd) {
+                                "yes" -> "approve"
+                                "no" -> "reject"
+                                "/exit" -> "quit"
+                                else -> cmd
+                            },
+                        )
+                    },
+                )
+            }
+        }
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -964,7 +1034,15 @@ private fun ReplyComposer(
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            placeholder = { Text(if (recording) "Listening…" else "Reply…") },
+            placeholder = {
+                Text(
+                    when {
+                        recording -> "Listening…"
+                        waitingInput -> "Reply (input required)…"
+                        else -> "Reply…"
+                    },
+                )
+            },
             modifier = Modifier.weight(1f),
             singleLine = false,
             maxLines = 4,

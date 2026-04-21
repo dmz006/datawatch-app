@@ -67,15 +67,21 @@ public fun PwaStatePill(state: SessionState) {
     }
 }
 
+/**
+ * PWA wire-format labels (`internal/server/web/app.js` renders these
+ * verbatim on `.state` span). We keep the exact tokens so mobile users
+ * can describe a session state to someone on the web and both are
+ * talking about the same badge.
+ */
 private fun SessionState.label(): String =
     when (this) {
-        SessionState.Running -> "RUNNING"
-        SessionState.Waiting -> "WAITING"
-        SessionState.RateLimited -> "RATE-LTD"
-        SessionState.Completed -> "DONE"
-        SessionState.Killed -> "KILLED"
-        SessionState.Error -> "FAILED"
-        SessionState.New -> "NEW"
+        SessionState.Running -> "running"
+        SessionState.Waiting -> "waiting_input"
+        SessionState.RateLimited -> "rate_limited"
+        SessionState.Completed -> "complete"
+        SessionState.Killed -> "killed"
+        SessionState.Error -> "failed"
+        SessionState.New -> "new"
     }
 
 /**

@@ -8,6 +8,42 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.14.1] — 2026-04-20 (Session-detail header + composer PWA parity)
+
+Second round of PWA parity fixes after a side-by-side walkthrough
+with the user. Note: v0.14.0 landed on the `dev` build but the
+user's phone was running `publicTrack` (the normal debug build),
+so none of the v0.14.0 changes were visible yet. v0.14.1 ships on
+publicTrack — the user-visible variant.
+
+### Fixed
+
+- **State pill labels now match PWA wire format exactly.** Previously
+  mobile showed "WAITING"/"DONE"/"FAILED"; now `waiting_input`,
+  `complete`, `failed`, `rate_limited` (lowercase, with underscores).
+  Users can describe a session state to someone on the PWA and both
+  are looking at the same token.
+
+### Added
+
+- **Session detail header meta row.** Below the title now shows
+  `<session-id> · <BACKEND> · <hostname>`, matching the PWA detail
+  header. Title itself now prefers user-assigned `name` over the
+  raw task prompt.
+- **Stop + Timeline promoted to top-level action icons** in the
+  session-detail app bar. Previously both lived in the overflow
+  menu — matching PWA's always-visible header buttons.
+- **tmux | channel tabs below the app bar.** Replaces the v0.14.0
+  Chat/Terminal icon toggle with a proper `TabRow` so the active
+  output surface is always visible. Selection still persists in
+  SharedPreferences across restarts.
+- **Composer quick-reply chips when session is `waiting_input`.**
+  Row of AssistChips above the text field: approve / reject /
+  continue / skip / quit. Matches the PWA's in-composer quick
+  commands. Fires `vm.sendQuickReply` without touching the typed
+  draft; placeholder text changes to "Reply (input required)…"
+  so the state is obvious even before expanding the chips.
+
 ## [0.14.0] — 2026-04-20 (Sessions tab matches PWA)
 
 Ripped the state-quick-filters the user explicitly called out ("the
