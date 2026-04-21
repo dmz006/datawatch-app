@@ -11,6 +11,15 @@
         tools:targetApi="34"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
         tools:targetApi="34"/>
+    <!--
+        Android 14+ requires a matching FOREGROUND_SERVICE_<TYPE>
+        permission for every `foregroundServiceType`. The :auto module's
+        CarAppService declares `connectedDevice`; without this permission
+        the Android Auto host fails to start it silently and the app
+        never surfaces on the head unit (A1).
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"
+        tools:targetApi="34"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <!-- Phone app only declares features it actually uses. Auto / Wear surfaces
