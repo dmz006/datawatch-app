@@ -1,14 +1,12 @@
 package com.dmzs.datawatchclient.ui.config
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -21,9 +19,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -31,22 +26,30 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Settings → Daemon config card. Read-only view of `GET /api/config`.
- * Top-level keys render as collapsible rows; tap to expand into a
- * pretty-printed JSON snippet. Server-masked and client-masked secrets
- * arrive as "***" and render verbatim.
+ * Daemon config viewer — PWA Settings/Config parity (read-only for v0.12;
+ * editable form lands v0.13 per ADR-0019).
  *
- * Write (PUT /api/config) is deliberately out of scope for v0.12 — a
- * structured form per ADR-0019 lands in v0.13.
+ * The PWA renders `/api/config` as one card per top-level section (server,
+ * session, telegram, slack, ollama, openwebui, anthropic, …) with the
+ * key=value pairs shown inline. This mirror renders the same layout:
+ * one `pwaCard()` per section, rows of `key value`, nested objects
+ * indented one level. Masked secrets (server sends `***` or mobile's
+ * client-side secondary mask) render as `***` in monospace.
  */
 @Composable
 public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
     val state by vm.state.collectAsState()
 
+    // Header card with refresh action + banner. Each config section
+    // renders as its own card below, mirroring the PWA's per-section
+    // grouping.
     Box(
         modifier =
             Modifier
@@ -77,98 +80,184 @@ public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
                     }
                 }
             }
-            ConfigViewerBody(state = state, vm = vm)
-        }
-    }
-}
-
-@Composable
-private fun ConfigViewerBody(
-    state: ConfigViewerViewModel.UiState,
-    vm: ConfigViewerViewModel,
-) {
-    state.banner?.let { banner ->
-        Surface(color = MaterialTheme.colorScheme.errorContainer) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            state.banner?.let { banner ->
+                Surface(color = MaterialTheme.colorScheme.errorContainer) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            banner,
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
+                    }
+                }
+            }
+            if (state.config.raw.isEmpty() && state.supported && !state.loading) {
                 Text(
-                    banner,
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodySmall,
+                    "Config empty or not yet loaded.",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
+            }
+            if (state.config.raw.isNotEmpty()) {
+                Text(
+                    "Read-only. Editable form lands v0.13 (ADR-0019).",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 
-    if (state.config.raw.isEmpty() && state.supported && !state.loading) {
-        Text(
-            "Config empty or not yet loaded.",
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    } else {
-        state.config.raw.toSortedMap().entries.forEachIndexed { idx, entry ->
-            if (idx > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            ConfigRow(key = entry.key, value = entry.value)
-        }
-    }
-
-    if (state.config.raw.isNotEmpty()) {
-        Text(
-            "Read-only. Write lands in v0.13 via a structured form (ADR-0019).",
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    // One card per top-level config section. Sorted alphabetically so the
+    // layout is stable across refreshes.
+    state.config.raw.toSortedMap().forEach { (sectionName, sectionValue) ->
+        ConfigSectionCard(name = sectionName, value = sectionValue)
     }
 }
 
 @Composable
-private fun ConfigRow(
-    key: String,
+private fun ConfigSectionCard(
+    name: String,
     value: JsonElement,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Column(
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            PwaSectionTitle(name)
+            ConfigSectionBody(value)
+        }
+    }
+}
+
+/**
+ * Render the body of a section. JsonObject flattens into key=value rows;
+ * primitives render as a single row; arrays render as a bullet list.
+ */
+@Composable
+private fun ConfigSectionBody(
+    value: JsonElement,
+    indent: Int = 0,
+) {
+    when (value) {
+        is JsonObject -> {
+            value.entries.forEachIndexed { idx, (key, v) ->
+                if (idx > 0) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                when (v) {
+                    is JsonObject -> {
+                        // Nested section — render an inset sub-header + body.
+                        Text(
+                            key,
+                            modifier =
+                                Modifier.padding(
+                                    start = (16 + indent * 12).dp,
+                                    end = 16.dp,
+                                    top = 8.dp,
+                                    bottom = 2.dp,
+                                ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        ConfigSectionBody(v, indent = indent + 1)
+                    }
+                    else -> ConfigKeyValueRow(key = key, value = v, indent = indent)
+                }
+            }
+        }
+        is JsonPrimitive -> {
             Text(
-                key,
+                value.content,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = if (expanded) "Collapse" else "Expand",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace,
             )
         }
-        if (expanded) {
+        is JsonArray -> {
+            value.forEach { el ->
+                Text(
+                    "• ${primitiveOrRepr(el)}",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+        }
+        is JsonNull -> {
             Text(
-                PRETTY_JSON.encodeToString(JsonElement.serializer(), value),
-                style = MaterialTheme.typography.labelSmall,
+                "—",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(top = 6.dp),
             )
         }
     }
 }
 
-// Module-level pretty printer. Lenient so we never blow up on a stray value.
-private val PRETTY_JSON: Json =
-    Json {
-        prettyPrint = true
-        isLenient = true
-        ignoreUnknownKeys = true
+@Composable
+private fun ConfigKeyValueRow(
+    key: String,
+    value: JsonElement,
+    indent: Int,
+) {
+    val startPadding = (16 + indent * 12).dp
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = startPadding, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            key,
+            modifier = Modifier.weight(1f, fill = true).padding(end = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val (display, isSecret) = formatValue(value)
+        Text(
+            display,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = FontFamily.Monospace,
+            color =
+                if (isSecret) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+        )
+    }
+}
+
+private fun formatValue(value: JsonElement): Pair<String, Boolean> =
+    when (value) {
+        is JsonPrimitive -> {
+            val s = value.content
+            val isSecret = s == "***"
+            s to isSecret
+        }
+        is JsonNull -> "—" to false
+        is JsonArray -> value.joinToString(", ") { primitiveOrRepr(it) } to false
+        is JsonObject -> "{…}" to false
+    }
+
+private fun primitiveOrRepr(el: JsonElement): String =
+    when (el) {
+        is JsonPrimitive -> el.content
+        is JsonNull -> "null"
+        else -> el.toString()
     }
