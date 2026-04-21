@@ -34,7 +34,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row timeline view (`/api/sessions/timeline`) | 🚧 | post-v0.12 — bottom-sheet overlay composed from cached WS events. Parent shipped the endpoint (closed [dmz006/datawatch#9](https://github.com/dmz006/datawatch/issues/9)); mobile wiring pending. |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
-| Schedule: list pending for a session (`/api/schedules`) | ❌ | **upstream-blocked** — parent `ScheduledCommand` schema lacks `session_id`; tracked in [dmz006/datawatch#14](https://github.com/dmz006/datawatch/issues/14). See §2 row below. |
+| Schedule: list pending for a session (`/api/schedules`) | 🚧 | server already supports `?session_id=`; mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
 
 ## 2. Session detail
 
@@ -57,7 +57,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
 | Inline schedule actions (create scheduled reply) | ✅ | post-v0.12 — composer "Schedule" button + overflow "Schedule reply…" both seed the schedule dialog with typed text → live prompt → task summary |
-| Per-session schedules list | ❌ | **upstream-blocked** — parent `ScheduledCommand` lacks `session_id`; tracked in [dmz006/datawatch#14](https://github.com/dmz006/datawatch/issues/14). |
+| Per-session schedules list | 🚧 | server already supports `/api/schedules?session_id=` (PWA uses it); mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
 | Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
 | Terminal Fit + Jump-to-bottom toolbar | ✅ | post-v0.12 — manual fit (after pinch-zoom) + scroll-to-tail buttons via `dwFit` / `dwScrollToBottom` JS bridges |
 | Pane-capture authoritative TUI rendering | ✅ | shipped earlier; mapper-level regression test added post-v0.12 to lock first/redraw frame contract |
@@ -72,7 +72,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Start session from form (`/api/sessions/start`) | ✅ | v0.11.0 — Sessions-tab FAB → `NewSessionScreen` |
 | Pick LLM backend (`/api/backends`) | ✅ | Settings → LLM read; New Session form has a Backend dropdown that calls `setActiveBackend` server-wide before start (parent lacks per-session backend param) |
 | Pick model variant | ❌ | parent shipped `/api/ollama/models` + `/api/openwebui/models` (closed [dmz006/datawatch#10](https://github.com/dmz006/datawatch/issues/10)) — mobile wiring pending |
-| Pick profile (`/api/profiles`) | ❌ | **upstream-blocked** — F10 ephemeral-agent profiles; tracked in [dmz006/datawatch#15](https://github.com/dmz006/datawatch/issues/15) |
+| Pick profile (`/api/profiles`) | 🚧 | server already exposes `/api/profiles` (PWA uses it); mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
 | Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
 | Voice-to-new-session | ❌ | v0.12 — composer mic exists; "new:" prefix auto-exec wiring needed |
 
