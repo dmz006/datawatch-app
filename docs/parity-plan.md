@@ -61,6 +61,8 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
 | Terminal Fit + Jump-to-bottom toolbar | ✅ | post-v0.12 — manual fit (after pinch-zoom) + scroll-to-tail buttons via `dwFit` / `dwScrollToBottom` JS bridges |
 | Pane-capture authoritative TUI rendering | ✅ | shipped earlier; mapper-level regression test added post-v0.12 to lock first/redraw frame contract |
+| Chat-mode / terminal-mode toggle | ✅ | post-v0.12 — top-app-bar icon swaps between xterm and event list, choice persisted in SharedPreferences |
+| Chat quick-reply buttons (Yes / No / Stop) | ✅ | post-v0.12 — appended under the latest PromptDetected in chat mode, fires `sendQuickReply` without touching composer draft |
 | Prompt + rate-limit inline banners | ✅ | InlineNotices |
 
 ## 3. New session (`data-view="new"`)

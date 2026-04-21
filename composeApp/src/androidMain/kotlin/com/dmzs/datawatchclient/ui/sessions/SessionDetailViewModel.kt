@@ -193,6 +193,29 @@ public class SessionDetailViewModel(
         }
     }
 
+    /**
+     * One-shot quick reply that bypasses the composer. Used by the
+     * chat-mode prompt quick-buttons ("Yes" / "No" / "Stop") so users
+     * can answer a `waiting_input` prompt without typing. Does not
+     * touch [_replyText] so any in-flight composer draft is preserved.
+     */
+    public fun sendQuickReply(text: String) {
+        val trimmed = text.trim()
+        val profile = profileCache ?: return
+        if (trimmed.isEmpty() || _replying.value) return
+        _replying.value = true
+        _banner.value = null
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).replyToSession(sessionId, trimmed).fold(
+                onSuccess = { _replying.value = false },
+                onFailure = { err ->
+                    _replying.value = false
+                    _banner.value = "Quick reply failed: ${err.describe()}"
+                },
+            )
+        }
+    }
+
     public fun kill() {
         val profile = profileCache ?: return
         if (_killing.value) return

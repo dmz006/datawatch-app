@@ -20,9 +20,11 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -84,6 +86,24 @@ public fun SessionDetailScreen(
     var scheduleOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
 
+    // Persistent mode preference — Terminal is the default (matches the
+    // PWA), Chat re-renders the existing event list with quick-reply
+    // buttons under prompts. Mode survives app restarts.
+    val context = LocalContext.current
+    val modePrefs =
+        remember(context) {
+            context.getSharedPreferences(
+                "dw.session.detail.v1",
+                android.content.Context.MODE_PRIVATE,
+            )
+        }
+    var chatMode by remember {
+        mutableStateOf(modePrefs.getBoolean("chat_mode", false))
+    }
+    androidx.compose.runtime.LaunchedEffect(chatMode) {
+        modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -116,6 +136,13 @@ public fun SessionDetailScreen(
                     state.session?.state?.let { s ->
                         // PWA: tap state pill → state-override menu.
                         StatePill(s, onClick = { stateMenuOpen = true })
+                    }
+                    IconButton(onClick = { chatMode = !chatMode }) {
+                        Icon(
+                            if (chatMode) Icons.Filled.Terminal else Icons.Filled.Chat,
+                            contentDescription =
+                                if (chatMode) "Switch to terminal" else "Switch to chat",
+                        )
                     }
                     IconButton(onClick = vm::toggleMute) {
                         val muted = state.session?.muted == true
@@ -188,16 +215,26 @@ public fun SessionDetailScreen(
                 InputRequiredBanner(prompt = state.pendingPromptText)
             }
 
-            val terminalController = rememberTerminalController()
-            TerminalToolbar(controller = terminalController, sessionId = sessionId)
-            TerminalView(
-                sessionId = sessionId,
-                events = state.events,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                controller = terminalController,
-            )
-
-            InlineNotices(state.events)
+            if (chatMode) {
+                // Chat mode — render the event-stream list with quick-reply
+                // buttons under the latest prompt. Mirrors the PWA chat
+                // pane that activates when you collapse the terminal.
+                ChatEventList(
+                    events = state.events,
+                    onQuickReply = vm::sendQuickReply,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+            } else {
+                val terminalController = rememberTerminalController()
+                TerminalToolbar(controller = terminalController, sessionId = sessionId)
+                TerminalView(
+                    sessionId = sessionId,
+                    events = state.events,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    controller = terminalController,
+                )
+                InlineNotices(state.events)
+            }
 
             ReplyComposer(
                 text = state.replyText,
@@ -448,6 +485,78 @@ private fun InputRequiredBanner(prompt: String?) {
             }
         }
     }
+}
+
+/**
+ * Chat-mode event list — same EventRow renderer, but the latest
+ * `PromptDetected` row gets quick-reply buttons appended (Yes / No /
+ * Stop). Tap fires [onQuickReply] without touching the composer
+ * draft.
+ */
+@Composable
+private fun ChatEventList(
+    events: List<SessionEvent>,
+    onQuickReply: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(events.size) {
+        if (events.isNotEmpty()) listState.animateScrollToItem(events.size - 1)
+    }
+    if (events.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize().padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "No messages yet. Waiting for session output…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    val latestPromptIndex =
+        events.indexOfLast { it is SessionEvent.PromptDetected }
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
+        items(
+            events,
+            key = { e -> "${e.sessionId}-${e.ts.toEpochMilliseconds()}-${e.hashCode()}" },
+        ) { ev ->
+            EventRow(ev)
+            if (ev is SessionEvent.PromptDetected && events.indexOf(ev) == latestPromptIndex) {
+                QuickReplyButtons(onQuickReply = onQuickReply)
+            }
+            HorizontalDivider()
+        }
+    }
+}
+
+/**
+ * Three pill buttons under the latest prompt: Yes / No / Stop. PWA
+ * surfaces the same triad to let you blast through approval prompts
+ * without typing. Stop sends "stop" rather than killing the session
+ * — the parent treats it as a graceful "halt this step" reply that
+ * the LLM can interpret in-context.
+ */
+@Composable
+private fun QuickReplyButtons(onQuickReply: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        QuickReplyChip("Yes", onClick = { onQuickReply("yes") })
+        QuickReplyChip("No", onClick = { onQuickReply("no") })
+        QuickReplyChip("Stop", onClick = { onQuickReply("stop") })
+    }
+}
+
+@Composable
+private fun QuickReplyChip(label: String, onClick: () -> Unit) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(label) },
+    )
 }
 
 @Composable

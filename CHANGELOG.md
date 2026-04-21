@@ -10,6 +10,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **Chat-mode / Terminal-mode toggle in session detail.** A new icon in
+  the top app bar (Chat ↔ Terminal) swaps between the existing xterm
+  surface and a chat-style event list. Choice persists via
+  `SharedPreferences("dw.session.detail.v1", "chat_mode")`. Chat mode
+  appends a Yes / No / Stop **quick-reply** button row under the
+  latest `PromptDetected` event so users can blast through approval
+  prompts without typing — taps fire `vm.sendQuickReply(...)` which
+  sends directly without touching the composer draft.
+
 - **Terminal toolbar: Fit + Jump-to-bottom buttons.** Two new icons next
   to font ± / Backlog: a Fit button forces a manual `safeFit()` pass
   (helps after a pinch-zoom or rotation that didn't fire a resize
