@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-04-20 (PWA parity sweep)
+
+A focused sweep over the gaps the user called out after v0.12.0:
+session-list rows now match the PWA monitor view, the session-detail
+header gains the affordances PWA users expect, and the
+new-session form picks up an LLM backend dropdown. Most upstream-
+blocked rows on parity-plan are explicitly tagged so future-me
+doesn't accidentally re-implement them client-side.
+
 ### Added
 
 - **New Session: LLM backend picker.** The Start-session form now shows

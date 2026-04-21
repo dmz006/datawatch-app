@@ -34,7 +34,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row timeline view (`/api/sessions/timeline`) | 🚧 | post-v0.12 — bottom-sheet overlay composed from cached WS events (state/prompt/rate-limit/completion/error). Will swap to a server feed when the parent endpoint lands. |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
-| Schedule: list pending for a session (`/api/schedules`) | ❌ | v0.12 |
+| Schedule: list pending for a session (`/api/schedules`) | ❌ | **upstream-blocked** — parent `ScheduledCommand` schema lacks `session_id`; see §2 row below |
 
 ## 2. Session detail
 
