@@ -128,7 +128,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Show daemon version (`/api/health`) | ✅ | v0.11.0 — uses `GET /api/info` for richer data (hostname + version + backends). About card "Connected to" row |
 | Connection status indicator | ✅ | v0.11.0 — 8 dp dot in Sessions TopAppBar + tap-to-open retry sheet |
 | Config read (`GET /api/config`) | ✅ | v0.12.0 — Settings → Daemon config card; collapsible top-level tree + client-side secondary mask on secret field names |
-| Config write (`PUT /api/config`) | ✅ | v0.20.0 BehaviourPreferencesCard + v0.21.0 BackendConfigDialog round-trip the doc per ADR-0019 |
+| Config write (`PUT /api/config`) | ✅ | v0.20.0 BehaviourPreferencesCard + v0.21.0 BackendConfigDialog. v0.33.6 rewrote the wire shape from a nested tree to the flat dot-path patch the server's `applyConfigPatch` actually cases on — previous versions silently no-op'd every save. Autosave (500 ms debounce) replaced the explicit Save button in v0.33.6 to match PWA. |
 | Recent logs (`/api/logs`) | ✅ | v0.16.0 — Settings → Monitor → DaemonLogCard, 10 s auto-refresh, colour-coded, paginated |
 | Network interfaces (`/api/interfaces`) | ✅ | v0.16.0 — Settings → Monitor → InterfacesCard |
 | Restart daemon (`/api/restart`) | ✅ | v0.16.0 — Settings → Monitor → RestartDaemonCard with confirm dialog |
