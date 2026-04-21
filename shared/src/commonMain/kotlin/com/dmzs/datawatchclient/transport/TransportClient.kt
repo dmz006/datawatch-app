@@ -214,6 +214,31 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * GET /api/logs?lines=<n>&offset=<m> — paged daemon log tail.
+     * PWA-observed response: `{ lines: [...], total: N }`. [level]
+     * optionally restricts to `info` / `warn` / `error`.
+     */
+    public suspend fun fetchLogs(
+        lines: Int = 50,
+        offset: Int = 0,
+        level: String? = null,
+    ): Result<LogsView>
+
+    /**
+     * POST /api/restart — daemon re-exec. Caller is responsible for
+     * the confirm dialog (destructive-ish — every active session
+     * briefly loses its WS connection during the re-exec).
+     */
+    public suspend fun restartDaemon(): Result<Unit>
+
+    /**
+     * GET /api/interfaces — read-only list of network interfaces the
+     * daemon sees. Shape is loose (flags / ip / mac / mtu) so we
+     * surface the raw JsonObject and let the UI pick fields.
+     */
+    public suspend fun listInterfaces(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side
@@ -309,6 +334,16 @@ public data class FederationView(
     val primary: List<Session>,
     val proxied: Map<String, List<Session>>,
     val errors: Map<String, String>,
+)
+
+/**
+ * Paginated daemon-log tail — PWA-observed shape:
+ * `{ lines: ["…"], total: <int> }`. [total] is the full log length so
+ * the UI can render a "Showing N of M" footer and paginate.
+ */
+public data class LogsView(
+    val lines: List<String>,
+    val total: Int,
 )
 
 public enum class DeviceKind(public val wire: String) { Fcm("fcm"), Ntfy("ntfy") }

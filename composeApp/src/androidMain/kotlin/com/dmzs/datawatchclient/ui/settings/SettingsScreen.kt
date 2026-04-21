@@ -228,6 +228,9 @@ public fun SettingsScreen(
                         // Stats tab so the layout matches the PWA's
                         // Settings/Monitor.
                         com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+                        com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                        com.dmzs.datawatchclient.ui.ops.InterfacesCard()
+                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                     }
                     SettingsTab.About -> {
                         AboutCard(activeProfile = activeProfile)

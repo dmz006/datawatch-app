@@ -8,6 +8,30 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-04-20 (Sprint D — Ops: logs viewer + interfaces + restart)
+
+### Added
+
+- **Daemon log viewer under Settings → Monitor.** Paginated
+  `GET /api/logs?lines=50&offset=…` with 10 s auto-refresh,
+  PWA-matching colour coding (error/warn/info), and newer/older
+  buttons. Matches the PWA's `loadDaemonLog` behaviour.
+- **Network interfaces card under Settings → Monitor.** Read-only
+  list from `GET /api/interfaces` — each row shows name / IPs /
+  MAC. Renders in under a second after opening the tab.
+- **Restart daemon card.** Red "Restart daemon" button with confirm
+  dialog. Calls `POST /api/restart`; the server re-execs and
+  active sessions briefly drop their WS connection (noted in the
+  card body). Surfaces a banner on success / failure.
+
+### Transport
+
+- New `TransportClient.fetchLogs(lines, offset, level)` returning
+  `LogsView(lines, total)`.
+- New `TransportClient.restartDaemon()` and
+  `TransportClient.listInterfaces()` (raw `List<JsonObject>` so UI
+  can pick fields without locking the schema).
+
 ## [0.15.0] — 2026-04-20 (Sprint C — /api/profiles picker + voice-to-new)
 
 ### Added

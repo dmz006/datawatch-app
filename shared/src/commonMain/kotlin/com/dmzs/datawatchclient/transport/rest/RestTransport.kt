@@ -8,6 +8,7 @@ import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.transport.AlertsView
+import com.dmzs.datawatchclient.transport.LogsView
 import com.dmzs.datawatchclient.transport.DeviceKind
 import com.dmzs.datawatchclient.transport.DevicePlatform
 import com.dmzs.datawatchclient.transport.TransportClient
@@ -456,6 +457,45 @@ public class RestTransport(
                 contentType(ContentType.Application.Json)
                 setBody(raw)
             }
+        }
+
+    override suspend fun fetchLogs(
+        lines: Int,
+        offset: Int,
+        level: String?,
+    ): Result<LogsView> =
+        request {
+            val raw: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/logs") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("lines", lines)
+                    parameter("offset", offset)
+                    level?.let { parameter("level", it) }
+                }.body()
+            val linesArr =
+                (raw["lines"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull {
+                    (it as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { p -> p.isString }?.content
+                } ?: emptyList()
+            val total =
+                (raw["total"] as? kotlinx.serialization.json.JsonPrimitive)
+                    ?.content?.toIntOrNull() ?: linesArr.size
+            LogsView(lines = linesArr, total = total)
+        }
+
+    override suspend fun restartDaemon(): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/restart") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+        }
+
+    override suspend fun listInterfaces(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/interfaces") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
     // ---- v0.12 schedules + files + saved commands + config (read) ----
