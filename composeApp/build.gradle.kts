@@ -24,6 +24,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(project(":shared"))
+                implementation(project(":auto"))
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.androidx.lifecycle.viewmodel.compose)
                 implementation(libs.androidx.lifecycle.process)
@@ -77,12 +78,17 @@ android {
             applicationIdSuffix = ""
             versionNameSuffix = ""
             manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
+            // Auto module has its own flavor dimension `surface`;
+            // pair publicTrack → publicMessaging so the
+            // CarAppService + manifest merge into the release APK.
+            missingDimensionStrategy("surface", "publicMessaging")
         }
         create("dev") {
             dimension = "track"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
             manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
+            missingDimensionStrategy("surface", "devPassenger")
         }
     }
 

@@ -253,6 +253,17 @@ the constants file.
 
 ### Non-terminal UI gaps not in Settings
 
+- **New Session form** is missing four PWA fields:
+  - Session name (distinct from task prompt — currently mobile treats
+    the task textarea as the name; PWA has both).
+  - Resume previous session dropdown (warm-resume from a completed
+    session's state, or enter a custom session id).
+  - Auto git init toggle.
+  - Auto git commit toggle (defaults on in PWA).
+- **Session backlog list** at bottom of New Session page — restart
+  grid for recent completed/killed/failed sessions.
+- **Backend not-installed warning panel** — shown when the picked
+  backend lacks install/config (PWA has specific install hints).
 - Session detail composer direct text injection (`/api/command`) —
   low priority power-user affordance.
 - API links (Swagger / OpenAPI / MCP Tools) — just clickable links.

@@ -73,10 +73,10 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 |---|---|---|
 | Start session from form (`/api/sessions/start`) | ✅ | v0.11.0 — Sessions-tab FAB → `NewSessionScreen` |
 | Pick LLM backend (`/api/backends`) | ✅ | Settings → LLM read; New Session form has a Backend dropdown that calls `setActiveBackend` server-wide before start (parent lacks per-session backend param) |
-| Pick model variant | 🚧 | v0.13.1 — read-only dropdown on New Session for ollama/openwebui (informational; `/api/sessions/start` has no `model` field, full swap needs backend-config PUT — v0.14) |
-| Pick profile (`/api/profiles`) | 🚧 | server already exposes `/api/profiles` (PWA uses it); mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
+| Pick model variant | ✅ | v0.13.1 dropdown + v0.21.0 full swap via `BackendConfigDialog` (PUT /api/config writes `backends.<name>.model`) |
+| Pick profile (`/api/profiles`) | ✅ | v0.15.0 — profile dropdown on New Session; passes as `profile` on POST /api/sessions/start |
 | Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
-| Voice-to-new-session | ❌ | v0.12 — composer mic exists; "new:" prefix auto-exec wiring needed |
+| Voice-to-new-session | ✅ | v0.15.0 — composer mic detects `new:` prefix on transcript and routes through `startSession` instead of composer insert |
 
 ## 4. Alerts (`data-view="alerts"`)
 

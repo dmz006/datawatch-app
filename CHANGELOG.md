@@ -8,6 +8,38 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.33.0] — 2026-04-22 (Sprint CC — Auto actually ships in the APK + docs refresh)
+
+### Fixed
+
+- **`:auto` module is now bundled into the composeApp APK.**
+  Previously the auto library built cleanly but wasn't a
+  dependency of `:composeApp`, so the `CarAppService` never
+  reached the APK and Android Auto never saw the app. Added
+  `implementation(project(":auto"))` with
+  `missingDimensionStrategy("surface", ...)` to bridge the two
+  modules' flavor dimensions. AAPT dump confirms the
+  CarAppService intent-filter + `automotive_app_desc` metadata
+  + `minCarApiLevel` metadata all merge into the final APK.
+
+### Added
+
+- **`androidx.car.app.minCarApiLevel = 1`** manifest metadata in
+  `auto/publicMain/AndroidManifest.xml`. Required by modern Auto
+  hosts to negotiate the template protocol.
+- **`docs/android-auto.md` rewritten** for current v0.32+ reality
+  — three-screen nav graph, AutoServiceLocator DI, DHU /
+  in-car test instructions, known gaps (TTS announcement,
+  voice-reply, allowlist Play-submit verification).
+- **`docs/README.md` refreshed** — upstream-issue section
+  updated to reflect 18 closed + 1 open-meta state.
+
+### Parity-plan
+
+- Three rows flipped from stale ❌/🚧 to ✅ (Pick model variant,
+  Pick profile, Voice-to-new-session) — all shipped in earlier
+  sprints, the labels were just stale.
+
 ## [0.32.0] — 2026-04-22 (Sprint BB — close the PWA-parity gap list)
 
 Closes every concrete PWA-parity gap the 2026-04-21 honest-audit

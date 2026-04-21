@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- Car App Library minimum API level. v1 = Android Auto
+             basic support; required by modern Auto hosts to
+             negotiate the template protocol. -->
+        <meta-data
+            android:name="androidx.car.app.minCarApiLevel"
+            android:value="1" />
+
         <service
             android:name="com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService"
             android:exported="true"

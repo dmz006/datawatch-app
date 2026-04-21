@@ -1,134 +1,112 @@
-# Android Auto Surfaces
+# Android Auto — current state + in-car test guide
 
-Dual-track (ADR-0031): public Messaging-template app (Play Store compliant) + internal
-full-passenger build (never promoted publicly). Both installable simultaneously via
-distinct `applicationId`s.
+*Last updated 2026-04-22 for v0.32.0+.*
 
-## Module structure
+## What ships in the APK
 
-```
-auto/
-├── build.gradle.kts
-├── src/publicMain/       # Messaging template, Play-compliant
-│   ├── AndroidManifest.xml
-│   └── kotlin/com/dmzs/datawatchclient/auto/messaging/
-│       └── DatawatchMessagingService.kt
-├── src/devMain/          # Full passenger UI (com.dmzs.datawatchclient.dev only)
-│   ├── AndroidManifest.xml
-│   └── kotlin/com/dmzs/datawatchclient/auto/dev/
-│       ├── MainScreen.kt
-│       ├── SessionListScreen.kt
-│       ├── SessionDetailScreen.kt
-│       ├── TerminalScreen.kt
-│       └── VoiceScreen.kt
-└── src/commonMain/       # shared helpers
-```
+As of v0.32.0 the `:auto` module is bundled into the `composeApp`
+APK via `missingDimensionStrategy("surface", "publicMessaging")` in
+the `publicTrack` flavor. The CarAppService + manifest metadata
+merge automatically; no separate Auto APK.
 
-The `publicMain` source set is compiled into the public applicationId only; `devMain` only
-into `.dev`. Build variants enforce this via `sourceSets` in Gradle.
+### Three-screen navigation
 
-## Public build — Messaging template
+1. **`AutoSummaryScreen`** — driver home screen. Shows Running /
+   Waiting input / Total counts for the first-enabled server
+   profile. Polls `GET /api/sessions` every 15 s.
+2. **`WaitingSessionsScreen`** — tap "Waiting input" to see the
+   list of sessions blocking on the user. Each row shows
+   `name` + a one-line body preview. Polls every 15 s.
+3. **`SessionReplyScreen`** — tap a session to reply with one of
+   four quick actions: **Yes / No / Continue / Stop**. Each
+   button fires `POST /api/sessions/reply`.
 
-Uses `androidx.car.app:app:1.7.x` in Messaging mode. This is the **only** Play-compliant
-Auto experience for a non-messaging app that needs inbound/outbound voice — the Car App
-Library's Driver Distraction review approves it for apps surfacing chat-style content.
+Templates used: `ListTemplate` + `MessageTemplate` only. No free-
+form UI per ADR-0031 Play-compliance.
 
-### Required manifest entries (public)
+### Dependency injection
 
-```xml
-<application>
-    <service
-        android:name=".auto.messaging.DatawatchMessagingService"
-        android:exported="true"
-        android:foregroundServiceType="connectedDevice">
-        <intent-filter>
-            <action android:name="androidx.car.app.CarAppService"/>
-            <category android:name="androidx.car.app.category.MESSAGING"/>
-        </intent-filter>
-    </service>
+Auto can't depend on `:composeApp` (library → app is a layering
+violation), so the `:auto` module has its own
+`AutoServiceLocator`. It rebuilds the same dependency graph the
+phone uses — `KeystoreManager` → `DatabaseFactory` →
+`ServerProfileRepository` → `SessionRepository` → `RestTransport` —
+all pulled from `:shared`. Same SQLCipher DB, same bearer tokens.
 
-    <meta-data
-        android:name="com.google.android.gms.car.application"
-        android:resource="@xml/automotive_app_desc"/>
-    <meta-data
-        android:name="androidx.car.app.minCarApiLevel"
-        android:value="1"/>
-</application>
-```
+Init happens in `DatawatchMessagingService.onCreate()` before any
+`Screen` is constructed.
 
-### Surface capabilities (public)
+### Host validation (ADR-0031)
 
-- **Inbound:** receives prompt/state-change events from the phone app. Creates a
-  `ConversationItem` per session; each prompt becomes a `CarMessage` read via TTS.
-- **Outbound:** voice dictation via Car App Library's voice reply intent → produces a
-  transcript; phone app calls `session_reply`.
-- **Explicit exclusions (Google policy):**
-  - No terminal, no logs, no stats table, no config UI.
-  - No free-form text entry; voice-only.
-  - No images or attachments (messaging template forbids for driving-safety).
-
-### Quality-tier review
-
-Messaging apps require a Driver Distraction Evaluation by Google at Play Console submission.
-This is a free but time-boxed review (typically 1–3 weeks). The app must pass before it can
-be distributed to Auto head units. Details in `play-store-registration.md`.
-
-## Internal build — full passenger UI
-
-Uses the full Car App Library (`androidx.car.app:app:1.7.x` + `app-automotive`) with custom
-screens. Since this goes through Play Console **Internal Testing track only** and never to
-production, Google's driver-distraction review is not required for distribution (you verify
-the internal list manually during upload). Note: even on internal testing, you are
-responsible for safe use — this is why it's labeled "passenger" and ships only to the user
-himself.
-
-### Screens
-
-- Session list (same as phone, adapted to car templates).
-- Session detail (chat + voice reply).
-- Terminal (minified xterm renderer; scrolling disabled while moving → overlay appears).
-- Voice quick actions.
-
-### Car App Library templates used (internal only)
-
-| Template | Use |
+| Build | Validator |
 |---|---|
-| `ListTemplate` | Session list, server picker |
-| `PaneTemplate` | Session summary, stats |
-| `MessageTemplate` | Prompt content |
-| `NavigationTemplate` (read-only) | Breadcrumb display |
-| `LongMessageTemplate` | Full chat log (parked-state recommended) |
+| Debug | `HostValidator.ALLOW_ALL_HOSTS_VALIDATOR` — DHU-friendly |
+| Release | strict allowlist from `R.array.hosts_allowlist` — Google Automotive + Android Auto + DHU + automotive emulator signing certs |
 
-### Interaction model
+The allowlist XML is at `auto/src/publicMain/res/values/hosts_allowlist.xml`.
 
-- Voice-first: every screen has a primary voice action; tap is secondary.
-- All interactions require < 2 taps before completing.
-- Any screen with > 6 list items uses scrolling with explicit "More" affordance.
+## Testing in your car
 
-## Per-variant code guard
+### Requirements
 
-`BuildConfig.AUTO_MODE` = `"public"` or `"dev"`. Public variant throws at compile time if
-any `.devMain` class is referenced, preventing accidental policy-violating code in the
-public AAB.
+- Phone running Android Auto (app installed + up to date).
+- Car with Android Auto (or Android Auto head unit / DHU).
+- APK installed on the phone. Debug builds use the default Android
+  debug key, which is fine for `adb install -r`.
+- Auto **developer mode** enabled for side-loaded apps (one-time):
+  - Open the Android Auto app on the phone.
+  - Tap the version number at the bottom of the Settings screen
+    ~10 times until the "Developer Mode" menu unlocks.
+  - In the now-visible developer settings, enable
+    **"Unknown sources"**. Without this, Auto won't expose side-
+    loaded debug apps to the car.
 
-## Testing
+### Connect + test
 
-- **DHU (Desktop Head Unit):** required for Auto development. `play-store-registration.md`
-  includes DHU setup instructions.
-- **Real head unit** tested before marking Validated=Yes for MVP.
-- **Public build review:** Google's Driver Distraction Evaluation before the app appears
-  on Auto. Start early — review can take 2+ weeks.
+1. `adb install -r composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk`
+2. Force-close any running datawatch instance:
+   `adb shell am force-stop com.dmzs.datawatchclient.debug`
+3. Connect the phone to the car (USB-C or wireless Auto).
+4. On the car display, the app drawer should show the datawatch
+   icon under the Messaging category.
+5. Tap to open → Summary screen with real counts.
+6. Tap "Waiting input" row → Waiting list.
+7. Tap a session → Reply screen with Yes/No/Continue/Stop.
 
-## Distribution
+### DHU (no car available)
 
-- Public AAB: uploaded to Play Console Production with Automotive-capable declared in the
-  manifest meta-data.
-- Internal AAB: uploaded to Play Console Internal Testing track only. Distribution list
-  includes only dmz's own devices.
+Google's **Desktop Head Unit** emulates Auto on a desktop PC
+connected to the phone over USB + ADB port forward.
 
-## Open item
+1. Install DHU: `sdkmanager "extras;google;auto"`
+2. Run: `$ANDROID_HOME/extras/google/auto/desktop-head-unit`
+3. With Auto developer mode on + phone connected, DHU mirrors the
+   Auto projection.
 
-- **App Actions for Auto voice** — Google's in-car voice routing depends on App Actions
-  BuiltInIntents. `CREATE_MESSAGE` and custom `datawatch.REPLY` need approval. Apply
-  immediately after Play Console account creation; approval lead time runs in parallel
-  with development.
+## Known gaps for in-car use
+
+| Item | State |
+|---|---|
+| Session counts live | ✅ via `AutoServiceLocator` |
+| Reply via quick actions | ✅ Yes/No/Continue/Stop |
+| **TTS announcement of new prompts** | ❌ `NotificationPoster` posts phone-side notifications but doesn't route through the Car Message API for in-car TTS. Drivers see visual notifications but don't hear them spoken. |
+| **RemoteInput voice reply from Auto notification** | ❌ — the `Reply` action uses `RemoteInput` for wrist/phone; Auto's own TTS-reply path is separate |
+| **Hosts allowlist verified against Play-submit** | ⚠️ — values from Google's public docs but not tested against an actual signing-cert chain |
+| **DHU simulator runtime smoke** | ❌ — code compiles cleanly; never exercised in DHU |
+
+## Architectural notes
+
+- **Process model.** The `CarAppService` may run in the same
+  process as `MainActivity` or a separate one depending on the
+  Auto host's decision. `AutoServiceLocator` is lazy-init'd in
+  `onCreate`, so either way the first `Screen` has a working DB +
+  transport.
+- **No shared state with the phone UI.** The screens poll their
+  own 15 s loop rather than subscribing to `SessionRepository`'s
+  flow, because the phone-side `SessionsViewModel` may or may not
+  be live at the time Auto binds.
+- **Play submission prerequisites** (not done):
+  - APK signed with release key
+  - `HostValidator` strict allowlist verified with actual cert chains
+  - Messaging template flow passes Auto's conformance lint
+  - App listing + Data Safety declarations updated
