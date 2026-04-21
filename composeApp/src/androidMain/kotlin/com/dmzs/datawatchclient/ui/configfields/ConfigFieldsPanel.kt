@@ -18,12 +18,14 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -60,6 +62,10 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
     var banner by remember { mutableStateOf<String?>(null) }
     // Per-field string state — covers all field types uniformly.
     val values = remember { mutableStateMapOf<String, String>() }
+    // Snapshot of what's on the server, used to decide "dirty" diff
+    // for autosave so we don't PUT values that haven't changed.
+    val loaded = remember { mutableStateMapOf<String, String>() }
+    var savingCount by remember { mutableStateOf(0) }
     // For interface/llm selects that need async data.
     var interfaces by remember { mutableStateOf<List<String>>(emptyList()) }
     var backends by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -83,7 +89,9 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
                 val raw = JsonObject(cfg.raw.toMap())
                 rawConfig = raw
                 section.fields.forEach { f ->
-                    values[f.key] = readDottedAsString(raw, f.key)
+                    val v = readDottedAsString(raw, f.key)
+                    values[f.key] = v
+                    loaded[f.key] = v
                 }
             },
             onFailure = { banner = "Config load failed — ${it.message ?: it::class.simpleName}" },
@@ -137,28 +145,52 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
                 backends = backends,
             )
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Button(
-                onClick = {
-                    val base = rawConfig ?: return@Button
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        val merged = mergeValues(base, section.fields, values)
-                        ServiceLocator.transportFor(profile).writeConfig(merged).fold(
-                            onSuccess = { banner = "Saved." },
-                            onFailure = {
-                                banner = "Save failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-            ) { Text("Save") }
+        // Tiny "Saving…" / "Saved" indicator where the Save button used
+        // to live. PWA auto-saves on every field change; we match by
+        // diffing values against the loaded snapshot, debouncing 500 ms,
+        // and sending a **flat dot-path patch** (server's
+        // applyConfigPatch cases on dotted top-level keys; nested trees
+        // are silently dropped — that's the v0.33.5-and-earlier bug).
+        if (savingCount > 0) {
+            Text(
+                "Saving…",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
+
+    // Compute the dirty set and debounce-save when anything changes.
+    val dirtyKey by remember(section.id) {
+        derivedStateOf {
+            section.fields
+                .filter { f -> (values[f.key] ?: "") != (loaded[f.key] ?: "") }
+                .joinToString(",") { f -> "${f.key}=${values[f.key].orEmpty()}" }
+        }
+    }
+    LaunchedEffect(dirtyKey) {
+        if (dirtyKey.isEmpty()) return@LaunchedEffect
+        kotlinx.coroutines.delay(SAVE_DEBOUNCE_MS)
+        val patch = buildDotPatch(section.fields, values, loaded) ?: return@LaunchedEffect
+        val profile = resolveProfile() ?: return@LaunchedEffect
+        savingCount += 1
+        ServiceLocator.transportFor(profile).writeConfig(patch).fold(
+            onSuccess = {
+                // Promote the changed values into the loaded snapshot so
+                // they're no longer "dirty" and we don't re-PUT them.
+                section.fields.forEach { f ->
+                    values[f.key]?.let { v -> loaded[f.key] = v }
+                }
+                banner = null
+            },
+            onFailure = { banner = "Save failed — ${it.message ?: it::class.simpleName}" },
+        )
+        savingCount = (savingCount - 1).coerceAtLeast(0)
+    }
 }
+
+private const val SAVE_DEBOUNCE_MS: Long = 500
 
 @Composable
 private fun FieldRow(
@@ -277,9 +309,56 @@ internal fun readDottedAsString(root: JsonObject, dottedKey: String): String {
 }
 
 /**
+ * Build the flat dot-path patch the server's `applyConfigPatch`
+ * actually accepts. Returns `null` if nothing has actually changed
+ * relative to [loaded]. Blank password fields are skipped
+ * (ADR-0019 empty-preserving rule — matches PWA).
+ *
+ * Matches parent `dmz006/datawatch internal/server/api.go`
+ * `applyConfigPatch`: a `map[string]interface{}` keyed by dotted
+ * path like `"ntfy.enabled": true`. Our previous `mergeValues`
+ * produced a nested tree, which the server silently ignores —
+ * that's why saves never persisted (#S7).
+ */
+internal fun buildDotPatch(
+    fields: List<ConfigField>,
+    values: Map<String, String>,
+    loaded: Map<String, String>,
+): JsonObject? {
+    val changed: List<Pair<String, JsonElement>> =
+        fields.mapNotNull { field ->
+            val key = field.key
+            val raw = values[key] ?: return@mapNotNull null
+            val prev = loaded[key] ?: ""
+            if (raw == prev) return@mapNotNull null
+            val trimmed = raw.trim()
+            if (field is ConfigField.TextField && field.password && trimmed.isEmpty()) {
+                return@mapNotNull null
+            }
+            val el: JsonElement =
+                when (field) {
+                    is ConfigField.Toggle -> JsonPrimitive(trimmed.toBooleanStrictOrNull() ?: false)
+                    is ConfigField.NumberField -> JsonPrimitive(trimmed.toIntOrNull() ?: 0)
+                    is ConfigField.TextField -> JsonPrimitive(trimmed)
+                    is ConfigField.Select,
+                    is ConfigField.InterfaceSelect,
+                    is ConfigField.LlmSelect,
+                    -> JsonPrimitive(trimmed)
+                }
+            key to el
+        }
+    if (changed.isEmpty()) return null
+    return buildJsonObject { changed.forEach { (k, v) -> put(k, v) } }
+}
+
+/**
  * Merge [values] back into [base] at their dotted-key locations.
  * Unknown / blank password fields preserve the original value
  * (ADR-0019 empty-preserving rule).
+ *
+ * **Deprecated** — retained only for compatibility with legacy call
+ * sites (BackendConfigDialog, DetectionFiltersCard) until they move
+ * to [buildDotPatch]. New code should prefer the flat patch path.
  */
 internal fun mergeValues(
     base: JsonObject,

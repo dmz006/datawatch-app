@@ -115,7 +115,6 @@ public fun BackendConfigDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val base = raw ?: return@TextButton
                     scope.launch {
                         val profiles = ServiceLocator.profileRepository.observeAll().first()
                         val activeId = ServiceLocator.activeServerStore.get()
@@ -124,8 +123,28 @@ public fun BackendConfigDialog(
                                 it.id == activeId && it.enabled &&
                                     activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
                             } ?: profiles.firstOrNull { it.enabled } ?: return@launch
-                        val merged = mergeConfig(base, backendName, model, baseUrl, apiKey)
-                        ServiceLocator.transportFor(profile).writeConfig(merged).fold(
+                        // Flat dot-path patch per server's applyConfigPatch
+                        // contract (see dmz006/datawatch-app#1 S7). Nested
+                        // trees are silently dropped.
+                        val patch =
+                            buildJsonObject {
+                                if (model.isNotBlank()) {
+                                    put("backends.$backendName.model", JsonPrimitive(model.trim()))
+                                }
+                                if (baseUrl.isNotBlank()) {
+                                    put("backends.$backendName.base_url", JsonPrimitive(baseUrl.trim()))
+                                }
+                                // Empty-preserving password rule (ADR-0019):
+                                // blank api_key input preserves server-side secret.
+                                if (apiKey.isNotBlank()) {
+                                    put("backends.$backendName.api_key", JsonPrimitive(apiKey.trim()))
+                                }
+                            }
+                        if (patch.isEmpty()) {
+                            onDismiss()
+                            return@launch
+                        }
+                        ServiceLocator.transportFor(profile).writeConfig(patch).fold(
                             onSuccess = { onDismiss() },
                             onFailure = {
                                 banner = "Save failed — ${it.message ?: it::class.simpleName}"

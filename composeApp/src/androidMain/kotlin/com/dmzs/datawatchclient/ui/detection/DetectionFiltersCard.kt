@@ -117,23 +117,35 @@ public fun DetectionFiltersCard() {
         }
 
     fun save(onSuccess: () -> Unit = {}) {
-        val base = raw ?: return
         scope.launch {
             val profile = resolveProfile() ?: return@launch
-            val merged =
+            // Flat dot-path patch per server's applyConfigPatch
+            // contract. Server handler `handleDetectionPatterns` /
+            // `applyConfigPatch` cases on dotted top-level keys
+            // (`detection.prompt_patterns`, etc.) — nested envelopes
+            // silently drop. See dmz006/datawatch-app#1 (S7).
+            val patch =
                 buildJsonObject {
-                    base.forEach { (k, v) ->
-                        if (k == "detection") {
-                            put(k, buildDetection(v as? JsonObject))
-                        } else {
-                            put(k, v)
-                        }
-                    }
-                    if (!base.containsKey("detection")) {
-                        put("detection", buildDetection(null))
-                    }
+                    put(
+                        "detection.prompt_patterns",
+                        buildJsonArray { promptPatterns.forEach { add(JsonPrimitive(it)) } },
+                    )
+                    put(
+                        "detection.completion_patterns",
+                        buildJsonArray { completionPatterns.forEach { add(JsonPrimitive(it)) } },
+                    )
+                    put(
+                        "detection.rate_limit_patterns",
+                        buildJsonArray { rateLimitPatterns.forEach { add(JsonPrimitive(it)) } },
+                    )
+                    put(
+                        "detection.input_needed_patterns",
+                        buildJsonArray { inputNeededPatterns.forEach { add(JsonPrimitive(it)) } },
+                    )
+                    debounce.toIntOrNull()?.let { put("detection.prompt_debounce", JsonPrimitive(it)) }
+                    cooldown.toIntOrNull()?.let { put("detection.notify_cooldown", JsonPrimitive(it)) }
                 }
-            ServiceLocator.transportFor(profile).writeConfig(merged).fold(
+            ServiceLocator.transportFor(profile).writeConfig(patch).fold(
                 onSuccess = {
                     banner = "Saved."
                     onSuccess()
