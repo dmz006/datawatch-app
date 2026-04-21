@@ -8,6 +8,133 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.33.10] — 2026-04-22 (Sprint EE — on-device triage)
+
+Every fix in the 0.33.2 → 0.33.10 patch stream is ground-truthed
+against the parent `dmz006/datawatch` source, verified on a live
+Galaxy S24 Ultra + Galaxy Watch 7 paired with a v4.0.7 daemon.
+Full punch list at
+[dmz006/datawatch-app#1](https://github.com/dmz006/datawatch-app/issues/1).
+
+### Fixed — Settings (S1–S9)
+
+- **S7 Save doesn't persist.** `PUT /api/config` now sends a flat
+  dot-path patch (`{"ntfy.enabled":true}`), matching the server's
+  `applyConfigPatch` switch-case contract. Previously sent the
+  entire nested tree (`{"ntfy":{"enabled":true}}`) which the
+  server silently dropped for every field. Three call sites:
+  ConfigFieldsPanel, DetectionFiltersCard, BackendConfigDialog.
+- **S4 Autosave.** Save button removed from ConfigFieldsPanel.
+  500 ms debounced autosave keyed on a derived diff of current
+  vs loaded values. "Saving…" label appears while in-flight.
+- **S5 Tab order.** Monitor → General → Comms → LLM → About,
+  default Monitor, matching PWA `app.js:3089`.
+- **S6 Monitor cards.** Memory Browser + Scheduled Events moved
+  from General to Monitor to match PWA `data-group="monitor"`.
+- **S8 LLM picker move.** Active-LLM radio list deleted from the
+  LLM tab; picker is now `session.llm_backend` LlmSelect on
+  General → Datawatch. LLM tab hosts per-backend config only.
+- **S3 + S1 + S2 Settings density.** Nested MaterialTheme scales
+  typography down (bodyLarge 16→14, bodyMedium 14→13, titleMedium
+  16→14) only within the Settings surface.
+  `CompositionLocalProvider(LocalTextStyle provides 13sp)` drops
+  OutlinedTextField / OutlinedButton default text to 13sp without
+  touching individual call sites. ConfigFieldsPanel rows use
+  shared `INPUT_WIDTH = 160dp` + `ROW_PADDING` constants so every
+  label-input row aligns.
+- **S9 partial.** `autonomous.*`, `plugins.*`, `orchestrator.*`
+  fields render but don't persist — server's `applyConfigPatch`
+  doesn't include those in its switch. Upstream limitation
+  (PWA has the same behaviour per `app.js:3620` comment).
+- Transport `request {}` now catches
+  `kotlinx.serialization.SerializationException` separately —
+  previously bucketed under the generic `Throwable → Unreachable`
+  branch, which misleadingly flipped the reachability dot red
+  when the server had actually answered fine.
+
+### Fixed — Transport (LLM + Comms tabs)
+
+- `listBackends` accepts both shipped shapes: `{llm:[{name,...}]}`
+  (current server) and `{llm:[String]}` (older). Extracts names
+  either way.
+- `listChannels` accepts `{channels:[...]}` envelope from current
+  server plus the older bare-array shape.
+
+### Fixed — Session detail (T1–T3)
+
+- **T3 Single display source.** Raw-output fallback deleted. Only
+  `pane_capture` ever writes to xterm. Matches parent
+  `dmz006/datawatch@0393e262` which killed the legacy path as
+  "broken for TUIs".
+- **T2 Resize-race on re-entry.** TerminalController now stashes
+  `pendingMinCols/Rows` + `pendingFrozen` and replays from
+  `onPageFinished`. Prevents claude-code's 120×40 enforcement
+  from dropping on the second session open.
+- **T1 Font size 9 → 11.** PWA's 9px is a desktop default; 11 is
+  the mobile-readable floor. User toolbar A+/A- still persists.
+- `SessionEventRepository` no longer silently drops
+  `PaneCapture`. Live captures flow through an in-memory
+  `MutableStateFlow<PaneCapture?>` per session id merged into
+  `observe()`.
+- `LaunchedEffect` keys on the latest pane-capture timestamp so
+  replacement captures retrigger render.
+- xterm CSS mirrors PWA `.output-area`: `overflow-x:auto`,
+  `overflow-y:hidden` on container, `width:fit-content;
+  min-width:100%` on `.xterm`, scrollbar hidden,
+  `box-sizing:content-box` reset per xterm.js #1283 / parent
+  `a129d031`. Viewport gets `touch-action:pan-x` so swipe-up
+  can't scroll a non-existent scrollback unless tmux scroll mode
+  is entered.
+
+### Fixed — Session detail header
+
+- TopAppBar title column was squeezed to ~1 char width by five
+  actions (StatePill + Stop + Timeline + Mute + More), causing
+  session id + backend chip to render one character per line.
+  Timeline + Mute moved into the overflow; title Texts get
+  `softWrap=false, overflow=Ellipsis`.
+
+### Fixed — About crash
+
+- McpToolsCard nested a `verticalScroll` Column inside the outer
+  Settings `verticalScroll` — Compose throws on infinite-height
+  measure. Inner scroll removed; outer Settings Column already
+  scrolls.
+
+### Fixed — Wear (W1)
+
+- Wear module was missing launcher icon resources entirely, so
+  Galaxy Watch omitted the app from the drawer. Copied
+  composeApp's adaptive-icon XMLs into `wear/src/main/res/`.
+  Both `<application>` and `<activity>` now declare
+  `android:icon/roundIcon`. Monochrome layer dropped from Wear
+  (references `?attr/colorControlNormal` which doesn't resolve
+  under `Theme.DeviceDefault`).
+
+### Fixed — Android Auto (A1)
+
+- Added `FOREGROUND_SERVICE_CONNECTED_DEVICE` permission required
+  by Android 14+ for any service with
+  `foregroundServiceType="connectedDevice"` — the CarAppService.
+  Without it the Auto host's `startForegroundService()` for
+  `DatawatchMessagingService` throws `SecurityException` on
+  modern devices and the app never surfaces on the head unit.
+  Verified in APK via `aapt2 dump xmltree`.
+
+### Versioning
+
+| Step | Subject |
+|-----|---------|
+| 0.33.2 | About crash fix (McpToolsCard nested scroll) |
+| 0.33.3 | DTO shape fix (LLM, Comms) + error classification |
+| 0.33.4 | pane_capture live bus + session-detail header density |
+| 0.33.5 | xterm CSS + 9px default + box-sizing reset |
+| 0.33.6 | flat dot-path patch + debounced autosave (S7, S4) |
+| 0.33.7 | Settings tab order + card moves + typography (S5/6/8/3) |
+| 0.33.8 | xterm T1/T2/T3 + Wear W1 |
+| 0.33.9 | Auto A1 — FOREGROUND_SERVICE_CONNECTED_DEVICE |
+| 0.33.10 | Settings LocalTextStyle polish + dead-code cleanup |
+
 ## [0.33.1] — 2026-04-22 (Sprint DD — full docs refresh)
 
 ### Changed
