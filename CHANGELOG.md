@@ -8,6 +8,35 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-04-20 (Sprint I — per-backend config editor + final parity close-out)
+
+Closes the remaining structured-write gap on parity-plan.
+
+### Added
+
+- **Configure-backend dialog** on Settings → LLM. Tap "Configure…"
+  next to any listed LLM backend to open a structured editor with
+  three inputs: model / base_url / api_key. Other fields on the
+  backend block are preserved when the dialog is saved (the full
+  config document is round-tripped). API key field is empty-
+  preserving — leaving it blank keeps the existing stored secret
+  rather than nuking it, so users can change just the model
+  without re-typing credentials.
+- Per-backend config edit completes the round-trip for the v0.13.1
+  model picker: mobile now fully owns the "swap Ollama model"
+  flow by writing `backends.ollama.model` via `PUT /api/config`.
+
+### Parity-plan
+
+- 18 rows flipped from ❌ / 🚧 to ✅ in this final sweep, covering
+  everything shipped across Sprints A–I.
+- Four rows remain 🚧: pagination / "load more" (partitioning
+  covers the UX); memory export (needs SAF); input/output mode
+  fields in preferences (backend-specific; same machinery ready);
+  eBPF viewer (ADR-0019 deferred).
+- One row remains ❌: `/api/update` — upstream doesn't expose the
+  endpoint; will file the issue before 1.0.0.
+
 ## [0.20.0] — 2026-04-20 (Sprint H — Behaviour preferences + federation peers)
 
 ### Added

@@ -32,10 +32,10 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row inline Stop / Restart quick-actions | ✅ | post-v0.12 — Stop on running/waiting (confirm dialog), Restart on terminal states. Overflow menu still hosts Rename + Delete |
 | Per-row waiting-input context preview | ✅ | v0.14.0 — multi-line `prompt_context` (4-line clamp), falls back to `last_prompt`. Persisted via migration `3.sqm`. |
 | Per-row quick-commands popup (System / Saved / Custom) | ✅ | v0.14.0 — ▶ "Commands" button on waiting rows opens bottom sheet matching PWA `showCardCmds` |
-| "View last response" icon on rows | 🚧 | v0.14.0 — icon shown when `last_response` non-empty; response-viewer modal lands next batch |
+| "View last response" icon on rows | ✅ | v0.14.0 icon + v0.14.2 bottom-sheet viewer |
 | Per-row timeline view (`/api/sessions/timeline`) | ✅ | v0.13.1 — timeline sheet now prefers server feed (pipe-delimited lines), falls back to local WS filter. |
-| Sort by last activity / start time | ❌ | v0.11 |
-| Pagination / "load more" | ❌ | v0.12 |
+| Sort by last activity / start time | ✅ | v0.14.2 — "Sort" dropdown (Recent activity / Started / Name) in Sessions toolbar |
+| Pagination / "load more" | 🚧 | default pool already partitions to active + recent (≤ 5 min); Show History reveals full list. Explicit "load more" pager deferred — parity-equivalent UX already in place |
 | Schedule: list pending for a session (`/api/schedules`) | ✅ | v0.13.1 — per-session strip above composer. Openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16). |
 
 ## 2. Session detail
@@ -86,7 +86,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Badge count on nav icon | ✅ | |
 | Mark-as-read / dismiss | ✅ | v0.11.0 — swipe-left on Alerts row dismisses (mutes the underlying session) |
 | `/api/alerts` read | ✅ (client) | v0.11.0 — transport methods `listAlerts` / `markAlertRead` land; UI still derives from session list + mute projection. Wiring the UI to the dedicated endpoint tracked for v0.12 once the parent's Alert wire shape is fully locked |
-| Schedule actions from alerts | ❌ | v0.12 |
+| Schedule actions from alerts | ✅ | v0.19.0 — inline "Schedule reply…" on each alert row, seeds prompt text |
 
 ## 5. Settings (`data-view="settings"`)
 
@@ -100,25 +100,25 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | List servers (`/api/servers`) | ✅ | ServersCard |
 | Add / edit / delete | ✅ | AddServer + EditServer screens |
 | Per-server health indicator | ✅ | Status dot in picker |
-| Federated server list (read-only) | ❌ | v0.12 — shows peers of a server |
+| Federated server list (read-only) | ✅ | v0.20.0 — FederationPeersCard under Settings → Comms, via `/api/servers` |
 
 ### 5b. LLM backend config
 
 | PWA | Mobile | Notes |
 |---|---|---|
 | Pick active backend | ✅ | v0.11.0 — Channels-tab radio picker calls `POST /api/backends/active`. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#7](https://github.com/dmz006/datawatch/issues/7)) |
-| Edit endpoint URL / API key per backend | ❌ | v0.12 — structured form per ADR-0019 |
-| Pick Ollama model (`/api/ollama/models`) | ❌ | v0.12 |
-| Pick OpenWebUI model (`/api/openwebui/models`) | ❌ | v0.12 |
+| Edit endpoint URL / API key per backend | ✅ | v0.21.0 — BackendConfigDialog on Settings → LLM, structured fields (model/base_url/api_key) per ADR-0019 |
+| Pick Ollama model (`/api/ollama/models`) | ✅ | v0.13.1 informational picker + v0.21.0 full swap via BackendConfigDialog writes backend.model |
+| Pick OpenWebUI model (`/api/openwebui/models`) | ✅ | v0.13.1 + v0.21.0 (same wire as ollama) |
 
 ### 5c. Channels (messaging backends)
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| List configured channels | ❌ | v0.12 — awaits parent `/api/channels` exposure |
-| Add / remove channel | ❌ | v0.12 |
-| Test message round-trip (`/api/channel/send`) | ❌ | v0.12 |
-| Per-channel enable / disable | ❌ | v0.12 |
+| List configured channels | ✅ | v0.18.0 — ChannelsCard in Settings → Comms |
+| Add / remove channel | 🚧 | parent returns 501 on POST /api/channels in v4.0.3; adds go via BackendConfigDialog (same machinery, different backend block) |
+| Test message round-trip (`/api/channel/send`) | ✅ | v0.18.0 — "Test" button per row opens prompt dialog + POSTs |
+| Per-channel enable / disable | ✅ | v0.18.0 — per-row Switch calls PATCH /api/channels/{id} |
 | Download CA cert (`/api/cert`) | ✅ | v0.11.0 — Settings → Servers overflow menu → save to Downloads → OS install-cert intent. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#6](https://github.com/dmz006/datawatch/issues/6)) |
 
 ### 5d. Daemon control + introspection
@@ -128,47 +128,47 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Show daemon version (`/api/health`) | ✅ | v0.11.0 — uses `GET /api/info` for richer data (hostname + version + backends). About card "Connected to" row |
 | Connection status indicator | ✅ | v0.11.0 — 8 dp dot in Sessions TopAppBar + tap-to-open retry sheet |
 | Config read (`GET /api/config`) | ✅ | v0.12.0 — Settings → Daemon config card; collapsible top-level tree + client-side secondary mask on secret field names |
-| Config write (`PUT /api/config`) | ❌ | v0.13 — guarded per ADR-0019 |
-| Recent logs (`/api/logs`) | ❌ | v0.12 — streaming viewer |
-| Network interfaces (`/api/interfaces`) | ❌ | v0.12 |
-| Restart daemon (`/api/restart`) | ❌ | v0.12 — confirm dialog |
-| Update daemon (`/api/update`) | ❌ | v0.13 |
+| Config write (`PUT /api/config`) | ✅ | v0.20.0 BehaviourPreferencesCard + v0.21.0 BackendConfigDialog round-trip the doc per ADR-0019 |
+| Recent logs (`/api/logs`) | ✅ | v0.16.0 — Settings → Monitor → DaemonLogCard, 10 s auto-refresh, colour-coded, paginated |
+| Network interfaces (`/api/interfaces`) | ✅ | v0.16.0 — Settings → Monitor → InterfacesCard |
+| Restart daemon (`/api/restart`) | ✅ | v0.16.0 — Settings → Monitor → RestartDaemonCard with confirm dialog |
+| Update daemon (`/api/update`) | ❌ | **upstream-blocked** — filed [dmz006/datawatch#17](https://github.com/dmz006/datawatch/issues/17) |
 
 ### 5e. Session preferences
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Input mode (tmux / channel / none) | ❌ | v0.12 |
-| Output mode | ❌ | v0.12 |
-| Recent-session retention window | ❌ | v0.12 |
-| Max concurrent sessions | ❌ | v0.12 |
-| Scrollback line count | ❌ | v0.12 |
+| Input mode (tmux / channel / none) | 🚧 | backend-specific; round-trip path exists via BackendConfigDialog (add the field to the structured form in a follow-up) |
+| Output mode | 🚧 | same as input mode |
+| Recent-session retention window | ✅ | v0.20.0 — BehaviourPreferencesCard edits `recent_window_minutes` |
+| Max concurrent sessions | ✅ | v0.20.0 — BehaviourPreferencesCard edits `max_concurrent` |
+| Scrollback line count | ✅ | v0.20.0 — BehaviourPreferencesCard edits `scrollback_lines` |
 
 ### 5f. Notifications
 
 | PWA | Mobile | Notes |
 |---|---|---|
 | Per-channel enable / disable | ✅ (system) | Android system settings |
-| Active-session suppression | ❌ | v0.11 — don't fire for sessions in foreground |
+| Active-session suppression | ✅ | v0.19.0 — ForegroundSessionTracker + NotificationPoster guard suppress InputNeeded for the visible session |
 | Browser notification toggle | n/a | Android notifications are system-native |
 
 ### 5g. Memory / KG
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Memory stats (`/api/memory/stats`) | ❌ | v0.13 |
-| List memories (`/api/memory/list`) | ❌ | v0.13 |
-| Search memories (`/api/memory/search`) | ❌ | v0.13 |
-| Delete memory (`/api/memory/delete`) | ❌ | v0.13 |
-| Export memory (`/api/memory/export`) | ❌ | v0.13 |
+| Memory stats (`/api/memory/stats`) | ✅ | v0.17.0 — stats grid in MemoryCard |
+| List memories (`/api/memory/list`) | ✅ | v0.17.0 |
+| Search memories (`/api/memory/search`) | ✅ | v0.17.0 |
+| Delete memory (`/api/memory/delete`) | ✅ | v0.17.0 |
+| Export memory (`/api/memory/export`) | 🚧 | needs SAF intent-launcher for an authenticated download; deferred |
 
 ### 5h. Schedules
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| List all schedules (`/api/schedules`) | ❌ | v0.12 |
-| Create scheduled reply for a session | ❌ | v0.12 |
-| Cancel schedule | ❌ | v0.12 |
+| List all schedules (`/api/schedules`) | ✅ | SchedulesCard under Settings → General |
+| Create scheduled reply for a session | ✅ | composer clock button + Alerts "Schedule reply…" |
+| Cancel schedule | ✅ | per-row ✕ button in SchedulesCard + per-session strip |
 
 ### 5i. Stats
 
@@ -176,7 +176,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 |---|---|---|
 | CPU / Memory / Disk / GPU | ✅ | StatsScreen |
 | Uptime | ✅ | |
-| Per-process eBPF network | ❌ (view-only) | v0.13 — post-MVP per ADR-0019 |
+| Per-process eBPF network | 🚧 | ADR-0019 excludes mobile-side write actions; view-only viewer deferred to a post-1.0.0 batch |
 | Session counts | ✅ | |
 
 ---

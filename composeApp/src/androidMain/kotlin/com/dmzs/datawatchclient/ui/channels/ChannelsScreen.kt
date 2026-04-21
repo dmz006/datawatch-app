@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 public fun LlmBackendCard(vm: ChannelsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
+    var configureBackend: String? by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<String?>(null)
+    }
 
     state.banner?.let {
         Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -58,7 +62,14 @@ public fun LlmBackendCard(vm: ChannelsViewModel = viewModel()) {
         active = state.activeBackend,
         setActiveSupported = state.setActiveSupported,
         onSelect = vm::setActive,
+        onConfigure = { configureBackend = it },
     )
+    configureBackend?.let { name ->
+        com.dmzs.datawatchclient.ui.channels.BackendConfigDialog(
+            backendName = name,
+            onDismiss = { configureBackend = null },
+        )
+    }
 }
 
 @Composable
@@ -67,6 +78,7 @@ private fun BackendsCard(
     active: String?,
     setActiveSupported: Boolean,
     onSelect: (String) -> Unit,
+    onConfigure: (String) -> Unit,
 ) {
     Card(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -124,6 +136,9 @@ private fun BackendsCard(
                                 leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null) },
                             )
                         }
+                        androidx.compose.material3.TextButton(
+                            onClick = { onConfigure(name) },
+                        ) { Text("Configure…", style = MaterialTheme.typography.labelSmall) }
                     }
                     HorizontalDivider()
                 }
