@@ -10,6 +10,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **Schedule-from-composer in session detail.** A new clock icon next to
+  Mic/Send opens the existing schedule dialog pre-seeded with the
+  typed reply text — turns "draft a reply, then schedule it for
+  later" into a single tap. Falls back to the live prompt → task
+  summary → session id when the composer is empty (priority order
+  matches the existing overflow-menu Schedule action).
+
 - **Session detail screen gains PWA header affordances and live banners.**
   Tapping the session title in the top app bar opens an inline rename
   dialog (same wire as the Sessions-list overflow), and tapping the

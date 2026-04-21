@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -205,6 +206,7 @@ public fun SessionDetailScreen(
                 sending = state.replying,
                 sessionId = sessionId,
                 onTranscribed = { vm.onReplyTextChange(it) },
+                onSchedule = { scheduleOpen = true },
             )
         }
     }
@@ -259,11 +261,15 @@ public fun SessionDetailScreen(
     }
 
     if (scheduleOpen) {
-        // Pre-seed the task with the latest prompt text when one is open —
-        // the common "schedule reply" intent is to auto-answer whatever the
-        // session is currently blocking on. Fallback: task summary, then id.
+        // Pre-seed the schedule task. Priority:
+        //   1. Typed reply text (the user opened Schedule from the
+        //      composer with a draft already in flight).
+        //   2. Latest live prompt — the common intent for an open
+        //      `waiting_input` session.
+        //   3. Session task summary, then id, as a last-resort label.
         val seededTask =
-            remember(state.events) {
+            remember(state.events, state.replyText) {
+                if (state.replyText.isNotBlank()) return@remember state.replyText
                 val latestPrompt =
                     state.events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
                         as? SessionEvent.PromptDetected
@@ -557,6 +563,7 @@ private fun ReplyComposer(
     sending: Boolean,
     sessionId: String,
     onTranscribed: (String) -> Unit,
+    onSchedule: () -> Unit,
 ) {
     HorizontalDivider()
     val context = LocalContext.current
@@ -626,6 +633,15 @@ private fun ReplyComposer(
                         },
                 )
             }
+        }
+        // Schedule-as-cron — preserves the typed reply text as the
+        // schedule task, so "draft → schedule" is a single tap.
+        IconButton(onClick = onSchedule, enabled = !sending) {
+            Icon(
+                Icons.Filled.Schedule,
+                contentDescription = "Schedule reply",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
         IconButton(onClick = onSend, enabled = !sending && text.isNotBlank()) {
             if (sending) {

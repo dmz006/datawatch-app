@@ -56,7 +56,8 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Delete session | ✅ | v0.11.0 — overflow + bulk. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5)) |
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
-| Inline schedule actions (create scheduled reply) | ❌ | v0.12 |
+| Inline schedule actions (create scheduled reply) | ✅ | post-v0.12 — composer "Schedule" button + overflow "Schedule reply…" both seed the schedule dialog with typed text → live prompt → task summary |
+| Per-session schedules list | ❌ | **upstream-blocked** — parent `ScheduledCommand` lacks `session_id`. Needs upstream schema change before mobile can filter accurately. |
 | Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
 | Prompt + rate-limit inline banners | ✅ | InlineNotices |
 
