@@ -329,13 +329,10 @@
       }
     });
 
-    // Paint a visible banner so the user sees the terminal is alive even
-    // before any output frames arrive. Uses bright-white on a black bg,
-    // no dim/italic, so it is unmistakably visible.
-    try {
-      term.write('\u001b[1;97m datawatch terminal ready \u001b[0m\r\n');
-      term.write('\u001b[90m waiting for session output… \u001b[0m\r\n');
-    } catch (e) { log('initial write failed: ' + e); }
+    // No pre-output banner — users said the "datawatch terminal ready"
+    // line was noise that mangled pane captures on session switch.
+    // The xterm container paints black-on-black until output arrives,
+    // which is the PWA behaviour.
 
     if (window.DwBridge && DwBridge.onReady) {
       try { DwBridge.onReady(); } catch (e) {}

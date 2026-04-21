@@ -8,6 +8,27 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.14.3] — 2026-04-20 (Sprint B — session detail + terminal polish)
+
+### Fixed
+
+- **Terminal no longer paints "datawatch terminal ready" banner**
+  on session open. The bright-white banner was noise that mangled
+  pane captures on session switch — the xterm container now stays
+  empty until real output arrives (matching PWA behaviour).
+- **"Load backlog" button re-enables on failure.** Previously the
+  button flipped permanently to disabled after the first click,
+  even if the call returned an error, leaving users with no retry
+  path on a transient network blip. Now it re-enables when the
+  fetch fails and is also reset on session switch.
+
+### Added
+
+- **Channel / messaging-backend badge in session-detail header.**
+  New middle-subtitle item next to the LLM badge shows the server's
+  active messaging channel (signal / telegram / …) fetched from
+  `/api/info` once on session open. Matches the PWA header.
+
 ## [0.14.2] — 2026-04-20 (Sprint A — Sessions list auto-refresh + sort + last-response viewer)
 
 ### Fixed

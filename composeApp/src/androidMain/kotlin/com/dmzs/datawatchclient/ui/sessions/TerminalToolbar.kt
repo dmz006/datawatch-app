@@ -52,9 +52,10 @@ public fun TerminalToolbar(
     modifier: Modifier = Modifier,
     sessionId: String? = null,
 ) {
-    var searchOpen by remember { mutableStateOf(false) }
-    var query by remember { mutableStateOf("") }
-    // Keyed to sessionId so switching sessions re-enables the button.
+    var searchOpen by remember(sessionId) { mutableStateOf(false) }
+    var query by remember(sessionId) { mutableStateOf("") }
+    // Keyed to sessionId so switching sessions re-enables the button;
+    // also reset when the load call itself fails so users can retry.
     var backlogLoaded by remember(sessionId) { mutableStateOf(false) }
     val context: Context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -151,6 +152,9 @@ public fun TerminalToolbar(
                                             ).show()
                                         },
                                         onFailure = { err ->
+                                            // Re-enable the button so the user can retry
+                                            // after transient network failures.
+                                            backlogLoaded = false
                                             Toast.makeText(
                                                 context,
                                                 "Backlog load failed — ${err.message ?: err::class.simpleName}",

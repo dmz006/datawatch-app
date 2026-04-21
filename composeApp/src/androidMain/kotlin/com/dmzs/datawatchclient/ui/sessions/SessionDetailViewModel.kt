@@ -48,6 +48,13 @@ public class SessionDetailViewModel(
          * probe failed (UI shows a banner above the terminal).
          */
         val reachable: Boolean? = null,
+        /**
+         * Server-wide messaging backend name, fetched from `/api/info`.
+         * Populates the channel badge in the detail header so users
+         * can see which channel (signal / telegram / etc.) the server
+         * is bound to — the PWA surfaces this same field.
+         */
+        val messagingBackend: String? = null,
     ) {
         public val needsInput: Boolean
             get() =
@@ -78,6 +85,7 @@ public class SessionDetailViewModel(
     private val _renaming = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
     private val _reachable = MutableStateFlow<Boolean?>(null)
+    private val _messagingBackend = MutableStateFlow<String?>(null)
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
@@ -99,6 +107,7 @@ public class SessionDetailViewModel(
             _banner,
             _renaming,
             _reachable,
+            _messagingBackend,
         ) { args ->
             val session = args[0] as Session?
             val events =
@@ -110,6 +119,7 @@ public class SessionDetailViewModel(
             val banner = args[5] as String?
             val renaming = args[6] as Boolean
             val reachable = args[7] as Boolean?
+            val messagingBackend = args[8] as String?
             UiState(
                 session = session,
                 events = events,
@@ -119,6 +129,7 @@ public class SessionDetailViewModel(
                 banner = banner,
                 renaming = renaming,
                 reachable = reachable,
+                messagingBackend = messagingBackend,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -134,6 +145,13 @@ public class SessionDetailViewModel(
             ServiceLocator.transportFor(profile).isReachable
                 .onEach { _reachable.value = it }
                 .launchIn(viewModelScope)
+            // Fetch /api/info once for the messaging-backend badge in
+            // the header. Best-effort; silent on failure.
+            ServiceLocator.transportFor(profile).fetchInfo().onSuccess { info ->
+                info.messagingBackend?.takeIf { it.isNotBlank() }?.let {
+                    _messagingBackend.value = it
+                }
+            }
         }
     }
 

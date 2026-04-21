@@ -151,6 +151,14 @@ public fun SessionDetailScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                            state.messagingBackend?.takeIf { it.isNotBlank() }?.let { ch ->
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "· $ch",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                )
+                            }
                             state.session?.hostnamePrefix?.takeIf { it.isNotBlank() }?.let { h ->
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
