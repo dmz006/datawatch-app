@@ -194,12 +194,38 @@ public fun SettingsScreen(
             ) {
                 when (activeTab) {
                     SettingsTab.General -> {
-                        // App-level + automation. Security card first (biometric
-                        // toggle), schedules (server-side recurring tasks),
-                        // then the episodic memory browser.
+                        // App-level + automation + server-config. Security + schedules
+                        // + the generic ConfigFieldsPanel per PWA-mirrored section.
                         SecurityCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                        com.dmzs.datawatchclient.ui.prefs.BehaviourPreferencesCard()
+                        // All PWA General sections, byte-for-byte schema match.
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.AutoUpdate,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Rtk,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
+                        )
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
@@ -219,13 +245,27 @@ public fun SettingsScreen(
                                 }
                             },
                         )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.CommsAuth,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebServer,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.McpServer,
+                        )
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                         com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                     }
                     SettingsTab.Llm -> {
-                        // LLM backend picker (was the old Channels tab content)
-                        // + saved command library (PWA groups commands under LLM).
+                        // LLM backend picker + saved commands + memory / rtk config.
                         com.dmzs.datawatchclient.ui.channels.LlmBackendCard()
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                        )
                         com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                     }
                     SettingsTab.Monitor -> {

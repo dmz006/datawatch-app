@@ -1,0 +1,347 @@
+package com.dmzs.datawatchclient.ui.configfields
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+
+/**
+ * Generic renderer for a [ConfigSection]. Reads `/api/config`,
+ * pulls current values for the section's fields (supports dotted
+ * keys like `session.log_level`), renders each field with its
+ * native widget, and writes the merged document back via
+ * `PUT /api/config` on Save.
+ *
+ * One card per section — multiple sections compose vertically.
+ * Empty-preserving password inputs: blank password fields keep the
+ * existing stored value rather than nuke it on Save.
+ */
+@Composable
+public fun ConfigFieldsPanel(section: ConfigSection) {
+    val scope = rememberCoroutineScope()
+    var rawConfig by remember { mutableStateOf<JsonObject?>(null) }
+    var banner by remember { mutableStateOf<String?>(null) }
+    // Per-field string state — covers all field types uniformly.
+    val values = remember { mutableStateMapOf<String, String>() }
+    // For interface/llm selects that need async data.
+    var interfaces by remember { mutableStateOf<List<String>>(emptyList()) }
+    var backends by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    suspend fun resolveProfile(): ServerProfile? {
+        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val activeId = ServiceLocator.activeServerStore.get()
+        return profiles.firstOrNull {
+            it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+        } ?: profiles.firstOrNull { it.enabled }
+    }
+
+    LaunchedEffect(section.id) {
+        val profile = resolveProfile() ?: run {
+            banner = "No enabled server."
+            return@LaunchedEffect
+        }
+        val transport = ServiceLocator.transportFor(profile)
+        transport.fetchConfig().fold(
+            onSuccess = { cfg ->
+                val raw = JsonObject(cfg.raw.toMap())
+                rawConfig = raw
+                section.fields.forEach { f ->
+                    values[f.key] = readDottedAsString(raw, f.key)
+                }
+            },
+            onFailure = { banner = "Config load failed — ${it.message ?: it::class.simpleName}" },
+        )
+        // Pre-populate async select options if any field needs them.
+        if (section.fields.any { it is ConfigField.InterfaceSelect }) {
+            transport.listInterfaces().onSuccess { list ->
+                interfaces =
+                    list.mapNotNull {
+                        (it["name"] as? JsonPrimitive)?.takeIf { p -> p.isString }?.content
+                    } + listOf("0.0.0.0", "127.0.0.1")
+            }
+        }
+        if (section.fields.any { it is ConfigField.LlmSelect }) {
+            transport.listBackends().onSuccess { v -> backends = v.llm }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    ) {
+        PwaSectionTitle(section.title)
+        banner?.let {
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    if (it.startsWith("Saved")) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+            )
+        }
+        if (rawConfig == null && banner == null) {
+            Text(
+                "Loading…",
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
+        section.fields.forEach { field ->
+            FieldRow(
+                field = field,
+                value = values[field.key].orEmpty(),
+                onChange = { v -> values[field.key] = v },
+                interfaces = interfaces,
+                backends = backends,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            Button(
+                onClick = {
+                    val base = rawConfig ?: return@Button
+                    scope.launch {
+                        val profile = resolveProfile() ?: return@launch
+                        val merged = mergeValues(base, section.fields, values)
+                        ServiceLocator.transportFor(profile).writeConfig(merged).fold(
+                            onSuccess = { banner = "Saved." },
+                            onFailure = {
+                                banner = "Save failed — ${it.message ?: it::class.simpleName}"
+                            },
+                        )
+                    }
+                },
+            ) { Text("Save") }
+        }
+    }
+}
+
+@Composable
+private fun FieldRow(
+    field: ConfigField,
+    value: String,
+    onChange: (String) -> Unit,
+    interfaces: List<String>,
+    backends: List<String>,
+) {
+    when (field) {
+        is ConfigField.Toggle -> {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(field.label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                Switch(
+                    checked = value.toBooleanStrictOrNull() ?: false,
+                    onCheckedChange = { on -> onChange(on.toString()) },
+                )
+            }
+        }
+        is ConfigField.NumberField -> InputRow(field.label) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
+                singleLine = true,
+                placeholder = field.placeholder?.let { { Text(it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(140.dp),
+            )
+        }
+        is ConfigField.TextField -> InputRow(field.label) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onChange,
+                singleLine = true,
+                placeholder = field.placeholder?.let { { Text(it) } },
+                visualTransformation =
+                    if (field.password) PasswordVisualTransformation() else VisualTransformation.None,
+                modifier = Modifier.width(220.dp),
+            )
+        }
+        is ConfigField.Select -> SelectRow(field.label, field.options, value, onChange)
+        is ConfigField.InterfaceSelect -> SelectRow(field.label, interfaces, value, onChange)
+        is ConfigField.LlmSelect -> SelectRow(field.label, backends, value, onChange)
+    }
+}
+
+@Composable
+private fun InputRow(label: String, trailing: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        trailing()
+    }
+}
+
+@Composable
+private fun SelectRow(
+    label: String,
+    options: List<String>,
+    value: String,
+    onChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.width(160.dp),
+            ) {
+                Text(value.ifBlank { "(default)" }, style = MaterialTheme.typography.labelMedium)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                if (options.isEmpty()) {
+                    DropdownMenuItem(
+                        text = { Text("(loading…)") },
+                        onClick = { expanded = false },
+                    )
+                }
+                options.forEach { opt ->
+                    DropdownMenuItem(
+                        text = { Text(opt) },
+                        onClick = {
+                            onChange(opt)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Read a dotted key like `session.log_level` from the config root, stringified. */
+internal fun readDottedAsString(root: JsonObject, dottedKey: String): String {
+    val parts = dottedKey.split('.')
+    var cur: JsonElement = root
+    for (p in parts) {
+        val obj = cur as? JsonObject ?: return ""
+        cur = obj[p] ?: return ""
+    }
+    return when (cur) {
+        is JsonPrimitive ->
+            if (cur.isString) cur.content
+            else cur.content.removeSurrounding("\"")
+        else -> cur.toString()
+    }
+}
+
+/**
+ * Merge [values] back into [base] at their dotted-key locations.
+ * Unknown / blank password fields preserve the original value
+ * (ADR-0019 empty-preserving rule).
+ */
+internal fun mergeValues(
+    base: JsonObject,
+    fields: List<ConfigField>,
+    values: Map<String, String>,
+): JsonObject {
+    val fieldByKey = fields.associateBy { it.key }
+    // Build a map of (dotted path) → new JsonElement, skipping
+    // blanks for password fields to preserve server-side secrets.
+    val updates = mutableMapOf<List<String>, JsonElement>()
+    for ((key, raw) in values) {
+        val field = fieldByKey[key] ?: continue
+        val trimmed = raw.trim()
+        if (field is ConfigField.TextField && field.password && trimmed.isEmpty()) continue
+        val el: JsonElement =
+            when (field) {
+                is ConfigField.Toggle -> JsonPrimitive(trimmed.toBooleanStrictOrNull() ?: false)
+                is ConfigField.NumberField -> JsonPrimitive(trimmed.toIntOrNull() ?: 0)
+                is ConfigField.TextField -> JsonPrimitive(trimmed)
+                is ConfigField.Select,
+                is ConfigField.InterfaceSelect,
+                is ConfigField.LlmSelect,
+                -> JsonPrimitive(trimmed)
+            }
+        updates[key.split('.')] = el
+    }
+    // Deep-merge updates into base, preserving sibling keys.
+    fun merge(
+        cur: JsonObject,
+        path: List<String>,
+        value: JsonElement,
+    ): JsonObject {
+        if (path.isEmpty()) return cur
+        val head = path.first()
+        val rest = path.drop(1)
+        return buildJsonObject {
+            var wrote = false
+            cur.forEach { (k, v) ->
+                if (k == head) {
+                    wrote = true
+                    if (rest.isEmpty()) {
+                        put(k, value)
+                    } else {
+                        val child = (v as? JsonObject) ?: JsonObject(emptyMap())
+                        put(k, merge(child, rest, value))
+                    }
+                } else {
+                    put(k, v)
+                }
+            }
+            if (!wrote) {
+                if (rest.isEmpty()) {
+                    put(head, value)
+                } else {
+                    put(head, merge(JsonObject(emptyMap()), rest, value))
+                }
+            }
+        }
+    }
+    var result = base
+    for ((path, el) in updates) {
+        result = merge(result, path, el)
+    }
+    return result
+}

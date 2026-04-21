@@ -8,6 +8,57 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-04-21 (Sprint V — ConfigFieldsPanel + 12 PWA Settings sections)
+
+Ports the biggest PWA-parity gap flagged in the Settings audit:
+mobile was missing ~25 config sections / ~70 editable fields that
+the PWA exposes.
+
+### Added
+
+- **Generic `ConfigFieldsPanel` renderer.** One composable that
+  reads a `List<ConfigField>` schema (Toggle / NumberField /
+  TextField / Select / InterfaceSelect / LlmSelect), fetches
+  `/api/config`, renders per-field native widgets, and writes
+  a merged document back via `PUT /api/config` on Save. Deep-
+  merges dotted keys (e.g. `session.log_level`) so siblings at
+  any nesting depth are preserved. Empty-preserving password
+  fields protect server-side secrets from accidental nuke.
+- **`ConfigFieldSchemas.kt`** — schemas for **12 PWA sections**
+  byte-for-byte ported from `app.js` COMMS_CONFIG_FIELDS,
+  LLM_CONFIG_FIELDS, GENERAL_CONFIG_FIELDS:
+  - **Comms:** CommsAuth, WebServer, McpServer
+  - **LLM:** Memory (17 fields), LlmRtk (7 fields)
+  - **General:** Datawatch, AutoUpdate, Session (18 fields),
+    Rtk, Pipelines, Autonomous (7 fields), Plugins,
+    Orchestrator, Whisper
+- Wired into Settings tabs — Comms tab gets three new cards,
+  LLM tab gets two, General tab gets nine. Adding a field
+  server-side now means adding one line to
+  `ConfigFieldSchemas.kt`; no new composable required.
+
+### Superseded
+
+- `BehaviourPreferencesCard` — replaced by
+  `ConfigFieldsPanel(Session)` which uses the correct PWA keys
+  (`session.max_sessions` / `session.tail_lines` /
+  `server.recent_session_minutes` instead of the invented
+  `recent_window_minutes` / `max_concurrent` / `scrollback_lines`
+  that weren't being honoured server-side). The old card remains
+  in-tree as dead code until a cleanup pass.
+
+### Skipped (non-field sections)
+
+- `proxy` Proxy Resilience — free-form server-config panel; the
+  PWA renders it via a custom `proxySettings` endpoint with
+  bespoke logic. Needs its own transport + card.
+- `gc_projectprofiles` / `gc_clusterprofiles` — CRUD lists,
+  not field-based. Follow-up sprint.
+- `gc_notifs` — browser notification permission request; Android
+  uses system settings.
+- `detection` / `filters` — rule lists with regex / action /
+  value. Follow-up sprint.
+
 ## [0.25.0] — 2026-04-21 (Sprint U — terminal extras + kill-orphans + memory test + Auto scaffolding)
 
 ### Added
