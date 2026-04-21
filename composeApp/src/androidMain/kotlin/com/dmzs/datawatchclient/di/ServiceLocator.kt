@@ -20,6 +20,9 @@ import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Hand-wired dependency graph. Deliberately not a DI framework for a solo-plus-Claude
@@ -105,6 +108,36 @@ public object ServiceLocator {
         transportCache[profile.id] = transport to signature
         return transport
     }
+
+    /**
+     * Flow of the currently "active" server profile — the one Settings,
+     * Stats, Schedules, Saved Commands, etc. should target. Resolved by
+     * combining [profileRepository] with [activeServerStore]:
+     *
+     *  - storedId == [ActiveServerStore.SENTINEL_ALL_SERVERS] → falls back to
+     *    the first enabled profile (Settings cards don't do all-servers;
+     *    they're per-server surfaces)
+     *  - storedId matches an enabled profile → that one
+     *  - else → first enabled profile
+     *
+     * Emits `null` only when no server is configured or enabled. Emission
+     * is `distinctUntilChanged` so downstream flatMapLatest VMs don't
+     * re-fire on identical values.
+     */
+    public fun activeProfileFlow(): Flow<ServerProfile?> =
+        combine(
+            profileRepository.observeAll(),
+            activeServerStore.observe(),
+        ) { profiles, storedId ->
+            val enabled = profiles.filter { it.enabled }
+            when {
+                enabled.isEmpty() -> null
+                storedId == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS ->
+                    enabled.first()
+                storedId != null -> enabled.firstOrNull { it.id == storedId } ?: enabled.first()
+                else -> enabled.first()
+            }
+        }.distinctUntilChanged { old, new -> old?.id == new?.id }
 
     /**
      * Build a [WebSocketTransport] for a given server profile. Uses the trust-all

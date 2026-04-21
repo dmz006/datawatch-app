@@ -42,16 +42,20 @@ public class SchedulesViewModel : ViewModel() {
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
-        // Auto-refresh whenever the active profile's reachability flips to true.
-        // Drops the sticky-unreachable banner the moment the network recovers.
-        ServiceLocator.profileRepository.observeAll()
-            .flatMapLatest { profiles ->
-                val profile = profiles.firstOrNull { it.enabled } ?: return@flatMapLatest flowOf(null)
-                ServiceLocator.transportFor(profile).isReachable
-                    .map { reachable -> if (reachable) profile else null }
+        // Re-fetch whenever the *active* profile changes (user switched
+        // servers via the picker or 3-finger-swipe), AND whenever the
+        // current active profile becomes reachable after a network blip.
+        ServiceLocator.activeProfileFlow()
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable
+                        .map { reachable -> if (reachable) profile else null }
+                }
             }
             .filterNotNull()
-            .distinctUntilChanged()
+            .distinctUntilChanged { a, b -> a.id == b.id }
             .onEach { refresh() }
             .launchIn(viewModelScope)
     }

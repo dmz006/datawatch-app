@@ -44,8 +44,7 @@ public class StatsViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val profiles = ServiceLocator.profileRepository.observeAll().first()
-            val profile = profiles.firstOrNull { it.enabled }
+            val profile = ServiceLocator.activeProfileFlow().first()
             if (profile == null) {
                 _state.value =
                     _state.value.copy(

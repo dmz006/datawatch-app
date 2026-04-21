@@ -45,18 +45,17 @@ public class ChannelsViewModel : ViewModel() {
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
-        // Re-fetch whenever the active profile becomes reachable. Fixes the
-        // sticky "server unreachable" banner the user reported: on cold boot
-        // the first probe sometimes fails before the network is up, and
-        // without this observer the banner never clears until a manual tap.
-        ServiceLocator.profileRepository.observeAll()
-            .flatMapLatest { profiles ->
-                val profile = profiles.firstOrNull { it.enabled } ?: return@flatMapLatest flowOf(null)
-                ServiceLocator.transportFor(profile).isReachable
-                    .map { reachable -> if (reachable) profile else null }
+        ServiceLocator.activeProfileFlow()
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable
+                        .map { reachable -> if (reachable) profile else null }
+                }
             }
             .filterNotNull()
-            .distinctUntilChanged()
+            .distinctUntilChanged { a, b -> a.id == b.id }
             .onEach { refresh() }
             .launchIn(viewModelScope)
     }

@@ -44,17 +44,17 @@ public class SavedCommandsViewModel : ViewModel() {
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
-        // Auto-refresh when the active profile becomes reachable. Replaces
-        // a brittle one-shot init refresh that stuck on "server unreachable"
-        // forever if the cold-boot probe failed.
-        ServiceLocator.profileRepository.observeAll()
-            .flatMapLatest { profiles ->
-                val profile = profiles.firstOrNull { it.enabled } ?: return@flatMapLatest flowOf(null)
-                ServiceLocator.transportFor(profile).isReachable
-                    .map { reachable -> if (reachable) profile else null }
+        ServiceLocator.activeProfileFlow()
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable
+                        .map { reachable -> if (reachable) profile else null }
+                }
             }
             .filterNotNull()
-            .distinctUntilChanged()
+            .distinctUntilChanged { a, b -> a.id == b.id }
             .onEach { refresh() }
             .launchIn(viewModelScope)
     }

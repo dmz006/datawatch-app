@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -117,8 +118,40 @@ public fun SettingsScreen(
         }
 
     var activeTab by remember { mutableStateOf(SettingsTab.General) }
+    var serverPickerOpen by remember { mutableStateOf(false) }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("Settings")
+                        activeProfile?.let {
+                            Text(
+                                it.displayName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    // Server picker — per-server surfaces (Monitor / General /
+                    // Comms / LLM) target whichever server this resolves to.
+                    // Tapping opens the same bottom sheet the 3-finger-swipe
+                    // summons, so user gesture + explicit tap both land on the
+                    // same chooser, and picking a server here re-fires every
+                    // settings card's refresh via activeProfileFlow().
+                    IconButton(onClick = { serverPickerOpen = true }) {
+                        Icon(
+                            Icons.Filled.Storage,
+                            contentDescription = "Switch server",
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(
             modifier =
                 Modifier
@@ -203,6 +236,16 @@ public fun SettingsScreen(
                 }
             }
         }
+    }
+
+    if (serverPickerOpen) {
+        com.dmzs.datawatchclient.ui.servers.ServerPickerSheet(
+            onDismiss = { serverPickerOpen = false },
+            onAdd = {
+                serverPickerOpen = false
+                onAddServer()
+            },
+        )
     }
 }
 
