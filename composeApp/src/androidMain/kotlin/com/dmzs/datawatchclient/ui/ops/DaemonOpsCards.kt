@@ -225,6 +225,83 @@ private fun kotlinx.serialization.json.JsonObject.stringField(key: String): Stri
     (get(key) as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
 
 @Composable
+public fun UpdateDaemonCard() {
+    var banner by remember { mutableStateOf<String?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    ) {
+        PwaSectionTitle("Daemon update")
+        Text(
+            "Check for and install a new datawatch daemon version on " +
+                "the active server. If an update is available the daemon " +
+                "downloads it and re-execs automatically — active WS " +
+                "connections blip but sessions survive.",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        banner?.let {
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    when {
+                        it.startsWith("Already") ->
+                            MaterialTheme.colorScheme.primary
+                        it.startsWith("Installing") ->
+                            MaterialTheme.colorScheme.primary
+                        else ->
+                            MaterialTheme.colorScheme.error
+                    },
+            )
+        }
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Button(
+                enabled = !checking,
+                onClick = {
+                    checking = true
+                    banner = null
+                    scope.launch {
+                        val profile = resolveActiveProfile()
+                        if (profile == null) {
+                            banner = "No enabled server."
+                            checking = false
+                            return@launch
+                        }
+                        ServiceLocator.transportFor(profile).updateDaemon().fold(
+                            onSuccess = { obj ->
+                                val status =
+                                    (obj["status"] as? kotlinx.serialization.json.JsonPrimitive)
+                                        ?.content
+                                val version =
+                                    (obj["version"] as? kotlinx.serialization.json.JsonPrimitive)
+                                        ?.content
+                                banner =
+                                    when (status) {
+                                        "up_to_date" -> "Already up to date (v${version ?: "?"})."
+                                        null -> "Update requested."
+                                        else -> "Installing v${version ?: "?"} — daemon will restart."
+                                    }
+                                checking = false
+                            },
+                            onFailure = {
+                                banner = "Update failed — ${it.message ?: it::class.simpleName}"
+                                checking = false
+                            },
+                        )
+                    }
+                },
+            ) { Text(if (checking) "Checking…" else "Check for update") }
+        }
+    }
+}
+
+@Composable
 public fun RestartDaemonCard() {
     var confirmOpen by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }

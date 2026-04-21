@@ -232,6 +232,16 @@ public interface TransportClient {
     public suspend fun restartDaemon(): Result<Unit>
 
     /**
+     * POST /api/update — daemon self-update. PWA-observed response:
+     * `{status: "up_to_date" | "installing" | ..., version: "…"}`.
+     * Not in parent openapi.yaml today (undocumented but shipped —
+     * see `internal/server/web/app.js` `runUpdate`). Returns the
+     * raw JSON so the UI can pick the status string and branch on
+     * "up_to_date" vs "installing".
+     */
+    public suspend fun updateDaemon(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
      * GET /api/interfaces — read-only list of network interfaces the
      * daemon sees. Shape is loose (flags / ip / mac / mtu) so we
      * surface the raw JsonObject and let the UI pick fields.

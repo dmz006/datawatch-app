@@ -235,6 +235,7 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                         com.dmzs.datawatchclient.ui.ops.InterfacesCard()
+                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                         com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                     }
                     SettingsTab.About -> {

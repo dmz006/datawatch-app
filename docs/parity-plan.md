@@ -132,7 +132,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | Recent logs (`/api/logs`) | ✅ | v0.16.0 — Settings → Monitor → DaemonLogCard, 10 s auto-refresh, colour-coded, paginated |
 | Network interfaces (`/api/interfaces`) | ✅ | v0.16.0 — Settings → Monitor → InterfacesCard |
 | Restart daemon (`/api/restart`) | ✅ | v0.16.0 — Settings → Monitor → RestartDaemonCard with confirm dialog |
-| Update daemon (`/api/update`) | ❌ | **upstream-blocked** — filed [dmz006/datawatch#17](https://github.com/dmz006/datawatch/issues/17) |
+| Update daemon (`/api/update`) | ✅ | v0.22.1 — endpoint exists in parent (PWA `runUpdate` at app.js:4149), UpdateDaemonCard under Settings → Monitor. Parent openapi.yaml doesn't document it yet; fell into the same stale-spec pattern as the schedules/profiles/timeline endpoints. |
 
 ### 5e. Session preferences
 

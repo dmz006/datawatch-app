@@ -8,6 +8,37 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-04-21 (daemon /api/update wiring + version-drift fix)
+
+### Fixed
+
+- **About card was stuck at v0.12.0** because `Version.kt` in the
+  shared module was never bumped across ten release commits since
+  v0.12. Gradle's versionCode was advancing correctly (read from
+  `gradle.properties`) but the UI read `Version.VERSION` directly.
+  Synced both files to v0.22.1 / code 28. Memory rule added so
+  future commits bump both.
+
+### Added
+
+- **Daemon update card under Settings → Monitor.** Calls
+  `POST /api/update`. Button says "Check for update"; server
+  responds with `up_to_date` (green banner with version) or
+  installs + restarts automatically. Endpoint is undocumented in
+  parent openapi.yaml but shipped — PWA `runUpdate` at app.js
+  line 4149 uses the same wire path. Closes the last ❌ row on
+  parity-plan.
+
+### Audit
+
+- Closed upstream dmz006/datawatch#17 (update-daemon) and #18
+  (add-channel). Both were filed in error: #17's endpoint already
+  exists (stale-spec pattern, same as #14/#15), #18's "missing"
+  endpoint is intentional upstream design — adds route through
+  `PUT /api/config`, which mobile already does via
+  BackendConfigDialog. No open mobile-filed issues remain against
+  parent.
+
 ## [0.22.0] — 2026-04-21 (Sprint J — memory export + input/output mode + ESC/Ctrl-b)
 
 ### Added

@@ -490,6 +490,13 @@ public class RestTransport(
             }
         }
 
+    override suspend fun updateDaemon(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/update") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listInterfaces(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val arr: kotlinx.serialization.json.JsonArray =
