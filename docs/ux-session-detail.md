@@ -1,7 +1,10 @@
 # UX — Session Detail
 
-Bottom-sheet pattern (ADR-0023): chat is the spine, auxiliary views slide up from the
-bottom. xterm.js in WebView for terminal (ADR-0024).
+*Last updated 2026-04-22 for v0.33.0.*
+
+Terminal-primary (v0.10.1 swap, ADR-0024 xterm.js in WebView). Chat
+mode is available as a toggle; Logs / Memory / Timeline open as
+bottom sheets (ADR-0023).
 
 ## Layout
 
@@ -59,12 +62,34 @@ full-screen, down dismisses. Only one sheet open at a time.
 - Pure view of the `timeline_entry` table rows for this session, with source (server or
   local observation).
 
-## Chat message rendering
+## Chat message rendering (v0.32.0 update)
 
-- Role color: user = accent purple, llm = neutral on surface, system = text2 italic.
-- Monospace body for code fences; tap-and-hold on any message → copy, share, remember
-  (add to memory), reply-to (quotes it in composer).
-- Pending-prompt highlighted with accent border + "Reply" chip appears inline.
+Chat mode uses **bubble rendering** with avatar + role label + tinted
+surface colour per speaker (user / assistant / system). Plain text
+body; markdown rendering of assistant output is deferred to post-1.0.0
+to keep the xterm path authoritative for TUIs.
+
+- Role color: user = accent purple, assistant = neutral on surface,
+  system = text2 italic.
+- Pending-prompt highlighted with accent border + **inline quick-reply
+  buttons** (Yes / No / Continue / Stop) fire `sendQuickReply` without
+  touching the composer draft.
+
+## Quick Commands sheet (v0.14.0 + v0.32.0 arrow keys)
+
+▶ Commands on any waiting session row opens a bottom sheet with:
+
+- **System** presets — Yes / No / Continue / Stop.
+- **Saved** — named command snippets from Settings → Saved commands.
+- **Custom** — free-form text.
+- **Arrow keys** (v0.32.0) — ↑ ↓ ← → Tab PageUp PageDown chips send
+  the corresponding ANSI escape sequences via `session_reply`. Useful
+  for TUI navigation (Claude Code menus, vim, top).
+
+## Session backlog grid (v0.32.0)
+
+Below the composer on **NewSessionScreen**, a grid of the 20 most
+recent done sessions with a **Restart** action per row.
 
 ## Composer
 

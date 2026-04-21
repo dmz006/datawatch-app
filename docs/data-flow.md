@@ -1,12 +1,14 @@
 # Data Flow
 
-Sequence diagrams for every interaction the app performs. Numbering matches the feature
-rollout in `sprint-plan.md`.
+*Last updated 2026-04-22 for v0.33.0.*
 
-> **v0.10.0 note:** every flow documented below is implemented. The parent
-> endpoints referenced as "proposed" in earlier revisions shipped in
-> datawatch v3.0.0 (`/api/devices/register`, `/api/voice/transcribe`,
-> `/api/federation/sessions`) and are now the real transport targets.
+Sequence diagrams for every interaction the app performs.
+
+> **v0.33.0 note:** every flow documented here is implemented. All
+> "proposed" endpoints referenced in earlier revisions shipped in
+> parent datawatch v3.0.0 / v4.0.3 and are integrated. Diagrams 15–18
+> cover v0.15–v0.33 additions (profile CRUD, detection filters, MCP
+> SSE invocation, session reorder) — see bottom of this file.
 
 ## 1. Bootstrap + server pairing
 
@@ -32,9 +34,10 @@ sequenceDiagram
     App-->>U: Home screen, profile listed
 ```
 
-Note: `POST /api/devices/register` is a **proposed new endpoint on the parent datawatch
-server**. If unavailable, fallback is subscribing to the user's configured ntfy topic for
-push wake. Needs confirmation before requiring parent change.
+Note: `POST /api/devices/register` shipped in parent v4.0.3 and is
+integrated on mobile since v0.11.0. If a server is older, the app
+falls back to subscribing to the user's configured ntfy topic for
+push wake (foreground-service path).
 
 ## 2. List sessions (active server + all-servers fan-out)
 
@@ -323,6 +326,84 @@ sequenceDiagram
     U->>App: Paste token
     App->>KS: Import + rebind
     App-->>U: Ready
+```
+
+## 15. Profile create / edit (v0.32.0)
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as Phone app
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Settings → Profiles → KindProfilesCard → + or row
+    App-->>U: ProfileEditDialog (name, description, nested blocks)
+    U->>App: Edit + Save
+    App->>T: PUT /api/profiles/<kind>s/<name> (full structured body)
+    T->>DW: HTTPS
+    DW-->>T: 200 with echoed profile
+    T-->>App: Updated profile
+    App-->>U: Row re-renders
+```
+
+## 16. Detection filters read + patch (v0.32.0)
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as Phone app
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Settings → LLM → DetectionFiltersCard
+    App->>T: GET /api/config
+    T->>DW: HTTPS
+    DW-->>T: full config doc
+    T-->>App: config.detection.*
+    App-->>U: Four pattern lists + debounce / cooldown fields
+    U->>App: Edit + Save
+    App->>T: PUT /api/config (merged patch limited to detection.*)
+    T->>DW: HTTPS
+    DW-->>T: 200
+    T-->>App: OK; reloads config
+```
+
+## 17. Session reorder save (v0.31.0)
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as Phone app
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Sessions tab → ⇅ toggle (enter reorder mode)
+    App-->>U: Drag handles on rows
+    U->>App: Drag + drop rows
+    U->>App: ⇅ toggle (exit reorder mode)
+    App->>T: POST /api/sessions/reorder { order: [...] }
+    T->>DW: HTTPS
+    DW-->>T: 200
+    T-->>App: OK
+    App-->>U: Sort dropdown now shows "Custom"
+```
+
+## 18. MCP tools list + render (v0.32.0 McpToolsCard)
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant App as Phone app
+    participant T as TransportClient
+    participant DW as datawatch server
+
+    U->>App: Settings → About
+    App->>T: GET /api/mcp/docs
+    T->>DW: HTTPS
+    DW-->>T: flat array OR grouped categories
+    T-->>App: McpToolsListOrCategories
+    App-->>U: McpToolsCard renders flat / grouped view
 ```
 
 ## Error + reconnection behavior summary

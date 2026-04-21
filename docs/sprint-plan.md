@@ -1,8 +1,16 @@
-# Sprint Plan — MVP → Production
+# Sprint Plan — MVP → Production → Parity
 
-Timeline per ADR-0032: MVP on Play Console Internal track by **2026-06-12** (8 weeks from
-2026-04-17). Public Production by **2026-07-10** (+4 weeks of closed/open testing). Team:
-solo + Claude. Sprint length: 2 weeks.
+*Last updated 2026-04-22 for v0.33.0.*
+
+**Historical sprints 0–6** below delivered v0.10.0 (MVP scope close
+per ADR-0042). Since then, v0.11.0–v0.33.0 have been rapid feature
+sprints (Sprints 7+ / letter-named A..CC) closing PWA parity. The
+v1.0.0 tag is reserved for the release that closes the last ⏳ / 🚧
+rows in [parity-plan.md](parity-plan.md) per ADR-0043.
+
+Team: solo + Claude. Sprint length: historically 2 weeks; v0.11+
+sprints are auto-cadenced (phase-end + green tests → patch bump →
+continue) per memory rule `feedback_phase_commit_cadence.md`.
 
 ## Gantt snapshot
 
@@ -168,6 +176,48 @@ correction). Each is folded into the nearest-fit sprint; timeline holds:
 If any of the five threatens the 2026-06-12 MVP or 2026-07-10 production
 target, the 3-finger gesture slips back to post-MVP first (it's the most
 easily replaceable — standard tap-to-open tree drawer stays either way).
+
+## v0.11–v0.33 feature sprints (post-MVP, parity-closing)
+
+These shipped after v0.10.0's ADR-0042 scope closed. They are the
+content of `CHANGELOG.md`'s `[0.11.0]`–`[0.33.0]` sections;
+summarised here for sprint-plan continuity.
+
+| Version | Sprint label | Highlights |
+|---------|--------------|-----------|
+| v0.11.0 | Session power-user parity | rename / restart / delete (single + bulk), connection dot, About hostname, CA cert download, terminal search + copy, new-session form, backend picker |
+| v0.12.0 | Channels + schedules + files | channels read, schedules CRUD, file picker, session preferences, timeline viewer, model pickers, daemon log + interfaces + restart |
+| v0.13.0–v0.13.1 | Memory + daemon config | memory CRUD, daemon config read-only viewer, per-session schedules strip |
+| v0.14.0–v0.14.2 | Sessions list PWA toolbar | text search + backend chips + show-history toggle, Quick Commands sheet, last-response viewer, Sort dropdown |
+| v0.15.0 | Voice + profiles | voice-to-new-session prefix, profile picker on New Session |
+| v0.16.0 | Daemon monitoring | logs card, interfaces card, restart card |
+| v0.17.0 | Memory + KG | stats grid, KG timeline, KG graph read-only |
+| v0.18.0 | Channels | list / test / enable / disable, per-channel Switch |
+| v0.19.0 | Schedules + active-session suppress | alert row schedule action, ForegroundSessionTracker |
+| v0.20.0 | Behaviour preferences + federation | recent-window / max-concurrent / scrollback, FederationPeersCard |
+| v0.21.0 | LLM backend config | BackendConfigDialog (structured fields per ADR-0019) |
+| v0.22.0–v0.22.1 | Input/output mode + update daemon | BehaviourPreferencesCard input_mode / output_mode, memory export SAF, `/api/update` integration |
+| v0.23.0 | Terminal parity | resize_term WS + pane_capture throttle + freeze-on-done + watchdog + configCols |
+| v0.24.0–v0.25.0 | Terminal polish + ops | Fit / Jump-to-bottom, additional ops cards |
+| v0.26.0 | ConfigFieldsPanel | 12-section PWA Settings renderer |
+| v0.27.0 | Filters CRUD + new-session | filters, session-type fields, polish |
+| v0.28.0 | Project + cluster profiles + proxy resilience | profile CRUD stubs |
+| v0.29.0 | About + notifications | API links card, Notifications card |
+| v0.30.0 | Auto live data | Auto session counts via AutoServiceLocator |
+| v0.31.0 | Session reorder | ⇅ toggle + Custom sort via POST /api/sessions/reorder |
+| v0.32.0 | Close PWA-parity gap | DetectionFiltersCard, McpToolsCard, CertInstallCard, ProfileEditDialog, chat bubble rendering, Quick Commands arrow keys, update progress bar, recent-sessions backlog grid |
+| v0.33.0 | Auto bundling fix + docs | composeApp → auto dependency + missingDimensionStrategy → CarAppService actually ships; android-auto.md + README refresh |
+
+## v1.0.0 parity roadmap
+
+Open rows in [parity-plan.md](parity-plan.md) blocking v1.0.0:
+
+- **🚧** `POST /api/channels` add/remove (blocked upstream:
+  [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18))
+- **⏳** Per-process eBPF network read-only viewer (deferred per
+  ADR-0019; server exposes data, mobile UI not built)
+
+Everything else in `parity-plan.md` is ✅ as of v0.33.0.
 
 ## Post-ADR-0042-scope backlog (v0.11+)
 

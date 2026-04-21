@@ -1,7 +1,16 @@
 # Wear OS Surfaces
 
-Extension-only. Token inherited silently from the phone over Wearable Data Layer API
-(ADR-0029). MVP ships notification + complication + rich app (ADR-0028). Tile deferred.
+*Last updated 2026-04-22 for v0.33.0.*
+
+Extension-only. Token inherited silently from the phone over Wearable
+Data Layer API (ADR-0029). MVP shipped notification + complication +
+rich app (ADR-0028) at v0.5.0+ and has been stable through v0.33.
+Tile (W2) remains deferred pending usage telemetry.
+
+**v0.33 bundling status:** Wear AAB has been embedded in the phone
+AAB since v0.5.0 — Play Console handles delivery to paired watches
+automatically. (For comparison, the Auto surface was only bundled
+starting v0.33.0; Wear has not had that issue.)
 
 ## Module
 

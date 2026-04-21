@@ -1,14 +1,21 @@
 # API + MCP Parity Matrix
 
-Confirms the client reaches 1:1 functional parity (ADR-0005) with everything the parent
-datawatch server exposes to a remote client. Source of truth: `internal/server/web/openapi.yaml`
-and `docs/mcp.md` in the parent repo.
+Confirms the client reaches 1:1 functional parity (ADR-0005) with
+everything the parent datawatch server exposes to a remote client.
+
+*Last updated 2026-04-22 for v0.33.0.*
+
+**Source of truth is the parent PWA** (`internal/server/web/app.js`),
+not `openapi.yaml` — the OpenAPI spec lags shipped endpoints by a few
+releases (pattern recognized 2026-04-20 when we filed-and-closed
+upstream issues for endpoints that already existed). Always grep
+`app.js` to confirm current endpoint availability.
 
 Legend:
-- ✅ MVP (Sprints 1–4)
-- 🧪 MVP — read-only on phone (ADR-0019 flagged exclusion)
+- ✅ Shipped
+- 🧪 Read-only on mobile (ADR-0019 flagged exclusion)
 - 🚫 Not exposed on mobile (blocked by ADR-0019)
-- ⏩ Post-MVP (Sprints 5+ or next release train)
+- 🚧 Pending upstream
 - 🔐 Requires extra confirmation dialog
 
 ## REST endpoints
@@ -22,19 +29,37 @@ Legend:
 | `/api/sessions/state` | POST | ✅🔐 | State override; confirm dialog |
 | `/api/sessions/reply` | POST | ✅ | Chat composer + voice + notification reply |
 | `/api/config` | GET | ✅ | Settings → Server config (read) |
-| `/api/config` | PUT | ⏩🚫 | Structured fields only; raw YAML blocked (ADR-0019). Token & crypto fields excluded. |
-| `/api/stats` | GET | 🧪 | View-only dashboard; GPU/eBPF view-only |
+| `/api/config` | PUT | ✅ | BehaviourPreferencesCard (v0.20), BackendConfigDialog (v0.21), DetectionFiltersCard (v0.32). Structured fields only; raw YAML blocked (ADR-0019). |
+| `/api/stats` | GET | 🧪 | Stats tab — CPU / mem / disk / GPU. eBPF per-process viewer deferred ⏳ post-1.0 |
+| `/api/sessions/rename` | POST | ✅ | Sessions row overflow + inline header tap (v0.11) |
+| `/api/sessions/restart` | POST | ✅ | Sessions row overflow + inline (v0.11) |
+| `/api/sessions/delete` | POST | ✅🔐 | Single + long-press multi-select (v0.11) |
+| `/api/sessions/reorder` | POST | ✅ | Reorder mode ⇅ toggle (v0.31) |
+| `/api/sessions/timeline` | GET | ✅ | Per-session timeline sheet (v0.13.1) |
 | `/api/stats/kill-orphans` | POST | ✅🔐 | Confirm, no biometric in v1 |
 | `/api/schedules` | GET/POST/PUT/DELETE | ✅ | Full CRUD on phone; list-only on Wear/Auto |
-| `/api/interfaces` | GET | 🧪 | Read-only |
+| `/api/interfaces` | GET | ✅ | Settings → Monitor (v0.16) |
+| `/api/logs` | GET | ✅ | Settings → Monitor, 10 s auto-refresh (v0.16) |
+| `/api/restart` | POST | ✅🔐 | Settings → Monitor, confirm dialog (v0.16) |
+| `/api/update` | POST | ✅🔐 | Settings → Monitor, progress bar (v0.22.1 / v0.32) |
 | `/api/backends` | GET | ✅ | Show availability; drives "configure" flows |
-| `/api/memory/*` | GET/POST | ✅ | Memory tab in session detail |
-| `/ws` | WebSocket | ✅ | Realtime session output + state |
-| `/api/test/message` | GET | ✅ | "Test" button in channel settings |
-| `/api/docs` | GET | ⏩ | External link only (Swagger in browser) |
+| `/api/backends/active` | POST | ✅ | Settings → LLM radio picker (v0.11) |
+| `/api/ollama/models` + `/api/openwebui/models` | GET | ✅ | Model selector (v0.13.1 / v0.21) |
+| `/api/memory/*` | GET/POST | ✅ | Memory tab (v0.17); export via SAF (v0.22) |
+| `/api/channels` + `/api/channels/{id}` | GET/PATCH | ✅ | ChannelsCard (v0.18). POST returns 501 upstream ([#18](https://github.com/dmz006/datawatch/issues/18)). |
+| `/api/channel/send` | POST | ✅ | "Test" button per channel (v0.18) |
+| `/api/cert` | GET | ✅ | Settings → Servers overflow + CertInstallCard (v0.11 / v0.32) |
+| `/api/info` | GET | ✅ | About card "Connected to" row (v0.11) |
+| `/api/files` | GET | ✅ | New Session directory picker (v0.12) |
+| `/api/output` | GET | ✅ | Terminal Load-backlog toolbar (v0.12) |
+| `/api/profiles` + `/api/profiles/<kind>s/<name>` | GET/PUT | ✅ | Profile picker + KindProfilesCard create/edit (v0.15 / v0.32) |
+| `/api/mcp/docs` | GET | ✅ | McpToolsCard in Settings → About (v0.32) |
+| `/ws` | WebSocket | ✅ | Realtime session output + state; outbound `resize_term` frames (v0.23) |
+| `/api/docs` | GET | ✅ | External link in ApiLinksCard (v0.29) |
 | `/mcp/sse` | SSE | ✅ | MCP tool invocation (see MCP table) |
-| `/api/devices/register` (proposed) | POST | ✅ | Tracked upstream: [dmz006/datawatch#1](https://github.com/dmz006/datawatch/issues/1). Fallback = ntfy-only subscription. |
-| `/api/voice/transcribe` (proposed) | POST | ✅ | Tracked upstream: [dmz006/datawatch#2](https://github.com/dmz006/datawatch/issues/2). Fallback = Telegram-path reuse. |
+| `/api/devices/register` | POST | ✅ | Shipped parent v4.0.3; integrated v0.11 |
+| `/api/voice/transcribe` | POST | ✅ | Shipped parent v4.0.3; integrated v0.11–v0.12 |
+| `/api/federation/sessions` | GET | ✅ | All-servers view |
 
 ## MCP tools (37)
 
@@ -106,15 +131,14 @@ new server endpoints are required for relay fallback.
 
 ## Upstream-tracked parity items (ADR-0039)
 
-All three raised as issues on the parent project — the mobile app ships the documented
-workarounds until they land.
+As of v0.33.0, all of #1–#17 are closed — either the upstream
+endpoint shipped and mobile integrated, or the "missing" endpoint was
+found to already exist in `app.js` (the openapi.yaml spec had drifted
+behind shipped reality). The only still-open upstream item:
 
-| # | Issue | Mobile sprint that uses it | Workaround if not available |
+| # | Issue | Status | Mobile workaround |
 |---|---|---|---|
-| 1 | [dmz006/datawatch#1](https://github.com/dmz006/datawatch/issues/1) — device registration | Sprint 2 | ntfy-only subscription; user configures ntfy backend on server |
-| 2 | [dmz006/datawatch#2](https://github.com/dmz006/datawatch/issues/2) — voice transcribe | Sprint 3 | Telegram-path reuse with fake chat_id |
-| 3 | [dmz006/datawatch#3](https://github.com/dmz006/datawatch/issues/3) — federation fan-out | Post-MVP (Sprint 5+) | Client-side parallel per-profile loop |
+| 18 | [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18) — `POST /api/channels` returns 501 | Open | Channels add/remove deferred; edit + enable/disable work via existing PATCH |
 
-When an upstream issue is merged + released, the mobile app's corresponding transport
-switches to the new endpoint in the next minor version; the workaround path stays in
-code behind a feature flag for a full release cycle before removal.
+When the upstream issue lands, ChannelsCard gets an "Add channel" row
+and the 🚧 row in parity-plan.md flips to ✅.

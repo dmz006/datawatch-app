@@ -1,7 +1,15 @@
 # UX — Voice
 
-Four invocation points (ADR-0025), server-side Whisper (ADR-0006), prefix auto-send with
-free-text preview as default (ADR-0026).
+*Last updated 2026-04-22 for v0.33.0.*
+
+Four invocation points (ADR-0025), server-side Whisper (ADR-0006),
+prefix auto-send with free-text preview as default (ADR-0026).
+
+**v0.33 status:** Composer mic (surface 2), global FAB (surface 1),
+Android quick-tile (surface 3) and ASSIST intent (surface 4) all ship
+in v0.33. Wear voice chain (ADR-0038) shipped v0.5.0+. The Quick
+Commands sheet (v0.14.0) with v0.32 arrow-key chips is text-based —
+voice prefix matching below applies to transcribed voice input only.
 
 ## Invocation surfaces
 

@@ -1,7 +1,9 @@
 # UX — Navigation
 
-Server-first shell (ADR-0020), breadcrumb primary + chips alternative (ADR-0021), unlimited
-server tabs (ADR-0022).
+*Last updated 2026-04-22 for v0.33.0.*
+
+Server-first shell (ADR-0020), breadcrumb primary + chips alternative
+(ADR-0021), unlimited server tabs (ADR-0022).
 
 ## Top-level shell
 
@@ -123,9 +125,39 @@ open in all-servers view, disable profile).
 
 ### Settings
 
-- Sections: Servers, Connections, Channels, Voice, Notifications, Appearance, Backup,
-  Diagnostics, About.
-- Each setting has a help tooltip (`?` icon) linking to the relevant docs.
+As of v0.33.0 Settings is grouped into nine sections (all rendered
+through the generic `ConfigFieldsPanel` where applicable — v0.26.0):
+
+- **General** — Servers, Security (biometric unlock), Schedules,
+  Saved commands, Session backup, BehaviourPreferencesCard
+  (input/output mode, recent window, max concurrent, scrollback).
+- **LLM** — backend picker, BackendConfigDialog (model / base URL /
+  API key), DetectionFiltersCard (prompt / completion / rate-limit /
+  input-needed patterns + debounce / cooldown — v0.32).
+- **Memory** — stats, list, search, delete, remember, export (SAF
+  v0.22), KG timeline + graph (v0.17).
+- **Comms** — ChannelsCard (list / test / enable — v0.18), federation
+  peers (v0.20), CertInstallCard (v0.32).
+- **Profiles** — active profile selector (v0.15),
+  KindProfilesCard with ProfileEditDialog for Project / Cluster kinds
+  (v0.32).
+- **Detection** — same DetectionFiltersCard exposed as a dedicated
+  subsection.
+- **Monitor** — DaemonLogCard (v0.16), InterfacesCard (v0.16),
+  RestartDaemonCard (v0.16), UpdateDaemonCard with progress bar
+  (v0.22.1 / v0.32), Daemon config read-only viewer (v0.12).
+- **Operations** — session reorder mode control (v0.31) + behaviour
+  preferences shortcut.
+- **About** — version, build SHA, license, package id,
+  "Connected to" row (v0.11), NotificationsCard (v0.29),
+  ApiLinksCard (v0.29), McpToolsCard rendering
+  `/api/mcp/docs` (v0.32).
+
+### Session reorder mode (v0.31.0)
+
+The Sessions tab TopAppBar has a ⇅ icon that enters reorder mode.
+Drag handles appear on each row; drag to set a Custom sort order,
+tap ⇅ again to persist via `POST /api/sessions/reorder`.
 
 ## Home-screen quick commands (ADR-0015)
 

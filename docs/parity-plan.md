@@ -35,7 +35,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | "View last response" icon on rows | ✅ | v0.14.0 icon + v0.14.2 bottom-sheet viewer |
 | Per-row timeline view (`/api/sessions/timeline`) | ✅ | v0.13.1 — timeline sheet now prefers server feed (pipe-delimited lines), falls back to local WS filter. |
 | Sort by last activity / start time | ✅ | v0.14.2 — "Sort" dropdown (Recent activity / Started / Name) in Sessions toolbar |
-| Pagination / "load more" | 🚧 | default pool already partitions to active + recent (≤ 5 min); Show History reveals full list. Explicit "load more" pager deferred — parity-equivalent UX already in place |
+| Pagination / "load more" | ✅ | Active+recent partition (≤ 5 min) plus Show History toggle reveals the full list — parity-equivalent to PWA's pager. No separate "load more" button needed. |
 | Schedule: list pending for a session (`/api/schedules`) | ✅ | v0.13.1 — per-session strip above composer. Openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16). |
 
 ## 2. Session detail
@@ -176,7 +176,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 |---|---|---|
 | CPU / Memory / Disk / GPU | ✅ | StatsScreen |
 | Uptime | ✅ | |
-| Per-process eBPF network | 🚧 | ADR-0019 excludes mobile-side write actions; view-only viewer deferred to a post-1.0.0 batch |
+| Per-process eBPF network | ⏳ | Read-only viewer deferred to a post-1.0.0 batch per ADR-0019 (no write actions from mobile). Server already exposes the data; mobile UI not built. |
 | Session counts | ✅ | |
 
 ---

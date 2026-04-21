@@ -8,6 +8,61 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.33.1] — 2026-04-22 (Sprint DD — full docs refresh)
+
+### Changed
+
+- **Eleven docs refreshed to v0.33 state** — every file under `docs/`
+  that had been last-touched at v0.10.0–v0.14.0 now matches shipped
+  reality:
+  - `usage.md` — rewritten screen-by-screen for v0.33 (new Settings
+    sections, Quick Commands sheet, chat bubbles, session reorder,
+    recent-sessions grid, CertInstallCard, McpToolsCard,
+    DetectionFiltersCard, KindProfilesCard).
+  - `config-reference.md` — completed per AGENT.md Configuration
+    Accessibility Rule; every user-settable value enumerated with UI
+    path, type, default, persistence tier, server-echo behaviour.
+  - `parity-status.md` — redirected to `parity-plan.md` as the single
+    authoritative matrix (eliminates two-doc drift pattern that
+    caused past staleness).
+  - `architecture.md` — v0.33 status note, Auto bundling section,
+    RelayComponent marked shipped.
+  - `api-parity.md` — ~20 endpoint rows added (rename / restart /
+    delete / reorder / timeline / logs / interfaces / restart /
+    update / backends.active / ollama / openwebui / memory / channels
+    / channel-send / cert / info / files / output / profiles /
+    mcp-docs / federation), `POST /api/config` flipped to ✅
+    structured-fields (v0.20 / v0.21 / v0.32), upstream-tracking
+    section reduced to only the single still-open item (#18).
+  - `data-flow.md` — four new sequence diagrams
+    (profile create/edit, detection filters read+patch, session
+    reorder save, MCP tools list).
+  - `ux-navigation.md` — Settings section replaced with the current
+    nine subsections (General / LLM / Memory / Comms / Profiles /
+    Detection / Monitor / Operations / About).
+  - `ux-session-detail.md` — chat bubble rendering block, Quick
+    Commands sheet block, inline quick-reply buttons, session backlog
+    grid.
+  - `ux-voice.md` — v0.33 status note + Quick Commands arrow-key
+    clarification.
+  - `wear-os.md` — v0.33 bundling note (Wear has always been bundled
+    via phone AAB; contrast with the Auto v0.33 fix).
+  - `sprint-plan.md` — v0.11–v0.33 sprint summary table, v1.0.0
+    parity roadmap (single remaining upstream blocker: #18).
+- **`parity-plan.md` — Pagination row flipped 🚧 → ✅** (active+recent
+  partition + Show History is parity-equivalent to PWA's pager; no
+  separate "load more" needed). **eBPF viewer row** clarified from
+  🚧 to ⏳ (post-1.0.0 per ADR-0019).
+
+### Verified
+
+- Built `publicTrack-debug` APK (93.7 MB,
+  `composeApp-publicTrack-debug.apk`). Confirmed via `aapt2 dump
+  xmltree`: `DatawatchMessagingService` + `CarAppService`
+  intent-filter + `androidx.car.app.minCarApiLevel=1` +
+  `CarAppPermissionActivity` + `CarAppNotificationBroadcastReceiver`
+  all present in the shipped manifest. Ready for in-car testing.
+
 ## [0.33.0] — 2026-04-22 (Sprint CC — Auto actually ships in the APK + docs refresh)
 
 ### Fixed

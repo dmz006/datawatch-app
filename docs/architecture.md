@@ -4,10 +4,14 @@ datawatch mobile is a thin, multi-surface Kotlin client that exposes a user's da
 server(s) across phone, watch, and car. All domain logic lives in a shared KMP module;
 surface-specific modules (Android phone, Wear OS, Android Auto, iOS skeleton) consume it.
 
-> **v0.10.0 status:** this document is authoritative as of the v0.10.0 ship.
-> Phone, Wear, and Auto surfaces are all implemented and building; the iOS
-> skeleton compiles but has no content yet. All transport layers (REST, WS,
-> MCP-SSE skeleton) are live in `:shared`.
+> **v0.33.0 status:** authoritative as of the v0.33.0 ship.
+> Phone, Wear, and Auto surfaces are all implemented, building, **and
+> bundled into the public APK** (Auto bundling fix landed v0.33.0 —
+> before that, the `:auto` module compiled but composeApp had no
+> dependency on it, so CarAppService never shipped). The iOS skeleton
+> compiles but has no content yet. All transport layers (REST, WS,
+> MCP-SSE) are live in `:shared`. The Intent-relay backend
+> (RelayComponent) shipped v0.11+ — ADR-0004 is closed.
 
 ## C4 — System Context
 
@@ -228,7 +232,22 @@ Each Android module has three flavors:
 
 All three are installable simultaneously on the same device (distinct applicationIds).
 
-## Dependency ceiling (proposed — subject to approval before adding)
+## Auto bundling (v0.33.0)
+
+`composeApp` declares `implementation(project(":auto"))` plus
+`missingDimensionStrategy("surface", "publicMessaging")` for the
+`publicTrack` flavor (and `"devPassenger"` for `dev`). This bridges
+composeApp's `track` flavor dimension to auto's `surface` dimension so
+the CarAppService manifest merges into the final APK. Verified in the
+shipped APK via `aapt2 dump xmltree`:
+
+- `com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService`
+  declared as an `androidx.car.app.CarAppService`.
+- `androidx.car.app.minCarApiLevel` meta-data set to `1`.
+- `androidx.car.app.CarAppPermissionActivity` +
+  `CarAppNotificationBroadcastReceiver` present.
+
+## Dependency ceiling
 
 ```
 org.jetbrains.kotlin:kotlin-stdlib               (stdlib)

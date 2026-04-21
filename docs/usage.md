@@ -1,85 +1,98 @@
 # Usage guide
 
-A screen-by-screen walkthrough of the datawatch mobile app at v0.11.0.
+*Last updated 2026-04-22 for v0.33.0.*
+
+A screen-by-screen walkthrough of the datawatch mobile app. This
+document reflects the v0.33.0 shipped state. For the authoritative
+feature matrix see [parity-plan.md](parity-plan.md); for Auto
+specifically, see [android-auto.md](android-auto.md).
 
 ## Launch flow
 
-1. **Splash** — animated Matrix/Earthrise scene; stays on screen for the
-   minimum brand dwell (~3.2 s) and until the encrypted DB has unlocked.
-2. **Biometric prompt** *(only if enabled in Settings)* — fingerprint or
-   face. Cancel = app closes.
-3. **Onboarding** — shown only on first install with zero servers. Tap
-   **Get started** to add your first server.
-4. **Home shell** — bottom nav with Sessions / Alerts / Channels / Stats /
-   Settings tabs.
+1. **Splash** — animated Matrix/Earthrise scene; stays until the
+   encrypted DB has unlocked.
+2. **Biometric prompt** *(only if enabled in Settings)* — fingerprint
+   or face. Cancel closes the app.
+3. **Onboarding** — shown only on first install with zero servers.
+   Tap **Get started** to add your first server.
+4. **Home shell** — bottom nav with Sessions / Alerts / Stats /
+   Settings / About.
 
 ## Sessions tab
 
-The default tab. Lists every session for the currently-active profile.
+The default tab. Lists sessions for the currently-active profile (or
+federation view).
 
 ### Top bar
 
-- **Server name** (tap-down-arrow) — opens a dropdown listing every
-  configured profile. Tap a row to switch; tap "Edit" next to a row to
-  modify it; the "All servers" row aggregates across every enabled
-  profile via `/api/federation/sessions`.
-- **Connection dot** (next to the server name, single-server mode only)
-  — observes the active profile's reachability. **Green** = last probe
-  succeeded. **Grey** = probing / unknown. **Red** = last probe failed.
-  Tap the dot for a bottom sheet with the last-success timestamp and a
-  Retry button.
-- **Refresh icon** — pulls `/api/sessions` now (or parallel fan-out in
-  All-servers mode).
+- **Server name + chevron** — tap to open server picker. The picker
+  lists every configured profile plus an **All servers** row that
+  aggregates via `/api/federation/sessions`.
+- **Connection dot** — 8 dp circle next to the server name.
+  **Green** = last probe succeeded. **Grey** = probing / unknown.
+  **Red** = last probe failed. Tap for retry sheet + last-success
+  timestamp.
+- **Reorder toggle (⇅)** (v0.31.0) — enters reorder mode on the
+  sessions list. Drag handles appear on each row; drag to set a
+  Custom sort order, tap ⇅ again to save via
+  `POST /api/sessions/reorder`.
+- **Sort dropdown** — Recent activity / Started / Name / Custom.
 
-### Filter chips
+### Toolbar
 
-All / Running / Waiting / Completed / Error. The "Completed" chip also
-includes Killed so you don't have to hunt through two buckets.
+Text search + per-backend filter chips + Show/Hide history toggle.
+Matches the PWA's Sessions toolbar. No state-quick-filter row (removed
+in v0.14.0 per user direction).
 
 ### Session rows
 
-- **Tap** — open the session detail screen (or toggle selection while
-  in multi-select mode).
-- **Horizontal swipe** (either direction, ≥64 dp) — toggle mute/unmute
-  for that row. The notification bell on the right reflects the state.
-- **Three-dot overflow** — Rename / Restart / Delete.
-  - **Rename** — dialog with a text field. Renames via
-    `POST /api/sessions/rename`.
-  - **Restart** — confirm dialog, then warm-resume via
-    `POST /api/sessions/restart`. Disruptive if the PTY is mid-stream,
-    hence the confirm.
-  - **Delete** — destructive confirm, then `POST /api/sessions/delete`.
-    Item greys out if the server doesn't support the endpoint (the
-    mobile client surfaces `TransportError.NotFound` that way) and is
-    always disabled for Running sessions.
-- **Long-press** — enters multi-select mode. The top bar flips to show
-  "N selected" with a Cancel arrow and a bulk-Delete action. Tap other
-  rows to toggle their selection. Confirm with the destructive delete
-  dialog.
+Each row shows: session name (renamed or truncated id), backend chip,
+hostname, last activity timestamp, state pill, waiting-prompt preview
+(up to 4 lines when `waiting_input`), mute indicator.
+
+Row interactions:
+
+- **Tap** — open session detail (or toggle selection in multi-select).
+- **Horizontal swipe (≥64 dp)** — toggle mute.
+- **Inline Stop / Restart** — visible on running/waiting
+  (Stop with confirm) and terminal-state rows (Restart) respectively.
+- **▶ Commands** — on waiting rows, opens the **Quick Commands** sheet:
+  - **System** presets (Yes / No / Continue / Stop)
+  - **Saved** — named commands from Settings → Saved commands
+  - **Custom** — free-form text
+  - **Arrow keys** (v0.32.0) — ↑ ↓ ← → Tab PageUp PageDown chips send
+    the corresponding ANSI escape sequences via `session_reply`
+- **👁 icon** — bottom-sheet viewer for the session's last LLM response.
+- **⏱ icon** — opens the session timeline sheet
+  (`/api/sessions/timeline` pipe-delimited feed, falls back to local
+  event stream if the server doesn't have a feed yet).
+- **Three-dot overflow** — Rename / Schedule reply / Delete.
+- **Long-press** — multi-select mode with bulk delete.
 
 ### New Session FAB
 
-A floating "+" button on the Sessions tab (visible only when a server
-is active). Opens the **New Session** screen — a form with:
+A floating "+" button (visible whenever a server is active). Opens
+**NewSessionScreen**:
 
-- **Task** — multi-line text; what you want the session to do. The
-  **From library ▾** dropdown next to the heading inlines a saved
-  command into the field for quick editing before you hit Start.
-  Hidden until at least one command is saved (Settings → Saved
-  commands).
-- **Server** — picker; defaults to the current active server.
-- **Working directory (optional)** — server-side path. Type it or tap
-  **Browse…** to open the server-side directory picker (breadcrumb,
-  `..` to go up, tap a folder to descend, "Pick this folder" to
-  select). Lands on `/api/sessions/start` as the `cwd` field; older
-  server builds ignore the field and start in their default dir.
-- **Start** — posts `/api/sessions/start`, then navigates straight into
-  the new session's detail view.
+- **Task** — multi-line text. **From library ▾** dropdown inlines a
+  saved command when at least one exists.
+- **Backend** — dropdown populated from `/api/backends`; calls
+  `setActiveBackend` server-wide before `POST /api/sessions/start`
+  (parent lacks a per-session backend param).
+- **Profile** (v0.15.0) — dropdown from `/api/profiles`; passes as
+  `profile` on start.
+- **Working directory** — type or **Browse…** opens the server-side
+  directory picker (`/api/files` with a `files` / `folders` / `both`
+  mode, breadcrumb + parent nav).
+- **Start** — posts `/api/sessions/start`, navigates into the new
+  session.
+- **Recent sessions backlog grid** (v0.32.0) — below Start, shows the
+  20 most recent done sessions with a **Restart** action per row.
 
 ### 3-finger swipe up
 
-On any screen inside the app, swipe **three fingers upward** to pop the
-server picker as a bottom sheet. Useful when the top bar isn't in reach.
+Anywhere in the app, swipe **three fingers upward** to pop the server
+picker as a bottom sheet.
 
 ## Session detail
 
@@ -88,145 +101,204 @@ Opens via tapping a session row, a notification, or a deep link
 
 ### Top bar
 
-- Task summary / session id as title, state pill subtitle.
+- **Session name / id** as title (tap-to-rename inline since post-v0.12).
+- **State pill** subtitle — tap to open the state-override menu.
 - **Bell icon** — mute / unmute.
-- **Overflow menu** — kill session (with confirm dialog), override state
-  (picker for Running / Waiting / Completed / Error / etc.).
+- **Mode toggle** — switches between **Terminal** (xterm.js WebView)
+  and **Chat** (event-stream list). Choice persists in SharedPrefs.
+- **Overflow menu** — Kill (confirm), Schedule reply, Copy link, etc.
 
-### Terminal
+### Terminal mode
 
-The xterm.js terminal fills most of the screen (ANSI colour, 5000-line
-scrollback) and renders server-side `pane_capture` frames byte-for-byte
-the same way the PWA does: first capture per session resets the
-terminal and writes the full pane; subsequent captures are wiped-and-
-redrawn so TUIs (Claude Code, vim, top) render at their intended
-geometry regardless of the phone's column width. If the server is
-older and only emits `raw_output` frames, the terminal falls back to
-the legacy incremental-append path. Above the terminal sits a
-**terminal toolbar**:
+Full xterm.js WebView, ANSI colour, 5000-line scrollback. Renders
+pane-capture frames byte-for-byte identically to the PWA (first capture
+resets and writes full pane; subsequent captures wipe-and-redraw). Old
+servers still emitting `raw_output` frames degrade gracefully. The
+terminal toolbar provides:
 
-- **Search icon** — expands an inline search bar with an
-  `OutlinedTextField`, **↑** (previous match), **↓** (next match), and
-  **✕** (close + clear highlights). Matches are highlighted in
-  datawatch purple. Clearing the query drops the decorations.
-- **Copy icon** — pulls the current xterm text selection (highlight by
-  long-press + drag on the terminal) and writes it to the Android
-  clipboard. A toast confirms the character count; an empty selection
-  toasts "No selection to copy".
-- **Load backlog icon (history)** — fetches up to 1000 lines of the
-  session's pre-subscription PTY output via `GET /api/output?id=&n=`
-  and prepends them into the terminal buffer. Useful when you join a
-  long-running session and want to see what happened before you
-  subscribed. Disables itself after first use per session to prevent
-  double-prepending; open a fresh session to re-enable.
+- **Search** — inline query + up/down navigation + highlight, backed
+  by `xterm-addon-search@0.13.0` (vendored).
+- **Copy** — pulls `term.getSelection()` into the system clipboard.
+- **Load backlog** — one-shot `GET /api/output?id=&n=1000` prepended
+  into the buffer.
+- **Fit** — re-fits the terminal to the WebView width after pinch-zoom
+  (sends `resize_term` over WS).
+- **Jump-to-bottom** — scrolls to the live tail.
 
-### Event stream
+Terminal parity behaviors (v0.23.0+): `resize_term` WS frame on
+fit-settle, `configCols` enforcement per backend (claude-code locks at
+120×40), 30 fps `pane_capture` throttle, freeze-on-done with a
+`DATAWATCH_COMPLETE` marker, 5 s watchdog, auto-fit-to-width,
+scroll-mode enter/exit.
 
-Chat-style spine from newest at bottom. Types:
+### Chat mode
+
+Chat-bubble rendering (v0.32.0): avatar + role label + tinted surface
+colors per speaker (user, assistant, system). Markdown rendering of
+assistant text is deferred to post-1.0.0; plain text for now.
+
+**Inline quick-reply buttons** appear under the latest PromptDetected:
+Yes / No / Continue / Stop. These fire `sendQuickReply` without
+touching the composer draft.
+
+Event types rendered:
 
 | Type | Renders as |
 |------|------------|
 | `Output` | Body in mono font, stderr tinted red, system dimmed |
 | `StateChange` | `[state] from → to` italic line |
-| `PromptDetected` | Highlighted banner with the prompt text |
-| `RateLimited` | Amber inline note with retry-after ts if provided |
+| `PromptDetected` | Highlighted bubble + inline quick-reply buttons |
+| `RateLimited` | Amber inline note with retry-after if provided |
 | `Completed` | `✓ completed (exit N)` dimmed line |
 | `Error` | Red line with message |
-| `Unknown` | `(type)` placeholder — forward-compat for future server events |
+
+Banners above the content:
+
+- **Connection banner** (post-v0.12) — surfaces when the owning
+  profile's `isReachable` flips false.
+- **Input-required banner** (post-v0.12) — amber strip on
+  `waiting_input`, shows the latest prompt text.
 
 ### Reply composer
 
 - **Text field** — expands to 4 lines; disabled while a send is in flight.
-- **Mic button** — press, speak, press again (becomes a Stop icon while
-  recording). AAC / 16 kHz mono → multipart POST to `/api/voice/transcribe`
-  with `auto_exec=false`, so the transcript drops into the text field for
-  you to edit + send.
-- **Send button** — POST `/api/sessions/reply`. Disables until there's
+- **Mic button** — AAC / 16 kHz mono → multipart POST to
+  `/api/voice/transcribe` with `auto_exec=false`. Transcript lands in
+  the text field for review + send. Prefix matching
+  (`new:` / `reply:` / `status:` / `remember`) applies — see
+  [ux-voice.md](ux-voice.md).
+- **Clock button** — opens a **Schedule reply** dialog pre-seeded with
+  the drafted text.
+- **Send** — POST `/api/sessions/reply`. Disabled until there's
   non-whitespace text.
 
-Per [ADR-0013](decisions/README.md), failed sends show an inline banner;
-nothing is queued.
+Per [ADR-0013](decisions/README.md), failed sends show an inline
+banner; nothing is queued.
 
 ## Alerts tab
 
 Surfaces sessions where `needsInput && !muted` for the active profile.
-A badge on the bottom-nav Alerts icon shows the count. Tap a row to jump
-straight into that session's detail (the reply composer is focused if
-the server still has the prompt open).
+A badge on the bottom-nav Alerts icon shows the count. Tap a row to
+jump into that session.
 
-- **Swipe left** on any alert row to dismiss it. Dismiss mutes the
-  underlying session, which immediately drops the row from the
-  projection and decrements the bottom-nav badge. The session itself
-  is preserved — you can unmute from the Sessions tab via the same
-  horizontal-swipe gesture. (A future release may migrate to the
-  parent's `POST /api/alerts` for a true dismiss that doesn't touch
-  mute state.)
-
-## Channels tab
-
-- **LLM backends** card — live from `GET /api/backends`. Each backend
-  has a radio button; tap to switch active via
-  `POST /api/backends/active`. If the server doesn't expose that
-  endpoint yet, the list goes read-only and a note explains (the
-  upstream issue is tracked in dmz006/datawatch).
-- **Messaging channels** card — read-only note pointing at server-side
-  config (`~/.datawatch/config.yaml`). Per-channel enable/disable from the
-  phone arrives in v0.12 once the parent exposes that REST surface.
+- **Swipe left** dismisses (mutes the underlying session).
+- **Schedule reply…** (v0.19.0) — inline on each alert row, seeds the
+  schedule dialog with the detected prompt.
 
 ## Stats tab
 
-Live polling of `GET /api/stats` every 5 seconds for the active profile.
+Live polling of `GET /api/stats` every 5 seconds.
 
-- CPU / Memory / Disk / GPU progress bars (disk and GPU only render when
-  the server provides them). Bar colour flips amber >70 %, red >90 %.
+- CPU / Memory / Disk / GPU progress bars (disk / GPU only when the
+  server provides them). Bar colour flips amber >70 %, red >90 %.
 - Session counts (total / running / waiting).
 - Daemon uptime, formatted as `Nd Nh Nm`.
 
 ## Settings tab
 
-- **Servers card** — list configured profiles with status badges
-  (no-auth, trust-all-TLS). Add (+), edit (tap row). Each row has a
-  three-dot overflow menu with:
-  - **Download CA cert** — fetches `GET /api/cert` from that server,
-    saves the PEM under `Download/datawatch/` in the system Downloads
-    directory, and opens the Android **Security** settings screen so
-    you can complete trust-anchor install via the OS flow. (Unrooted
-    Android doesn't allow the app itself to install CA certs — by
-    design.) If the server doesn't support `/api/cert`, you get a
-    toast pointing at the upstream issue instead.
-  - **Delete server** — removes the profile and its bearer token.
+Grouped into cards by subject area. Every tab renders through the
+`ConfigFieldsPanel` generic renderer (v0.26.0) where applicable, so
+label / type / validation / save are consistent across sections.
+
+### Settings → General
+
+- **Servers card** — list, add, edit, delete profiles. Each row
+  overflow menu: **Download CA cert** (`GET /api/cert` → Downloads →
+  OS security settings shortcut + expandable Android/iPhone install
+  steps via CertInstallCard).
 - **Security card** — biometric unlock toggle.
-- **Saved commands card** — lists named command snippets from
-  `GET /api/commands`. Tap a row to expand long commands; delete icon
-  removes one. **+** opens a "Save a command" dialog with name +
-  command fields. Recalled in New Session via the "From library ▾"
-  dropdown next to the Task heading.
-- **Daemon config card** — read-only view of `GET /api/config`. Each
-  top-level key is a collapsible row; tap to expand a pretty-printed
-  JSON snippet of that section. Sensitive fields (`token`, `secret`,
-  `key`, `password`, etc.) render as `***` — first the parent server
-  masks, then mobile applies a belt-and-braces second mask in case
-  the parent misses one. Write-access (`PUT /api/config`) lands in
-  v0.13 behind a structured form per ADR-0019.
-- **Schedules card** — lists every scheduled command on the active
-  server (`GET /api/schedule`). Each row shows task + cron +
-  enabled/disabled chip with a delete icon. The **+** in the card
-  header opens a **New schedule** dialog with fields for task
-  (multi-line), cron expression (free-form — the server validates;
-  inline hint shows common patterns like `0 9 * * *`), and enabled
-  toggle. Also reachable from any session detail screen's overflow
-  menu as **Schedule reply** — pre-seeds the task with the current
-  detected prompt so you can turn a reply into a recurring nudge.
-- **Comms card** — placeholder for full channel config (v0.13+).
-- **About card** — live animated logo, app version + build SHA, license,
-  package id, source + parent project links. Also a **Connected to**
-  row showing `<hostname> · datawatch vX.Y.Z` read live from
-  `GET /api/info` against the active server.
+- **Schedules card** — all schedules (`GET /api/schedules`), cancel
+  via ✕, create via **+** (task / cron / enabled).
+- **Saved commands card** — named command snippets from
+  `GET /api/commands`; recalled via the New Session form's
+  "From library ▾".
+- **Session backup** — export state (sessions + settings) to a local
+  encrypted archive.
+- **BehaviourPreferencesCard** (v0.20.0 / v0.22.0) — input mode
+  (tmux / channel / none), output mode (tmux / channel / both / none),
+  recent-window minutes, max-concurrent, scrollback lines.
+
+### Settings → LLM
+
+- **LLM backends card** — radio-picker calls
+  `POST /api/backends/active`.
+- **BackendConfigDialog** (v0.21.0) — structured fields per backend
+  (model / base_url / api_key) per ADR-0019. Routes:
+  Ollama → `/api/ollama/models`, OpenWebUI → `/api/openwebui/models`.
+- **DetectionFiltersCard** (v0.32.0) — four pattern lists
+  (prompt / completion / rate_limit / input_needed) plus
+  debounce / cooldown milliseconds. PUT `/api/config` patches
+  `config.detection.*`.
+
+### Settings → Memory
+
+- **Memory stats** — live totals from `/api/memory/stats`.
+- **List / search / delete** — `/api/memory/list`, `/memory/search`,
+  `/memory/delete`.
+- **Remember** — add fact composer.
+- **Export** (v0.22.0) — SAF `CreateDocument` → bearer-auth GET
+  `/api/memory/export` → writes to user-chosen URI.
+- **KG timeline / graph** — read-only viewer (v0.17.0+).
+
+### Settings → Comms
+
+- **ChannelsCard** (v0.18.0) — list configured channels.
+- Per-row **Test** button prompts for a message → POST
+  `/api/channel/send`.
+- Per-row Switch toggles enable via PATCH `/api/channels/{id}`.
+- **Add / remove channel** (🚧) — parent returns 501 on
+  POST `/api/channels`; tracked upstream at
+  [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18).
+- **FederationPeersCard** (v0.20.0) — read-only peer list from
+  `/api/servers`.
+- **CertInstallCard** (v0.32.0) — download button + security-settings
+  shortcut + expandable Android/iPhone install steps.
+
+### Settings → Profiles
+
+- **Active profile selector** (v0.15.0).
+- **KindProfilesCard** (v0.32.0) — Project and Cluster kinds. Tap +
+  or a row to open **ProfileEditDialog**: name / description fields,
+  nested config blocks preserved. PUT
+  `/api/profiles/<kind>s/<name>`.
+
+### Settings → Detection
+
+DetectionFiltersCard (same card referenced under LLM; appears here if
+the user expands the Detection-first surface).
+
+### Settings → Monitor
+
+- **DaemonLogCard** (v0.16.0) — 10 s auto-refresh, colour-coded,
+  paginated view of `/api/logs`.
+- **InterfacesCard** (v0.16.0) — `/api/interfaces`.
+- **RestartDaemonCard** (v0.16.0) — confirm → `/api/restart`.
+- **UpdateDaemonCard** (v0.22.1) — progress bar during check (v0.32.0)
+  → `/api/update`.
+- **Daemon config viewer** (v0.12.0) — collapsible top-level tree of
+  `GET /api/config`, sensitive fields double-masked.
+
+### Settings → Operations
+
+- **Session reorder mode** control (v0.31.0).
+- **Behaviour preferences** duplicated surface for quick access.
+
+### Settings → About
+
+- App version, build SHA (`BuildConfig.GIT_SHA`), license, package id,
+  source + parent links.
+- **Connected to** row — live `GET /api/info` (hostname + daemon
+  version + backend).
+- **NotificationsCard** (v0.29.0) — channel overview.
+- **ApiLinksCard** (v0.29.0) — deep links to `/api/docs` Swagger,
+  `/api/stats`, `/api/health`, etc.
+- **McpToolsCard** (v0.32.0) — renders `/api/mcp/docs` response as
+  flat tool list or grouped categories.
 
 ## Notifications
 
-The app registers five channels in Android system settings. You can toggle
-any subset from Settings → Apps → datawatch → Notifications:
+Five Android channels. Toggle any subset from
+**Settings → Apps → datawatch → Notifications**:
 
 | Channel | Importance | When it fires |
 |---------|------------|---------------|
@@ -236,36 +308,48 @@ any subset from Settings → Apps → datawatch → Notifications:
 | Errors | High | Session hit an error |
 | Background services | Low | ntfy fallback foreground service marker |
 
-### Inline reply
+**Inline reply** — the Input-needed notification has a **Reply**
+action backed by Android `RemoteInput`. The phone POSTs
+`/api/sessions/reply` via `ReplyBroadcastReceiver` without bringing
+the app to the foreground.
 
-The **Input needed** notification has a **Reply** action backed by Android
-`RemoteInput`. Type or dictate, tap Send — the phone POSTs
-`/api/sessions/reply` via the app's `ReplyBroadcastReceiver` without
-bringing the app to the foreground.
+**Deep links** — tapping any notification opens
+`dwclient://session/<session-id>`.
 
-### Deep links
-
-Tapping any notification opens the app with
-`dwclient://session/<session-id>`, which the app routes straight to the
-session detail screen.
+**Active-session suppression** (v0.19.0) — `ForegroundSessionTracker`
++ `NotificationPoster` suppress `InputNeeded` for the session currently
+on screen.
 
 ## Widget
 
-Long-press your home screen → Widgets → datawatch → drag the **Sessions**
-widget. Shows running / waiting / total for the active profile. Tap opens
-the app.
+Home screen → Widgets → datawatch → **Sessions** widget. Shows
+running / waiting / total for the active profile.
 
 ## Wear OS
 
-- **Dashboard** — three-count view in the watch app.
-- **Tile** — glance surface on the Tiles carousel (swipe right from the
-  watch face). Identical counts.
+- **Notification on the watch** (v0.3.0+) with RemoteInput reply.
+- **Complication** (v0.5.0+) on watchfaces that accept it.
+- **Rich Wear app** (v0.5.0+) — three-count dashboard + dictation
+  composer. Wear never holds the bearer token; all calls proxy through
+  the phone via the Wearable Data Layer.
+
+See [wear-os.md](wear-os.md) for full details.
 
 ## Android Auto
 
-Under the **Communication** category on your head unit. Shows a
-three-row list (running / waiting / total) — driver-safe by policy.
-Deep interaction stays on the phone.
+Under the **Messaging** category on your head unit. Three-screen
+navigation:
+
+1. **Summary** — Running / Waiting / Total counts for the first
+   enabled profile.
+2. **Waiting list** — sessions blocking on you.
+3. **Reply** — Yes / No / Continue / Stop quick-action buttons.
+
+Bundled into the public APK since v0.33.0 (before then, the
+CarAppService was never shipped despite the code existing).
+
+See [android-auto.md](android-auto.md) for full details + DHU test
+guide.
 
 ## Gestures summary
 
@@ -273,11 +357,20 @@ Deep interaction stays on the phone.
 |---------|--------|
 | Tap session row | Open detail |
 | Horizontal swipe on session row | Toggle mute |
+| Long-press session row | Multi-select |
 | 3-finger swipe up (anywhere) | Open server picker bottom sheet |
-| Swipe right from watch face | Reveal Tile |
+| Pinch-zoom on terminal | Adjust font size (then Fit to re-measure) |
 
-## Keyboard shortcut / voice
+## Voice
 
-No on-device voice assistant wiring yet in v0.10.0 — voice is limited to
-the mic button in the session detail composer. Quick-tile and ASSIST
-intent wiring arrive in v0.11 when the Wear Data Layer pair lands.
+Four surfaces (ADR-0025):
+
+1. **Composer mic** inside a session — default reply path.
+2. **Global FAB** from any screen when a server is reachable.
+3. **Android quick-tile** — launches `dwclient://voice/new`.
+4. **ASSIST intent** — Google Assistant handoff.
+
+Prefix matching (v0.26.0) auto-routes transcripts:
+`new:` → starts a session, `reply:` → session reply,
+`status:` → stats query, `remember` → `memory_remember`.
+See [ux-voice.md](ux-voice.md).
