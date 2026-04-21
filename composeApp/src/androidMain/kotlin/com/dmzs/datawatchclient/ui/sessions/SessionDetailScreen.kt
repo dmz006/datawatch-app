@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
@@ -36,8 +37,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -85,6 +88,7 @@ public fun SessionDetailScreen(
     var stateMenuOpen by remember { mutableStateOf(false) }
     var scheduleOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
+    var timelineOpen by remember { mutableStateOf(false) }
 
     // Persistent mode preference — Terminal is the default (matches the
     // PWA), Chat re-renders the existing event list with quick-reply
@@ -175,6 +179,14 @@ public fun SessionDetailScreen(
                             onClick = {
                                 menuOpen = false
                                 scheduleOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Timeline…") },
+                            leadingIcon = { Icon(Icons.Filled.Timeline, null) },
+                            onClick = {
+                                menuOpen = false
+                                timelineOpen = true
                             },
                         )
                     }
@@ -282,6 +294,13 @@ public fun SessionDetailScreen(
                 stateMenuOpen = false
                 vm.overrideState(s)
             },
+        )
+    }
+
+    if (timelineOpen) {
+        TimelineSheet(
+            events = state.events,
+            onDismiss = { timelineOpen = false },
         )
     }
 
@@ -483,6 +502,111 @@ private fun InputRequiredBanner(prompt: String?) {
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
+        }
+    }
+}
+
+/**
+ * Bottom-sheet timeline of significant session events. Filters
+ * `state.events` to non-Output entries (state changes, prompts,
+ * rate-limits, completions, errors) so users can scan the
+ * **what-happened-when** without scrolling raw output.
+ *
+ * Source-of-truth note: parent openapi has no `/api/sessions/timeline`
+ * yet, so this overlay is composed entirely from the existing WS
+ * event stream cached in `SessionEventRepository`. When upstream
+ * lands a structured timeline endpoint, replace the filter step with
+ * a fetch — the rendering stays.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimelineSheet(
+    events: List<SessionEvent>,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val items =
+        remember(events) {
+            events.filter { it !is SessionEvent.Output && it !is SessionEvent.PaneCapture }
+                .sortedBy { it.ts }
+        }
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            Text("Timeline", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "${items.size} significant events (output frames hidden)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            if (items.isEmpty()) {
+                Text(
+                    "No events yet — open a session that has produced output to see " +
+                        "state transitions, prompts, and completions here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(items, key = { it.ts.toEpochMilliseconds().toString() + it.hashCode() }) { ev ->
+                        TimelineRow(ev)
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineRow(event: SessionEvent) {
+    val (label, body, color) =
+        when (event) {
+            is SessionEvent.StateChange ->
+                Triple(
+                    "STATE",
+                    "${event.from.name.lowercase()} → ${event.to.name.lowercase()}",
+                    MaterialTheme.colorScheme.tertiary,
+                )
+            is SessionEvent.PromptDetected ->
+                Triple(
+                    "PROMPT",
+                    event.prompt.text.take(160),
+                    MaterialTheme.colorScheme.tertiary,
+                )
+            is SessionEvent.RateLimited ->
+                Triple(
+                    "RATE-LIMIT",
+                    event.retryAfter?.let { "retry $it" } ?: "throttled",
+                    MaterialTheme.colorScheme.secondary,
+                )
+            is SessionEvent.Completed ->
+                Triple(
+                    "DONE",
+                    "exit ${event.exitCode ?: "?"}",
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            is SessionEvent.Error ->
+                Triple("ERROR", event.message, MaterialTheme.colorScheme.error)
+            is SessionEvent.Unknown ->
+                Triple("(${event.type})", "—", MaterialTheme.colorScheme.onSurfaceVariant)
+            is SessionEvent.Output, is SessionEvent.PaneCapture ->
+                // filtered out upstream, but exhaustiveness requires a branch
+                Triple("OUTPUT", "(filtered)", MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            event.ts.toString().substringAfter('T').substringBefore('.'),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 8.dp).width(72.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+            Text(body, style = MaterialTheme.typography.bodySmall, maxLines = 4)
         }
     }
 }

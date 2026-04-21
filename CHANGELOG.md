@@ -10,6 +10,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **Session timeline bottom-sheet overlay.** A new "Timeline…" entry
+  in the session-detail overflow opens a modal sheet that filters the
+  cached event stream to non-Output entries (state changes, prompts,
+  rate-limits, completions, errors) and renders them as a
+  chronological strip — what-happened-when at a glance, without
+  scrolling raw output. Composed entirely from
+  `SessionEventRepository`'s WS-backed cache; will swap to a server
+  feed when parent ships `/api/sessions/timeline`.
+
 - **Chat-mode / Terminal-mode toggle in session detail.** A new icon in
   the top app bar (Chat ↔ Terminal) swaps between the existing xterm
   surface and a chat-style event list. Choice persists via

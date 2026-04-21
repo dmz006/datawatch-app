@@ -31,7 +31,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row backend chip + hostname + time meta | ✅ | post-v0.12 — backend resolved from `/api/info` per profile; chip styled to match PWA monitor pills |
 | Per-row inline Stop / Restart quick-actions | ✅ | post-v0.12 — Stop on running/waiting (confirm dialog), Restart on terminal states. Overflow menu still hosts Rename + Delete |
 | Per-row waiting-input context preview | ✅ | post-v0.12 — two-line clamp of `last_prompt` under waiting rows, persisted via `session.last_prompt` (migration `2.sqm`) |
-| Per-row timeline view (`/api/sessions/timeline`) | ❌ | v0.12 |
+| Per-row timeline view (`/api/sessions/timeline`) | 🚧 | post-v0.12 — bottom-sheet overlay composed from cached WS events (state/prompt/rate-limit/completion/error). Will swap to a server feed when the parent endpoint lands. |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
 | Schedule: list pending for a session (`/api/schedules`) | ❌ | v0.12 |
