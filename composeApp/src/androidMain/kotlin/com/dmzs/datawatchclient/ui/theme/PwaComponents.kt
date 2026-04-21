@@ -155,3 +155,15 @@ public fun PwaSectionTitle(
  */
 public val PwaRowDividerColor: Color
     @Composable get() = LocalDatawatchColors.current.border
+
+/**
+ * Tight input text style used inside Settings cards. Material3's
+ * default OutlinedTextField/OutlinedButton render at 16sp which
+ * looks oversized next to the PWA's 13px `.form-input`. Pass this
+ * to each input's `textStyle = pwaInputTextStyle()` param so the
+ * input baselines line up across Schedules, Channels, Commands,
+ * Filters, Profiles and the ConfigFieldsPanel inputs.
+ */
+@Composable
+public fun pwaInputTextStyle(): androidx.compose.ui.text.TextStyle =
+    MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)

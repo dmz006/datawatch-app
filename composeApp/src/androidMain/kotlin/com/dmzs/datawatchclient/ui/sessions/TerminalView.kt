@@ -389,20 +389,5 @@ public fun TerminalView(
     }
 }
 
-/**
- * Map a [SessionEvent] to the text that should be written to the terminal.
- * Output events contribute their body verbatim (server already includes line
- * endings); state changes get a system marker line; everything else is `null`
- * so the chat surface (not the terminal) renders it.
- */
-internal fun SessionEvent.terminalText(): String? =
-    when (this) {
-        is SessionEvent.Output -> body
-        is SessionEvent.StateChange -> "\u001b[2m[state] $from → $to\u001b[0m\n"
-        is SessionEvent.Completed -> "\u001b[2m[completed] exit ${exitCode ?: ""}\u001b[0m\n"
-        is SessionEvent.Error -> "\u001b[31m[error] $message\u001b[0m\n"
-        else -> null
-    }
-
 /** Quote a string as a JS literal — JSONObject handles all the escaping rules. */
 internal fun jsonString(s: String): String = JSONObject.quote(s)

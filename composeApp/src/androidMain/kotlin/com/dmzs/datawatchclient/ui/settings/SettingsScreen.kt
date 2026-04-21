@@ -201,6 +201,14 @@ public fun SettingsScreen(
                 colorScheme = MaterialTheme.colorScheme,
                 typography = settingsTypography,
             ) {
+            // LocalTextStyle drives OutlinedTextField / OutlinedButton
+            // default text rendering — without overriding it those
+            // widgets keep the outer 16sp bodyLarge even inside our
+            // shrunken MaterialTheme. Providing a 13sp default here
+            // lines up every input to PWA's `.form-input` density.
+            CompositionLocalProvider(
+                LocalTextStyle provides TextStyle(fontSize = 13.sp),
+            ) {
             Column(
                 modifier =
                     Modifier
@@ -327,6 +335,7 @@ public fun SettingsScreen(
                     }
                 }
             }
+            } // end LocalTextStyle provider
             } // end settings-scale MaterialTheme
         }
     }
