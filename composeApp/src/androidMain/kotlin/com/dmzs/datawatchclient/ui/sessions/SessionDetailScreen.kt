@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -64,6 +65,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.storage.observeForProfileAny
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -83,6 +85,12 @@ public fun SessionDetailScreen(
 ) {
     val state by vm.state.collectAsState()
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel = viewModel()
+    val sessionSchedulesVm: SessionSchedulesViewModel =
+        viewModel(
+            key = "session-schedules-$sessionId",
+            factory = viewModelFactory { initializer { SessionSchedulesViewModel(sessionId) } },
+        )
+    val sessionSchedules by sessionSchedulesVm.state.collectAsState()
     var killConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
@@ -248,6 +256,16 @@ public fun SessionDetailScreen(
                 InlineNotices(state.events)
             }
 
+            // Per-session "Scheduled" strip — mirrors PWA
+            // loadSessionSchedules() in app.js. Hidden when no pending
+            // schedules or when the server predates the session_id filter.
+            if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
+                SessionSchedulesStrip(
+                    schedules = sessionSchedules.schedules,
+                    onCancel = sessionSchedulesVm::cancel,
+                )
+            }
+
             ReplyComposer(
                 text = state.replyText,
                 onTextChange = vm::onReplyTextChange,
@@ -299,6 +317,7 @@ public fun SessionDetailScreen(
 
     if (timelineOpen) {
         TimelineSheet(
+            sessionId = sessionId,
             events = state.events,
             onDismiss = { timelineOpen = false },
         )
@@ -337,7 +356,12 @@ public fun SessionDetailScreen(
             initialTask = seededTask,
             title = "Schedule reply",
             onConfirm = { task, cron, enabled ->
-                schedulesVm.create(task, cron, enabled)
+                // Attach the new schedule to this session so it shows up in
+                // the per-session "Scheduled" strip below. Refresh the
+                // strip optimistically — the PWA waits for the list
+                // round-trip, which looks sluggish on mobile.
+                schedulesVm.create(task, cron, enabled, sessionId = sessionId)
+                sessionSchedulesVm.refresh()
                 scheduleOpen = false
             },
             onDismiss = { scheduleOpen = false },
@@ -507,39 +531,73 @@ private fun InputRequiredBanner(prompt: String?) {
 }
 
 /**
- * Bottom-sheet timeline of significant session events. Filters
- * `state.events` to non-Output entries (state changes, prompts,
- * rate-limits, completions, errors) so users can scan the
- * **what-happened-when** without scrolling raw output.
- *
- * Source-of-truth note: parent openapi has no `/api/sessions/timeline`
- * yet, so this overlay is composed entirely from the existing WS
- * event stream cached in `SessionEventRepository`. When upstream
- * lands a structured timeline endpoint, replace the filter step with
- * a fetch — the rendering stays.
+ * Bottom-sheet session timeline. Prefers the parent server's
+ * `/api/sessions/timeline?id=` feed (pipe-delimited lines:
+ * `"<ts> | <event> | <detail>"`); falls back to a local filter of
+ * cached WS events when the server can't be reached or the endpoint
+ * hasn't been pre-populated yet.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimelineSheet(
+    sessionId: String,
     events: List<SessionEvent>,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val items =
+    var serverLines by remember { mutableStateOf<List<String>?>(null) }
+    var fetchFailed by remember { mutableStateOf(false) }
+    LaunchedEffect(sessionId) {
+        val profiles =
+            com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+        val owningId =
+            runCatching {
+                com.dmzs.datawatchclient.di.ServiceLocator.sessionRepository
+                    .observeForProfileAny(sessionId)
+                    .first()
+                    ?.serverProfileId
+            }.getOrNull()
+        val profile =
+            profiles.firstOrNull { it.id == owningId }
+                ?: profiles.firstOrNull { it.enabled }
+        if (profile == null) {
+            fetchFailed = true
+            return@LaunchedEffect
+        }
+        com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+            .fetchTimeline(sessionId)
+            .fold(
+                onSuccess = { serverLines = it },
+                onFailure = { fetchFailed = true },
+            )
+    }
+    val localItems =
         remember(events) {
             events.filter { it !is SessionEvent.Output && it !is SessionEvent.PaneCapture }
                 .sortedBy { it.ts }
         }
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text("Timeline", style = MaterialTheme.typography.titleMedium)
+            val usingServer = serverLines != null && serverLines!!.isNotEmpty()
+            val subtitle =
+                when {
+                    usingServer -> "${serverLines!!.size} events (server feed)"
+                    fetchFailed -> "${localItems.size} events (local cache — server feed unavailable)"
+                    else -> "${localItems.size} events (local cache)"
+                }
             Text(
-                "${items.size} significant events (output frames hidden)",
+                subtitle,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
-            if (items.isEmpty()) {
+            if (usingServer) {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(serverLines!!, key = { it }) { line -> TimelineServerRow(line) }
+                }
+            } else if (localItems.isEmpty()) {
                 Text(
                     "No events yet — open a session that has produced output to see " +
                         "state transitions, prompts, and completions here.",
@@ -548,13 +606,51 @@ private fun TimelineSheet(
                 )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    items(items, key = { it.ts.toEpochMilliseconds().toString() + it.hashCode() }) { ev ->
+                    items(localItems, key = { it.ts.toEpochMilliseconds().toString() + it.hashCode() }) { ev ->
                         TimelineRow(ev)
                         HorizontalDivider()
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * Parses one PWA-shape timeline line (`"<ts> | <event> | <detail>"`)
+ * into a styled row. Colour-codes by event keyword the same way the
+ * PWA does (state → accent, input → success, rate → warning).
+ */
+@Composable
+private fun TimelineServerRow(line: String) {
+    val parts = line.split(" | ", limit = 3)
+    val ts = parts.getOrNull(0).orEmpty()
+    val event = parts.getOrNull(1).orEmpty()
+    val detail = parts.getOrNull(2).orEmpty()
+    val color =
+        when {
+            event.contains("state") -> MaterialTheme.colorScheme.tertiary
+            event.contains("input") -> MaterialTheme.colorScheme.primary
+            event.contains("rate") -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            ts.substringAfter('T').substringBefore('Z').substringBefore('.'),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 8.dp).width(72.dp),
+        )
+        Text(
+            event,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            modifier = Modifier.padding(end = 8.dp).width(96.dp),
+        )
+        Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 4)
     }
 }
 
@@ -607,6 +703,62 @@ private fun TimelineRow(event: SessionEvent) {
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = color)
             Text(body, style = MaterialTheme.typography.bodySmall, maxLines = 4)
+        }
+    }
+}
+
+/**
+ * PWA parity: the per-session "Scheduled" strip that lives just above
+ * the composer. Shows `run_at` (or `cron`) + command body + a red ✕
+ * cancel button per row, matching the PWA's app.js
+ * loadSessionSchedules() render.
+ */
+@Composable
+private fun SessionSchedulesStrip(
+    schedules: List<com.dmzs.datawatchclient.domain.Schedule>,
+    onCancel: (String) -> Unit,
+) {
+    HorizontalDivider()
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Text(
+            "SCHEDULED (${schedules.size})",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        schedules.forEach { sc ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val when_ =
+                    sc.runAt?.toString()?.substringBefore('.')?.replace('T', ' ')
+                        ?: sc.cron
+                        ?: "on input"
+                Text(
+                    when_,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(
+                    sc.task,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = { onCancel(sc.id) },
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Cancel schedule",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+            }
         }
     }
 }

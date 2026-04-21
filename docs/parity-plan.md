@@ -31,10 +31,10 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Per-row backend chip + hostname + time meta | ✅ | post-v0.12 — backend resolved from `/api/info` per profile; chip styled to match PWA monitor pills |
 | Per-row inline Stop / Restart quick-actions | ✅ | post-v0.12 — Stop on running/waiting (confirm dialog), Restart on terminal states. Overflow menu still hosts Rename + Delete |
 | Per-row waiting-input context preview | ✅ | post-v0.12 — two-line clamp of `last_prompt` under waiting rows, persisted via `session.last_prompt` (migration `2.sqm`) |
-| Per-row timeline view (`/api/sessions/timeline`) | 🚧 | post-v0.12 — bottom-sheet overlay composed from cached WS events. Parent shipped the endpoint (closed [dmz006/datawatch#9](https://github.com/dmz006/datawatch/issues/9)); mobile wiring pending. |
+| Per-row timeline view (`/api/sessions/timeline`) | ✅ | v0.13.1 — timeline sheet now prefers server feed (pipe-delimited lines), falls back to local WS filter. |
 | Sort by last activity / start time | ❌ | v0.11 |
 | Pagination / "load more" | ❌ | v0.12 |
-| Schedule: list pending for a session (`/api/schedules`) | 🚧 | server already supports `?session_id=`; mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
+| Schedule: list pending for a session (`/api/schedules`) | ✅ | v0.13.1 — per-session strip above composer. Openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16). |
 
 ## 2. Session detail
 
@@ -57,7 +57,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
 | Inline schedule actions (create scheduled reply) | ✅ | post-v0.12 — composer "Schedule" button + overflow "Schedule reply…" both seed the schedule dialog with typed text → live prompt → task summary |
-| Per-session schedules list | 🚧 | server already supports `/api/schedules?session_id=` (PWA uses it); mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
+| Per-session schedules list | ✅ | v0.13.1 — per-session strip above composer. Openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16). |
 | Backlog pager (`/api/output`) | ✅ | v0.12.0 — terminal-toolbar history button fetches `GET /api/output?id=&n=1000` and prepends into xterm. One-shot per session. `/api/sessions/timeline` structured view still v0.13. |
 | Terminal Fit + Jump-to-bottom toolbar | ✅ | post-v0.12 — manual fit (after pinch-zoom) + scroll-to-tail buttons via `dwFit` / `dwScrollToBottom` JS bridges |
 | Pane-capture authoritative TUI rendering | ✅ | shipped earlier; mapper-level regression test added post-v0.12 to lock first/redraw frame contract |
@@ -71,7 +71,7 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 |---|---|---|
 | Start session from form (`/api/sessions/start`) | ✅ | v0.11.0 — Sessions-tab FAB → `NewSessionScreen` |
 | Pick LLM backend (`/api/backends`) | ✅ | Settings → LLM read; New Session form has a Backend dropdown that calls `setActiveBackend` server-wide before start (parent lacks per-session backend param) |
-| Pick model variant | ❌ | parent shipped `/api/ollama/models` + `/api/openwebui/models` (closed [dmz006/datawatch#10](https://github.com/dmz006/datawatch/issues/10)) — mobile wiring pending |
+| Pick model variant | 🚧 | v0.13.1 — read-only dropdown on New Session for ollama/openwebui (informational; `/api/sessions/start` has no `model` field, full swap needs backend-config PUT — v0.14) |
 | Pick profile (`/api/profiles`) | 🚧 | server already exposes `/api/profiles` (PWA uses it); mobile wiring pending + openapi doc fix tracked in [dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16) |
 | Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
 | Voice-to-new-session | ❌ | v0.12 — composer mic exists; "new:" prefix auto-exec wiring needed |

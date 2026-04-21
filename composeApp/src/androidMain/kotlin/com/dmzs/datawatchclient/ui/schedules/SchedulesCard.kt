@@ -171,7 +171,7 @@ private fun ScheduleRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    schedule.cron,
+                    schedule.cron ?: schedule.runAt?.toString() ?: "on input",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

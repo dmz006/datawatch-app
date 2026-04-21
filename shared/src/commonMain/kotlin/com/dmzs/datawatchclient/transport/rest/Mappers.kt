@@ -63,9 +63,13 @@ internal fun ScheduleDto.toDomain(serverProfileId: String): Schedule =
     Schedule(
         id = id,
         serverProfileId = serverProfileId,
-        task = task,
+        // Prefer `command` (newer server) then fall back to `task` (older spec).
+        task = command ?: task ?: "",
         cron = cron,
+        runAt = runAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
         enabled = enabled,
+        state = state,
+        sessionId = sessionId,
         createdAt = createdAt.toInstantOrEpoch(),
     )
 

@@ -94,6 +94,23 @@ public fun NewSessionScreen(
         )
     }
 
+    // Model variants for ollama / openwebui backends. Only populated when
+    // the picked backend is one of those two; other backends don't
+    // enumerate a model list on the parent today.
+    var models by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pickedModel by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedProfileId, pickedBackend) {
+        models = emptyList()
+        pickedModel = null
+        val backend = pickedBackend?.lowercase() ?: return@LaunchedEffect
+        if (backend != "ollama" && backend != "openwebui") return@LaunchedEffect
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listModels(backend).onSuccess { list ->
+            models = list
+            pickedModel = list.firstOrNull()
+        }
+    }
+
     // Default-select active profile (or the first enabled one) on first composition.
     LaunchedEffect(profiles, activeId) {
         if (selectedProfileId == null) {
@@ -192,6 +209,34 @@ public fun NewSessionScreen(
                     selected = pickedBackend,
                     active = activeBackend,
                     onSelect = { pickedBackend = it },
+                )
+            }
+
+            // Model picker — only visible for ollama / openwebui. The
+            // parent's /api/sessions/start doesn't accept a `model` field
+            // (PWA sends `backend` + `profile` only); model selection is
+            // server-side backend config. Shown here as informational —
+            // the user can see what's installed before kicking off. A
+            // future patch could PUT /api/profiles to change the server's
+            // configured model for the chosen backend before /start.
+            if (models.isNotEmpty()) {
+                Text(
+                    "Model (server-configured)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                ModelPickerDropdown(
+                    models = models,
+                    selected = pickedModel,
+                    onSelect = { pickedModel = it },
+                )
+                Text(
+                    "Models installed on the selected backend. Changing this " +
+                        "on mobile requires a backend config update (v0.14).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
 
@@ -333,6 +378,45 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
                     },
                     onClick = {
                         onPick(cmd.command)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelPickerDropdown(
+    models: List<String>,
+    selected: String?,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = selected ?: models.first(),
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            models.forEach { name ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        onSelect(name)
                         expanded = false
                     },
                 )

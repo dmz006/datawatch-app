@@ -8,6 +8,50 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.13.1] — 2026-04-20 (follow-up — correct stale spec paths + wire shipped endpoints)
+
+Discovered that three parity-plan rows previously tagged
+upstream-blocked were actually server-ready — parent openapi.yaml
+was just stale vs the shipped server (tracked
+[dmz006/datawatch#16](https://github.com/dmz006/datawatch/issues/16)).
+Fixed the mobile transport to match what the server actually
+serves, then wired the UIs the gaps were blocking.
+
+### Fixed
+
+- **Schedules endpoint was wrong path.** Mobile was calling
+  `/api/schedule` (singular, per stale spec); the shipped server
+  exposes `/api/schedules` (plural). Corrected list + create + delete
+  + unit tests.
+
+### Added
+
+- **Per-session schedules strip in session detail.** Mirrors the
+  PWA's `loadSessionSchedules(sessionId)` — renders a small strip
+  above the composer listing every pending schedule attached to the
+  current session, with a ✕ cancel per row. Calls
+  `GET /api/schedules?session_id=<id>&state=pending`; hides when the
+  session has no pending schedules or the server predates the
+  filter. Schedule-reply dialog now passes `sessionId` so new
+  schedules show up in the strip immediately.
+
+- **Session timeline overlay prefers server feed.** The existing
+  bottom-sheet now tries
+  `GET /api/sessions/timeline?id=<sessionId>` first and renders the
+  pipe-delimited `{lines: [...]}` response with PWA-matching
+  event-colour rules (state → tertiary, input → primary, rate →
+  secondary). Falls back to the local WS-event filter when the
+  endpoint isn't reachable, with a subtitle flag so users can tell
+  which source they're looking at.
+
+- **Model picker in New Session form.** When the picked backend is
+  `ollama` or `openwebui`, a second dropdown enumerates installed
+  models via `GET /api/<backend>/models`. Informational only today
+  — parent's `POST /api/sessions/start` doesn't accept a model
+  field (PWA sends `backend` + `profile` only), so the picker lets
+  users see what's available. Actually changing the model from
+  mobile will need a backend-config PUT, tracked for v0.14.
+
 ## [0.13.0] — 2026-04-20 (PWA parity sweep)
 
 A focused sweep over the gaps the user called out after v0.12.0:

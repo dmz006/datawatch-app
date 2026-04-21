@@ -178,6 +178,22 @@ public interface TransportClient {
     public suspend fun fetchInfo(): Result<ServerInfo>
 
     /**
+     * GET /api/sessions/timeline?id=<sessionId> — pipe-delimited
+     * timeline lines: `"<ts> | <event> | <detail>"`. Mobile's
+     * session-detail Timeline sheet prefers this over the client-side
+     * WS-event-filter derivation whenever the server responds.
+     */
+    public suspend fun fetchTimeline(sessionId: String): Result<List<String>>
+
+    /**
+     * GET /api/ollama/models or /api/openwebui/models — returns a flat
+     * array of model-name strings. [backend] must be "ollama" or
+     * "openwebui"; any other value returns [TransportError.NotFound]
+     * so callers can grey out the picker without special-casing.
+     */
+    public suspend fun listModels(backend: String): Result<List<String>>
+
+    /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's
      * PTY output as plain text. Useful as a backlog pager for sessions that
      * predate the current WebSocket subscription. [lines] clamped server-side
@@ -191,17 +207,32 @@ public interface TransportClient {
     // ---- v0.12 schedules + files + saved commands + config (read) ----
     // (see docs/plans/2026-04-20-v0.12-schedules-files-config.md)
 
-    /** GET /api/schedule — list every scheduled command on this server. */
-    public suspend fun listSchedules(): Result<List<Schedule>>
+    /**
+     * GET /api/schedules — list scheduled commands on this server. Filters
+     * ([sessionId], [state]) correspond to the query params the PWA uses:
+     *  - `sessionId` scopes to schedules tied to one session (populates the
+     *    per-session "Scheduled" strip in session detail);
+     *  - `state` filters by schedule state (e.g. `"pending"`).
+     *
+     * Both params are optional; passing none returns every schedule.
+     */
+    public suspend fun listSchedules(
+        sessionId: String? = null,
+        state: String? = null,
+    ): Result<List<Schedule>>
 
-    /** POST /api/schedule — create a scheduled command. Returns the created [Schedule]. */
+    /**
+     * POST /api/schedules — create a scheduled command. [sessionId] attaches
+     * the schedule to a session so it shows up in that session's strip.
+     */
     public suspend fun createSchedule(
         task: String,
         cron: String,
         enabled: Boolean = true,
+        sessionId: String? = null,
     ): Result<Schedule>
 
-    /** DELETE /api/schedule?id=<id> — cancel a scheduled command. */
+    /** DELETE /api/schedules?id=<id> — cancel a scheduled command. */
     public suspend fun deleteSchedule(scheduleId: String): Result<Unit>
 
     /**

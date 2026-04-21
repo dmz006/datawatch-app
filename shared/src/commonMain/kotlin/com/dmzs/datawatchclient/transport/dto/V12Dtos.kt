@@ -10,14 +10,28 @@ import kotlinx.serialization.Serializable
  * audit (see `docs/plans/2026-04-20-v0.12-schedules-files-config.md`).
  */
 
-// ---- Schedules (/api/schedule — singular) ----
+// ---- Schedules (/api/schedules — plural, per shipped server) ----
+//
+// The parent server actually exposes `/api/schedules` (plural); the openapi.yaml
+// in the 2026-04-20 audit documented `/api/schedule` (singular) which was stale.
+// ScheduledCommand objects that come back include richer fields than the spec
+// claimed — `session_id` (present when created in a session context), `run_at`
+// (one-shot schedules), `command` (the body; newer servers may emit this
+// instead of / alongside `task`), and `state` (`pending` / `fired` /
+// `cancelled`). All are optional here for forward- and back-compat: older
+// servers that only emit `task` + `cron` + `enabled` still parse cleanly.
+// Tracked upstream at dmz006/datawatch#16.
 
 @Serializable
 public data class ScheduleDto(
     val id: String,
-    val task: String,
-    val cron: String,
+    val task: String? = null,
+    val command: String? = null,
+    val cron: String? = null,
+    @SerialName("run_at") val runAt: String? = null,
     val enabled: Boolean = true,
+    val state: String? = null,
+    @SerialName("session_id") val sessionId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
 )
 
@@ -26,6 +40,8 @@ public data class CreateScheduleDto(
     val task: String,
     val cron: String,
     val enabled: Boolean = true,
+    /** Attach the schedule to a specific session so it shows up in that session's strip. */
+    @SerialName("session_id") val sessionId: String? = null,
 )
 
 // ---- Files (/api/files?path=) ----

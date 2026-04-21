@@ -101,10 +101,16 @@ public class SchedulesViewModel : ViewModel() {
         task: String,
         cron: String,
         enabled: Boolean,
+        sessionId: String? = null,
     ) {
         viewModelScope.launch {
             val profile = resolveActiveProfile() ?: return@launch
-            ServiceLocator.transportFor(profile).createSchedule(task, cron, enabled).fold(
+            ServiceLocator.transportFor(profile).createSchedule(
+                task = task,
+                cron = cron,
+                enabled = enabled,
+                sessionId = sessionId,
+            ).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _state.value =

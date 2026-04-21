@@ -401,13 +401,50 @@ public class RestTransport(
             }.bodyAsText()
         }
 
+    override suspend fun fetchTimeline(sessionId: String): Result<List<String>> =
+        request {
+            // PWA-observed shape: `{"lines": ["<ts> | <event> | <detail>", ...]}`.
+            val raw: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/sessions/timeline") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("id", sessionId)
+                }.body()
+            val linesEl = raw["lines"] as? kotlinx.serialization.json.JsonArray
+            linesEl?.mapNotNull { el ->
+                (el as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            } ?: emptyList()
+        }
+
+    override suspend fun listModels(backend: String): Result<List<String>> =
+        request {
+            val path =
+                when (backend.lowercase()) {
+                    "ollama" -> "/api/ollama/models"
+                    "openwebui" -> "/api/openwebui/models"
+                    else -> throw TransportError.NotFound("unknown backend: $backend")
+                }
+            // PWA-observed shape: a flat JSON array of model-name strings.
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}$path") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { el ->
+                (el as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            }
+        }
+
     // ---- v0.12 schedules + files + saved commands + config (read) ----
 
-    override suspend fun listSchedules(): Result<List<Schedule>> =
+    override suspend fun listSchedules(
+        sessionId: String?,
+        state: String?,
+    ): Result<List<Schedule>> =
         request {
             val dto: List<ScheduleDto> =
-                client.get("${profile.baseUrl}/api/schedule") {
+                client.get("${profile.baseUrl}/api/schedules") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    sessionId?.let { parameter("session_id", it) }
+                    state?.let { parameter("state", it) }
                 }.body()
             dto.map { it.toDomain(profile.id) }
         }
@@ -416,20 +453,28 @@ public class RestTransport(
         task: String,
         cron: String,
         enabled: Boolean,
+        sessionId: String?,
     ): Result<Schedule> =
         request {
             val dto: ScheduleDto =
-                client.post("${profile.baseUrl}/api/schedule") {
+                client.post("${profile.baseUrl}/api/schedules") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
-                    setBody(CreateScheduleDto(task = task, cron = cron, enabled = enabled))
+                    setBody(
+                        CreateScheduleDto(
+                            task = task,
+                            cron = cron,
+                            enabled = enabled,
+                            sessionId = sessionId,
+                        ),
+                    )
                 }.body()
             dto.toDomain(profile.id)
         }
 
     override suspend fun deleteSchedule(scheduleId: String): Result<Unit> =
         request {
-            client.delete("${profile.baseUrl}/api/schedule") {
+            client.delete("${profile.baseUrl}/api/schedules") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 parameter("id", scheduleId)
             }

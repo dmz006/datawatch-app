@@ -515,7 +515,7 @@ class RestTransportTest {
             assertEquals("0 3 * * *", list[0].cron)
             assertEquals(true, list[0].enabled)
             assertEquals(false, list[1].enabled)
-            assertEquals("/api/schedule", server.takeRequest().path)
+            assertEquals("/api/schedules", server.takeRequest().path)
         }
 
     @Test
@@ -539,7 +539,7 @@ class RestTransportTest {
             assertEquals("sch-9", res.getOrThrow().id)
             val sent = server.takeRequest()
             assertEquals("POST", sent.method)
-            assertEquals("/api/schedule", sent.path)
+            assertEquals("/api/schedules", sent.path)
             val body = sent.body.readUtf8()
             assertTrue(body.contains("\"task\":\"weekly\""), body)
             assertTrue(body.contains("\"cron\":\"0 0 * * 0\""), body)
@@ -554,7 +554,7 @@ class RestTransportTest {
             assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
             val sent = server.takeRequest()
             assertEquals("DELETE", sent.method)
-            assertEquals("/api/schedule?id=sch-1", sent.path)
+            assertEquals("/api/schedules?id=sch-1", sent.path)
         }
 
     @Test
