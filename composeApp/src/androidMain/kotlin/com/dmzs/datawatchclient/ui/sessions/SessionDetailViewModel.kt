@@ -40,19 +40,44 @@ public class SessionDetailViewModel(
         val banner: String? = null,
         val replying: Boolean = false,
         val killing: Boolean = false,
+        val renaming: Boolean = false,
         val replyText: String = "",
+        /**
+         * Reachability of the *owning* profile's transport. `null` until the
+         * first probe completes (UI shows nothing); `false` when the last
+         * probe failed (UI shows a banner above the terminal).
+         */
+        val reachable: Boolean? = null,
     ) {
         public val needsInput: Boolean
             get() =
                 events.asReversed().firstOrNull {
                     it is SessionEvent.PromptDetected
                 } != null && session?.needsInput == true
+
+        /**
+         * Most-recent prompt text, used by the "input required" banner that
+         * sits above the terminal when the session is in `waiting_input`.
+         * Prefers a live PromptDetected event over the cached
+         * `Session.lastPrompt` so realtime updates beat REST cache.
+         */
+        public val pendingPromptText: String?
+            get() {
+                val live =
+                    (
+                        events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }
+                            as? SessionEvent.PromptDetected
+                    )?.prompt?.text
+                return live ?: session?.lastPrompt
+            }
     }
 
     private val _replyText = MutableStateFlow("")
     private val _replying = MutableStateFlow(false)
     private val _killing = MutableStateFlow(false)
+    private val _renaming = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
+    private val _reachable = MutableStateFlow<Boolean?>(null)
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
@@ -72,6 +97,8 @@ public class SessionDetailViewModel(
             _replying,
             _killing,
             _banner,
+            _renaming,
+            _reachable,
         ) { args ->
             val session = args[0] as Session?
             val events =
@@ -81,6 +108,8 @@ public class SessionDetailViewModel(
             val replying = args[3] as Boolean
             val killing = args[4] as Boolean
             val banner = args[5] as String?
+            val renaming = args[6] as Boolean
+            val reachable = args[7] as Boolean?
             UiState(
                 session = session,
                 events = events,
@@ -88,6 +117,8 @@ public class SessionDetailViewModel(
                 replying = replying,
                 killing = killing,
                 banner = banner,
+                renaming = renaming,
+                reachable = reachable,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -98,6 +129,11 @@ public class SessionDetailViewModel(
             val profile = resolveProfile() ?: return@launch
             profileCache = profile
             startStream(profile)
+            // Mirror the owning profile's transport reachability into the
+            // VM so the detail screen can render a connection banner.
+            ServiceLocator.transportFor(profile).isReachable
+                .onEach { _reachable.value = it }
+                .launchIn(viewModelScope)
         }
     }
 
@@ -169,6 +205,27 @@ public class SessionDetailViewModel(
                 onFailure = { err ->
                     _killing.value = false
                     _banner.value = "Kill failed: ${err.describe()}"
+                },
+            )
+        }
+    }
+
+    /**
+     * Inline-rename from the detail screen header tap. Same wire as the
+     * Sessions-list overflow rename — `POST /api/sessions/rename`.
+     */
+    public fun rename(newName: String) {
+        val profile = profileCache ?: return
+        val trimmed = newName.trim()
+        if (trimmed.isBlank() || _renaming.value) return
+        _renaming.value = true
+        _banner.value = null
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).renameSession(sessionId, trimmed).fold(
+                onSuccess = { _renaming.value = false },
+                onFailure = { err ->
+                    _renaming.value = false
+                    _banner.value = "Rename failed: ${err.describe()}"
                 },
             )
         }

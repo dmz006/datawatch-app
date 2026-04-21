@@ -1,5 +1,7 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -78,12 +81,19 @@ public fun SessionDetailScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
     var scheduleOpen by remember { mutableStateOf(false) }
+    var renameOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
+                    // Tap title to rename — same wire as Sessions-list overflow.
+                    Column(
+                        modifier =
+                            Modifier
+                                .clickable { renameOpen = true }
+                                .padding(vertical = 4.dp),
+                    ) {
                         Text(
                             state.session?.taskSummary ?: sessionId,
                             maxLines = 1,
@@ -102,7 +112,10 @@ public fun SessionDetailScreen(
                     }
                 },
                 actions = {
-                    state.session?.state?.let { s -> StatePill(s) }
+                    state.session?.state?.let { s ->
+                        // PWA: tap state pill → state-override menu.
+                        StatePill(s, onClick = { stateMenuOpen = true })
+                    }
                     IconButton(onClick = vm::toggleMute) {
                         val muted = state.session?.muted == true
                         Icon(
@@ -157,6 +170,21 @@ public fun SessionDetailScreen(
                         TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
                     }
                 }
+            }
+
+            // Connection banner — shows when the owning profile's transport
+            // last-probe failed. PWA renders an equivalent strip when WS or
+            // REST drops; ours doubles as a hint that the live event stream
+            // is also degraded (REST + WS share the trust-anchor wiring).
+            if (state.reachable == false) {
+                ConnectionBanner(onRetry = vm::dismissBanner)
+            }
+            // Input-required banner — top-of-terminal callout when the
+            // session is `waiting_input`, mirroring the PWA's amber prompt
+            // strip. Body shows the latest prompt text so users can decide
+            // before scrolling the terminal.
+            state.session?.takeIf { it.state == SessionState.Waiting }?.let {
+                InputRequiredBanner(prompt = state.pendingPromptText)
             }
 
             val terminalController = rememberTerminalController()
@@ -215,6 +243,18 @@ public fun SessionDetailScreen(
                 stateMenuOpen = false
                 vm.overrideState(s)
             },
+        )
+    }
+
+    if (renameOpen) {
+        val initial = state.session?.taskSummary ?: sessionId
+        RenameDialog(
+            initial = initial,
+            onConfirm = { newName ->
+                renameOpen = false
+                vm.rename(newName)
+            },
+            onDismiss = { renameOpen = false },
         )
     }
 
@@ -282,7 +322,7 @@ private fun InlineNotices(events: List<SessionEvent>) {
 }
 
 @Composable
-private fun StatePill(state: SessionState) {
+private fun StatePill(state: SessionState, onClick: () -> Unit = {}) {
     val (label, color) =
         when (state) {
             SessionState.New -> "new" to MaterialTheme.colorScheme.onSurfaceVariant
@@ -294,11 +334,114 @@ private fun StatePill(state: SessionState) {
             SessionState.Error -> "error" to MaterialTheme.colorScheme.error
         }
     AssistChip(
-        onClick = {},
+        onClick = onClick,
         label = { Text(label) },
         colors = AssistChipDefaults.assistChipColors(labelColor = color),
         modifier = Modifier.padding(end = 4.dp),
     )
+}
+
+/**
+ * Inline rename dialog spawned from a tap on the session-detail header.
+ * Mirrors the row-level rename in SessionsScreen so behaviour is
+ * consistent — single-line input, "Save" disabled while blank.
+ */
+@Composable
+private fun RenameDialog(
+    initial: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename session") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(text.trim()) },
+                enabled = text.isNotBlank(),
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+/**
+ * Top-of-terminal banner that surfaces when the active profile's
+ * transport is unreachable. Non-dismissable on purpose — it self-clears
+ * the moment a probe succeeds. The Retry button just nudges the VM to
+ * drop any sticky error banner so the next refresh repaints cleanly.
+ */
+@Composable
+private fun ConnectionBanner(onRetry: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Server unreachable — terminal stream paused, last frame shown.",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            TextButton(onClick = onRetry) { Text("Retry") }
+        }
+    }
+}
+
+/**
+ * Amber strip right above the terminal when the session is
+ * `waiting_input`. Body shows the latest prompt text (live event
+ * preferred, falling back to `Session.lastPrompt`) so the user can
+ * decide-then-reply without scrolling backlog.
+ */
+@Composable
+private fun InputRequiredBanner(prompt: String?) {
+    val accent = MaterialTheme.colorScheme.tertiary
+    Surface(
+        color = accent.copy(alpha = 0.12f),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .width(3.dp)
+                        .padding(end = 8.dp)
+                        .background(accent),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "INPUT REQUIRED",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = accent,
+                )
+                Text(
+                    prompt?.takeIf { it.isNotBlank() } ?: "Session is waiting on a reply.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 3,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+    }
 }
 
 @Composable

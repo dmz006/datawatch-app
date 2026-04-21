@@ -10,6 +10,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ### Added
 
+- **Session detail screen gains PWA header affordances and live banners.**
+  Tapping the session title in the top app bar opens an inline rename
+  dialog (same wire as the Sessions-list overflow), and tapping the
+  state pill opens the state-override menu (used to require an
+  overflow-menu tap-then-pick). When the owning profile's transport is
+  unreachable, a top-of-terminal connection banner now appears (the
+  PWA shows an equivalent strip when WS / REST drops). When the
+  session is `waiting_input`, an amber input-required banner sits
+  directly above the terminal showing the most-recent prompt text
+  (live `PromptDetected` event preferred, falling back to
+  `Session.lastPrompt`) so triage doesn't require backlog scrolling.
+
 - **Session list rows now match the PWA monitor view.** Each card surfaces
   the active LLM backend chip alongside the state pill (sourced from
   `/api/info` per server), the hostname + relative time meta line, an

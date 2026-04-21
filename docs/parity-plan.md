@@ -48,8 +48,11 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Kill session (confirm dialog) | ✅ | |
 | State override | ✅ | |
 | Mute per-session | ✅ | |
-| Rename session | ✅ | v0.11.0 — Sessions overflow menu |
+| Rename session | ✅ | v0.11.0 overflow + post-v0.12 inline header-tap on detail screen |
 | Restart session | ✅ | v0.11.0 — Sessions overflow menu |
+| State override via badge tap | ✅ | post-v0.12 — tap the detail-screen state pill to open the override menu |
+| Connection banner above terminal | ✅ | post-v0.12 — surfaces when owning profile's `isReachable` flips false |
+| Input-required banner above terminal | ✅ | post-v0.12 — amber strip on `waiting_input`, body shows latest prompt text |
 | Delete session | ✅ | v0.11.0 — overflow + bulk. Parent shipped endpoint in v4.0.3 (closed: [dmz006/datawatch#5](https://github.com/dmz006/datawatch/issues/5)) |
 | Terminal copy action | ✅ | v0.11.0 — terminal toolbar, copies `term.getSelection()` to system clipboard |
 | Terminal search (`xterm-addon-search`) | ✅ | v0.11.0 — vendored `xterm-addon-search@0.13.0` + inline search toolbar |
