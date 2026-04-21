@@ -8,6 +8,37 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-04-21 (Sprint J — memory export + input/output mode + ESC/Ctrl-b)
+
+### Added
+
+- **Memory export via SAF.** Settings → General → Memory gets an
+  "Export…" button. It fetches `GET /api/memory/export` (raw
+  bytes with bearer auth, which ACTION_VIEW couldn't do) and
+  launches `CreateDocument` so the user picks the destination;
+  bytes are written to the chosen content-URI with a
+  timestamped filename.
+- **Input mode / Output mode dropdowns** on the Behaviour
+  Preferences card. `input_mode` options: tmux / channel /
+  none. `output_mode` options: tmux / channel / both / none.
+  Blank preserves the server's existing value on save.
+- **ESC and Ctrl-b chips in the Quick Commands sheet.** Rather
+  than introduce a separate WS command channel for the list
+  surface, mobile sends the raw ASCII control bytes (0x1B for
+  ESC, 0x02 for Ctrl-b) via the existing `/api/sessions/reply`
+  path. TUIs that interpret replies through the tmux pane pick
+  them up the same way the PWA's `sendkey` command does.
+
+### Transport
+
+- `memoryExport()` → `Result<ByteArray>` for the SAF download.
+
+### Parity-plan
+
+- 3 more 🚧 rows flip to ✅: memory export, input mode, output
+  mode. ESC/Ctrl-b wasn't tracked as its own row but was noted
+  as deferred in the quick-commands docstring.
+
 ## [0.21.0] — 2026-04-20 (Sprint I — per-backend config editor + final parity close-out)
 
 Closes the remaining structured-write gap on parity-plan.

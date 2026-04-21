@@ -543,6 +543,13 @@ public class RestTransport(
             }
         }
 
+    override suspend fun memoryExport(): Result<ByteArray> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/export") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<ByteArray>()
+        }
+
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val arr: kotlinx.serialization.json.JsonArray =

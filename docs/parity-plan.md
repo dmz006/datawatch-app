@@ -138,8 +138,8 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 
 | PWA | Mobile | Notes |
 |---|---|---|
-| Input mode (tmux / channel / none) | 🚧 | backend-specific; round-trip path exists via BackendConfigDialog (add the field to the structured form in a follow-up) |
-| Output mode | 🚧 | same as input mode |
+| Input mode (tmux / channel / none) | ✅ | v0.22.0 — BehaviourPreferencesCard dropdown |
+| Output mode | ✅ | v0.22.0 — BehaviourPreferencesCard dropdown (tmux/channel/both/none) |
 | Recent-session retention window | ✅ | v0.20.0 — BehaviourPreferencesCard edits `recent_window_minutes` |
 | Max concurrent sessions | ✅ | v0.20.0 — BehaviourPreferencesCard edits `max_concurrent` |
 | Scrollback line count | ✅ | v0.20.0 — BehaviourPreferencesCard edits `scrollback_lines` |
@@ -160,7 +160,7 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 | List memories (`/api/memory/list`) | ✅ | v0.17.0 |
 | Search memories (`/api/memory/search`) | ✅ | v0.17.0 |
 | Delete memory (`/api/memory/delete`) | ✅ | v0.17.0 |
-| Export memory (`/api/memory/export`) | 🚧 | needs SAF intent-launcher for an authenticated download; deferred |
+| Export memory (`/api/memory/export`) | ✅ | v0.22.0 — "Export…" button uses SAF CreateDocument + bearer-auth GET, writes to user-chosen URI |
 
 ### 5h. Schedules
 

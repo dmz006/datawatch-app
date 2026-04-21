@@ -47,6 +47,8 @@ public fun BehaviourPreferencesCard() {
     var recentWindow by remember { mutableStateOf("") }
     var maxConcurrent by remember { mutableStateOf("") }
     var scrollback by remember { mutableStateOf("") }
+    var inputMode by remember { mutableStateOf("") }
+    var outputMode by remember { mutableStateOf("") }
     var banner by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -64,6 +66,8 @@ public fun BehaviourPreferencesCard() {
                 recentWindow = rawMap.intField("recent_window_minutes")?.toString().orEmpty()
                 maxConcurrent = rawMap.intField("max_concurrent")?.toString().orEmpty()
                 scrollback = rawMap.intField("scrollback_lines")?.toString().orEmpty()
+                inputMode = rawMap.stringField("input_mode").orEmpty()
+                outputMode = rawMap.stringField("output_mode").orEmpty()
             },
             onFailure = { banner = "Couldn't load config — ${it.message ?: it::class.simpleName}" },
         )
@@ -111,6 +115,18 @@ public fun BehaviourPreferencesCard() {
             value = scrollback,
             onChange = { scrollback = it },
         )
+        ModeDropdown(
+            label = "Input mode",
+            value = inputMode,
+            options = listOf("tmux", "channel", "none"),
+            onChange = { inputMode = it },
+        )
+        ModeDropdown(
+            label = "Output mode",
+            value = outputMode,
+            options = listOf("tmux", "channel", "both", "none"),
+            onChange = { outputMode = it },
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -137,6 +153,18 @@ public fun BehaviourPreferencesCard() {
                                             put(k, intOrKeep(maxConcurrent, v))
                                         "scrollback_lines" ->
                                             put(k, intOrKeep(scrollback, v))
+                                        "input_mode" ->
+                                            if (inputMode.isNotBlank()) {
+                                                put(k, JsonPrimitive(inputMode))
+                                            } else {
+                                                put(k, v)
+                                            }
+                                        "output_mode" ->
+                                            if (outputMode.isNotBlank()) {
+                                                put(k, JsonPrimitive(outputMode))
+                                            } else {
+                                                put(k, v)
+                                            }
                                         else -> put(k, v)
                                     }
                                 }
@@ -156,6 +184,12 @@ public fun BehaviourPreferencesCard() {
                                         put("scrollback_lines", JsonPrimitive(it))
                                     }
                                 }
+                                if (!base.containsKey("input_mode") && inputMode.isNotBlank()) {
+                                    put("input_mode", JsonPrimitive(inputMode))
+                                }
+                                if (!base.containsKey("output_mode") && outputMode.isNotBlank()) {
+                                    put("output_mode", JsonPrimitive(outputMode))
+                                }
                             }
                         ServiceLocator.transportFor(profile).writeConfig(merged).fold(
                             onSuccess = { banner = "Saved." },
@@ -166,6 +200,52 @@ public fun BehaviourPreferencesCard() {
                     }
                 },
             ) { Text("Save") }
+        }
+    }
+}
+
+@Composable
+private fun ModeDropdown(
+    label: String,
+    value: String,
+    options: List<String>,
+    onChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        androidx.compose.foundation.layout.Box {
+            androidx.compose.material3.OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.width(140.dp),
+            ) {
+                Text(
+                    value.ifBlank { "default" },
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            androidx.compose.material3.DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { opt ->
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(opt) },
+                        onClick = {
+                            onChange(opt)
+                            expanded = false
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -197,6 +277,9 @@ private fun IntField(
 
 private fun JsonObject.intField(key: String): Int? =
     (get(key) as? JsonPrimitive)?.content?.toIntOrNull()
+
+private fun JsonObject.stringField(key: String): String? =
+    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
 private fun intOrKeep(text: String, fallback: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement {
     val n = text.toIntOrNull()

@@ -264,6 +264,14 @@ public interface TransportClient {
     public suspend fun memoryDelete(id: Long): Result<Unit>
 
     /**
+     * GET /api/memory/export — dump of every memory as a single
+     * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes
+     * so the UI can hand them off to a SAF `ACTION_CREATE_DOCUMENT`
+     * writer.
+     */
+    public suspend fun memoryExport(): Result<ByteArray>
+
+    /**
      * GET /api/channels — list configured messaging channels with
      * their enabled state. Shape is per-channel `{id, type,
      * enabled, ...}` so the UI lists them with a toggle.

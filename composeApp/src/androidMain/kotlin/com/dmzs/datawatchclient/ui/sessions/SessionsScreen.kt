@@ -1123,12 +1123,21 @@ private fun QuickCommandsSheet(
             androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
             ) {
+                // PWA's cardSendCmd dispatches ESC / Ctrl-b as WS
+                // `command` frames with `sendkey` payloads. Mobile
+                // doesn't subscribe to a general-purpose WS command
+                // channel from the list surface; the parent
+                // /api/sessions/reply endpoint accepts raw control
+                // bytes so we send the ASCII literal and the TUI
+                // receives it the same way. ESC = 0x1B, Ctrl-b = 0x02.
                 listOf(
                     "yes" to "approve",
                     "no" to "reject",
                     "continue" to "continue",
                     "skip" to "skip",
                     "/exit" to "quit",
+                    "\u001B" to "ESC",
+                    "\u0002" to "Ctrl-b",
                 ).forEach { (value, label) ->
                     FilterChip(
                         selected = false,

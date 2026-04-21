@@ -13,10 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -95,6 +99,30 @@ public fun MemoryCard() {
         refreshList("")
     }
 
+    // SAF-based export: user picks a destination via the system
+    // file-creator, we GET /api/memory/export and write the bytes
+    // through the returned ContentResolver URI. Handles the
+    // "download behind bearer token" problem that ACTION_VIEW
+    // can't solve (no way to attach headers to an intent-launched
+    // browser download).
+    val context = LocalContext.current
+    var pendingBytes by remember { mutableStateOf<ByteArray?>(null) }
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            val bytes = pendingBytes ?: return@rememberLauncherForActivityResult
+            pendingBytes = null
+            if (uri != null) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                }.fold(
+                    onSuccess = { banner = "Exported ${bytes.size} bytes." },
+                    onFailure = { banner = "Export write failed — ${it.message}" },
+                )
+            }
+        }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
@@ -119,6 +147,32 @@ public fun MemoryCard() {
         }
         stats?.let { s ->
             StatsGrid(s)
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val profile = resolveProfile() ?: return@launch
+                        ServiceLocator.transportFor(profile).memoryExport().fold(
+                            onSuccess = { bytes ->
+                                pendingBytes = bytes
+                                val ts =
+                                    kotlinx.datetime.Clock.System.now().toString()
+                                        .substringBefore('.')
+                                        .replace(':', '-')
+                                exportLauncher.launch("datawatch-memory-$ts.json")
+                            },
+                            onFailure = {
+                                banner = "Export failed — ${it.message ?: it::class.simpleName}"
+                            },
+                        )
+                    }
+                },
+            ) { Text("Export…", style = MaterialTheme.typography.labelMedium) }
         }
 
         OutlinedTextField(
