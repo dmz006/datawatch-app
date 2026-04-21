@@ -234,6 +234,7 @@ public fun SettingsScreen(
                             kind = "cluster",
                             title = "Cluster profiles",
                         )
+                        com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                     }
                     SettingsTab.Comms -> {
@@ -293,6 +294,7 @@ public fun SettingsScreen(
                     }
                     SettingsTab.About -> {
                         AboutCard(activeProfile = activeProfile)
+                        com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                         com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }

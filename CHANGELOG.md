@@ -8,6 +8,27 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-04-21 (Sprint Y — About API links + Notifications card + cleanup)
+
+### Added
+
+- **API links card** under Settings → About. Four clickable rows
+  open the active server's Swagger UI, OpenAPI YAML, MCP tools
+  catalogue, and architecture diagrams in the system browser.
+  Mirrors PWA `api` section.
+- **Notifications card** under Settings → General. Shows whether
+  the app currently holds POST_NOTIFICATIONS permission and
+  opens the system app-notification settings for adjustments.
+  Per-channel importance + sound stays in system UI (Android
+  native pattern). Mirrors PWA `gc_notifs`.
+
+### Removed
+
+- Dead `BehaviourPreferencesCard.kt` — superseded by
+  `ConfigFieldsPanel(Session)` in v0.26.0. Was writing to
+  invented keys never honoured server-side; now fully out of
+  tree.
+
 ## [0.28.0] — 2026-04-21 (Sprint X — Project + Cluster profile CRUD + Proxy Resilience)
 
 ### Added
