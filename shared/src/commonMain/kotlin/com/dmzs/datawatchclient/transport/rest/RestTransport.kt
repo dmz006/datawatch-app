@@ -47,6 +47,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -112,6 +113,7 @@ public class RestTransport(
         task: String,
         serverHint: String?,
         workingDir: String?,
+        profileName: String?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
@@ -123,6 +125,7 @@ public class RestTransport(
                             task = task,
                             serverHint = serverHint,
                             workingDir = workingDir,
+                            profile = profileName,
                         ),
                     )
                 }.body()
@@ -430,6 +433,28 @@ public class RestTransport(
                 }.body()
             arr.mapNotNull { el ->
                 (el as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            }
+        }
+
+    override suspend fun listProfiles(): Result<Map<String, kotlinx.serialization.json.JsonObject>> =
+        request {
+            val raw: kotlinx.serialization.json.JsonObject =
+                client.get("${profile.baseUrl}/api/profiles") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            raw.mapNotNull { (name, el) ->
+                (el as? kotlinx.serialization.json.JsonObject)?.let { name to it }
+            }.toMap()
+        }
+
+    override suspend fun writeConfig(
+        raw: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(raw)
             }
         }
 

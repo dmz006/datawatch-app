@@ -8,6 +8,33 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-04-20 (Sprint C — /api/profiles picker + voice-to-new)
+
+### Added
+
+- **Profile picker on New Session form.** Pulls `GET /api/profiles`
+  for the selected server and renders a dropdown above the Working
+  Directory field. "Default (no profile)" is the top option; each
+  profile shows name + backend. Selection is passed as `profile`
+  on `POST /api/sessions/start`, matching the PWA's populateProfile
+  dropdown.
+- **Voice-to-new-session.** When voice transcription in an existing
+  session's composer starts with `"new:"` or `"new "` (case-
+  insensitive), the client now posts `/api/sessions/start` with the
+  remaining text instead of inserting it into the composer. Toast
+  confirms the new session id; on failure, the transcript falls
+  back to the composer so the user doesn't lose the dictation.
+
+### Transport
+
+- New `TransportClient.listProfiles()` returning the raw
+  `Map<String, JsonObject>` — callers extract the `backend` field
+  for display and pass the profile name to startSession.
+- New `TransportClient.writeConfig(raw)` — PUT /api/config with the
+  full document. Unused by UI yet; lands for the per-backend
+  config editor in a follow-up sprint.
+- `startSession` gains an optional `profileName` parameter.
+
 ## [0.14.3] — 2026-04-20 (Sprint B — session detail + terminal polish)
 
 ### Fixed

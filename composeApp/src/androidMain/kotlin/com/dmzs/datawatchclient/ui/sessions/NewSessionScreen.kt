@@ -111,6 +111,32 @@ public fun NewSessionScreen(
         }
     }
 
+    // Server-defined F10 profiles (agent profiles). Keyed by name; each
+    // value is the profile body — we only need the backend field for
+    // display. Profile picker is optional ("Default (no profile)" on top).
+    var serverProfiles by remember {
+        mutableStateOf<List<Pair<String, String>>>(emptyList())
+    }
+    var pickedServerProfile by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedProfileId) {
+        serverProfiles = emptyList()
+        pickedServerProfile = null
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listProfiles().onSuccess { map ->
+            serverProfiles =
+                map.entries
+                    .sortedBy { it.key }
+                    .map { (name, body) ->
+                        val backend =
+                            (
+                                body["backend"]
+                                    as? kotlinx.serialization.json.JsonPrimitive
+                            )?.content ?: "?"
+                        name to backend
+                    }
+        }
+    }
+
     // Default-select active profile (or the first enabled one) on first composition.
     LaunchedEffect(profiles, activeId) {
         if (selectedProfileId == null) {
@@ -212,6 +238,24 @@ public fun NewSessionScreen(
                 )
             }
 
+            // Profile picker — maps to /api/profiles. Optional; users
+            // can start "Default (no profile)" and the parent picks its
+            // own backend/profile. When set, profile name is sent on
+            // POST /api/sessions/start.
+            if (serverProfiles.isNotEmpty()) {
+                Text(
+                    "Profile",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                ProfilePickerDropdown(
+                    profiles = serverProfiles,
+                    selected = pickedServerProfile,
+                    onSelect = { pickedServerProfile = it },
+                )
+            }
+
             // Model picker — only visible for ollama / openwebui. The
             // parent's /api/sessions/start doesn't accept a `model` field
             // (PWA sends `backend` + `profile` only); model selection is
@@ -300,6 +344,7 @@ public fun NewSessionScreen(
                                     .startSession(
                                         task = task.trim(),
                                         workingDir = workingDir.trim().ifBlank { null },
+                                        profileName = pickedServerProfile,
                                     )
                                     .fold(
                                         onSuccess = { sessionId ->
@@ -378,6 +423,63 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
                     },
                     onClick = {
                         onPick(cmd.command)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfilePickerDropdown(
+    profiles: List<Pair<String, String>>,
+    selected: String?,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val display =
+        selected ?: "Default (no profile)"
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = display,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Default (no profile)") },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
+            )
+            profiles.forEach { (name, backend) ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(name)
+                            Text(
+                                backend,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelect(name)
                         expanded = false
                     },
                 )

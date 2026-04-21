@@ -40,6 +40,7 @@ public interface TransportClient {
         task: String,
         serverHint: String? = null,
         workingDir: String? = null,
+        profileName: String? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */
@@ -192,6 +193,25 @@ public interface TransportClient {
      * so callers can grey out the picker without special-casing.
      */
     public suspend fun listModels(backend: String): Result<List<String>>
+
+    /**
+     * GET /api/profiles — map of profile-name → profile object, each
+     * carrying a `backend` field plus per-backend configuration.
+     * Populates the profile picker on the New Session form so users
+     * can pick an F10 ephemeral-agent profile at session start.
+     */
+    public suspend fun listProfiles(): Result<Map<String, kotlinx.serialization.json.JsonObject>>
+
+    /**
+     * PUT /api/config — write the full config document. Mobile callers
+     * must fetch first (via [fetchConfig]), modify the relevant block
+     * in memory, and send the whole document back; the parent replaces
+     * the file wholesale. Guarded per ADR-0019: mobile only offers
+     * structured field edits, never raw YAML.
+     */
+    public suspend fun writeConfig(
+        raw: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit>
 
     /**
      * GET /api/output?id=<sessionId>&n=<lines> — last N lines of a session's

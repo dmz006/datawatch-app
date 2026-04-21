@@ -1077,7 +1077,40 @@ private fun ReplyComposer(
                                     sessionId = sessionId,
                                     autoExec = false,
                                 ).fold(
-                                    onSuccess = { onTranscribed(it.transcript) },
+                                    onSuccess = { result ->
+                                        val text = result.transcript.trim()
+                                        // Voice-to-new-session: detect "new:" or "new "
+                                        // prefix (case-insensitive) and route through
+                                        // startSession instead of putting it in the
+                                        // reply composer. Matches PWA behaviour for
+                                        // voice commands from inside an existing
+                                        // session.
+                                        val newPrefix =
+                                            Regex("^new[:\\s]+(.+)", RegexOption.IGNORE_CASE)
+                                                .matchEntire(text)?.groupValues?.get(1)?.trim()
+                                        if (!newPrefix.isNullOrEmpty()) {
+                                            com.dmzs.datawatchclient.di.ServiceLocator
+                                                .transportFor(profile)
+                                                .startSession(task = newPrefix)
+                                                .fold(
+                                                    onSuccess = {
+                                                        android.widget.Toast.makeText(
+                                                            context,
+                                                            "Started new session: $newPrefix",
+                                                            android.widget.Toast.LENGTH_SHORT,
+                                                        ).show()
+                                                    },
+                                                    onFailure = {
+                                                        // Fall back to normal composer
+                                                        // insert so the user doesn't
+                                                        // lose their dictation.
+                                                        onTranscribed(text)
+                                                    },
+                                                )
+                                        } else {
+                                            onTranscribed(text)
+                                        }
+                                    },
                                     onFailure = { /* non-fatal — banner would go here */ },
                                 )
                         }
