@@ -38,6 +38,11 @@ kotlin {
                 implementation(libs.firebase.messaging)
                 implementation(libs.androidx.biometric)
                 implementation(libs.kotlinx.coroutines.android)
+                // Wearable Data Layer — phone publishes session-count
+                // DataItems that the paired Wear companion subscribes to
+                // via its own DataClient. Watch never stores the bearer
+                // token; phone holds auth.
+                implementation(libs.play.services.wearable)
                 // Material Components for Android — provides the XML Theme.Material3.*
                 // parent styles referenced in res/values/themes.xml.
                 implementation(libs.material.components)

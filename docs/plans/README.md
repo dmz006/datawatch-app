@@ -17,6 +17,23 @@ when work warrants formal planning (3+ files or non-trivial architecture).
 | B5 | Stats screen is minimal compared to PWA | 2026-04-19 | Open | `StatsScreen` shows CPU / Memory / Disk / GPU bars + session counts + uptime (`/api/stats`, 5 s poll). PWA exposes more (eBPF per-process network, disk-partition breakdowns, GPU detail). Extended metrics are out-of-scope per ADR-0019 and are view-only on the parity-plan (v1.3). This bug tracks the **UX perception** — title, density, legend — not the server data contract. Decide: is this a bug (fix layout/density) or a BL (re-scope)? Needs user triage. |
 | B6 | Push notifications not confirmed working | 2026-04-19 | Open | `PushRegistrar` fires `POST /api/devices/register` on first successful connection (FCM token preferred, ntfy fallback). Diagnostic steps: (1) Settings → Diagnostics → last push registration result; (2) `adb logcat PushRegistrar:V NtfyFallbackService:V`; (3) server-side `GET /api/devices` to confirm the phone's registration; (4) trigger a test from the server. No code change made until a failure mode is isolated. |
 | B7 | CI ktlintCheck fails with "KtLint failed to parse file: FederationDtos.kt" | 2026-04-20 | Open | Pre-existing on `main` since at least the `ca2bd90` commit — every recent CI run shows the same failure. File content is plain Kotlin with no BOM / weird chars (verified via `od -c`). Looks like a ktlint / Kotlin version skew triggered by the `Map<String, List<SessionDto>>` default-valued field. AGENT.md says "ktlint flipped from warnings-only to failure in Sprint 5" but the setting already flipped earlier. Fix options: (a) bump ktlint-gradle, (b) revert to warnings-only until Sprint-5-equivalent hardening, (c) restructure FederationDtos.kt to sidestep the parser bug. Deferred — blocks green CI but is orthogonal to v0.11. |
+- sessions list does not have datawatch eye in background like PWA
+- settings tab issues
+-- monitor tab issues
+--- no system statistics with real time details streaming
+--- session statistics and ebpf status are missing (with wheel and graphs for all)
+--- no sessions list with details about sessions (active) and link to sessions page with "all" visible
+--- no chat channels configured and status
+--- no llm backend configured and status
+--- no list of chat not enabled
+--- schedules - should that be scheduled events? why is there a refresh? all elements should regularly be syncing and keeping up to date
+--- scheduled events should have pagination, it's too long and takes a lot of space, plus pwa has pagination and it should have matched
+--- not sure why network interfaces is there
+--- update and restart should be on the about tab
+--- kill orphans should be  after system statistics and before memory browser
+-- comms tab
+--- messaging channels should be communicatoin configuration
+--- 
 
 ## Planned / In Progress
 

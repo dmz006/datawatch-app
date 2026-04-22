@@ -11,11 +11,18 @@ val appVersionCode: Int =
     providers.gradleProperty("DATAWATCH_APP_VERSION_CODE").get().toInt()
 
 android {
+    // Namespace stays distinct so Kotlin packages don't collide with
+    // composeApp's. The applicationId, however, MUST match the paired
+    // phone app for the Wearable Data Layer to treat us as the same
+    // app pair — DataClient.putDataItem uri ownership is (pkg, cert).
+    // With mismatched pkgs, phone-published DataItems never reach the
+    // watch subscriber. This was the root cause of the "Pair phone in
+    // Settings" placeholder never flipping.
     namespace = "com.dmzs.datawatchclient.wear"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.dmzs.datawatchclient.wear"
+        applicationId = "com.dmzs.datawatchclient"
         minSdk = 30
         targetSdk = 35
         versionCode = appVersionCode
@@ -27,6 +34,12 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+        }
+        debug {
+            // Mirror composeApp's `.debug` suffix so side-loaded debug
+            // builds on phone + watch share the same applicationId
+            // (`com.dmzs.datawatchclient.debug`).
+            applicationIdSuffix = ".debug"
         }
     }
     compileOptions {
