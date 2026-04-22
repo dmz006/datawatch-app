@@ -93,6 +93,20 @@ ktlint {
     ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
 }
 
+// B7: exclude SQLDelight-generated sources from ktlint's scan. The
+// plugin auto-includes `build/generated/**` via the Kotlin source set
+// which ktlint-gradle then recursively walks — the generated code has
+// 2-space indent that ktlint's 4-space rule can't parse, producing
+// hundreds of false-positives that mask real lint issues. `exclude`
+// on the task (SourceTask) filters files before they reach the rule
+// set; `filter {}` in the extension only affects console output.
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
+    exclude { it.file.absolutePath.contains("${file("build").absolutePath}/generated/") }
+}
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask>().configureEach {
+    exclude { it.file.absolutePath.contains("${file("build").absolutePath}/generated/") }
+}
+
 sqldelight {
     databases {
         create("DatawatchDb") {
