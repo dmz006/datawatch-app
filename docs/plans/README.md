@@ -116,6 +116,9 @@ or retracted rather than scheduled.
 | B30 | Wear + Auto multi-server picker | v0.33.25 | Auto gets `AutoServerPickerScreen` reachable from the Monitor ActionStrip; Wear gets a dedicated "Server" page that sends a `/datawatch/setActive` MessageClient message the phone's `WearSyncService` consumes. `ActiveServerStore` moved from `composeApp` to `shared/androidMain` so both composeApp and :auto can bind to the same prefs file. |
 | B32 | Wear + Auto monitoring tab | v0.33.25 | Auto's root screen is now `AutoMonitorScreen` (CPU load, memory, disk, VRAM, sessions, uptime). Wear's default page is Monitor, reading a new `/datawatch/stats` DataItem the phone publishes every 15 s. User requested Monitor be the default landing page. |
 | B33 | Wear + Auto About screen | v0.33.25 | Auto adds `AutoAboutScreen` with Version + build + surface. Wear adds an About page (4th in pager) reading shared `Version.VERSION`. Both styled with datawatch dark palette + teal accent, not stock Material defaults. |
+| widgets-monitor | Home-screen Monitor widget + tap-to-cycle servers | v0.34.0 | New `MonitorWidget` renders CPU / memory / session counts from the active profile; both Sessions and Monitor widgets share `WidgetActions.cycleActiveServer` so tapping the profile label advances `ActiveServerStore` to the next enabled profile and refreshes both widget types in lockstep. |
+| tile-sessions-wired | Wear Sessions tile reads DataLayer | v0.34.0 | `SessionsTileService` was still the Phase-1 placeholder rendering zeros. Now reads `/datawatch/counts` from the phone's `WearSyncService` and uses the datawatch palette (teal / amber) instead of legacy purple. Tap → launches Wear companion. |
+| tile-monitor | Wear Monitor tile | v0.34.0 | New `MonitorTileService` reading `/datawatch/stats` (CPU load / cores, memory %, session summary, uptime). Colour thresholds mirror the PWA Monitor card. |
 
 ### Backlog (already shipped)
 

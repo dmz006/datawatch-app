@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">datawatch</string>
+    <string name="tile_sessions_label">datawatch Sessions</string>
+    <string name="tile_monitor_label">datawatch Monitor</string>
 </resources>

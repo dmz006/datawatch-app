@@ -4,4 +4,7 @@
     <string name="app_name">datawatch</string>
     <string name="tile_voice_label">Datawatch voice</string>
     <string name="widget_description">Running / waiting / total session counts at a glance.</string>
+    <string name="widget_monitor_description">CPU load, memory and session counts from the active datawatch server.</string>
+    <string name="widget_monitor_label">datawatch Monitor</string>
+    <string name="widget_sessions_label">datawatch Sessions</string>
 </resources>

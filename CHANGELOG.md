@@ -8,6 +8,60 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-04-22 (glance surfaces — widgets + Wear tiles + multi-server)
+
+Minor bump per SemVer: new user-facing surfaces (second home-screen
+widget, second Wear tile) plus multi-server tap-to-cycle on both
+widgets. Still pre-1.0; test track.
+
+### Added
+
+- **Home-screen Monitor widget.** New `MonitorWidget` +
+  `widget_monitor.xml` — shows CPU load (vs cores), memory used
+  over total, and a one-line session count for the active server.
+  Uses `ProgressBar` for inline bars with the existing datawatch
+  widget palette. Refreshes on the 30 min `AppWidgetManager`
+  cadence; tap opens MainActivity; tap the server-name label
+  cycles to the next enabled profile.
+- **`SessionsWidget` tap-to-cycle.** Same affordance as
+  MonitorWidget — tap the profile label → advance
+  `ActiveServerStore` to the next enabled profile. Both widgets
+  share `WidgetActions.cycleActiveServer` and refresh each other
+  when one cycles, so any Monitor + Sessions pair on the same
+  home screen stays in sync.
+- **Wear Monitor tile (`MonitorTileService`).** Reads
+  `/datawatch/stats` DataItem published by the phone's
+  `WearSyncService`. Renders CPU (load/cores), memory pct,
+  sessions total + waiting, uptime. Colour thresholds mirror the
+  Monitor card (warn ≥70 %, error ≥90 %). Tap → opens the Wear
+  companion's Server picker / Sessions pages.
+- **Wear Sessions tile wired up (real data).** The pre-existing
+  `SessionsTileService` was still the Phase-1 placeholder
+  rendering zeros — now reads `/datawatch/counts` from the Data
+  Layer. Restyled to the datawatch palette (teal accent / amber
+  warning) instead of the legacy purple.
+- **`docs/plans/2026-04-22-wear-auto-roadmap.md`.** New planning
+  doc enumerating every reasonable Wear + Auto follow-on: 10
+  Wear items (complications, ongoing notifications, quick-reply
+  buttons, voice, pane-capture image, watch-face complications,
+  rotary input, waiting-list tile, etc), 10 Auto items (voice
+  reply, TTS incoming, notification deep-link, multi-server
+  overview, saved commands in ActionStrip, map template, etc) +
+  5 phone widget / quick-tile extensions. Ordered by impact × cost.
+
+### Changed
+
+- **Wear and Auto palette documentation.** Added a feedback
+  memory so future Wear + Auto work stays on-brand (dark surface
+  + teal / amber accents); stock Material is explicitly out.
+
+### Notes
+
+- `com.dmzs.datawatchclient.dev.debug` is an old sideload from
+  before the package-id cleanup; the current debug package is
+  `com.dmzs.datawatchclient.debug`. Uninstall the stale one if
+  it shows up alongside the new build.
+
 ## [0.33.25] — 2026-04-22 (Monitor cards + Wear/Auto feature parity B30/B32/B33)
 
 ### Fixed

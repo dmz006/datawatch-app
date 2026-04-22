@@ -37,6 +37,17 @@ public class SessionsWidget : AppWidgetProvider() {
         scope.launch { refresh(context) }
     }
 
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == WidgetActions.ACTION_CYCLE_SERVER) {
+            scope.launch {
+                WidgetActions.cycleActiveServer()
+                refresh(context)
+                MonitorWidget.requestUpdate(context)
+            }
+        }
+    }
+
     private fun renderLoadingState(
         context: Context,
         manager: AppWidgetManager,
@@ -97,18 +108,25 @@ public class SessionsWidget : AppWidgetProvider() {
         context: Context,
         views: RemoteViews,
     ) {
-        val intent =
+        val openApp =
             Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-        val pi =
+        val openPi =
             PendingIntent.getActivity(
                 context,
                 0,
-                intent,
+                openApp,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-        views.setOnClickPendingIntent(R.id.widget_root, pi)
+        views.setOnClickPendingIntent(R.id.widget_root, openPi)
+        // Tap the server-name label → cycle active profile. Mirrors
+        // [MonitorWidget] so a multi-server user can switch from
+        // either widget.
+        views.setOnClickPendingIntent(
+            R.id.widget_profile,
+            WidgetActions.cyclePendingIntent(context, SessionsWidget::class.java),
+        )
     }
 
     private data class Counts(
