@@ -2,6 +2,8 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.sp
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -293,6 +295,20 @@ public fun SessionDetailScreen(
                     text = { Text("channel") },
                 )
             }
+            // v0.33.19 — PWA-style `.session-info-bar` row matching
+            // `app.js:1672-1680`: backend chip, mode chip, state pill
+            // (clickable to override), Stop / Restart / Delete action,
+            // Timeline button. Mirrors PWA's nicely-presented badges.
+            SessionInfoBar(
+                backend = state.session?.backend,
+                sessionMode = state.messagingBackend ?: "tmux",
+                state = state.session?.state,
+                reachable = state.reachable,
+                onStateClick = { stateMenuOpen = true },
+                onStop = { killConfirm = true },
+                onRestart = { /* parent-level reschedule not wired here yet */ },
+                onTimeline = { timelineOpen = true },
+            )
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -494,6 +510,151 @@ public fun SessionDetailScreen(
  * Kept intentionally terse — the terminal carries the main narrative; this
  * is a status strip.
  */
+/**
+ * Byte-for-byte mirror of PWA's `.session-info-bar > .meta` (app.js:1672-1680):
+ * backend chip, mode chip, clickable state pill, primary action button
+ * (Stop when active, Restart when done), and a Timeline button. Sits below
+ * the tmux/channel TabRow, above any banners + the terminal.
+ */
+@Composable
+private fun SessionInfoBar(
+    backend: String?,
+    sessionMode: String,
+    state: SessionState?,
+    reachable: Boolean?,
+    onStateClick: () -> Unit,
+    onStop: () -> Unit,
+    onRestart: () -> Unit,
+    onTimeline: () -> Unit,
+) {
+    val isActive =
+        state == SessionState.Running || state == SessionState.Waiting ||
+            state == SessionState.RateLimited
+    val isDone =
+        state == SessionState.Completed || state == SessionState.Killed ||
+            state == SessionState.Error
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+        ) {
+            // Connection dot — green / red / grey per profile reachability.
+            Box(
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .background(
+                            color =
+                                when (reachable) {
+                                    true -> Color(0xFF22C55E) // green-500
+                                    false -> Color(0xFFEF4444) // red-500
+                                    null -> Color(0xFF94A3B8) // slate-400
+                                },
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                        ),
+            )
+            if (!backend.isNullOrBlank()) {
+                InfoBadge(text = backend.lowercase(), color = MaterialTheme.colorScheme.primary)
+            }
+            InfoBadge(text = sessionMode.lowercase(), color = MaterialTheme.colorScheme.secondary)
+            state?.let {
+                Box(
+                    modifier =
+                        Modifier
+                            .clickable(onClick = onStateClick)
+                            .background(
+                                color = stateBgColor(it),
+                                shape = RoundedCornerShape(10.dp),
+                            )
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        stateLabel(it),
+                        fontSize = 10.sp,
+                        color = stateFgColor(it),
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+            }
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+            if (isActive) {
+                TextButton(onClick = onStop, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                    Text(
+                        "■ Stop",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else if (isDone) {
+                TextButton(onClick = onRestart, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                    Text("↻ Restart", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            TextButton(onClick = onTimeline, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                Text("⏱ Timeline", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoBadge(text: String, color: Color) {
+    Box(
+        modifier =
+            Modifier
+                .background(
+                    color = color.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(10.dp),
+                )
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text,
+            fontSize = 10.sp,
+            color = color,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            letterSpacing = 0.3.sp,
+        )
+    }
+}
+
+@Composable
+private fun stateBgColor(s: SessionState): Color {
+    val dw = LocalDatawatchColors.current
+    return when (s) {
+        SessionState.Running -> dw.success.copy(alpha = 0.15f)
+        SessionState.Waiting -> dw.waiting.copy(alpha = 0.15f)
+        SessionState.RateLimited -> dw.warning.copy(alpha = 0.15f)
+        SessionState.Error -> MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
+    }
+}
+
+@Composable
+private fun stateFgColor(s: SessionState): Color {
+    val dw = LocalDatawatchColors.current
+    return when (s) {
+        SessionState.Running -> dw.success
+        SessionState.Waiting -> dw.waiting
+        SessionState.RateLimited -> dw.warning
+        SessionState.Error -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}
+
+private fun stateLabel(s: SessionState): String =
+    when (s) {
+        SessionState.Running -> "running"
+        SessionState.Waiting -> "waiting_input"
+        SessionState.RateLimited -> "rate_limited"
+        SessionState.Completed -> "complete"
+        SessionState.Killed -> "killed"
+        SessionState.Error -> "failed"
+        SessionState.New -> "new"
+    }
+
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
     val latestPrompt =

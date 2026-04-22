@@ -119,7 +119,17 @@ public class WebSocketTransport(
                                         println("WsTransport: unparseable frame: ${text.take(120)}")
                                         continue
                                     }
+                                    // v0.33.19: trace every inbound frame
+                                    // type + count mapped → events, so we
+                                    // can see when pane_captures arrive but
+                                    // get filtered by EventMapper's
+                                    // session-id check (B27 live-update
+                                    // investigation).
                                     val events = dto.toDomainEvents(sessionId)
+                                    println(
+                                        "WsTransport: rx type=${dto.type} " +
+                                            "mapped=${events.size} bytes=${text.length}",
+                                    )
                                     if (events.isNotEmpty()) {
                                         for (ev in events) producer.trySend(ev)
                                     }

@@ -8,9 +8,10 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -28,19 +29,22 @@ public class SessionEventRepository(
     }
 
     /**
-     * In-memory latest [SessionEvent.PaneCapture] per session id. Pane captures
-     * are not persisted to SQLite (whole-screen snapshots, not event-log rows),
-     * but they **must** reach the live terminal view — so we keep the newest
-     * capture here and merge it into [observe]'s flow. Previously the insert
-     * path silently dropped captures and TerminalView fell back to the legacy
-     * `raw_output` renderer, which parent `dmz006/datawatch` killed off in
-     * commit `0393e262` (garbles TUIs).
+     * In-memory bus for live pane captures. Previously a per-sessionId
+     * `MutableMap<String, MutableStateFlow<PaneCapture?>>` — fine in theory,
+     * but `insert()` stored under the FULL session id emitted by the server
+     * in the WS frame (e.g. `"17db-abcdef-full-uuid"`), while callers pass
+     * the SHORT id they navigated with (`"17db"`). Different map keys →
+     * observer never sees the updates. Confirmed by v0.33.19 WS trace:
+     * pane_capture arrives every ~200ms but the terminal stays frozen on
+     * the initial capture.
+     *
+     * Single SharedFlow carries every capture; `observe()` filters by
+     * prefix match (same contract EventMapper uses for frame filtering).
+     * replay = 1 so a late subscriber gets the latest capture.
      */
-    private val liveCaptures: MutableMap<String, MutableStateFlow<SessionEvent.PaneCapture?>> =
-        mutableMapOf()
-
-    private fun captureFlowFor(sessionId: String): MutableStateFlow<SessionEvent.PaneCapture?> =
-        liveCaptures.getOrPut(sessionId) { MutableStateFlow(null) }
+    private val paneCaptureBus:
+        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.PaneCapture> =
+        kotlinx.coroutines.flow.MutableSharedFlow(replay = 1, extraBufferCapacity = 32)
 
     public fun observe(
         sessionId: String,
@@ -51,7 +55,15 @@ public class SessionEventRepository(
                 .asFlow()
                 .mapToList(ioDispatcher)
                 .map { rows -> rows.map { it.toDomain() } }
-        val liveFlow = captureFlowFor(sessionId)
+        val liveFlow: Flow<SessionEvent.PaneCapture?> =
+            paneCaptureBus
+                .filter { pc ->
+                    // Accept a capture for this observer when the IDs match
+                    // either direction — short vs full handled symmetrically.
+                    pc.sessionId.contains(sessionId) || sessionId.contains(pc.sessionId)
+                }
+                .map { it as SessionEvent.PaneCapture? }
+                .onStart { emit(null) }
         return combine(dbFlow, liveFlow) { dbEvents, liveCapture ->
             if (liveCapture == null) dbEvents else dbEvents + liveCapture
         }
@@ -169,13 +181,11 @@ public class SessionEventRepository(
                         message = null,
                     )
                 is SessionEvent.PaneCapture ->
-                    // Pane captures are live-display-only — whole-screen snapshots,
-                    // not event-log rows. Keep the newest in the in-memory live bus
-                    // so [observe] merges it into the emitted list; TerminalView
-                    // keys off `hasPaneCapture` to pick the pane-capture render path
-                    // instead of the legacy raw_output fallback (parent killed that
-                    // path in `0393e262` as broken for TUIs).
-                    captureFlowFor(event.sessionId).value = event
+                    // Pane captures stream through a single SharedFlow bus
+                    // (paneCaptureBus) so observers can match on full-or-short
+                    // id prefix — keyed-map was the bug where full-id server
+                    // sids didn't reach short-id mobile observers.
+                    paneCaptureBus.tryEmit(event)
             }
             // Prune oldest after each insert so the ring buffer stays bounded.
             db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)

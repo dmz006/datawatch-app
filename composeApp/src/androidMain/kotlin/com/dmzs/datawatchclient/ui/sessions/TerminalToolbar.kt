@@ -205,7 +205,7 @@ private fun Separator() {
 // PWA `changeTermFontSize` clamps [5, 20]; mobile keeps the same range so
 // the saved size round-trips through localStorage == SharedPreferences.
 // Default matches host.html's fontSize: 11 (mobile-friendly floor vs PWA's 9).
-private const val DEFAULT_TERM_FONT_PX: Int = 11
+private const val DEFAULT_TERM_FONT_PX: Int = 9
 private const val MIN_TERM_FONT_PX: Int = 5
 private const val MAX_TERM_FONT_PX: Int = 20
 private const val FONT_STEP_PX: Int = 1
