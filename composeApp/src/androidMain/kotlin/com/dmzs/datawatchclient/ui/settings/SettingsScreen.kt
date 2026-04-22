@@ -315,9 +315,12 @@ public fun SettingsScreen(
                         // Matches PWA `data-group="llm"`: LLM
                         // Configuration → lc_* (Memory, LlmRtk) →
                         // Detection Filters → Saved Commands →
-                        // Output Filters. The active-LLM picker used to
-                        // live here as a radio list but moved to General
-                        // (S8) — LLM tab is per-backend config only.
+                        // Output Filters.
+                        //
+                        // v0.33.13 (B22): LlmConfigCard at the top
+                        // shows each registered backend + "(default)"
+                        // badge, matching PWA's first card.
+                        com.dmzs.datawatchclient.ui.channels.LlmConfigCard()
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                         )
@@ -644,6 +647,12 @@ private fun CommsCard() {
 private fun AboutCard(activeProfile: ServerProfile?) {
     var serverInfo by remember(activeProfile?.id) { mutableStateOf<ServerInfo?>(null) }
     var serverInfoError by remember(activeProfile?.id) { mutableStateOf<String?>(null) }
+    // v0.33.13 (B25) — compact sessions-details footer on About.
+    // Shows total / running / waiting + uptime sourced from
+    // `/api/stats`; single-shot fetch tied to the active profile.
+    var stats by remember(activeProfile?.id) {
+        mutableStateOf<com.dmzs.datawatchclient.transport.dto.StatsDto?>(null)
+    }
 
     // Refresh daemon info when the active profile changes. Failure is tolerated
     // — the card shows an em-dash fallback, not a banner.
@@ -660,6 +669,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 serverInfoError = err.message ?: err::class.simpleName
             },
         )
+        transport.stats().onSuccess { stats = it }
     }
 
     Section(title = "About") {
@@ -742,7 +752,50 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+            // v0.33.13 (B25) sessions-details footer. Sourced from
+            // `/api/stats` alongside the daemon-info fetch so the
+            // About card communicates server activity at a glance.
+            stats?.let { s ->
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                    color = LocalDatawatchColors.current.border,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Sessions", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "${s.sessionsTotal} total · ${s.sessionsRunning} running · ${s.sessionsWaiting} waiting",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Uptime", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        formatUptime(s.uptimeSeconds),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
+    }
+}
+
+private fun formatUptime(seconds: Long): String {
+    if (seconds <= 0) return "—"
+    val d = seconds / 86_400
+    val h = (seconds % 86_400) / 3_600
+    val m = (seconds % 3_600) / 60
+    return buildString {
+        if (d > 0) append("${d}d ")
+        if (d > 0 || h > 0) append("${h}h ")
+        append("${m}m")
     }
 }
 
