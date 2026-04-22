@@ -56,10 +56,16 @@
       background-color: #0f1117 !important;
       scrollbar-width: none;         /* Firefox */
       /* Lock vertical swipe so users can't scroll through scrollback
-         unless they've explicitly entered tmux scroll mode. Parent
-         PWA doesn't need this because mouse wheel on desktop is
-         opt-in; on mobile, swipe-up consumes scrollback too easily. */
-      touch-action: pan-x;
+         unless they've explicitly entered tmux scroll mode, AND let
+         horizontal touches bubble up to #term (which has overflow-x:
+         auto) so users can pan across a 120-col claude pane on a
+         ~55-col phone viewport. touch-action:none means "this element
+         doesn't handle any touch gesture itself, pass the event up."
+         Our earlier `pan-x` was wrong: it made xterm-viewport CAPTURE
+         horizontal gestures and then do nothing with them (xterm-
+         viewport has no horizontal overflow of its own), so #term's
+         natural scroll never saw the touch. (B27 terminal scroll.) */
+      touch-action: none;
       overflow-y: hidden !important;
     }
     .xterm-viewport::-webkit-scrollbar {

@@ -334,9 +334,15 @@ public fun SessionDetailScreen(
                 // Without this, claude's TUI wraps on phone widths.
                 androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
                     val backend = state.session?.backend?.lowercase()
+                    // PWA defaults every terminal to `configCols || 80`
+                    // (app.js:2057). Giving mobile an 80-col floor for
+                    // every backend forces horizontal scroll on the phone
+                    // viewport (~55 cols at 11 px font) and matches how
+                    // TUIs render on the web. Claude-code keeps its
+                    // 120×40 enforcement per parent v0.14.1.
                     when (backend) {
                         "claude-code", "claude" -> terminalController.setMinSize(120, 40)
-                        else -> terminalController.setMinSize(0, 0)
+                        else -> terminalController.setMinSize(80, 24)
                     }
                 }
                 // Freeze writes when session reaches a terminal state so
