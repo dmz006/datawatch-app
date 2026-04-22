@@ -6,24 +6,27 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.transport.DeviceKind
 import com.dmzs.datawatchclient.transport.DevicePlatform
-import com.google.android.gms.tasks.Tasks
-import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.first
 
 /**
- * Reconciles per-profile push registrations against the parent server. Idempotent:
- * if a profile already has a `device_id` stored locally, registration is skipped
- * unless [force] is set.
+ * Reconciles per-profile push registrations against the parent server.
+ * Idempotent: if a profile already has a `device_id` stored locally,
+ * registration is skipped unless [force] is set.
+ *
+ * **FCM removed in v0.33.17** (B6 closed). datawatch is a self-hosted
+ * / privacy-minded stack; depending on Google FCM for push delivery
+ * pulled in Firebase as a required dependency and required an
+ * operator-provisioned `google-services.json`. Ntfy runs over the
+ * user's own ntfy server (or a public topic of their choice) and is
+ * the single push path now.
  *
  * Registration strategy:
- * 1. Resolve a delivery token: prefer the cached FCM token; if FCM is not
- *    available (no Firebase config / failure), fall back to a per-profile ntfy
- *    topic generated from the profile id.
- * 2. POST /api/devices/register with the token + metadata.
+ * 1. Get or generate a per-profile ntfy topic.
+ * 2. POST /api/devices/register with the topic + metadata.
  * 3. Persist the returned `device_id` keyed by profile id.
  *
- * Errors are swallowed (logged) — push registration failure should never block
- * the user from interacting with sessions over REST.
+ * Errors are swallowed (logged) — push registration failure should
+ * never block the user from interacting with sessions over REST.
  */
 public class PushRegistrationCoordinator(private val context: Context) {
     public suspend fun registerAll(force: Boolean = false) {
@@ -31,10 +34,9 @@ public class PushRegistrationCoordinator(private val context: Context) {
             ServiceLocator.profileRepository.observeAll().first()
                 .filter { it.enabled }
         val store = ServiceLocator.pushTokenStore
-        val token = ensureFcmToken() ?: store.fcmToken()
         for (profile in profiles) {
             if (!force && store.deviceIdFor(profile.id) != null) continue
-            registerOne(profile, token)
+            registerOne(profile, fcmToken = null)
         }
     }
 
@@ -80,23 +82,6 @@ public class PushRegistrationCoordinator(private val context: Context) {
         val deviceId = store.deviceIdFor(profile.id) ?: return
         ServiceLocator.transportFor(profile).unregisterDevice(deviceId)
         store.clearProfile(profile.id)
-    }
-
-    private fun ensureFcmToken(): String? {
-        // FirebaseMessaging.getInstance().token returns a Task; we block briefly
-        // on the IO dispatcher (caller) — typical resolution is sub-100 ms when
-        // a token already exists. If Firebase isn't initialised (no
-        // google-services.json), this throws — we catch and return null so the
-        // ntfy fallback path takes over.
-        return try {
-            val task = FirebaseMessaging.getInstance().token
-            val token = Tasks.await(task)
-            ServiceLocator.pushTokenStore.setFcmToken(token)
-            token
-        } catch (e: Throwable) {
-            android.util.Log.i("PushRegistration", "FCM unavailable, will use ntfy: ${e.message}")
-            null
-        }
     }
 
     private fun ntfyTopicFor(profileId: String): String {

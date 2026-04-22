@@ -64,14 +64,10 @@
         </activity>
 
         <!-- FCM service — activated in Sprint 2 once parent endpoint lands or ntfy fallback is wired. -->
-        <service
-            android:name=".push.DatawatchFcmService"
-            android:exported="false"
-            tools:ignore="Instantiatable">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
-            </intent-filter>
-        </service>
+        <!-- FCM service removed in v0.33.17 (B6): datawatch ships ntfy-only
+             push to stay self-hosted + privacy-aligned. See
+             PushRegistrationCoordinator kdoc for the rationale. -->
+
 
         <!-- ntfy fallback foreground service — runs when at least one profile
              is configured for ntfy delivery instead of FCM. -->

@@ -137,7 +137,7 @@ aggregator re-broadcasts.
 
 ### Phase 3 — eBPF + cluster detail
 
-- Per-process network card (read-only, post-1.0 per ADR-0019) appears only
+- Per-process network card (read-only, pre-1.0 per ADR-0019) appears only
   when `net.per_process` is non-null.
 - `cluster.nodes` row list appears only when present. Tap → drills into that
   node's stats.
@@ -165,10 +165,21 @@ aggregator re-broadcasts.
   detect the container sibling and defer collection to it? Likely yes with a
   config flag.
 
+## Pre-1.0 scope
+
+Every phase (1 through 4) lands **before v1.0.0**. v1.0.0 is
+reserved for full PWA-parity close, and full-feature stats is part
+of that parity target per user direction (2026-04-22). ADR-0019's
+"eBPF view-only" caveat is unchanged — mobile still doesn't write
+to the server — but it IS a pre-1.0 mobile feature. Previous
+post-1.0 deferrals are retracted.
+
 ## Next steps
 
-1. File upstream issue on dmz006/datawatch referencing this doc.
+1. File upstream issue on dmz006/datawatch referencing this doc. ✅
+   ([dmz006/datawatch#20](https://github.com/dmz006/datawatch/issues/20))
 2. Wait for the server spec to land in a parent release.
 3. Bump mobile `StatsDto`, merge Phase 1.
-4. WS stream (Phase 2) as v0.34.
-5. eBPF surface (Phase 3) post-1.0 per ADR-0019.
+4. WS stream (Phase 2).
+5. eBPF surface (Phase 3) — mobile UI is view-only per ADR-0019,
+   but ships pre-1.0 alongside the server's cluster container.

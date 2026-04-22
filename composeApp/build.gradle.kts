@@ -35,7 +35,8 @@ kotlin {
                 implementation(compose.materialIconsExtended)
                 implementation(compose.ui)
                 implementation(compose.components.resources)
-                implementation(libs.firebase.messaging)
+                // FCM removed in v0.33.17 (B6). Self-hosted ntfy is the push path;
+                // see `push/PushRegistrationCoordinator.kt` kdoc for rationale.
                 implementation(libs.androidx.biometric)
                 implementation(libs.kotlinx.coroutines.android)
                 // Wearable Data Layer — phone publishes session-count
