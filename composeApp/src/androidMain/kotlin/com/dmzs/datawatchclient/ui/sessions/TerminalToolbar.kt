@@ -1,53 +1,43 @@
 package com.dmzs.datawatchclient.ui.sessions
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.FitScreen
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.TextIncrease
-import androidx.compose.material.icons.filled.VerticalAlignBottom
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.sp
 
 /**
- * Terminal toolbar — v0.11 parity affordance. Shows a search button and a
- * copy button by default; tapping search expands an inline search bar with
- * prev/next arrows and a close button, matching the PWA's terminal chrome.
+ * Terminal toolbar — exact PWA parity (app.js:1635-1643).
  *
- * Intentionally thin — all the search logic lives in [TerminalController]
- * which marshals calls to the xterm-addon-search bridge in host.html.
+ * Four controls, in order:
+ * 1. **A−**  — decrease font size (clamp 5..20)
+ * 2. **`{size}px`** — current font size, non-interactive label
+ * 3. **A+**  — increase font size
+ * 4. **Fit** — [TerminalController.autoFitToWidth] shrinks font until xterm fits the
+ *    container horizontally
+ * 5. **↕ Scroll / ⏹ Exit Scroll** — enters / exits tmux scroll mode (copy-mode).
+ *    While in scroll mode, a second row appears with Page Up / Page Down / Line Up /
+ *    Line Down / ESC, matching PWA `toggleScrollMode()` (app.js:1911).
+ *
+ * Previous mobile-only extras (search / copy / jump-to-bottom / load-backlog)
+ * were removed in v0.33.18 because they don't exist in PWA and the four-button
+ * row matches user muscle-memory when switching between web and phone.
  */
 @Composable
 public fun TerminalToolbar(
@@ -55,17 +45,7 @@ public fun TerminalToolbar(
     modifier: Modifier = Modifier,
     sessionId: String? = null,
 ) {
-    var searchOpen by remember(sessionId) { mutableStateOf(false) }
-    var query by remember(sessionId) { mutableStateOf("") }
-    // Keyed to sessionId so switching sessions re-enables the button;
-    // also reset when the load call itself fails so users can retry.
-    var backlogLoaded by remember(sessionId) { mutableStateOf(false) }
     val context: Context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    // Persisted terminal font size. PWA uses localStorage; mobile uses
-    // SharedPreferences under `dw.terminal.v1` so the user's zoom-level
-    // survives session re-opens. Clamp to a sensible range (8 … 24 sp).
     val fontPrefs =
         remember(context) {
             context.getSharedPreferences("dw.terminal.v1", Context.MODE_PRIVATE)
@@ -73,8 +53,9 @@ public fun TerminalToolbar(
     var fontSize by remember {
         mutableStateOf(fontPrefs.getInt("font_size_px", DEFAULT_TERM_FONT_PX))
     }
-    // Apply on first composition and whenever the user bumps the size.
-    androidx.compose.runtime.LaunchedEffect(fontSize) {
+    var scrollMode by remember(sessionId) { mutableStateOf(false) }
+
+    LaunchedEffect(fontSize) {
         controller.setFontSize(fontSize)
         fontPrefs.edit().putInt("font_size_px", fontSize).apply()
     }
@@ -84,205 +65,147 @@ public fun TerminalToolbar(
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            if (!searchOpen) {
-                IconButton(onClick = { searchOpen = true }) {
-                    Icon(Icons.Filled.Search, contentDescription = "Search terminal")
-                }
-                IconButton(
-                    onClick = { controller.copyToClipboard(context) },
-                ) {
-                    Icon(Icons.Filled.ContentCopy, contentDescription = "Copy selection")
-                }
-                IconButton(
+            TermToolBtn(
+                label = "A−",
+                onClick = {
+                    if (fontSize > MIN_TERM_FONT_PX) fontSize -= FONT_STEP_PX
+                },
+                enabled = fontSize > MIN_TERM_FONT_PX,
+            )
+            Text(
+                "${fontSize}px",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+            TermToolBtn(
+                label = "A+",
+                onClick = {
+                    if (fontSize < MAX_TERM_FONT_PX) fontSize += FONT_STEP_PX
+                },
+                enabled = fontSize < MAX_TERM_FONT_PX,
+            )
+            Separator()
+            TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
+            Separator()
+            TermToolBtn(
+                label = if (scrollMode) "⏹ Exit" else "↕ Scroll",
+                onClick = {
+                    if (sessionId == null) return@TermToolBtn
+                    if (scrollMode) {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                    } else {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "tmux-copy-mode $sessionId")
+                    }
+                    scrollMode = !scrollMode
+                },
+                enabled = sessionId != null,
+                highlight = scrollMode,
+            )
+        }
+    }
+    // Scroll-mode navigation strip — shown only while in scroll mode,
+    // mirrors PWA's `.scroll-bar` element inserted by toggleScrollMode().
+    if (scrollMode && sessionId != null) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                TermToolBtn(
+                    label = "PgUp",
                     onClick = {
-                        if (fontSize > MIN_TERM_FONT_PX) fontSize -= FONT_STEP_PX
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: PageUp")
                     },
-                    enabled = fontSize > MIN_TERM_FONT_PX,
-                ) {
-                    Icon(Icons.Filled.Remove, contentDescription = "Smaller font")
-                }
-                IconButton(
-                    onClick = {
-                        if (fontSize < MAX_TERM_FONT_PX) fontSize += FONT_STEP_PX
-                    },
-                    enabled = fontSize < MAX_TERM_FONT_PX,
-                ) {
-                    Icon(Icons.Filled.TextIncrease, contentDescription = "Larger font")
-                }
-                IconButton(onClick = { controller.fit() }) {
-                    Icon(Icons.Filled.FitScreen, contentDescription = "Fit terminal")
-                }
-                IconButton(onClick = { controller.autoFitToWidth() }) {
-                    Icon(
-                        Icons.Filled.SwapVert,
-                        contentDescription = "Auto-fit width (shrink font)",
-                    )
-                }
-                IconButton(onClick = { controller.scrollToBottom() }) {
-                    Icon(
-                        Icons.Filled.VerticalAlignBottom,
-                        contentDescription = "Jump to live tail",
-                    )
-                }
-                // Scroll-mode toggle — enters tmux copy-mode on the
-                // server, surfacing history scrollback. PWA toggles
-                // between this and normal input per v2.3.2.
-                if (sessionId != null) {
-                    IconButton(
-                        onClick = {
-                            com.dmzs.datawatchclient.transport.ws.WsOutbound
-                                .sendCommand(sessionId, "tmux-copy-mode $sessionId")
-                        },
-                    ) {
-                        Icon(
-                            Icons.Filled.KeyboardDoubleArrowUp,
-                            contentDescription = "Scroll mode (tmux copy-mode)",
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            // Exit scroll mode: tmux copy-mode leaves on Escape.
-                            com.dmzs.datawatchclient.transport.ws.WsOutbound
-                                .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                        },
-                    ) {
-                        Icon(
-                            Icons.Filled.KeyboardDoubleArrowDown,
-                            contentDescription = "Exit scroll mode",
-                        )
-                    }
-                }
-                if (sessionId != null) {
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                val profiles =
-                                    ServiceLocator.profileRepository.observeAll().first()
-                                val activeId = ServiceLocator.activeServerStore.get()
-                                val profile =
-                                    profiles.firstOrNull {
-                                        it.id == activeId && it.enabled &&
-                                            activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-                                    }
-                                        ?: profiles.firstOrNull { it.enabled }
-                                if (profile == null) {
-                                    Toast.makeText(
-                                        context,
-                                        "No active server",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                    return@launch
-                                }
-                                ServiceLocator.transportFor(profile)
-                                    .fetchOutput(sessionId, lines = 1000)
-                                    .fold(
-                                        onSuccess = { backlog ->
-                                            controller.prepend(backlog)
-                                            backlogLoaded = true
-                                            Toast.makeText(
-                                                context,
-                                                "Loaded backlog (${backlog.length} chars)",
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        },
-                                        onFailure = { err ->
-                                            // Re-enable the button so the user can retry
-                                            // after transient network failures.
-                                            backlogLoaded = false
-                                            Toast.makeText(
-                                                context,
-                                                "Backlog load failed — ${err.message ?: err::class.simpleName}",
-                                                Toast.LENGTH_LONG,
-                                            ).show()
-                                        },
-                                    )
-                            }
-                        },
-                        enabled = !backlogLoaded,
-                    ) {
-                        Icon(
-                            Icons.Filled.History,
-                            contentDescription = "Load backlog",
-                            tint =
-                                if (backlogLoaded) {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                        )
-                    }
-                }
-            } else {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { newValue ->
-                        query = newValue
-                        if (newValue.isBlank()) controller.searchClear()
-                    },
-                    placeholder = { Text("Search terminal") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                 )
-                IconButton(
-                    onClick = { if (query.isNotEmpty()) controller.searchPrev(query) },
-                    enabled = query.isNotEmpty(),
-                ) {
-                    Icon(Icons.Filled.ArrowUpward, contentDescription = "Previous match")
-                }
-                IconButton(
-                    onClick = { if (query.isNotEmpty()) controller.searchNext(query) },
-                    enabled = query.isNotEmpty(),
-                ) {
-                    Icon(Icons.Filled.ArrowDownward, contentDescription = "Next match")
-                }
-                IconButton(onClick = {
-                    controller.searchClear()
-                    query = ""
-                    searchOpen = false
-                }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close search")
-                }
+                TermToolBtn(
+                    label = "PgDn",
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: PageDown")
+                    },
+                )
+                TermToolBtn(
+                    label = "↑",
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Up")
+                    },
+                )
+                TermToolBtn(
+                    label = "↓",
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Down")
+                    },
+                )
+                TermToolBtn(
+                    label = "ESC — Exit",
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                        scrollMode = false
+                    },
+                    highlight = true,
+                )
             }
         }
     }
 }
 
-/**
- * Fetches the current terminal selection via [TerminalController.copySelection]
- * and writes it to the system clipboard. Shows a toast with the copied-char
- * count (or "no selection" when empty).
- */
-private fun TerminalController.copyToClipboard(context: Context) {
-    copySelection { selection ->
-        val trimmed = selection.trim()
-        if (trimmed.isEmpty()) {
-            Toast.makeText(context, "No selection to copy", Toast.LENGTH_SHORT).show()
-            return@copySelection
-        }
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("datawatch terminal", trimmed))
-        Toast.makeText(
-            context,
-            "Copied ${trimmed.length} chars",
-            Toast.LENGTH_SHORT,
-        ).show()
+@Composable
+private fun TermToolBtn(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    highlight: Boolean = false,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(
+            label,
+            fontSize = 11.sp,
+            fontWeight = if (highlight) FontWeight.Medium else FontWeight.Normal,
+            color =
+                if (highlight) {
+                    MaterialTheme.colorScheme.primary
+                } else if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+        )
     }
 }
 
 @Composable
-private fun Text(text: String) {
-    // Tiny shim so OutlinedTextField's placeholder parameter stays concise
-    // without importing Text at the top — keeps the import list minimal.
-    androidx.compose.material3.Text(text)
+private fun Separator() {
+    Text(
+        "|",
+        fontSize = 10.sp,
+        color = MaterialTheme.colorScheme.outline,
+        modifier = Modifier.padding(horizontal = 2.dp),
+    )
 }
 
-// PWA changeTermFontSize clamps [5, 20]; mobile goes slightly larger
-// since phone users zoom up to read from arm's length. Default matches
-// the existing host.html `fontSize: 15` baseline.
-private const val DEFAULT_TERM_FONT_PX: Int = 15
-private const val MIN_TERM_FONT_PX: Int = 10
-private const val MAX_TERM_FONT_PX: Int = 28
-private const val FONT_STEP_PX: Int = 2
+// PWA `changeTermFontSize` clamps [5, 20]; mobile keeps the same range so
+// the saved size round-trips through localStorage == SharedPreferences.
+// Default matches host.html's fontSize: 11 (mobile-friendly floor vs PWA's 9).
+private const val DEFAULT_TERM_FONT_PX: Int = 11
+private const val MIN_TERM_FONT_PX: Int = 5
+private const val MAX_TERM_FONT_PX: Int = 20
+private const val FONT_STEP_PX: Int = 1

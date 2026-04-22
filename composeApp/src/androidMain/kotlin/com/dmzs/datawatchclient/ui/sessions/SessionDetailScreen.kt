@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -260,7 +261,20 @@ public fun SessionDetailScreen(
             )
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+        // `imePadding()` shifts the whole column up when the soft keyboard
+        // is open so the reply composer stays visible instead of covering
+        // the terminal's bottom rows (B27-layout). `consumeWindowInsets`
+        // tells Scaffold we've taken the IME inset so it's not double-
+        // counted. Without this, the ReplyComposer overlaps the last 4-6
+        // rows of xterm when the keyboard pops — user's "bottom of screen
+        // below the input reply window" report.
+        Column(
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .imePadding()
+                    .fillMaxSize(),
+        ) {
             // PWA-style output-surface tabs: tmux (terminal) / chat.
             // Replaces the v0.14 icon-toggle with proper tabs so the
             // active surface is always visible at a glance.
