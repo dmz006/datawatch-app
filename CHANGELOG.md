@@ -8,6 +8,65 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.33.25] — 2026-04-22 (Monitor cards + Wear/Auto feature parity B30/B32/B33)
+
+### Fixed
+
+- **Monitor tab missing system cards + wrong Sessions layout (user 2026-04-22).**
+  Rewrote `StatsScreen`:
+  - New **System Statistics** card mirrors PWA's `renderStatsData` reads —
+    CPU Load (`cpu_load_avg_1 / cpu_cores`), Memory (`mem_used / mem_total`),
+    Disk (`disk_used / disk_total`), Swap (conditional), GPU util + temp,
+    GPU VRAM. Uses bars with datawatch pct-threshold colours.
+  - **Session Statistics** card replaces the flat 3-count row with a circle
+    graph showing `sessionsTotal / session.max_sessions` (ring colour
+    warns at 70 %, errors at 90 %) plus running / waiting / idle pills.
+    `StatsViewModel` lazily reads `session.max_sessions` from
+    `/api/config` to populate the denominator.
+  - **Server Info** card drops the LLM-backend row (a fleet can run
+    several backends; per-session badge + Backend Health card are the
+    right surfaces) and adds live CPU and Memory rows for real-time
+    display.
+  - **Ollama Server** card only renders when the server reports
+    `available = true`; previously showed an "offline" card on every
+    server that merely listed Ollama as a candidate backend.
+
+### Added
+
+- **B30 Wear + Auto multi-server picker.** `ActiveServerStore` moved
+  from `composeApp` to `shared/androidMain` so both surfaces can bind
+  to the same SharedPreferences. Auto's Monitor screen ActionStrip
+  gains a **Server** button opening `AutoServerPickerScreen` — tap a
+  profile → writes through `ActiveServerStore`, phone's Sessions tab
+  reflects it next observe tick. Wear adds a dedicated pager page
+  with the enabled profile list; tap sends `/datawatch/setActive`
+  over MessageClient, phone's `WearSyncService` receives it and
+  flips the same store.
+- **B32 Wear + Auto monitoring tab.** Auto's root screen is now
+  `AutoMonitorScreen` (default per user request 2026-04-22) with
+  CPU / memory / disk / VRAM / sessions / uptime rows. Wear's first
+  pager page is Monitor, reading a new `/datawatch/stats` DataItem
+  the phone republishes every 15 s with a light stats snapshot. The
+  phone's `WearSyncService` now owns three DataItem paths (counts,
+  profiles, stats) and a MessageClient listener for setActive.
+- **B33 Wear + Auto About screen.** `AutoAboutScreen` shows the
+  shared `Version.VERSION` + build + surface label. Wear gains an
+  About page (page 4 in the pager) reading the same shared object.
+  Both are styled with the datawatch dark palette + teal / amber
+  accents instead of stock Material defaults (user feedback —
+  "make wear and auto stylish, in style with datawatch").
+
+### Changed
+
+- **Auto entry screen is Monitor, not Sessions.** Per user direction
+  2026-04-22, drivers see the fleet health first; Sessions becomes
+  an ActionStrip-reachable secondary screen.
+- **B31 (Wear + Auto sessions w/ snapshot + voice) on hold.** Auto
+  already ships `AutoSummaryScreen` → `WaitingSessionsScreen` →
+  `SessionReplyScreen` with Yes / No / Continue / Stop quick-reply
+  flow; user evaluating before committing to watch snapshot + voice
+  rollout.
+
 ## [0.33.11] — 2026-04-22 (Sprint FF — upstream fixes integrated)
 
 Both outstanding upstream issues closed. Mobile wiring landed.

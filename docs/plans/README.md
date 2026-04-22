@@ -20,10 +20,7 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B30 | Wear + Auto: multi-server picker | When >1 datawatch server is configured on phone, both surfaces need a server-switcher (drawer/menu on Wear, ActionStrip option on Auto). Piggybacks on the existing ActiveServerStore + profileRepository flows. |
-| B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | Wear shows the session list, tap → last-capture snapshot (still image from pane_capture) + quick-reply buttons (Yes/No/Continue/Stop). Auto equivalent via ListTemplate + MessageTemplate, with VoiceActionController wired to the existing `/api/voice/transcribe` path. |
-| B32 | Wear + Auto: Monitoring tab showing all stats | Consumes the v4.1.0 `/api/stats` v2 payload now that the phone reads it. Wear = compact three-number tile (CPU/Mem/Sess). Auto = GridTemplate with CPU/Mem/Disk/GPU/Sessions rows. Depends on B28 stats plumbing. |
-| B33 | Wear + Auto: About screen with logo + version | Wear: static branded tile with Version + build SHA. Auto: PaneTemplate with an animated logo (if CarAppService animation hooks allow; fall back to still image) + daemon hostname + app version. Mirror of phone-side AboutCard. |
+| B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
@@ -115,6 +112,10 @@ or retracted rather than scheduled.
 | reply-send-404 | Composer "connection error" | v0.33.22 | Server doesn't expose `/api/sessions/reply`; switched to WS `send_input` (PWA path). |
 | composer-invisible | Reply text black-on-black | v0.33.23 | Explicit `textStyle.color = onSurface` + OutlinedTextFieldDefaults colors so the field doesn't inherit LocalContentColor from the amber banner's Surface. |
 | channel-tab-crash | Clicking channel tab → IllegalArgumentException duplicate-key | v0.33.23 | LazyColumn key collided when live-capture SharedFlow replayed + live-emitted the same PaneCapture. Switched to `itemsIndexed`. |
+| monitor-missing-cards | Settings/Monitor missing CPU/Mem/Disk/GPU/VRAM + wrong Sessions card + LLM row on Server card + Ollama rendered offline | v0.33.25 | Rewrote `StatsScreen` to PWA's `renderStatsData` reads: `cpu_load_avg_1 / cpu_cores`, `mem_used / mem_total`, `disk_used / disk_total`, `swap_*`, `gpu_*`. Session card switched to ring showing X of `session.max_sessions`. Server card adds live CPU + memory rows and drops LLM backend (fleet can run many). Ollama card hidden unless server reports `available = true`. |
+| B30 | Wear + Auto multi-server picker | v0.33.25 | Auto gets `AutoServerPickerScreen` reachable from the Monitor ActionStrip; Wear gets a dedicated "Server" page that sends a `/datawatch/setActive` MessageClient message the phone's `WearSyncService` consumes. `ActiveServerStore` moved from `composeApp` to `shared/androidMain` so both composeApp and :auto can bind to the same prefs file. |
+| B32 | Wear + Auto monitoring tab | v0.33.25 | Auto's root screen is now `AutoMonitorScreen` (CPU load, memory, disk, VRAM, sessions, uptime). Wear's default page is Monitor, reading a new `/datawatch/stats` DataItem the phone publishes every 15 s. User requested Monitor be the default landing page. |
+| B33 | Wear + Auto About screen | v0.33.25 | Auto adds `AutoAboutScreen` with Version + build + surface. Wear adds an About page (4th in pager) reading shared `Version.VERSION`. Both styled with datawatch dark palette + teal accent, not stock Material defaults. |
 
 ### Backlog (already shipped)
 

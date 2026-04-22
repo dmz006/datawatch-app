@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto
 import android.content.Context
 import com.dmzs.datawatchclient.db.DatawatchDb
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.security.KeystoreManager
 import com.dmzs.datawatchclient.storage.DatabaseFactory
 import com.dmzs.datawatchclient.storage.ServerProfileRepository
@@ -34,6 +35,7 @@ public object AutoServiceLocator {
     private var _profileRepo: ServerProfileRepository? = null
     private var _sessionRepo: SessionRepository? = null
     private var _httpClient: HttpClient? = null
+    private var _activeStore: ActiveServerStore? = null
 
     public fun init(context: Context) {
         if (appContext != null) return
@@ -61,4 +63,15 @@ public object AutoServiceLocator {
 
     public fun transportFor(profile: ServerProfile): TransportClient =
         RestTransport(profile = profile, client = httpClient, tokenProvider = null)
+
+    /**
+     * Shared active-profile preference with the phone app. The car
+     * picker writes to this and the phone's Sessions tab reflects the
+     * change next observe() tick.
+     */
+    public val activeServerStore: ActiveServerStore
+        get() = _activeStore ?: run {
+            val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
+            ActiveServerStore(ctx).also { _activeStore = it }
+        }
 }

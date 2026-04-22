@@ -69,16 +69,25 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
         return
     }
 
-    info?.let { ServerInfoCard(it) }
+    // Server card needs live stats (user 2026-04-22 — "cpu and stats
+    // are important and should be there and real time displayed"), so
+    // it gets both info and stats. LLM-backend row dropped — a fleet
+    // can run multiple backends and the Monitor tab isn't the right
+    // surface for a single-backend readout.
+    info?.let { ServerInfoCard(it, s) }
     s?.let {
-        SessionCountsCard(it)
-        ResourceCard(it)
+        SessionStatisticsCard(it, state.maxSessions)
+        SystemStatisticsCard(it)
         NetworkCard(it)
         DaemonCard(it)
         InfrastructureCard(it, info)
         if (it.rtkInstalled) RtkCard(it)
         MemoryStatsCard(it)
-        it.ollamaStats?.let { o -> OllamaStatsCard(o) }
+        // Ollama card only when the server reports an actually-online
+        // Ollama endpoint. Previously rendered on `ollamaStats != null`
+        // which showed an "offline" card on servers that merely list
+        // Ollama as a backend without it running.
+        it.ollamaStats?.takeIf { o -> o.available }?.let { o -> OllamaStatsCard(o) }
         if (it.envelopes.isNotEmpty()) EnvelopesCard(it.envelopes)
         if (it.backends.isNotEmpty()) BackendHealthCard(it.backends)
     }
@@ -334,15 +343,50 @@ private fun formatBytes(bytes: Long): String =
 
 
 @Composable
-private fun ServerInfoCard(info: ServerInfo) {
+private fun ServerInfoCard(
+    info: ServerInfo,
+    stats: StatsDto?,
+) {
+    // Server card shows identity + real-time vitals per user 2026-04-22.
+    // LLM-backend row was removed — a fleet can run several backends and
+    // the per-session badge in sessions list is the right surface for
+    // that. Backends card below shows reachability.
     PwaCardContainer {
         PwaSectionTitle("Server")
         InfoRow("Hostname", info.hostname)
         InfoRow("Daemon", "v${info.version}")
-        info.llmBackend?.let { InfoRow("LLM backend", it) }
         info.messagingBackend?.let { InfoRow("Messaging", it) }
         if (info.serverHost != null && info.serverPort != null) {
             InfoRow("Bound to", "${info.serverHost}:${info.serverPort}")
+        }
+        stats?.let { s ->
+            // Live CPU load — prefer the richer `cpu_load_avg_1 / cores`
+            // pair the PWA emits, fall back to the v1 `cpu_pct` scalar.
+            val load1 = s.cpuLoad1
+            val cores = s.cpuCores
+            val cpuPctFlat = s.cpuPct
+            val cpuText =
+                when {
+                    load1 != null && cores != null && cores > 0 ->
+                        "%.2f load (%d cores)".format(load1, cores)
+                    cpuPctFlat != null -> "%.1f%%".format(cpuPctFlat)
+                    else -> null
+                }
+            cpuText?.let { InfoRow("CPU", it) }
+            val memUsed = s.memUsed
+            val memTotal = s.memTotal
+            val memPctFlat = s.memPct
+            val memText =
+                if (memUsed != null && memTotal != null && memTotal > 0) {
+                    val pct = (memUsed.toDouble() / memTotal.toDouble()) * 100.0
+                    "${formatBytes(memUsed)} / ${formatBytes(memTotal)} (${"%.0f".format(pct)}%)"
+                } else if (memPctFlat != null) {
+                    "%.1f%%".format(memPctFlat)
+                } else {
+                    null
+                }
+            memText?.let { InfoRow("Memory", it) }
+            if (s.uptimeSeconds > 0) InfoRow("Uptime", formatUptime(s.uptimeSeconds))
         }
     }
 }
@@ -370,83 +414,243 @@ private fun InfoRow(
 }
 
 @Composable
-private fun SessionCountsCard(s: StatsDto) {
+private fun SessionStatisticsCard(
+    s: StatsDto,
+    maxSessions: Int?,
+) {
     val dw = LocalDatawatchColors.current
+    // PWA shows a ring "X / max" with running/waiting breakdown below.
+    // max comes from config session.max_sessions; when unknown, the
+    // denominator falls back to max(total, 1) so the ring reads 100% full.
+    val total = s.sessionsTotal
+    val max = (maxSessions ?: total).coerceAtLeast(total).coerceAtLeast(1)
+    val fraction = (total.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    val ringColor =
+        when {
+            fraction >= 0.9f -> MaterialTheme.colorScheme.error
+            fraction >= 0.7f -> dw.warning
+            else -> dw.success
+        }
     PwaCardContainer {
-        PwaSectionTitle("Sessions")
+        PwaSectionTitle("Session Statistics")
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            BigStat("Total", s.sessionsTotal.toString(), MaterialTheme.colorScheme.onSurface)
-            BigStat("Running", s.sessionsRunning.toString(), dw.success)
-            BigStat("Waiting", s.sessionsWaiting.toString(), dw.waiting)
+            Box(
+                modifier = Modifier.size(96.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    modifier = Modifier.size(96.dp),
+                    color = dw.bg3,
+                    strokeWidth = 8.dp,
+                    trackColor = Color.Transparent,
+                )
+                CircularProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier.size(96.dp),
+                    color = ringColor,
+                    strokeWidth = 8.dp,
+                    trackColor = Color.Transparent,
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        total.toString(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        if (maxSessions != null) "of $maxSessions" else "sessions",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f).padding(start = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatPill("Running", s.sessionsRunning, dw.success)
+                StatPill("Waiting", s.sessionsWaiting, dw.waiting)
+                val idle = (s.sessionsTotal - s.sessionsRunning - s.sessionsWaiting).coerceAtLeast(0)
+                StatPill("Idle", idle, MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
 
 @Composable
-private fun BigStat(
+private fun StatPill(
     label: String,
-    value: String,
+    value: Int,
     color: Color,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .background(
+                            color = color,
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                        ),
+            )
+            Text(
+                label,
+                modifier = Modifier.padding(start = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
-            value,
-            style = MaterialTheme.typography.displaySmall,
+            value.toString(),
+            style = MaterialTheme.typography.titleMedium,
             color = color,
             fontWeight = FontWeight.SemiBold,
         )
-        Text(
-            label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = androidx.compose.ui.unit.TextUnit(0.8f, androidx.compose.ui.unit.TextUnitType.Sp),
-        )
     }
 }
 
 @Composable
-private fun ResourceCard(s: StatsDto) {
+private fun SystemStatisticsCard(s: StatsDto) {
+    // PWA renderStatsData (app.js:5769-5920) reads cpu_load_avg_1 / cpu_cores
+    // for CPU load, mem_used / mem_total for memory, disk_used / disk_total
+    // for disk, swap_used / swap_total when present, and the gpu_* block
+    // when the host has a GPU. Mirror the same fields here.
     PwaCardContainer {
-        PwaSectionTitle("Host resources")
+        PwaSectionTitle("System Statistics")
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            ResourceRow("CPU", s.cpuPct)
-            ResourceRow("Memory", s.memPct)
-            s.diskPct?.let { ResourceRow("Disk", it) }
-            s.gpuPct?.let { ResourceRow("GPU", it) }
+            // CPU Load — fraction against core count, cap bar at 100%.
+            val load1 = s.cpuLoad1
+            val cores = s.cpuCores
+            val cpuPctFlat = s.cpuPct
+            val cpuPct: Double? =
+                when {
+                    load1 != null && cores != null && cores > 0 ->
+                        (load1 / cores) * 100.0
+                    cpuPctFlat != null -> cpuPctFlat
+                    else -> null
+                }
+            val cpuSub =
+                if (load1 != null && cores != null) {
+                    "%.2f load · %d cores".format(load1, cores)
+                } else {
+                    null
+                }
+            UsageBar("CPU Load", cpuPct, cpuSub)
+
+            // Memory — show used/total under the bar.
+            val memUsed = s.memUsed
+            val memTotal = s.memTotal
+            val memPct: Double? =
+                if (memUsed != null && memTotal != null && memTotal > 0) {
+                    (memUsed.toDouble() / memTotal.toDouble()) * 100.0
+                } else {
+                    s.memPct
+                }
+            val memSub =
+                if (memUsed != null && memTotal != null) {
+                    "${formatBytes(memUsed)} / ${formatBytes(memTotal)}"
+                } else {
+                    null
+                }
+            UsageBar("Memory", memPct, memSub)
+
+            // Disk — same pattern, also tolerate v1 flat scalar.
+            val diskUsed = s.diskUsed
+            val diskTotal = s.diskTotal
+            val diskPct: Double? =
+                if (diskUsed != null && diskTotal != null && diskTotal > 0) {
+                    (diskUsed.toDouble() / diskTotal.toDouble()) * 100.0
+                } else {
+                    s.diskPct
+                }
+            val diskSub =
+                if (diskUsed != null && diskTotal != null) {
+                    "${formatBytes(diskUsed)} / ${formatBytes(diskTotal)}"
+                } else {
+                    null
+                }
+            UsageBar("Disk", diskPct, diskSub)
+
+            // Swap — only render when the host actually has swap configured.
+            if (s.swapTotal > 0) {
+                val swapPct = (s.swapUsed.toDouble() / s.swapTotal.toDouble()) * 100.0
+                UsageBar(
+                    "Swap",
+                    swapPct,
+                    "${formatBytes(s.swapUsed)} / ${formatBytes(s.swapTotal)}",
+                )
+            }
+
+            // GPU util — render when a GPU name was reported or util came in.
+            if (s.gpuName != null || s.gpuUtilPct != null || s.gpuPct != null) {
+                val gpuPct = s.gpuUtilPct ?: s.gpuPct
+                val tempSuffix = s.gpuTemp?.let { " · ${"%.0f".format(it)}°C" } ?: ""
+                val gpuSub = s.gpuName?.plus(tempSuffix) ?: tempSuffix.ifBlank { null }
+                UsageBar("GPU", gpuPct, gpuSub)
+            }
+
+            // GPU VRAM — separate bar per PWA layout.
+            val vramTotal = s.gpuMemTotalMb
+            if (vramTotal != null && vramTotal > 0) {
+                val usedMb = s.gpuMemUsedMb ?: 0L
+                val pct = (usedMb.toDouble() / vramTotal.toDouble()) * 100.0
+                UsageBar(
+                    "GPU VRAM",
+                    pct,
+                    "${formatBytes(usedMb * 1_000_000L)} / ${formatBytes(vramTotal * 1_000_000L)}",
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ResourceRow(
+private fun UsageBar(
     label: String,
     pct: Double?,
+    subtitle: String?,
 ) {
     if (pct == null) return
+    val clamped = pct.coerceIn(0.0, 100.0)
     Column(modifier = Modifier.padding(vertical = 6.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             Text(
-                "${"%.1f".format(pct)}%",
+                "${"%.1f".format(clamped)}%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = pctColor(pct),
+                color = pctColor(clamped),
                 fontWeight = FontWeight.SemiBold,
             )
         }
         LinearProgressIndicator(
-            progress = { (pct / 100.0).toFloat().coerceIn(0f, 1f) },
+            progress = { (clamped / 100.0).toFloat() },
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-            color = pctColor(pct),
+            color = pctColor(clamped),
             trackColor = LocalDatawatchColors.current.bg3,
         )
+        subtitle?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 
@@ -457,20 +661,6 @@ private fun pctColor(pct: Double): Color {
         pct >= 90 -> MaterialTheme.colorScheme.error
         pct >= 70 -> dw.warning
         else -> dw.success
-    }
-}
-
-@Composable
-private fun UptimeCard(
-    s: StatsDto,
-    info: ServerInfo?,
-) {
-    PwaCardContainer {
-        PwaSectionTitle("Daemon")
-        InfoRow("Uptime", formatUptime(s.uptimeSeconds))
-        info?.sessionCount?.let {
-            InfoRow("Sessions tracked", it.toString())
-        }
     }
 }
 

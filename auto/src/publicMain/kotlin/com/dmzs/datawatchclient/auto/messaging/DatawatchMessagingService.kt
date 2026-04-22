@@ -3,17 +3,17 @@ package com.dmzs.datawatchclient.auto.messaging
 import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
+import com.dmzs.datawatchclient.auto.AutoMonitorScreen
 import com.dmzs.datawatchclient.auto.AutoServiceLocator
-import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
  * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
  *
- * Opens [AutoSummaryScreen] — live Running / Waiting / Total
- * counts polled every 15 s. Tapping "Waiting input" pushes
- * [com.dmzs.datawatchclient.auto.WaitingSessionsScreen] → per-
- * session reply with Yes / No / Continue / Stop quick actions.
+ * Opens [AutoMonitorScreen] — default Monitor tab per user request
+ * 2026-04-22, showing live server vitals (CPU, memory, disk, VRAM,
+ * sessions, uptime). ActionStrip on that screen exposes Sessions,
+ * Server picker and About as secondary screens.
  */
 public class DatawatchMessagingService : CarAppService() {
     override fun onCreate() {
@@ -43,6 +43,6 @@ public class DatawatchMessagingService : CarAppService() {
 
     override fun onCreateSession(): Session =
         object : Session() {
-            override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
+            override fun onCreateScreen(intent: android.content.Intent) = AutoMonitorScreen(carContext)
         }
 }

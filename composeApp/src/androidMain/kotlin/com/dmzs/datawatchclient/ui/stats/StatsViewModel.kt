@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Stats tab VM. Polls `/api/stats` every [REFRESH_INTERVAL_MS] for the
@@ -28,6 +29,13 @@ public class StatsViewModel : ViewModel() {
         val refreshing: Boolean = false,
         val banner: String? = null,
         val serverName: String? = null,
+        /**
+         * `session.max_sessions` pulled from `/api/config`. Cached across
+         * polls so the Session Statistics ring has a stable denominator.
+         * Null until the first successful config fetch or when a server
+         * omits the key.
+         */
+        val maxSessions: Int? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -60,6 +68,14 @@ public class StatsViewModel : ViewModel() {
             // /api/info is cheap and rarely changes; fetch alongside /api/stats
             // so the server-identity header is populated.
             val infoResult = transport.fetchInfo()
+            // Fetch `session.max_sessions` once, then keep the cached value.
+            // Config is heavy relative to stats, so only hit it when we
+            // don't already have a denominator for the Sessions ring.
+            val maxSessions: Int? =
+                _state.value.maxSessions
+                    ?: transport.fetchConfig().getOrNull()?.let { cfg ->
+                        runCatching { cfg.raw["session.max_sessions"]?.jsonPrimitive?.content?.toInt() }.getOrNull()
+                    }
             transport.stats().fold(
                 onSuccess = { dto ->
                     _state.value =
@@ -69,6 +85,7 @@ public class StatsViewModel : ViewModel() {
                             refreshing = false,
                             banner = null,
                             serverName = profile.displayName,
+                            maxSessions = maxSessions,
                         )
                 },
                 onFailure = { err ->
@@ -77,6 +94,7 @@ public class StatsViewModel : ViewModel() {
                             refreshing = false,
                             info = infoResult.getOrNull() ?: _state.value.info,
                             banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
+                            maxSessions = maxSessions,
                         )
                 },
             )
