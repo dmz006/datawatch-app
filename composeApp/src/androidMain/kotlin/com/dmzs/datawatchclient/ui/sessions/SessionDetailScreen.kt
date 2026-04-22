@@ -202,13 +202,28 @@ public fun SessionDetailScreen(
                         Icon(Icons.Filled.Close, contentDescription = "Back")
                     }
                 },
-                // v0.33.21: actions stripped. SessionInfoBar now hosts
-                // the state pill (clickable → override), Stop / Restart,
-                // and ⏱ Timeline. Mute + Schedule reply are reachable
-                // from the Sessions row (swipe) and composer (clock
-                // button) respectively — no need to duplicate in the
-                // header. Only the close icon remains in the top bar.
-                actions = {},
+                // v0.33.22: connection dot moved from SessionInfoBar to
+                // the right side of the TopAppBar, matching PWA's header
+                // connection indicator. Everything else (state pill,
+                // Stop, Timeline, chips) still lives in SessionInfoBar
+                // below the tabs.
+                actions = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(end = 12.dp)
+                                .size(10.dp)
+                                .background(
+                                    color =
+                                        when (state.reachable) {
+                                            true -> Color(0xFF22C55E) // green-500
+                                            false -> Color(0xFFEF4444) // red-500
+                                            null -> Color(0xFF94A3B8) // slate-400
+                                        },
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                ),
+                    )
+                },
             )
         },
     ) { padding ->
@@ -488,21 +503,8 @@ private fun SessionInfoBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
         ) {
-            // Connection dot — green / red / grey per profile reachability.
-            Box(
-                modifier =
-                    Modifier
-                        .size(8.dp)
-                        .background(
-                            color =
-                                when (reachable) {
-                                    true -> Color(0xFF22C55E) // green-500
-                                    false -> Color(0xFFEF4444) // red-500
-                                    null -> Color(0xFF94A3B8) // slate-400
-                                },
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                        ),
-            )
+            // v0.33.22 — dot moved to TopAppBar right side. SessionInfoBar
+            // now starts straight with the backend chip like PWA.
             if (!backend.isNullOrBlank()) {
                 InfoBadge(text = backend.lowercase(), color = MaterialTheme.colorScheme.primary)
             }
@@ -767,38 +769,78 @@ private fun ConnectionBanner(onRetry: () -> Unit) {
  */
 @Composable
 private fun InputRequiredBanner(prompt: String?) {
-    val accent = MaterialTheme.colorScheme.tertiary
+    // v0.33.22 — big yellow PWA-style `.needs-input-banner` block
+    // (app.js:1584-1589). Left-aligned "Input Required" pill, multi-
+    // line prompt body (last ~6 lines), ✕ dismiss on the right. Big
+    // amber fill + bold header so it's unmissable, matching the PWA
+    // treatment.
+    var dismissed by remember(prompt) { mutableStateOf(false) }
+    if (dismissed) return
+    val lines =
+        prompt?.trim().orEmpty().lines().map { it.trim() }.filter { it.isNotEmpty() }
+            .takeLast(PROMPT_CTX_LINES)
+    val amberBg = Color(0xFFFEF3C7) // amber-100
+    val amberFg = Color(0xFF92400E) // amber-800
+    val amberEdge = Color(0xFFD97706) // amber-600
     Surface(
-        color = accent.copy(alpha = 0.12f),
+        color = amberBg,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.Top,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .width(3.dp)
-                        .padding(end = 8.dp)
-                        .background(accent),
-            )
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "INPUT REQUIRED",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = accent,
-                )
-                Text(
-                    prompt?.takeIf { it.isNotBlank() } ?: "Session is waiting on a reply.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 3,
-                    modifier = Modifier.padding(top = 2.dp),
+                Box(
+                    modifier =
+                        Modifier
+                            .background(
+                                color = amberEdge,
+                                shape = RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        "Input Required",
+                        fontSize = 11.sp,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = Color.White,
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+                if (lines.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(top = 6.dp)) {
+                        lines.forEach { l ->
+                            Text(
+                                l,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = amberFg,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "Session is waiting on a reply.",
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = amberFg,
+                    )
+                }
+            }
+            IconButton(onClick = { dismissed = true }, modifier = Modifier.size(28.dp)) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Dismiss",
+                    modifier = Modifier.size(16.dp),
+                    tint = amberFg,
                 )
             }
         }
     }
 }
+
+private const val PROMPT_CTX_LINES = 6
 
 /**
  * Bottom-sheet session timeline. Prefers the parent server's

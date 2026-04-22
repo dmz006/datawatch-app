@@ -63,6 +63,25 @@ public object WsOutbound {
     }
 
     /**
+     * Send a `send_input` frame — the PWA path for composer text
+     * (app.js:2341). Wire shape:
+     * `{type:"send_input", data:{session_id, text}}`.
+     *
+     * Important: the server does **not** expose
+     * `POST /api/sessions/reply` — earlier mobile code posted there
+     * and got 404. PWA has never used a REST endpoint for replies;
+     * send_input over the already-open WS hub is the only path.
+     */
+    public fun sendInput(
+        sessionId: String,
+        text: String,
+    ): Boolean {
+        val body =
+            """{"type":"send_input","data":{"session_id":"${escape(sessionId)}","text":"${escape(text)}"}}"""
+        return tryEmit(sessionId, body)
+    }
+
+    /**
      * Send a generic `command` frame. PWA uses this for `sendkey`
      * (arrow/PageUp/Escape), `tmux-copy-mode`, `tmux-kill`.
      * Example: `sendCommand(id, "sendkey $id: Escape")`.

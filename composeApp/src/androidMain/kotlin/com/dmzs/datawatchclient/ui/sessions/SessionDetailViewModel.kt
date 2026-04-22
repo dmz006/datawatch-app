@@ -192,22 +192,23 @@ public class SessionDetailViewModel(
 
     public fun sendReply() {
         val text = _replyText.value.trim()
-        val profile = profileCache ?: return
         if (text.isEmpty() || _replying.value) return
         _replying.value = true
         _banner.value = null
-        viewModelScope.launch {
-            val transport = ServiceLocator.transportFor(profile)
-            transport.replyToSession(sessionId, text).fold(
-                onSuccess = {
-                    _replyText.value = ""
-                    _replying.value = false
-                },
-                onFailure = { err ->
-                    _replying.value = false
-                    _banner.value = "Reply failed: ${err.describe()}"
-                },
-            )
+        // v0.33.22: send via WS `send_input` (PWA path at app.js:2341)
+        // instead of the old REST `POST /api/sessions/reply` which the
+        // server doesn't expose (404). WsOutbound emits the frame on
+        // the open hub socket — fire-and-forget since the server
+        // doesn't ack replies; success is observed via the next
+        // pane_capture frame showing the input landing.
+        val ok = com.dmzs.datawatchclient.transport.ws.WsOutbound
+            .sendInput(sessionId, text)
+        if (ok) {
+            _replyText.value = ""
+            _replying.value = false
+        } else {
+            _replying.value = false
+            _banner.value = "Reply failed: WS not connected (open session once more)."
         }
     }
 
@@ -224,13 +225,12 @@ public class SessionDetailViewModel(
         _replying.value = true
         _banner.value = null
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).replyToSession(sessionId, trimmed).fold(
-                onSuccess = { _replying.value = false },
-                onFailure = { err ->
-                    _replying.value = false
-                    _banner.value = "Quick reply failed: ${err.describe()}"
-                },
-            )
+            val ok = com.dmzs.datawatchclient.transport.ws.WsOutbound
+                .sendInput(sessionId, trimmed)
+            _replying.value = false
+            if (!ok) {
+                _banner.value = "Quick reply failed: WS not connected."
+            }
         }
     }
 
