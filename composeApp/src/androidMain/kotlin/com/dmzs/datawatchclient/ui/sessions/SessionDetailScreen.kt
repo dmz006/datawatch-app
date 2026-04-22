@@ -202,64 +202,13 @@ public fun SessionDetailScreen(
                         Icon(Icons.Filled.Close, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    state.session?.state?.let { s ->
-                        // PWA: tap state pill → state-override menu.
-                        StatePill(s, onClick = { stateMenuOpen = true })
-                    }
-                    // Stop — promoted from the overflow menu so it's
-                    // one tap for a running/waiting session, matching
-                    // the PWA header Stop button.
-                    val isActive =
-                        state.session?.state == SessionState.Running ||
-                            state.session?.state == SessionState.Waiting
-                    if (isActive) {
-                        IconButton(onClick = { killConfirm = true }) {
-                            Icon(
-                                Icons.Filled.Stop,
-                                contentDescription = "Stop session",
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                    // Phones can't fit five icons + title + chip. Keep one
-                    // utility action (overflow) — Timeline, Mute, Override,
-                    // Schedule live inside the menu to free title width.
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
-                    }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Timeline") },
-                            onClick = {
-                                menuOpen = false
-                                timelineOpen = true
-                            },
-                        )
-                        val muted = state.session?.muted == true
-                        DropdownMenuItem(
-                            text = { Text(if (muted) "Unmute" else "Mute") },
-                            onClick = {
-                                menuOpen = false
-                                vm.toggleMute()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Override state…") },
-                            onClick = {
-                                menuOpen = false
-                                stateMenuOpen = true
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Schedule reply…") },
-                            onClick = {
-                                menuOpen = false
-                                scheduleOpen = true
-                            },
-                        )
-                    }
-                },
+                // v0.33.21: actions stripped. SessionInfoBar now hosts
+                // the state pill (clickable → override), Stop / Restart,
+                // and ⏱ Timeline. Mute + Schedule reply are reachable
+                // from the Sessions row (swipe) and composer (clock
+                // button) respectively — no need to duplicate in the
+                // header. Only the close icon remains in the top bar.
+                actions = {},
             )
         },
     ) { padding ->
