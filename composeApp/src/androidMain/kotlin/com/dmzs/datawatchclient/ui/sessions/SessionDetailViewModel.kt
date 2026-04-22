@@ -65,11 +65,17 @@ public class SessionDetailViewModel(
         /**
          * Most-recent prompt text, used by the "input required" banner that
          * sits above the terminal when the session is in `waiting_input`.
-         * Prefers a live PromptDetected event over the cached
-         * `Session.lastPrompt` so realtime updates beat REST cache.
+         *
+         * Priority matches PWA `app.js:1574-1578`:
+         *  1. `session.promptContext` (multi-line — the captured last ~6
+         *     lines before the prompt detector fired); richest payload.
+         *  2. Live `PromptDetected` event text (from WS real-time stream).
+         *  3. `session.lastPrompt` (REST-cached single-line fallback).
          */
         public val pendingPromptText: String?
             get() {
+                val ctx = session?.promptContext?.takeIf { it.isNotBlank() }
+                if (ctx != null) return ctx
                 val live =
                     (
                         events.asReversed().firstOrNull { it is SessionEvent.PromptDetected }

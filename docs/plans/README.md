@@ -52,6 +52,8 @@ where relevant.*
 | B26 | Input-required banner should match PWA yellow style + X-to-close | 2026-04-22 | Open | PWA's `.needs-input-banner` is a distinct amber/yellow strip with a ✕ dismiss button (parent `e0f2bb0b` set font-size:11px, flex layout with a `btn-icon` X). Mobile `InlineNotices` amber strip has no dismiss button and uses the Material secondary color rather than PWA's yellow. Match PWA exactly. |
 | B27 | Terminal blank / no live update after first pane_capture | 2026-04-22 | Investigating | Two overlapping issues: (a) WS reconnects every 3-5 s even after v0.33.12 Data Layer + v0.33.13 watchdog-removal. v0.33.15 added verbose cause-chain logging; next trace will reveal whether it's OkHttp ping timeout, server-side idle close, or tailnet path flap. (b) **v0.33.16 fix** — `touch-action: none` on `.xterm-viewport` so horizontal pan gestures bubble to `#term` for scroll (was `pan-x` which captured + dropped), and `setMinSize(80, 24)` floor for non-claude backends matches PWA's `configCols \|\| 80` default — every TUI renders wider than the phone viewport so horizontal scroll is exercisable. |
 
+- watch and auto should be able to view monitoring stats for all connected servers
+
 ## Planned / In Progress
 
 v0.10.0 shipped 2026-04-19 (originally mis-tagged v1.0.0 — the 1.0 label

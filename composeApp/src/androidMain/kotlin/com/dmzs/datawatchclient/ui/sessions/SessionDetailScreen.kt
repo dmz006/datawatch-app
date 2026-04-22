@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,7 +44,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
@@ -1109,12 +1112,15 @@ private fun ChatEventList(
     val latestPromptIndex =
         events.indexOfLast { it is SessionEvent.PromptDetected }
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
-        items(
-            events,
-            key = { e -> "${e.sessionId}-${e.ts.toEpochMilliseconds()}-${e.hashCode()}" },
-        ) { ev ->
+        // v0.33.23: key by list index. The previous
+        // "${sessionId}-${ts}-${hashCode}" composite collided when the
+        // live PaneCapture SharedFlow replayed the same event twice
+        // (replay=1 + a subsequent live emit) → LazyColumn crashed
+        // with "Key … was already used". Index-based keys are the
+        // Compose-canonical fallback when no stable identifier exists.
+        itemsIndexed(events) { idx, ev ->
             ChatBubbleRow(ev)
-            if (ev is SessionEvent.PromptDetected && events.indexOf(ev) == latestPromptIndex) {
+            if (ev is SessionEvent.PromptDetected && idx == latestPromptIndex) {
                 QuickReplyButtons(onQuickReply = onQuickReply)
             }
         }
@@ -1411,6 +1417,21 @@ private fun ReplyComposer(
             singleLine = false,
             maxLines = 4,
             enabled = !sending && !recording,
+            // v0.33.23: explicit onSurface text color. Without this the
+            // composer inherited LocalContentColor from whichever Surface
+            // was closest in the tree — when the amber InputRequiredBanner
+            // was above it, the banner's contentColor tinted the text
+            // dark-amber-on-dark-surface → invisible black-on-black.
+            textStyle =
+                LocalTextStyle.current.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
         )
         IconButton(
             onClick = {
