@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -214,7 +216,27 @@ public fun SessionsScreen(
             if (visible.isEmpty()) {
                 EmptyState()
             } else {
-                LazyColumn {
+                // v0.33.15 (B9): datawatch eye watermark behind the
+                // sessions list. PWA centers the brand icon at ~85%
+                // page width as a faint background. Uses the shared
+                // launcher-foreground vector which already draws the
+                // eye + matrix + arcs; clipped to the list bounds
+                // and painted at 10% alpha so it doesn't compete with
+                // the row content.
+                androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(
+                            id = com.dmzs.datawatchclient.R.drawable.ic_launcher_foreground,
+                        ),
+                        contentDescription = null,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.85f)
+                                .aspectRatio(1f)
+                                .align(androidx.compose.ui.Alignment.Center)
+                                .alpha(0.10f),
+                    )
+                    LazyColumn {
                     // Key = profile:id to avoid LazyColumn duplicate-key crashes
                     // when the same session id appears under both a server's
                     // primary list and another server's federation fan-out.
@@ -252,7 +274,8 @@ public fun SessionsScreen(
                             onDelete = { vm.delete(session.id) },
                         )
                     }
-                }
+                    } // LazyColumn close
+                } // watermark Box close
             }
         }
     }
@@ -489,10 +512,13 @@ private fun SessionRow(
                         Modifier
                     },
                 )
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongPress,
-                )
+                // v0.33.15 (B3): pointerInput BEFORE combinedClickable
+                // so the horizontal-drag detector sees events first.
+                // combinedClickable's internal pointerInput consumed
+                // drag gestures on the main-pass in the previous order,
+                // so swipe-to-mute never fired — the finger-up just
+                // looked like a tap that Compose swallowed via the
+                // press-release cycle.
                 .pointerInput(session.id, selectionMode) {
                     if (selectionMode) return@pointerInput
                     var dx = 0f
@@ -502,6 +528,10 @@ private fun SessionRow(
                         onDragCancel = { dx = 0f },
                     ) { _, delta -> dx += delta }
                 }
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongPress,
+                )
                 .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
     ) {
         // Header row: id + state pill + mute/more actions.

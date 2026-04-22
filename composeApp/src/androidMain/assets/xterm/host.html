@@ -370,6 +370,14 @@
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
         }
+        // Force viewport to the bottom after the write batch so the
+        // visible 40 rows show the *tail* of the capture, not an
+        // arbitrary scrollback position. Parent PWA does this
+        // implicitly because its xterm `scrollOnOutput` default is
+        // true; we make it explicit after a large paste since a
+        // CapturePaneANSI-style first capture can contain thousands
+        // of lines and xterm's auto-scroll can end up mid-buffer.
+        try { term.scrollToBottom(); } catch (e) {}
       } catch (e) {
         log('paneCapture failed: ' + e);
       }

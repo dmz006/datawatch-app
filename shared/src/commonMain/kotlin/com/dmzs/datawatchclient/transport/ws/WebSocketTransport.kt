@@ -136,7 +136,18 @@ public class WebSocketTransport(
                     }
                     backoff = INITIAL_BACKOFF_MS
                 } catch (e: Throwable) {
-                    println("WsTransport: $wsUrl failed: ${e::class.simpleName}: ${e.message}")
+                    // Include cause chain — Ktor wraps OkHttp's real failure
+                    // inside a generic CancellationException / CloseReason, so
+                    // the inner cause is what tells us whether it was a
+                    // server-close (4xxx code), a ping timeout, or
+                    // OkHttp-level EOFException on read. Needed to diagnose
+                    // the v0.33.x "WS re-connects every few seconds even
+                    // though the server is healthy" reports.
+                    val chain =
+                        generateSequence(e as Throwable?) { it.cause }
+                            .take(4)
+                            .joinToString(" ← ") { "${it::class.simpleName}: ${it.message?.take(80)}" }
+                    println("WsTransport: $wsUrl failed — $chain")
                     runCatching {
                         producer.trySend(
                             SessionEvent.Error(

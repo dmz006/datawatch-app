@@ -88,8 +88,19 @@ public fun DetectionFiltersCard() {
                 completionPatterns = d.stringArray("completion_patterns")
                 rateLimitPatterns = d.stringArray("rate_limit_patterns")
                 inputNeededPatterns = d.stringArray("input_needed_patterns")
-                debounce = (d?.get("prompt_debounce") as? JsonPrimitive)?.content ?: "3"
-                cooldown = (d?.get("notify_cooldown") as? JsonPrimitive)?.content ?: "15"
+                // Match PWA's `cfg.value || default` semantics
+                // (app.js:6022-6023) — server sends 0 when the YAML
+                // omits the key, and PWA treats 0 as "use default 3 / 15"
+                // because 0 is falsy in JS. Kotlin `.content ?: "x"`
+                // only kicks in for nulls, so check for "0"/"" too.
+                debounce =
+                    (d?.get("prompt_debounce") as? JsonPrimitive)?.content
+                        ?.takeUnless { it == "0" || it.isBlank() }
+                        ?: "3"
+                cooldown =
+                    (d?.get("notify_cooldown") as? JsonPrimitive)?.content
+                        ?.takeUnless { it == "0" || it.isBlank() }
+                        ?: "15"
             },
             onFailure = {
                 banner = "Config load failed — ${it.message ?: it::class.simpleName}"
@@ -187,24 +198,28 @@ public fun DetectionFiltersCard() {
         PatternSection(
             title = "Prompt patterns",
             patterns = promptPatterns,
+            defaults = BUILTIN_PROMPT_PATTERNS,
             onAdd = { p -> promptPatterns = promptPatterns + p; save() },
             onRemove = { p -> promptPatterns = promptPatterns - p; save() },
         )
         PatternSection(
             title = "Completion patterns",
             patterns = completionPatterns,
+            defaults = BUILTIN_COMPLETION_PATTERNS,
             onAdd = { p -> completionPatterns = completionPatterns + p; save() },
             onRemove = { p -> completionPatterns = completionPatterns - p; save() },
         )
         PatternSection(
             title = "Rate-limit patterns",
             patterns = rateLimitPatterns,
+            defaults = BUILTIN_RATE_LIMIT_PATTERNS,
             onAdd = { p -> rateLimitPatterns = rateLimitPatterns + p; save() },
             onRemove = { p -> rateLimitPatterns = rateLimitPatterns - p; save() },
         )
         PatternSection(
             title = "Input-needed patterns",
             patterns = inputNeededPatterns,
+            defaults = BUILTIN_INPUT_NEEDED_PATTERNS,
             onAdd = { p -> inputNeededPatterns = inputNeededPatterns + p; save() },
             onRemove = { p -> inputNeededPatterns = inputNeededPatterns - p; save() },
         )
@@ -238,10 +253,18 @@ private fun TimingRow(label: String, value: String, onChange: (String) -> Unit) 
 private fun PatternSection(
     title: String,
     patterns: List<String>,
+    defaults: List<String>,
     onAdd: (String) -> Unit,
     onRemove: (String) -> Unit,
 ) {
     var newPattern by remember { mutableStateOf("") }
+    // v0.33.15 (B23): when the server returns an empty list, render
+    // PWA's built-in defaults grayed-out + non-removable so the user
+    // sees what patterns are active implicitly. First add call swaps
+    // to the user's own list and the defaults vanish (matches PWA
+    // `isUsingDefaults` semantics at app.js:6042).
+    val usingDefaults = patterns.isEmpty()
+    val displayed = if (usingDefaults) defaults else patterns
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
         Text(
             title,
@@ -249,7 +272,14 @@ private fun PatternSection(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 8.dp),
         )
-        patterns.forEach { p ->
+        if (usingDefaults) {
+            Text(
+                "Using built-in defaults — add a pattern to override.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        displayed.forEach { p ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -259,13 +289,21 @@ private fun PatternSection(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
+                    color =
+                        if (usingDefaults) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
-                IconButton(onClick = { onRemove(p) }, modifier = Modifier.width(32.dp)) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        "Remove",
-                        tint = MaterialTheme.colorScheme.error,
-                    )
+                if (!usingDefaults) {
+                    IconButton(onClick = { onRemove(p) }, modifier = Modifier.width(32.dp)) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            "Remove",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             }
             HorizontalDivider()
@@ -292,6 +330,26 @@ private fun PatternSection(
         }
     }
 }
+
+// Built-in default patterns mirror PWA `builtinDefaults` at app.js:6015.
+// Server sends null when the YAML is empty; displaying defaults greyed
+// out shows users what's implicitly active. Adding any pattern swaps
+// to an explicit user-owned list.
+private val BUILTIN_PROMPT_PATTERNS: List<String> =
+    listOf(
+        "? ", "> ", "$ ", "# ", "[y/N]", "[Y/n]", "Do you want to", "Allow ",
+        "Trust ", "(y/n)", "Would you like", "Proceed?", "Enter to confirm",
+        "❯", "Ask anything",
+    )
+private val BUILTIN_COMPLETION_PATTERNS: List<String> =
+    listOf("DATAWATCH_COMPLETE:")
+private val BUILTIN_RATE_LIMIT_PATTERNS: List<String> =
+    listOf(
+        "DATAWATCH_RATE_LIMITED:", "You've hit your limit",
+        "rate limit exceeded", "quota exceeded",
+    )
+private val BUILTIN_INPUT_NEEDED_PATTERNS: List<String> =
+    listOf("DATAWATCH_NEEDS_INPUT:")
 
 private fun JsonObject?.stringArray(key: String): List<String> =
     (this?.get(key) as? JsonArray)

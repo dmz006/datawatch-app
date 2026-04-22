@@ -483,24 +483,64 @@ private fun InlineNotices(events: List<SessionEvent>) {
         events.asReversed().firstOrNull { it is SessionEvent.RateLimited }
             as? SessionEvent.RateLimited
     if (latestPrompt == null && latestRateLimit == null) return
+    // v0.33.15 (B26): PWA-style `.needs-input-banner` — distinct
+    // amber/yellow with an X dismiss button. Each banner kind can be
+    // individually closed; closure is per-recomposition (re-appears
+    // when a fresh prompt/rate-limit event arrives, matching PWA
+    // where the X just hides the current display).
+    var promptDismissed by remember(latestPrompt?.ts) { mutableStateOf(false) }
+    var rateDismissed by remember(latestRateLimit?.ts) { mutableStateOf(false) }
+    val showPrompt = latestPrompt != null && !promptDismissed
+    val showRate = latestRateLimit != null && !rateDismissed
+    if (!showPrompt && !showRate) return
+    val yellow = androidx.compose.ui.graphics.Color(0xFFFEF3C7) // amber-100
+    val yellowText = androidx.compose.ui.graphics.Color(0xFF92400E) // amber-800
     Surface(
-        color = MaterialTheme.colorScheme.tertiaryContainer,
+        color = yellow,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-            latestPrompt?.let {
-                Text(
-                    "⌨ prompt: ${it.prompt.text.take(120)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+            if (showPrompt) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Waiting for input — ${latestPrompt!!.prompt.text.take(60)}",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = yellowText,
+                    )
+                    IconButton(
+                        onClick = { promptDismissed = true },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            "Dismiss",
+                            modifier = Modifier.size(16.dp),
+                            tint = yellowText,
+                        )
+                    }
+                }
             }
-            latestRateLimit?.let {
-                Text(
-                    "⏳ rate-limited" + (it.retryAfter?.let { ts -> " · retry at $ts" } ?: ""),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
+            if (showRate) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Rate-limited" + (latestRateLimit!!.retryAfter?.let { ts -> " · retry at $ts" } ?: ""),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = yellowText,
+                    )
+                    IconButton(
+                        onClick = { rateDismissed = true },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            "Dismiss",
+                            modifier = Modifier.size(16.dp),
+                            tint = yellowText,
+                        )
+                    }
+                }
             }
         }
     }
