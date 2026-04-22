@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -58,6 +59,22 @@ public class SchedulesViewModel : ViewModel() {
             .distinctUntilChanged { a, b -> a.id == b.id }
             .onEach { refresh() }
             .launchIn(viewModelScope)
+
+        // 15-second poll so Scheduled Events stays live without the
+        // user hitting a Refresh button — matches PWA's ticking
+        // behaviour (B16). Invisible to the UI; refreshing flag is
+        // only flipped inside [refresh] while the HTTP call is in
+        // flight, so there's no visible loading flicker every tick.
+        viewModelScope.launch {
+            while (isActive) {
+                kotlinx.coroutines.delay(SCHEDULES_POLL_MS)
+                refresh()
+            }
+        }
+    }
+
+    private companion object {
+        const val SCHEDULES_POLL_MS: Long = 15_000L
     }
 
     public fun refresh() {

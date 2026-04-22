@@ -217,21 +217,22 @@ public fun SettingsScreen(
             ) {
                 when (activeTab) {
                     SettingsTab.Monitor -> {
-                        // Matches PWA `data-group="monitor"` sections at
-                        // app.js:3238-3295: System Statistics → Memory
-                        // Browser → Scheduled Events → Daemon Log.
-                        // Interfaces / KillOrphans / Update / Restart
-                        // are mobile-added admin actions that don't have
-                        // a PWA surface; keep them here so the daemon
-                        // management surface is one tap away.
+                        // v0.33.13 reshuffle per B18/B19/B20:
+                        //  - Kill Orphans moves between Stats and Memory.
+                        //  - Network Interfaces dropped (B18 — not on PWA).
+                        //  - Update + Restart daemon moved to About (B19)
+                        //    since those target daemon meta + already
+                        //    sit next to version/host info there.
+                        // Final order matches PWA
+                        // `data-group="monitor"`: Stats → Memory
+                        // Browser → Scheduled Events → Daemon Log, with
+                        // Kill Orphans inserted after Stats as the
+                        // primary mobile admin action.
                         com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
-                        com.dmzs.datawatchclient.ui.ops.InterfacesCard()
-                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
-                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
-                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                     }
                     SettingsTab.General -> {
                         // Matches PWA `data-group="general"`: gc_* config
@@ -328,9 +329,15 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.filters.FiltersCard()
                     }
                     SettingsTab.About -> {
+                        // v0.33.13 (B19 + B24): Update + Restart daemon
+                        // cards moved in from Monitor (daemon meta lives
+                        // here). McpToolsCard dropped — PWA doesn't put
+                        // the MCP tool catalogue on About and users
+                        // rarely need it at-a-glance.
                         AboutCard(activeProfile = activeProfile)
                         com.dmzs.datawatchclient.ui.about.ApiLinksCard()
-                        com.dmzs.datawatchclient.ui.about.McpToolsCard()
+                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
+                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                         com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }

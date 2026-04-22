@@ -229,25 +229,16 @@ public fun TerminalView(
         com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
     }
 
-    // Watchdog — if no pane_capture arrives within 5 seconds of the
-    // session opening, reset the first-capture flag so the next
-    // frame (whenever it arrives) is treated as a fresh reset-and-
-    // write. Mirrors PWA's `startTermConnectWatchdog` (app.js ~line
-    // 1723). We don't force a WS reconnect — the underlying
-    // WebSocketTransport already reconnects on error — but we do
-    // un-freeze and clear the "initial seen" state.
-    LaunchedEffect(sessionId) {
-        kotlinx.coroutines.delay(5_000L)
-        val sawAny = events.any { it is SessionEvent.PaneCapture }
-        if (!sawAny) {
-            Log.w("DwTerm", "watchdog: no pane_capture in 5s for $sessionId; resetting")
-            com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
-            webViewRef.value?.evaluateJavascript(
-                "window.dwClear && window.dwClear();",
-                null,
-            )
-        }
-    }
+    // Watchdog removed in v0.33.13: it captured `events` at
+    // LaunchedEffect composition (keyed only on sessionId), evaluated
+    // the STALE captured list 5s later, and — if that snapshot had no
+    // pane_capture — called `dwClear()` + reset the first-seen flag.
+    // On a live session this reliably blanked the terminal 5s after
+    // first open even when pane_captures had been streaming in the
+    // whole time. The single-source pane_capture pipeline landed in
+    // v0.33.8 already handles "no frame yet" by just not writing;
+    // the explicit clear was a leftover from the legacy raw_output
+    // fallback path and is no longer useful.
 
     AndroidView(
         modifier = modifier,

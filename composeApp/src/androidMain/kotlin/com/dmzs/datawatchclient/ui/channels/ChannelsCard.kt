@@ -83,7 +83,7 @@ public fun ChannelsCard() {
             modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PwaSectionTitle("Messaging channels", modifier = Modifier.weight(1f))
+            PwaSectionTitle("Communication Configuration", modifier = Modifier.weight(1f))
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add channel")
             }

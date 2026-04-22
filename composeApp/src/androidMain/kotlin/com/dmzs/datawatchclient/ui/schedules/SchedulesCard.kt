@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -32,6 +34,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.Schedule
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+
+private const val SCHEDULES_PAGE_SIZE = 10
 
 /**
  * Settings → Schedules card. Lists `/api/schedule` entries for the active
@@ -60,25 +64,15 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PwaSectionTitle("Schedules", modifier = Modifier.weight(1f))
-                IconButton(onClick = vm::refresh, enabled = state.supported && !state.refreshing) {
-                    if (state.refreshing) {
-                        androidx.compose.material3.CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.padding(6.dp),
-                        )
-                    } else {
-                        Icon(
-                            Icons.Filled.Refresh,
-                            contentDescription = "Refresh",
-                            tint =
-                                if (state.supported) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                    }
+                // v0.33.13 (B16): title matches PWA "Scheduled Events".
+                // Explicit Refresh button dropped — VM polls every 15 s
+                // and re-fetches on active-profile change.
+                PwaSectionTitle("Scheduled Events", modifier = Modifier.weight(1f))
+                if (state.refreshing) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.padding(horizontal = 8.dp).size(16.dp),
+                    )
                 }
                 IconButton(onClick = { addOpen = true }, enabled = state.supported) {
                     Icon(
@@ -130,12 +124,43 @@ private fun SchedulesCardBody(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        state.schedules.forEachIndexed { idx, schedule ->
+        // v0.33.13 (B17): paginate 10 per page. PWA's Scheduled
+        // Events does the same — render-all was eating the entire
+        // Settings scroll on servers with many entries.
+        var pageState by remember(state.schedules.size) { mutableStateOf(0) }
+        val pageSize = SCHEDULES_PAGE_SIZE
+        val total = state.schedules.size
+        val lastPage = ((total - 1).coerceAtLeast(0)) / pageSize
+        val page = pageState.coerceIn(0, lastPage)
+        val slice = state.schedules.drop(page * pageSize).take(pageSize)
+        slice.forEachIndexed { idx, schedule ->
             if (idx > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ScheduleRow(
                 schedule = schedule,
                 onDelete = { vm.delete(schedule.id) },
             )
+        }
+        if (total > pageSize) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { pageState = (page - 1).coerceAtLeast(0) }, enabled = page > 0) {
+                    Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = "Previous page")
+                }
+                Text(
+                    "Page ${page + 1} of ${lastPage + 1}  ·  $total total",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                IconButton(
+                    onClick = { pageState = (page + 1).coerceAtMost(lastPage) },
+                    enabled = page < lastPage,
+                ) {
+                    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Next page")
+                }
+            }
         }
     }
 

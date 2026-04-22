@@ -8,32 +8,47 @@ when work warrants formal planning (3+ files or non-trivial architecture).
 
 ## Active bugs
 
+*Live-device testing against a v4.0.7 server on 2026-04-21 + 22
+surfaced 18 new items on top of the v0.19-era B1–B7 set. B1/B2/B4
+are closed by v0.33.x fixes; B3/B5/B6/B7 remain. New items B8–B25
+classified below and cross-linked to
+[dmz006/datawatch-app#1](https://github.com/dmz006/datawatch-app/issues/1)
+where relevant.*
+
+### Closed by v0.33.x
+
+| ID | Title | Closed in | Notes |
+|----|-------|-----------|-------|
+| B1 | Terminal TUI unreadable on mobile | v0.23.0 + v0.33.5 + v0.33.8 | `resize_term` WS frame (BL18 path), single-source pane_capture renderer, host.html horizontal-scroll + 11px default font, pane_capture live bus bypassing the DB. Verify: live claude-code session renders at 120 cols with horizontal swipe to pan. |
+| B2 | Android Auto head unit doesn't list datawatch | v0.33.0 + v0.33.9 | v0.33.0 bundled `:auto` into the composeApp APK (`missingDimensionStrategy`); v0.33.9 added the `FOREGROUND_SERVICE_CONNECTED_DEVICE` permission Android 14+ requires for CarAppService's `connectedDevice` foregroundServiceType. User must still toggle Android Auto → Settings → version 10× → Unknown sources, which is one-time per phone. |
+| B4 | Settings → LLM / Comms say "server unreachable" | v0.33.6 | `listBackends` + `listChannels` DTOs were expecting a different shape than the shipped server; fixed to accept both old and new shapes. Serialization errors no longer bucket as `Unreachable`. |
+
+### Open
+
 | ID | Title | Reported | Status | Notes |
 |----|-------|----------|--------|-------|
-| B1 | Terminal appears frozen / unreadable on TUI sessions (e.g. Claude Code) | 2026-04-19 | Investigating — partial mitigation | Live-validated 2026-04-20 00:05 against session `787e*` on the user's Galaxy S24 Ultra (Android 16). **Actual root cause is NOT a freeze.** Logcat confirms `onReady` + FitAddon + `initial flush` + continuous `incremental:` writes all fire correctly. Screenshot shows scattered single characters (`p g`, `a i`, `B strapping…` / `Bootstrapping…`) — the server is streaming a TUI (Claude Code's cursor-positioned UI) built for ~80 cols, and xterm is sized to 39 cols × 29 rows (FitAddon's honest answer to a 384 px viewport). Cursor-position escapes like `\e[12;45H` address columns that don't exist, xterm drops the char into wrap territory, result is unreadable. Phase 1 (write-cursor keyed to sessionId) still landed and did fix a real latent bug — but it was not the primary symptom. Real fix needs server-side PTY resize driven by a client-sent `{"type":"resize","cols":N,"rows":M}` WS frame; the WebSocket transport has no outbound API for this today, and parent-repo coordination is required to confirm the server accepts it. Short-term mitigation shipped: WebView pinch-zoom enabled so the full 80-col TUI can be panned/zoomed. Proper fix tracked as **BL18** (WS resize negotiation) for v1.1. |
-| B2 | Android Auto head unit does not list the datawatch app | 2026-04-19 | Open | User confirmed the phone app is installed; Auto category `androidx.car.app.category.MESSAGING` is declared on `com.dmzs.datawatchclient` (public) in `auto/src/publicMessaging/AndroidManifest.xml`. Likely causes: (a) user is running the `.dev` variant, which is Auto-enabled only in the `devPassenger` flavor behind the gate from ADR-0042; (b) CarAppService isn't being enumerated because the car-app minimum API on the head unit is below what we declare; (c) Play "unknown sources" Auto list needs a DHU-side toggle. Verify by `adb shell pm list packages \| grep datawatch` + check which applicationId is installed. |
-| B3 | Swipe-to-mute on a session row does not toggle mute | 2026-04-19 | Open | Gesture is in `SessionsScreen` swipe handler; mute state is round-tripped via `/api/sessions/mute` on the server and locally in `SessionRepository`. Verify gesture threshold fires, transport call succeeds, and DB mute flag is observed by the list. |
-| B4 | Channels tab shows "server unreachable" | 2026-04-19 | Open | `ChannelsScreen` reads `/api/backends` on the active profile. "Server unreachable" is the generic unreachable banner from `TransportError.Unreachable`. Likely causes: (a) active profile has a stale URL; (b) `/api/backends` is not exposed on the server version the user is pointing at; (c) bearer token rejected; (d) the screen is retrying a cached profile after the active profile was swapped. Confirm by tapping a session in the same session — if Sessions works but Channels fails, it's endpoint-specific. |
-| B5 | Stats screen is minimal compared to PWA | 2026-04-19 | Open | `StatsScreen` shows CPU / Memory / Disk / GPU bars + session counts + uptime (`/api/stats`, 5 s poll). PWA exposes more (eBPF per-process network, disk-partition breakdowns, GPU detail). Extended metrics are out-of-scope per ADR-0019 and are view-only on the parity-plan (v1.3). This bug tracks the **UX perception** — title, density, legend — not the server data contract. Decide: is this a bug (fix layout/density) or a BL (re-scope)? Needs user triage. |
-| B6 | Push notifications not confirmed working | 2026-04-19 | Open | `PushRegistrar` fires `POST /api/devices/register` on first successful connection (FCM token preferred, ntfy fallback). Diagnostic steps: (1) Settings → Diagnostics → last push registration result; (2) `adb logcat PushRegistrar:V NtfyFallbackService:V`; (3) server-side `GET /api/devices` to confirm the phone's registration; (4) trigger a test from the server. No code change made until a failure mode is isolated. |
-| B7 | CI ktlintCheck fails with "KtLint failed to parse file: FederationDtos.kt" | 2026-04-20 | Open | Pre-existing on `main` since at least the `ca2bd90` commit — every recent CI run shows the same failure. File content is plain Kotlin with no BOM / weird chars (verified via `od -c`). Looks like a ktlint / Kotlin version skew triggered by the `Map<String, List<SessionDto>>` default-valued field. AGENT.md says "ktlint flipped from warnings-only to failure in Sprint 5" but the setting already flipped earlier. Fix options: (a) bump ktlint-gradle, (b) revert to warnings-only until Sprint-5-equivalent hardening, (c) restructure FederationDtos.kt to sidestep the parser bug. Deferred — blocks green CI but is orthogonal to v0.11. |
-- sessions list does not have datawatch eye in background like PWA
-- settings tab issues
--- monitor tab issues
---- no system statistics with real time details streaming
---- session statistics and ebpf status are missing (with wheel and graphs for all)
---- no sessions list with details about sessions (active) and link to sessions page with "all" visible
---- no chat channels configured and status
---- no llm backend configured and status
---- no list of chat not enabled
---- schedules - should that be scheduled events? why is there a refresh? all elements should regularly be syncing and keeping up to date
---- scheduled events should have pagination, it's too long and takes a lot of space, plus pwa has pagination and it should have matched
---- not sure why network interfaces is there
---- update and restart should be on the about tab
---- kill orphans should be  after system statistics and before memory browser
--- comms tab
---- messaging channels should be communicatoin configuration
---- 
+| B3 | Swipe-to-mute on a session row does not toggle mute | 2026-04-19 | Open | Gesture in `SessionsScreen` swipe handler; mute state round-tripped via `/api/sessions/mute`. Needs reproducer trace — threshold fires but toggle doesn't land. |
+| B5 | Stats screen lacks PWA density + eBPF / GPU detail | 2026-04-19 | Open | `StatsScreen` shows CPU / mem / disk / GPU + session counts + uptime. PWA shows eBPF per-process, disk partitions, GPU detail. Partially addressed by v0.33.7 Monitor card reshuffle but eBPF row remains ⏳ post-1.0 per parity-plan. |
+| B6 | Push notifications not confirmed working | 2026-04-19 | Open | Needs live FCM + ntfy test. No code change until a failure mode isolates. |
+| B7 | CI ktlintCheck fails parsing FederationDtos.kt | 2026-04-20 | Open | Pre-existing kt-lint/Kotlin version skew. Local `:composeApp:ktlintCheck` passes; CI runner version differs. Options: bump ktlint-gradle, revert to warnings-only, restructure FederationDtos.kt. |
+| B8 | Session terminal starts, refreshes, then blank | 2026-04-22 | **Fixed in v0.33.13** | 5-second watchdog in TerminalView captured `events` as a stale closure (LaunchedEffect keyed on sessionId only), fired `dwClear()` 5 s after open regardless of whether pane_captures had been streaming. Watchdog removed — the single-source pane_capture pipeline (v0.33.8) handles "no frame yet" by not writing, so the belt-and-braces clear was a v0.5.0 leftover that caused more harm than good. |
+| B9 | Sessions list lacks datawatch eye background watermark | 2026-04-22 | Open | PWA shows the brand eye centered behind the session list at ~85 % page width. Needs a transparent drawable layered behind the LazyColumn. Cosmetic — defer if session-tab density work lands first. |
+| B10 | Monitor — no live system-stats streaming | 2026-04-22 | Open | StatsScreenContent polls `/api/stats` every 5 s. PWA updates at ~1 s over WS. Replace poll with a WS subscription or tighten interval. |
+| B11 | Monitor — no session-stats panel with eBPF wheels/graphs | 2026-04-22 | Open | Extends B5. PWA has per-session CPU / mem / net wheel + per-backend graphs. Full scope post-1.0 (ADR-0019). |
+| B12 | Monitor — no active-sessions list with link to "all" | 2026-04-22 | Open | PWA embeds a compact sessions list in Monitor so admins see active work without switching tabs. Could be a small card that reuses the sessions row renderer. |
+| B13 | Monitor — no "chat channels configured + status" summary | 2026-04-22 | Open | Separate from Comms → Messaging channels (which is CRUD). PWA's Monitor has a per-channel status row (connected / last message / last error). |
+| B14 | Monitor — no "LLM backend configured + status" summary | 2026-04-22 | Open | Same pattern as B13: a read-only Monitor card for the active backend with its health + last-used timestamp. |
+| B15 | Monitor — no list of chats not-enabled | 2026-04-22 | Open | PWA surfaces disabled-channel rows so admins can quickly re-enable. |
+| B16 | Monitor — "Schedules" should be "Scheduled Events" + auto-sync, no refresh button | 2026-04-22 | Open | SchedulesCard currently has a manual refresh. PWA title is "Scheduled Events" and it syncs on WS events + 15 s poll. Rename + drop the refresh button + add WS subscription. |
+| B17 | Monitor — Scheduled Events needs pagination | 2026-04-22 | Open | PWA paginates at ~10 rows per page. Mobile currently renders every schedule in a scrolling column that hijacks the outer Settings scroll. |
+| B18 | Monitor — Network Interfaces card doesn't belong on Monitor | 2026-04-22 | Open | Move to a server-health surface or remove. PWA doesn't put it here. |
+| B19 | Monitor — Update daemon + Restart daemon belong on About | 2026-04-22 | Open | Those actions target the daemon meta — About is where the daemon version + build info already live. |
+| B20 | Monitor — Kill Orphans should appear between System Statistics and Memory Browser | 2026-04-22 | Open | Current order: Stats → Log → Interfaces → Kill Orphans → Update → Restart. Wanted order: Stats → Kill Orphans → Memory Browser → Schedules → Log. |
+| B21 | Comms — "Messaging channels" card should be titled "Communication Configuration" | 2026-04-22 | Open | Matches PWA card title verbatim. Just a label rename. |
+| B22 | LLM — missing entire LLM Configuration section | 2026-04-22 | Open | PWA's LLM tab opens with a top "LLM Configuration" card listing the active backend + its configured model + per-backend base_url / api_key health. Our tab jumps straight to Memory. Add the missing top card. |
+| B23 | LLM — Detection Filters fields are empty on load | 2026-04-22 | Open | DetectionFiltersCard reads config.detection.*_patterns but displays blanks — either the read path doesn't pick up arrays under the autosave-flat-patch contract, or the initial GET /api/config now returns a different nesting. Needs logcat on a live profile. |
+| B24 | About — MCP tools list doesn't belong on About | 2026-04-22 | Open | PWA renders MCP docs inside a dedicated route/tab, not About. Either move to a new Monitor subsection or drop the card. |
+| B25 | About — missing sessions-details footer | 2026-04-22 | Open | PWA's About shows a tally of total sessions ever, current active count, server uptime. Mobile About only shows app version + daemon hostname. |
 
 ## Planned / In Progress
 
