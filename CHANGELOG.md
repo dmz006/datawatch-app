@@ -8,6 +8,59 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.2] — 2026-04-22 (Monitor widget expansion + voice/widget fixes)
+
+### Fixed
+
+- **Voice transcription routed to wrong server.** The voice composer
+  picked the first-enabled profile from the DB instead of honouring
+  `ActiveServerStore`, so users with >1 configured server had their
+  audio land on whichever server the DB returned first (reported
+  2026-04-22 — "is it being processed by another server?"). Voice
+  now uses the active profile and falls back to first-enabled only
+  when there's no active selection. Transcribe failures now toast
+  with the server name + error instead of silently dropping.
+- **Microphone silently did nothing.** The composer's mic button
+  launched `MediaRecorder` without first requesting `RECORD_AUDIO`,
+  so `start()` threw and `runCatching` swallowed it. Now checks the
+  runtime grant, requests via `ActivityResultContracts.RequestPermission`
+  on first use, and toasts on denial or recorder failure.
+- **Session Statistics card showed zero.** Many server builds either
+  don't populate `sessions_total` in `/api/stats` or lag by a poll
+  cycle. `StatsViewModel` now calls `listSessions()` alongside
+  `stats()` and overrides the stats-reported counts with the live
+  list count — matches the PWA Monitor's behaviour.
+- **`SessionsWidget` ignored `ActiveServerStore`.** Silently pinned
+  to the first enabled profile; now resolves active ? first-enabled
+  like `MonitorWidget`.
+- **Widgets flashed on refresh.** `onUpdate` pre-cleared the widget
+  to a "loading…" state before the async refresh landed. Removed the
+  pre-clear so the previous snapshot stays visible until new numbers
+  arrive.
+- **Widgets waited for 30-minute `AppWidgetManager` cadence.** Added
+  `ServiceLocator.refreshHomeWidgets()` called from
+  `StatsViewModel` + `SessionsViewModel` after each successful poll,
+  so widgets update live while the app is open.
+
+### Added
+
+- **Monitor widget: Swap / Network / GPU temp / Daemon rows.**
+  User request 2026-04-22 — the widget should show everything
+  real-time-worthy. Added swap bar (conditional on `swap_total >
+  0`), network row (`↓rx  ↑tx` cumulative bytes, label reflects
+  `ebpf_active` vs system fallback), GPU temp folded into the GPU
+  value text, and a daemon footer (`RSS · goroutines · fds`).
+  Widget min-height bumped to 3×4 cells.
+
+### Notes
+
+- `RECORD_AUDIO` permission is declared in the manifest; if you
+  had a previous build installed, the runtime grant carries over.
+  Fresh installs will prompt on first mic tap.
+- When upgrading between debug builds, always use `adb install
+  -r -d` — `adb uninstall` wipes the SQLCipher DB and Android
+  Keystore key; configured servers become unrecoverable.
+
 ## [0.34.0] — 2026-04-22 (glance surfaces — widgets + Wear tiles + multi-server)
 
 Minor bump per SemVer: new user-facing surfaces (second home-screen

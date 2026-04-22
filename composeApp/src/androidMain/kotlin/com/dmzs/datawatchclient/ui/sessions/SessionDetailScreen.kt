@@ -1370,6 +1370,35 @@ private fun ReplyComposer(
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
 
+    // RECORD_AUDIO is a runtime permission on Android 6+; without it
+    // MediaRecorder.start() throws and the tap appears to do nothing
+    // (2026-04-22 user report). Request at first use, start recording
+    // once granted — denial surfaces as a toast so the button never
+    // silently no-ops.
+    val micPermissionLauncher =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                runCatching { r.start() }
+                    .onSuccess { recorder = r }
+                    .onFailure { e ->
+                        android.widget.Toast.makeText(
+                            context,
+                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            } else {
+                android.widget.Toast.makeText(
+                    context,
+                    "Microphone permission denied — enable it in Settings.",
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+
     // When the session is waiting_input, show a compact row of quick-
     // reply chips above the text field — PWA composer shows the same
     // yes/no/continue/skip shortcuts so users can answer a prompt
@@ -1441,10 +1470,23 @@ private fun ReplyComposer(
                     val captured = r.stop() ?: return@IconButton
                     transcribing = true
                     scope.launch {
+                        // Honour ActiveServerStore so voice lands on the
+                        // server the user is actually viewing, not the
+                        // first-enabled profile by DB order. Before
+                        // 2026-04-22 this silently routed transcription
+                        // to whichever server the DB happened to return
+                        // first — baffling when multiple servers are
+                        // configured and only the non-active one has
+                        // Whisper enabled.
+                        val activeId =
+                            com.dmzs.datawatchclient.di.ServiceLocator
+                                .activeServerStore.get()
                         val profiles =
                             com.dmzs.datawatchclient.di.ServiceLocator
                                 .profileRepository.observeAll().first()
-                        val profile = profiles.firstOrNull { it.enabled }
+                        val profile =
+                            profiles.firstOrNull { it.id == activeId && it.enabled }
+                                ?: profiles.firstOrNull { it.enabled }
                         if (profile != null) {
                             com.dmzs.datawatchclient.di.ServiceLocator
                                 .transportFor(profile)
@@ -1488,14 +1530,46 @@ private fun ReplyComposer(
                                             onTranscribed(text)
                                         }
                                     },
-                                    onFailure = { /* non-fatal — banner would go here */ },
+                                    onFailure = { err ->
+                                        // Surface transcription failure as a
+                                        // toast with the server's response so
+                                        // the user knows voice is disabled /
+                                        // unreachable instead of a silent
+                                        // no-op (2026-04-22 user report).
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Transcribe failed on ${profile.displayName}: " +
+                                                "${err.message ?: err::class.simpleName}",
+                                            android.widget.Toast.LENGTH_LONG,
+                                        ).show()
+                                    },
                                 )
                         }
                         transcribing = false
                     }
                 } else {
-                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
-                    runCatching { r.start() }.onSuccess { recorder = r }
+                    // Check runtime grant first. If already granted, start
+                    // immediately; otherwise route through the launcher,
+                    // which will start on grant or toast on deny.
+                    val granted =
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context,
+                            android.Manifest.permission.RECORD_AUDIO,
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) {
+                        val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                        runCatching { r.start() }
+                            .onSuccess { recorder = r }
+                            .onFailure { e ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Recording failed: ${e.message ?: e::class.simpleName}",
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                    } else {
+                        micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                    }
                 }
             },
             enabled = !sending && !transcribing,

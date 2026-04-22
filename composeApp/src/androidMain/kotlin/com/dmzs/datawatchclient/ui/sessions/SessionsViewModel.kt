@@ -581,6 +581,10 @@ public class SessionsViewModel : ViewModel() {
                     _refreshing.value = false
                     _banner.value = null
                     _lastProbeEpochMs.value = System.currentTimeMillis()
+                    // Push the fresh counts to the home-screen widgets
+                    // so they don't wait for AppWidgetManager's
+                    // 30-minute cadence to catch up.
+                    ServiceLocator.refreshHomeWidgets()
                 },
                 onFailure = { err ->
                     _refreshing.value = false

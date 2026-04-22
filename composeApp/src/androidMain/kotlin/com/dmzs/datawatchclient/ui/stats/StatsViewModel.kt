@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerInfo
+import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,17 +77,42 @@ public class StatsViewModel : ViewModel() {
                     ?: transport.fetchConfig().getOrNull()?.let { cfg ->
                         runCatching { cfg.raw["session.max_sessions"]?.jsonPrimitive?.content?.toInt() }.getOrNull()
                     }
+            // PWA derives Monitor's session counts from the live
+            // `/api/sessions` list, not from `/api/stats`. Many server
+            // builds either don't populate `sessions_total` or lag by
+            // a full poll cycle; the list is the authoritative source.
+            // Pull it here alongside stats so the card never shows 0
+            // when there are live sessions (2026-04-22 user report).
+            val sessionsList = transport.listSessions().getOrNull().orEmpty()
+            val sessionsTotal = sessionsList.size
+            val sessionsRunning = sessionsList.count { it.state == SessionState.Running }
+            val sessionsWaiting = sessionsList.count { it.state == SessionState.Waiting }
             transport.stats().fold(
                 onSuccess = { dto ->
+                    // Override the stats-reported counts when the session
+                    // list returns something richer. `.copy` leaves the
+                    // stats fields as-is when the list was empty so we
+                    // don't clobber a v4.1.0 envelope-only payload.
+                    val patched =
+                        if (sessionsTotal > 0) {
+                            dto.copy(
+                                sessionsTotal = sessionsTotal,
+                                sessionsRunning = sessionsRunning,
+                                sessionsWaiting = sessionsWaiting,
+                            )
+                        } else {
+                            dto
+                        }
                     _state.value =
                         UiState(
-                            stats = dto,
+                            stats = patched,
                             info = infoResult.getOrNull() ?: _state.value.info,
                             refreshing = false,
                             banner = null,
                             serverName = profile.displayName,
                             maxSessions = maxSessions,
                         )
+                    ServiceLocator.refreshHomeWidgets()
                 },
                 onFailure = { err ->
                     _state.value =

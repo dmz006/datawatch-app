@@ -33,7 +33,9 @@ public class SessionsWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        appWidgetIds.forEach { renderLoadingState(context, appWidgetManager, it) }
+        // Skip the loading-state reset — preserves the previous render
+        // so the widget doesn't flash on every AppWidgetManager tick
+        // or app-triggered `requestUpdate`. Matches MonitorWidget.
         scope.launch { refresh(context) }
     }
 
@@ -60,8 +62,16 @@ public class SessionsWidget : AppWidgetProvider() {
     }
 
     private suspend fun refresh(context: Context) {
+        // Honour the user's active-profile selection — matches
+        // MonitorWidget and the in-app Sessions tab. Without this
+        // check, the widget was silently pinned to the first-enabled
+        // profile and ignored manual picks from the app / widget
+        // tap-to-cycle affordance (2026-04-22 user report).
+        val activeId = ServiceLocator.activeServerStore.get()
         val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val profile = profiles.firstOrNull { it.enabled }
+        val profile =
+            profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
         val counts =
             if (profile == null) {
                 Counts(0, 0, 0, null, "No servers")

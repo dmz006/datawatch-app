@@ -52,6 +52,18 @@ public object ServiceLocator {
 
     public val pushTokenStore: PushTokenStore by lazy { PushTokenStore(appContext) }
 
+    /**
+     * Kick the home-screen widgets so they re-render with the latest
+     * session / stats snapshot. Called from view-models after a
+     * successful REST poll — without this, the widgets only refresh
+     * on AppWidgetManager's own 30-minute cadence, which the user
+     * (2026-04-22) reported as "not updating".
+     */
+    public fun refreshHomeWidgets() {
+        com.dmzs.datawatchclient.widget.SessionsWidget.requestUpdate(appContext)
+        com.dmzs.datawatchclient.widget.MonitorWidget.requestUpdate(appContext)
+    }
+
     public val profileRepository: ServerProfileRepository by lazy {
         ServerProfileRepository(database, Dispatchers.IO)
     }
