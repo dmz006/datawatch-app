@@ -45,10 +45,10 @@ where relevant.*
 | B19 | Monitor — Update daemon + Restart daemon belong on About | 2026-04-22 | Open | Those actions target the daemon meta — About is where the daemon version + build info already live. |
 | B20 | Monitor — Kill Orphans should appear between System Statistics and Memory Browser | 2026-04-22 | Open | Current order: Stats → Log → Interfaces → Kill Orphans → Update → Restart. Wanted order: Stats → Kill Orphans → Memory Browser → Schedules → Log. |
 | B21 | Comms — "Messaging channels" card should be titled "Communication Configuration" | 2026-04-22 | Open | Matches PWA card title verbatim. Just a label rename. |
-| B22 | LLM — missing entire LLM Configuration section | 2026-04-22 | Open | PWA's LLM tab opens with a top "LLM Configuration" card listing the active backend + its configured model + per-backend base_url / api_key health. Our tab jumps straight to Memory. Add the missing top card. |
-| B23 | LLM — Detection Filters fields are empty on load | 2026-04-22 | Open | DetectionFiltersCard reads config.detection.*_patterns but displays blanks — either the read path doesn't pick up arrays under the autosave-flat-patch contract, or the initial GET /api/config now returns a different nesting. Needs logcat on a live profile. |
-| B24 | About — MCP tools list doesn't belong on About | 2026-04-22 | Open | PWA renders MCP docs inside a dedicated route/tab, not About. Either move to a new Monitor subsection or drop the card. |
-| B25 | About — missing sessions-details footer | 2026-04-22 | Open | PWA's About shows a tally of total sessions ever, current active count, server uptime. Mobile About only shows app version + daemon hostname. |
+| B22 | LLM — missing entire LLM Configuration section | 2026-04-22 | **Fixed in v0.33.14** | New `LlmConfigCard` at the top of the LLM tab shows each backend + "(default)" badge + footer pointing at `session.llm_backend`. |
+| B23 | LLM — Detection Filters fields are empty on load | 2026-04-22 | **Not a bug** | On-device trace showed server returns `"prompt_patterns": null` etc. because the particular YAML has no patterns configured. Card correctly renders empty. User-config item; re-open if blanks appear with filters actually present. |
+| B24 | About — MCP tools list doesn't belong on About | 2026-04-22 | **Fixed in v0.33.13** | McpToolsCard dropped from About. |
+| B25 | About — missing sessions-details footer | 2026-04-22 | **Fixed in v0.33.14** | AboutCard now renders Sessions (total · running · waiting) + Uptime rows sourced from `/api/stats`. |
 
 ## Planned / In Progress
 
