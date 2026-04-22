@@ -308,6 +308,12 @@ public fun SettingsScreen(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
                         )
                         com.dmzs.datawatchclient.ui.channels.ChannelsCard()
+                        // Messaging Backends — covers the case where a
+                        // backend is configured globally (e.g. signal
+                        // under messaging.signal.*) without having a
+                        // channel instance row, so it never showed up
+                        // in /api/channels. User report 2026-04-22.
+                        com.dmzs.datawatchclient.ui.channels.MessagingBackendsCard()
                         com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                         com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                     }

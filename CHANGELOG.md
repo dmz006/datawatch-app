@@ -8,6 +8,54 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.4] — 2026-04-22 (schema-driven LLM + Comms config dialogs)
+
+### Added
+
+- **Per-backend LLM config schemas** (`LlmBackendSchemas`). Each
+  known backend type (ollama, openai, anthropic, groq, openrouter,
+  gemini, xai, openwebui, opencode) has its own field list —
+  enable toggle + model + api_key plus the type-specific knobs
+  (host, base_url, temperature, max_tokens, system_prompt,
+  context_window, timeout, site_url, app_name, …). Unknown
+  backends fall back to the legacy three-field shape.
+- **Schema-driven `BackendConfigDialog`** now renders through
+  `ConfigFieldsPanel` so every LLM field prefills from
+  `/api/config` and auto-saves on change via the flat dot-path
+  patch — same mechanic as the General / Session / Monitor
+  config panels. No more "only 3 fields, nothing prefills".
+- **Per-channel `ChannelConfigDialog`** with schema per channel
+  type (`signal`, `telegram`, `discord`, `slack`, `matrix`,
+  `ntfy`, `email`, `twilio`, `webhook`, `github_webhook`). Each
+  row in the Comms → Messaging Channels card now has a
+  **Configure** button that opens the dialog with every field
+  for that type, prefilled from the server, auto-saving.
+- **`MessagingBackendsCard`** (new). Lists every known channel
+  backend type and opens a global-per-type editor at
+  `messaging.<type>.*`. Fixes the 2026-04-22 report —
+  "signal is configured on one server but it is not in the
+  list": `/api/channels` only returns channel *instances*, so a
+  standalone global backend config never appeared. This card
+  surfaces the type even without an instance row so users can
+  configure signal (or any other backend) directly.
+
+### Changed
+
+- **Channels rows now expose Configure + Test + Toggle + Delete**,
+  in that order — matches PWA's right-hand action cluster.
+- **Field rendering reuses `ConfigFieldsPanel`** across General,
+  LLM, and Comms tabs; adding a new field for any of them now
+  takes one line in the corresponding `*Schemas.kt` object.
+
+### Notes
+
+- The dot-path keys in the new schemas reflect the naming
+  conventions the parent daemon's `applyConfigPatch` uses
+  (`backends.<name>.*` for LLM, `messaging.<type>.*` for global
+  channel config, `channels.<id>.*` for per-instance). Where a
+  field doesn't match the parent exactly, the save is a no-op
+  rather than a crash — no data is lost.
+
 ## [0.34.3] — 2026-04-22 (LLM config actions)
 
 ### Added

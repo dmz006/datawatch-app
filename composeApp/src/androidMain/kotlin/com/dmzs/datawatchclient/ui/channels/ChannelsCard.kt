@@ -55,6 +55,11 @@ public fun ChannelsCard() {
     var banner by remember { mutableStateOf<String?>(null) }
     var testChannel by remember { mutableStateOf<String?>(null) }
     var addOpen by remember { mutableStateOf(false) }
+    // Per-row Configure dialog — captures channel id + type so the
+    // schema dispatch lines up with the instance's backend.
+    var configuringChannel by remember {
+        mutableStateOf<Pair<String, String?>?>(null)
+    }
 
     suspend fun refresh() {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
@@ -122,6 +127,10 @@ public fun ChannelsCard() {
                         )
                     }
                 }
+                OutlinedButton(
+                    onClick = { configuringChannel = id to type },
+                ) { Text("Configure", style = MaterialTheme.typography.labelSmall) }
+                Spacer(modifier = Modifier.width(4.dp))
                 OutlinedButton(
                     onClick = { testChannel = id },
                     enabled = enabled,
@@ -201,6 +210,17 @@ public fun ChannelsCard() {
                             },
                         )
                 }
+            },
+        )
+    }
+
+    configuringChannel?.let { (cid, ctype) ->
+        ChannelConfigDialog(
+            channelId = cid,
+            channelType = ctype,
+            onDismiss = {
+                configuringChannel = null
+                scope.launch { refresh() }
             },
         )
     }

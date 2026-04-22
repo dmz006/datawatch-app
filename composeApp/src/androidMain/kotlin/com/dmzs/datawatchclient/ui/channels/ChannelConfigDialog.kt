@@ -12,31 +12,27 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.ui.configfields.ChannelBackendSchemas
 import com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel
-import com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas
 
 /**
- * Structured per-LLM-backend config editor. Dispatches to
- * [LlmBackendSchemas.sectionFor] to get the right field set for
- * the backend type (ollama, openai, anthropic, groq, openrouter,
- * gemini, xai, openwebui, opencode) — unknown backends fall back
- * to a generic model / base_url / api_key shape. All fields
- * prefill from the live `/api/config` and auto-save on change via
- * flat dot-path patches.
- *
- * ADR-0019: only structured edits. Raw YAML editing stays off
- * the phone; all writes go through `writeConfig` which the parent
- * daemon merges into its config document.
+ * Per-channel-instance config editor (`channels.<id>.*`). Dispatches
+ * to [ChannelBackendSchemas.instanceSectionFor] to get the right
+ * field set for the channel type (signal, telegram, discord, slack,
+ * matrix, ntfy, email, twilio, webhook, github_webhook). Fields
+ * prefill from `/api/config` and auto-save on change.
  */
 @Composable
-public fun BackendConfigDialog(
-    backendName: String,
+public fun ChannelConfigDialog(
+    channelId: String,
+    channelType: String?,
     onDismiss: () -> Unit,
 ) {
-    val section = LlmBackendSchemas.sectionFor(backendName)
+    val type = channelType?.takeIf { it.isNotBlank() } ?: "webhook"
+    val section = ChannelBackendSchemas.instanceSectionFor(channelId, type)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Configure $backendName") },
+        title = { Text("$channelId · $type") },
         text = {
             Column(
                 modifier = Modifier
@@ -45,8 +41,9 @@ public fun BackendConfigDialog(
             ) {
                 ConfigFieldsPanel(section)
                 Text(
-                    "Other fields on this backend are preserved. Changes " +
-                        "take effect on the next new session.",
+                    "Fields save as you type. Empty password fields keep " +
+                        "the current stored secret — overwrite only when " +
+                        "rotating.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
