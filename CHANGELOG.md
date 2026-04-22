@@ -8,6 +8,29 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.3] — 2026-04-22 (LLM config actions)
+
+### Added
+
+- **LLM Configuration card now has per-backend actions.** Each row
+  in Settings → LLM → LLM Configuration now shows a **Configure**
+  button (opens the existing `BackendConfigDialog` to edit model /
+  base URL / api key) and a **Make default** button on any
+  non-default backend (writes `session.llm_backend` via the flat
+  dot-path config patch so the picked backend becomes the default
+  for every new session). Previously the card was read-only, which
+  made the LLM tab feel featureless (user feedback 2026-04-22).
+
+### Notes
+
+- The New Session backend picker already filtered by active server
+  via the per-profile `listBackends()` call — no change needed
+  there. If the picker is showing stale data, it's the server's
+  `/api/backends` response rather than the client.
+- Voice debugging work deferred to a later session per user
+  request; `SessionDetailScreen` mic + routing fix from 0.34.2
+  remains the active baseline.
+
 ## [0.34.2] — 2026-04-22 (Monitor widget expansion + voice/widget fixes)
 
 ### Fixed
