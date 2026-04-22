@@ -16,6 +16,15 @@ backlog) grouped into proposed sprint batches. Batches are ordered
 to land the highest-user-impact items first with the smallest code
 surface per batch. All sprints are **pre-1.0** per user direction.
 
+### Sprint FF+ — Wear & Auto feature parity (user request 2026-04-22)
+
+| ID | Title | Notes |
+|----|-------|-------|
+| B30 | Wear + Auto: multi-server picker | When >1 datawatch server is configured on phone, both surfaces need a server-switcher (drawer/menu on Wear, ActionStrip option on Auto). Piggybacks on the existing ActiveServerStore + profileRepository flows. |
+| B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | Wear shows the session list, tap → last-capture snapshot (still image from pane_capture) + quick-reply buttons (Yes/No/Continue/Stop). Auto equivalent via ListTemplate + MessageTemplate, with VoiceActionController wired to the existing `/api/voice/transcribe` path. |
+| B32 | Wear + Auto: Monitoring tab showing all stats | Consumes the v4.1.0 `/api/stats` v2 payload now that the phone reads it. Wear = compact three-number tile (CPU/Mem/Sess). Auto = GridTemplate with CPU/Mem/Disk/GPU/Sessions rows. Depends on B28 stats plumbing. |
+| B33 | Wear + Auto: About screen with logo + version | Wear: static branded tile with Version + build SHA. Auto: PaneTemplate with an animated logo (if CarAppService animation hooks allow; fall back to still image) + daemon hostname + app version. Mirror of phone-side AboutCard. |
+
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
 In-flight fixes from the current test pass. Small / cosmetic; aim
