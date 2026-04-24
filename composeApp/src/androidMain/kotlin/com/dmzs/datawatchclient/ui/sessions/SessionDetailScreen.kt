@@ -274,6 +274,7 @@ public fun SessionDetailScreen(
             // `app.js:1672-1680`: backend chip, mode chip, state pill
             // (clickable to override), Stop / Restart / Delete action,
             // Timeline button. Mirrors PWA's nicely-presented badges.
+            var responseOpen by remember { mutableStateOf(false) }
             SessionInfoBar(
                 backend = state.session?.backend,
                 sessionMode = state.messagingBackend ?: "tmux",
@@ -284,7 +285,21 @@ public fun SessionDetailScreen(
                 onRestart = { /* parent-level reschedule not wired here yet */ },
                 onTimeline = { timelineOpen = true },
                 onDelete = { deleteConfirm = true },
+                stateMenuOpen = stateMenuOpen,
+                onStateMenuDismiss = { stateMenuOpen = false },
+                onPickState = { s ->
+                    stateMenuOpen = false
+                    vm.overrideState(s)
+                },
+                hasResponse = !state.session?.lastResponse.isNullOrBlank(),
+                onResponse = { responseOpen = true },
             )
+            if (responseOpen) {
+                LastResponseSheet(
+                    response = state.session?.lastResponse.orEmpty(),
+                    onDismiss = { responseOpen = false },
+                )
+            }
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -454,15 +469,10 @@ public fun SessionDetailScreen(
         )
     }
 
-    if (stateMenuOpen) {
-        StateOverrideDialog(
-            onDismiss = { stateMenuOpen = false },
-            onPick = { s ->
-                stateMenuOpen = false
-                vm.overrideState(s)
-            },
-        )
-    }
+    // v0.35.1: stateMenuOpen is now handled inline by SessionInfoBar's
+    // DropdownMenu anchored to the state pill. The old AlertDialog
+    // (StateOverrideDialog) is kept as a no-longer-called composable
+    // for back-compat; it can be removed in a later cleanup release.
 
     if (timelineOpen) {
         TimelineSheet(
@@ -541,6 +551,18 @@ private fun SessionInfoBar(
     onRestart: () -> Unit,
     onTimeline: () -> Unit,
     onDelete: () -> Unit = {},
+    // G12: dropdown anchored to the state pill rather than a full-screen
+    // AlertDialog (matches PWA showStateOverride app.js:2206). Hosted
+    // inside the pill's Box so the menu appears directly under the
+    // badge. Pass `stateMenuOpen=true` to show the menu, and wire
+    // `onStateMenuDismiss` / `onPickState` to handle interaction.
+    stateMenuOpen: Boolean = false,
+    onStateMenuDismiss: () -> Unit = {},
+    onPickState: (SessionState) -> Unit = {},
+    // G13: optional Response button — renders when the session has
+    // a non-blank lastResponse. Taps open the response viewer sheet.
+    hasResponse: Boolean = false,
+    onResponse: () -> Unit = {},
 ) {
     val isActive =
         state == SessionState.Running || state == SessionState.Waiting ||
@@ -561,23 +583,46 @@ private fun SessionInfoBar(
             }
             InfoBadge(text = sessionMode.lowercase(), color = MaterialTheme.colorScheme.secondary)
             state?.let {
-                Box(
-                    modifier =
-                        Modifier
-                            .clickable(onClick = onStateClick)
-                            .background(
-                                color = stateBgColor(it),
-                                shape = RoundedCornerShape(10.dp),
+                Box {
+                    Box(
+                        modifier =
+                            Modifier
+                                .clickable(onClick = onStateClick)
+                                .background(
+                                    color = stateBgColor(it),
+                                    shape = RoundedCornerShape(10.dp),
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            stateLabel(it),
+                            fontSize = 10.sp,
+                            color = stateFgColor(it),
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+                    // DropdownMenu anchored to the pill's Box —
+                    // appears directly under the badge when open.
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = stateMenuOpen,
+                        onDismissRequest = onStateMenuDismiss,
+                    ) {
+                        SessionState.values().forEach { target ->
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stateLabel(target),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                },
+                                onClick = {
+                                    onStateMenuDismiss()
+                                    onPickState(target)
+                                },
                             )
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                ) {
-                    Text(
-                        stateLabel(it),
-                        fontSize = 10.sp,
-                        color = stateFgColor(it),
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                        letterSpacing = 0.3.sp,
-                    )
+                        }
+                    }
                 }
             }
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
@@ -610,6 +655,17 @@ private fun SessionInfoBar(
             }
             TextButton(onClick = onTimeline, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
                 Text("⏱ Timeline", style = MaterialTheme.typography.labelSmall)
+            }
+            if (hasResponse) {
+                TextButton(
+                    onClick = onResponse,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 10.dp,
+                        vertical = 2.dp,
+                    ),
+                ) {
+                    Text("💾 Response", style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
     }

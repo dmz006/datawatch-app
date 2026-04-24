@@ -1206,7 +1206,7 @@ private fun relativeTimeLabel(epochMs: Long): String {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LastResponseSheet(
+internal fun LastResponseSheet(
     response: String,
     onDismiss: () -> Unit,
 ) {

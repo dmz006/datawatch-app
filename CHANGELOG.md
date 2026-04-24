@@ -8,6 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.1] — 2026-04-24 (Session-detail polish — state dropdown + Response)
+
+### Changed
+
+- **G12 — State override opens as a dropdown anchored to the pill**
+  instead of a full-screen AlertDialog. Mirrors PWA's
+  `showStateOverride(sessionId, element)` (app.js:2206) which
+  pops a menu directly below the badge. Faster interaction —
+  tap pill, tap target state, dismissed. SessionInfoBar now
+  owns the dropdown's anchoring; the outer screen hands it
+  `stateMenuOpen` + callbacks via new parameters.
+- **G13 — Response button surfaces on the session info bar** for
+  any session (active or terminal) whose `lastResponse` is non-blank.
+  Opens the existing `LastResponseSheet` (was only reachable from
+  the Sessions list 📄 icon before). Matches PWA's 💾 Response
+  quick-panel under the composer (app.js:~1685).
+
+### Notes
+
+- The old `StateOverrideDialog` composable is retained as dead code
+  for back-compat; a later cleanup release will remove it.
+- `LastResponseSheet` promoted from `private` to `internal` so it
+  can be used outside `SessionsScreen.kt` (from
+  `SessionDetailScreen.kt` now).
+
 ## [0.35.0] — 2026-04-24 (LLM config paths + Settings compact inputs + eBPF banner)
 
 ### Fixed
