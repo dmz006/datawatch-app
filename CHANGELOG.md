@@ -8,6 +8,69 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.5] — 2026-04-22 (LLM card polish + Settings reactivity + button audit)
+
+### Added
+
+- **`claude-code` LLM backend schema**. Full field set the PWA
+  exposes: binary path, model, optional api key, max tokens, max
+  turns, system prompt, skip-permissions toggle, working
+  directory, timeout.
+- **Settings cards reload on active-server change**. Before, the
+  user had to bounce out of Settings (e.g. via Sessions tab) and
+  back before new-server config appeared. Now `LlmConfigCard`,
+  `ChannelsCard`, and the shared `ConfigFieldsPanel` all observe
+  `ActiveServerStore.observe()` as a StateFlow, re-fetch on
+  active-id change, and preserve the user's tab + scroll
+  position. `ConfigFieldsPanel` clears its local value cache on
+  server flip so the old server's numbers don't ghost-display
+  while the new config is in flight.
+
+### Changed
+
+- **LLM Configuration card — state-aware per-row actions.**
+  - When a backend is **configured** (any non-enabled key in
+    `backends.<name>.*` has a value): row shows a compact
+    enable/disable **Switch** + a pencil edit **IconButton**.
+  - When **not configured**: row shows a single **Configure**
+    outlined button.
+  - The "Make default" action was removed — `session.llm_backend`
+    on the General tab is the single place to set default (user
+    feedback 2026-04-22, "that is on general tab").
+- **LLM card includes `KnownBackends` merged into the
+  server-reported list** so claude-code (and any other configured
+  backend not yet registered with `/api/backends`) is always
+  reachable for edit.
+- **New Session backend picker filters to enabled-on-server.**
+  Cross-references `/api/backends` names with
+  `backends.<name>.enabled` from `/api/config`. Keeps the server's
+  default active backend in the list even if its `enabled` flag
+  isn't set, so the picker never ends up empty when a default
+  exists.
+- **New Session: Browse… and Restart are proper OutlinedButtons**
+  instead of flat TextButton "text links" (user feedback).
+- **Sessions row action buttons** (Stop / Commands / Restart) +
+  the offline-sheet Retry are now OutlinedButtons.
+
+### Removed
+
+- **`MessagingBackendsCard`** (the Comms-tab "Messaging Backends"
+  card). Redundant with Communication Configuration — user
+  feedback 2026-04-22, "isn't needed anymore". Per-type editing
+  for backends that don't have a channel instance yet is a
+  follow-on via the existing Configure dialog once the instance
+  row is created.
+
+### Notes
+
+- Dialog-slot TextButtons (confirm / dismiss inside AlertDialog)
+  stay as TextButton per Material guidance — only in-content
+  primary actions were converted to OutlinedButton this round.
+- PWA-parity audit of every LLM / Comms field is a living task.
+  Report any mismatched dot-path keys against your server's
+  `config.yaml` and I'll update `LlmBackendSchemas.kt` /
+  `ChannelBackendSchemas.kt` — each field is one line.
+
 ## [0.34.4] — 2026-04-22 (schema-driven LLM + Comms config dialogs)
 
 ### Added

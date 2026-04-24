@@ -729,7 +729,7 @@ private fun SessionRow(
             ) {
                 when (session.state) {
                     SessionState.Running, SessionState.Waiting -> {
-                        TextButton(
+                        OutlinedButton(
                             onClick = { killConfirmOpen = true },
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                                 horizontal = 10.dp,
@@ -750,7 +750,7 @@ private fun SessionRow(
                         // prompt is actually blocking).
                         if (session.state == SessionState.Waiting) {
                             Spacer(modifier = Modifier.width(4.dp))
-                            TextButton(
+                            OutlinedButton(
                                 onClick = { quickCmdsOpen = true },
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                                     horizontal = 10.dp,
@@ -771,7 +771,7 @@ private fun SessionRow(
                     SessionState.Killed,
                     SessionState.Error,
                     -> {
-                        TextButton(
+                        OutlinedButton(
                             onClick = { restartConfirmOpen = true },
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                                 horizontal = 10.dp,
@@ -1083,7 +1083,7 @@ private fun ReachabilityDot(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                 )
-                TextButton(
+                OutlinedButton(
                     onClick = {
                         onRetry()
                         sheetOpen = false

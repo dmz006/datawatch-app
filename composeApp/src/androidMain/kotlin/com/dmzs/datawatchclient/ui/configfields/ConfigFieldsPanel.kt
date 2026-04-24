@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -79,7 +80,20 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
         } ?: profiles.firstOrNull { it.enabled }
     }
 
-    LaunchedEffect(section.id) {
+    // Observe active-server changes so cards reload with the newly
+    // selected server's config without losing the user's tab /
+    // scroll position. Before 2026-04-22 this only re-ran on
+    // section-id change, forcing users to leave Settings and come
+    // back to see new-server values.
+    val activeId by ServiceLocator.activeServerStore.observe()
+        .collectAsState(initial = ServiceLocator.activeServerStore.get())
+
+    LaunchedEffect(section.id, activeId) {
+        // Clear local state so we don't briefly show the old
+        // server's values while the fetch is in flight.
+        rawConfig = null
+        values.clear()
+        loaded.clear()
         val profile = resolveProfile() ?: run {
             banner = "No enabled server."
             return@LaunchedEffect

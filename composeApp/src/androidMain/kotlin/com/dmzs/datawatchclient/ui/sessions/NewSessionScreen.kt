@@ -21,6 +21,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -103,11 +104,31 @@ public fun NewSessionScreen(
         pickedBackend = null
         backendsBlocked = false
         val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
-        ServiceLocator.transportFor(profile).listBackends().fold(
+        val transport = ServiceLocator.transportFor(profile)
+        transport.listBackends().fold(
             onSuccess = { v ->
-                backends = v.llm
                 activeBackend = v.active
                 pickedBackend = v.active
+                // Filter to backends actually enabled on the selected
+                // server. `/api/backends` returns every adapter the
+                // daemon was built with, which made the New Session
+                // picker list ghost backends (e.g. openai shown even
+                // when no api_key is configured). Cross-reference the
+                // config's per-backend enabled flag. A missing flag
+                // means "user never configured" → hide.
+                val enabledSet =
+                    transport.fetchConfig().getOrNull()?.let { cfg ->
+                        val root = kotlinx.serialization.json.JsonObject(cfg.raw.toMap())
+                        v.llm.filter { name -> backendEnabled(root, name) }
+                            .toSet()
+                    } ?: v.llm.toSet()
+                // Keep server-reported active even if the enabled flag
+                // wasn't set — otherwise the picker might drop the
+                // default and leave nothing selected.
+                backends =
+                    (enabledSet + listOfNotNull(v.active))
+                        .distinct()
+                        .filter { it.isNotBlank() }
             },
             onFailure = {
                 // Server doesn't expose /api/backends — picker is hidden.
@@ -337,7 +358,7 @@ public fun NewSessionScreen(
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(
+                OutlinedButton(
                     onClick = { filePickerOpen = true },
                     enabled = selectedProfileId != null,
                     modifier = Modifier.padding(start = 8.dp),
@@ -420,10 +441,10 @@ public fun NewSessionScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        TextButton(
+                        OutlinedButton(
                             onClick = {
                                 val profile = profiles.firstOrNull { it.id == selectedProfileId }
-                                    ?: return@TextButton
+                                    ?: return@OutlinedButton
                                 scope.launch {
                                     ServiceLocator.transportFor(profile)
                                         .restartSession(s.id)
@@ -833,4 +854,25 @@ private fun ServerPickerDropdown(
             }
         }
     }
+}
+
+/**
+ * Inspect `/api/config` for `backends.<name>.enabled`. Tolerates
+ * both the flat dot-path storage the parent daemon uses and the
+ * legacy nested `{backends: {name: {enabled: true}}}` shape so
+ * older servers still filter correctly.
+ */
+private fun backendEnabled(
+    root: kotlinx.serialization.json.JsonObject,
+    name: String,
+): Boolean {
+    root["backends.$name.enabled"]?.let { v ->
+        return (v as? kotlinx.serialization.json.JsonPrimitive)
+            ?.content?.toBooleanStrictOrNull() == true
+    }
+    val nested =
+        (root["backends"] as? kotlinx.serialization.json.JsonObject)?.get(name)
+            as? kotlinx.serialization.json.JsonObject ?: return false
+    val v = nested["enabled"] as? kotlinx.serialization.json.JsonPrimitive ?: return false
+    return v.content.toBooleanStrictOrNull() == true
 }

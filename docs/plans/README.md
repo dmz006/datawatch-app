@@ -8,6 +8,16 @@ directory when work warrants formal planning (3+ files or non-trivial
 architecture).
 
 ---
+## Open - Not Assessed
+- there was an additional audit of PWA vs datawatch-app which can be found 2026-04-22-pwa-parity-audit.md. use that when doing the in-depth audit and validate all the findings in addition to anything else you find.  You need to do a deep dive audit into PWA features, including every single edit dialog box, config option and variable.  Also the buttons and input windows are way larger than the text in all settings.
+- new session LLM backend does not load the confgiured and active list of LLM from the server that is selected.
+- sessions with chat mode do not show the chat windows
+- the hamberger menu on upper right corner of sessions that activates reorder buttons isn't needed. that and the reorder option shoud just be a drage and drop if we want to change order, like in PWA
+- in session clicking stop got 'session not found'. PWA worked fine. "/api/sessions/kill" 404 session not found
+- stop from list of session stop button badge has the same error
+- no delete button after a session was killed. both inside sessoin as well as in session list
+- can't swipe to close, or delete nor view history of alerts. the functionality is not what PWA has which has tabs for active/inactive then sub-tab for types make it easy to browse all actions for each sesion, and inactive with envelope collapsable histor for older sessions
+- when using tmux for input on app, the window with the text should lift up when keyboard pops up so you can read the message as it is being typed. as it is now it is hidden behind the keyboard
 
 ## Open — organised by sprint (fastest resolution first)
 

@@ -113,6 +113,24 @@ public object LlmBackendSchemas {
                         apiKey(backendName),
                         TextField("backends.opencode.model", "Model"),
                     )
+                "claude-code", "claude_code", "claudecode" ->
+                    // Parent daemon's Claude Code adapter — local CLI
+                    // binary, not a REST backend. Exposes the knobs
+                    // the PWA's LLM_CONFIG_FIELDS registers on this
+                    // type (apiKey is optional since the CLI reads
+                    // ANTHROPIC_API_KEY from its own env when blank).
+                    listOf(
+                        enabled(backendName),
+                        TextField("backends.claude-code.binary", "CLI binary path", placeholder = "claude"),
+                        TextField("backends.claude-code.model", "Model", placeholder = "claude-opus-4-7"),
+                        apiKey(backendName, label = "API key (optional — CLI reads env otherwise)"),
+                        NumberField("backends.claude-code.max_tokens", "Max output tokens", placeholder = "8192"),
+                        NumberField("backends.claude-code.max_turns", "Max conversation turns", placeholder = "0"),
+                        TextField("backends.claude-code.system_prompt", "System prompt (optional)"),
+                        Toggle("backends.claude-code.skip_permissions", "Claude skip permissions"),
+                        TextField("backends.claude-code.working_dir", "Working directory (optional)"),
+                        NumberField("backends.claude-code.timeout_seconds", "Timeout (sec)", placeholder = "600"),
+                    )
                 else -> DefaultLlmFields(backendName)
             }
         return ConfigSection(
@@ -130,7 +148,7 @@ public object LlmBackendSchemas {
      */
     public val KnownBackends: List<String> =
         listOf(
-            "ollama", "openai", "anthropic", "groq", "openrouter",
-            "gemini", "xai", "openwebui", "opencode",
+            "claude-code", "ollama", "openai", "anthropic", "groq",
+            "openrouter", "gemini", "xai", "openwebui", "opencode",
         )
 }

@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,7 +80,12 @@ public fun ChannelsCard() {
         )
     }
 
-    LaunchedEffect(Unit) { refresh() }
+    val activeId by ServiceLocator.activeServerStore.observe()
+        .collectAsState(initial = ServiceLocator.activeServerStore.get())
+    // Reload whenever active server changes so the channel list
+    // reflects the newly selected server without the user needing
+    // to leave Settings and come back (2026-04-22 user report).
+    LaunchedEffect(activeId) { refresh() }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),

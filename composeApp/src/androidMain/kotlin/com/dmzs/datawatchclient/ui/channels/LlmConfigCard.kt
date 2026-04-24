@@ -3,15 +3,24 @@ package com.dmzs.datawatchclient.ui.channels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,53 +31,83 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 /**
  * Settings → LLM → "LLM Configuration" card. Lists every backend
- * the active server reports via `/api/backends`, marks the default,
- * and exposes two actions per row: **Configure** (opens
- * [BackendConfigDialog] for model / base-url / api-key edits), and
- * **Make default** (writes `session.llm_backend` through the flat
- * dot-path config patch so the picked backend becomes the default
- * for every new session).
+ * the active server reports via `/api/backends`, merges in
+ * `KnownBackends` so a backend that's configured in
+ * `backends.*` but not yet active still appears for edit, and
+ * renders per-row actions that reflect configured state:
  *
- * Full-field editing for each backend's uncommon knobs (temperature,
- * max_tokens, system_prompt) stays a follow-on — today the dialog
- * covers the three fields the PWA surfaces in its primary LLM UI.
+ *  - **Not configured** (no fields populated in `backends.<name>`)
+ *    → a single "Configure" button.
+ *  - **Configured** → enable/disable Switch + pencil edit icon.
+ *
+ * Tapping Configure or the pencil opens [BackendConfigDialog],
+ * which uses the type-specific schema from
+ * [LlmBackendSchemas.sectionFor] with prefill + auto-save. The
+ * per-backend "Make default" action was removed on 2026-04-22 —
+ * that duplicates `session.llm_backend` on the General tab.
  */
 @Composable
 public fun LlmConfigCard() {
     val scope = rememberCoroutineScope()
     var backends by remember { mutableStateOf<List<String>>(emptyList()) }
-    var active by remember { mutableStateOf<String?>(null) }
+    var defaultBackend by remember { mutableStateOf<String?>(null) }
     var banner by remember { mutableStateOf<String?>(null) }
-    var configuringBackend by remember { mutableStateOf<String?>(null) }
-    // Bumped every time we want to re-fetch (after a save). Keyed
-    // on this + a Unit trigger so LaunchedEffect re-runs cleanly.
+    var configuring by remember { mutableStateOf<String?>(null) }
+    // Per-backend "configured?" + "enabled?" derived from /api/config.
+    val configured = remember { mutableStateMapOf<String, Boolean>() }
+    val enabled = remember { mutableStateMapOf<String, Boolean>() }
     var refreshTick by remember { mutableStateOf(0) }
+    // Re-run fetch whenever the user flips active server anywhere in
+    // the app (Sessions tab picker, widget tap-to-cycle, Wear/Auto
+    // picker). Before this, Settings only re-loaded when re-entered.
+    val activeId by ServiceLocator.activeServerStore.observe()
+        .collectAsState(initial = ServiceLocator.activeServerStore.get())
 
-    LaunchedEffect(refreshTick) {
-        val profile = resolveActiveProfile()
-        if (profile == null) {
+    LaunchedEffect(activeId, refreshTick) {
+        val profile = resolveActiveProfile() ?: run {
             banner = "No enabled server."
             return@LaunchedEffect
         }
-        ServiceLocator.transportFor(profile).listBackends().fold(
+        val transport = ServiceLocator.transportFor(profile)
+        // Names the server reports as available.
+        transport.listBackends().fold(
             onSuccess = { v ->
-                backends = v.llm
-                active = v.active
+                // Merge server-known + app-known so a backend whose
+                // config exists but isn't registered still appears
+                // (e.g. user configured claude-code via config.yaml
+                // without restart). Dedup by name, preserving server
+                // order.
+                val merged = (v.llm + LlmBackendSchemas.KnownBackends).distinct()
+                backends = merged
+                defaultBackend = v.active
                 banner = null
             },
             onFailure = {
+                // Show all known backends even when listBackends fails,
+                // so the user can still configure from scratch.
+                backends = LlmBackendSchemas.KnownBackends
                 banner = "Couldn't load backends — ${it.message ?: it::class.simpleName}"
             },
         )
+        // Config drives "configured?" + per-backend enabled state.
+        transport.fetchConfig().onSuccess { cfg ->
+            val root = JsonObject(cfg.raw.toMap())
+            backends.forEach { name ->
+                configured[name] = isBackendConfigured(root, name)
+                enabled[name] = readBackendEnabled(root, name)
+            }
+        }
     }
 
     Column(
@@ -93,62 +132,140 @@ public fun LlmConfigCard() {
         }
         backends.forEachIndexed { idx, name ->
             if (idx > 0) HorizontalDivider()
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        name,
-                        fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    if (name == active) {
-                        Text(
-                            "default",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+            BackendRow(
+                name = name,
+                isDefault = name == defaultBackend,
+                isConfigured = configured[name] == true,
+                isEnabled = enabled[name] == true,
+                onConfigure = { configuring = name },
+                onToggleEnabled = { newValue ->
+                    scope.launch {
+                        val profile = resolveActiveProfile() ?: return@launch
+                        val patch =
+                            buildJsonObject {
+                                put(
+                                    "backends.$name.enabled",
+                                    JsonPrimitive(newValue),
+                                )
+                            }
+                        ServiceLocator.transportFor(profile).writeConfig(patch).fold(
+                            onSuccess = {
+                                enabled[name] = newValue
+                                refreshTick++
+                            },
+                            onFailure = {
+                                banner = "Toggle failed — ${it.message ?: it::class.simpleName}"
+                            },
                         )
                     }
-                }
-                if (name != active) {
-                    TextButton(onClick = {
-                        scope.launch {
-                            val profile = resolveActiveProfile() ?: return@launch
-                            val patch =
-                                buildJsonObject {
-                                    put("session.llm_backend", JsonPrimitive(name))
-                                }
-                            ServiceLocator.transportFor(profile).writeConfig(patch).fold(
-                                onSuccess = {
-                                    active = name
-                                    refreshTick++
-                                },
-                                onFailure = {
-                                    banner = "Couldn't set default — ${it.message ?: it::class.simpleName}"
-                                },
-                            )
-                        }
-                    }) { Text("Make default") }
-                }
-                TextButton(onClick = { configuringBackend = name }) {
-                    Text("Configure")
-                }
-            }
+                },
+            )
         }
     }
 
-    configuringBackend?.let { name ->
+    configuring?.let { name ->
         BackendConfigDialog(
             backendName = name,
             onDismiss = {
-                configuringBackend = null
+                configuring = null
                 refreshTick++
             },
         )
     }
 }
+
+@Composable
+private fun BackendRow(
+    name: String,
+    isDefault: Boolean,
+    isConfigured: Boolean,
+    isEnabled: Boolean,
+    onConfigure: () -> Unit,
+    onToggleEnabled: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                name,
+                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (isDefault) {
+                Text(
+                    "default",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        if (isConfigured) {
+            // Compact per-row on/off + pencil. Matches PWA's
+            // "configured backend" cluster: toggle + edit icon.
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = onToggleEnabled,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = onConfigure) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = "Edit $name",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        } else {
+            OutlinedButton(onClick = onConfigure) {
+                Text("Configure", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+/**
+ * Reasonable heuristic for "configured": any key under
+ * `backends.<name>` has a non-blank string or any truthy value.
+ * Doesn't assume a specific schema — survives new field additions
+ * and handles both dotted (`backends.foo.model`) and nested
+ * (`backends: {foo: {model: ...}}`) storage shapes.
+ */
+private fun isBackendConfigured(config: JsonObject, name: String): Boolean {
+    // Flat dot-path variant — what the parent daemon actually stores.
+    val prefix = "backends.$name."
+    val hasFlat =
+        config.entries.any { (k, v) ->
+            k.startsWith(prefix) && k != "${prefix}enabled" && hasValue(v)
+        }
+    if (hasFlat) return true
+    // Nested variant — tolerate an older /api/config shape that
+    // returns `{backends: {claude-code: {...}}}`.
+    val nested = (config["backends"] as? JsonObject)?.get(name) as? JsonObject ?: return false
+    return nested.entries.any { (k, v) -> k != "enabled" && hasValue(v) }
+}
+
+private fun readBackendEnabled(config: JsonObject, name: String): Boolean {
+    config["backends.$name.enabled"]?.let { return asBool(it) }
+    val nested = (config["backends"] as? JsonObject)?.get(name) as? JsonObject ?: return false
+    nested["enabled"]?.let { return asBool(it) }
+    return false
+}
+
+private fun hasValue(e: kotlinx.serialization.json.JsonElement): Boolean =
+    when (e) {
+        is JsonPrimitive ->
+            when {
+                e.isString -> e.content.isNotBlank()
+                else -> e.content.isNotBlank() && e.content != "null" && e.content != "false" &&
+                    e.content != "0"
+            }
+        else -> true
+    }
+
+private fun asBool(e: kotlinx.serialization.json.JsonElement): Boolean =
+    (e as? JsonPrimitive)?.content?.toBooleanStrictOrNull() == true
 
 /**
  * Resolve the profile every LLM action should target: the user's
