@@ -8,11 +8,11 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 ## At a glance
 
-| Phone | Watch | PWA reference |
-|:---:|:---:|:---:|
-| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
+| Watch | PWA reference |
+|:---:|:---:|
+| ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
 
-*Slideshows loop at ~2.5 s per frame. Watch cards are circle-shaped to follow the Samsung Galaxy Watch bezel; phone shots are from a Galaxy S23 Ultra running `publicTrackDebug`; PWA shots are from `localhost:8443` captured via Playwright.*
+*Slideshows loop at ~2.5 s per frame. Watch cards are circle-shaped to follow the Samsung Galaxy Watch bezel; PWA shots are from `localhost:8443` captured via Playwright. Phone slideshow is pending a clean re-capture (prior captures were compromised by the device's home screen).*
 
 ## What it does
 

@@ -81,9 +81,10 @@ shot "09-session-detail"
 key KEYCODE_BACK 2
 sleep 1
 
-# Home screen (widgets, if installed).
-key KEYCODE_HOME 2
-sleep 2
-shot "10-home-widgets"
+# NOTE: the home-screen / widget frame is deliberately NOT captured.
+# The home screen may expose confidential user apps / notifications;
+# per user direction (2026-04-24) it must never be committed. If
+# widget documentation is needed, use a dedicated sandbox launcher
+# setup rather than the user's live home screen.
 
 echo "done"
