@@ -4,6 +4,11 @@ import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +27,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -97,17 +105,74 @@ private fun WearRoot(
 ) {
     val state by vm.state.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 4 }
+
+    // v0.35.5 — session tap popup with voice reply. Tapping a
+    // session on the Sessions page opens [SessionDetailPopup]; the
+    // mic button launches the speech-to-text activity; confirm
+    // sends the transcribed text to the phone via MessageClient
+    // which forwards to send_input over a transient WS.
+    var openSession: WearSessionCountsViewModel.SessionItem? by remember {
+        mutableStateOf(null)
+    }
+    var pendingTranscript by remember { mutableStateOf("") }
+    val voiceLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val transcripts =
+                    result.data?.getStringArrayListExtra(
+                        RecognizerIntent.EXTRA_RESULTS,
+                    )
+                pendingTranscript = transcripts?.firstOrNull().orEmpty()
+            }
+        }
+
     Scaffold {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 when (page) {
                     0 -> MonitorPage(state)
-                    1 -> SessionsPage(state)
+                    1 ->
+                        SessionsPage(
+                            state = state,
+                            onSessionTap = { item -> openSession = item },
+                        )
                     2 -> ServersPage(state) { id -> vm.requestActiveServer(id) }
                     3 -> AboutPage()
                 }
             }
             PagerDots(pagerState.currentPage, 4, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            openSession?.let { item ->
+                SessionDetailPopup(
+                    session = item,
+                    transcript = pendingTranscript,
+                    onRecord = {
+                        pendingTranscript = ""
+                        val intent =
+                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(
+                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+                                )
+                                putExtra(
+                                    RecognizerIntent.EXTRA_PROMPT,
+                                    "Reply to ${item.title}",
+                                )
+                            }
+                        runCatching { voiceLauncher.launch(intent) }
+                    },
+                    onConfirm = {
+                        vm.sendReply(item.id, pendingTranscript)
+                        pendingTranscript = ""
+                        openSession = null
+                    },
+                    onDismiss = {
+                        pendingTranscript = ""
+                        openSession = null
+                    },
+                )
+            }
         }
     }
 }
@@ -323,7 +388,10 @@ private const val GAUGE_AMBER_THRESHOLD: Float = 60f
 private const val GAUGE_RED_THRESHOLD: Float = 80f
 
 @Composable
-private fun SessionsPage(state: WearSessionCountsViewModel.UiState) {
+private fun SessionsPage(
+    state: WearSessionCountsViewModel.UiState,
+    onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
+) {
     PageScaffold("Sessions") {
         if (state.pairedServer.isEmpty()) {
             Text(
@@ -333,20 +401,189 @@ private fun SessionsPage(state: WearSessionCountsViewModel.UiState) {
             )
             return@PageScaffold
         }
+        // Counts strip at top — pre-existing glance remains the
+        // first-impression read ("is anything waiting on me?"). The
+        // per-session rows below are the v0.35.5 tap-to-reply
+        // affordance; each row opens the popup with voice input.
         Row(
-            modifier = Modifier.padding(top = 10.dp),
+            modifier = Modifier.padding(top = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             CountTile(value = state.running, label = "run", color = MaterialTheme.colors.primary)
             CountTile(value = state.waiting, label = "wait", color = MaterialTheme.colors.secondary)
             CountTile(value = state.total, label = "total", color = MaterialTheme.colors.onSurface)
         }
-        Text(
-            state.serverName,
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.caption2,
-            color = MaterialTheme.colors.onSurfaceVariant,
-        )
+        if (state.sessions.isEmpty()) {
+            Text(
+                state.serverName,
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+            return@PageScaffold
+        }
+        // Per-session rows. Bezel-scrollable column above already
+        // exists via PageScaffold, so rows naturally paginate when
+        // the count exceeds visible area on the round face.
+        state.sessions.forEach { item ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .background(
+                        color = sessionBadgeColor(item.stateName).copy(alpha = 0.25f),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                    )
+                    .clickable { onSessionTap(item) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "●",
+                    color = sessionBadgeColor(item.stateName),
+                    style = MaterialTheme.typography.caption1,
+                )
+                Text(
+                    item.title,
+                    modifier = Modifier.padding(start = 6.dp),
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurface,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+/** Color accent per session state — running green, waiting amber, others grey. */
+private fun sessionBadgeColor(stateName: String): Color =
+    when (stateName.lowercase()) {
+        "running" -> Color(0xFF22C55E)
+        "waiting" -> Color(0xFFF59E0B)
+        "ratelimited", "rate_limited" -> Color(0xFFEF4444)
+        else -> Color(0xFF94A3B8)
+    }
+
+/**
+ * Round-bezel tap popup. Shows session title + last-line context +
+ * a microphone button that launches the system speech-to-text
+ * activity; a Send button confirms the transcript via [onConfirm];
+ * an X dismisses without sending.
+ */
+@Composable
+private fun SessionDetailPopup(
+    session: WearSessionCountsViewModel.SessionItem,
+    transcript: String,
+    onRecord: () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xE6000000)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp)
+                .background(
+                    MaterialTheme.colors.surface,
+                    androidx.compose.foundation.shape.CircleShape,
+                )
+                .border(
+                    1.5.dp,
+                    MaterialTheme.colors.primary.copy(alpha = 0.55f),
+                    androidx.compose.foundation.shape.CircleShape,
+                )
+                .padding(horizontal = 24.dp, vertical = 18.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Dismiss affordance. Keep compact — an X at the top
+                // of the circle inside the safe area, not on the bezel.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Text(
+                        "✕",
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                        modifier = Modifier
+                            .clickable(onClick = onDismiss)
+                            .padding(4.dp),
+                    )
+                }
+                Text(
+                    session.title,
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                )
+                Text(
+                    session.stateName.lowercase(),
+                    style = MaterialTheme.typography.caption2,
+                    color = sessionBadgeColor(session.stateName),
+                )
+                if (session.lastLine.isNotBlank()) {
+                    Text(
+                        session.lastLine,
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurface,
+                        maxLines = 4,
+                    )
+                }
+                if (transcript.isNotBlank()) {
+                    Text(
+                        "“$transcript”",
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.body2,
+                        color = MaterialTheme.colors.primary,
+                        maxLines = 3,
+                    )
+                }
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "🎤",
+                        style = MaterialTheme.typography.title3,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colors.primary.copy(alpha = 0.15f),
+                                androidx.compose.foundation.shape.CircleShape,
+                            )
+                            .clickable(onClick = onRecord)
+                            .padding(10.dp),
+                    )
+                    if (transcript.isNotBlank()) {
+                        Text(
+                            "Send",
+                            style = MaterialTheme.typography.button,
+                            color = MaterialTheme.colors.primary,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                )
+                                .clickable(onClick = onConfirm)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -464,6 +701,10 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val gpuMemUsedMb: Long = 0L,
         val gpuMemTotalMb: Long = 0L,
         val gpuName: String = "",
+        // Per-session list (v0.35.5) — sourced from
+        // /datawatch/sessions. Sorted by last-activity desc, capped
+        // at SESSIONS_PUBLISH_LIMIT on the phone side.
+        val sessions: List<SessionItem> = emptyList(),
         // Enabled profiles the user can switch between.
         val profiles: List<Pair<String, String>> = emptyList(),
     ) {
@@ -499,6 +740,14 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public fun hasGpu(): Boolean = gpuName.isNotBlank() || gpuUtilPct > 0 || gpuMemTotalMb > 0
     }
 
+    public data class SessionItem(
+        val id: String,
+        val title: String,
+        val backend: String,
+        val stateName: String,
+        val lastLine: String,
+    )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -522,6 +771,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                                 applyProfiles(DataMapItem.fromDataItem(item).dataMap)
                             STATS_PATH ->
                                 applyStats(DataMapItem.fromDataItem(item).dataMap)
+                            SESSIONS_PATH ->
+                                applySessions(DataMapItem.fromDataItem(item).dataMap)
                         }
                     }
                 } finally {
@@ -569,11 +820,48 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                             applyProfiles(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         STATS_PATH ->
                             applyStats(DataMapItem.fromDataItem(event.dataItem).dataMap)
+                        SESSIONS_PATH ->
+                            applySessions(DataMapItem.fromDataItem(event.dataItem).dataMap)
                     }
                 }
             }
         } finally {
             buffer.release()
+        }
+    }
+
+    private fun applySessions(map: DataMap) {
+        val ids = map.getStringArray("ids") ?: emptyArray()
+        val titles = map.getStringArray("titles") ?: emptyArray()
+        val backends = map.getStringArray("backends") ?: emptyArray()
+        val states = map.getStringArray("states") ?: emptyArray()
+        val lastLines = map.getStringArray("lastLines") ?: emptyArray()
+        val items = ids.indices.map { i ->
+            SessionItem(
+                id = ids[i],
+                title = titles.getOrNull(i).orEmpty(),
+                backend = backends.getOrNull(i).orEmpty(),
+                stateName = states.getOrNull(i).orEmpty(),
+                lastLine = lastLines.getOrNull(i).orEmpty(),
+            )
+        }
+        _state.value = _state.value.copy(sessions = items)
+    }
+
+    /**
+     * Send a voice-reply to the phone for forwarding to the active
+     * server's send_input hub. Payload format is "sessionId\ntext".
+     */
+    public fun sendReply(sessionId: String, text: String) {
+        if (sessionId.isBlank() || text.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val body = "$sessionId\n$text".toByteArray(Charsets.UTF_8)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, REPLY_PATH, body).await()
+                }
+            }
         }
     }
 
@@ -620,7 +908,9 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val COUNTS_PATH: String = "/datawatch/counts"
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
+        public const val SESSIONS_PATH: String = "/datawatch/sessions"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
+        public const val REPLY_PATH: String = "/datawatch/reply"
     }
 }
 

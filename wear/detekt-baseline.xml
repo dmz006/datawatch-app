@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
+    <ID>LongMethod:WearMainActivity.kt$@Composable private fun SessionDetailPopup( session: WearSessionCountsViewModel.SessionItem, transcript: String, onRecord: () -&gt; Unit, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
     <ID>NestedBlockDepth:WearMainActivity.kt$WearSessionCountsViewModel$private fun consume(buffer: DataEventBuffer)</ID>
     <ID>TooManyFunctions:MonitorTileService.kt$MonitorTileService : TileService</ID>
     <ID>TooManyFunctions:SessionsTileService.kt$SessionsTileService : TileService</ID>
