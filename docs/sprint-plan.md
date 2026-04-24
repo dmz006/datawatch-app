@@ -207,6 +207,9 @@ summarised here for sprint-plan continuity.
 | v0.31.0 | Session reorder | ⇅ toggle + Custom sort via POST /api/sessions/reorder |
 | v0.32.0 | Close PWA-parity gap | DetectionFiltersCard, McpToolsCard, CertInstallCard, ProfileEditDialog, chat bubble rendering, Quick Commands arrow keys, update progress bar, recent-sessions backlog grid |
 | v0.33.0 | Auto bundling fix + docs | composeApp → auto dependency + missingDimensionStrategy → CarAppService actually ships; android-auto.md + README refresh |
+| v0.33.1–v0.33.25 | Auto + Wear hardening + widget fixes | Auto Messaging + Monitor, AA publicMessaging / devPassenger split, Wear Monitor tile, home-screen widget, 3-finger server cycle, voice routing |
+| v0.34.0–v0.34.9 | Schema-driven config + P0/P1 parity | Channels/LLM dialogs schema-driven, P0 session-id contract fix, P1 Alerts rebuild, Settings restart affordance, G6 drag-drop reorder |
+| v0.35.0–v0.35.3 | Final PWA-parity milestone + UX polish | LLM backend config paths fixed, inline rename, state-override dropdown, Response composer button, Sessions list UX (search collapse + right-side reachability dot), Wear round bezel cards, release workflow fix. **Parity milestone closed 2026-04-24 at v0.35.2** per [`docs/plans/audit-2026-04-23/README.md`](plans/audit-2026-04-23/README.md). |
 
 ## v1.0.0 parity roadmap
 
