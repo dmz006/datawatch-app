@@ -141,12 +141,16 @@ public fun LlmConfigCard() {
                 onToggleEnabled = { newValue ->
                     scope.launch {
                         val profile = resolveActiveProfile() ?: return@launch
+                        // Use the backend-specific enabled path
+                        // (e.g. ollama.enabled, session.claude_enabled).
+                        // Previously used `backends.<name>.enabled`
+                        // which the server doesn't recognise — every
+                        // toggle was a silent no-op. See 2026-04-24
+                        // parity audit G45 + LlmBackendSchemas.enabledKey.
+                        val key = com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas.enabledKey(name)
                         val patch =
                             buildJsonObject {
-                                put(
-                                    "backends.$name.enabled",
-                                    JsonPrimitive(newValue),
-                                )
+                                put(key, JsonPrimitive(newValue))
                             }
                         ServiceLocator.transportFor(profile).writeConfig(patch).fold(
                             onSuccess = {
@@ -226,32 +230,44 @@ private fun BackendRow(
 }
 
 /**
- * Reasonable heuristic for "configured": any key under
- * `backends.<name>` has a non-blank string or any truthy value.
- * Doesn't assume a specific schema — survives new field additions
- * and handles both dotted (`backends.foo.model`) and nested
- * (`backends: {foo: {model: ...}}`) storage shapes.
+ * Is this backend "configured"? Tests whether any field under the
+ * backend's canonical section (`ollama.*`, `session.*` for
+ * claude-code, `shell_backend.*` for shell, etc.) has a non-blank /
+ * truthy value, excluding the enable toggle itself. Updated 2026-04-24
+ * per parity audit G45 — the prior implementation scanned
+ * `backends.<name>.*` which is not where the server stores these.
  */
 private fun isBackendConfigured(config: JsonObject, name: String): Boolean {
-    // Flat dot-path variant — what the parent daemon actually stores.
-    val prefix = "backends.$name."
-    val hasFlat =
-        config.entries.any { (k, v) ->
-            k.startsWith(prefix) && k != "${prefix}enabled" && hasValue(v)
-        }
-    if (hasFlat) return true
-    // Nested variant — tolerate an older /api/config shape that
-    // returns `{backends: {claude-code: {...}}}`.
-    val nested = (config["backends"] as? JsonObject)?.get(name) as? JsonObject ?: return false
-    return nested.entries.any { (k, v) -> k != "enabled" && hasValue(v) }
+    val section = sectionNameFor(name)
+    val enabledLeaf = enabledLeafFor(name)
+    // /api/config returns a nested tree; iterate the section object
+    // looking for any non-enabled key with a real value.
+    val sec = config[section] as? JsonObject ?: return false
+    return sec.entries.any { (k, v) -> k != enabledLeaf && hasValue(v) }
 }
 
 private fun readBackendEnabled(config: JsonObject, name: String): Boolean {
-    config["backends.$name.enabled"]?.let { return asBool(it) }
-    val nested = (config["backends"] as? JsonObject)?.get(name) as? JsonObject ?: return false
-    nested["enabled"]?.let { return asBool(it) }
-    return false
+    val section = sectionNameFor(name)
+    val leaf = enabledLeafFor(name)
+    val sec = config[section] as? JsonObject ?: return false
+    return sec[leaf]?.let { asBool(it) } ?: false
 }
+
+/** Mirrors [com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas] — keep in sync. */
+private fun sectionNameFor(name: String): String =
+    when (name.lowercase()) {
+        "claude-code", "claude_code", "claudecode" -> "session"
+        "opencode-acp", "opencode_acp" -> "opencode_acp"
+        "opencode-prompt", "opencode_prompt" -> "opencode_prompt"
+        "shell" -> "shell_backend"
+        else -> name.lowercase()
+    }
+
+private fun enabledLeafFor(name: String): String =
+    when (name.lowercase()) {
+        "claude-code", "claude_code", "claudecode" -> "claude_enabled"
+        else -> "enabled"
+    }
 
 private fun hasValue(e: kotlinx.serialization.json.JsonElement): Boolean =
     when (e) {

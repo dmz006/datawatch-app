@@ -8,6 +8,68 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.0] — 2026-04-24 (LLM config paths + Settings compact inputs + eBPF banner)
+
+### Fixed
+
+- **G45 — LLM backend config was writing to nonexistent paths.** The
+  Android schema used `backends.<name>.*` (e.g.
+  `backends.ollama.enabled`), but the server actually stores each
+  LLM's config under a top-level section named the same as the
+  backend (e.g. `ollama.enabled`, `openwebui.url`,
+  `session.claude_enabled`, `shell_backend.script_path`,
+  `opencode_acp.acp_startup_timeout`). Verified against live
+  `/api/config` on localhost:8443 and parent `app.js:4262-4288`
+  `LLM_FIELDS` + `LLM_CFG_SECTION`. Every toggle + field save was a
+  silent no-op — the server accepts unknown keys and discards them.
+  - `LlmBackendSchemas.kt` rewritten to emit the canonical paths for
+    each known backend, with a `section(name)` + `enabledKey(name)`
+    helper to resolve section names consistently.
+  - `LlmConfigCard` toggle writes now use `enabledKey(name)` (e.g.
+    `session.claude_enabled`, `ollama.enabled`), so flipping the
+    per-backend switch actually enables/disables the adapter.
+  - `LlmConfigCard.isBackendConfigured` + `readBackendEnabled`
+    scan the correct config section instead of the dead
+    `backends.<name>` prefix.
+  - `NewSessionScreen.backendEnabled` filter uses the same helper,
+    so the backend picker correctly hides adapters whose section
+    has `enabled=false`.
+- **Dead LLM schemas dropped.** Removed `anthropic`, `openai`,
+  `groq`, `openrouter`, `xai` — parent daemon has no adapters
+  for these; the rows were dead UX. Added missing schemas the
+  server does support: `aider`, `goose`, `gemini`, `opencode-acp`,
+  `opencode-prompt`, `shell`. `KnownBackends` now matches the
+  parent's `available_backends` list verbatim.
+- **`StatsDto` missing `ebpf_enabled` + `ebpf_message`.** The
+  server emits both (confirmed 2026-04-24 against live
+  `/api/stats` on localhost:8443); adding the fields as nullable
+  with server-driven defaults so older servers still parse.
+
+### Changed
+
+- **G9/G57 — Settings inputs now tight (compact density).** Swapped
+  `OutlinedTextField` for a purpose-built `CompactInput` on every
+  field in `ConfigFieldsPanel`: 36 dp tall, 13 sp text, 1 dp
+  border, 6 dp vertical content padding. Fixes the user-flagged
+  "buttons + input windows way larger than their text" report —
+  M3's default 56 dp minimum-height OutlinedTextField dwarfed the
+  actual content. The new field preserves password masking,
+  number-only keyboards, placeholder text, and the cursor colour
+  pull from theme.
+- **G26 — Monitor tab eBPF Degraded banner.** Surfaces prominently
+  when the daemon was built with eBPF capture but the kernel probes
+  aren't loaded. Shows the server's
+  `ebpf_message` (e.g. `"Degraded — run: datawatch setup ebpf"`)
+  with an amber error-container background matching PWA.
+
+### Notes
+
+- No schema migration.
+- Other G19-G28 Monitor cards (Network, Daemon, Infrastructure,
+  RTK Token Savings, Memory, Ollama, Session Statistics ring) were
+  already present on Android since earlier releases — verified
+  coverage during this pass.
+
 ## [0.34.9] — 2026-04-24 (G6 Sessions drag-drop reorder)
 
 ### Changed

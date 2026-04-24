@@ -168,6 +168,20 @@ public data class StatsDto(
     @SerialName("gpu_mem_total_mb") val gpuMemTotalMb: Long? = null,
 
     @SerialName("ebpf_active") val ebpfActive: Boolean = false,
+    /**
+     * `ebpf_enabled` — daemon was built with eBPF capture support. When
+     * this is `true` but [ebpfActive] is `false`, the kernel probes
+     * aren't loaded and the network/pid traces the Monitor tab relies
+     * on are missing. The PWA renders an inline amber "Degraded" banner
+     * in that case; we do the same. Null for older servers that
+     * predate this field.
+     */
+    @SerialName("ebpf_enabled") val ebpfEnabled: Boolean? = null,
+    /**
+     * Human-readable status message (e.g. `"Degraded — run: datawatch
+     * setup ebpf"`). Shown in the eBPF Degraded banner when non-blank.
+     */
+    @SerialName("ebpf_message") val ebpfMessage: String? = null,
     @SerialName("net_rx_bytes") val netRxBytes: Long = 0,
     @SerialName("net_tx_bytes") val netTxBytes: Long = 0,
 

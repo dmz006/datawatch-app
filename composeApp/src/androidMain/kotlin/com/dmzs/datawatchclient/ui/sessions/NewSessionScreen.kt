@@ -884,13 +884,24 @@ private fun backendEnabled(
     root: kotlinx.serialization.json.JsonObject,
     name: String,
 ): Boolean {
-    root["backends.$name.enabled"]?.let { v ->
+    // The server stores each backend's config under a top-level
+    // section (ollama.*, openwebui.*, session.* for claude-code,
+    // shell_backend.* for shell, opencode_acp.*, etc.). Use the
+    // canonical enabled-path resolver so we stay in lockstep with
+    // the LLM card's toggle writes.
+    val key = com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas.enabledKey(name)
+    // Try the flat dot-path form first (matches saved-as-patch shape).
+    root[key]?.let { v ->
         return (v as? kotlinx.serialization.json.JsonPrimitive)
             ?.content?.toBooleanStrictOrNull() == true
     }
-    val nested =
-        (root["backends"] as? kotlinx.serialization.json.JsonObject)?.get(name)
-            as? kotlinx.serialization.json.JsonObject ?: return false
-    val v = nested["enabled"] as? kotlinx.serialization.json.JsonPrimitive ?: return false
+    // Fall back to nested { section: { enabled: bool } } which is
+    // how /api/config returns the server's in-memory tree.
+    val dotIdx = key.indexOf('.')
+    if (dotIdx <= 0) return false
+    val sec = key.substring(0, dotIdx)
+    val leaf = key.substring(dotIdx + 1)
+    val section = root[sec] as? kotlinx.serialization.json.JsonObject ?: return false
+    val v = section[leaf] as? kotlinx.serialization.json.JsonPrimitive ?: return false
     return v.content.toBooleanStrictOrNull() == true
 }

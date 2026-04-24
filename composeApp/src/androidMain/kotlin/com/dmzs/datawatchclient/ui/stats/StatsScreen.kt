@@ -81,6 +81,11 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
         NetworkCard(it)
         DaemonCard(it)
         InfrastructureCard(it, info)
+        // eBPF "Degraded" banner — surfaces when the daemon was built
+        // with eBPF capture support but the kernel probes aren't
+        // attached (needs `datawatch setup ebpf` or equivalent). PWA
+        // renders the same banner prominently on the Monitor tab.
+        EbpfDegradedBanner(it)
         if (it.rtkInstalled) RtkCard(it)
         MemoryStatsCard(it)
         // Ollama card only when the server reports an actually-online
@@ -94,6 +99,45 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
 }
 
 // ---------- New v4.1.0 observer cards ----------
+
+/**
+ * eBPF "Degraded" banner — surfaces on the Monitor tab when the
+ * daemon ships eBPF capture support but the kernel probes aren't
+ * attached (common after a fresh install — needs `datawatch setup
+ * ebpf`). Renders only when [ebpfEnabled] is explicitly true and
+ * [ebpfActive] is false. Mirrors PWA app.js eBPF status strip.
+ */
+@Composable
+private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
+    val enabled = s.ebpfEnabled ?: return
+    if (!enabled || s.ebpfActive) return
+    val msg = s.ebpfMessage?.takeIf { it.isNotBlank() }
+        ?: "eBPF support is built into the daemon but probes aren't loaded. Run `datawatch setup ebpf` to enable."
+    androidx.compose.material3.Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "⚠ eBPF Degraded",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(
+                msg,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
 
 @Composable
 private fun NetworkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {

@@ -1,21 +1,27 @@
 package com.dmzs.datawatchclient.ui.configfields
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -248,30 +254,21 @@ private fun FieldRow(
             }
         }
         is ConfigField.NumberField -> InputRow(field.label) {
-            OutlinedTextField(
+            CompactInput(
                 value = value,
-                onValueChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
-                singleLine = true,
-                placeholder = field.placeholder?.let {
-                    { Text(it, style = inputTextStyle()) }
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = inputTextStyle(),
-                modifier = Modifier.width(INPUT_WIDTH),
+                onChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
+                placeholder = field.placeholder,
+                password = false,
+                keyboardType = KeyboardType.Number,
             )
         }
         is ConfigField.TextField -> InputRow(field.label) {
-            OutlinedTextField(
+            CompactInput(
                 value = value,
-                onValueChange = onChange,
-                singleLine = true,
-                placeholder = field.placeholder?.let {
-                    { Text(it, style = inputTextStyle()) }
-                },
-                visualTransformation =
-                    if (field.password) PasswordVisualTransformation() else VisualTransformation.None,
-                textStyle = inputTextStyle(),
-                modifier = Modifier.width(INPUT_WIDTH),
+                onChange = onChange,
+                placeholder = field.placeholder,
+                password = field.password,
+                keyboardType = KeyboardType.Text,
             )
         }
         is ConfigField.Select -> SelectRow(field.label, field.options, value, onChange)
@@ -389,5 +386,68 @@ internal fun buildDotPatch(
         }
     if (changed.isEmpty()) return null
     return buildJsonObject { changed.forEach { (k, v) -> put(k, v) } }
+}
+
+/**
+ * Compact text input designed to match PWA `.form-input` density:
+ * 36 dp total height, 13 sp text, 6 dp vertical content padding.
+ * Standard M3 OutlinedTextField enforces a 56 dp minimum height
+ * and 16 dp internal padding which made the box dwarf the text
+ * (user-flagged 2026-04-23 "buttons + input windows way larger
+ * than their text").
+ *
+ * Built on BasicTextField inside a bordered Box. Loses the floating
+ * label animation — acceptable because the row already has a leading
+ * label column, and the floating label was never rendered anyway
+ * (we pass `placeholder`, not `label`).
+ */
+@Composable
+private fun CompactInput(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String?,
+    password: Boolean,
+    keyboardType: KeyboardType,
+) {
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = MaterialTheme.colorScheme.outline
+    val bgColor = MaterialTheme.colorScheme.surface
+    val textStyle =
+        LocalTextStyle.current.copy(
+            color = textColor,
+            fontSize = 13.sp,
+        )
+    Box(
+        modifier =
+            Modifier
+                .width(INPUT_WIDTH)
+                .height(36.dp)
+                .background(bgColor, RoundedCornerShape(6.dp))
+                .border(1.dp, borderColor, RoundedCornerShape(6.dp))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onChange,
+            singleLine = true,
+            textStyle = textStyle,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            visualTransformation =
+                if (password) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.fillMaxWidth(),
+            decorationBox = { inner ->
+                if (value.isEmpty() && !placeholder.isNullOrEmpty()) {
+                    Text(
+                        placeholder,
+                        style = textStyle.copy(color = placeholderColor),
+                    )
+                }
+                inner()
+            },
+        )
+    }
 }
 

@@ -1,154 +1,226 @@
 package com.dmzs.datawatchclient.ui.configfields
 
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.NumberField
+import com.dmzs.datawatchclient.ui.configfields.ConfigField.Select
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.TextField
 import com.dmzs.datawatchclient.ui.configfields.ConfigField.Toggle
 
 /**
- * Per-backend field schemas for the LLM config dialog. Mirrors the
- * dot-path keys the parent daemon's `applyConfigPatch` recognises
- * under `backends.<name>.*`. When the parent adds a field, mirror
- * it here — the dialog renders generically off these schemas so new
- * fields appear by adding a single line below.
+ * Per-backend field schemas for the LLM config dialog.
  *
- * Fallback: a backend the mobile app doesn't know a schema for
- * still shows the legacy 3-field set (model / base_url / api_key)
- * via [DefaultLlmFields] so novel backends aren't locked out.
+ * **Path convention** (verified 2026-04-24 against live /api/config
+ * on localhost:8443 + parent app.js:4262-4282 `LLM_FIELDS` +
+ * app.js:4286-4288 `LLM_CFG_SECTION`):
+ *
+ * Each registered backend has its own top-level config section. The
+ * section name is **not** `backends.<name>` — that prefix doesn't
+ * exist in the server config. Prior Android schemas used the wrong
+ * path and every write/toggle was silently dropped.
+ *
+ *  - `claude-code` → fields live under **`session.*`** (e.g.
+ *    `session.claude_code_bin`, `session.claude_enabled`).
+ *  - `aider` / `goose` / `gemini` / `ollama` / `opencode` /
+ *    `openwebui` → each has its own section named the same.
+ *  - `opencode-acp` → **`opencode_acp.*`** (note underscore).
+ *  - `opencode-prompt` → **`opencode_prompt.*`**.
+ *  - `shell` → **`shell_backend.*`**.
+ *  - `auto_git_init` / `auto_git_commit` → **`session.*`** (shared
+ *    across all backends).
+ *
+ * Backends not listed on the server's `available_backends` (GET
+ * `/api/info`) are **not** schematized here. `anthropic`, `openai`,
+ * `groq`, `openrouter`, `xai`, etc. were removed 2026-04-24 —
+ * parent daemon doesn't ship adapters for them, so exposing config
+ * fields for them was dead UX.
  */
 public object LlmBackendSchemas {
-    /** Common-to-all-backends "is this backend enabled?" toggle. */
-    private fun enabled(name: String): Toggle =
-        Toggle("backends.$name.enabled", "Enabled")
+    /**
+     * Map backend display name → config section name (section.* is
+     * the dotted prefix for every field on this backend).
+     */
+    private fun section(backendName: String): String =
+        when (backendName.lowercase()) {
+            "claude-code", "claude_code", "claudecode" -> "session"
+            "opencode-acp", "opencode_acp" -> "opencode_acp"
+            "opencode-prompt", "opencode_prompt" -> "opencode_prompt"
+            "shell" -> "shell_backend"
+            else -> backendName.lowercase()
+        }
 
-    /** Common-to-most "password-style" API-key input. Empty preserves. */
-    private fun apiKey(name: String, label: String = "API key"): TextField =
-        TextField("backends.$name.api_key", "$label (leave blank to keep)", password = true)
+    /**
+     * Per-backend "enabled" config key. Surface for the LLM card's
+     * toggle, and for the NewSession picker's enable filter. Most
+     * backends use `<section>.enabled`; claude-code is the exception
+     * (`session.claude_enabled` — historical, the `session` section
+     * predates the other adapters).
+     */
+    public fun enabledKey(backendName: String): String =
+        when (backendName.lowercase()) {
+            "claude-code", "claude_code", "claudecode" -> "session.claude_enabled"
+            else -> "${section(backendName)}.enabled"
+        }
 
-    /** Fallback used when the backend name has no registered schema. */
-    public val DefaultLlmFields: (String) -> List<ConfigField> = { name ->
-        listOf(
-            enabled(name),
-            TextField("backends.$name.model", "Model"),
-            TextField("backends.$name.base_url", "Base URL"),
-            apiKey(name),
+    private fun consoleSizeFields(backendName: String): List<ConfigField> {
+        val s = section(backendName)
+        return listOf(
+            NumberField("$s.console_cols", "Console width (cols)", placeholder = "80"),
+            NumberField("$s.console_rows", "Console height (rows)", placeholder = "24"),
+            Select(
+                "$s.output_mode",
+                "Output mode",
+                options = listOf("terminal", "log", "chat"),
+            ),
+            Select(
+                "$s.input_mode",
+                "Input mode",
+                options = listOf("tmux", "none"),
+            ),
         )
     }
 
-    /**
-     * Return the schema for [backendName], synthesising dotted keys
-     * per the parent server's naming convention. Backends not listed
-     * here get [DefaultLlmFields] as a best-effort fallback.
-     */
+    /** Shared "Auto git init/commit" under session.*. */
+    private val GitFields: List<ConfigField> =
+        listOf(
+            Toggle("session.auto_git_init", "Auto git init"),
+            Toggle("session.auto_git_commit", "Auto git commit"),
+        )
+
+    /** Fallback when we get a backend name we don't know. Keeps
+     * the user able to flip enable + set a model, nothing fancy. */
+    public val DefaultLlmFields: (String) -> List<ConfigField> = { name ->
+        val s = section(name)
+        listOf(
+            Toggle(enabledKey(name), "Enabled"),
+            TextField("$s.binary", "Binary path"),
+            TextField("$s.model", "Model"),
+        ) + consoleSizeFields(name) + GitFields
+    }
+
     public fun sectionFor(backendName: String): ConfigSection {
-        val fields =
-            when (backendName.lowercase()) {
+        val name = backendName.lowercase()
+        val s = section(backendName)
+        val fields: List<ConfigField> =
+            when (name) {
                 "ollama" ->
                     listOf(
-                        enabled(backendName),
-                        TextField("backends.ollama.host", "Host", placeholder = "http://localhost:11434"),
-                        TextField("backends.ollama.model", "Model"),
-                        NumberField("backends.ollama.timeout_seconds", "Timeout (sec)", placeholder = "120"),
-                        NumberField("backends.ollama.context_window", "Context window (tokens)", placeholder = "8192"),
-                    )
-                "openai" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.openai.model", "Model", placeholder = "gpt-4o"),
-                        TextField("backends.openai.base_url", "Base URL (optional)", placeholder = "https://api.openai.com/v1"),
-                        NumberField("backends.openai.max_tokens", "Max output tokens"),
-                        TextField("backends.openai.temperature", "Temperature (0.0-2.0)", placeholder = "0.7"),
-                        TextField("backends.openai.system_prompt", "System prompt (optional)"),
-                    )
-                "anthropic", "claude" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.anthropic.model", "Model", placeholder = "claude-opus-4-7"),
-                        NumberField("backends.anthropic.max_tokens", "Max output tokens", placeholder = "8192"),
-                        TextField("backends.anthropic.temperature", "Temperature (0.0-1.0)", placeholder = "0.7"),
-                    )
-                "groq" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.groq.model", "Model", placeholder = "llama-3.3-70b-versatile"),
-                        TextField("backends.groq.base_url", "Base URL (optional)"),
-                        NumberField("backends.groq.max_tokens", "Max output tokens"),
-                    )
-                "openrouter" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.openrouter.model", "Model", placeholder = "anthropic/claude-3.5-sonnet"),
-                        TextField("backends.openrouter.base_url", "Base URL (optional)"),
-                        TextField("backends.openrouter.site_url", "Referer / site URL (optional)"),
-                        TextField("backends.openrouter.app_name", "App name (optional)", placeholder = "datawatch"),
-                    )
-                "gemini", "google" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.gemini.model", "Model", placeholder = "gemini-2.0-flash-exp"),
-                        NumberField("backends.gemini.max_tokens", "Max output tokens"),
-                    )
-                "xai", "grok" ->
-                    listOf(
-                        enabled(backendName),
-                        apiKey(backendName),
-                        TextField("backends.xai.model", "Model", placeholder = "grok-2-latest"),
-                        TextField("backends.xai.base_url", "Base URL (optional)"),
-                    )
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.host", "Host URL", placeholder = "http://localhost:11434"),
+                        TextField("$s.model", "Model"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
                 "openwebui" ->
                     listOf(
-                        enabled(backendName),
-                        TextField("backends.openwebui.base_url", "Base URL", placeholder = "http://localhost:3000"),
-                        apiKey(backendName),
-                        TextField("backends.openwebui.model", "Model"),
-                    )
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.url", "Server URL", placeholder = "http://localhost:3000"),
+                        TextField("$s.api_key", "API key (leave blank to keep)", password = true),
+                        TextField("$s.model", "Model"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "claude-code", "claude_code", "claudecode" ->
+                    listOf(
+                        Toggle("session.claude_enabled", "Enabled"),
+                        TextField(
+                            "session.claude_code_bin",
+                            "Claude binary",
+                            placeholder = "claude",
+                        ),
+                        Toggle("session.skip_permissions", "Skip permissions"),
+                        Toggle("session.channel_enabled", "Channel mode"),
+                        TextField(
+                            "session.fallback_chain",
+                            "Fallback chain (comma-separated profiles)",
+                            placeholder = "claude-personal,gemini-backup",
+                        ),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "aider" ->
+                    listOf(
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "aider"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "goose" ->
+                    listOf(
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "goose"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "gemini" ->
+                    listOf(
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "gemini"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
                 "opencode" ->
                     listOf(
-                        enabled(backendName),
-                        TextField("backends.opencode.base_url", "Base URL"),
-                        apiKey(backendName),
-                        TextField("backends.opencode.model", "Model"),
-                    )
-                "claude-code", "claude_code", "claudecode" ->
-                    // Parent daemon's Claude Code adapter — local CLI
-                    // binary, not a REST backend. Exposes the knobs
-                    // the PWA's LLM_CONFIG_FIELDS registers on this
-                    // type (apiKey is optional since the CLI reads
-                    // ANTHROPIC_API_KEY from its own env when blank).
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "opencode"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "opencode-acp", "opencode_acp" ->
                     listOf(
-                        enabled(backendName),
-                        TextField("backends.claude-code.binary", "CLI binary path", placeholder = "claude"),
-                        TextField("backends.claude-code.model", "Model", placeholder = "claude-opus-4-7"),
-                        apiKey(backendName, label = "API key (optional — CLI reads env otherwise)"),
-                        NumberField("backends.claude-code.max_tokens", "Max output tokens", placeholder = "8192"),
-                        NumberField("backends.claude-code.max_turns", "Max conversation turns", placeholder = "0"),
-                        TextField("backends.claude-code.system_prompt", "System prompt (optional)"),
-                        Toggle("backends.claude-code.skip_permissions", "Claude skip permissions"),
-                        TextField("backends.claude-code.working_dir", "Working directory (optional)"),
-                        NumberField("backends.claude-code.timeout_seconds", "Timeout (sec)", placeholder = "600"),
-                    )
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "opencode"),
+                        NumberField(
+                            "$s.acp_startup_timeout",
+                            "ACP startup timeout (sec)",
+                            placeholder = "30",
+                        ),
+                        NumberField(
+                            "$s.acp_health_interval",
+                            "ACP health interval (sec)",
+                            placeholder = "5",
+                        ),
+                        NumberField(
+                            "$s.acp_message_timeout",
+                            "ACP message timeout (sec)",
+                            placeholder = "120",
+                        ),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "opencode-prompt", "opencode_prompt" ->
+                    listOf(
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField("$s.binary", "Binary path", placeholder = "opencode"),
+                    ) + consoleSizeFields(backendName) + GitFields
+
+                "shell" ->
+                    listOf(
+                        Toggle("$s.enabled", "Enabled"),
+                        TextField(
+                            "$s.script_path",
+                            "Script path (empty = interactive shell)",
+                        ),
+                    ) + consoleSizeFields(backendName) + GitFields
+
                 else -> DefaultLlmFields(backendName)
             }
         return ConfigSection(
-            id = "lc_backend_$backendName",
+            id = "lc_backend_${name.replace('-', '_')}",
             title = "$backendName configuration",
             fields = fields,
         )
     }
 
     /**
-     * Known LLM backend names. Used by the "Messaging Backends"-style
-     * sweep that surfaces backends configured in `/api/config` even
-     * when they don't appear in `/api/backends` (e.g. keys set to
-     * blank values or a backend the parent hasn't registered yet).
+     * Adapters the parent daemon registers (verified via
+     * `GET /api/info` `available_backends` on 2026-04-24 against
+     * dmz006/datawatch v4.x). This list controls which rows the
+     * LLM card surfaces when `/api/backends` is stale or a user
+     * has configured a backend that isn't yet in the daemon's
+     * active registry.
      */
     public val KnownBackends: List<String> =
         listOf(
-            "claude-code", "ollama", "openai", "anthropic", "groq",
-            "openrouter", "gemini", "xai", "openwebui", "opencode",
+            "claude-code",
+            "ollama",
+            "openwebui",
+            "aider",
+            "goose",
+            "gemini",
+            "opencode",
+            "opencode-acp",
+            "opencode-prompt",
+            "shell",
         )
 }
