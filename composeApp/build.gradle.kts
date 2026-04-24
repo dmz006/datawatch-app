@@ -21,6 +21,11 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
     sourceSets {
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         val androidMain by getting {
             dependencies {
                 implementation(project(":shared"))
