@@ -8,6 +8,55 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.6] — 2026-04-24 (Composer reshuffle + voice-reply fix + terminal toolbar toggle)
+
+### Changed
+
+- **Sessions list FAB lowered** further. `Modifier.offset(y = 36.dp)`
+  on the FAB drops it past the Scaffold's inset reserve so the `+`
+  button sits within thumb reach on a 6.8" screen rather than on
+  the bottom-nav seam.
+- **Sessions list header** — `ServerPickerTitle` drops its vertical
+  padding; the TopAppBar already centre-aligns the title so the
+  extra 4 dp was making the header feel hollow above the hostname.
+- **Session detail — Response button moves back to the badge bar**
+  (reverts v0.35.3's composer move). Composer row now stacks the
+  **Saved Commands** button (📋 keyboard icon) under the mic. Taps
+  open the existing `QuickCommandsSheet` with the session's saved
+  commands from `/api/commands`.
+- **QuickCommandsSheet custom reply** gets a mic button next to Send.
+  Records via `VoiceRecorder`, transcribes, appends into the custom
+  text field for review before sending.
+- **Terminal toolbar hides by default behind a badge-row toggle.**
+  SessionInfoBar now shows `Aa ▾` (expand) / `Aa ▴` (collapse) —
+  per-session state, hidden on first open so the badge strip stays
+  compact. Upstream design-sync issue [dmz006/datawatch#24](https://github.com/dmz006/datawatch/issues/24)
+  filed for PWA parity.
+- **Settings → Monitor slims down.** `KillOrphansCard` moves to About
+  alongside `UpdateDaemonCard` + `RestartDaemonCard` (daemon-admin
+  cluster); Monitor keeps Stats / Memory / Schedules / DaemonLog.
+
+### Fixed
+
+- **Session-detail voice reply routed to the wrong server.** The mic
+  button resolved the target transport from `ActiveServerStore`
+  instead of the session's own `serverProfileId`. When the active
+  store pointed elsewhere (All-Servers mode, cross-server
+  navigation) the transcribe call hit a server that didn't host
+  that session — the user's "voice use to work but isn't anymore"
+  report. Now looks up the session's profile via
+  `SessionRepository.observeForProfileAny(sessionId)` and falls back
+  to the active store only when the session row isn't cached yet.
+- **Voice-failure toast surfaces the real cause.** Ktor's wrapped
+  exceptions mask the underlying 404/500/TLS/bearer error in the
+  top-level message; the composer now walks the cause chain and
+  prints the inner `className: message` so the user can tell
+  whether Whisper is disabled, the bearer is missing, or the profile
+  is unreachable.
+- **"No enabled server profile" toast** when no profile at all can
+  be resolved — previously the mic button just silently reset
+  after the record/stop cycle.
+
 ## [0.35.5] — 2026-04-24 (Wear Sessions tap-popup + voice reply)
 
 ### Added
