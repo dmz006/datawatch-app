@@ -189,18 +189,138 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
             )
             return@PageScaffold
         }
+        // v0.35.4 — color-gauge redesign. Active-server name stays at
+        // top; CPU / Memory / Disk / GPU render as 2-up gauge rings
+        // with threshold-coloured arcs (green → amber → red). GPU
+        // shows only when the phone has published a real snapshot.
+        // Uptime hangs below as a single-line caption. The whole
+        // column is vertically scrollable inside the round card
+        // (PageScaffold already wraps in verticalScroll) so content
+        // that overflows the bezel is reachable via bezel scroll.
         Text(
             "● ${state.serverName}",
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = 2.dp),
             style = MaterialTheme.typography.caption1,
             color = MaterialTheme.colors.primary,
         )
-        StatLine("CPU", state.cpuText())
-        StatLine("Memory", state.memText())
-        StatLine("Disk", state.diskText())
-        StatLine("Uptime", state.uptimeText())
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            GaugeRing(
+                label = "CPU",
+                pct = state.cpuPctFor(),
+                center = cpuCenterText(state),
+            )
+            GaugeRing(
+                label = "MEM",
+                pct = state.memPct(),
+                center =
+                    if (state.memTotal > 0) "%.0f%%".format(state.memPct())
+                    else "—",
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            GaugeRing(
+                label = "DISK",
+                pct = state.diskPct(),
+                center =
+                    if (state.diskTotal > 0) "%.0f%%".format(state.diskPct())
+                    else "—",
+            )
+            if (state.hasGpu()) {
+                GaugeRing(
+                    label = "GPU",
+                    pct = state.gpuPct(),
+                    center =
+                        if (state.gpuPct() > 0) "%.0f%%".format(state.gpuPct())
+                        else "—",
+                )
+            } else {
+                // Empty slot keeps the 2-up grid symmetric when the
+                // phone hasn't published GPU stats yet.
+                Box(modifier = Modifier.size(GAUGE_SIZE_DP.dp))
+            }
+        }
+        if (state.uptimeSeconds > 0) {
+            Text(
+                "up ${state.uptimeText()}",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+        }
+        if (state.hasGpu() && state.gpuMemTotalMb > 0) {
+            Text(
+                "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
+                style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+        }
     }
 }
+
+/**
+ * Threshold-coloured ring gauge sized for a round-bezel watch.
+ * Green for nominal load, amber 60–80 %, red 80+ %. Value renders
+ * inside the ring so the gauge is self-labelling and the overall
+ * page stays compact.
+ */
+@Composable
+private fun GaugeRing(
+    label: String,
+    pct: Float,
+    center: String,
+) {
+    val safePct = pct.coerceIn(0f, 100f)
+    val ringColor =
+        when {
+            safePct >= GAUGE_RED_THRESHOLD -> Color(0xFFEF4444) // red-500
+            safePct >= GAUGE_AMBER_THRESHOLD -> Color(0xFFF59E0B) // amber-500
+            safePct > 0f -> Color(0xFF22C55E) // green-500
+            else -> MaterialTheme.colors.onSurfaceVariant
+        }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier.size(GAUGE_SIZE_DP.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                progress = safePct / 100f,
+                modifier = Modifier.fillMaxSize(),
+                indicatorColor = ringColor,
+                trackColor = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.25f),
+                strokeWidth = GAUGE_STROKE_DP.dp,
+            )
+            Text(
+                center,
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurface,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+        Text(
+            label,
+            style = MaterialTheme.typography.caption3,
+            color = MaterialTheme.colors.onSurfaceVariant,
+        )
+    }
+}
+
+private fun cpuCenterText(state: WearSessionCountsViewModel.UiState): String =
+    when {
+        state.cpuCores > 0 -> "%.1f".format(state.cpuLoad1)
+        state.cpuLoad1 > 0 -> "%.0f%%".format(state.cpuLoad1)
+        else -> "—"
+    }
+
+private const val GAUGE_SIZE_DP: Int = 54
+private const val GAUGE_STROKE_DP: Int = 4
+private const val GAUGE_AMBER_THRESHOLD: Float = 60f
+private const val GAUGE_RED_THRESHOLD: Float = 80f
 
 @Composable
 private fun SessionsPage(state: WearSessionCountsViewModel.UiState) {
@@ -301,22 +421,6 @@ private fun AboutPage() {
 }
 
 @Composable
-private fun StatLine(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp, horizontal = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.onSurfaceVariant)
-        Text(
-            value,
-            style = MaterialTheme.typography.caption1,
-            color = MaterialTheme.colors.onSurface,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
-}
-
-@Composable
 private fun CountTile(
     value: Int,
     label: String,
@@ -352,6 +456,14 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val diskUsed: Long = 0,
         val diskTotal: Long = 0,
         val uptimeSeconds: Long = 0,
+        // GPU — published by the phone's WearSyncService.publishStats
+        // starting v0.35.4. Absent on older phone builds, in which
+        // case the Monitor page hides the GPU gauge.
+        val gpuUtilPct: Double = 0.0,
+        val gpuTempC: Double = 0.0,
+        val gpuMemUsedMb: Long = 0L,
+        val gpuMemTotalMb: Long = 0L,
+        val gpuName: String = "",
         // Enabled profiles the user can switch between.
         val profiles: List<Pair<String, String>> = emptyList(),
     ) {
@@ -366,6 +478,25 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public fun diskText(): String =
             if (diskTotal > 0) "${fmt(diskUsed)} / ${fmt(diskTotal)}" else "—"
         public fun uptimeText(): String = if (uptimeSeconds > 0) fmtUptime(uptimeSeconds) else "—"
+
+        // Percentages used by the round-bezel gauge rings. 0..100 with
+        // 0f sentinel when the field isn't available. Caller decides
+        // whether to hide the gauge when the backing data is absent.
+        public fun cpuPctFor(maxCores: Int = cpuCores): Float =
+            when {
+                maxCores > 0 && cpuLoad1 > 0 ->
+                    ((cpuLoad1 / maxCores.toDouble()) * 100.0)
+                        .coerceIn(0.0, 100.0)
+                        .toFloat()
+                cpuLoad1 in 0.0..100.0 -> cpuLoad1.toFloat()
+                else -> 0f
+            }
+        public fun memPct(): Float =
+            if (memTotal > 0) ((memUsed.toDouble() / memTotal.toDouble()) * 100.0).toFloat() else 0f
+        public fun diskPct(): Float =
+            if (diskTotal > 0) ((diskUsed.toDouble() / diskTotal.toDouble()) * 100.0).toFloat() else 0f
+        public fun gpuPct(): Float = gpuUtilPct.coerceIn(0.0, 100.0).toFloat()
+        public fun hasGpu(): Boolean = gpuName.isNotBlank() || gpuUtilPct > 0 || gpuMemTotalMb > 0
     }
 
     private val _state = MutableStateFlow(UiState())
@@ -477,6 +608,11 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
             diskUsed = map.getLong("diskUsed", 0),
             diskTotal = map.getLong("diskTotal", 0),
             uptimeSeconds = map.getLong("uptimeSeconds", 0),
+            gpuUtilPct = map.getDouble("gpuUtilPct", 0.0),
+            gpuTempC = map.getDouble("gpuTempC", 0.0),
+            gpuMemUsedMb = map.getLong("gpuMemUsedMb", 0L),
+            gpuMemTotalMb = map.getLong("gpuMemTotalMb", 0L),
+            gpuName = map.getString("gpuName", ""),
         )
     }
 
