@@ -19,6 +19,14 @@
 # Ktor
 -keep class io.ktor.** { *; }
 -keep class kotlinx.coroutines.** { *; }
+# Ktor's IntellijIdeaDebugDetector references JVM-only java.lang.management classes
+# that don't exist on Android. R8 full-mode treats these as errors under AGP 8.5+;
+# silence them since the detector is a no-op at runtime on Android.
+-dontwarn java.lang.management.**
+# Ktor + coroutines pull in slf4j-api; we don't bundle the impl because Android
+# uses its own logging. R8 full-mode flags the missing binder — silence it.
+-dontwarn org.slf4j.impl.**
+-dontwarn org.slf4j.**
 
 # SQLCipher
 -keep class net.sqlcipher.** { *; }
