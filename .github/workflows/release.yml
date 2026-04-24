@@ -35,10 +35,15 @@ jobs:
             mkdir -p ~/.android
             echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > ~/.android/upload.jks
           fi
+          # Flavor task names track the `publicTrack` + `dev` product
+          # flavors (composeApp/build.gradle.kts:87-100). The older
+          # `bundlePublicRelease` names broke at the v0.32 rename; this
+          # is the current canonical invocation.
           ./gradlew \
-            :composeApp:bundlePublicRelease \
+            :composeApp:bundlePublicTrackRelease \
             :composeApp:bundleDevRelease \
-            :composeApp:assemblePublicRelease \
+            :composeApp:assemblePublicTrackRelease \
+            :composeApp:assembleDevRelease \
             --no-daemon --stacktrace
 
       - name: Compute checksums

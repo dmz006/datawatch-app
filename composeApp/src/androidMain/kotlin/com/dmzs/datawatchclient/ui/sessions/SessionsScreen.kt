@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Keyboard
@@ -114,6 +115,11 @@ public fun SessionsScreen(
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val selectionMode = selectedIds.isNotEmpty()
     var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
+    // Search / filter / sort toolbar is collapsed by default — user
+    // 2026-04-24 (dmz006/datawatch#23). The top-app-bar search icon
+    // toggles this. Stays implicitly "expanded" when filter text or
+    // history are active so typed queries / visible state aren't hidden.
+    var toolbarExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -127,66 +133,79 @@ public fun SessionsScreen(
             } else {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            ServerPickerTitle(
-                                active = state.activeProfile,
-                                allMode = state.allServersMode,
-                                open = pickerOpen,
-                                onToggle = { pickerOpen = !pickerOpen },
-                                onDismiss = { pickerOpen = false },
-                                profiles = state.allProfiles,
-                                onSelectAll = {
-                                    vm.selectAllServers()
-                                    pickerOpen = false
-                                },
-                                onSelect = {
-                                    vm.selectProfile(it)
-                                    pickerOpen = false
-                                },
-                                onEdit = {
-                                    pickerOpen = false
-                                    onEditServer(it)
-                                },
-                                onAdd = {
-                                    pickerOpen = false
-                                    onAddServer()
-                                },
-                            )
-                            // ADR-0013 — reachability is a visible state, never hidden.
-                            // Shown for single-server mode only; all-servers mode
-                            // deliberately hides it since we track many profiles.
-                            if (!state.allServersMode && state.activeProfile != null) {
-                                ReachabilityDot(
-                                    reachable = state.activeReachable,
-                                    lastProbeEpochMs = state.lastProbeEpochMs,
-                                    onRetry = vm::refresh,
-                                )
-                            }
-                        }
+                        ServerPickerTitle(
+                            active = state.activeProfile,
+                            allMode = state.allServersMode,
+                            open = pickerOpen,
+                            onToggle = { pickerOpen = !pickerOpen },
+                            onDismiss = { pickerOpen = false },
+                            profiles = state.allProfiles,
+                            onSelectAll = {
+                                vm.selectAllServers()
+                                pickerOpen = false
+                            },
+                            onSelect = {
+                                vm.selectProfile(it)
+                                pickerOpen = false
+                            },
+                            onEdit = {
+                                pickerOpen = false
+                                onEditServer(it)
+                            },
+                            onAdd = {
+                                pickerOpen = false
+                                onAddServer()
+                            },
+                        )
                     },
                     actions = {
-                        // Inline refresh-in-progress spinner; explicit
-                        // refresh button removed in v0.14.2 since the
-                        // Sessions tab auto-polls every 5 s.
+                        // Inline refresh-in-progress spinner (Sessions
+                        // tab auto-polls every 5 s — explicit refresh
+                        // button was dropped in v0.14.2).
                         if (state.refreshing) {
                             CircularProgressIndicator(
                                 strokeWidth = 2.dp,
-                                modifier = Modifier.padding(12.dp).size(20.dp),
+                                modifier = Modifier.padding(8.dp).size(18.dp),
                             )
                         }
-                        // v0.34.9: reorder icon removed. Reorder is now
-                        // long-press-drag on any row (G6), matching PWA's
-                        // HTML5 drag-drop. `vm.toggleReorderMode` + the
-                        // up/down arrow buttons remain in the VM as an
-                        // accessibility fallback but are no longer
-                        // surfaced in the top bar.
+                        // User direction 2026-04-24 + dmz006/datawatch#23
+                        // — search icon lives on the top app bar, left
+                        // of the reachability dot. Tapping toggles the
+                        // filter toolbar underneath.
+                        IconButton(onClick = { toolbarExpanded = !toolbarExpanded }) {
+                            Icon(
+                                if (toolbarExpanded) Icons.Filled.Close else Icons.Filled.Search,
+                                contentDescription =
+                                    if (toolbarExpanded) "Collapse filter" else "Filter / sort sessions",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        // Reachability dot on the right (PWA places
+                        // its connection indicator in the same spot).
+                        // Single-server mode only; all-servers mode
+                        // tracks many profiles so we hide the dot
+                        // (ADR-0013).
+                        if (!state.allServersMode && state.activeProfile != null) {
+                            ReachabilityDot(
+                                reachable = state.activeReachable,
+                                lastProbeEpochMs = state.lastProbeEpochMs,
+                                onRetry = vm::refresh,
+                            )
+                        }
                     },
                 )
             }
         },
         floatingActionButton = {
             if (!selectionMode && state.activeProfile != null) {
-                FloatingActionButton(onClick = onNewSession) {
+                // User 2026-04-24: "the plus sign for new sessions
+                // should be lower" — nudge the FAB a bit down-left
+                // so it sits within thumb reach on a 6.8-inch screen
+                // rather than centred on the inset zone.
+                FloatingActionButton(
+                    onClick = onNewSession,
+                    modifier = Modifier.padding(bottom = 24.dp, end = 4.dp),
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = "New session")
                 }
             }
@@ -215,6 +234,8 @@ public fun SessionsScreen(
                     onToggleShowHistory = vm::toggleShowHistory,
                     sortOrder = state.sortOrder,
                     onSortOrderChange = vm::setSortOrder,
+                    expanded = toolbarExpanded,
+                    onCollapse = { toolbarExpanded = false },
                 )
             }
 
@@ -417,78 +438,107 @@ private fun SessionsToolbar(
     onToggleShowHistory: () -> Unit,
     sortOrder: SessionsViewModel.SortOrder,
     onSortOrderChange: (SessionsViewModel.SortOrder) -> Unit,
+    expanded: Boolean,
+    onCollapse: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        OutlinedTextField(
-            value = filterText,
-            onValueChange = onFilterTextChange,
-            placeholder = { Text("Filter sessions…") },
-            singleLine = true,
-            trailingIcon = {
-                if (filterText.isNotEmpty()) {
-                    IconButton(onClick = { onFilterTextChange("") }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Clear filter")
+    // Toolbar is rendered only when expanded (user toggled search) OR
+    // something filter-related is active (stale state we don't want
+    // to hide). Collapsed state = nothing renders here; the search
+    // icon lives on the TopAppBar above.
+    val show = expanded || filterText.isNotEmpty() ||
+        activeBackendFilter != null || showHistory
+    if (!show) return
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
+        run {
+            OutlinedTextField(
+                value = filterText,
+                onValueChange = onFilterTextChange,
+                placeholder = { Text("Filter sessions…") },
+                singleLine = true,
+                trailingIcon = {
+                    Row {
+                        if (filterText.isNotEmpty()) {
+                            IconButton(onClick = { onFilterTextChange("") }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Clear filter")
+                            }
+                        }
+                        IconButton(onClick = {
+                            onFilterTextChange("")
+                            onCollapse()
+                        }) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "Collapse toolbar",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (backendCounts.size > 1) {
+                LazyRow(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                ) {
+                    items(backendCounts) { (backend, count) ->
+                        FilterChip(
+                            selected = activeBackendFilter == backend,
+                            onClick = { onToggleBackend(backend) },
+                            label = { Text("$backend · $count", style = MaterialTheme.typography.labelSmall) },
+                            colors = FilterChipDefaults.filterChipColors(),
+                        )
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (backendCounts.size > 1) {
-            LazyRow(
+            }
+            Row(
                 modifier = Modifier.padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
             ) {
-                items(backendCounts) { (backend, count) ->
-                    FilterChip(
-                        selected = activeBackendFilter == backend,
-                        onClick = { onToggleBackend(backend) },
-                        label = { Text("$backend · $count", style = MaterialTheme.typography.labelSmall) },
-                        colors = FilterChipDefaults.filterChipColors(),
-                    )
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.padding(top = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-        ) {
-            if (historyCount > 0) {
-                OutlinedButton(onClick = onToggleShowHistory) {
-                    Text(
-                        if (showHistory) "Hide history ($historyCount)" else "Show history ($historyCount)",
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
-            }
-            Box {
-                OutlinedButton(onClick = { sortMenuOpen = true }) {
-                    Text("Sort: ${sortOrder.label}", style = MaterialTheme.typography.labelMedium)
-                }
-                DropdownMenu(
-                    expanded = sortMenuOpen,
-                    onDismissRequest = { sortMenuOpen = false },
-                ) {
-                    SessionsViewModel.SortOrder.entries.forEach { o ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(o.label, modifier = Modifier.weight(1f))
-                                    if (o == sortOrder) {
-                                        Icon(
-                                            Icons.Filled.Check,
-                                            "selected",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                onSortOrderChange(o)
-                                sortMenuOpen = false
-                            },
+                if (historyCount > 0) {
+                    OutlinedButton(
+                        onClick = onToggleShowHistory,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            if (showHistory) "Hide history ($historyCount)" else "Show history ($historyCount)",
+                            style = MaterialTheme.typography.labelSmall,
                         )
+                    }
+                }
+                Box {
+                    OutlinedButton(
+                        onClick = { sortMenuOpen = true },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text("Sort: ${sortOrder.label}", style = MaterialTheme.typography.labelSmall)
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuOpen,
+                        onDismissRequest = { sortMenuOpen = false },
+                    ) {
+                        SessionsViewModel.SortOrder.entries.forEach { o ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(o.label, modifier = Modifier.weight(1f))
+                                        if (o == sortOrder) {
+                                            Icon(
+                                                Icons.Filled.Check,
+                                                "selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onSortOrderChange(o)
+                                    sortMenuOpen = false
+                                },
+                            )
+                        }
                     }
                 }
             }

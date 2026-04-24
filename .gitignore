@@ -76,3 +76,11 @@ design/
 CLAUDE.md
 .claude/
 .mcp.json
+
+# README slideshow source screenshots — we commit the *.gif result but
+# not the hundreds of per-frame PNGs that feed it. Regenerate via
+# docs/media/capture-phone.sh + capture-watch.sh. PWA frames come
+# from /home/dmz/workspace/pwa-audit/out/ (also untracked).
+docs/media/phone/
+docs/media/watch/
+docs/media/pwa/
