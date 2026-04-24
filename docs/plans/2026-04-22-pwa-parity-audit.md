@@ -1,4 +1,18 @@
-# 2026-04-22 – PWA Parity Audit
+# 2026-04-22 – PWA Parity Audit (SUPERSEDED)
+
+> **⚠️ SUPERSEDED 2026-04-23 by [`audit-2026-04-23/`](audit-2026-04-23/).**
+>
+> The 2026-04-23 directory re-audits every claim here with live PWA
+> screenshots, source verification, and v0.34.6 Android state. Two
+> claims in this doc were factually incorrect (B37 TLS cert selector,
+> B41 language selector — neither exists in the PWA), and several
+> others (B34, B35, B42) describe features Android already has.
+>
+> See [`audit-2026-04-23/audit-validation.md`](audit-2026-04-23/audit-validation.md)
+> for the per-row disposition of every B-id below.
+>
+> The canonical parity matrix lives in
+> [`audit-2026-04-23/README.md`](audit-2026-04-23/README.md) §3.
 
 **Goal**: Identify every UI/UX difference between the PWA (`https://127.0.0.1:8443`) and the Android `datawatch-app`.  For each difference we record the exact source file / line range in the PWA (JS) and the Android app (Kotlin), classify the gap, and create a concrete backlog ticket.
 

@@ -21,23 +21,20 @@ architecture).
   migration 4.sqm persists `output_mode`/`input_mode` so cold-open
   from cache picks the right surface.
 
-### Still open
-- **PWA parity deep-dive audit.** Validate every finding in
-  `2026-04-22-pwa-parity-audit.md` and expand. Every settings edit
-  dialog, every config field, every variable. Buttons + input
-  windows are visibly larger than their own text in Settings.
-- **New Session LLM backend picker** — user reported it doesn't
-  load the configured/active LLM list for the selected server.
-  v0.34.5 added per-server filtering; retest on 0.34.6 before
-  calling closed or doing another pass.
-- **Sessions hamburger-menu reorder** — user wants drag-and-drop
-  instead, PWA style.
-- **Alerts UI rebuild** — PWA has active/inactive tabs + per-type
-  sub-tabs + collapsible envelope history for older sessions. No
-  swipe-to-close / swipe-to-delete on Android currently.
-- **tmux input IME padding** — text window doesn't lift above
-  keyboard on the session-detail composer; message gets hidden
-  behind the soft keyboard as user types.
+### Master parity inventory (2026-04-23)
+
+Everything below is captured with per-gap IDs (G1–G64) in the
+master inventory — see [`audit-2026-04-23/README.md`](audit-2026-04-23/README.md)
+for the full matrix, per-screen inventories, server contract, and
+disposition of the prior 2026-04-22 audit.
+
+Release batches:
+- **v0.34.7** — P1 fix pass: G5 (new-session LLM picker retest), G8 (tmux IME padding)
+- **v0.34.8** — G7 Alerts rebuild (Active/Inactive tabs + per-session groups + per-alert quick-reply)
+- **v0.34.9** — Sessions ergonomics: G6 (drag-drop reorder), G10 (New tab in bottom nav)
+- **v0.35.0** — Settings polish + Monitor cards: G9 (input sizing), G19–G28 (Monitor cards), G45 (LLM schema cleanup), G57–G64 (visual)
+- **v0.35.1** — Session-detail polish: G11 (inline rename), G12 (state-override dropdown), G13–G17 (terminal toolbar + response)
+- **v0.35.2** — G41 Signal QR device linking (optional)
 
 ## Open — organised by sprint (fastest resolution first)
 
