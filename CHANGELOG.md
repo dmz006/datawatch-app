@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.9] — 2026-04-24 (G6 Sessions drag-drop reorder)
+
+### Changed
+
+- **G6 — Sessions list reorder is now long-press drag.** Replaces
+  the prior hamburger-menu reorder-mode toggle + up/down arrow
+  buttons with a native Compose long-press drag on each row.
+  Mirrors PWA HTML5 drag-drop (app.js:1412-1415). Approach:
+  - Long-press a row → the row lifts (elevation + translationY).
+  - Drag vertically → row floats; neighbours stay put (no live
+    reordering — intentional for deterministic release).
+  - Release → compute `(dragOffsetY / 72 dp).toInt()` and call
+    `moveSessionByOffset(sessionId, shift)`, which updates the
+    custom-order list in one shot.
+  - Auto-seeds Custom sort + custom order snapshot on first drag
+    so users don't have to toggle a reorder mode first.
+- **Reorder-mode icon removed from the top app bar.** The VM's
+  `toggleReorderMode` / `moveUp` / `moveDown` entries remain as
+  accessibility fallbacks — they simply aren't surfaced in UI.
+
+### Notes
+
+- No schema or contract changes.
+- Custom-order persistence across app restarts is still TBD
+  (in-memory during VM lifetime, matching earlier behaviour).
+  Follow-up: mirror PWA `localStorage('cs_session_order')` with
+  SharedPreferences keyed on profile id.
+
 ## [0.34.8] — 2026-04-24 (G7 Alerts rebuild + Settings restart affordance)
 
 ### Added

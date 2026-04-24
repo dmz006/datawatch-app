@@ -408,6 +408,34 @@ public class SessionsViewModel : ViewModel() {
         _customOrder.value = list
     }
 
+    /**
+     * Move [sessionId] by [rowOffset] positions in the custom ordering.
+     * Positive offsets move toward the bottom; negative toward the top.
+     * No-op when the session is not yet in the custom order (fires
+     * [toggleReorderMode] semantics to seed the list first). Used by
+     * the long-press drag-drop gesture on SessionsScreen — a single
+     * drag emits one call instead of looping through moveUp/moveDown.
+     */
+    public fun moveSessionByOffset(sessionId: String, rowOffset: Int) {
+        if (rowOffset == 0) return
+        // Seed customOrder from the current visible snapshot if the
+        // user drags before toggling reorder mode — matches PWA
+        // drag-drop which Just Works without a mode switch.
+        if (_customOrder.value.isEmpty()) {
+            val snap = state.value.visibleSessions.map { it.id }
+            _customOrder.value = snap
+            _sortOrder.value = SortOrder.Custom
+        }
+        val list = _customOrder.value.toMutableList()
+        val idx = list.indexOf(sessionId)
+        if (idx < 0) return
+        val newIdx = (idx + rowOffset).coerceIn(0, list.size - 1)
+        if (newIdx == idx) return
+        list.removeAt(idx)
+        list.add(newIdx, sessionId)
+        _customOrder.value = list
+    }
+
     /** Move the session [sessionId] one slot toward the bottom. */
     public fun moveDown(sessionId: String) {
         val list = _customOrder.value.toMutableList()

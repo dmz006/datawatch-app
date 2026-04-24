@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,7 +74,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -86,6 +89,16 @@ import com.dmzs.datawatchclient.ui.theme.PwaStatePill
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
 import kotlin.math.absoluteValue
+
+/**
+ * Approximate session-row height in dp — used by the long-press drag
+ * gesture to translate vertical drag distance into "N rows moved"
+ * before calling `moveSessionByOffset`. Actual row heights vary
+ * slightly with task-context lines (waiting_input rows are taller),
+ * but the rounding self-corrects within ~1 row and users seldom drag
+ * > 5 rows in one gesture.
+ */
+private const val ROW_HEIGHT_GUESS_DP: Int = 72
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -161,19 +174,12 @@ public fun SessionsScreen(
                                 modifier = Modifier.padding(12.dp).size(20.dp),
                             )
                         }
-                        IconButton(onClick = vm::toggleReorderMode) {
-                            Icon(
-                                Icons.Filled.Reorder,
-                                contentDescription =
-                                    if (state.reorderMode) "Exit reorder mode" else "Reorder sessions",
-                                tint =
-                                    if (state.reorderMode) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                            )
-                        }
+                        // v0.34.9: reorder icon removed. Reorder is now
+                        // long-press-drag on any row (G6), matching PWA's
+                        // HTML5 drag-drop. `vm.toggleReorderMode` + the
+                        // up/down arrow buttons remain in the VM as an
+                        // accessibility fallback but are no longer
+                        // surfaced in the top bar.
                     },
                 )
             }
@@ -241,6 +247,24 @@ public fun SessionsScreen(
                     // when the same session id appears under both a server's
                     // primary list and another server's federation fan-out.
                     items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
+                        // Per-row drag state. The user long-presses the row
+                        // to start dragging; while dragging, the row floats
+                        // via `translationY` and other rows stay put. On
+                        // release, `moveSessionByOffset` applies the delta
+                        // in one shot, matching PWA `sessionDrop()` (app.js
+                        // :1414-1415). Row height is approximated at 72 dp
+                        // — exact height varies with task-context lines,
+                        // but rounding errors self-correct within ~1 row
+                        // and users seldom drag > 5 rows in one gesture.
+                        val density = LocalDensity.current
+                        val rowHeightPx =
+                            with(density) { ROW_HEIGHT_GUESS_DP.dp.toPx() }
+                        var dragOffsetY by remember(session.id) {
+                            mutableStateOf(0f)
+                        }
+                        var isDragging by remember(session.id) {
+                            mutableStateOf(false)
+                        }
                         SessionRow(
                             session = session,
                             backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
@@ -252,6 +276,26 @@ public fun SessionsScreen(
                             deleteSupported = state.deleteSupported,
                             selectionMode = selectionMode,
                             isSelected = session.id in selectedIds,
+                            dragOffsetY = dragOffsetY,
+                            isDragging = isDragging,
+                            onDragStart = {
+                                // Ignore drags while multi-select is
+                                // active — long-press is repurposed for
+                                // selection toggle there.
+                                if (selectionMode) return@SessionRow
+                                isDragging = true
+                            },
+                            onDrag = { delta -> dragOffsetY += delta },
+                            onDragEnd = {
+                                if (!selectionMode && isDragging) {
+                                    val shift = (dragOffsetY / rowHeightPx).toInt()
+                                    if (shift != 0) {
+                                        vm.moveSessionByOffset(session.id, shift)
+                                    }
+                                }
+                                dragOffsetY = 0f
+                                isDragging = false
+                            },
                             onClick = {
                                 if (selectionMode) {
                                     selectedIds = selectedIds.toggle(session.id)
@@ -260,9 +304,10 @@ public fun SessionsScreen(
                                 }
                             },
                             onLongPress = {
-                                // Enter multi-select on first long-press, then
-                                // subsequent taps toggle. Long-press on an
-                                // already-selected row is idempotent.
+                                // In multi-select, long-press selects the
+                                // row. Outside multi-select the gesture is
+                                // reclaimed by the drag detector in
+                                // SessionRow itself.
                                 selectedIds = selectedIds + session.id
                             },
                             onSwipeMute = {
@@ -483,6 +528,13 @@ private fun SessionRow(
     reorderMode: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
+    // Drag-drop state — passed from SessionsScreen so the caller owns
+    // the offset (per-row state would reset on LazyColumn re-key).
+    dragOffsetY: Float = 0f,
+    isDragging: Boolean = false,
+    onDragStart: () -> Unit = {},
+    onDrag: (Float) -> Unit = {},
+    onDragEnd: () -> Unit = {},
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
     var responseOpen by remember { mutableStateOf(false) }
@@ -501,6 +553,25 @@ private fun SessionRow(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
+                .graphicsLayer {
+                    // While being dragged, the row floats vertically
+                    // and sits above its neighbours — neighbours stay
+                    // put (no live reordering). Release applies the
+                    // shift in one shot via moveSessionByOffset.
+                    translationY = if (isDragging) dragOffsetY else 0f
+                    shadowElevation = if (isDragging) 12f else 0f
+                }
+                .pointerInput(session.id, selectionMode) {
+                    if (selectionMode) return@pointerInput
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { _: androidx.compose.ui.geometry.Offset ->
+                            onDragStart()
+                        },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragEnd() },
+                        onDrag = { _, delta -> onDrag(delta.y) },
+                    )
+                }
                 .pwaCard()
                 .pwaStateEdge(session.state)
                 .then(
