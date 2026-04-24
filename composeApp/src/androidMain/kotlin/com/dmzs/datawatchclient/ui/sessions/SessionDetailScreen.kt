@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -118,6 +119,12 @@ public fun SessionDetailScreen(
     var scheduleOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
     var timelineOpen by remember { mutableStateOf(false) }
+    // v0.35.6 user 2026-04-24: terminal toolbar (font size / scroll)
+    // collapses behind a toggle on the badge line. Hidden by default
+    // so the badges + terminal get more vertical real-estate; the
+    // user toggles it on only when they need font-size / scroll
+    // controls. Upstream design-sync issue filed against PWA.
+    var terminalToolbarVisible by remember(sessionId) { mutableStateOf(false) }
 
     // Persistent mode preference — Terminal is the default (matches the
     // PWA), Chat re-renders the existing event list with quick-reply
@@ -353,12 +360,17 @@ public fun SessionDetailScreen(
                     stateMenuOpen = false
                     vm.overrideState(s)
                 },
-                // Response button relocated to the composer row
-                // (stacked under the microphone) — v0.35.3 user
-                // direction. SessionInfoBar keeps the flag as 0 so
-                // the old button doesn't render twice.
-                hasResponse = false,
+                // User 2026-04-24 round 2: Response button belongs on
+                // the badge bar; the composer stack under the mic
+                // carries the Saved Commands button instead. Revert
+                // v0.35.3's move so both actions are one tap from
+                // their natural anchor.
+                hasResponse = hasResponse,
                 onResponse = { responseOpen = true },
+                terminalToolbarVisible = terminalToolbarVisible,
+                onToggleTerminalToolbar = {
+                    terminalToolbarVisible = !terminalToolbarVisible
+                },
             )
             if (responseOpen) {
                 LastResponseSheet(
@@ -420,7 +432,9 @@ public fun SessionDetailScreen(
                 )
             } else {
                 val terminalController = rememberTerminalController()
-                TerminalToolbar(controller = terminalController, sessionId = sessionId)
+                if (terminalToolbarVisible) {
+                    TerminalToolbar(controller = terminalController, sessionId = sessionId)
+                }
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
@@ -467,6 +481,7 @@ public fun SessionDetailScreen(
                 )
             }
 
+            var savedCmdsOpen by remember { mutableStateOf(false) }
             ReplyComposer(
                 text = state.replyText,
                 onTextChange = vm::onReplyTextChange,
@@ -477,9 +492,19 @@ public fun SessionDetailScreen(
                 onSchedule = { scheduleOpen = true },
                 waitingInput = state.session?.state == SessionState.Waiting,
                 onQuickReply = vm::sendQuickReply,
-                hasResponse = hasResponse,
-                onResponse = { responseOpen = true },
+                onSavedCommands = { savedCmdsOpen = true },
             )
+            if (savedCmdsOpen) {
+                QuickCommandsSheet(
+                    fetchSavedCommands = { vm.fetchSavedCommands() },
+                    onSend = { cmd ->
+                        vm.sendQuickReply(cmd)
+                        savedCmdsOpen = false
+                    },
+                    onDismiss = { savedCmdsOpen = false },
+                    sessionId = sessionId,
+                )
+            }
         }
     }
 
@@ -631,6 +656,11 @@ private fun SessionInfoBar(
     // a non-blank lastResponse. Taps open the response viewer sheet.
     hasResponse: Boolean = false,
     onResponse: () -> Unit = {},
+    // v0.35.6: badge-line toggle that shows / hides the
+    // font-size + scroll TerminalToolbar beneath the badges.
+    // Hidden by default so the badges row stays compact.
+    terminalToolbarVisible: Boolean = false,
+    onToggleTerminalToolbar: () -> Unit = {},
 ) {
     val isActive =
         state == SessionState.Running || state == SessionState.Waiting ||
@@ -740,6 +770,27 @@ private fun SessionInfoBar(
                 ) {
                     Text("💾 Response", style = MaterialTheme.typography.labelSmall)
                 }
+            }
+            // v0.35.6 — terminal-toolbar show/hide toggle. Keep the
+            // glyph compact so it reads as a "font controls" affordance
+            // without eating horizontal space in the badge row.
+            TextButton(
+                onClick = onToggleTerminalToolbar,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 8.dp,
+                    vertical = 2.dp,
+                ),
+            ) {
+                Text(
+                    if (terminalToolbarVisible) "Aa ▴" else "Aa ▾",
+                    style = MaterialTheme.typography.labelSmall,
+                    color =
+                        if (terminalToolbarVisible) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
             }
         }
     }
@@ -1561,11 +1612,10 @@ private fun ReplyComposer(
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
     onQuickReply: (String) -> Unit = {},
-    // v0.35.3: saved-response viewer moves off the SessionInfoBar
-    // and stacks under the microphone button in the composer row,
-    // per user direction 2026-04-24.
-    hasResponse: Boolean = false,
-    onResponse: () -> Unit = {},
+    // v0.35.6: Saved Commands sheet opens from under the mic; the
+    // Response badge moved back to SessionInfoBar (user reversed
+    // v0.35.3's placement).
+    onSavedCommands: () -> Unit = {},
 ) {
     HorizontalDivider()
     val context = LocalContext.current
@@ -1683,23 +1733,39 @@ private fun ReplyComposer(
                     val captured = r.stop() ?: return@IconButton
                     transcribing = true
                     scope.launch {
-                        // Honour ActiveServerStore so voice lands on the
-                        // server the user is actually viewing, not the
-                        // first-enabled profile by DB order. Before
-                        // 2026-04-22 this silently routed transcription
-                        // to whichever server the DB happened to return
-                        // first — baffling when multiple servers are
-                        // configured and only the non-active one has
-                        // Whisper enabled.
-                        val activeId =
+                        // v0.35.6 fix: resolve the profile from the
+                        // session the user is actually viewing, not
+                        // from ActiveServerStore. Users can view a
+                        // session on server A while the store points
+                        // at B (All Servers mode, cross-server nav),
+                        // which silently routed transcribe traffic to
+                        // B's Whisper and surfaced a 404 toast —
+                        // matching the "use to work but isn't anymore"
+                        // report 2026-04-24. Falls back to the active
+                        // store only if the session isn't cached yet.
+                        val sessionRow =
                             com.dmzs.datawatchclient.di.ServiceLocator
-                                .activeServerStore.get()
+                                .sessionRepository
+                                .observeForProfileAny(sessionId)
+                                .first()
                         val profiles =
                             com.dmzs.datawatchclient.di.ServiceLocator
                                 .profileRepository.observeAll().first()
                         val profile =
-                            profiles.firstOrNull { it.id == activeId && it.enabled }
-                                ?: profiles.firstOrNull { it.enabled }
+                            sessionRow?.serverProfileId
+                                ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                                ?: run {
+                                    val activeId =
+                                        com.dmzs.datawatchclient.di.ServiceLocator
+                                            .activeServerStore.get()
+                                    profiles.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: profiles.firstOrNull { it.enabled }
+                                }
+                        android.util.Log.d(
+                            "VoiceReply",
+                            "transcribe → sid=$sessionId profile=${profile?.displayName} " +
+                                "(id=${profile?.id})",
+                        )
                         if (profile != null) {
                             com.dmzs.datawatchclient.di.ServiceLocator
                                 .transportFor(profile)
@@ -1744,19 +1810,34 @@ private fun ReplyComposer(
                                         }
                                     },
                                     onFailure = { err ->
-                                        // Surface transcription failure as a
-                                        // toast with the server's response so
-                                        // the user knows voice is disabled /
-                                        // unreachable instead of a silent
-                                        // no-op (2026-04-22 user report).
+                                        // v0.35.6: include the root-cause chain
+                                        // so Ktor-wrapped failures (TLS, 404,
+                                        // 500, bearer missing) surface the
+                                        // actual reason instead of a generic
+                                        // CancellationException message.
+                                        val cause =
+                                            generateSequence(err as Throwable?) { it.cause }
+                                                .take(3)
+                                                .joinToString(" ← ") {
+                                                    "${it::class.simpleName}: ${it.message?.take(120)}"
+                                                }
+                                        android.util.Log.w(
+                                            "VoiceReply",
+                                            "transcribe fail on ${profile.displayName}: $cause",
+                                        )
                                         android.widget.Toast.makeText(
                                             context,
-                                            "Transcribe failed on ${profile.displayName}: " +
-                                                "${err.message ?: err::class.simpleName}",
+                                            "Transcribe failed on ${profile.displayName}: $cause",
                                             android.widget.Toast.LENGTH_LONG,
                                         ).show()
                                     },
                                 )
+                        } else {
+                            android.widget.Toast.makeText(
+                                context,
+                                "No enabled server profile — voice reply aborted.",
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
                         }
                         transcribing = false
                     }
@@ -1802,20 +1883,18 @@ private fun ReplyComposer(
                 )
             }
         }
-        if (hasResponse) {
-            IconButton(
-                modifier = Modifier.size(36.dp),
-                onClick = onResponse,
-                enabled = !sending,
-            ) {
-                Icon(
-                    Icons.Filled.Description,
-                    contentDescription = "View last response",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+        IconButton(
+            modifier = Modifier.size(36.dp),
+            onClick = onSavedCommands,
+            enabled = !sending,
+        ) {
+            Icon(
+                Icons.Filled.Keyboard,
+                contentDescription = "Saved commands",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
-        } // Column (Mic + Response stack)
+        } // Column (Mic + Saved-Commands stack)
         // Schedule-as-cron — preserves the typed reply text as the
         // schedule task, so "draft → schedule" is a single tap.
         IconButton(onClick = onSchedule, enabled = !sending) {

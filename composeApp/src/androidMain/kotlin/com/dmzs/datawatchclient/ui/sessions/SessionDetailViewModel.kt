@@ -250,6 +250,21 @@ public class SessionDetailViewModel(
      */
     private fun fullIdOrShort(): String = state.value.session?.fullId ?: sessionId
 
+    /**
+     * Load the active server's saved-command list so the Saved Commands
+     * sheet (opened from the composer) renders its "Saved" group.
+     * Mirrors [SessionsViewModel.fetchSavedCommands] but scoped to the
+     * detail VM's profile cache.
+     */
+    public suspend fun fetchSavedCommands(): List<Pair<String, String>> {
+        val profile = profileCache ?: return emptyList()
+        return com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+            .listCommands().fold(
+                onSuccess = { list -> list.map { it.name to it.command } },
+                onFailure = { emptyList() },
+            )
+    }
+
     public fun kill() {
         val profile = profileCache ?: return
         if (_killing.value) return

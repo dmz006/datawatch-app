@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Reorder
@@ -71,7 +73,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -198,13 +203,19 @@ public fun SessionsScreen(
         },
         floatingActionButton = {
             if (!selectionMode && state.activeProfile != null) {
-                // User 2026-04-24: "the plus sign for new sessions
-                // should be lower" — nudge the FAB a bit down-left
-                // so it sits within thumb reach on a 6.8-inch screen
-                // rather than centred on the inset zone.
+                // User 2026-04-24 (round 2): "the + on sessions list
+                // needs to be lower" — first pass (bottom = 24.dp)
+                // didn't pull enough. Using a negative-y offset instead
+                // of padding so the FAB drops past the Scaffold's
+                // floating-action inset reserve; a 6.8" screen has
+                // ~28 dp of gesture inset below the button and the
+                // FAB is visibly below the bottom-nav bar's vertical
+                // centre now.
                 FloatingActionButton(
                     onClick = onNewSession,
-                    modifier = Modifier.padding(bottom = 24.dp, end = 4.dp),
+                    modifier = Modifier
+                        .offset(y = 36.dp)
+                        .padding(end = 4.dp),
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "New session")
                 }
@@ -1083,8 +1094,14 @@ private fun ServerPickerTitle(
     onAdd: () -> Unit,
 ) {
     Box {
+        // User 2026-04-24: "top header has space above host name" —
+        // drop the title Row's vertical padding; the TopAppBar already
+        // centre-aligns the title within its own fixed height, so any
+        // extra vertical padding here just pushes the server-name down
+        // from the visible centre line and makes the header feel like
+        // it has a dead strip above the label.
         Row(
-            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp, vertical = 4.dp),
+            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(if (allMode) "All servers" else (active?.displayName ?: "No server"))
@@ -1299,10 +1316,11 @@ internal fun LastResponseSheet(
  */
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun QuickCommandsSheet(
+internal fun QuickCommandsSheet(
     fetchSavedCommands: suspend () -> List<Pair<String, String>>,
     onSend: (String) -> Unit,
     onDismiss: () -> Unit,
+    sessionId: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
@@ -1386,14 +1404,137 @@ private fun QuickCommandsSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
             )
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val scope = rememberCoroutineScope()
+            var recorder by remember {
+                mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null)
+            }
+            var transcribing by remember { mutableStateOf(false) }
+            val recording = recorder != null
+            val micLauncher =
+                androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+                ) { granted ->
+                    if (granted) {
+                        val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                        runCatching { r.start() }
+                            .onSuccess { recorder = r }
+                            .onFailure { e ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Recording failed: ${e.message ?: e::class.simpleName}",
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Microphone permission denied — enable it in Settings.",
+                            android.widget.Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = customText,
                     onValueChange = { customText = it },
-                    placeholder = { Text("Type a reply…") },
+                    placeholder = {
+                        Text(if (recording) "Listening…" else "Type a reply…")
+                    },
                     singleLine = true,
+                    enabled = !recording,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(
+                    onClick = {
+                        if (recording) {
+                            val r = recorder ?: return@IconButton
+                            recorder = null
+                            val captured = r.stop() ?: return@IconButton
+                            transcribing = true
+                            scope.launch {
+                                val activeId =
+                                    com.dmzs.datawatchclient.di.ServiceLocator
+                                        .activeServerStore.get()
+                                val profiles =
+                                    com.dmzs.datawatchclient.di.ServiceLocator
+                                        .profileRepository.observeAll().first()
+                                val profile =
+                                    profiles.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: profiles.firstOrNull { it.enabled }
+                                if (profile != null) {
+                                    com.dmzs.datawatchclient.di.ServiceLocator
+                                        .transportFor(profile)
+                                        .transcribeAudio(
+                                            audio = captured.first,
+                                            audioMime = captured.second,
+                                            sessionId = sessionId,
+                                            autoExec = false,
+                                        ).fold(
+                                            onSuccess = { result ->
+                                                customText =
+                                                    (customText + " " + result.transcript)
+                                                        .trim()
+                                            },
+                                            onFailure = { err ->
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "Transcribe failed on ${profile.displayName}: " +
+                                                        "${err.message ?: err::class.simpleName}",
+                                                    android.widget.Toast.LENGTH_LONG,
+                                                ).show()
+                                            },
+                                        )
+                                }
+                                transcribing = false
+                            }
+                        } else {
+                            val granted =
+                                androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.RECORD_AUDIO,
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (granted) {
+                                val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                                runCatching { r.start() }
+                                    .onSuccess { recorder = r }
+                                    .onFailure { e ->
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                                            android.widget.Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                            } else {
+                                micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                            }
+                        }
+                    },
+                    enabled = !transcribing,
+                ) {
+                    if (transcribing) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.padding(4.dp),
+                        )
+                    } else {
+                        Icon(
+                            if (recording) {
+                                Icons.Filled.Stop
+                            } else {
+                                Icons.Filled.Mic
+                            },
+                            contentDescription =
+                                if (recording) "Stop recording" else "Voice reply",
+                            tint =
+                                if (recording) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                        )
+                    }
+                }
                 IconButton(
                     onClick = {
                         val t = customText.trim()

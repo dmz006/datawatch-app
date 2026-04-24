@@ -33,6 +33,7 @@ per-version change log.
 - [#21](https://github.com/dmz006/datawatch/issues/21) — PWA missing voice-input UI for `/api/voice/transcribe` (Android has it end-to-end).
 - [#22](https://github.com/dmz006/datawatch/issues/22) — PWA migrate New bottom-nav tab → FAB + full-screen create, to match Android.
 - [#23](https://github.com/dmz006/datawatch/issues/23) — PWA Sessions list — mirror Android v0.35.3 layout (inline filter toggle, reachability dot right-side, FAB lower).
+- [#24](https://github.com/dmz006/datawatch/issues/24) — PWA terminal toolbar collapse toggle on session-info-bar (match Android v0.35.6).
 
 ---
 
@@ -174,7 +175,7 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | GPU stats publish path | `WearSyncService.publishStats` adds `gpuUtilPct`, `gpuTempC`, `gpuMemUsedMb`, `gpuMemTotalMb`, `gpuName` to the `/datawatch/stats` DataItem. |
 | Uptime + VRAM summary | Moved below the gauge grid as captions instead of list rows. |
 
-### v0.35.5 — 2026-04-24 · Wear Sessions tap-popup + voice reply (current)
+### v0.35.5 — 2026-04-24 · Wear Sessions tap-popup + voice reply
 
 | What | Mechanism |
 |---|---|
@@ -182,6 +183,19 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Tap → `SessionDetailPopup` | Circular card with title + state + last-line preview + 🎤 + Send + ✕. Scaffold wraps `verticalScroll` so overflow is bezel-scrollable. |
 | Voice transcription | Mic launches system `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`. Transcript appears inside the popup for confirmation before send. |
 | Reply round-trip | Watch `MessageClient.sendMessage("/datawatch/reply", "sessionId\ntext")` → phone `WearSyncService` opens a transient WS subscription to that session, emits `send_input` via `WsOutbound`, cancels after drain. The only path — server rejects REST `/api/sessions/reply` (404, pre-v0.34.6 regression context). |
+
+### v0.35.6 — 2026-04-24 · Composer reshuffle + voice-reply fix + terminal toolbar toggle (current)
+
+| What | Mechanism |
+|---|---|
+| Sessions FAB lowered | `SessionsScreen.kt`: `Modifier.offset(y = 36.dp)` on FAB pushes past Scaffold inset reserve — thumb reach on 6.8" screen. |
+| Sessions header dead strip removed | `ServerPickerTitle` drops its `vertical = 4.dp` padding; TopAppBar already vertically centres so the extra padding made the title look hollow. |
+| Composer under-mic → Saved Commands | `ReplyComposer` swaps `hasResponse` / `onResponse` for `onSavedCommands`; Response badge returns to `SessionInfoBar`. New `QuickCommandsSheet` state hoisted in detail screen; `SessionDetailViewModel.fetchSavedCommands()` uses `profileCache`. |
+| Quick-commands custom input gets a mic | `QuickCommandsSheet` (now `internal`) — mic next to Send runs `VoiceRecorder` + `transcribeAudio`, appends into the custom text field for review before send. |
+| Terminal toolbar hides behind badge-row toggle | `SessionInfoBar` new params `terminalToolbarVisible` + `onToggleTerminalToolbar`; `Aa ▾ / Aa ▴` TextButton in badge row. Detail screen `remember(sessionId) { mutableStateOf(false) }` — per-session, hidden by default. Upstream issue [dmz006/datawatch#24](https://github.com/dmz006/datawatch/issues/24) for PWA parity. |
+| Voice reply routed to session's own profile | `ReplyComposer`: resolve profile via `SessionRepository.observeForProfileAny(sessionId)` first, fall back to ActiveServerStore. Fixes "voice use to work but isn't anymore" — cross-server / all-servers mode was routing transcribe to the wrong Whisper instance. |
+| Voice-failure toast surfaces root cause | Walks the cause chain (3 deep) so Ktor-wrapped `CancellationException` no longer masks 404 / TLS / bearer-missing messages. Also adds a "No enabled server profile" toast when resolution fails entirely. |
+| Kill Orphans moves to About | `SettingsScreen`: `KillOrphansCard` relocates from Monitor → About beside `UpdateDaemonCard` + `RestartDaemonCard` (daemon-admin cluster). Monitor keeps read-oriented cards only. |
 
 ---
 

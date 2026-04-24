@@ -230,19 +230,14 @@ public fun SettingsScreen(
 
                 when (activeTab) {
                     SettingsTab.Monitor -> {
-                        // v0.33.13 reshuffle per B18/B19/B20:
-                        //  - Kill Orphans moves between Stats and Memory.
-                        //  - Network Interfaces dropped (B18 — not on PWA).
-                        //  - Update + Restart daemon moved to About (B19)
-                        //    since those target daemon meta + already
-                        //    sit next to version/host info there.
-                        // Final order matches PWA
-                        // `data-group="monitor"`: Stats → Memory
-                        // Browser → Scheduled Events → Daemon Log, with
-                        // Kill Orphans inserted after Stats as the
-                        // primary mobile admin action.
+                        // Monitor carries live-data cards only.
+                        // User 2026-04-24: "Kill orphaned should be on
+                        // About tab" — `KillOrphansCard` moved down to
+                        // About alongside Update + Restart daemon, which
+                        // already own the daemon-admin action cluster.
+                        // Monitor keeps Stats / Memory / Schedules /
+                        // DaemonLog — the read-oriented glance surfaces.
                         com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
@@ -345,15 +340,16 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.filters.FiltersCard()
                     }
                     SettingsTab.About -> {
-                        // v0.33.13 (B19 + B24): Update + Restart daemon
-                        // cards moved in from Monitor (daemon meta lives
-                        // here). McpToolsCard dropped — PWA doesn't put
-                        // the MCP tool catalogue on About and users
-                        // rarely need it at-a-glance.
+                        // Daemon admin cluster — About carries the
+                        // actions that target daemon meta / process
+                        // lifecycle. Update + Restart moved here in
+                        // v0.33.13 (B19); Kill Orphans joins them in
+                        // v0.35.6 per user direction 2026-04-24.
                         AboutCard(activeProfile = activeProfile)
                         com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                         com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                         com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
+                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                         com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }
