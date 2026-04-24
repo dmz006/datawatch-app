@@ -22,6 +22,13 @@ Auto, and iOS are out of scope.
 | **P3** — polish / visual fidelity | 8 | 3 ✅ | 5 (opportunistic) |
 | WONTFIX / non-gap / upstream-tracked | 12 | — | — |
 
+Post-milestone arc (v0.35.3–v0.35.5, all 2026-04-24) closed the Wear
+feature backlog: round-bezel cards, colour-gauge Monitor with GPU
+stats, and tap-to-reply voice flow on Sessions. Parity itself stays
+closed — those rows aren't in the PWA matrix, they're Wear-only work
+tracked outside this audit. See §5 "Closed — by release" for the
+per-version change log.
+
 **Upstream issues filed against `dmz006/datawatch`** (per the bidirectional parity rule):
 - [#21](https://github.com/dmz006/datawatch/issues/21) — PWA missing voice-input UI for `/api/voice/transcribe` (Android has it end-to-end).
 - [#22](https://github.com/dmz006/datawatch/issues/22) — PWA migrate New bottom-nav tab → FAB + full-screen create, to match Android.
@@ -137,7 +144,7 @@ Seven files, ~700 LOC. Commit: `release: v0.34.6 — P0: session-id contract, de
 |---|---|---|
 | ✅ G11 | Session-detail rename via modal dialog | Tap title → `BasicTextField` swap in-place. Enter or blur commits via `vm.rename`. Mirrors PWA `startHeaderRename` contentEditable. Prior `RenameDialog` still reachable via overflow menu for users who prefer modal. |
 
-### v0.35.3 — 2026-04-24 · Sessions UX polish + Wear round cards + release-workflow fix (current)
+### v0.35.3 — 2026-04-24 · Sessions UX polish + Wear round cards + release-workflow fix
 
 Not a parity row close — this ships the UX polish the user asked for
 post-milestone plus an upstream design-sync issue for the PWA.
@@ -150,7 +157,25 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Terminal toolbar hugs badges | `TerminalToolbar` vertical padding dropped from 2 dp → 0 dp. Closes the "empty line" gap to `SessionInfoBar`. |
 | Wear — circular bordered card per page | `WearMainActivity`: `CircleShape` background + 1.5 dp primary-tinted border. Matches Samsung Galaxy Watch bezel. |
 | Auto — MagicNumber detekt cleanups | `AutoMonitorScreen.kt` byte/time constants named. |
-| Release workflow — fix stale `bundlePublicRelease` → `bundlePublicTrackRelease` | `.github/workflows/release.yml`. v0.35.2 release never published binaries because of this. |
+| Release workflow — fix stale `bundlePublicRelease` → `bundlePublicTrackRelease` | `.github/workflows/release.yml`. v0.35.2 release never published binaries because of this. Also adds R8 `-dontwarn` rules for Ktor's `IntellijIdeaDebugDetector` + slf4j so the shrink step stops failing. |
+| Security — phone slideshow GIF purged from git history | `git-filter-repo --path docs/media/phone-slideshow.gif --invert-paths` + force-push main + `v0.35.3` tag. Previous GIF captured the user's live home screen; `capture-phone.sh` now bans the home-screen step. README drops to 2-column (Watch + PWA) slideshow table until a clean re-capture runs. |
+
+### v0.35.4 — 2026-04-24 · Wear Monitor redesign
+
+| What | Mechanism |
+|---|---|
+| CPU / Memory / Disk / GPU gauge rings on Wear Monitor | `WearMainActivity.MonitorPage`: 2-up grid of `CircularProgressIndicator` with threshold colours (green < 60 % → amber 60–80 % → red ≥ 80 %). Value printed inside the ring; label below. GPU gauge hides gracefully when phone doesn't publish GPU stats. |
+| GPU stats publish path | `WearSyncService.publishStats` adds `gpuUtilPct`, `gpuTempC`, `gpuMemUsedMb`, `gpuMemTotalMb`, `gpuName` to the `/datawatch/stats` DataItem. |
+| Uptime + VRAM summary | Moved below the gauge grid as captions instead of list rows. |
+
+### v0.35.5 — 2026-04-24 · Wear Sessions tap-popup + voice reply (current)
+
+| What | Mechanism |
+|---|---|
+| Per-session list on Wear Sessions page | New `/datawatch/sessions` DataItem from phone publishes top-12 by `lastActivityAt` (id, title, backend, state, last-line). Watch renders coloured state-badge rows — running/waiting/rate-limited/other. |
+| Tap → `SessionDetailPopup` | Circular card with title + state + last-line preview + 🎤 + Send + ✕. Scaffold wraps `verticalScroll` so overflow is bezel-scrollable. |
+| Voice transcription | Mic launches system `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`. Transcript appears inside the popup for confirmation before send. |
+| Reply round-trip | Watch `MessageClient.sendMessage("/datawatch/reply", "sessionId\ntext")` → phone `WearSyncService` opens a transient WS subscription to that session, emits `send_input` via `WsOutbound`, cancels after drain. The only path — server rejects REST `/api/sessions/reply` (404, pre-v0.34.6 regression context). |
 
 ---
 
