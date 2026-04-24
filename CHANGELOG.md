@@ -8,6 +8,26 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.2] — 2026-04-24 (G11 inline header rename)
+
+### Changed
+
+- **G11 — Session-detail title is now tap-to-edit inline.** Clicking
+  the header swaps the Text for a BasicTextField pre-filled with
+  the current title; Enter or blur commits via `vm.rename`. Empty
+  / unchanged values are ignored. Mirrors PWA `startHeaderRename`
+  at app.js:1672 (which used contentEditable on the `<h2>`). The
+  prior RenameDialog is still accessible via the overflow menu
+  and elsewhere — inline is the primary path now.
+
+### Notes
+
+- Closes the last P2 row in the 2026-04-23 parity inventory.
+  Remaining rows are P3 polish items (Monitor Plugins card,
+  terminal toolbar Font/Fit/Scroll buttons, schedule popup field
+  alignment) — captured in the audit doc and will ship on an
+  opportunistic cadence.
+
 ## [0.35.1] — 2026-04-24 (Session-detail polish — state dropdown + Response)
 
 ### Changed
