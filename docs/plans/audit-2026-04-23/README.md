@@ -311,19 +311,20 @@ G41. Can be deferred; only needed when a user actually wants to pair Signal from
 
 ---
 
-## 6. Non-gaps / WONTFIX (captured for memory)
+## 6. Non-gaps / WONTFIX + upstream-tracked (captured for memory)
 
-| Claim | Reason |
-|---|---|
-| Language selector | Not in PWA. Parent datawatch is English only. |
-| "TLS cert selector" | Misread of B37 in prior audit. PWA doesn't offer a selector; `/api/cert` is CA download only, which Android has via CertInstallCard. |
-| Aspirational REST-style session endpoints (`DELETE /api/sessions/{id}`) | Android inventory doc listed these, but server is POST with body. v0.34.6 is already correct; don't introduce REST-style. |
-| "Prompt templates UI" | Not a PWA thing; Saved Commands fills this role and is parity. |
-| In-app alerts panel as a "new feature" | Android already has Alerts tab. Real gap is G7 (structure). |
-| Voice transcribe | PWA lacks it; Android has it. Non-gap, Android extra. |
-| Home-screen widgets | PWA lacks (not a platform capability). Non-gap, Android extra. |
-| Biometric unlock | PWA lacks. Non-gap, Android-only requirement. |
-| Wear / Auto surfaces | Explicitly out of scope per user directive. |
+| Claim | Reason | Upstream ref |
+|---|---|---|
+| Language selector | Not in PWA. Parent datawatch is English only. | — |
+| "TLS cert selector" | Misread of B37 in prior audit. PWA doesn't offer a selector; `/api/cert` is CA download only, which Android has via CertInstallCard. | — |
+| Aspirational REST-style session endpoints (`DELETE /api/sessions/{id}`) | Android inventory doc listed these, but server is POST with body. v0.34.6 is already correct; don't introduce REST-style. | — |
+| "Prompt templates UI" | Not a PWA thing; Saved Commands fills this role and is parity. | — |
+| In-app alerts panel as a "new feature" | Android already has Alerts tab. Real gap is G7 (structure). | — |
+| **Voice transcribe** (Android-extra) | PWA has no `getUserMedia` / mic surface despite server exposing `/api/voice/transcribe`. Contract-parity gap, filed upstream per bidirectional parity rule. | **[dmz006/datawatch#21](https://github.com/dmz006/datawatch/issues/21)** |
+| Home-screen widgets | PWA lacks (not a platform capability). Non-gap, Android extra. Platform-specific, not a parity item. | — |
+| Biometric unlock | PWA lacks. Non-gap, Android-only requirement. Platform-specific. | — |
+| Wear / Auto surfaces | Explicitly out of scope per user directive. | — |
+| `/api/sessions/reply` (Android dead code) | Server doesn't expose this; composer actually uses WS `send_input`. Android cleanup, not a PWA gap. | — |
 
 ---
 
