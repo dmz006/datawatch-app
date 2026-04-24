@@ -8,6 +8,45 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.5] — 2026-04-24 (Wear Sessions tap-popup + voice reply)
+
+### Added
+
+- **Per-session list on the Wear Sessions page.** Phone's
+  `WearSyncService` publishes the top-12 most-recently-active sessions
+  on a new `/datawatch/sessions` DataItem (id, title, backend, state,
+  last-line). Wear renders each as a coloured state-badge row
+  (running green / waiting amber / rate-limited red) sorted by
+  activity.
+- **Tap a session on the watch → `SessionDetailPopup`** with title,
+  state, last-line preview, and a microphone button. Mic launches the
+  system speech-to-text activity via `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`;
+  the transcribed text appears inside the popup for confirmation.
+- **Voice-reply relay.** Watch sends the transcript + session id to
+  the phone over MessageClient on `/datawatch/reply`; phone
+  `WearSyncService` opens a transient WS subscription, emits
+  `send_input`, and closes after the drain grace. This is the only
+  path — the server doesn't expose a REST `/api/sessions/reply` (404
+  pre-v0.34.6 regression that WS send_input was the fix for).
+
+### Changed
+
+- **Wear counts strip unchanged** (running/waiting/total tile trio
+  stays at the top of the Sessions page) — the per-session rows
+  slot below it so the glance read stays instant.
+
+### Notes
+
+- If a watch reply is issued while the phone is offline or the
+  paired server is unreachable, the WS connect will time out during
+  `WATCH_REPLY_SUBSCRIBE_GRACE_MS` and the `send_input` frame will
+  be dropped silently. A later release should surface that failure
+  back to the watch.
+- `SessionDetailPopup` is baselined under `wear/detekt-baseline.xml`
+  for `LongMethod` (107 vs 80 cap). Refactoring the stacked
+  title/mic/send layout would only hurt legibility; accepting the
+  baseline is the right call here.
+
 ## [0.35.4] — 2026-04-24 (Wear Monitor redesign — color gauges + GPU)
 
 ### Changed
