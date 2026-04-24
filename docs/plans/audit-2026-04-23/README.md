@@ -19,7 +19,7 @@ Auto, and iOS are out of scope.
 | **P0** — user-flagged, app broken | 3 | 3 ✅ | 0 |
 | **P1** — user-flagged, still broken on 0.34.6 | 5 | 5 ✅ | 0 |
 | **P2** — structural parity | 7 | 5 ✅ + 2 wontfix | 0 |
-| **P3** — polish / visual fidelity | 8 | 3 ✅ | 5 (opportunistic) |
+| **P3** — polish / visual fidelity | 8 | 6 ✅ | 2 (opportunistic) |
 | WONTFIX / non-gap / upstream-tracked | 12 | — | — |
 
 Post-milestone arc (v0.35.3–v0.35.5, all 2026-04-24) closed the Wear
@@ -38,15 +38,21 @@ per-version change log.
 
 ## 2. Remaining (P3, opportunistic)
 
-These are not blocking parity and ship when convenient. None are user-reported defects; all were sourced from the original audit walk and tagged P3.
+These are not blocking parity and ship when convenient. None are user-reported defects.
 
 | ID | Title | Owner file | Notes |
 |---|---|---|---|
 | G14 | Schedule-input popup field alignment vs PWA | `SessionDetailScreen.kt` `ScheduleDialog` | Verify task seed / cron preset / enabled toggle ordering matches PWA. Low-impact. |
-| G15 | Terminal toolbar font-size buttons (A+/A−) | `TerminalToolbar.kt` | Font-size works internally; exposing the buttons is polish. |
-| G16 | Terminal toolbar "Fit to width" button | `TerminalToolbar.kt` | Fit-to-width already happens automatically on the WebView; button is UX surface. |
-| G17 | Terminal toolbar "Scroll mode" button (Ctrl-b `[`) | `TerminalToolbar.kt` + QuickCommandsSheet | Key combo available via the Commands sheet. |
 | G27 | Plugins card on Monitor tab | new `PluginsCard.kt` + `/api/plugins` transport | Operator-level feature; defer until a user asks for it. |
+
+**Closed P3 rows** (verified 2026-04-24 during v0.35.5 backlog sweep —
+were already implemented in `TerminalToolbar.kt:72-110` when the
+original audit was written but the audit inherited a stale row):
+
+- ✅ G15 — Terminal toolbar A+ / A− font-size buttons (`TerminalToolbar.kt:72-91`).
+- ✅ G16 — Terminal toolbar "Fit to width" button (`TerminalToolbar.kt:96`).
+- ✅ G17 — Terminal toolbar "Scroll mode" toggle + navigation strip
+  (`TerminalToolbar.kt:99-163`, PgUp / PgDn / ↑ / ↓ / ESC).
 
 Any new gap surfaced during implementation or review gets added here with the same schema.
 
