@@ -38,6 +38,8 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         promptContext = promptContext,
         lastResponse = lastResponse,
         backend = llmBackend,
+        outputMode = outputMode,
+        inputMode = inputMode,
     )
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert =

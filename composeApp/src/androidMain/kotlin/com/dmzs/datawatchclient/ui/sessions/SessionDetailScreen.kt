@@ -108,6 +108,7 @@ public fun SessionDetailScreen(
         )
     val sessionSchedules by sessionSchedulesVm.state.collectAsState()
     var killConfirm by remember { mutableStateOf(false) }
+    var deleteConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
     var scheduleOpen by remember { mutableStateOf(false) }
@@ -275,6 +276,7 @@ public fun SessionDetailScreen(
                 onStop = { killConfirm = true },
                 onRestart = { /* parent-level reschedule not wired here yet */ },
                 onTimeline = { timelineOpen = true },
+                onDelete = { deleteConfirm = true },
             )
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
@@ -308,10 +310,21 @@ public fun SessionDetailScreen(
                 InputRequiredBanner(prompt = state.pendingPromptText)
             }
 
-            if (chatMode) {
-                // Chat mode — render the event-stream list with quick-reply
-                // buttons under the latest prompt. Mirrors the PWA chat
-                // pane that activates when you collapse the terminal.
+            // Server-reported chat-mode sessions (output_mode=chat, e.g.
+            // OpenWebUI / Ollama) emit structured `chat_message` WS frames
+            // instead of `pane_capture` — no terminal exists. When on, the
+            // transcript panel is the only sensible output surface; user's
+            // Terminal/Chat view toggle doesn't apply.
+            val serverChatMode = state.session?.isChatMode == true
+            if (serverChatMode) {
+                ChatTranscriptPanel(
+                    sessionId = sessionId,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+            } else if (chatMode) {
+                // User's view-mode toggle (Terminal vs Chat-style bubbles
+                // for any non-chat session). Renders the event stream as
+                // bubbles but is different from server-side chat mode.
                 ChatEventList(
                     events = state.events,
                     onQuickReply = vm::sendQuickReply,
@@ -407,6 +420,33 @@ public fun SessionDetailScreen(
         )
     }
 
+    if (deleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { deleteConfirm = false },
+            title = { Text("Delete session?") },
+            text = {
+                Text(
+                    "This removes the session record from the server. " +
+                        "Tracking data on disk is preserved. This cannot be undone.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleteConfirm = false
+                    vm.delete(onDeleted = onBack)
+                }) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     if (stateMenuOpen) {
         StateOverrideDialog(
             onDismiss = { stateMenuOpen = false },
@@ -493,6 +533,7 @@ private fun SessionInfoBar(
     onStop: () -> Unit,
     onRestart: () -> Unit,
     onTimeline: () -> Unit,
+    onDelete: () -> Unit = {},
 ) {
     val isActive =
         state == SessionState.Running || state == SessionState.Waiting ||
@@ -544,6 +585,20 @@ private fun SessionInfoBar(
             } else if (isDone) {
                 TextButton(onClick = onRestart, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
                     Text("↻ Restart", style = MaterialTheme.typography.labelSmall)
+                }
+                // Delete is only offered after the session has reached a terminal
+                // state — same gate the PWA uses (app.js delete button only
+                // appears on non-active rows). Prevents accidental removal of
+                // live sessions from the UI.
+                TextButton(
+                    onClick = onDelete,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        "🗑 Delete",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
             TextButton(onClick = onTimeline, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
@@ -1001,7 +1056,7 @@ private fun TimelineRow(event: SessionEvent) {
                 Triple("ERROR", event.message, MaterialTheme.colorScheme.error)
             is SessionEvent.Unknown ->
                 Triple("(${event.type})", "—", MaterialTheme.colorScheme.onSurfaceVariant)
-            is SessionEvent.Output, is SessionEvent.PaneCapture ->
+            is SessionEvent.Output, is SessionEvent.PaneCapture, is SessionEvent.ChatMessage ->
                 // filtered out upstream, but exhaustiveness requires a branch
                 Triple("OUTPUT", "(filtered)", MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -1162,6 +1217,10 @@ private fun ChatBubbleRow(event: SessionEvent) {
                 Quad("⏳", "Rate", event.retryAfter?.let { "retry $it" } ?: "throttled", "system")
             is SessionEvent.Unknown -> Quad("?", event.type, "", "system")
             is SessionEvent.PaneCapture -> return
+            is SessionEvent.ChatMessage ->
+                // Chat frames render via ChatTranscriptPanel, not the event
+                // bubble list. Exhaustiveness only — skip.
+                return
         }
     val bubbleBg =
         when (role) {
@@ -1348,6 +1407,9 @@ private fun EventRow(event: SessionEvent) {
         // into the event-stream chat surface, so the chat row is intentionally
         // a no-op here.
         is SessionEvent.PaneCapture -> Unit
+        // Chat frames render via ChatTranscriptPanel when the session is in
+        // chat mode; the timeline/event-row surface never sees them.
+        is SessionEvent.ChatMessage -> Unit
     }
 }
 

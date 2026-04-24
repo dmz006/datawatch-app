@@ -45,9 +45,37 @@ public data class Session(
      * Source-of-truth for the per-row backend badge.
      */
     val backend: String? = null,
+    /**
+     * Server-reported output rendering mode. Values observed on datawatch
+     * v4.x: `"terminal"` (default — tmux pane), `"chat"` (role-badged
+     * bubble transcript fed by WS `chat_message` frames, for backends like
+     * OpenWebUI / Ollama), `"log"` (read-only log viewer).
+     *
+     * Null = server didn't report; UI assumes `"terminal"`.
+     */
+    val outputMode: String? = null,
+    /**
+     * Server-reported input mode. Values: `"tmux"` (default, send keystrokes
+     * to tmux pane), `"chat"` (submit as chat message), `"none"` (session
+     * is read-only, hide composer). Null = assume `"tmux"`.
+     */
+    val inputMode: String? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =
         state == SessionState.Completed ||
             state == SessionState.Killed || state == SessionState.Error
+
+    /**
+     * Server-scoped session identifier the daemon uses as its store key
+     * (e.g. `"ring-2db6"`). Every session mutation endpoint
+     * (`kill`, `state`, `rename`, `restart`, `delete`) matches on this,
+     * not the short [id]. Computed from [hostnamePrefix] + [id]; falls
+     * back to [id] when the prefix is unknown (offline cold start).
+     */
+    public val fullId: String
+        get() = hostnamePrefix?.takeIf { it.isNotBlank() }?.let { "$it-$id" } ?: id
+
+    /** True when the session uses structured chat bubbles instead of a tmux pane. */
+    public val isChatMode: Boolean get() = outputMode == "chat"
 }

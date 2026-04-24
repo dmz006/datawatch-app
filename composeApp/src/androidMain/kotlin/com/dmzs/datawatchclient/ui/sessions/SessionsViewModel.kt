@@ -434,7 +434,7 @@ public class SessionsViewModel : ViewModel() {
     ) {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).renameSession(sessionId, newName).fold(
+            ServiceLocator.transportFor(profile).renameSession(fullIdFor(sessionId), newName).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _banner.value = "Rename failed — ${err.message ?: err::class.simpleName}"
@@ -490,7 +490,7 @@ public class SessionsViewModel : ViewModel() {
     public fun kill(sessionId: String) {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).killSession(sessionId).fold(
+            ServiceLocator.transportFor(profile).killSession(fullIdFor(sessionId)).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _banner.value = "Kill failed — ${err.message ?: err::class.simpleName}"
@@ -503,7 +503,7 @@ public class SessionsViewModel : ViewModel() {
     public fun restart(sessionId: String) {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).restartSession(sessionId).fold(
+            ServiceLocator.transportFor(profile).restartSession(fullIdFor(sessionId)).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _banner.value = "Restart failed — ${err.message ?: err::class.simpleName}"
@@ -520,7 +520,7 @@ public class SessionsViewModel : ViewModel() {
     public fun delete(sessionId: String) {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).deleteSession(sessionId).fold(
+            ServiceLocator.transportFor(profile).deleteSession(fullIdFor(sessionId)).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     if (err is TransportError.NotFound) {
@@ -540,7 +540,7 @@ public class SessionsViewModel : ViewModel() {
         if (sessionIds.isEmpty()) return
         val profile = activeProfile.value ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).deleteSessions(sessionIds).fold(
+            ServiceLocator.transportFor(profile).deleteSessions(fullIdsFor(sessionIds)).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     if (err is TransportError.NotFound) {
@@ -564,6 +564,22 @@ public class SessionsViewModel : ViewModel() {
         return profiles.firstOrNull { it.id == session?.serverProfileId }
             ?: activeProfile.value
     }
+
+    /**
+     * Resolve the server-scoped full id the daemon's session mutation
+     * endpoints match on. Falls back to [sessionId] when the row isn't
+     * in the cached snapshot (shouldn't happen in normal flow — the
+     * caller always resolved a session to hit this path — but keeps
+     * the call well-formed if it does).
+     */
+    private fun fullIdFor(sessionId: String): String {
+        val session = state.value.sessions.firstOrNull { it.id == sessionId }
+        return session?.fullId ?: sessionId
+    }
+
+    /** Bulk counterpart for multi-select deletion. */
+    private fun fullIdsFor(sessionIds: List<String>): List<String> =
+        sessionIds.map { fullIdFor(it) }
 
     public fun refresh() {
         if (allServersMode.value) {

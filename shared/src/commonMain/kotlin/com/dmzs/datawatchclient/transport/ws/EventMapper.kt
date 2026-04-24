@@ -7,6 +7,7 @@ import com.dmzs.datawatchclient.transport.dto.WsFrameDto
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -43,6 +44,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
     return when (type) {
         "pane_capture" -> buildPaneCaptureEvents(obj, ts, forSessionId)
         "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId)
+        "chat_message" -> listOfNotNull(buildChatMessage(obj, ts, forSessionId))
         "needs_input", "prompt", "prompt_detected" ->
             listOfNotNull(
                 buildPrompt(obj, ts, forSessionId),
@@ -229,6 +231,33 @@ private fun buildAlert(
     val sid = obj.jsonString("session_id") ?: forSessionId
     val msg = obj.jsonString("message") ?: obj.jsonString("summary") ?: return null
     return outputEvent(sid, ts, "\u001b[33m[alert] $msg\u001b[0m")
+}
+
+private fun buildChatMessage(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): SessionEvent? {
+    if (obj == null) return null
+    val sid = obj.jsonString("session_id") ?: forSessionId
+    if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return null
+    val content = obj.jsonString("content") ?: ""
+    val role =
+        when (obj.jsonString("role")?.lowercase()) {
+            "user" -> SessionEvent.ChatMessage.Role.User
+            "assistant", "ai", "llm" -> SessionEvent.ChatMessage.Role.Assistant
+            "system" -> SessionEvent.ChatMessage.Role.System
+            else -> SessionEvent.ChatMessage.Role.System
+        }
+    val streaming =
+        runCatching { obj["streaming"]?.jsonPrimitive?.booleanOrNull }.getOrNull() ?: false
+    return SessionEvent.ChatMessage(
+        sessionId = sid,
+        ts = ts,
+        role = role,
+        content = content,
+        streaming = streaming,
+    )
 }
 
 private fun JsonObject.jsonString(key: String): String? = runCatching { get(key)?.jsonPrimitive?.content }.getOrNull()

@@ -37,6 +37,8 @@ public fun SessionRepository.observeForProfileAny(
                     backend = it.backend,
                     promptContext = it.prompt_context,
                     lastResponse = it.last_response,
+                    outputMode = it.output_mode,
+                    inputMode = it.input_mode,
                 )
             }
         }

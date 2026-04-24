@@ -75,6 +75,31 @@ public sealed interface SessionEvent {
         val isFirst: Boolean = false,
     ) : SessionEvent
 
+    /**
+     * Structured chat message frame (WS `chat_message`) emitted by sessions
+     * whose `output_mode == "chat"` (OpenWebUI / Ollama / any chat-transcript
+     * backend). Replaces raw pane_capture output for chat-mode sessions.
+     *
+     * Streaming protocol (per datawatch app.js:556): assistant messages
+     * arrive as a sequence of `streaming=true` chunks, finalised by a
+     * `streaming=false` frame (whose [content] may repeat the accumulated
+     * body or be empty). User / system messages arrive as single
+     * non-streaming frames.
+     *
+     * System messages whose [content] is transient ("processing...",
+     * "thinking...", "ready...") are rendered as a live indicator by the
+     * UI and not persisted.
+     */
+    public data class ChatMessage(
+        override val sessionId: String,
+        override val ts: Instant,
+        val role: Role,
+        val content: String,
+        val streaming: Boolean = false,
+    ) : SessionEvent {
+        public enum class Role { User, Assistant, System }
+    }
+
     /** Unknown event kind. Forward-compat for future server versions. */
     public data class Unknown(
         override val sessionId: String,

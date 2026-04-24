@@ -62,6 +62,8 @@ public class SessionRepository(
             backend = session.backend,
             prompt_context = session.promptContext,
             last_response = session.lastResponse,
+            output_mode = session.outputMode,
+            input_mode = session.inputMode,
         )
     }
 
@@ -80,5 +82,7 @@ public class SessionRepository(
             backend = backend,
             promptContext = prompt_context,
             lastResponse = last_response,
+            outputMode = output_mode,
+            inputMode = input_mode,
         )
 }

@@ -32,10 +32,12 @@ public data class WsSubscribeDto(
 )
 
 /**
- * Body for POST /api/sessions/state (override). Mirrors parent server shape.
+ * Body for POST /api/sessions/state (override). Server expects `{"id": fullId, "state": "..."}`
+ * (datawatch internal/server/api.go:handleSetSessionState). Passing short id or
+ * the `session_id` key silently 404s — callers must send session.fullId.
  */
 @Serializable
 public data class StateOverrideDto(
-    @SerialName("session_id") val sessionId: String,
+    @SerialName("id") val sessionId: String,
     val state: String,
 )

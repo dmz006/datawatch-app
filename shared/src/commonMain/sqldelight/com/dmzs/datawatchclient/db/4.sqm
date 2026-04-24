@@ -1,0 +1,15 @@
+-- Migration 4 → 5 (chat-mode + per-session input/output mode).
+--
+-- Adds the rendering hints datawatch v4.x reports on /api/sessions so the
+-- mobile client can detect chat-mode sessions (OpenWebUI, Ollama, any
+-- backend where output_mode=chat) and render a bubble transcript instead
+-- of a blank tmux pane.
+--   * output_mode — "terminal" (default), "chat", or "log".
+--     Drives SessionDetailScreen's panel selection.
+--   * input_mode  — "tmux", "chat", or "none". Drives composer visibility.
+--
+-- Both nullable: older server versions don't emit these and the UI falls
+-- back to "terminal" / "tmux" when null.
+
+ALTER TABLE session ADD COLUMN output_mode TEXT;
+ALTER TABLE session ADD COLUMN input_mode TEXT;

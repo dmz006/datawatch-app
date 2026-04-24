@@ -786,6 +786,25 @@ private fun SessionRow(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Restart")
                         }
+                        if (deleteSupported) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            OutlinedButton(
+                                onClick = { deleteConfirmOpen = true },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Delete", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
                     }
                     else -> Unit
                 }

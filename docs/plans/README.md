@@ -9,15 +9,35 @@ architecture).
 
 ---
 ## Open - Not Assessed
-- there was an additional audit of PWA vs datawatch-app which can be found 2026-04-22-pwa-parity-audit.md. use that when doing the in-depth audit and validate all the findings in addition to anything else you find.  You need to do a deep dive audit into PWA features, including every single edit dialog box, config option and variable.  Also the buttons and input windows are way larger than the text in all settings.
-- new session LLM backend does not load the confgiured and active list of LLM from the server that is selected.
-- sessions with chat mode do not show the chat windows
-- the hamberger menu on upper right corner of sessions that activates reorder buttons isn't needed. that and the reorder option shoud just be a drage and drop if we want to change order, like in PWA
-- in session clicking stop got 'session not found'. PWA worked fine. "/api/sessions/kill" 404 session not found
-- stop from list of session stop button badge has the same error
-- no delete button after a session was killed. both inside sessoin as well as in session list
-- can't swipe to close, or delete nor view history of alerts. the functionality is not what PWA has which has tabs for active/inactive then sub-tab for types make it easy to browse all actions for each sesion, and inactive with envelope collapsable histor for older sessions
-- when using tmux for input on app, the window with the text should lift up when keyboard pops up so you can read the message as it is being typed. as it is now it is hidden behind the keyboard
+
+### P0 closed in v0.34.6
+- ✅ **/api/sessions/kill 404** — mobile sent `session_id` key + short id;
+  server reads `id` + full id. Fixed across every mutation endpoint.
+- ✅ **Stop badge in list** — same root cause as the above.
+- ✅ **No delete button after kill** — detail infobar + list row now
+  show `🗑 Delete` for terminal-state rows.
+- ✅ **Chat-mode sessions blank** — `ChatTranscriptPanel` renders
+  role-badged bubbles from WS `chat_message` frames; schema
+  migration 4.sqm persists `output_mode`/`input_mode` so cold-open
+  from cache picks the right surface.
+
+### Still open
+- **PWA parity deep-dive audit.** Validate every finding in
+  `2026-04-22-pwa-parity-audit.md` and expand. Every settings edit
+  dialog, every config field, every variable. Buttons + input
+  windows are visibly larger than their own text in Settings.
+- **New Session LLM backend picker** — user reported it doesn't
+  load the configured/active LLM list for the selected server.
+  v0.34.5 added per-server filtering; retest on 0.34.6 before
+  calling closed or doing another pass.
+- **Sessions hamburger-menu reorder** — user wants drag-and-drop
+  instead, PWA style.
+- **Alerts UI rebuild** — PWA has active/inactive tabs + per-type
+  sub-tabs + collapsible envelope history for older sessions. No
+  swipe-to-close / swipe-to-delete on Android currently.
+- **tmux input IME padding** — text window doesn't lift above
+  keyboard on the session-detail composer; message gets hidden
+  behind the soft keyboard as user types.
 
 ## Open — organised by sprint (fastest resolution first)
 

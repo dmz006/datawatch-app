@@ -163,7 +163,9 @@ public class RestTransport(
             client.post("${profile.baseUrl}/api/sessions/kill") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(mapOf("session_id" to sessionId))
+                // Server expects `{"id": fullId}` (see datawatch internal/server/api.go:handleKillSession).
+                // Caller passes session.fullId (e.g. "ring-2db6"); short ids 404.
+                setBody(mapOf("id" to sessionId))
             }
         }
 

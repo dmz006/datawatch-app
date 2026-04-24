@@ -8,6 +8,73 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.6] — 2026-04-23 (P0: session-id contract, delete UI, chat mode)
+
+### Fixed
+
+- **Session mutation endpoints were speaking a different dialect
+  than the server.** All of `/api/sessions/kill`, `/state`, `/rename`,
+  `/restart`, `/delete` were failing with a silent 404 because mobile
+  sent either the wrong JSON key (`session_id`) or the short client
+  id, while the server (internal/server/api.go) reads `{"id": fullId}`
+  and keys its session store on the prefixed `ring-2db6` form.
+  - `RestTransport.killSession` body key fixed: `session_id` → `id`.
+  - `StateOverrideDto` SerialName fixed to `id`.
+  - Every mutate-session VM call (kill, rename, state override,
+    restart, delete) now resolves `session.fullId` (e.g.
+    `"ring-2db6"`) before hitting the server. Domain `Session`
+    exposes a computed `fullId = "$hostnamePrefix-$id"` helper
+    with a falls-back-to-short-id safety for pre-cache calls.
+  - Fixes the reported **"/api/sessions/kill 404 session not found"**
+    on both the session-detail Stop button and the Sessions-list
+    row Stop badge.
+
+### Added
+
+- **Delete-after-kill UI** surfaced on both the session-detail
+  infobar and the Sessions-list row (prior release only exposed
+  Delete from the row overflow menu, which the user flagged).
+  Terminal-state rows now show a `🗑 Delete` OutlinedButton next to
+  Restart; the detail-screen infobar shows the same once state is
+  Killed / Completed / Error. Both go through a confirmation dialog
+  before calling `/api/sessions/delete`. Gated on
+  `state.deleteSupported` so older servers don't offer it.
+- **Chat-mode session rendering.** Sessions whose `output_mode`
+  reports `"chat"` (OpenWebUI, Ollama, any chat-transcript backend)
+  now render a real transcript surface instead of a blank terminal.
+  - New `SessionEvent.ChatMessage(role, content, streaming)` type
+    parsed from WS `chat_message` frames in `EventMapper`.
+  - New `ChatTranscriptPanel` composable: user / assistant / system
+    bubbles with avatar + role + timestamp header. Assistant
+    streaming chunks accumulate into a single live bubble; the
+    `streaming=false` finaliser seals it (PWA app.js:562-605
+    protocol). Transient system indicators
+    ("processing...", "thinking...", "ready...") render as a single
+    replaceable dot-row instead of piling up the history.
+  - `SessionDetailScreen` branches on `session.isChatMode` ahead of
+    the existing user-preference Terminal/Chat view toggle — the
+    two concepts are distinct (server-side chat mode ≠ user's
+    view-toggle choice).
+  - SQLDelight migration **4.sqm** adds `session.output_mode` +
+    `input_mode` columns so cold-start from cache picks the right
+    surface without a round-trip. `SessionDto` + domain `Session`
+    carry the new fields through.
+
+### Notes
+
+- Chat history is in-memory only per the PWA's design (server
+  doesn't broadcast backfill). The `chatMessageBus` on
+  `SessionEventRepository` uses `replay = 64` so late subscribers
+  (opening the session after the first messages landed) still see
+  the recent burst.
+- Delete does not pass `delete_data=true` yet; that second-step
+  "Delete tracking data on disk too" option from the PWA is a
+  follow-up iteration.
+- User's new-session LLM picker reloads from the active server
+  (v0.34.5 fix) — follow-up test on this build will confirm
+  whether that item from the Open-Not-Assessed list fully closes
+  or needs a second pass.
+
 ## [0.34.5] — 2026-04-22 (LLM card polish + Settings reactivity + button audit)
 
 ### Added

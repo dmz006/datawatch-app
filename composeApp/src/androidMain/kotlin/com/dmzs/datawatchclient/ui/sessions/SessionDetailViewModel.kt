@@ -240,6 +240,16 @@ public class SessionDetailViewModel(
         }
     }
 
+    /**
+     * Resolves the server-scoped full id (`"hostname-shortid"`) the
+     * daemon's session store keys on. Every mutation endpoint on the
+     * server (`kill`, `state`, `rename`, `restart`, `delete`) rejects
+     * the short id with a 404. Falls back to [sessionId] when no cached
+     * session is available yet — the server will still 404 in that
+     * rare case, but at least the request is well-formed.
+     */
+    private fun fullIdOrShort(): String = state.value.session?.fullId ?: sessionId
+
     public fun kill() {
         val profile = profileCache ?: return
         if (_killing.value) return
@@ -247,7 +257,7 @@ public class SessionDetailViewModel(
         _banner.value = null
         viewModelScope.launch {
             val transport = ServiceLocator.transportFor(profile)
-            transport.killSession(sessionId).fold(
+            transport.killSession(fullIdOrShort()).fold(
                 onSuccess = { _killing.value = false },
                 onFailure = { err ->
                     _killing.value = false
@@ -268,7 +278,7 @@ public class SessionDetailViewModel(
         _renaming.value = true
         _banner.value = null
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).renameSession(sessionId, trimmed).fold(
+            ServiceLocator.transportFor(profile).renameSession(fullIdOrShort(), trimmed).fold(
                 onSuccess = { _renaming.value = false },
                 onFailure = { err ->
                     _renaming.value = false
@@ -282,13 +292,35 @@ public class SessionDetailViewModel(
         val profile = profileCache ?: return
         viewModelScope.launch {
             ServiceLocator.transportFor(profile)
-                .overrideSessionState(sessionId, to)
+                .overrideSessionState(fullIdOrShort(), to)
                 .fold(
                     onSuccess = { _banner.value = null },
                     onFailure = { err ->
                         _banner.value = "State override failed: ${err.describe()}"
                     },
                 )
+        }
+    }
+
+    /**
+     * Delete a terminal-state session from the server. Fired from the
+     * detail screen's post-kill Delete action. Server takes the full
+     * id + an optional `delete_data` flag which we leave false here;
+     * the PWA's "Delete data" is a separate two-step confirmation that
+     * we surface as its own UI iteration.
+     */
+    public fun delete(onDeleted: () -> Unit) {
+        val profile = profileCache ?: return
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).deleteSession(fullIdOrShort()).fold(
+                onSuccess = {
+                    _banner.value = null
+                    onDeleted()
+                },
+                onFailure = { err ->
+                    _banner.value = "Delete failed: ${err.describe()}"
+                },
+            )
         }
     }
 

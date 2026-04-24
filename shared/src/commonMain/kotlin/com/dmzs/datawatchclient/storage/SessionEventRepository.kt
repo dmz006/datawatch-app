@@ -46,6 +46,27 @@ public class SessionEventRepository(
         kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.PaneCapture> =
         kotlinx.coroutines.flow.MutableSharedFlow(replay = 1, extraBufferCapacity = 32)
 
+    /**
+     * Live bus for chat-mode frames. Mirrors [paneCaptureBus] in purpose:
+     * the PWA keeps chat history in memory only (datawatch app.js:560),
+     * and doesn't push backfill from the server — the transcript is
+     * whatever WS events arrived while the client was alive. Persisting
+     * to SQLCipher would only duplicate that without enabling replay.
+     *
+     * `replay = 64` keeps the last-seen message burst available for
+     * late subscribers (navigating into a chat session after the first
+     * message landed), while the UI holds its own growing list.
+     */
+    private val chatMessageBus:
+        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.ChatMessage> =
+        kotlinx.coroutines.flow.MutableSharedFlow(replay = 64, extraBufferCapacity = 64)
+
+    /** Flow of live chat messages matching the given short-or-full session id. */
+    public fun observeChat(sessionId: String): Flow<SessionEvent.ChatMessage> =
+        chatMessageBus.filter { cm ->
+            cm.sessionId.contains(sessionId) || sessionId.contains(cm.sessionId)
+        }
+
     public fun observe(
         sessionId: String,
         limit: Long = RETAIN_PER_SESSION,
@@ -186,6 +207,12 @@ public class SessionEventRepository(
                     // id prefix — keyed-map was the bug where full-id server
                     // sids didn't reach short-id mobile observers.
                     paneCaptureBus.tryEmit(event)
+                is SessionEvent.ChatMessage ->
+                    // Chat messages stream through a dedicated SharedFlow bus
+                    // (chatMessageBus) so the detail screen can render the
+                    // transcript without touching the event_queries DB — the
+                    // PWA also keeps chat history in-memory only.
+                    chatMessageBus.tryEmit(event)
             }
             // Prune oldest after each insert so the ring buffer stays bounded.
             db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)

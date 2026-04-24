@@ -59,6 +59,17 @@ public data class SessionDto(
      * proxied fan-out call. `"local"` for rows on the user's own server.
      */
     val server: String? = null,
+    /**
+     * Output rendering mode. `"terminal"` (default), `"chat"` (bubble
+     * transcript), `"log"` (read-only). PWA branches on this at
+     * app.js:1644 (`sess.output_mode === 'chat'`).
+     */
+    @SerialName("output_mode") val outputMode: String? = null,
+    /**
+     * Input mode. `"tmux"` (default), `"chat"`, or `"none"` for
+     * read-only sessions. PWA reads at app.js:1685.
+     */
+    @SerialName("input_mode") val inputMode: String? = null,
 )
 
 @Serializable
