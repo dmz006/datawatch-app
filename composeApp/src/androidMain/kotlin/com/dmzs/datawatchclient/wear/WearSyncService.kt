@@ -129,6 +129,11 @@ public class WearSyncService(
                                         sessionsTotal = s.sessionsTotal,
                                         sessionsRunning = s.sessionsRunning,
                                         sessionsWaiting = s.sessionsWaiting,
+                                        gpuUtilPct = s.gpuUtilPct ?: s.gpuPct ?: 0.0,
+                                        gpuTempC = s.gpuTemp ?: 0.0,
+                                        gpuMemUsedMb = s.gpuMemUsedMb ?: 0L,
+                                        gpuMemTotalMb = s.gpuMemTotalMb ?: 0L,
+                                        gpuName = s.gpuName.orEmpty(),
                                     ),
                                 )
                             }
@@ -171,6 +176,12 @@ public class WearSyncService(
         val sessionsTotal: Int,
         val sessionsRunning: Int,
         val sessionsWaiting: Int,
+        // v0.35.4 — GPU stats for the Wear Monitor redesign.
+        val gpuUtilPct: Double,
+        val gpuTempC: Double,
+        val gpuMemUsedMb: Long,
+        val gpuMemTotalMb: Long,
+        val gpuName: String,
     )
 
     private fun publishCounts(snap: Snapshot) {
@@ -215,6 +226,11 @@ public class WearSyncService(
                     dataMap.putInt("sessionsTotal", snap.sessionsTotal)
                     dataMap.putInt("sessionsRunning", snap.sessionsRunning)
                     dataMap.putInt("sessionsWaiting", snap.sessionsWaiting)
+                    dataMap.putDouble("gpuUtilPct", snap.gpuUtilPct)
+                    dataMap.putDouble("gpuTempC", snap.gpuTempC)
+                    dataMap.putLong("gpuMemUsedMb", snap.gpuMemUsedMb)
+                    dataMap.putLong("gpuMemTotalMb", snap.gpuMemTotalMb)
+                    dataMap.putString("gpuName", snap.gpuName)
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)

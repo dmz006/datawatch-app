@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.4] — 2026-04-24 (Wear Monitor redesign — color gauges + GPU)
+
+### Changed
+
+- **Wear Monitor page rebuilt around round-bezel gauge rings.** CPU /
+  Memory / Disk / GPU each render as a threshold-coloured
+  `CircularProgressIndicator` (green < 60 % → amber 60–80 % → red
+  ≥ 80 %) with the value printed in the centre of the ring. 2-up grid
+  fits the Samsung Galaxy Watch bezel; content overflow scrolls via
+  the existing `PageScaffold` vertical scroll.
+- **GPU stats now published to the watch.** `WearSyncService` attaches
+  `gpuUtilPct`, `gpuTempC`, `gpuMemUsedMb`, `gpuMemTotalMb`, and
+  `gpuName` to the `/datawatch/stats` DataItem. Watch hides the GPU
+  gauge when the phone hasn't published (graceful downgrade with older
+  phone builds).
+- **Uptime + VRAM summary** move below the gauge grid as captions
+  instead of list rows — keeps the page dense without losing detail.
+
 ## [0.35.3] — 2026-04-24 (Sessions UX polish + Wear round cards + Auto-release workflow fix)
 
 ### Changed
