@@ -21,10 +21,38 @@ public data class Alert(
     /** Free-form alert category as the server sends it (e.g. "input_needed", "error"). */
     val type: String,
     val severity: AlertSeverity = AlertSeverity.Info,
+    /**
+     * Short headline — first line of the alert (e.g. `"ring: datawatch-app
+     * [17db]: waiting for input"`). Server emits this as `title`.
+     */
+    val title: String = "",
+    /**
+     * Body payload — the prompt context, error detail, or multi-line
+     * info block. Server emits this as `body`.
+     */
     val message: String,
     val sessionId: String? = null,
     val createdAt: Instant,
     val read: Boolean = false,
 )
 
-public enum class AlertSeverity { Info, Warning, Error }
+public enum class AlertSeverity {
+    Info,
+    Warning,
+    Error,
+    ;
+
+    /**
+     * Wire-to-domain mapping that tolerates every spelling the parent
+     * has used: `"info"`, `"warn"`, `"warning"`, `"error"`, plus the
+     * legacy `severity` string. Unknown values fall back to [Info].
+     */
+    public companion object {
+        public fun fromWire(s: String?): AlertSeverity =
+            when (s?.lowercase()) {
+                "error", "err", "critical" -> Error
+                "warn", "warning" -> Warning
+                else -> Info
+            }
+    }
+}

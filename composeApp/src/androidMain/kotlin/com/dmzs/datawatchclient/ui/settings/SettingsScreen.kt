@@ -215,6 +215,19 @@ public fun SettingsScreen(
                         .verticalScroll(rememberScrollState())
                         .fillMaxWidth(),
             ) {
+                // Restart-needed banner — visible on every Settings tab
+                // when `server.auto_restart_on_config` is false.
+                // ConfigFieldsPanel auto-saves on every change, and the
+                // server writes to config.yaml synchronously, but many
+                // fields (TLS, bind interface, backend configs, etc.)
+                // only take effect on daemon restart. With auto-restart
+                // off the user has no signal that their save hasn't yet
+                // activated — hence this always-visible affordance.
+                // User-flagged 2026-04-24: "make sure settings tab saves
+                // changes and restarts as needed and settings actually
+                // work."
+                RestartNeededBanner(activeProfile)
+
                 when (activeTab) {
                     SettingsTab.Monitor -> {
                         // v0.33.13 reshuffle per B18/B19/B20:
@@ -883,6 +896,111 @@ private fun SectionWithAction(
                 }
             }
             content()
+        }
+    }
+}
+
+/**
+ * Inline banner shown above the Settings tab content. Probes the
+ * active server's `/api/config` for `server.auto_restart_on_config`:
+ *  - **true** → server restarts itself on any PUT /api/config; banner
+ *    shows a neutral "Changes auto-apply" note so saves feel trusted.
+ *  - **false** → banner turns amber with a prominent "Restart now"
+ *    button that hits POST /api/restart. Otherwise users type into
+ *    fields, see "Saving…", but their change never activates until
+ *    someone manually restarts the daemon (user-reported 2026-04-24).
+ *
+ * Re-fetches whenever the active profile changes.
+ */
+@Composable
+private fun RestartNeededBanner(profile: ServerProfile?) {
+    var autoRestart by remember { mutableStateOf<Boolean?>(null) }
+    var restarting by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(profile?.id) {
+        autoRestart = null
+        message = null
+        val p = profile ?: return@LaunchedEffect
+        ServiceLocator.transportFor(p).fetchConfig().onSuccess { cfg ->
+            val srv =
+                (cfg.raw["server"] as? kotlinx.serialization.json.JsonObject)
+            val flag =
+                srv?.get("auto_restart_on_config") as? kotlinx.serialization.json.JsonPrimitive
+            // JsonPrimitive.content returns "true"/"false" for booleans;
+            // parse defensively since the server may emit either case.
+            autoRestart = flag?.content?.lowercase() == "true"
+        }
+    }
+
+    val showAmber = autoRestart == false
+    val showGreen = autoRestart == true
+    if (!showAmber && !showGreen && message == null) return
+
+    val bg =
+        if (showAmber) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+    val fg =
+        if (showAmber) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+    androidx.compose.material3.Surface(
+        color = bg,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                message ?: if (showAmber) {
+                    "⚠ Daemon auto-restart is OFF. Some settings won't take effect until you restart."
+                } else {
+                    "✓ Daemon auto-restarts on save — changes apply immediately."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = fg,
+                modifier = Modifier.weight(1f),
+            )
+            if (showAmber) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = {
+                        val p = profile ?: return@OutlinedButton
+                        restarting = true
+                        message = "Restarting daemon…"
+                        scope.launch {
+                            ServiceLocator.transportFor(p).restartDaemon().fold(
+                                onSuccess = {
+                                    message = "Restart requested. Give the daemon 5–10 s to come back."
+                                    restarting = false
+                                },
+                                onFailure = { err ->
+                                    message = "Restart failed — ${err.message ?: err::class.simpleName}"
+                                    restarting = false
+                                },
+                            )
+                        }
+                    },
+                    enabled = !restarting,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 12.dp,
+                        vertical = 4.dp,
+                    ),
+                ) {
+                    Text(
+                        if (restarting) "…" else "Restart now",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
         }
     }
 }

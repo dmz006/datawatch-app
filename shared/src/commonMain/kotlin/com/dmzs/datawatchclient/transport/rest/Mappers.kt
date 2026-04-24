@@ -42,17 +42,34 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         inputMode = inputMode,
     )
 
-internal fun AlertDto.toDomain(serverProfileId: String): Alert =
-    Alert(
+internal fun AlertDto.toDomain(serverProfileId: String): Alert {
+    // The live server emits {level, title, body}; legacy builds emit
+    // {type, severity, message}. Prefer the new triple when present,
+    // fall back to the old one. Either way the domain gets a
+    // non-null title + message and a best-effort severity.
+    val newShape = level != null || title != null || body != null
+    val resolvedSeverity =
+        if (newShape) {
+            AlertSeverity.fromWire(level)
+        } else {
+            when (severity?.lowercase()) {
+                "error", "critical", "fatal" -> AlertSeverity.Error
+                "warn", "warning" -> AlertSeverity.Warning
+                else -> AlertSeverity.Info
+            }
+        }
+    return Alert(
         id = id,
         serverProfileId = serverProfileId,
-        type = type,
-        severity = severity.toAlertSeverity(),
-        message = message,
+        type = type ?: level ?: "info",
+        severity = resolvedSeverity,
+        title = title ?: "",
+        message = body ?: message ?: "",
         sessionId = sessionId,
         createdAt = createdAt.toInstantOrEpoch(),
         read = read,
     )
+}
 
 internal fun ServerInfoDto.toDomain(): ServerInfo =
     ServerInfo(

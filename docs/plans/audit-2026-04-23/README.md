@@ -28,7 +28,7 @@
 |---|---|---|
 | **P0 — user-flagged, app broken** (shipped in v0.34.6 today) | 3 | kill/state/rename/restart/delete 404s, delete UI visibility, chat-mode blank |
 | **P1 — user-flagged, still broken on v0.34.6** | 5 | drag-drop reorder, Alerts Active/Inactive tabs, tmux IME padding, new-session backend picker retest, settings input-larger-than-text |
-| **P2 — structural parity gaps** | 9 | bottom nav 4 vs 3 tabs, New is a full view (not FAB), session-detail inline rename, alert quick-reply dropdown, per-session sub-tabs in Alerts, Monitor-tab card coverage (GPU/Network/Plugins/Infra/RTK), Signal QR linking, response viewer sheet parity, schedule input popup parity |
+| **P2 — structural parity gaps** | 7 | session-detail inline rename, alert quick-reply dropdown, per-session sub-tabs in Alerts, Monitor-tab card coverage (GPU/Network/Plugins/Infra/RTK), Signal QR linking, response viewer sheet parity, schedule input popup parity (bottom-nav / New-tab items dropped 2026-04-24 — PWA adopting Android FAB pattern) |
 | **P3 — polish / visual fidelity** | 8 | purple-accent palette alignment, monospace header font, collapsible section chevrons, "(default)" badge on LLM rows, waiting-input-banner tip strings, state-override labels, hostname-prefix positioning, badge border radius |
 | **WONTFIX / NON-GAP** | 12 | "language selector" (doesn't exist in PWA), "TLS cert selector" (misread of /api/cert), "in-app alerts panel" (Android already has it), B42 duplicates, etc. |
 
@@ -64,8 +64,8 @@ Each release goes through the normal `release:` cadence (Version.kt + gradle.pro
 
 | Surface | PWA | Android (v0.34.6) | Disposition |
 |---|---|---|---|
-| Top-level views | 5: `sessions`, `new`, `alerts`, `settings`, `session-detail` (app.js:969) | 3 home tabs + 2 full routes: `home/sessions`, `home/alerts`, `home/settings`, `sessions/new`, `sessions/{id}` | PWA treats *New* as a peer tab; Android treats it as an FAB-triggered full route. **GAP** — P2. |
-| Bottom nav items | 4 (Sessions / New / Alerts / Settings) | 3 (Sessions / Alerts / Settings) + FAB for New | User will read the 4-tab layout as "the standard"; align Android. **GAP** — P2. |
+| Top-level views | 5: `sessions`, `new`, `alerts`, `settings`, `session-detail` (app.js:969) | 3 home tabs + 2 full routes: `home/sessions`, `home/alerts`, `home/settings`, `sessions/new`, `sessions/{id}` | **REVERSED 2026-04-24** — Android's FAB + full-screen create is the target UX; PWA migrating to match this weekend. No mobile change. |
+| Bottom nav items | 4 (Sessions / New / Alerts / Settings) | 3 (Sessions / Alerts / Settings) + FAB for New | Same — Android FAB pattern wins; PWA adapting. |
 | Settings sub-tabs | 5: Monitor / General / Comms / LLM / About (app.js:3090) | 5: Monitor / General / Comms / LLM / About | ✅ Parity. |
 | Back button behavior | History API push; popstate returns | Nav controller pop; `BackHandler` in session detail | ✅ Parity. |
 | Session detail arrival | `navigate('session-detail', fullId)` — replaces nav with back-button | Full-screen route; top bar has X (close) | ✅ Parity. |
@@ -136,7 +136,7 @@ See [`server-contract.md`](server-contract.md). Short summary: Android's RestTra
 
 | ID | Title | PWA evidence | Android evidence | Fix | Owner | Severity | Batch |
 |---|---|---|---|---|---|---|---|
-| G10 | New Session tab in bottom nav | 4-tab bottom nav (app.js renderBottomNav) | 3-tab + FAB | Add "New" tab to BottomNavBar, navigate to NewSessionScreen. Keep FAB for convenience. | BottomNavBar.kt, AppRoot.kt | P2 | v0.34.9 |
+| ~~G10~~ | ~~New Session tab in bottom nav~~ | 4-tab bottom nav (app.js renderBottomNav) | 3-tab + FAB | **REVERSED 2026-04-24.** User confirmed Android's FAB + full-screen create pattern is the desired UX; parent PWA will migrate to this pattern, not the other way round. Upstream-tracked ahead of this weekend's PWA work. Android stays as-is. | — | WONTFIX | — |
 | G11 | Session-detail inline header rename | app.js:1672 click `session-detail > h2` → `startHeaderRename(sessionId)` inline text input | Android opens RenameDialog modal | Convert title Text to editable: click → switch to TextField in-place; Enter/blur → commit | SessionDetailScreen.kt | P2 | v0.35.1 |
 | G12 | Session-detail state override — menu shape | app.js:2206 `showStateOverride` opens dropdown menu directly under state pill | Android opens StateOverrideDialog (AlertDialog) | Replace AlertDialog with DropdownMenu anchored to the pill | SessionDetailScreen.kt | P3 | v0.35.1 |
 | G13 | Session-detail Response button (📄) on active sessions | app.js quick panel shows "💾 Response" button when session active (line ~1685) | Android has Response icon on list row but not on detail screen | Add response button to SessionInfoBar when lastResponse present | SessionDetailScreen.kt | P2 | v0.35.1 |
@@ -190,7 +190,7 @@ PWA sections: Authentication (browser token + server bearer + MCP SSE bearer), S
 | G38 | Web Server config | enabled / bind interface / port / TLS / TLS port / TLS auto-generate | ConfigFieldsPanel(WebServer) | ✅ Parity; verify TLS fields render | ConfigFieldSchemas.kt | P3 | v0.35.0 |
 | G39 | MCP Server config | addr + enabled + token | ConfigFieldsPanel(McpServer) | ✅ Parity | — | ✅ | — |
 | G40 | Proxy Resilience | toggle + retry params | ConfigFieldsPanel(Proxy) | ✅ Parity | — | ✅ | — |
-| G41 | Signal device linking (QR code) | `POST /api/link/start` → SSE `/api/link/stream` → QR image; `GET /api/link/status` | not implemented (BL21) | Follow-on: add LinkSignalCard with QR rendering. | new LinkSignalCard.kt + transport | P2 | v0.35.2 |
+| ~~G41~~ | ~~Signal device linking (QR code)~~ | `POST /api/link/start` → SSE `/api/link/stream` → QR image | not implemented | **DEFERRED 2026-04-24** — user: "already on phone, do not need signal setup. that can be a server only function." Signal pairing stays server-admin-only; Android won't implement. | — | WONTFIX | — |
 | G42 | Channels list (messaging backends) | list of channel types with per-type Configure | ChannelsCard with schema-driven dialogs (v0.34.4) | ✅ Parity since v0.34.4 | ChannelsCard.kt | ✅ | — |
 | G43 | CA cert install | `GET /api/cert` download link | CertInstallCard | ✅ Parity | — | ✅ | — |
 
@@ -282,14 +282,13 @@ G7 (and G36 roll-up).
 
 Target files: `AlertsScreen.kt`, `AlertsViewModel.kt`, new `AlertsRepository.kt`, RestTransport.kt (extend), maybe new `AlertCard.kt`.
 
-### v0.34.9 — Sessions ergonomics (~2 days)
-G6, G10, G62.
+### v0.34.9 — Sessions ergonomics (~1-2 days)
+G6, G62. (G10 dropped 2026-04-24 — PWA will adopt Android's FAB + full-screen-create pattern this weekend; no mobile change needed.)
 - Drag-drop reorder: Compose long-press drag via `Modifier.pointerInput` + `reorderable` library if justified, OR custom DragDrop implementation. Persist order via SharedPreferences (mirroring PWA localStorage key).
 - Drop hamburger-menu reorder entry; drop up/down arrow buttons.
-- Add "New" tab to BottomNavBar; route to `sessions/new`. Keep FAB too (user convenience).
 - Re-verify card left-border state colors against PWA screenshots.
 
-Target files: `SessionsScreen.kt`, `BottomNavBar.kt`, `AppRoot.kt`.
+Target files: `SessionsScreen.kt`.
 
 ### v0.35.0 — Settings polish + Monitor completion (~3-4 days)
 G9 (dimensions sweep), G19-G28 (Monitor cards), G31/G35 (General field verification), G37 (Servers card), G38 (TLS fields), G45 (LLM schema cleanup), G47 (Memory fields), G57-G64 (visual polish).
@@ -304,10 +303,8 @@ G11 (inline rename), G12 (state-override dropdown anchor), G13 (Response button)
 
 Target files: `SessionDetailScreen.kt`, `TerminalToolbar.kt`.
 
-### v0.35.2 — Signal QR linking (optional, ~2-3 days)
-G41. Can be deferred; only needed when a user actually wants to pair Signal from the phone.
-- Add `/api/link/*` transport methods.
-- New `LinkSignalCard.kt` under Settings → Comms with QR renderer (e.g. zxing).
+### ~~v0.35.2 — Signal QR linking~~
+Dropped 2026-04-24 per user direction: Signal pairing remains a server-admin-only function; the phone has no reason to run the QR pairing flow (user is already authenticated on the phone). G41 marked WONTFIX in §3.4.
 
 ---
 

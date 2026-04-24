@@ -8,6 +8,74 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.8] — 2026-04-24 (G7 Alerts rebuild + Settings restart affordance)
+
+### Added
+
+- **G7 — Alerts screen rebuilt to PWA structure.** The old
+  AlertsScreen derived rows from the session list (filtered to
+  `Waiting && !muted`) and surfaced no actual `/api/alerts` payload.
+  The new implementation:
+  - Fetches `/api/alerts` every 5 s from the active server's
+    transport.
+  - Groups alerts by `session_id` (synthetic `"__system__"` bucket
+    for session-less alerts) and classifies each group as **Active**
+    (live session in running/waiting/rate-limited/new) or **Inactive**
+    (terminal state or orphaned). Mirrors `app.js:5550-5627`.
+  - Top-level `TabRow` with Active (N) / Inactive (N) tabs; the
+    Active count drives the bottom-nav badge.
+  - Per-session expandable cards with state pill + alert count +
+    session link. Active groups default-expand, inactive
+    default-collapse (matches PWA `.alert-session-group` chevron
+    behaviour).
+  - Per-alert cards with level-colored left border (3dp,
+    error/warn/info palette), level badge, timestamp, bold title,
+    body preview (500-char truncation). Matches PWA `.alert-card`.
+  - Quick-reply dropdown button on the **first** alert of a
+    waiting-input session (mirrors `app.js:5573-5580`); tapping
+    opens session detail with the composer auto-focused.
+  - Per-alert Schedule / Open / ✓ (mark-read) actions.
+  - Legacy swipe-left-to-mute gesture retained since it's a useful
+    shortcut the PWA lacks.
+
+### Fixed
+
+- **AlertDto was decoding no live fields.** The old DTO used
+  `type/severity/message` (non-nullable `type`) but the server
+  actually emits `level/title/body`. Every real alert was failing
+  decode silently and the UI never showed `/api/alerts` content —
+  it was falling back to the session-filter approach. DTO now
+  matches the live shape with back-compat for the legacy triple;
+  domain `Alert` gains a `title` field distinct from `message`.
+- **Settings save + restart — user-reported 2026-04-24.** Any
+  change in `ConfigFieldsPanel` auto-saves via `PUT /api/config`,
+  but many fields require a daemon restart to take effect
+  (TLS, bind, backends, channels). When `server.auto_restart_on_config`
+  is off the user had no signal their save wasn't yet active.
+  Added an always-visible `RestartNeededBanner` at the top of the
+  Settings content area:
+  - **Green** note when auto-restart is on ("changes apply
+    immediately").
+  - **Amber** banner with a prominent **Restart now** button when
+    it's off; calls `POST /api/restart`. Post-click status surfaces
+    inline ("Restarting daemon…", "Restart requested. Give the
+    daemon 5–10 s to come back.", or error).
+
+### Notes
+
+- No schema migration.
+- G10 (New-session tab in bottom nav) dropped from the parity plan
+  per user direction 2026-04-24: PWA will migrate to the Android
+  FAB + full-screen-create pattern this weekend (upstream
+  [dmz006/datawatch#22](https://github.com/dmz006/datawatch/issues/22)).
+- G41 (Signal QR device linking) WONTFIX — user direction
+  2026-04-24: "already on phone, do not need signal setup; that can
+  be a server only function." v0.35.2 release dropped from plan.
+- Bidirectional parity rule applied: Android-extra gap flagged
+  upstream this release —
+  [dmz006/datawatch#21](https://github.com/dmz006/datawatch/issues/21)
+  (voice-transcribe UI for PWA).
+
 ## [0.34.7] — 2026-04-24 (P1 fix pass — G5 + G8)
 
 ### Fixed

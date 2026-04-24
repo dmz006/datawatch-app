@@ -56,12 +56,29 @@ public data class AlertsListResponseDto(
  * superset of fields observed across recent server versions. Missing fields
  * default to safe values so version skew doesn't break the client.
  */
+/**
+ * Matches the live `/api/alerts` row shape (verified 2026-04-23 against
+ * localhost:8443): `{id, level, title, body, session_id, read, created_at}`.
+ * Earlier versions of this DTO used `type/severity/message` which the
+ * server never actually emits — `type` was a non-nullable String and
+ * decode failed silently for every row. Fields here are nullable with
+ * defaults so older servers that emit the legacy shape still decode.
+ */
 @Serializable
 public data class AlertDto(
     val id: String,
-    val type: String,
+    /** One of `"info"`, `"warn"`, `"error"`. Maps to [AlertSeverity]. */
+    val level: String? = null,
+    val title: String? = null,
+    val body: String? = null,
+    /**
+     * Retained for transport back-compat with servers still emitting
+     * the legacy `type/severity/message` triple. When [level] is
+     * present, these are ignored.
+     */
+    val type: String? = null,
     val severity: String? = null,
-    val message: String,
+    val message: String? = null,
     @SerialName("session_id") val sessionId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     val read: Boolean = false,
