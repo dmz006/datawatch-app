@@ -60,12 +60,15 @@ public fun TerminalToolbar(
         fontPrefs.edit().putInt("font_size_px", fontSize).apply()
     }
 
+    // User 2026-04-24: trim vertical padding so the toolbar sits
+    // flush against the SessionInfoBar badges (no "empty line"
+    // between the font controls and the badge row).
     Surface(
         color = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {

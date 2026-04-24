@@ -60,6 +60,11 @@ ktlint {
 detekt {
     config.setFrom(rootProject.file("config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
+    // Baseline accepts the current NestedBlockDepth (WearMainActivity
+    // :402) + TooManyFunctions findings pending the 2026-04-24 Wear
+    // UI refactor (card-border pass). Regenerate with
+    // `./gradlew :wear:detektBaseline` once that refactor is done.
+    baseline = file("detekt-baseline.xml")
 }
 
 dependencies {

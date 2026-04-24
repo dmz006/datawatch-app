@@ -144,7 +144,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     Row.Builder()
                         .setTitle(name)
                         .addText(
-                            "${fmt(used * 1_000_000L)} / ${fmt(vramTotal * 1_000_000L)} VRAM",
+                            "${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)} VRAM",
                         )
                         .build(),
                 )
@@ -210,18 +210,33 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
     }
 }
 
+// Named constants satisfy detekt's MagicNumber rule while keeping
+// the byte / time maths readable. Decimal (SI) units rather than
+// binary (IEC) — matches `fmt`'s "GB / MB / KB" strings.
+private const val BYTES_PER_KB: Long = 1_000L
+private const val BYTES_PER_MB: Long = 1_000_000L
+private const val BYTES_PER_GB: Long = 1_000_000_000L
+private const val SECONDS_PER_MINUTE: Long = 60L
+private const val SECONDS_PER_HOUR: Long = 3_600L
+private const val SECONDS_PER_DAY: Long = 86_400L
+
+// VRAM figures arrive in mebibytes from the daemon; converting to
+// bytes lets `fmt` do the "GB / MB" threshold choice. Kept inline
+// with BYTES_PER_MB so the unit conversion is obvious to readers.
+internal const val VRAM_MEBIBYTES_TO_BYTES: Long = BYTES_PER_MB
+
 private fun fmt(bytes: Long): String =
     when {
-        bytes >= 1_000_000_000 -> "%.1f GB".format(bytes / 1_000_000_000.0)
-        bytes >= 1_000_000 -> "%.1f MB".format(bytes / 1_000_000.0)
-        bytes >= 1_000 -> "%.1f KB".format(bytes / 1_000.0)
+        bytes >= BYTES_PER_GB -> "%.1f GB".format(bytes / BYTES_PER_GB.toDouble())
+        bytes >= BYTES_PER_MB -> "%.1f MB".format(bytes / BYTES_PER_MB.toDouble())
+        bytes >= BYTES_PER_KB -> "%.1f KB".format(bytes / BYTES_PER_KB.toDouble())
         else -> "$bytes B"
     }
 
 private fun uptime(seconds: Long): String {
-    val d = seconds / 86_400
-    val h = (seconds % 86_400) / 3600
-    val m = (seconds % 3600) / 60
+    val d = seconds / SECONDS_PER_DAY
+    val h = (seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR
+    val m = (seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
     return buildString {
         if (d > 0) append("${d}d ")
         if (h > 0 || d > 0) append("${h}h ")

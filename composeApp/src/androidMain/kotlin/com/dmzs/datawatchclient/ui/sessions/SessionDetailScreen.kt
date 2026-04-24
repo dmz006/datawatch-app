@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -335,6 +336,7 @@ public fun SessionDetailScreen(
             // (clickable to override), Stop / Restart / Delete action,
             // Timeline button. Mirrors PWA's nicely-presented badges.
             var responseOpen by remember { mutableStateOf(false) }
+            val hasResponse = !state.session?.lastResponse.isNullOrBlank()
             SessionInfoBar(
                 backend = state.session?.backend,
                 sessionMode = state.messagingBackend ?: "tmux",
@@ -351,7 +353,11 @@ public fun SessionDetailScreen(
                     stateMenuOpen = false
                     vm.overrideState(s)
                 },
-                hasResponse = !state.session?.lastResponse.isNullOrBlank(),
+                // Response button relocated to the composer row
+                // (stacked under the microphone) — v0.35.3 user
+                // direction. SessionInfoBar keeps the flag as 0 so
+                // the old button doesn't render twice.
+                hasResponse = false,
                 onResponse = { responseOpen = true },
             )
             if (responseOpen) {
@@ -471,6 +477,8 @@ public fun SessionDetailScreen(
                 onSchedule = { scheduleOpen = true },
                 waitingInput = state.session?.state == SessionState.Waiting,
                 onQuickReply = vm::sendQuickReply,
+                hasResponse = hasResponse,
+                onResponse = { responseOpen = true },
             )
         }
     }
@@ -632,7 +640,7 @@ private fun SessionInfoBar(
             state == SessionState.Error
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
         ) {
@@ -641,7 +649,13 @@ private fun SessionInfoBar(
             if (!backend.isNullOrBlank()) {
                 InfoBadge(text = backend.lowercase(), color = MaterialTheme.colorScheme.primary)
             }
-            InfoBadge(text = sessionMode.lowercase(), color = MaterialTheme.colorScheme.secondary)
+            // User 2026-04-24: the "tmux" mode badge is redundant with
+            // the tmux/channel TabRow above. Only surface the mode
+            // badge for non-default modes (channel, chat, etc.) so the
+            // information isn't repeated.
+            if (sessionMode.lowercase() !in setOf("tmux", "", "none")) {
+                InfoBadge(text = sessionMode.lowercase(), color = MaterialTheme.colorScheme.secondary)
+            }
             state?.let {
                 Box {
                     Box(
@@ -1547,6 +1561,11 @@ private fun ReplyComposer(
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
     onQuickReply: (String) -> Unit = {},
+    // v0.35.3: saved-response viewer moves off the SessionInfoBar
+    // and stacks under the microphone button in the composer row,
+    // per user direction 2026-04-24.
+    hasResponse: Boolean = false,
+    onResponse: () -> Unit = {},
 ) {
     HorizontalDivider()
     val context = LocalContext.current
@@ -1654,7 +1673,9 @@ private fun ReplyComposer(
                     disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
         )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
         IconButton(
+            modifier = Modifier.size(40.dp),
             onClick = {
                 if (recording) {
                     val r = recorder ?: return@IconButton
@@ -1781,6 +1802,20 @@ private fun ReplyComposer(
                 )
             }
         }
+        if (hasResponse) {
+            IconButton(
+                modifier = Modifier.size(36.dp),
+                onClick = onResponse,
+                enabled = !sending,
+            ) {
+                Icon(
+                    Icons.Filled.Description,
+                    contentDescription = "View last response",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        } // Column (Mic + Response stack)
         // Schedule-as-cron — preserves the typed reply text as the
         // schedule task, so "draft → schedule" is a single tap.
         IconButton(onClick = onSchedule, enabled = !sending) {

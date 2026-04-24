@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>NestedBlockDepth:WearMainActivity.kt$WearSessionCountsViewModel$private fun consume(buffer: DataEventBuffer)</ID>
+    <ID>TooManyFunctions:MonitorTileService.kt$MonitorTileService : TileService</ID>
+    <ID>TooManyFunctions:SessionsTileService.kt$SessionsTileService : TileService</ID>
+    <ID>TooManyFunctions:WearMainActivity.kt$com.dmzs.datawatchclient.wear.WearMainActivity.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

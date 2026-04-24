@@ -4,7 +4,15 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Status:** `v0.12.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/tag/v0.12.0). Pairs with `datawatch v4.0.3+`. **v1.0.0 is reserved for the release that reaches 100% client-side parity with the parent [PWA](https://github.com/dmz006/datawatch)** — tracked in [`docs/parity-status.md`](docs/parity-status.md) and ADR-0043.
+**Status:** `v0.35.3` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v4.x`. PWA-parity milestone closed 2026-04-24 ([audit](docs/plans/audit-2026-04-23/README.md)); ongoing polish drives the remaining gap to v1.0.0.
+
+## At a glance
+
+| Phone | Watch | PWA reference |
+|:---:|:---:|:---:|
+| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
+
+*Slideshows loop at ~2.5 s per frame. Watch cards are circle-shaped to follow the Samsung Galaxy Watch bezel; phone shots are from a Galaxy S23 Ultra running `publicTrackDebug`; PWA shots are from `localhost:8443` captured via Playwright.*
 
 ## What it does
 
@@ -35,15 +43,16 @@ Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 ## Install
 
 See [docs/installation.md](docs/installation.md) for the full walkthrough.
-Quick version:
+Quick version (fetch the APKs from the [latest release](https://github.com/dmz006/datawatch-app/releases/latest)):
 
 ```bash
-# Phone (debug APK from the v0.12.0 release)
-adb install -r datawatch-0.12.0.apk
+# Phone — always use `install -r`. NEVER `adb uninstall` to upgrade:
+# it wipes the SQLCipher DB + Android Keystore key for this app and
+# your server profiles + bearer tokens are unrecoverable.
+adb install -r composeApp-publicTrack-release.apk
 
-# Wear OS — requires the watch to be paired to this phone or to have debug
-# bridge enabled over Wi-Fi. See below.
-adb -s <watch-serial> install -r datawatch-wear-0.12.0.apk
+# Wear OS — pair via companion app or enable Wi-Fi debug bridge.
+adb -s <watch-serial> install -r wear-release.apk
 ```
 
 First launch:

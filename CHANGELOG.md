@@ -8,6 +8,63 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.3] — 2026-04-24 (Sessions UX polish + Wear round cards + Auto-release workflow fix)
+
+### Changed
+
+- **Sessions list: filter / sort / history collapse behind a single
+  search icon** in the TopAppBar, with the reachability dot moved to
+  the right of the actions slot (matches PWA header layout). FAB
+  lowered ~24 dp so it doesn't overlap the bottom nav.
+- **Session detail: drop the `tmux` mode badge** — it was redundant
+  with the tmux/channel TabRow immediately above. Only non-default
+  modes (`channel`, `chat`, etc.) still surface as InfoBadge.
+- **Response button relocated** from the SessionInfoBar to the composer
+  row, stacked under the microphone (mic 40 dp + response 36 dp) so the
+  info bar stays uncluttered while the saved-response surface stays
+  one tap from the primary reply action.
+- **Terminal toolbar hugs the info bar** — removed the extra 2 dp of
+  vertical padding around the font/fit/scroll row so there's no empty
+  line between the badges and the controls.
+- **Wear: circular bordered card per page** (Monitor / Sessions / Servers
+  / About) — `CircleShape` + 1.5 dp primary-tinted border matches the
+  Samsung Galaxy Watch bezel geometry.
+- **Auto: MagicNumber detekt cleanups** — byte-size and time constants
+  in `AutoMonitorScreen` are now named (`BYTES_PER_MB`, `SECONDS_PER_DAY`,
+  etc.) instead of inline literals.
+
+### Fixed
+
+- **Release workflow no longer 404s** — `bundlePublicRelease` was renamed
+  to `bundlePublicTrackRelease` at v0.32 but `.github/workflows/release.yml`
+  still pointed at the old task. Workflow now builds both publicTrack +
+  dev bundles and assembles the publicTrack APK.
+
+### Added
+
+- **Slideshows in README** — phone / watch / PWA captures looping at
+  ~2.5 s per frame. Watch frames are circle-cropped to match the bezel;
+  PWA frames are sourced from Playwright against `localhost:8443`.
+- **.gitignore excludes slideshow sources** (`docs/media/phone/`,
+  `docs/media/watch/`, `docs/media/pwa/`) so per-frame PNGs stay out of
+  git while the generated `*.gif` outputs are committed.
+- **`docs/media/capture-{phone,watch}.sh`** — reproducible adb-driven
+  navigation + screenshot scripts.
+- **Wear detekt baseline** (`wear/detekt-baseline.xml`) to accept the
+  NestedBlockDepth / TooManyFunctions findings pending the Wear UI
+  refactor tracked in the Monitor redesign backlog.
+
+### Upstream follow-ups
+
+Filed against `dmz006/datawatch` to keep PWA ↔ mobile design in sync:
+
+- [#21](https://github.com/dmz006/datawatch/issues/21) — voice-input UI
+  parity (RemoteInput-style reply on PWA).
+- [#22](https://github.com/dmz006/datawatch/issues/22) — PWA FAB migration
+  for "New session" to match Android.
+- [#23](https://github.com/dmz006/datawatch/issues/23) — Sessions list
+  filter/sort/reachability-dot layout sync.
+
 ## [0.35.2] — 2026-04-24 (G11 inline header rename)
 
 ### Changed

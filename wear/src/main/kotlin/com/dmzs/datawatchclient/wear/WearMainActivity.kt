@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -129,20 +130,47 @@ private fun PagerDots(selected: Int, count: Int, modifier: Modifier = Modifier) 
 
 @Composable
 private fun PageScaffold(title: String, content: @Composable () -> Unit) {
-    Column(
+    // Per user 2026-04-24 "the wear app should have borders around each
+    // screen like cards" + "the watch is a samsung watch, the cards
+    // should be round to match bezel" — each pager page renders inside
+    // a CIRCULAR bordered card that follows the Samsung Galaxy Watch's
+    // round bezel. Dark surface with teal primary-color border at
+    // ~45% alpha. Inner padding is diamond-shaped (more horizontal,
+    // less vertical) because a circular viewport cuts the corners
+    // anyway — content stays within the safe area.
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 14.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.title3,
-            color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        content()
+        val cardShape = androidx.compose.foundation.shape.CircleShape
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colors.surface, shape = cardShape)
+                .border(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colors.primary.copy(alpha = 0.45f),
+                    shape = cardShape,
+                )
+                .padding(horizontal = 28.dp, vertical = 20.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                content()
+            }
+        }
     }
 }
 
