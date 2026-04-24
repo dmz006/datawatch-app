@@ -25,6 +25,7 @@ Auto, and iOS are out of scope.
 **Upstream issues filed against `dmz006/datawatch`** (per the bidirectional parity rule):
 - [#21](https://github.com/dmz006/datawatch/issues/21) — PWA missing voice-input UI for `/api/voice/transcribe` (Android has it end-to-end).
 - [#22](https://github.com/dmz006/datawatch/issues/22) — PWA migrate New bottom-nav tab → FAB + full-screen create, to match Android.
+- [#23](https://github.com/dmz006/datawatch/issues/23) — PWA Sessions list — mirror Android v0.35.3 layout (inline filter toggle, reachability dot right-side, FAB lower).
 
 ---
 
@@ -130,11 +131,26 @@ Seven files, ~700 LOC. Commit: `release: v0.34.6 — P0: session-id contract, de
 | ✅ G12 | State override opens as full-screen AlertDialog | Replaced with DropdownMenu anchored to the state pill inside `SessionInfoBar`. Matches PWA `showStateOverride(sessionId, element)`. |
 | ✅ G13 | Response button not on session detail | Added to `SessionInfoBar` when `session.lastResponse` is non-blank. Opens existing `LastResponseSheet` (now `internal` so reachable from detail). |
 
-### v0.35.2 — 2026-04-24 · Inline header rename (current)
+### v0.35.2 — 2026-04-24 · Inline header rename
 
 | ID | What | Mechanism |
 |---|---|---|
 | ✅ G11 | Session-detail rename via modal dialog | Tap title → `BasicTextField` swap in-place. Enter or blur commits via `vm.rename`. Mirrors PWA `startHeaderRename` contentEditable. Prior `RenameDialog` still reachable via overflow menu for users who prefer modal. |
+
+### v0.35.3 — 2026-04-24 · Sessions UX polish + Wear round cards + release-workflow fix (current)
+
+Not a parity row close — this ships the UX polish the user asked for
+post-milestone plus an upstream design-sync issue for the PWA.
+
+| What | Mechanism |
+|---|---|
+| Sessions list — filter/sort/history collapse behind a single icon | `SessionsScreen.kt`: `toolbarExpanded` state hoisted; `actions` slot holds search icon + reachability dot. Matches PWA header direction-wise; upstream issue [#23](https://github.com/dmz006/datawatch/issues/23) tracks the mirror change on PWA. |
+| Session detail — drop redundant `tmux` mode badge | `SessionInfoBar` filters out `tmux`, `""`, `none` from the mode chip since the tmux/channel TabRow renders it a row above. |
+| Response button relocates to composer row under mic | `ReplyComposer` `hasResponse` + `onResponse` params; `SessionInfoBar` drops its copy. Mic 40 dp / Response 36 dp stacked column. |
+| Terminal toolbar hugs badges | `TerminalToolbar` vertical padding dropped from 2 dp → 0 dp. Closes the "empty line" gap to `SessionInfoBar`. |
+| Wear — circular bordered card per page | `WearMainActivity`: `CircleShape` background + 1.5 dp primary-tinted border. Matches Samsung Galaxy Watch bezel. |
+| Auto — MagicNumber detekt cleanups | `AutoMonitorScreen.kt` byte/time constants named. |
+| Release workflow — fix stale `bundlePublicRelease` → `bundlePublicTrackRelease` | `.github/workflows/release.yml`. v0.35.2 release never published binaries because of this. |
 
 ---
 
