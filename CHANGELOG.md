@@ -8,6 +8,40 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.34.7] — 2026-04-24 (P1 fix pass — G5 + G8)
+
+### Fixed
+
+- **G8 — Session-detail composer hidden behind soft keyboard.** SDK-35
+  edge-to-edge is enforced and the prior `imePadding()` was applied to
+  the whole outer Column inside the Scaffold, which double-counted
+  insets in some layouts and left the reply text field partially
+  occluded. Moved `imePadding()` off the outer Column and onto the
+  composer Row directly so **only** the input bar lifts above the
+  keyboard (the terminal / chat surface keeps its original bounds —
+  matches PWA behaviour). Fixes user report "the window with the text
+  should lift up when keyboard pops up so you can read the message as
+  it is being typed."
+- **G5 — New Session LLM picker stuck on old server's backends.** The
+  server dropdown seeded itself from `ActiveServerStore` only when
+  `selectedProfileId == null` on first composition. If the user
+  flipped the active server elsewhere and returned to New Session,
+  the picker kept the previous server's backend list. Effect now
+  syncs on every `(profiles, activeId)` change until the user makes
+  an explicit pick from the dropdown (tracked via `userPickedServer`
+  flag), after which auto-sync is suppressed so their manual choice
+  sticks.
+
+### Notes
+
+- No schema migration.
+- Per the 2026-04-23 parity inventory — G5 and G8 are the two P1
+  items the user flagged as still broken post-v0.34.6. Remaining
+  batches v0.34.8 → v0.35.2 cover structural parity gaps (Alerts
+  rebuild, drag-drop reorder, Settings dimension sweep, session
+  detail polish, optional Signal QR linking). See
+  [`docs/plans/audit-2026-04-23/README.md`](docs/plans/audit-2026-04-23/README.md).
+
 ## [0.34.6] — 2026-04-23 (P0: session-id contract, delete UI, chat mode)
 
 ### Fixed

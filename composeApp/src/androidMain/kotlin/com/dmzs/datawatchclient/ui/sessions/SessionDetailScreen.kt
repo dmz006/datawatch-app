@@ -231,18 +231,25 @@ public fun SessionDetailScreen(
             )
         },
     ) { padding ->
-        // `imePadding()` shifts the whole column up when the soft keyboard
-        // is open so the reply composer stays visible instead of covering
-        // the terminal's bottom rows (B27-layout). `consumeWindowInsets`
-        // tells Scaffold we've taken the IME inset so it's not double-
-        // counted. Without this, the ReplyComposer overlaps the last 4-6
-        // rows of xterm when the keyboard pops — user's "bottom of screen
-        // below the input reply window" report.
+        // Window-inset handling for the soft keyboard (user report
+        // 2026-04-23: "tmux input window is hidden behind the keyboard").
+        //
+        // Prior iteration applied `imePadding()` to the outer Column,
+        // which shrunk the *entire* content (terminal + banners +
+        // composer) whenever the IME opened. On SDK 35+ edge-to-edge
+        // that combined with Scaffold's content insets in ways that
+        // left the composer partially occluded — the composer would
+        // lift a bit but not enough to clear the keyboard.
+        //
+        // New approach: let the terminal / chat surface keep its full
+        // height and move only the composer row above the keyboard
+        // via `imePadding()` on ReplyComposer directly. This mirrors
+        // how the PWA handles it — the output area stays fixed; only
+        // the input bar lifts.
         Column(
             modifier =
                 Modifier
                     .padding(padding)
-                    .imePadding()
                     .fillMaxSize(),
         ) {
             // PWA-style output-surface tabs: tmux (terminal) / chat.
@@ -1489,7 +1496,14 @@ private fun ReplyComposer(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        // `imePadding()` here (not on the outer Column) lifts only the
+        // composer row above the soft keyboard. Mirrors PWA behaviour —
+        // output area keeps its bounds; input bar floats above the IME.
+        // User-flagged 2026-04-23: the text field was being occluded by
+        // the keyboard when typing; SDK 35 edge-to-edge requires explicit
+        // IME handling and the prior Column-level imePadding was fighting
+        // Scaffold's content insets.
+        modifier = Modifier.fillMaxWidth().imePadding().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(

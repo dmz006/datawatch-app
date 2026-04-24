@@ -180,15 +180,26 @@ public fun NewSessionScreen(
         }
     }
 
-    // Default-select active profile (or the first enabled one) on first composition.
+    // Keep the Server dropdown synced with ActiveServerStore so the LLM
+    // backend picker loads the *selected* server's enabled list, not a
+    // stale one. The prior guard `if (selectedProfileId == null)` only
+    // seeded on first composition, so flipping the active server
+    // elsewhere left the picker pinned to the original server's
+    // backends (user report 2026-04-23). Track whether the user has
+    // *manually* chosen a server on this screen; when they have, we
+    // stop auto-syncing so we don't overwrite their explicit choice.
+    var userPickedServer by remember { mutableStateOf(false) }
     LaunchedEffect(profiles, activeId) {
-        if (selectedProfileId == null) {
-            val enabled = profiles.filter { it.enabled }
-            selectedProfileId = when {
+        if (userPickedServer) return@LaunchedEffect
+        val enabled = profiles.filter { it.enabled }
+        val target =
+            when {
                 activeId != null && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS ->
                     enabled.firstOrNull { it.id == activeId }?.id
                 else -> null
             } ?: enabled.firstOrNull()?.id
+        if (target != null && target != selectedProfileId) {
+            selectedProfileId = target
         }
     }
 
@@ -274,7 +285,14 @@ public fun NewSessionScreen(
             ServerPickerDropdown(
                 profiles = profiles.filter { it.enabled },
                 selectedId = selectedProfileId,
-                onSelect = { selectedProfileId = it },
+                onSelect = { id ->
+                    selectedProfileId = id
+                    // Any explicit pick from the dropdown disables the
+                    // auto-sync with ActiveServerStore — otherwise if the
+                    // user chooses server B while active is A, the effect
+                    // would snap back to A on recomposition.
+                    userPickedServer = true
+                },
             )
 
             // Backend picker — populated from /api/backends. Only renders
