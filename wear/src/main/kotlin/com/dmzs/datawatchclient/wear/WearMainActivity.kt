@@ -4,11 +4,9 @@ import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import android.app.Activity
-import android.content.Intent
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -106,25 +104,67 @@ private fun WearRoot(
     val state by vm.state.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 4 }
 
-    // v0.35.5 — session tap popup with voice reply. Tapping a
-    // session on the Sessions page opens [SessionDetailPopup]; the
-    // mic button launches the speech-to-text activity; confirm
-    // sends the transcribed text to the phone via MessageClient
-    // which forwards to send_input over a transient WS.
+    // v0.35.5 — session tap popup with voice reply.
+    // v0.35.8 — replaced RecognizerIntent with phone-relayed Whisper.
+    // Watch records audio locally via WearVoiceRecorder, ships bytes
+    // to the phone over MessageClient `/datawatch/audio`, phone
+    // resolves the session's profile + posts to /api/voice/transcribe,
+    // phone replies on `/datawatch/transcript` with the text. Watch
+    // shows the transcript in the popup for the user to validate
+    // before tapping Send (which uses the existing /datawatch/reply
+    // path from v0.35.5).
     var openSession: WearSessionCountsViewModel.SessionItem? by remember {
         mutableStateOf(null)
     }
     var pendingTranscript by remember { mutableStateOf("") }
-    val voiceLauncher =
+    var recording by remember { mutableStateOf(false) }
+    var transcribing by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val recorder =
+        remember { com.dmzs.datawatchclient.wear.voice.WearVoiceRecorder(context) }
+
+    // Subscribe to the phone's transcript replies. The DisposableEffect
+    // tied to `openSession` (re-armed every popup) lets us tear down
+    // the listener cleanly when the popup closes.
+    androidx.compose.runtime.DisposableEffect(openSession?.id) {
+        val listener =
+            com.google.android.gms.wearable.MessageClient
+                .OnMessageReceivedListener { ev ->
+                    if (ev.path == WearSessionCountsViewModel.TRANSCRIPT_PATH) {
+                        val body = runCatching { String(ev.data, Charsets.UTF_8) }
+                            .getOrNull().orEmpty()
+                        val (sid, text) =
+                            body.split("\n", limit = 2).let { p ->
+                                p.firstOrNull().orEmpty() to
+                                    p.getOrNull(1).orEmpty()
+                            }
+                        if (sid == openSession?.id) {
+                            transcribing = false
+                            pendingTranscript =
+                                if (text.startsWith("error:")) {
+                                    "[transcribe failed: ${text.removePrefix("error:")}]"
+                                } else {
+                                    text
+                                }
+                        }
+                    }
+                }
+        com.google.android.gms.wearable.Wearable.getMessageClient(context)
+            .addListener(listener)
+        onDispose {
+            com.google.android.gms.wearable.Wearable.getMessageClient(context)
+                .removeListener(listener)
+        }
+    }
+
+    val micPermissionLauncher =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-        ) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val transcripts =
-                    result.data?.getStringArrayListExtra(
-                        RecognizerIntent.EXTRA_RESULTS,
-                    )
-                pendingTranscript = transcripts?.firstOrNull().orEmpty()
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                runCatching { recorder.start() }
+                    .onSuccess { recording = true }
+                    .onFailure { recording = false }
             }
         }
 
@@ -147,28 +187,45 @@ private fun WearRoot(
                 SessionDetailPopup(
                     session = item,
                     transcript = pendingTranscript,
+                    recording = recording,
+                    transcribing = transcribing,
                     onRecord = {
-                        pendingTranscript = ""
-                        val intent =
-                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(
-                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-                                )
-                                putExtra(
-                                    RecognizerIntent.EXTRA_PROMPT,
-                                    "Reply to ${item.title}",
+                        if (!recording) {
+                            pendingTranscript = ""
+                            val granted =
+                                androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.RECORD_AUDIO,
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (granted) {
+                                runCatching { recorder.start() }
+                                    .onSuccess { recording = true }
+                            } else {
+                                micPermissionLauncher.launch(
+                                    android.Manifest.permission.RECORD_AUDIO,
                                 )
                             }
-                        runCatching { voiceLauncher.launch(intent) }
+                        } else {
+                            val captured = recorder.stop()
+                            recording = false
+                            if (captured != null && captured.first.isNotEmpty()) {
+                                transcribing = true
+                                vm.sendAudio(item.id, captured.first)
+                            }
+                        }
                     },
                     onConfirm = {
                         vm.sendReply(item.id, pendingTranscript)
                         pendingTranscript = ""
+                        recording = false
+                        transcribing = false
                         openSession = null
                     },
                     onDismiss = {
+                        runCatching { recorder.cancel() }
                         pendingTranscript = ""
+                        recording = false
+                        transcribing = false
                         openSession = null
                     },
                 )
@@ -465,15 +522,28 @@ private fun sessionBadgeColor(stateName: String): Color =
     }
 
 /**
- * Round-bezel tap popup. Shows session title + last-line context +
- * a microphone button that launches the system speech-to-text
- * activity; a Send button confirms the transcript via [onConfirm];
- * an X dismisses without sending.
+ * Round-bezel tap popup.
+ *
+ * v0.35.8 layout: title + state + last-line context occupy the centre
+ * column; the microphone button anchors to the **right edge** so the
+ * thumb lands on it without crossing the screen, and the Send chip
+ * appears on the left edge once a transcript is staged. ✕ dismiss
+ * stays top-right inside the safe area.
+ *
+ * Voice flow (v0.35.8): mic toggles between record and stop. While
+ * recording, the icon turns red and the label below changes to
+ * "Listening…". On stop, audio bytes ship to the phone via
+ * `/datawatch/audio`; while waiting for the transcript the centre
+ * shows a small `…transcribing` line. Reply lands on
+ * `/datawatch/transcript` and populates the transcript box for the
+ * user to validate before tapping Send.
  */
 @Composable
 private fun SessionDetailPopup(
     session: WearSessionCountsViewModel.SessionItem,
     transcript: String,
+    recording: Boolean,
+    transcribing: Boolean,
     onRecord: () -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -497,16 +567,16 @@ private fun SessionDetailPopup(
                     MaterialTheme.colors.primary.copy(alpha = 0.55f),
                     androidx.compose.foundation.shape.CircleShape,
                 )
-                .padding(horizontal = 24.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 18.dp),
         ) {
+            // Centre content stack — title, state, last-line, transcript.
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(horizontal = 8.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Dismiss affordance. Keep compact — an X at the top
-                // of the circle inside the safe area, not on the bezel.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -541,46 +611,78 @@ private fun SessionDetailPopup(
                         maxLines = 4,
                     )
                 }
-                if (transcript.isNotBlank()) {
-                    Text(
-                        "“$transcript”",
-                        modifier = Modifier.padding(top = 6.dp),
-                        style = MaterialTheme.typography.body2,
-                        color = MaterialTheme.colors.primary,
-                        maxLines = 3,
-                    )
+                when {
+                    recording ->
+                        Text(
+                            "Listening…",
+                            modifier = Modifier.padding(top = 6.dp),
+                            style = MaterialTheme.typography.caption1,
+                            color = Color(0xFFEF4444),
+                        )
+                    transcribing ->
+                        Text(
+                            "…transcribing",
+                            modifier = Modifier.padding(top = 6.dp),
+                            style = MaterialTheme.typography.caption1,
+                            color = MaterialTheme.colors.onSurfaceVariant,
+                        )
+                    transcript.isNotBlank() ->
+                        Text(
+                            "“$transcript”",
+                            modifier = Modifier.padding(top = 6.dp),
+                            style = MaterialTheme.typography.body2,
+                            color = MaterialTheme.colors.primary,
+                            maxLines = 3,
+                        )
                 }
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            }
+            // Mic button anchored to the right edge of the safe area.
+            // Stop icon when recording, mic glyph when idle. Tinting
+            // tells the user at a glance which state they're in.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 0.dp),
+            ) {
+                Text(
+                    if (recording) "■" else "🎤",
+                    style = MaterialTheme.typography.title2,
+                    color =
+                        if (recording) Color(0xFFEF4444)
+                        else MaterialTheme.colors.primary,
+                    modifier = Modifier
+                        .background(
+                            (
+                                if (recording) Color(0xFFEF4444)
+                                else MaterialTheme.colors.primary
+                            ).copy(alpha = 0.18f),
+                            androidx.compose.foundation.shape.CircleShape,
+                        )
+                        .clickable(onClick = onRecord)
+                        .padding(10.dp),
+                )
+            }
+            // Send chip anchored to the left edge once a transcript
+            // is staged. Hidden during record / transcribe / no-text.
+            if (transcript.isNotBlank() && !recording && !transcribing) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 0.dp),
                 ) {
                     Text(
-                        "🎤",
-                        style = MaterialTheme.typography.title3,
+                        "Send",
+                        style = MaterialTheme.typography.button,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .background(
-                                MaterialTheme.colors.primary.copy(alpha = 0.15f),
-                                androidx.compose.foundation.shape.CircleShape,
+                                MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                             )
-                            .clickable(onClick = onRecord)
-                            .padding(10.dp),
+                            .clickable(onClick = onConfirm)
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
                     )
-                    if (transcript.isNotBlank()) {
-                        Text(
-                            "Send",
-                            style = MaterialTheme.typography.button,
-                            color = MaterialTheme.colors.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                                )
-                                .clickable(onClick = onConfirm)
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                        )
-                    }
                 }
             }
         }
@@ -865,6 +967,30 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         }
     }
 
+    /**
+     * Ship raw audio bytes to the phone for Whisper transcription.
+     * Payload layout: `sessionId` UTF-8 + `\n` (0x0A) + raw audio
+     * bytes. The phone's `WearSyncService` parses by the first
+     * newline so the audio body isn't UTF-8 decoded. Reply lands on
+     * [TRANSCRIPT_PATH] handled by [WearMainActivity]'s listener.
+     */
+    public fun sendAudio(sessionId: String, audio: ByteArray) {
+        if (sessionId.isBlank() || audio.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val sidBytes = sessionId.toByteArray(Charsets.UTF_8)
+                val body = ByteArray(sidBytes.size + 1 + audio.size)
+                System.arraycopy(sidBytes, 0, body, 0, sidBytes.size)
+                body[sidBytes.size] = '\n'.code.toByte()
+                System.arraycopy(audio, 0, body, sidBytes.size + 1, audio.size)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, AUDIO_PATH, body).await()
+                }
+            }
+        }
+    }
+
     private fun applyCounts(map: DataMap) {
         _state.value = _state.value.copy(
             loading = false,
@@ -911,6 +1037,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
         public const val REPLY_PATH: String = "/datawatch/reply"
+        public const val AUDIO_PATH: String = "/datawatch/audio"
+        public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
     }
 }
 

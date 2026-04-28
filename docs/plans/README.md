@@ -9,6 +9,23 @@ architecture).
 
 ---
 ## Open - Not Assessed
+- there are open issues for parity with PWA, make backlog
+- there are changes to UI from testing that need to be updated
+-- in a session
+--- the PWA has resiliaence on the server connection that datawatch-app needs
+--- tailscale may not be connected when session is not active and screen is locked. datawatch-app should be aware of this and not overload the system if connection is not possible.  Retry when sessoin becomes active again
+--- the status indicator never goes red; but it should show the active status of the connection
+--- when going into a session or unlocking the session it should refresh to get the current state like going in from session list
+--- if unlocking screen it should test, show status and reconnect automatically to server and if session is being viewed it shoudl refresh
+--- the session window does not show live status and appears to be lagged or delayed. PWA is more responsive and shows animated processing indications that datawatch-app isn't
+--- delete shouldn't be an option unless the sesion is stopped then should show restart & delete
+-- layout changes inside viewing a session
+--- tmux and channel should be tighter and left justified like PWA with font size & scroll button to the right of them
+--- the badget shoudl be above the tabs and the latest response should be to the left of the saved commands on tmux bar at bottom.  
+--- the saved commands (quick commands) have an icon under the microphone, so the list above the input isn't needed; however the line that has the quick commands should have the last response button, followed by the saved response/quick commands icon followed by the the arrows (up down left right)
+--- the quick commands icon can be removed from under the microphone since it is now in the line above
+--- the order of the input box should be: input box, send message, scheduled message, microphone/record - matching PWA
+--- the last response icon inside a sessoin is not the same icon as used elsewhere make sure icons are all the same
 
 ### P0 closed in v0.34.6
 - ✅ **/api/sessions/kill 404** — mobile sent `session_id` key + short id;

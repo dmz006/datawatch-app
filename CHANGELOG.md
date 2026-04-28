@@ -8,6 +8,41 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.8] — 2026-04-28 (Wear voice via phone-relayed Whisper + popup polish)
+
+### Changed
+
+- **Wear Sessions row preview shows `lastResponse`** instead of
+  `lastPrompt`. Running sessions are mostly interesting for what
+  they just produced; falls back to `lastPrompt` → `taskSummary`
+  → empty so the row is always anchored to readable content.
+- **`SessionDetailPopup` mic button anchors to the right edge**
+  of the safe area; the Send chip pops in on the left edge once a
+  transcript is staged. Centre column carries title / state /
+  last-line / transcript stack — thumb hits the controls without
+  crossing the screen.
+- **State-aware popup labels** — "Listening…" while recording (red),
+  "…transcribing" while waiting on the phone, transcript text once
+  Whisper replies. Stop icon (`■`) replaces the mic glyph during
+  recording so the toggle state is unambiguous.
+
+### Fixed
+
+- **Wear voice replaced with phone-relayed Whisper.** The
+  `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` flow added in v0.35.5
+  didn't reliably return text on the Galaxy Watch — no on-device
+  recognizer model + the Pixel-Watch-style Assistant flow doesn't
+  hand the result back to the launcher. v0.35.8 records audio
+  locally via the new `WearVoiceRecorder` (mirror of the phone's
+  `VoiceRecorder`), ships raw bytes to the phone over MessageClient
+  on the new `/datawatch/audio` path. Phone resolves the session's
+  profile, posts to `/api/voice/transcribe`, and replies on
+  `/datawatch/transcript` with `sessionId\n<text>` (or
+  `sessionId\nerror:<cause>` on failure). Watch shows the transcript
+  inside the existing popup for the user to validate before tapping
+  Send. Reuses the v0.35.5 `/datawatch/reply` plumbing for the
+  send_input forward.
+
 ## [0.35.7] — 2026-04-28 (PWA v5.1.0–v5.2.0 alignment + data freshness)
 
 ### Changed

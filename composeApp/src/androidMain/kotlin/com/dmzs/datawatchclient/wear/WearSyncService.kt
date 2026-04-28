@@ -4,6 +4,7 @@ import android.content.Context
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.transport.ws.WsOutbound
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
@@ -77,6 +78,24 @@ public class WearSyncService(
                         scope.launch { forwardWatchReply(sessionId, text) }
                     }
                 }
+                AUDIO_PATH -> {
+                    // v0.35.8 — watch-initiated voice transcribe.
+                    // Payload is "sessionId\n<utf-8 garbage>" + raw
+                    // audio bytes after the first newline. We slice
+                    // by the first 0x0A byte so the audio body is
+                    // not corrupted by UTF-8 decoding.
+                    val data = ev.data
+                    val nl = data.indexOf('\n'.code.toByte())
+                    if (nl > 0 && nl < data.size - 1) {
+                        val sessionId = String(data, 0, nl, Charsets.UTF_8)
+                        val audio = data.copyOfRange(nl + 1, data.size)
+                        if (sessionId.isNotEmpty() && audio.isNotEmpty()) {
+                            scope.launch {
+                                forwardWatchAudio(ev.sourceNodeId, sessionId, audio)
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -123,9 +142,26 @@ public class WearSyncService(
                                             title = (s.name ?: s.taskSummary ?: s.id).take(40),
                                             backend = s.backend.orEmpty(),
                                             stateName = s.state.name,
+                                            // v0.35.8 — prefer
+                                            // lastResponse (the LLM's
+                                            // actual output) over
+                                            // lastPrompt (the question
+                                            // it's waiting on); a
+                                            // running session is
+                                            // mostly interesting for
+                                            // what it just produced.
+                                            // Falls back to
+                                            // lastPrompt → taskSummary
+                                            // → empty so the row is
+                                            // always anchored to
+                                            // something readable.
                                             lastLine =
-                                                (s.lastPrompt ?: s.lastResponse ?: "")
-                                                    .replace("\n", " ")
+                                                (
+                                                    s.lastResponse
+                                                        ?: s.lastPrompt
+                                                        ?: s.taskSummary
+                                                        ?: ""
+                                                ).replace("\n", " ")
                                                     .trim()
                                                     .take(SESSION_LAST_LINE_MAX),
                                         )
@@ -197,6 +233,68 @@ public class WearSyncService(
     public fun stop() {
         runCatching {
             Wearable.getMessageClient(context).removeListener(messageListener)
+        }
+    }
+
+    /**
+     * Phone-side handler for the watch's voice-transcribe round-trip
+     * (v0.35.8). Resolves the session's profile, posts the audio
+     * blob to that server's `/api/voice/transcribe`, and replies on
+     * `/datawatch/transcript` with `sessionId\n<text>` (or the cause
+     * chain on failure prefixed with `error:`). Watch keeps the
+     * confirm-then-send flow already in place from v0.35.5.
+     */
+    private suspend fun forwardWatchAudio(
+        sourceNodeId: String,
+        sessionId: String,
+        audio: ByteArray,
+    ) {
+        val (text, error) =
+            runCatching {
+                val sessionRow =
+                    ServiceLocator.sessionRepository
+                        .observeForProfileAny(sessionId).first()
+                val profiles = ServiceLocator.profileRepository.observeAll().first()
+                val profile =
+                    sessionRow?.serverProfileId
+                        ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                        ?: run {
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            profiles.firstOrNull { it.id == activeId && it.enabled }
+                                ?: profiles.firstOrNull { it.enabled }
+                        }
+                        ?: return@runCatching "" to "no enabled profile"
+                ServiceLocator.transportFor(profile).transcribeAudio(
+                    audio = audio,
+                    audioMime = "audio/mp4",
+                    sessionId = sessionId,
+                    autoExec = false,
+                ).fold(
+                    onSuccess = { it.transcript.trim() to "" },
+                    onFailure = { err ->
+                        val cause =
+                            generateSequence(err as Throwable?) { it.cause }
+                                .take(3)
+                                .joinToString(" ← ") {
+                                    "${it::class.simpleName}: ${it.message?.take(120)}"
+                                }
+                        "" to cause
+                    },
+                )
+            }.getOrElse { "" to (it.message ?: it::class.simpleName ?: "unknown") }
+
+        // Reply payload: "sessionId\n<text>" on success,
+        // "sessionId\nerror:<cause>" on failure.
+        val payload =
+            buildString {
+                append(sessionId)
+                append('\n')
+                if (error.isEmpty()) append(text)
+                else append("error:").append(error)
+            }.toByteArray(Charsets.UTF_8)
+        runCatching {
+            Wearable.getMessageClient(context)
+                .sendMessage(sourceNodeId, TRANSCRIPT_PATH, payload)
         }
     }
 
@@ -365,6 +463,8 @@ public class WearSyncService(
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
         public const val REPLY_PATH: String = "/datawatch/reply"
+        public const val AUDIO_PATH: String = "/datawatch/audio"
+        public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val STATS_POLL_MS: Long = 15_000L
         // v0.35.5 watch-reply plumbing — see forwardWatchReply. These
         // are tuned conservatively: Ktor WS subscribe typically completes
