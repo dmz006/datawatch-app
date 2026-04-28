@@ -68,6 +68,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,6 +76,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -1197,14 +1200,11 @@ private fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
-    // Explicit traffic-light palette so "is the server up" is
-    // unmistakable at a glance. User asked for green/red rather than
-    // theme-primary/error which looked too subtle on some devices.
     val color =
         when (reachable) {
-            true -> Color(0xFF22C55E) // success green (PWA --success)
-            false -> Color(0xFFEF4444) // error red (PWA --error)
-            null -> Color(0xFFF59E0B) // amber — probing, haven't heard yet
+            true -> Color(0xFF22C55E)
+            false -> Color(0xFFEF4444)
+            null -> Color(0xFFF59E0B)
         }
     val description =
         when (reachable) {
@@ -1212,6 +1212,21 @@ private fun ReachabilityDot(
             false -> "Server unreachable"
             null -> "Probing…"
         }
+    // v0.36.2 — pulse the dot when actively probing (reachable == null)
+    // so the user sees that work is happening rather than a static
+    // amber. Steady green / red doesn't pulse — those are settled
+    // states.
+    val infinite = androidx.compose.animation.core.rememberInfiniteTransition(label = "probe-pulse")
+    val scale by infinite.animateFloat(
+        initialValue = 1f,
+        targetValue = if (reachable == null) 1.4f else 1f,
+        animationSpec =
+            androidx.compose.animation.core.infiniteRepeatable(
+                animation = androidx.compose.animation.core.tween(900),
+                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+            ),
+        label = "probe-pulse-scale",
+    )
     Box(
         modifier =
             Modifier
@@ -1222,7 +1237,10 @@ private fun ReachabilityDot(
     ) {
         Surface(
             color = color,
-            modifier = Modifier.size(12.dp),
+            modifier =
+                Modifier
+                    .size(12.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale },
             shape = CircleShape,
         ) {}
     }

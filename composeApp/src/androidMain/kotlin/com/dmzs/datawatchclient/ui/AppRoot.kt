@@ -39,6 +39,8 @@ import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * Top-level composable. Cold-launch lands on Splash. After a minimum splash
@@ -69,6 +71,38 @@ public fun AppRoot() {
                 PushRegistrationCoordinator(context).registerAll()
             }
             NtfyFallbackService.start(context)
+        }
+
+        // v0.36.2 — screen-unlock lifecycle observer. On every
+        // ON_RESUME (activity becomes visible again — including the
+        // post-keyguard unlock case), re-probe every enabled
+        // profile so the reachability dot reflects current state
+        // instead of whatever was true when the screen turned off.
+        // Polling resumes naturally via SessionsViewModel's
+        // 5-second loop; this just removes the "first poll lag"
+        // operators were seeing on unlock.
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+            val observer =
+                androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                        kotlinx.coroutines.GlobalScope.launch(
+                            kotlinx.coroutines.Dispatchers.IO,
+                        ) {
+                            runCatching {
+                                val list =
+                                    ServiceLocator.profileRepository
+                                        .observeAll()
+                                        .first()
+                                list.filter { it.enabled }.forEach { p ->
+                                    runCatching { ServiceLocator.transportFor(p).ping() }
+                                }
+                            }
+                        }
+                    }
+                }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
         }
 
         // Deep-link consumer: pop any pending session id off the SharedFlow and
