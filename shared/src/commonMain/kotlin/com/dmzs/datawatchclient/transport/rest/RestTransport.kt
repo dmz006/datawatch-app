@@ -768,6 +768,21 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun startAgent(
+        request: com.dmzs.datawatchclient.transport.dto.StartAgentRequestDto,
+    ): Result<String> {
+        val req = request
+        return request {
+            val res: com.dmzs.datawatchclient.transport.dto.StartAgentResponseDto =
+                client.post("${profile.baseUrl}/api/agents") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(req)
+                }.body()
+            res.sessionId ?: res.id ?: error("server returned no session id")
+        }
+    }
+
     override suspend fun editFiles(
         prdId: String,
         storyId: String?,

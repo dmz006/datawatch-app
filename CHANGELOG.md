@@ -8,6 +8,32 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.39.1] — 2026-04-28 (New Session unified Profile + cluster routing)
+
+### Added
+
+- **Cluster sub-dropdown on `NewSessionScreen`** — closes
+  [#20](https://github.com/dmz006/datawatch-app/issues/20)
+  (PWA v5.26.63). Renders only when a project profile is selected;
+  first option is the local-service-instance sentinel (empty
+  string), remaining are the configured cluster profiles loaded
+  via `listKindProfiles("cluster")`.
+- **`startAgent(StartAgentRequestDto)`** on `TransportClient` +
+  `RestTransport` — `POST /api/agents` for F10 ephemeral-agent
+  sessions whose worker LLM is carried by the project profile's
+  `image_pair` rather than a flat `backend` field.
+- **DTOs** — `StartAgentRequestDto` (task / project_profile /
+  cluster_profile? / branch? / name?), `StartAgentResponseDto`
+  (server returns `session_id` or `id` depending on build).
+
+### Changed
+
+- **Start button branches by mode.** When a project profile is
+  selected the spawn goes to `POST /api/agents` with the F10 body;
+  when no profile is selected (project-directory mode) the spawn
+  keeps the historic `POST /api/sessions/start` with workingDir +
+  backend. Mirrors PWA v5.26.63 routing.
+
 ## [0.39.0] — 2026-04-28 (Orchestrator PRD-DAG graph + observer_summary)
 
 ### Added

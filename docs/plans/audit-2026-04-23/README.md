@@ -1,61 +1,87 @@
 # 2026-04-23 PWA parity master inventory
 
 > **🎉 Parity milestone reached 2026-04-24 at v0.35.2.** All P0, P1, and
-> P2 rows in the original gap matrix are closed. Remaining rows are
-> P3 polish items that ship opportunistically. See §3 "Remaining (P3)"
-> for the shortlist and §5 "Closed — by release" for what shipped where.
+> P2 rows in the original gap matrix are closed.
+>
+> **🎉 Full PWA-parity arc closed 2026-04-28 at v0.39.1.** Every
+> open dmz006/datawatch-app GitHub issue from the v5.1.0 → v5.27.0
+> catch-up (including the entire Autonomous tab, Mempalace surfaces,
+> federated monitoring, orchestrator graph + observer_summary, and
+> the unified Profile dropdown on both New PRD and New Session)
+> has shipped.
+>
+> See §5 "Closed — by release" for the per-version change log.
 
 **Original goal.** Close every observable parity gap between the
 datawatch PWA (live at `https://localhost:8443`, source at
 `/home/dmz/workspace/datawatch`) and the Android phone client. Wear,
-Auto, and iOS are out of scope.
+Auto, and iOS are out of scope of this audit but tracked separately.
 
 ---
 
 ## 1. Summary
 
-| Severity | Originally identified | Closed in 0.34.6 → 0.35.2 | Still open |
-|---|---|---|---|
-| **P0** — user-flagged, app broken | 3 | 3 ✅ | 0 |
-| **P1** — user-flagged, still broken on 0.34.6 | 5 | 5 ✅ | 0 |
-| **P2** — structural parity | 7 | 5 ✅ + 2 wontfix | 0 |
-| **P3** — polish / visual fidelity | 8 | 6 ✅ | 2 (opportunistic) |
-| WONTFIX / non-gap / upstream-tracked | 12 | — | — |
+### Original 2026-04-23 gap matrix
 
-Post-milestone arc (v0.35.3–v0.35.5, all 2026-04-24) closed the Wear
-feature backlog: round-bezel cards, colour-gauge Monitor with GPU
-stats, and tap-to-reply voice flow on Sessions. Parity itself stays
-closed — those rows aren't in the PWA matrix, they're Wear-only work
-tracked outside this audit. See §5 "Closed — by release" for the
-per-version change log.
+| Severity | Originally identified | Status |
+|---|---|---|
+| **P0** — user-flagged, app broken | 3 | 3 ✅ |
+| **P1** — user-flagged, still broken on 0.34.6 | 5 | 5 ✅ |
+| **P2** — structural parity | 7 | 5 ✅ + 2 wontfix |
+| **P3** — polish / visual fidelity | 8 | 8 ✅ (final 2 closed in v0.36.0 / v0.36.1) |
+| WONTFIX / non-gap / upstream-tracked | 12 | — |
+
+### Post-milestone catch-up (v0.35.7 → v0.39.1, all 2026-04-28)
+
+The PWA shipped `v5.1.0 → v5.27.0` between the parity-milestone
+release and 2026-04-28. The mobile companion absorbed every
+operator-facing change in twelve releases:
+
+| GH issue | Closed in |
+|---|---|
+| [#2](https://github.com/dmz006/datawatch-app/issues/2) Federated peers card | v0.36.0 |
+| [#3](https://github.com/dmz006/datawatch-app/issues/3) Cluster nodes card | v0.36.0 |
+| [#4](https://github.com/dmz006/datawatch-app/issues/4) eBPF status badge | v0.36.0 |
+| [#5](https://github.com/dmz006/datawatch-app/issues/5) Native plugins display | v0.36.0 |
+| [#6](https://github.com/dmz006/datawatch-app/issues/6) Agents filter pill | v0.36.0 |
+| [#7](https://github.com/dmz006/datawatch-app/issues/7) Orchestrator observer_summary | v0.39.0 |
+| [#8](https://github.com/dmz006/datawatch-app/issues/8) Drop terminal toolbar toggle | v0.35.7 |
+| [#9](https://github.com/dmz006/datawatch-app/issues/9) v5.1.0–v5.2.0 alignment | v0.35.7 |
+| [#10](https://github.com/dmz006/datawatch-app/issues/10) v5.3.0+ catch-up umbrella | v0.35.7 → v0.39.1 (full sweep) |
+| [#11](https://github.com/dmz006/datawatch-app/issues/11) New PRD unified Profile | v0.38.0 |
+| [#12](https://github.com/dmz006/datawatch-app/issues/12) Story-level review + edit | v0.38.1 |
+| [#13](https://github.com/dmz006/datawatch-app/issues/13) PRD list FAB + filter | v0.38.1 |
+| [#14](https://github.com/dmz006/datawatch-app/issues/14) Picker mkdir | v0.36.1 |
+| [#15](https://github.com/dmz006/datawatch-app/issues/15) Response capture filter | v0.36.1 |
+| [#16](https://github.com/dmz006/datawatch-app/issues/16) Input Required banner | v0.35.7 |
+| [#17](https://github.com/dmz006/datawatch-app/issues/17) /diagrams.html viewer | N/A (no mobile doc viewer) |
+| [#18](https://github.com/dmz006/datawatch-app/issues/18) Per-story approval | v0.38.1 |
+| [#19](https://github.com/dmz006/datawatch-app/issues/19) File association | v0.38.1 |
+| [#20](https://github.com/dmz006/datawatch-app/issues/20) New Session unified Profile | v0.39.1 |
+| [#21](https://github.com/dmz006/datawatch-app/issues/21) Mempalace surfaces | v0.37.0 |
+
+**Wear / Auto** post-milestone work (v0.35.3 → v0.35.10): round-bezel
+cards, colour-gauge Monitor with GPU, tap-to-reply Sessions popup
+with phone-relayed Whisper voice, session-detail layout rebuild,
+force-refresh on detail open, connection-resilience pulse +
+ON_RESUME observer.
 
 **Upstream issues filed against `dmz006/datawatch`** (per the bidirectional parity rule):
-- [#21](https://github.com/dmz006/datawatch/issues/21) — PWA missing voice-input UI for `/api/voice/transcribe` (Android has it end-to-end).
-- [#22](https://github.com/dmz006/datawatch/issues/22) — PWA migrate New bottom-nav tab → FAB + full-screen create, to match Android.
-- [#23](https://github.com/dmz006/datawatch/issues/23) — PWA Sessions list — mirror Android v0.35.3 layout (inline filter toggle, reachability dot right-side, FAB lower).
-- [#24](https://github.com/dmz006/datawatch/issues/24) — PWA terminal toolbar collapse toggle on session-info-bar (match Android v0.35.6).
+- [#21](https://github.com/dmz006/datawatch/issues/21) — PWA missing voice-input UI for `/api/voice/transcribe`.
+- [#22](https://github.com/dmz006/datawatch/issues/22) — PWA migrate New bottom-nav tab → FAB + full-screen create.
+- [#23](https://github.com/dmz006/datawatch/issues/23) — PWA Sessions list layout mirror.
+- [#24](https://github.com/dmz006/datawatch/issues/24) — closed as superseded (PWA v5.1.0 dropped its own toggle).
 
 ---
 
-## 2. Remaining (P3, opportunistic)
+## 2. Remaining
 
-These are not blocking parity and ship when convenient. None are user-reported defects.
+**None — every backlog row from both the original 2026-04-23 audit
+and the v5.1.0 → v5.27.0 PWA catch-up is closed as of v0.39.1.**
 
-| ID | Title | Owner file | Notes |
-|---|---|---|---|
-| G14 | Schedule-input popup field alignment vs PWA | `SessionDetailScreen.kt` `ScheduleDialog` | Verify task seed / cron preset / enabled toggle ordering matches PWA. Low-impact. |
-| G27 | Plugins card on Monitor tab | new `PluginsCard.kt` + `/api/plugins` transport | Operator-level feature; defer until a user asks for it. |
-
-**Closed P3 rows** (verified 2026-04-24 during v0.35.5 backlog sweep —
-were already implemented in `TerminalToolbar.kt:72-110` when the
-original audit was written but the audit inherited a stale row):
-
-- ✅ G15 — Terminal toolbar A+ / A− font-size buttons (`TerminalToolbar.kt:72-91`).
-- ✅ G16 — Terminal toolbar "Fit to width" button (`TerminalToolbar.kt:96`).
-- ✅ G17 — Terminal toolbar "Scroll mode" toggle + navigation strip
-  (`TerminalToolbar.kt:99-163`, PgUp / PgDn / ↑ / ↓ / ESC).
-
-Any new gap surfaced during implementation or review gets added here with the same schema.
+The next sprint is driven by user requests or new server features
+rather than a backlog walk. New parity gaps surfaced from this
+point on get a fresh audit doc rather than amending this one.
 
 ---
 
@@ -218,7 +244,7 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | State-aware popup labels | "Listening…" (red) while recording, "…transcribing" while waiting on phone, transcript text once Whisper replies. |
 | `RecognizerIntent` replaced with phone-relayed Whisper | New `WearVoiceRecorder` (mirror of phone's `VoiceRecorder`) records m4a/AAC. Watch ships bytes via MessageClient `/datawatch/audio` (`sessionId\n<bytes>`). Phone's `WearSyncService.forwardWatchAudio` resolves session profile + posts to `/api/voice/transcribe`, replies on `/datawatch/transcript`. Watch listener re-uses existing `/datawatch/reply` for the send_input forward once user confirms. |
 
-### v0.35.9 — 2026-04-28 · Session detail layout rebuild (current)
+### v0.35.9 — 2026-04-28 · Session detail layout rebuild
 
 | What | Mechanism |
 |---|---|
@@ -226,6 +252,44 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Unified quick-actions strip | New `Row` above `ReplyComposer`: Last-Response (`Description`) + Saved-Commands (`Keyboard`) + arrow-key chips (`↑ ↓ ← →`). Replaces both the tmux-arrow `LazyRow` and the under-mic Saved-Commands stack. |
 | Composer reordered | Send → Schedule → Mic. Saved-Commands removed from composer (now on quick-actions row). PWA order. |
 | Last Response icon consistency | `Icons.Filled.Description` on both `SessionInfoBar` `💾 Response` button and the new quick-actions row. Single canonical glyph. |
+
+### v0.35.10 — 2026-04-28 · Session detail force-refresh on open
+
+| What | Mechanism |
+|---|---|
+| `SessionDetailViewModel.init` calls `refreshFromServer()` immediately after starting the WS stream so the screen never displays the 5-second-stale list cache. | (resilience) |
+
+### v0.36.0 — 2026-04-28 · Federated monitoring suite
+
+Closes [#2](https://github.com/dmz006/datawatch-app/issues/2)–[#6](https://github.com/dmz006/datawatch-app/issues/6) (PWA v4.4.0+ / S13 federation surfaces). Four new Settings → Monitor cards + 3 transport endpoints; each card self-hides when its endpoint returns nothing.
+
+### v0.36.1 — 2026-04-28 · Picker mkdir + response-noise filter
+
+Closes [#14](https://github.com/dmz006/datawatch-app/issues/14) (`FilePickerDialog` "+ New folder" + `TransportClient.mkdir()`) and [#15](https://github.com/dmz006/datawatch-app/issues/15) (new shared `ResponseNoiseFilter` strips TUI noise from `LastResponseSheet`; full unit-test coverage).
+
+### v0.36.2 — 2026-04-28 · Connection resilience completions
+
+Reachability dot pulses while probing (1.0 ↔ 1.4 on 900 ms reverse loop). `AppRoot` registers `ON_RESUME` lifecycle observer that pings every enabled profile on screen-unlock so the dot reflects current state immediately instead of waiting for the next 5-second poll.
+
+### v0.37.0 — 2026-04-28 · Mempalace surfaces
+
+Closes [#21](https://github.com/dmz006/datawatch-app/issues/21). Settings → Monitor "Mempalace" card with Sweep stale (older-than + dry-run), Spellcheck (Levenshtein), Extract facts (SVO triples). New `memoryPin / memorySweepStale / memorySpellcheck / memoryExtractFacts / memoryWakeup` transport methods.
+
+### v0.38.0 — 2026-04-28 · Autonomous tab foundation
+
+Closes [#11](https://github.com/dmz006/datawatch-app/issues/11). New "PRDs" bottom-nav tab; `AutonomousScreen` lists PRDs from `/api/autonomous/prds`; `NewPrdDialog` carries the unified Profile dropdown (`__dir__` sentinel + project profiles) + Cluster sub-dropdown.
+
+### v0.38.1 — 2026-04-28 · Autonomous tab features
+
+Closes [#12](https://github.com/dmz006/datawatch-app/issues/12), [#13](https://github.com/dmz006/datawatch-app/issues/13), [#18](https://github.com/dmz006/datawatch-app/issues/18), [#19](https://github.com/dmz006/datawatch-app/issues/19). PRD list filter pill row behind 🔍 toggle; `PrdDetailDialog` with story description rendering, ✎ edit modals, Approve/Reject buttons, file-pill rendering + ✎ files edit modal. New `editStory / editFiles` transport.
+
+### v0.39.0 — 2026-04-28 · Orchestrator PRD-DAG graph + observer_summary
+
+Closes [#7](https://github.com/dmz006/datawatch-app/issues/7). `OrchestratorGraphDialog` reachable from `PrdDetailDialog` via 📊 Graph button; per-node `observer_summary` badge (CPU/RSS/envelope) + outgoing edges as `→ targetId (kind)` lines.
+
+### v0.39.1 — 2026-04-28 · New Session unified Profile + cluster routing (current)
+
+Closes [#20](https://github.com/dmz006/datawatch-app/issues/20). Cluster sub-dropdown on `NewSessionScreen` when a project profile is selected. Start button branches: profile → `POST /api/agents` (new `startAgent` transport); no profile → historic `POST /api/sessions/start`.
 
 ---
 

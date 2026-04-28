@@ -537,3 +537,22 @@ public data class OrchestratorEdgeDto(
     val to: String = "",
     val kind: String? = null,
 )
+
+// ============================================================
+// v0.39.1 — F10 ephemeral-agent session start (#20 / PWA v5.26.63)
+// ============================================================
+
+@Serializable
+public data class StartAgentRequestDto(
+    val task: String,
+    @SerialName("project_profile") val projectProfile: String,
+    @SerialName("cluster_profile") val clusterProfile: String? = null,
+    val branch: String? = null,
+    val name: String? = null,
+)
+
+@Serializable
+public data class StartAgentResponseDto(
+    @SerialName("session_id") val sessionId: String? = null,
+    val id: String? = null,
+)

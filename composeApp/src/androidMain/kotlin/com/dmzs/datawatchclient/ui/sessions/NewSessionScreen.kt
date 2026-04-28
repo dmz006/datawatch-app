@@ -161,9 +161,16 @@ public fun NewSessionScreen(
         mutableStateOf<List<Pair<String, String>>>(emptyList())
     }
     var pickedServerProfile by remember { mutableStateOf<String?>(null) }
+    // v0.39.1 (#20) — cluster sub-dropdown opens when a project
+    // profile is selected. Empty string = "Local service instance"
+    // (daemon-side clone path), matching PWA v5.26.34.
+    var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pickedClusterProfile by remember { mutableStateOf("") }
     LaunchedEffect(selectedProfileId) {
         serverProfiles = emptyList()
+        clusterProfiles = emptyList()
         pickedServerProfile = null
+        pickedClusterProfile = ""
         val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
         ServiceLocator.transportFor(profile).listProfiles().onSuccess { map ->
             serverProfiles =
@@ -177,6 +184,14 @@ public fun NewSessionScreen(
                             )?.content ?: "?"
                         name to backend
                     }
+        }
+        // Load cluster profiles too — only shown once the user picks a
+        // project profile (PWA hides until then).
+        ServiceLocator.transportFor(profile).listKindProfiles("cluster").onSuccess { list ->
+            clusterProfiles =
+                list.mapNotNull { obj ->
+                    (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                }
         }
     }
 
@@ -315,8 +330,14 @@ public fun NewSessionScreen(
 
             // Profile picker — maps to /api/profiles. Optional; users
             // can start "Default (no profile)" and the parent picks its
-            // own backend/profile. When set, profile name is sent on
-            // POST /api/sessions/start.
+            // own backend/profile.
+            //
+            // v0.39.1 (#20 / PWA v5.26.63 routing): when set, the
+            // session goes through `POST /api/agents` with the
+            // project_profile + cluster_profile body — the F10
+            // image_pair carries the worker LLM. When unset, the
+            // session falls back to `POST /api/sessions/start` with
+            // working dir + backend (the historic mobile path).
             if (serverProfiles.isNotEmpty()) {
                 Text(
                     "Profile",
@@ -329,6 +350,59 @@ public fun NewSessionScreen(
                     selected = pickedServerProfile,
                     onSelect = { pickedServerProfile = it },
                 )
+            }
+
+            // Cluster sub-dropdown — only when a project profile is
+            // selected. First option is the "local service instance"
+            // sentinel (empty string), remaining are configured cluster
+            // profiles. Mirrors PWA v5.26.34.
+            if (pickedServerProfile != null) {
+                Text(
+                    "Cluster",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                var clusterMenuOpen by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value =
+                            pickedClusterProfile.ifEmpty {
+                                "— Local service instance (daemon-side) —"
+                            },
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            TextButton(
+                                onClick = { clusterMenuOpen = !clusterMenuOpen },
+                            ) { Text("▾") }
+                        },
+                    )
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = clusterMenuOpen,
+                        onDismissRequest = { clusterMenuOpen = false },
+                    ) {
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = {
+                                Text("— Local service instance (daemon-side) —")
+                            },
+                            onClick = {
+                                pickedClusterProfile = ""
+                                clusterMenuOpen = false
+                            },
+                        )
+                        clusterProfiles.forEach { c ->
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(c) },
+                                onClick = {
+                                    pickedClusterProfile = c
+                                    clusterMenuOpen = false
+                                },
+                            )
+                        }
+                    }
+                }
             }
 
             // Model picker — only visible for ollama / openwebui. The
@@ -506,28 +580,48 @@ public fun NewSessionScreen(
                                                 "Starting with server's current backend."
                                     }
                                 }
-                                transport
-                                    .startSession(
-                                        task = task.trim(),
-                                        workingDir = workingDir.trim().ifBlank { null },
-                                        profileName = pickedServerProfile,
-                                        name = sessionName.trim().ifBlank { null },
-                                        backend = pickedBackend,
-                                        resumeId = resumeId,
-                                        autoGitInit = autoGitInit,
-                                        autoGitCommit = autoGitCommit,
-                                    )
-                                    .fold(
-                                        onSuccess = { sessionId ->
-                                            submitting = false
-                                            onStarted(sessionId)
-                                        },
-                                        onFailure = { err ->
-                                            submitting = false
-                                            banner = "Start failed — " +
-                                                (err.message ?: err::class.simpleName)
-                                        },
-                                    )
+                                // v0.39.1 (#20) — branch the spawn
+                                // path. Project profile selected →
+                                // POST /api/agents with the F10 body.
+                                // No profile (project-directory mode)
+                                // → keep the historic POST
+                                // /api/sessions/start with workingDir
+                                // + backend.
+                                val pickedProfile = pickedServerProfile
+                                val outcome =
+                                    if (pickedProfile != null) {
+                                        transport.startAgent(
+                                            com.dmzs.datawatchclient.transport.dto.StartAgentRequestDto(
+                                                task = task.trim(),
+                                                projectProfile = pickedProfile,
+                                                clusterProfile =
+                                                    pickedClusterProfile.takeIf { it.isNotBlank() },
+                                                name = sessionName.trim().ifBlank { null },
+                                            ),
+                                        )
+                                    } else {
+                                        transport.startSession(
+                                            task = task.trim(),
+                                            workingDir = workingDir.trim().ifBlank { null },
+                                            profileName = null,
+                                            name = sessionName.trim().ifBlank { null },
+                                            backend = pickedBackend,
+                                            resumeId = resumeId,
+                                            autoGitInit = autoGitInit,
+                                            autoGitCommit = autoGitCommit,
+                                        )
+                                    }
+                                outcome.fold(
+                                    onSuccess = { sessionId ->
+                                        submitting = false
+                                        onStarted(sessionId)
+                                    },
+                                    onFailure = { err ->
+                                        submitting = false
+                                        banner = "Start failed — " +
+                                            (err.message ?: err::class.simpleName)
+                                    },
+                                )
                             }
                         },
                         enabled = !submitting && task.isNotBlank() && selectedProfileId != null,
