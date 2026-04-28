@@ -126,7 +126,10 @@ private fun KindBadge(kind: String) {
     }
 }
 
-public class PluginsCardViewModel : ViewModel() {
+public class PluginsCardViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(
         val loading: Boolean = true,
         val plugins: List<PluginDto> = emptyList(),
@@ -138,11 +141,8 @@ public class PluginsCardViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@launch
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).listPlugins().fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.listPlugins().fold(
                 onSuccess = { dto ->
                     _state.value = _state.value.copy(
                         loading = false,

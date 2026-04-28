@@ -100,18 +100,18 @@ private fun EBpfFlag(label: String, ok: Boolean) {
     }
 }
 
-public class EBpfStatusViewModel : ViewModel() {
+public class EBpfStatusViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(val ebpf: ObserverEbpfDto? = null)
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
     public fun refresh() {
         viewModelScope.launch {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@launch
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).observerStats().fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.observerStats().fold(
                 onSuccess = { dto ->
                     _state.value = UiState(ebpf = dto.host?.ebpf)
                 },

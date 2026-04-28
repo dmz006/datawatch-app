@@ -155,7 +155,10 @@ private fun nodeStatusColor(status: String): Color =
         else -> Color(0xFF94A3B8)
     }
 
-public class OrchestratorGraphViewModel : ViewModel() {
+public class OrchestratorGraphViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(
         val graph: OrchestratorGraphDto? = null,
         val banner: String? = null,
@@ -165,11 +168,8 @@ public class OrchestratorGraphViewModel : ViewModel() {
 
     public fun refresh(id: String) {
         viewModelScope.launch {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@launch
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).orchestratorGraph(id).fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.orchestratorGraph(id).fold(
                 onSuccess = { dto -> _state.value = UiState(graph = dto) },
                 onFailure = { err ->
                     _state.value = UiState(

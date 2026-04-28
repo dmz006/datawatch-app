@@ -8,6 +8,48 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-04-28 (VM unit tests via ProfileResolver shim)
+
+### Added
+
+- **`ProfileResolver` fun-interface** in `composeApp/.../ui/common/`.
+  Wraps the `ServiceLocator.activeServerStore + transportFor` pair so
+  the v0.36+ monitoring + autonomous + mempalace ViewModels can
+  resolve their (profile, transport) tuple through a single
+  injectable seam.
+- **`ProfileResolver.Default`** — production singleton; reads
+  `ServiceLocator` exactly as the VMs did before. Constructor
+  defaults preserve every existing call-site.
+- **VM unit tests** in `composeApp/src/androidUnitTest/`:
+  - `AutonomousViewModelTest` — 8 tests covering `refresh` (success
+    / failure / no-server), `create`, `approve`, `reject` (verifies
+    the reason payload), `editStory` (verifies blank-stripped fields
+    pass through as null), `editFiles`.
+  - `MonitoringViewModelTests` — 12 tests covering
+    `FederatedPeersViewModel` (load + filter + failure-as-empty),
+    `ClusterNodesViewModel` (cluster.nodes mapping + empty when
+    no cluster block), `EBpfStatusViewModel` (host.ebpf surfaces
+    + null on failure), `PluginsCardViewModel` (subprocess vs
+    native split), `OrchestratorGraphViewModel` (graph load + banner
+    on failure), `MempalaceActionsViewModel` (sweep / spellcheck /
+    extract result wiring).
+
+### Changed
+
+- All 7 new VMs (`AutonomousViewModel`, `OrchestratorGraphViewModel`,
+  `MempalaceActionsViewModel`, `FederatedPeersViewModel`,
+  `ClusterNodesViewModel`, `EBpfStatusViewModel`,
+  `PluginsCardViewModel`) take a `ProfileResolver` constructor
+  parameter, defaulting to `ProfileResolver.Default`. No behaviour
+  change in production; tests pass a mockk-backed fake.
+
+### Build
+
+- `composeApp/build.gradle.kts` `androidUnitTest` source set adds
+  `io.mockk:mockk:1.13.13` + `kotlinx-coroutines-test:1.9.0` to back
+  the VM tests. Avoids hand-implementing the 60-method
+  `TransportClient` interface.
+
 ## [0.40.2] — 2026-04-28 (DTO round-trip test coverage)
 
 ### Added
