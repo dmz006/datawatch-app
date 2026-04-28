@@ -24,6 +24,12 @@ kotlin {
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // v0.41.0 — mockk for VM-level unit tests against a
+                // mocked TransportClient. Avoids hand-implementing
+                // every method of a 60-method interface that mostly
+                // doesn't matter for the test under run.
+                implementation("io.mockk:mockk:1.13.13")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
             }
         }
         val androidMain by getting {

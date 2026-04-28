@@ -192,7 +192,10 @@ private fun healthDotColor(lastPushAt: String?): Color {
     }
 }
 
-public class FederatedPeersViewModel : ViewModel() {
+public class FederatedPeersViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public enum class Filter { All, Standalone, Cluster, Agent }
 
     public data class UiState(
@@ -207,11 +210,8 @@ public class FederatedPeersViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@launch
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).observerPeers().fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.observerPeers().fold(
                 onSuccess = { dto ->
                     _state.value = _state.value.copy(
                         loading = false,

@@ -216,7 +216,10 @@ private fun ExtractFactsRow(
     }
 }
 
-public class MempalaceActionsViewModel : ViewModel() {
+public class MempalaceActionsViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(
         val sweepDays: String = "30",
         val sweepDryRun: Boolean = true,
@@ -247,9 +250,9 @@ public class MempalaceActionsViewModel : ViewModel() {
     public fun runSweep() {
         val days = _state.value.sweepDays.toIntOrNull() ?: return
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
+            val (_, transport) = resolver.resolve() ?: return@launch
             _state.value = _state.value.copy(busy = true, banner = null)
-            ServiceLocator.transportFor(profile).memorySweepStale(
+            transport.memorySweepStale(
                 olderThanDays = days,
                 dryRun = _state.value.sweepDryRun,
             ).fold(
@@ -270,10 +273,9 @@ public class MempalaceActionsViewModel : ViewModel() {
         val text = _state.value.spellcheckText.trim()
         if (text.isEmpty()) return
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
+            val (_, transport) = resolver.resolve() ?: return@launch
             _state.value = _state.value.copy(busy = true, banner = null)
-            ServiceLocator.transportFor(profile)
-                .memorySpellcheck(text = text, extraWords = emptyList()).fold(
+            transport.memorySpellcheck(text = text, extraWords = emptyList()).fold(
                     onSuccess = { sug ->
                         _state.value = _state.value.copy(busy = false, spellcheckResult = sug)
                     },
@@ -291,9 +293,9 @@ public class MempalaceActionsViewModel : ViewModel() {
         val text = _state.value.factsText.trim()
         if (text.isEmpty()) return
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
+            val (_, transport) = resolver.resolve() ?: return@launch
             _state.value = _state.value.copy(busy = true, banner = null)
-            ServiceLocator.transportFor(profile).memoryExtractFacts(text = text).fold(
+            transport.memoryExtractFacts(text = text).fold(
                 onSuccess = { triples ->
                     _state.value = _state.value.copy(busy = false, factsResult = triples)
                 },
@@ -305,11 +307,5 @@ public class MempalaceActionsViewModel : ViewModel() {
                 },
             )
         }
-    }
-
-    private suspend fun activeProfile(): com.dmzs.datawatchclient.domain.ServerProfile? {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return null
-        return ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled }
     }
 }

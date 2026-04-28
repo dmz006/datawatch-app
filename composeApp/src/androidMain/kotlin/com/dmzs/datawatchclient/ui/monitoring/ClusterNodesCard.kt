@@ -140,7 +140,10 @@ private fun UsageBar(label: String, pct: Double) {
     }
 }
 
-public class ClusterNodesViewModel : ViewModel() {
+public class ClusterNodesViewModel(
+    private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
+        com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(
         val nodes: List<ObserverClusterNodeDto> = emptyList(),
         val error: String? = null,
@@ -150,11 +153,8 @@ public class ClusterNodesViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@launch
-            val profile =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-            ServiceLocator.transportFor(profile).observerStats().fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.observerStats().fold(
                 onSuccess = { dto ->
                     _state.value = _state.value.copy(
                         nodes = dto.cluster?.nodes.orEmpty(),

@@ -2,19 +2,20 @@ package com.dmzs.datawatchclient.ui.autonomous
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
  * Backs [AutonomousScreen]. Reads /api/autonomous/prds against the
  * active server profile.
  */
-public class AutonomousViewModel : ViewModel() {
+public class AutonomousViewModel(
+    private val resolver: ProfileResolver = ProfileResolver.Default,
+) : ViewModel() {
     public data class UiState(
         val loading: Boolean = true,
         val prds: List<PrdDto> = emptyList(),
@@ -26,11 +27,11 @@ public class AutonomousViewModel : ViewModel() {
 
     public fun refresh() {
         viewModelScope.launch {
-            val profile = activeProfile() ?: run {
+            val (_, transport) = resolver.resolve() ?: run {
                 _state.value = UiState(loading = false, banner = "No enabled server.")
                 return@launch
             }
-            ServiceLocator.transportFor(profile).listPrds().fold(
+            transport.listPrds().fold(
                 onSuccess = { dto ->
                     _state.value = UiState(loading = false, prds = dto.prds)
                 },
@@ -47,8 +48,8 @@ public class AutonomousViewModel : ViewModel() {
 
     public fun create(req: NewPrdRequestDto) {
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
-            ServiceLocator.transportFor(profile).createPrd(req).fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.createPrd(req).fold(
                 onSuccess = { _ -> refresh() },
                 onFailure = { err ->
                     _state.value = _state.value.copy(
@@ -61,8 +62,8 @@ public class AutonomousViewModel : ViewModel() {
 
     public fun approve(prdId: String) {
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
-            ServiceLocator.transportFor(profile).prdAction(prdId, "approve").fold(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.prdAction(prdId, "approve").fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _state.value = _state.value.copy(
@@ -75,12 +76,12 @@ public class AutonomousViewModel : ViewModel() {
 
     public fun reject(prdId: String, reason: String) {
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
+            val (_, transport) = resolver.resolve() ?: return@launch
             val body =
                 kotlinx.serialization.json.buildJsonObject {
                     put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
                 }
-            ServiceLocator.transportFor(profile).prdAction(prdId, "reject", body).fold(
+            transport.prdAction(prdId, "reject", body).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _state.value = _state.value.copy(
@@ -98,8 +99,8 @@ public class AutonomousViewModel : ViewModel() {
         newDescription: String?,
     ) {
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
-            ServiceLocator.transportFor(profile).editStory(
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.editStory(
                 prdId = prdId,
                 storyId = storyId,
                 newTitle = newTitle?.takeIf { it.isNotBlank() },
@@ -121,22 +122,15 @@ public class AutonomousViewModel : ViewModel() {
         files: List<String>,
     ) {
         viewModelScope.launch {
-            val profile = activeProfile() ?: return@launch
-            ServiceLocator.transportFor(profile)
-                .editFiles(prdId = prdId, storyId = storyId, files = files).fold(
-                    onSuccess = { refresh() },
-                    onFailure = { err ->
-                        _state.value = _state.value.copy(
-                            banner = "Edit files failed — ${err.message ?: err::class.simpleName}",
-                        )
-                    },
-                )
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.editFiles(prdId = prdId, storyId = storyId, files = files).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        banner = "Edit files failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
         }
-    }
-
-    private suspend fun activeProfile(): com.dmzs.datawatchclient.domain.ServerProfile? {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return null
-        return ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled }
     }
 }
