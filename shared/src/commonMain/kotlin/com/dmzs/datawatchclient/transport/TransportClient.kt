@@ -401,6 +401,17 @@ public interface TransportClient {
     ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto>
 
     /**
+     * POST /api/agents — start an F10 ephemeral-agent session.
+     * Distinct from [startSession] (`POST /api/sessions/start`) in
+     * that the worker LLM is carried by the project profile's
+     * `image_pair` rather than a flat `backend` field. Issue #20
+     * (PWA v5.26.63 unified-Profile dropdown routing).
+     */
+    public suspend fun startAgent(
+        request: com.dmzs.datawatchclient.transport.dto.StartAgentRequestDto,
+    ): Result<String>
+
+    /**
      * GET /api/memory/export — dump of every memory as a single
      * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes
      * so the UI can hand them off to a SAF `ACTION_CREATE_DOCUMENT`
