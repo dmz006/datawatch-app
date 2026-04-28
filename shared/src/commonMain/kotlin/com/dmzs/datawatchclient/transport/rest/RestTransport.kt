@@ -899,6 +899,20 @@ public class RestTransport(
             dto.toDomain()
         }
 
+    override suspend fun mkdir(path: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/files") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    com.dmzs.datawatchclient.transport.dto.FilesMkdirDto(
+                        path = path,
+                        action = "mkdir",
+                    ),
+                )
+            }.body<Unit>()
+        }
+
     override suspend fun listCommands(): Result<List<SavedCommand>> =
         request {
             val dto: List<SavedCommandDto> =

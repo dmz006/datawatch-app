@@ -508,6 +508,13 @@ public interface TransportClient {
      */
     public suspend fun browseFiles(path: String? = null): Result<FileList>
 
+    /**
+     * POST /api/files with `{path, action: "mkdir"}` — create a new
+     * folder server-side from inside the file picker. Mirrors PWA
+     * v5.26.46's "+ New folder" affordance (issue #14).
+     */
+    public suspend fun mkdir(path: String): Result<Unit>
+
     /** GET /api/commands — list saved command snippets. */
     public suspend fun listCommands(): Result<List<SavedCommand>>
 

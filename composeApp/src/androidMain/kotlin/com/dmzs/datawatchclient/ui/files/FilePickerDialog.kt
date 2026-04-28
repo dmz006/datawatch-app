@@ -13,18 +13,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -76,6 +82,63 @@ public fun FilePickerDialog(
                             modifier = Modifier.padding(12.dp),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+
+                // v0.36.1 (issue #14) — "+ New folder" affordance
+                // mirrors PWA v5.26.46. Inline form so user doesn't
+                // lose their place in the dir tree.
+                var newFolderOpen by remember { mutableStateOf(false) }
+                var newFolderText by remember { mutableStateOf("") }
+                if (newFolderOpen) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            value = newFolderText,
+                            onValueChange = { newFolderText = it },
+                            placeholder = { Text("Folder name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().padding(end = 4.dp),
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            onClick = {
+                                newFolderText = ""
+                                newFolderOpen = false
+                            },
+                        ) { Text("Cancel") }
+                        TextButton(
+                            onClick = {
+                                vm.newFolder(newFolderText)
+                                newFolderText = ""
+                                newFolderOpen = false
+                            },
+                            enabled = newFolderText.isNotBlank(),
+                        ) { Text("Create") }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { newFolderOpen = true }) {
+                            Icon(
+                                Icons.Filled.CreateNewFolder,
+                                contentDescription = "New folder",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Text(
+                            "New folder",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
