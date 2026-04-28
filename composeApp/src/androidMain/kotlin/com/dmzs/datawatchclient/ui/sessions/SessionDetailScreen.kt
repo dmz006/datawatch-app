@@ -314,28 +314,14 @@ public fun SessionDetailScreen(
                     .padding(padding)
                     .fillMaxSize(),
         ) {
-            // PWA-style output-surface tabs: tmux (terminal) / chat.
-            // Replaces the v0.14 icon-toggle with proper tabs so the
-            // active surface is always visible at a glance.
-            androidx.compose.material3.TabRow(
-                selectedTabIndex = if (chatMode) 1 else 0,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                androidx.compose.material3.Tab(
-                    selected = !chatMode,
-                    onClick = { chatMode = false },
-                    text = { Text("tmux") },
-                )
-                androidx.compose.material3.Tab(
-                    selected = chatMode,
-                    onClick = { chatMode = true },
-                    text = { Text("channel") },
-                )
-            }
-            // v0.33.19 — PWA-style `.session-info-bar` row matching
-            // `app.js:1672-1680`: backend chip, mode chip, state pill
-            // (clickable to override), Stop / Restart / Delete action,
-            // Timeline button. Mirrors PWA's nicely-presented badges.
+            // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
+            // (user direction 2026-04-28). PWA carries the chips at
+            // the top of the session-info-bar; mobile aligning here
+            // makes the most-used actions (Stop, Timeline, state
+            // override) reachable without scrolling past the tabs.
+            // The Last Response button stays here on the badge bar
+            // — Description-glyph is the single canonical icon used
+            // across SessionInfoBar + the quick-actions row below.
             var responseOpen by remember { mutableStateOf(false) }
             val hasResponse = !state.session?.lastResponse.isNullOrBlank()
             SessionInfoBar(
@@ -354,11 +340,6 @@ public fun SessionDetailScreen(
                     stateMenuOpen = false
                     vm.overrideState(s)
                 },
-                // User 2026-04-24 round 2: Response button belongs on
-                // the badge bar; the composer stack under the mic
-                // carries the Saved Commands button instead. Revert
-                // v0.35.3's move so both actions are one tap from
-                // their natural anchor.
                 hasResponse = hasResponse,
                 onResponse = {
                     // v0.35.8 — force a server refetch before opening
@@ -369,6 +350,22 @@ public fun SessionDetailScreen(
                     responseOpen = true
                 },
             )
+            // PWA-style output-surface tabs: tmux (terminal) / chat.
+            androidx.compose.material3.TabRow(
+                selectedTabIndex = if (chatMode) 1 else 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                androidx.compose.material3.Tab(
+                    selected = !chatMode,
+                    onClick = { chatMode = false },
+                    text = { Text("tmux") },
+                )
+                androidx.compose.material3.Tab(
+                    selected = chatMode,
+                    onClick = { chatMode = true },
+                    text = { Text("channel") },
+                )
+            }
             if (responseOpen) {
                 LastResponseSheet(
                     response = state.session?.lastResponse.orEmpty(),
@@ -492,6 +489,11 @@ public fun SessionDetailScreen(
                 onSchedule = { scheduleOpen = true },
                 waitingInput = state.session?.state == SessionState.Waiting,
                 onQuickReply = vm::sendQuickReply,
+                onResponse = {
+                    vm.refreshFromServer()
+                    responseOpen = true
+                },
+                hasResponse = hasResponse,
                 onSavedCommands = { savedCmdsOpen = true },
             )
             if (savedCmdsOpen) {
@@ -1586,9 +1588,11 @@ private fun ReplyComposer(
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
     onQuickReply: (String) -> Unit = {},
-    // v0.35.6: Saved Commands sheet opens from under the mic; the
-    // Response badge moved back to SessionInfoBar (user reversed
-    // v0.35.3's placement).
+    // v0.35.9: Last-Response + Saved-Commands moved to a unified
+    // quick-actions strip ABOVE the composer (rendered by the parent
+    // detail screen). The composer no longer carries either button.
+    onResponse: () -> Unit = {},
+    hasResponse: Boolean = false,
     onSavedCommands: () -> Unit = {},
 ) {
     HorizontalDivider()
@@ -1654,24 +1658,50 @@ private fun ReplyComposer(
         }
     }
 
-    // v0.35.7 — tmux arrow-key row mirrors PWA v5.2.0
-    // (saved-commands quick row neighbour). ANSI escape sequences
-    // sent via the WS hub `send_input` envelope, same path the
-    // QuickCommandsSheet keys ride. Always rendered when not in
-    // chat mode so the user can drive a TUI menu without hunting
-    // for the saved-commands sheet.
-    androidx.compose.foundation.lazy.LazyRow(
+    // v0.35.9 — unified quick-actions row above the composer.
+    // PWA-aligned per user direction 2026-04-28: the Last Response
+    // viewer + Saved Commands sheet + tmux arrow keys all live on
+    // one strip so the under-mic Saved-Commands button can go away
+    // and the composer row holds only typing/sending controls.
+    // Last Response anchors left, Saved Commands next, then arrow
+    // keys. Same `Description` icon as the SessionInfoBar's 1F4BE
+    // Response button — single canonical glyph for the action.
+    Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp),
     ) {
-        items(
-            listOf(
-                "[A" to "↑",
-                "[B" to "↓",
-                "[D" to "←",
-                "[C" to "→",
-            ),
-        ) { (seq, label) ->
+        IconButton(
+            onClick = onResponse,
+            modifier = Modifier.size(36.dp),
+            enabled = !sending,
+        ) {
+            Icon(
+                Icons.Filled.Description,
+                contentDescription = "View last response",
+                tint =
+                    if (hasResponse) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(
+            onClick = onSavedCommands,
+            modifier = Modifier.size(36.dp),
+            enabled = !sending,
+        ) {
+            Icon(
+                Icons.Filled.Keyboard,
+                contentDescription = "Saved commands",
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        // ANSI arrow-key chips — ESC + [A/B/C/D via send_input hub.
+        listOf(
+            "[A" to "↑",
+            "[B" to "↓",
+            "[D" to "←",
+            "[C" to "→",
+        ).forEach { (seq, label) ->
             androidx.compose.material3.AssistChip(
                 onClick = { onQuickReply(seq) },
                 label = {
@@ -1727,7 +1757,29 @@ private fun ReplyComposer(
                     disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
         )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // v0.35.9 — Send first, then Schedule, then Mic (PWA order).
+        // Saved-Commands stack under mic removed; that button now
+        // lives on the unified quick-actions row above the composer.
+        IconButton(onClick = onSend, enabled = !sending && text.isNotBlank()) {
+            if (sending) {
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(8.dp))
+            } else {
+                Icon(
+                    Icons.Filled.Send,
+                    contentDescription = "Send",
+                    tint =
+                        if (text.isNotBlank()) MaterialTheme.colorScheme.primary
+                        else Color.Gray,
+                )
+            }
+        }
+        IconButton(onClick = onSchedule, enabled = !sending) {
+            Icon(
+                Icons.Filled.Schedule,
+                contentDescription = "Schedule reply",
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
         IconButton(
             modifier = Modifier.size(40.dp),
             onClick = {
@@ -1884,38 +1936,6 @@ private fun ReplyComposer(
                         } else {
                             MaterialTheme.colorScheme.primary
                         },
-                )
-            }
-        }
-        IconButton(
-            modifier = Modifier.size(36.dp),
-            onClick = onSavedCommands,
-            enabled = !sending,
-        ) {
-            Icon(
-                Icons.Filled.Keyboard,
-                contentDescription = "Saved commands",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        } // Column (Mic + Saved-Commands stack)
-        // Schedule-as-cron — preserves the typed reply text as the
-        // schedule task, so "draft → schedule" is a single tap.
-        IconButton(onClick = onSchedule, enabled = !sending) {
-            Icon(
-                Icons.Filled.Schedule,
-                contentDescription = "Schedule reply",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        IconButton(onClick = onSend, enabled = !sending && text.isNotBlank()) {
-            if (sending) {
-                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(8.dp))
-            } else {
-                Icon(
-                    Icons.Filled.Send,
-                    contentDescription = "Send",
-                    tint = if (text.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray,
                 )
             }
         }

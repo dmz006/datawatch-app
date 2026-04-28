@@ -209,7 +209,7 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Live `last_response` refetch | `SessionDetailViewModel.refreshFromServer()` — triggers on Response button tap; daemon's `Manager.GetLastResponse` re-captures from live tmux for `running` / `waiting_input`. | [#9](https://github.com/dmz006/datawatch-app/issues/9) BL178 |
 | Input-Required banner refresh on bulk WS | `startStream` now triggers `refreshFromServer()` on every `SessionEvent.StateChange`. | (PWA v5.26.49 mirror — closes the "yellow box doesn't show up after re-enter" complaint) |
 
-### v0.35.8 — 2026-04-28 · Wear voice via phone-relayed Whisper + popup polish (current)
+### v0.35.8 — 2026-04-28 · Wear voice via phone-relayed Whisper + popup polish
 
 | What | Mechanism |
 |---|---|
@@ -217,6 +217,15 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Wear popup mic to right edge, Send to left | `SessionDetailPopup` rebuilt: centre column holds title/state/last-line/transcript; mic anchors `Alignment.CenterEnd`; Send chip `Alignment.CenterStart`. Stop icon `■` replaces 🎤 while recording. |
 | State-aware popup labels | "Listening…" (red) while recording, "…transcribing" while waiting on phone, transcript text once Whisper replies. |
 | `RecognizerIntent` replaced with phone-relayed Whisper | New `WearVoiceRecorder` (mirror of phone's `VoiceRecorder`) records m4a/AAC. Watch ships bytes via MessageClient `/datawatch/audio` (`sessionId\n<bytes>`). Phone's `WearSyncService.forwardWatchAudio` resolves session profile + posts to `/api/voice/transcribe`, replies on `/datawatch/transcript`. Watch listener re-uses existing `/datawatch/reply` for the send_input forward once user confirms. |
+
+### v0.35.9 — 2026-04-28 · Session detail layout rebuild (current)
+
+| What | Mechanism |
+|---|---|
+| Badges row above tabs | `SessionDetailScreen` reorders the `Column`: `SessionInfoBar` first, then `TabRow`. PWA-aligned chip ordering. |
+| Unified quick-actions strip | New `Row` above `ReplyComposer`: Last-Response (`Description`) + Saved-Commands (`Keyboard`) + arrow-key chips (`↑ ↓ ← →`). Replaces both the tmux-arrow `LazyRow` and the under-mic Saved-Commands stack. |
+| Composer reordered | Send → Schedule → Mic. Saved-Commands removed from composer (now on quick-actions row). PWA order. |
+| Last Response icon consistency | `Icons.Filled.Description` on both `SessionInfoBar` `💾 Response` button and the new quick-actions row. Single canonical glyph. |
 
 ---
 

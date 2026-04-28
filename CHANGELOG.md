@@ -8,6 +8,26 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.9] — 2026-04-28 (Session detail layout rebuild)
+
+### Changed
+
+- **Badges row moves above the tmux/channel TabRow.** PWA carries
+  the chips at the top of the session-info-bar; mobile aligns —
+  Stop / Timeline / state-override / Last-Response are reachable
+  without scrolling past the tabs.
+- **Unified quick-actions strip above the composer.** New row
+  carries the Last-Response viewer (`Description` icon) + Saved
+  Commands sheet (`Keyboard` icon) + four ANSI arrow chips
+  (`↑ ↓ ← →`). Replaces both the standalone arrow-key LazyRow
+  *and* the under-mic Saved-Commands stack.
+- **Composer row reordered** to PWA order: text field → **Send** →
+  Schedule → Mic. Saved-Commands button removed from under the mic
+  (now on the quick-actions row above).
+- **Last Response icon is consistent** across surfaces — same
+  `Icons.Filled.Description` glyph on the SessionInfoBar badge
+  bar AND the new quick-actions row.
+
 ## [0.35.8] — 2026-04-28 (Wear voice via phone-relayed Whisper + popup polish)
 
 ### Changed
