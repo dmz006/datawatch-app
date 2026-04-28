@@ -17,9 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -56,20 +60,71 @@ public fun AutonomousScreen(
 ) {
     val state by vm.state.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
+    // v0.38.1 (#13) — filter row hidden behind a magnifier toggle in
+    // the TopAppBar; templates checkbox + status filter inline. Closed
+    // by default, matching PWA v5.26.36-46.
+    var filterOpen by remember { mutableStateOf(false) }
+    var includeTemplates by remember { mutableStateOf(false) }
+    var statusFilter by remember { mutableStateOf<String?>(null) }
+    var openPrdId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { vm.refresh() }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("PRDs") })
+            TopAppBar(
+                title = { Text("PRDs") },
+                actions = {
+                    IconButton(onClick = { filterOpen = !filterOpen }) {
+                        Icon(
+                            if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
+                            contentDescription =
+                                if (filterOpen) "Close filter" else "Filter PRDs",
+                        )
+                    }
+                },
+            )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { newOpen = true }) {
-                Icon(Icons.Filled.Add, contentDescription = "New PRD")
+            // PRDs FAB: hidden when a detail panel is open so the
+            // affordance only appears on the list view (PWA v5.26.36).
+            if (openPrdId == null) {
+                FloatingActionButton(onClick = { newOpen = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = "New PRD")
+                }
             }
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (filterOpen) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    FilterChip(
+                        selected = statusFilter == null,
+                        onClick = { statusFilter = null },
+                        label = { Text("All") },
+                    )
+                    listOf(
+                        "needs_review",
+                        "running",
+                        "complete",
+                        "rejected",
+                    ).forEach { s ->
+                        FilterChip(
+                            selected = statusFilter == s,
+                            onClick = { statusFilter = if (statusFilter == s) null else s },
+                            label = { Text(s.replace('_', ' ')) },
+                        )
+                    }
+                    FilterChip(
+                        selected = includeTemplates,
+                        onClick = { includeTemplates = !includeTemplates },
+                        label = { Text("Templates") },
+                    )
+                }
+            }
             state.banner?.let { banner ->
                 Text(
                     banner,
@@ -78,20 +133,27 @@ public fun AutonomousScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (state.prds.isEmpty() && !state.loading) {
+            val visible =
+                state.prds.filter { prd ->
+                    (includeTemplates || !prd.isTemplate) &&
+                        (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true))
+                }
+            if (visible.isEmpty() && !state.loading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No PRDs yet — tap + to create one.",
+                        "No PRDs match.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
                 LazyColumn {
-                    items(state.prds, key = { it.id }) { prd -> PrdRow(prd) }
+                    items(visible, key = { it.id }) { prd ->
+                        PrdRow(prd, onClick = { openPrdId = prd.id })
+                    }
                 }
             }
         }
@@ -106,14 +168,38 @@ public fun AutonomousScreen(
             },
         )
     }
+    openPrdId?.let { id ->
+        val prd = state.prds.firstOrNull { it.id == id }
+        if (prd != null) {
+            PrdDetailDialog(
+                prd = prd,
+                onDismiss = { openPrdId = null },
+                onApprove = {
+                    vm.approve(id)
+                    openPrdId = null
+                },
+                onReject = { reason ->
+                    vm.reject(id, reason)
+                    openPrdId = null
+                },
+                onEditStory = { storyId, newTitle, newDescription ->
+                    vm.editStory(id, storyId, newTitle, newDescription)
+                },
+                onEditFiles = { storyId, files ->
+                    vm.editFiles(id, storyId, files)
+                },
+            )
+        }
+    }
 }
 
 @Composable
-private fun PrdRow(prd: PrdDto) {
+private fun PrdRow(prd: PrdDto, onClick: () -> Unit = {}) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
