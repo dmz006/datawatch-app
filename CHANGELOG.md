@@ -8,6 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.40.2] — 2026-04-28 (DTO round-trip test coverage)
+
+### Added
+
+- **11 round-trip / parse tests** in `:shared:testDebugUnitTest` for
+  every transport DTO added between v0.36.0 and v0.39.2:
+  `ObserverPeersDto`, `ObserverStatsDto` (host.ebpf + cluster.nodes),
+  `PluginsDto` (subprocess + native), `FilesMkdirDto`,
+  `MemorySweepStaleResponseDto`, `MemorySpellcheckResponseDto`,
+  `MemoryExtractFactsResponseDto` (incl. the `object` ↔ `obj`
+  Kotlin-keyword remap), `PrdListDto` (depth + template + stories
+  + files + files_touched), `NewPrdRequestDto`, `OrchestratorGraphDto`
+  (incl. `observer_summary` per node), `StartAgentResponseDto`
+  (accepts either `session_id` or `id`), `StartAgentRequestDto`.
+
+### Notes
+
+- VM unit tests for the new screens (`AutonomousViewModel`,
+  `OrchestratorGraphViewModel`, `MempalaceActionsViewModel`,
+  `FederatedPeersViewModel`, `ClusterNodesViewModel`,
+  `EBpfStatusViewModel`, `PluginsCardViewModel`) need a
+  `ServiceLocator` mock-out refactor that is genuinely out of
+  scope for this round. The DTO tests guard the wire contract,
+  which is where most regression risk lives.
+
 ## [0.40.1] — 2026-04-28 (Auto PRD review screen)
 
 ### Added
