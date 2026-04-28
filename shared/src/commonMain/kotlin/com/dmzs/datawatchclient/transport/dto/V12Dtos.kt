@@ -59,6 +59,16 @@ public data class FilesListResponseDto(
     val entries: List<FileEntryDto> = emptyList(),
 )
 
+/**
+ * POST /api/files body for mkdir-while-browsing (PWA v5.26.46 / #14).
+ * The daemon also accepts other `action` values; we only emit `mkdir`.
+ */
+@Serializable
+public data class FilesMkdirDto(
+    val path: String,
+    val action: String = "mkdir",
+)
+
 // ---- Saved commands (/api/commands) ----
 
 @Serializable

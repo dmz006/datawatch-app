@@ -1280,6 +1280,13 @@ internal fun LastResponseSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // v0.36.1 (issue #15) — apply the same noise filter the PWA's
+    // 💾 Response viewer landed in v5.26.31 so spinners, status
+    // timers, footer hints, and box-drawing borders don't bury the
+    // actual LLM prose.
+    val cleaned =
+        com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(response)
+            .ifBlank { response }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier =
@@ -1290,7 +1297,7 @@ internal fun LastResponseSheet(
         ) {
             Text("Last response", style = MaterialTheme.typography.titleMedium)
             Text(
-                response,
+                cleaned,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 modifier = Modifier.padding(top = 12.dp),

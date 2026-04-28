@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.36.1] — 2026-04-28 (Picker mkdir + response-noise filter)
+
+### Added
+
+- **File picker — "+ New folder" affordance** ([#14](https://github.com/dmz006/datawatch-app/issues/14)).
+  Mirrors PWA v5.26.46. Inline form inside `FilePickerDialog`
+  collects a folder name, refuses path-separator chars
+  client-side, then POSTs `{path, action:"mkdir"}` via the new
+  `TransportClient.mkdir()` and re-browses the parent so the new
+  folder appears in the listing immediately.
+- **`TransportClient.mkdir()` + `FilesMkdirDto`** — new `POST
+  /api/files` body type so future actions (rename / delete) plug
+  in without another DTO.
+
+### Fixed
+
+- **Response viewer strips TUI noise** ([#15](https://github.com/dmz006/datawatch-app/issues/15)).
+  New `ResponseNoiseFilter` (in `:shared`) ports the PWA v5.26.31
+  filter: drops pure box-drawing lines, labeled borders
+  (`─── Status ───`), embedded status timers (`elapsed 0:01:23`,
+  `12s`), spinner counters (`⠋ Thinking…`), pure digit lines
+  (`12 / 100`), and a small set of broadened noise patterns
+  (`tokens:`, `(esc to interrupt)`, etc.). Applied unconditionally
+  per the v5.26.31 lesson — the v5.26.23 prose-detection gate was
+  too charitable. `LastResponseSheet` runs the captured response
+  through the filter before rendering. Full unit-test regression
+  coverage in `:shared:testDebugUnitTest`.
+
 ## [0.36.0] — 2026-04-28 (Federated monitoring suite)
 
 ### Added
