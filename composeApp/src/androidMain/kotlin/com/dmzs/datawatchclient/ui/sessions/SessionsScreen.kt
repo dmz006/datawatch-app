@@ -514,7 +514,9 @@ private fun SessionsToolbar(
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            if (showHistory) "Hide history ($historyCount)" else "Show history ($historyCount)",
+                            // v0.35.7 — drop the verb churn, match
+                            // PWA v5.1.0 ("History (N)").
+                            "History ($historyCount)",
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }

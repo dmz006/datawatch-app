@@ -184,7 +184,7 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Voice transcription | Mic launches system `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`. Transcript appears inside the popup for confirmation before send. |
 | Reply round-trip | Watch `MessageClient.sendMessage("/datawatch/reply", "sessionId\ntext")` → phone `WearSyncService` opens a transient WS subscription to that session, emits `send_input` via `WsOutbound`, cancels after drain. The only path — server rejects REST `/api/sessions/reply` (404, pre-v0.34.6 regression context). |
 
-### v0.35.6 — 2026-04-24 · Composer reshuffle + voice-reply fix + terminal toolbar toggle (current)
+### v0.35.6 — 2026-04-24 · Composer reshuffle + voice-reply fix + terminal toolbar toggle
 
 | What | Mechanism |
 |---|---|
@@ -196,6 +196,18 @@ post-milestone plus an upstream design-sync issue for the PWA.
 | Voice reply routed to session's own profile | `ReplyComposer`: resolve profile via `SessionRepository.observeForProfileAny(sessionId)` first, fall back to ActiveServerStore. Fixes "voice use to work but isn't anymore" — cross-server / all-servers mode was routing transcribe to the wrong Whisper instance. |
 | Voice-failure toast surfaces root cause | Walks the cause chain (3 deep) so Ktor-wrapped `CancellationException` no longer masks 404 / TLS / bearer-missing messages. Also adds a "No enabled server profile" toast when resolution fails entirely. |
 | Kill Orphans moves to About | `SettingsScreen`: `KillOrphansCard` relocates from Monitor → About beside `UpdateDaemonCard` + `RestartDaemonCard` (daemon-admin cluster). Monitor keeps read-oriented cards only. |
+
+### v0.35.7 — 2026-04-28 · PWA v5.1.0–v5.2.0 alignment + data freshness (current)
+
+| What | Mechanism | Closes |
+|---|---|---|
+| Terminal toolbar always renders | Reverts v0.35.6's `Aa ▾ / Aa ▴` toggle. `SessionInfoBar` + detail screen drop the `terminalToolbarVisible` state plumbing. | [#8](https://github.com/dmz006/datawatch-app/issues/8) — also obsoletes upstream `dmz006/datawatch#24` |
+| History label rename | `SessionsToolbar`: "Show / Hide history (N)" → "History (N)" | [#9](https://github.com/dmz006/datawatch-app/issues/9) v5.1.0 |
+| Tmux arrow-key row | `ReplyComposer`: 4-AssistChip `LazyRow` above the text field, ANSI escape sequences via `WsOutbound.sendInput` | [#9](https://github.com/dmz006/datawatch-app/issues/9) v5.2.0 |
+| About — Play Store row | `AboutCard`: new row "Play Store / (pending submission)" | [#9](https://github.com/dmz006/datawatch-app/issues/9) v5.2.0 |
+| About — `ConfigViewerCard` removed | `SettingsScreen` About branch: drops the raw-YAML viewer to align with PWA About surface. | (alignment) |
+| Live `last_response` refetch | `SessionDetailViewModel.refreshFromServer()` — triggers on Response button tap; daemon's `Manager.GetLastResponse` re-captures from live tmux for `running` / `waiting_input`. | [#9](https://github.com/dmz006/datawatch-app/issues/9) BL178 |
+| Input-Required banner refresh on bulk WS | `startStream` now triggers `refreshFromServer()` on every `SessionEvent.StateChange`. | (PWA v5.26.49 mirror — closes the "yellow box doesn't show up after re-enter" complaint) |
 
 ---
 

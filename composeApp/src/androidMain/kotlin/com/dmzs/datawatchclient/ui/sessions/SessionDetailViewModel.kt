@@ -188,7 +188,21 @@ public class SessionDetailViewModel(
         val transport = ServiceLocator.wsTransportFor(profile)
         streamJob =
             transport.events(sessionId)
-                .onEach { ev -> ServiceLocator.sessionEventRepository.insert(ev) }
+                .onEach { ev ->
+                    ServiceLocator.sessionEventRepository.insert(ev)
+                    // v0.35.8 — mirror PWA v5.26.49 fix:
+                    // bulk-session WS pushes can flip a session to
+                    // waiting_input without going through the
+                    // single-session `session_state` channel, leaving
+                    // the input-required banner out of date until the
+                    // user exits + re-enters. On every state change
+                    // observed in the WS stream, force a fresh
+                    // session re-read so the banner + prompt context
+                    // update immediately.
+                    if (ev is com.dmzs.datawatchclient.domain.SessionEvent.StateChange) {
+                        refreshFromServer()
+                    }
+                }
                 .launchIn(viewModelScope)
     }
 
@@ -263,6 +277,35 @@ public class SessionDetailViewModel(
                 onSuccess = { list -> list.map { it.name to it.command } },
                 onFailure = { emptyList() },
             )
+    }
+
+    /**
+     * Force-refresh this session's record from the server.
+     *
+     * v0.35.8 (BL178 + dmz006/datawatch-app#9): for sessions in
+     * `running` / `waiting_input`, the daemon's `Manager.GetLastResponse`
+     * re-captures from live tmux on every read. Cached `last_response`
+     * from the last 5-second list-poll is therefore stale by up to 5 s
+     * — fine for a glance, not fine when the user just tapped the
+     * 💾 Response viewer expecting the very latest snippet.
+     *
+     * Triggered by:
+     *   - Tap on the Response button in SessionInfoBar.
+     *   - Any state-transition WS frame (running→complete etc.)
+     *
+     * Fire-and-forget — failure is silently absorbed; the user keeps
+     * whatever cached value the repository already had.
+     */
+    public fun refreshFromServer() {
+        val profile = profileCache ?: return
+        viewModelScope.launch {
+            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+                list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                    ?.let { fresh ->
+                        ServiceLocator.sessionRepository.upsert(fresh)
+                    }
+            }
+        }
     }
 
     public fun kill() {
