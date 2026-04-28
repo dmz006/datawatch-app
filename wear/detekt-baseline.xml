@@ -2,8 +2,11 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>LongMethod:WearMainActivity.kt$@Composable private fun SessionDetailPopup( session: WearSessionCountsViewModel.SessionItem, transcript: String, onRecord: () -&gt; Unit, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
+    <ID>CyclomaticComplexMethod:WearMainActivity.kt$@Composable private fun WearRoot( vm: WearSessionCountsViewModel = viewModel( factory = ViewModelProvider.AndroidViewModelFactory.getInstance( LocalApp.current, ), ), )</ID>
+    <ID>LongMethod:WearMainActivity.kt$@Composable private fun SessionDetailPopup( session: WearSessionCountsViewModel.SessionItem, transcript: String, recording: Boolean, transcribing: Boolean, onRecord: () -&gt; Unit, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
+    <ID>LongMethod:WearMainActivity.kt$@Composable private fun WearRoot( vm: WearSessionCountsViewModel = viewModel( factory = ViewModelProvider.AndroidViewModelFactory.getInstance( LocalApp.current, ), ), )</ID>
     <ID>NestedBlockDepth:WearMainActivity.kt$WearSessionCountsViewModel$private fun consume(buffer: DataEventBuffer)</ID>
+    <ID>TooGenericExceptionCaught:WearVoiceRecorder.kt$WearVoiceRecorder$e: Throwable</ID>
     <ID>TooManyFunctions:MonitorTileService.kt$MonitorTileService : TileService</ID>
     <ID>TooManyFunctions:SessionsTileService.kt$SessionsTileService : TileService</ID>
     <ID>TooManyFunctions:WearMainActivity.kt$com.dmzs.datawatchclient.wear.WearMainActivity.kt</ID>
