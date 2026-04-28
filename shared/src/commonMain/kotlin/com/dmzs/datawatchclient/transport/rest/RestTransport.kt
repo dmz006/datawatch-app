@@ -193,6 +193,30 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun observerStats():
+        Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun observerPeers():
+        Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersDto> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/peers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun listPlugins():
+        Result<com.dmzs.datawatchclient.transport.dto.PluginsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/plugins") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listBackends(): Result<com.dmzs.datawatchclient.transport.BackendsView> =
         request {
             // PWA ships `{llm: [{name, ...}, ...], active}`; older servers
