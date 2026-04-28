@@ -8,6 +8,30 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.10] — 2026-04-28 (Session detail force-refresh on open)
+
+### Fixed
+
+- **Session detail force-refreshes from server on open.** v0.35.8
+  added `SessionDetailViewModel.refreshFromServer()` for the Response
+  button + WS state changes; this release also calls it from the VM
+  `init` block so the moment the user opens the detail screen they
+  see current `last_response` / `last_prompt` / state instead of
+  whatever the 5-second list poll last cached. Closes the user's
+  *"should refresh to get the current state like going in from
+  session list"* complaint (2026-04-28).
+
+### Notes
+
+Connection resilience pass (task #209) continues — pending items
+slated for v0.36.x:
+
+- Animated processing indicator alongside the reachability dot.
+- Throttle reconnect attempts when the network is offline / phone
+  is locked (avoid Tailscale-loop battery burn).
+- Screen-unlock lifecycle observer that probes + refreshes the
+  active session on resume.
+
 ## [0.35.9] — 2026-04-28 (Session detail layout rebuild)
 
 ### Changed

@@ -146,6 +146,14 @@ public class SessionDetailViewModel(
             val profile = resolveProfile() ?: return@launch
             profileCache = profile
             startStream(profile)
+            // v0.35.10 — force a fresh server read on detail open so
+            // last_response / state are current the moment the screen
+            // appears (matches PWA load-on-open behavior). Without
+            // this the user would see whatever the 5-second list
+            // poll last cached. Mirrors the user's
+            // "should refresh to get the current state like going in
+            // from session list" complaint 2026-04-28.
+            refreshFromServer()
             // Mirror the owning profile's transport reachability into the
             // VM so the detail screen can render a connection banner.
             ServiceLocator.transportFor(profile).isReachable
