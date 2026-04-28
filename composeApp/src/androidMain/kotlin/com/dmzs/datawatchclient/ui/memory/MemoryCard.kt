@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.HorizontalDivider
@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
 
 /**
  * Settings → General → Memory card. Mirrors the PWA's Memory panel:
@@ -221,6 +224,17 @@ public fun MemoryCard() {
                             )
                         }
                     },
+                    onTogglePin = { id, pinned ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
+                                onSuccess = { refreshList(searchText) },
+                                onFailure = {
+                                    banner = "Pin failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
                 )
                 HorizontalDivider()
             }
@@ -279,12 +293,14 @@ private fun StatsGrid(s: JsonObject) {
 private fun MemoryRow(
     memory: JsonObject,
     onDelete: (Long) -> Unit,
+    onTogglePin: (Long, Boolean) -> Unit = { _, _ -> },
 ) {
     val id = memory.longField("id")
     val role = memory.stringField("role").orEmpty()
     val content = memory.stringField("content").orEmpty()
     val preview = if (content.length > 200) content.take(200) + "…" else content
     val similarity = memory.doubleField("similarity")
+    val pinned = (memory["pinned"] as? JsonPrimitive)?.boolean == true
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Top,
@@ -321,6 +337,18 @@ private fun MemoryRow(
             )
         }
         if (id != null) {
+            // v0.39.2 (#21 follow-up) — pin toggle so memories can be
+            // tacked into L1 retrieval regardless of recency decay.
+            // Backed by /api/memory/pin (transport landed in v0.37.0).
+            IconButton(onClick = { onTogglePin(id, !pinned) }) {
+                Icon(
+                    if (pinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                    contentDescription = if (pinned) "Unpin memory" else "Pin memory",
+                    tint =
+                        if (pinned) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             IconButton(onClick = { onDelete(id) }) {
                 Icon(
                     Icons.Filled.Delete,
