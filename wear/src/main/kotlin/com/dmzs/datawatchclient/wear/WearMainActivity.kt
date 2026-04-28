@@ -102,7 +102,7 @@ private fun WearRoot(
         ),
 ) {
     val state by vm.state.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0) { 4 }
+    val pagerState = rememberPagerState(initialPage = 0) { 5 }
 
     // v0.35.5 — session tap popup with voice reply.
     // v0.35.8 — replaced RecognizerIntent with phone-relayed Whisper.
@@ -178,11 +178,17 @@ private fun WearRoot(
                             state = state,
                             onSessionTap = { item -> openSession = item },
                         )
-                    2 -> ServersPage(state) { id -> vm.requestActiveServer(id) }
-                    3 -> AboutPage()
+                    2 ->
+                        PrdsPage(
+                            state = state,
+                            onApprove = { id -> vm.sendPrdAction(id, "approve") },
+                            onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
+                        )
+                    3 -> ServersPage(state) { id -> vm.requestActiveServer(id) }
+                    4 -> AboutPage()
                 }
             }
-            PagerDots(pagerState.currentPage, 4, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
             openSession?.let { item ->
                 SessionDetailPopup(
                     session = item,
@@ -689,6 +695,90 @@ private fun SessionDetailPopup(
     }
 }
 
+/**
+ * v0.40.0 — PRDs glance page. Renders needs_review / running PRDs
+ * the phone publishes on `/datawatch/prds`. Tap the green ✓ to
+ * approve or the red ✕ to reject (with an automatic "rejected on
+ * watch" reason — full rejection-with-reason flow stays on the
+ * phone). Hides itself entirely when the list is empty so the
+ * page count stays at 4 on minimal setups.
+ */
+@Composable
+private fun PrdsPage(
+    state: WearSessionCountsViewModel.UiState,
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit,
+) {
+    PageScaffold("PRDs") {
+        if (state.prds.isEmpty()) {
+            Text(
+                "No PRDs in review.",
+                modifier = Modifier.padding(top = 10.dp),
+                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+            return@PageScaffold
+        }
+        Text(
+            "${state.prds.size} pending",
+            modifier = Modifier.padding(top = 2.dp),
+            style = MaterialTheme.typography.caption1,
+            color = MaterialTheme.colors.primary,
+        )
+        state.prds.forEach { prd ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .background(
+                        prdStatusColor(prd.status).copy(alpha = 0.18f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                    )
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    prd.title,
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurface,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp),
+                    maxLines = 2,
+                )
+                if (prd.status.lowercase() == "needs_review" ||
+                    prd.status.lowercase() == "revisions_asked"
+                ) {
+                    Text(
+                        "✓",
+                        modifier = Modifier
+                            .clickable { onApprove(prd.id) }
+                            .padding(horizontal = 4.dp),
+                        style = MaterialTheme.typography.title3,
+                        color = Color(0xFF22C55E),
+                    )
+                    Text(
+                        "✕",
+                        modifier = Modifier
+                            .clickable { onReject(prd.id) }
+                            .padding(horizontal = 4.dp),
+                        style = MaterialTheme.typography.title3,
+                        color = Color(0xFFEF4444),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun prdStatusColor(status: String): Color =
+    when (status.lowercase()) {
+        "running" -> Color(0xFF22C55E)
+        "needs_review" -> Color(0xFFF59E0B)
+        "revisions_asked" -> Color(0xFFA855F7)
+        else -> Color(0xFF94A3B8)
+    }
+
 @Composable
 private fun ServersPage(
     state: WearSessionCountsViewModel.UiState,
@@ -807,6 +897,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         // /datawatch/sessions. Sorted by last-activity desc, capped
         // at SESSIONS_PUBLISH_LIMIT on the phone side.
         val sessions: List<SessionItem> = emptyList(),
+        // PRDs in needs_review/running/revisions_asked (v0.40.0).
+        val prds: List<PrdItem> = emptyList(),
         // Enabled profiles the user can switch between.
         val profiles: List<Pair<String, String>> = emptyList(),
     ) {
@@ -850,6 +942,12 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val lastLine: String,
     )
 
+    public data class PrdItem(
+        val id: String,
+        val title: String,
+        val status: String,
+    )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -875,6 +973,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                                 applyStats(DataMapItem.fromDataItem(item).dataMap)
                             SESSIONS_PATH ->
                                 applySessions(DataMapItem.fromDataItem(item).dataMap)
+                            PRDS_PATH ->
+                                applyPrds(DataMapItem.fromDataItem(item).dataMap)
                         }
                     }
                 } finally {
@@ -924,12 +1024,28 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                             applyStats(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         SESSIONS_PATH ->
                             applySessions(DataMapItem.fromDataItem(event.dataItem).dataMap)
+                        PRDS_PATH ->
+                            applyPrds(DataMapItem.fromDataItem(event.dataItem).dataMap)
                     }
                 }
             }
         } finally {
             buffer.release()
         }
+    }
+
+    private fun applyPrds(map: DataMap) {
+        val ids = map.getStringArray("ids") ?: emptyArray()
+        val titles = map.getStringArray("titles") ?: emptyArray()
+        val statuses = map.getStringArray("statuses") ?: emptyArray()
+        val items = ids.indices.map { i ->
+            PrdItem(
+                id = ids[i],
+                title = titles.getOrNull(i).orEmpty(),
+                status = statuses.getOrNull(i).orEmpty(),
+            )
+        }
+        _state.value = _state.value.copy(prds = items)
     }
 
     private fun applySessions(map: DataMap) {
@@ -962,6 +1078,29 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 val nodes: List<Node> = nodeClient.connectedNodes.await()
                 nodes.forEach { node ->
                     messageClient.sendMessage(node.id, REPLY_PATH, body).await()
+                }
+            }
+        }
+    }
+
+    /**
+     * Send a PRD action to the phone for forwarding to
+     * /api/autonomous/prds/{id}/{action}. Payload format is
+     * "prdId\naction\nreason?" — `reason` only meaningful for
+     * `reject`. Best-effort; failure is silent (the watch UI just
+     * won't see the PRD disappear from needs_review on next refresh).
+     */
+    public fun sendPrdAction(prdId: String, action: String, reason: String = "") {
+        if (prdId.isBlank() || action.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val body =
+                    if (reason.isNotEmpty()) "$prdId\n$action\n$reason"
+                    else "$prdId\n$action"
+                val payload = body.toByteArray(Charsets.UTF_8)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, PRD_ACTION_PATH, payload).await()
                 }
             }
         }
@@ -1035,8 +1174,10 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
+        public const val PRDS_PATH: String = "/datawatch/prds"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
         public const val REPLY_PATH: String = "/datawatch/reply"
+        public const val PRD_ACTION_PATH: String = "/datawatch/prdAction"
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
     }

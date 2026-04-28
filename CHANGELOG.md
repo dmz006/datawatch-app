@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.40.0] — 2026-04-28 (Wear PRDs glance with approve / reject)
+
+### Added
+
+- **5th Wear page — "PRDs"** between Sessions and Servers. Renders
+  the active server's needs_review / running / revisions_asked
+  PRDs with tap-to-approve (✓) and tap-to-reject (✕) glyphs. The
+  page hides itself when the list is empty (no autonomous surface
+  configured / no PRDs).
+- **Phone-side PRD publish** — `WearSyncService` polls
+  `transport.listPrds()` on the existing 15 s stats cadence and
+  pushes a `/datawatch/prds` DataItem (id + title + status, capped
+  at 8 entries to fit the DataLayer budget).
+- **Watch → phone PRD action relay** — new MessageClient path
+  `/datawatch/prdAction` with payload `prdId\naction\nreason?`.
+  Phone resolves the active profile and posts to
+  `/api/autonomous/prds/{id}/{action}`. Reject ships an automatic
+  "rejected on watch" reason — full reject-with-reason flow stays
+  on the phone.
+
+### Notes
+
+- `WearSessionCountsViewModel` now hosts 11 public methods (counts /
+  profiles / stats / sessions / prds DataLayer + 4 send-* actions).
+  Wear detekt baseline regenerated to accept the `TooManyFunctions`
+  threshold; refactor against legibility on the round bezel
+  intentionally deferred.
+
 ## [0.39.2] — 2026-04-28 (Memory pin + PRD conflict marker + decomposition profile + approval gate config)
 
 ### Added
