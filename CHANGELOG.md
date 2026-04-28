@@ -8,6 +8,59 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.36.0] — 2026-04-28 (Federated monitoring suite)
+
+### Added
+
+- **Settings → Monitor — federated peers card** ([#2](https://github.com/dmz006/datawatch-app/issues/2)).
+  Mirrors PWA `loadObserverPeers()` (datawatch v4.4.0+). Lists Shape B / C
+  / Agent peers from `/api/observer/peers` with a coloured health dot
+  (green ≤15 s push age, amber ≤60 s, red >60 s, grey if never), shape
+  badge, last-push age, hostname. Card hides on single-node setups
+  (empty peers list).
+- **Agents filter pill row** on the federated peers card
+  ([#6](https://github.com/dmz006/datawatch-app/issues/6) — S13 parity).
+  `All / Standalone / Cluster / Agents` chips at the top narrow the
+  list client-side; matches PWA `host.shape == "agent"` semantics.
+- **Settings → Monitor — cluster nodes card**
+  ([#3](https://github.com/dmz006/datawatch-app/issues/3)). Mirrors PWA
+  `loadObserverClusterNodes()` (datawatch v4.5.0). Renders only when
+  `/api/observer/stats.cluster.nodes` is non-empty. Per-node row carries
+  health dot (ready vs unhealthy), name, pressure flags
+  (`memory|disk|pid` from kubelet), pod count, CPU + memory bars (CPU
+  threshold-coloured the same way as the Wear Monitor gauges).
+- **Settings → Monitor — eBPF status card**
+  ([#4](https://github.com/dmz006/datawatch-app/issues/4)). Mirrors PWA
+  `loadEBPFStatus()` (datawatch v4.1.1+). Three pill flags
+  (`configured` / `capability` / `kprobes`) read from
+  `/api/observer/stats.host.ebpf` plus the human-readable status
+  message. Card hides for daemons that predate the observer endpoint.
+- **Settings → Monitor — plugins card**
+  ([#5](https://github.com/dmz006/datawatch-app/issues/5)). Mirrors PWA
+  `loadPluginsStatus()` (datawatch v4.2.0+ / B41). Renders subprocess
+  + native plugins in the same list with a `subprocess` / `native`
+  kind badge so operators see datawatch-observer alongside subprocess
+  hooks without confusion. Native plugins render first.
+
+### Transport
+
+- New `/api/observer/stats`, `/api/observer/peers`, and `/api/plugins`
+  endpoints on `TransportClient` + `RestTransport` impl. New DTOs:
+  `ObserverStatsDto` (host + cluster), `ObserverPeersDto`,
+  `ObserverPeerDto`, `ObserverPeerHostDto`, `ObserverHostDto`,
+  `ObserverEbpfDto`, `ObserverClusterDto`, `ObserverClusterNodeDto`,
+  `PluginsDto`, `PluginDto`.
+
+### Notes
+
+- Each card self-hides when its backing endpoint returns nothing
+  useful (older daemon, single-node deployment) so the Monitor tab
+  stays readable on minimal setups and grows on richer ones.
+- Issue [#7](https://github.com/dmz006/datawatch-app/issues/7)
+  (`observer_summary` per-node badges on the PRD-DAG graph) deferred
+  to v0.36.1 — the orchestrator graph is its own screen and warrants
+  a focused release.
+
 ## [0.35.10] — 2026-04-28 (Session detail force-refresh on open)
 
 ### Fixed

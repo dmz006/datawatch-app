@@ -230,14 +230,17 @@ public fun SettingsScreen(
 
                 when (activeTab) {
                     SettingsTab.Monitor -> {
-                        // Monitor carries live-data cards only.
-                        // User 2026-04-24: "Kill orphaned should be on
-                        // About tab" — `KillOrphansCard` moved down to
-                        // About alongside Update + Restart daemon, which
-                        // already own the daemon-admin action cluster.
-                        // Monitor keeps Stats / Memory / Schedules /
-                        // DaemonLog — the read-oriented glance surfaces.
+                        // v0.36.0 federated monitoring suite. Cards
+                        // self-hide when their backing endpoint
+                        // returns nothing useful (older daemons,
+                        // single-node setups), so the Monitor tab
+                        // stays readable on minimal deployments and
+                        // grows on richer ones.
                         com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+                        com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
+                        com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
+                        com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
+                        com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
@@ -855,7 +858,7 @@ private fun DaemonInfoRow(
 }
 
 @Composable
-private fun Section(
+internal fun Section(
     title: String,
     content: @Composable () -> Unit,
 ) {

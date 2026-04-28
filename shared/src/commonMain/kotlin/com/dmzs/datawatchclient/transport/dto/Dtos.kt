@@ -272,3 +272,100 @@ public data class BackendStatusDto(
     @SerialName("latency_ms") val latencyMs: Int = 0,
     val error: String? = null,
 )
+
+// ============================================================
+// v0.36.0 — federated monitoring DTOs (datawatch v4.4.0+ + S13)
+// ============================================================
+
+/**
+ * GET /api/observer/peers — list of Shape B / C / Agent peers the
+ * parent observer knows about. Issue #2 + #6 (S13 agents filter).
+ */
+@Serializable
+public data class ObserverPeersDto(
+    val peers: List<ObserverPeerDto> = emptyList(),
+)
+
+@Serializable
+public data class ObserverPeerDto(
+    val name: String = "",
+    /** "standalone" | "cluster" | "agent" — drives the row badge. */
+    val shape: String = "",
+    /** "agent" when this peer was a F10 ephemeral worker (S13). */
+    @SerialName("host_info") val hostInfo: ObserverPeerHostDto? = null,
+    val version: String? = null,
+    @SerialName("registered_at") val registeredAt: String? = null,
+    @SerialName("last_push_at") val lastPushAt: String? = null,
+)
+
+@Serializable
+public data class ObserverPeerHostDto(
+    val hostname: String? = null,
+    /** "agent" tag on F10 ephemeral peers — surfaced via the filter pill. */
+    val shape: String? = null,
+    val os: String? = null,
+    val arch: String? = null,
+)
+
+/**
+ * GET /api/plugins — subprocess + native plugin listing.
+ * Issue #5 (datawatch v4.2.0 / B41 native rows).
+ */
+@Serializable
+public data class PluginsDto(
+    val plugins: List<PluginDto> = emptyList(),
+    val native: List<PluginDto> = emptyList(),
+)
+
+@Serializable
+public data class PluginDto(
+    val name: String = "",
+    /** "subprocess" or "native" — controls the row badge. */
+    val kind: String = "subprocess",
+    val description: String? = null,
+    val enabled: Boolean = true,
+    val version: String? = null,
+    val message: String? = null,
+)
+
+/**
+ * GET /api/observer/stats — richer observer view of the daemon's
+ * own host + cluster posture. Issue #3 (cluster.nodes) + #4
+ * (host.ebpf richer block).
+ *
+ * Only the fields used by mobile cards are modeled here; the
+ * full observer payload is much larger.
+ */
+@Serializable
+public data class ObserverStatsDto(
+    val host: ObserverHostDto? = null,
+    val cluster: ObserverClusterDto? = null,
+)
+
+@Serializable
+public data class ObserverHostDto(
+    val ebpf: ObserverEbpfDto? = null,
+)
+
+@Serializable
+public data class ObserverEbpfDto(
+    val configured: Boolean = false,
+    val capability: Boolean = false,
+    @SerialName("kprobes_loaded") val kprobesLoaded: Boolean = false,
+    val message: String? = null,
+)
+
+@Serializable
+public data class ObserverClusterDto(
+    val nodes: List<ObserverClusterNodeDto> = emptyList(),
+)
+
+@Serializable
+public data class ObserverClusterNodeDto(
+    val name: String = "",
+    val ready: Boolean = true,
+    val pressures: List<String> = emptyList(),
+    @SerialName("pod_count") val podCount: Int = 0,
+    @SerialName("cpu_pct") val cpuPct: Double = 0.0,
+    @SerialName("mem_pct") val memPct: Double = 0.0,
+)

@@ -67,6 +67,27 @@ public interface TransportClient {
     public suspend fun stats(): Result<StatsDto>
 
     /**
+     * GET /api/observer/stats — richer observer payload that carries
+     * the eBPF status block + cluster nodes (datawatch v4.4.0+ /
+     * v4.5.0). Used by the v0.36.0 cluster-nodes + eBPF cards.
+     */
+    public suspend fun observerStats(): Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto>
+
+    /**
+     * GET /api/observer/peers — federated peers list (Shape B / C /
+     * Agent). datawatch v4.4.0+; S13 added the "agent" shape for
+     * F10 ephemeral workers. Issue #2 + #6.
+     */
+    public suspend fun observerPeers(): Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersDto>
+
+    /**
+     * GET /api/plugins — subprocess + native plugin list. The native
+     * array (datawatch v4.2.0) carries in-process subsystems
+     * (datawatch-observer + future bridges). Issue #5.
+     */
+    public suspend fun listPlugins(): Result<com.dmzs.datawatchclient.transport.dto.PluginsDto>
+
+    /**
      * GET /api/backends — list of registered LLM backends + which is active.
      * Mobile uses this to populate the Channels / LLM backends tab.
      */
