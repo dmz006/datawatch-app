@@ -134,6 +134,19 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .addText("$total sessions")
                 .build(),
         )
+        // v0.40.1 — PRDs needing review. Tap to drill into the
+        // approve / reject screen. List populates on first
+        // refresh of the screen; until then the row is a static
+        // entry-point.
+        builder.addItem(
+            Row.Builder()
+                .setTitle(colored("PRDs to review", CarColor.YELLOW))
+                .addText("Approve / reject hands-free")
+                .setOnClickListener {
+                    screenManager.push(WaitingPrdsScreen(carContext))
+                }
+                .build(),
+        )
         val title = "datawatch ${Version.VERSION}"
         val actionStrip =
             ActionStrip.Builder()

@@ -8,6 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.40.1] — 2026-04-28 (Auto PRD review screen)
+
+### Added
+
+- **Auto — `WaitingPrdsScreen`** lists the active server's PRDs in
+  `needs_review` / `revisions_asked` so a driver can hands-free
+  approve / reject between drives. Reachable from the existing
+  `AutoSummaryScreen` via a new "PRDs to review" row beneath the
+  session counts.
+- **Auto — `PrdActionScreen`** is the per-PRD action target: a
+  `MessageTemplate` with two big buttons (Approve / Reject) plus a
+  Back action. Reject ships an automatic "rejected from car"
+  reason so the daemon's `request_revision` workflow records
+  something without keyboard input on a moving vehicle. Full
+  rejection-with-reason flow stays on the phone.
+- Both screens reuse the existing 15 s poll cadence + the shared
+  `AutoServiceLocator.transportFor(profile).listPrds() / prdAction`
+  surfaces (added in v0.38.0 / v0.38.1). No new transport.
+
+### Notes
+
+- ADR-0031 Play-compliance preserved: every Auto template here is
+  static `ListTemplate` / `MessageTemplate` — no free-form text
+  input from the driver surface.
+
 ## [0.40.0] — 2026-04-28 (Wear PRDs glance with approve / reject)
 
 ### Added
