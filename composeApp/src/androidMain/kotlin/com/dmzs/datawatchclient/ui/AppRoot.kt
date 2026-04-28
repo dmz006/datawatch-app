@@ -285,6 +285,9 @@ private fun HomeShell(
                     onNewSession = onNewSession,
                 )
             }
+            composable(Destinations.Tabs.Autonomous) {
+                com.dmzs.datawatchclient.ui.autonomous.AutonomousScreen()
+            }
             composable(Destinations.Tabs.Alerts) {
                 AlertsScreen(onOpenSession = onOpenSession, vm = alertsVm)
             }

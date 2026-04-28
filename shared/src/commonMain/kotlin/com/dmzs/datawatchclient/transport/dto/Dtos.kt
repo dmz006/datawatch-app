@@ -425,3 +425,72 @@ public data class SvoTripleDto(
 public data class MemoryExtractFactsResponseDto(
     val triples: List<SvoTripleDto> = emptyList(),
 )
+
+// ============================================================
+// v0.38.0 — autonomous PRD lifecycle DTOs (datawatch BL191/v5.x)
+// ============================================================
+
+/**
+ * GET /api/autonomous/prds — list PRDs the parent observer knows about.
+ * Mirrors the PWA `loadPRDs()` payload shape.
+ */
+@Serializable
+public data class PrdListDto(
+    val prds: List<PrdDto> = emptyList(),
+)
+
+@Serializable
+public data class PrdDto(
+    val id: String = "",
+    val name: String = "",
+    val title: String? = null,
+    /** decomposing | needs_review | revisions_asked | approved | running | complete | rejected | cancelled */
+    val status: String = "",
+    @SerialName("project_dir") val projectDir: String? = null,
+    @SerialName("project_profile") val projectProfile: String? = null,
+    @SerialName("cluster_profile") val clusterProfile: String? = null,
+    val backend: String? = null,
+    val effort: String? = null,
+    val model: String? = null,
+    val parent: String? = null,
+    val depth: Int = 0,
+    @SerialName("is_template") val isTemplate: Boolean = false,
+    @SerialName("created_at") val createdAt: String? = null,
+    val stories: List<PrdStoryDto> = emptyList(),
+)
+
+@Serializable
+public data class PrdStoryDto(
+    val id: String = "",
+    val title: String = "",
+    val description: String? = null,
+    /** pending | awaiting_approval | in_progress | complete | rejected */
+    val status: String = "",
+    val files: List<String> = emptyList(),
+    @SerialName("files_touched") val filesTouched: List<String> = emptyList(),
+    @SerialName("execution_profile") val executionProfile: String? = null,
+)
+
+/**
+ * POST /api/autonomous/prds — create a new PRD. Mirrors PWA New PRD
+ * modal form fields after the v5.26.30 unified-Profile dropdown
+ * collapse: when `project_profile` is set, daemon ignores the
+ * `project_dir` / `backend` / `effort` / `model` fields.
+ */
+@Serializable
+public data class NewPrdRequestDto(
+    val name: String,
+    val title: String? = null,
+    @SerialName("project_dir") val projectDir: String? = null,
+    @SerialName("project_profile") val projectProfile: String? = null,
+    @SerialName("cluster_profile") val clusterProfile: String? = null,
+    val backend: String? = null,
+    val effort: String? = null,
+    val model: String? = null,
+    @SerialName("decomposition_profile") val decompositionProfile: String? = null,
+)
+
+@Serializable
+public data class NewPrdResponseDto(
+    val id: String = "",
+)

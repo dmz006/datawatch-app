@@ -348,6 +348,23 @@ public interface TransportClient {
         parentName: String? = null,
     ): Result<String>
 
+    // ---- v0.38.0 autonomous PRD lifecycle (datawatch BL191) ----
+
+    /** GET /api/autonomous/prds — list PRDs (issue #11–13). */
+    public suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto>
+
+    /** POST /api/autonomous/prds — create a new PRD (issue #11). */
+    public suspend fun createPrd(
+        request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto,
+    ): Result<String>
+
+    /** POST /api/autonomous/prds/{id}/{action} — approve|reject|request_revision|cancel|instantiate. */
+    public suspend fun prdAction(
+        prdId: String,
+        action: String,
+        body: kotlinx.serialization.json.JsonObject? = null,
+    ): Result<Unit>
+
     /**
      * GET /api/memory/export — dump of every memory as a single
      * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes

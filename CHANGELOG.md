@@ -8,6 +8,41 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.38.0] — 2026-04-28 (Autonomous tab foundation)
+
+### Added
+
+- **New "PRDs" bottom-nav tab** between Sessions and Alerts. PWA
+  has a dedicated `data-view="autonomous"` view; mobile mirrors.
+  `AutonomousScreen` lists every PRD the parent observer reports
+  (`/api/autonomous/prds`) with status pill (decomposing / needs_review
+  / running / complete / etc.), depth indicator, template badge,
+  story count.
+- **New PRD modal** with the **unified Profile dropdown** that PWA
+  v5.26.30 collapsed (closes [#11](https://github.com/dmz006/datawatch-app/issues/11)).
+  First option is the project-directory sentinel `__dir__`; remaining
+  options are the configured F10 project profiles. When `__dir__` is
+  selected the dialog shows directory + Backend / Effort / Model
+  fields. When a profile is selected the dialog hides those and shows
+  a Cluster dropdown (first option `— Local service instance —`,
+  remaining are cluster profiles). Routes to either
+  `POST /api/autonomous/prds` (with `project_dir`) or with
+  `project_profile` per the PWA semantics.
+- **Transport** — new `listPrds()`, `createPrd()`, `prdAction()` on
+  `TransportClient` + `RestTransport`.
+- **DTOs** — `PrdListDto`, `PrdDto`, `PrdStoryDto`, `NewPrdRequestDto`,
+  `NewPrdResponseDto`.
+
+### Notes
+
+- v0.38.1 closes the rest of the autonomous backlog: story-level
+  review/edit ([#12](https://github.com/dmz006/datawatch-app/issues/12)),
+  PRD list FAB + filter toggle ([#13](https://github.com/dmz006/datawatch-app/issues/13)),
+  per-story approval gate ([#18](https://github.com/dmz006/datawatch-app/issues/18)),
+  file association pills ([#19](https://github.com/dmz006/datawatch-app/issues/19)),
+  and the matching profile dropdown in the New Session modal
+  ([#20](https://github.com/dmz006/datawatch-app/issues/20)).
+
 ## [0.37.0] — 2026-04-28 (Mempalace surfaces — sweep / spellcheck / extract)
 
 ### Added

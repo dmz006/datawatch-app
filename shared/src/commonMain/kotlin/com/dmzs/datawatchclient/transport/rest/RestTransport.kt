@@ -693,6 +693,44 @@ public class RestTransport(
             }.body<String>()
         }
 
+    override suspend fun listPrds():
+        Result<com.dmzs.datawatchclient.transport.dto.PrdListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/prds") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createPrd(
+        request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto,
+    ): Result<String> {
+        val req = request
+        return request {
+            val res: com.dmzs.datawatchclient.transport.dto.NewPrdResponseDto =
+                client.post("${profile.baseUrl}/api/autonomous/prds") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(req)
+                }.body()
+            res.id
+        }
+    }
+
+    override suspend fun prdAction(
+        prdId: String,
+        action: String,
+        body: kotlinx.serialization.json.JsonObject?,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/$action") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                if (body != null) {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            }.body<Unit>()
+        }
+
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             // PWA ships `{channels: [{id, type, enabled, ...}, ...]}`;

@@ -24,6 +24,7 @@ public object Destinations {
     // Bottom-nav tabs under Home.
     public object Tabs {
         public const val Sessions: String = "home/sessions"
+        public const val Autonomous: String = "home/autonomous"
         public const val Alerts: String = "home/alerts"
         public const val Channels: String = "home/channels"
         public const val Stats: String = "home/stats"

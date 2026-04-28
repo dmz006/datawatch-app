@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.shell
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Settings
@@ -32,9 +33,13 @@ internal fun BottomNavBar(
     // keeps 3 bottom tabs. Stats used to be here; moved into
     // Settings/Monitor per PWA structure. Channels used to be here but
     // the PWA has no such tab — backend picker is under Settings/LLM.
+    // v0.38.0 — Autonomous tab added between Sessions and Alerts to
+    // surface the PRD lifecycle (#11–13, #18, #19). Mirrors PWA's
+    // dedicated `data-view="autonomous"` view.
     val items =
         listOf(
             BottomNavItem(Destinations.Tabs.Sessions, "Sessions", Icons.Filled.Chat),
+            BottomNavItem(Destinations.Tabs.Autonomous, "PRDs", Icons.Filled.AutoAwesome),
             BottomNavItem(Destinations.Tabs.Alerts, "Alerts", Icons.Filled.NotificationsActive),
             BottomNavItem(Destinations.Tabs.Settings, "Settings", Icons.Filled.Settings),
         )
