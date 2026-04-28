@@ -120,6 +120,13 @@ public object ConfigFieldSchemas {
                     NumberField("autonomous.stale_task_seconds", "Stale task timeout (sec)", "600"),
                     NumberField("autonomous.auto_fix_retries", "Auto-fix retries", "1"),
                     Toggle("autonomous.security_scan", "Run security scan before commit"),
+                    // v0.39.2 — PWA v5.26.60-62 per-story approval gate.
+                    // Default OFF; when ON, every story spawns into
+                    // `awaiting_approval` and needs an explicit
+                    // Approve / Reject from the operator before it
+                    // runs. Operator UI for the gate already lives on
+                    // PrdDetailDialog (v0.38.1).
+                    Toggle("autonomous.per_story_approval", "Per-story approval gate"),
                 ),
         )
 

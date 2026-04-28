@@ -85,12 +85,37 @@ internal fun PrdDetailDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
+                    // v0.39.2 (#19 follow-up) — cross-story file
+                    // conflict scan. A path that appears in more than
+                    // one pending story's `files` list lights up the
+                    // ⚠ marker on every conflicting pill, with a
+                    // tooltip-style row beneath naming the other
+                    // story. Mirrors PWA v5.26.64.
+                    val conflicts =
+                        buildMap<String, List<String>> {
+                            val byPath = mutableMapOf<String, MutableList<String>>()
+                            prd.stories
+                                .filter {
+                                    it.status.lowercase() != "complete" &&
+                                        it.status.lowercase() != "rejected"
+                                }
+                                .forEach { story ->
+                                    story.files.forEach { f ->
+                                        byPath.getOrPut(f) { mutableListOf() }
+                                            .add(story.id)
+                                    }
+                                }
+                            byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
+                                put(path, ids)
+                            }
+                        }
                     prd.stories.forEach { story ->
                         StoryRow(
                             story = story,
                             canEdit = canEdit,
                             onEdit = { editingStory = story },
                             onEditFiles = { editingFilesFor = story },
+                            conflicts = conflicts,
                         )
                     }
                 }
@@ -181,6 +206,7 @@ private fun StoryRow(
     canEdit: Boolean,
     onEdit: () -> Unit,
     onEditFiles: () -> Unit,
+    conflicts: Map<String, List<String>> = emptyMap(),
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -218,7 +244,17 @@ private fun StoryRow(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                story.files.forEach { f -> FilePill(f, color = Color(0xFF3B82F6)) }
+                story.files.forEach { f ->
+                    val others = conflicts[f]?.filter { it != story.id }.orEmpty()
+                    FilePill(
+                        name = f,
+                        color = Color(0xFF3B82F6),
+                        conflict = others.isNotEmpty(),
+                        conflictNote =
+                            if (others.isNotEmpty()) "also in ${others.joinToString(", ")}"
+                            else null,
+                    )
+                }
                 story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF22C55E)) }
                 if (canEdit) {
                     Spacer(Modifier.weight(1f))
@@ -256,19 +292,35 @@ private fun StoryStatusPill(status: String) {
 }
 
 @Composable
-private fun FilePill(name: String, color: Color) {
-    Box(
-        modifier =
-            Modifier
-                .background(color.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
-                .padding(horizontal = 6.dp, vertical = 1.dp),
-    ) {
-        Text(
-            "📝 $name",
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            maxLines = 1,
-        )
+private fun FilePill(
+    name: String,
+    color: Color,
+    conflict: Boolean = false,
+    conflictNote: String? = null,
+) {
+    val pillColor = if (conflict) Color(0xFFEF4444) else color
+    Column {
+        Box(
+            modifier =
+                Modifier
+                    .background(pillColor.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 6.dp, vertical = 1.dp),
+        ) {
+            Text(
+                if (conflict) "⚠ 📝 $name" else "📝 $name",
+                style = MaterialTheme.typography.labelSmall,
+                color = pillColor,
+                maxLines = 1,
+            )
+        }
+        conflictNote?.let { note ->
+            Text(
+                note,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFFEF4444),
+                maxLines = 1,
+            )
+        }
     }
 }
 

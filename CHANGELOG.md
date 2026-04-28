@@ -8,6 +8,30 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.39.2] — 2026-04-28 (Memory pin + PRD conflict marker + decomposition profile + approval gate config)
+
+### Added
+
+- **Per-row pin button on `MemoryCard`**. Pinned entries show a
+  filled pin icon in the primary tint; unpinned show the outlined
+  pin in the surface-variant tint. Tap toggles via the
+  `memoryPin()` transport that landed in v0.37.0.
+- **File conflict marker on PRD story file pills.** When two
+  pending stories plan the same path, every conflicting pill turns
+  red and prefixes ⚠; a tooltip-style line under the pill names
+  the other stories. Mirrors PWA v5.26.64 cross-story conflict
+  detection.
+- **Decomposition profile dropdown on `NewPrdDialog`** — independent
+  of the project / execution profile (PWA v5.26.60-62). First
+  option is `— inherit —`; remaining options are the configured
+  project profiles. Routed through the existing
+  `NewPrdRequestDto.decompositionProfile` field.
+- **Settings → General → Autonomous: per-story approval gate
+  toggle** (`autonomous.per_story_approval`) added to the config
+  schema panel. Default OFF; when ON, every story spawns in
+  `awaiting_approval` and needs an explicit Approve/Reject. Operator
+  UI for that gate already shipped in v0.38.1's `PrdDetailDialog`.
+
 ## [0.39.1] — 2026-04-28 (New Session unified Profile + cluster routing)
 
 ### Added

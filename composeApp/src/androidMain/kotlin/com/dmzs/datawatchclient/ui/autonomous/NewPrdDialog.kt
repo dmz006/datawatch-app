@@ -63,6 +63,11 @@ internal fun NewPrdDialog(
     var clusterMenuOpen by remember { mutableStateOf(false) }
     var cluster by remember { mutableStateOf("") }
 
+    // v0.39.2 (PWA v5.26.60-62) — decomposition profile is independent
+    // of execution profile. Empty = inherit from project profile.
+    var decompMenuOpen by remember { mutableStateOf(false) }
+    var decomp by remember { mutableStateOf("") }
+
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
 
@@ -142,6 +147,45 @@ internal fun NewPrdDialog(
                                 onClick = {
                                     profile = p
                                     profileMenuOpen = false
+                                },
+                            )
+                        }
+                    }
+                }
+
+                // Decomposition profile dropdown (PWA v5.26.60-62) —
+                // independent of the project / execution profile chosen
+                // above. Empty value = inherit.
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    OutlinedTextField(
+                        value = decomp.ifEmpty { "— inherit —" },
+                        onValueChange = {},
+                        label = { Text("Decomposition profile") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            TextButton(onClick = { decompMenuOpen = !decompMenuOpen }) {
+                                Text("▾")
+                            }
+                        },
+                    )
+                    DropdownMenu(
+                        expanded = decompMenuOpen,
+                        onDismissRequest = { decompMenuOpen = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("— inherit —") },
+                            onClick = {
+                                decomp = ""
+                                decompMenuOpen = false
+                            },
+                        )
+                        projectProfiles.forEach { p ->
+                            DropdownMenuItem(
+                                text = { Text(p) },
+                                onClick = {
+                                    decomp = p
+                                    decompMenuOpen = false
                                 },
                             )
                         }
@@ -233,6 +277,7 @@ internal fun NewPrdDialog(
                                 backend = backend.trim().ifBlank { null },
                                 effort = effort.trim().ifBlank { null },
                                 model = model.trim().ifBlank { null },
+                                decompositionProfile = decomp.ifBlank { null },
                             )
                         } else {
                             NewPrdRequestDto(
@@ -240,6 +285,7 @@ internal fun NewPrdDialog(
                                 title = title.trim().ifBlank { null },
                                 projectProfile = profile,
                                 clusterProfile = cluster.ifBlank { null },
+                                decompositionProfile = decomp.ifBlank { null },
                             )
                         }
                     if (req.name.isNotBlank()) onCreate(req)
