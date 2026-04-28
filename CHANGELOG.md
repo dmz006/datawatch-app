@@ -8,6 +8,46 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.38.1] — 2026-04-28 (Autonomous tab features)
+
+### Added
+
+- **PRD list filter row** behind a magnifier toggle in the Autonomous
+  TopAppBar ([#13](https://github.com/dmz006/datawatch-app/issues/13)).
+  Status chips (`needs_review` / `running` / `complete` / `rejected`)
+  + Templates checkbox; closed by default. FAB hides while a PRD
+  detail dialog is open (PWA v5.26.36 parity).
+- **Tap a PRD row → `PrdDetailDialog`** with story list rendering.
+  Story description rendered below the title in `pre-wrap` style;
+  `✎` button on each story while parent PRD is in `needs_review` /
+  `revisions_asked` ([#12](https://github.com/dmz006/datawatch-app/issues/12)).
+  Edit modal carries title + multi-line description fields.
+- **Approve / Reject buttons** on the PRD detail dialog when status
+  is `needs_review` or `revisions_asked`
+  ([#18](https://github.com/dmz006/datawatch-app/issues/18)).
+  Reject prompts for a required reason.
+- **File pills on story rows** ([#19](https://github.com/dmz006/datawatch-app/issues/19)).
+  `📝` blue pills for `story.files` (planned), green pills for
+  `story.files_touched` (post-spawn). `✎ files` button opens the
+  file-list edit modal (one path per line, 50-cap). Conflict
+  detection across stories deferred to v0.38.2.
+- **Transport** — new `editStory(prdId, storyId, newTitle?,
+  newDescription?, actor?)` and `editFiles(prdId, storyId|taskId,
+  files, actor?)` on `TransportClient` + `RestTransport`. Backed by
+  `POST /api/autonomous/prds/{id}/edit_story` and `…/edit_files`.
+
+### Notes
+
+- v0.38.2 closes #20 (unified Profile dropdown in New Session modal —
+  `NewSessionScreen` already has a profile picker; PWA v5.26.63's
+  collapse onto a single Profile selector + Cluster sub-dropdown
+  rebuild stays in scope).
+- Per-story Decomposition profile dropdown (PWA v5.26.60-62) and
+  Settings → Autonomous "per-story approval gate" toggle are part of
+  #18; included as the Approve/Reject affordance, but the
+  `autonomous.per_story_approval` config-key surface stays on the
+  Settings → Autonomous tab (deferred to v0.38.2).
+
 ## [0.38.0] — 2026-04-28 (Autonomous tab foundation)
 
 ### Added

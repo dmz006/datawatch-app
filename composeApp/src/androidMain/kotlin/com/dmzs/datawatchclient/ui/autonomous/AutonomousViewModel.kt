@@ -59,6 +59,81 @@ public class AutonomousViewModel : ViewModel() {
         }
     }
 
+    public fun approve(prdId: String) {
+        viewModelScope.launch {
+            val profile = activeProfile() ?: return@launch
+            ServiceLocator.transportFor(profile).prdAction(prdId, "approve").fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        banner = "Approve failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
+        }
+    }
+
+    public fun reject(prdId: String, reason: String) {
+        viewModelScope.launch {
+            val profile = activeProfile() ?: return@launch
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+                }
+            ServiceLocator.transportFor(profile).prdAction(prdId, "reject", body).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        banner = "Reject failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
+        }
+    }
+
+    public fun editStory(
+        prdId: String,
+        storyId: String,
+        newTitle: String?,
+        newDescription: String?,
+    ) {
+        viewModelScope.launch {
+            val profile = activeProfile() ?: return@launch
+            ServiceLocator.transportFor(profile).editStory(
+                prdId = prdId,
+                storyId = storyId,
+                newTitle = newTitle?.takeIf { it.isNotBlank() },
+                newDescription = newDescription?.takeIf { it.isNotBlank() },
+            ).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        banner = "Edit story failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
+        }
+    }
+
+    public fun editFiles(
+        prdId: String,
+        storyId: String,
+        files: List<String>,
+    ) {
+        viewModelScope.launch {
+            val profile = activeProfile() ?: return@launch
+            ServiceLocator.transportFor(profile)
+                .editFiles(prdId = prdId, storyId = storyId, files = files).fold(
+                    onSuccess = { refresh() },
+                    onFailure = { err ->
+                        _state.value = _state.value.copy(
+                            banner = "Edit files failed — ${err.message ?: err::class.simpleName}",
+                        )
+                    },
+                )
+        }
+    }
+
     private suspend fun activeProfile(): com.dmzs.datawatchclient.domain.ServerProfile? {
         val activeId = ServiceLocator.activeServerStore.get() ?: return null
         return ServiceLocator.profileRepository.observeAll().first()

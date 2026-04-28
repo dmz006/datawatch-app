@@ -731,6 +731,67 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun editStory(
+        prdId: String,
+        storyId: String,
+        newTitle: String?,
+        newDescription: String?,
+        actor: String?,
+    ): Result<Unit> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                    newTitle?.let {
+                        put("new_title", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                    newDescription?.let {
+                        put("new_description", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                    actor?.let {
+                        put("actor", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/edit_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun editFiles(
+        prdId: String,
+        storyId: String?,
+        taskId: String?,
+        files: List<String>,
+        actor: String?,
+    ): Result<Unit> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    storyId?.let {
+                        put("story_id", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                    taskId?.let {
+                        put("task_id", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                    put(
+                        "files",
+                        kotlinx.serialization.json.buildJsonArray {
+                            files.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                        },
+                    )
+                    actor?.let {
+                        put("actor", kotlinx.serialization.json.JsonPrimitive(it))
+                    }
+                }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/edit_files") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             // PWA ships `{channels: [{id, type, enabled, ...}, ...]}`;

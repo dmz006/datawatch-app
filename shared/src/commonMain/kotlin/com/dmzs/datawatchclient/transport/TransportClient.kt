@@ -366,6 +366,33 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * POST /api/autonomous/prds/{id}/edit_story — story title +
+     * description edit while parent PRD is in needs_review or
+     * revisions_asked. Empty `new_description` preserves existing.
+     * Issue #12.
+     */
+    public suspend fun editStory(
+        prdId: String,
+        storyId: String,
+        newTitle: String? = null,
+        newDescription: String? = null,
+        actor: String? = null,
+    ): Result<Unit>
+
+    /**
+     * POST /api/autonomous/prds/{id}/edit_files — story or task
+     * files-list edit. Pass story_id OR task_id, never both.
+     * Issue #19.
+     */
+    public suspend fun editFiles(
+        prdId: String,
+        storyId: String? = null,
+        taskId: String? = null,
+        files: List<String> = emptyList(),
+        actor: String? = null,
+    ): Result<Unit>
+
+    /**
      * GET /api/memory/export — dump of every memory as a single
      * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes
      * so the UI can hand them off to a SAF `ACTION_CREATE_DOCUMENT`
