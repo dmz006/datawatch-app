@@ -242,6 +242,7 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
                         com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
                         com.dmzs.datawatchclient.ui.memory.MemoryCard()
+                        com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
                         com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                     }

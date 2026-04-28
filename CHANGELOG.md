@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.37.0] — 2026-04-28 (Mempalace surfaces — sweep / spellcheck / extract)
+
+### Added
+
+- **Settings → Monitor — Mempalace card** ([#21](https://github.com/dmz006/datawatch-app/issues/21)).
+  Surfaces the v5.27.0 mempalace operator endpoints:
+  - **Sweep stale** — older-than-N-days input + `dry-run` checkbox
+    (default on); *Estimate* / *Sweep now* button reports the count.
+  - **Spellcheck** — text field + Check action, renders the
+    Levenshtein suggestions inline (daemon never rewrites).
+  - **Extract facts** — text field + Extract action, renders the
+    SVO triples (`subject — verb → object`).
+- **Transport** — new methods on `TransportClient` + `RestTransport`:
+  `memoryPin(id, pinned)`, `memorySweepStale(olderThanDays, dryRun)`,
+  `memorySpellcheck(text, extraWords)`, `memoryExtractFacts(text)`,
+  `memoryWakeup(projectDir, agentId, parentAgentId, parentName)`.
+- **DTOs** — `MemoryPinDto`, `MemorySweepStale*Dto`, `MemorySpellcheck*Dto`,
+  `SpellcheckSuggestionDto`, `MemoryExtractFacts*Dto`, `SvoTripleDto`.
+
+### Notes
+
+- `pin` transport ships in this release but the per-row pin button on
+  `MemoryCard` is queued for v0.37.1 — keeping the v0.37.0 UI delta
+  contained to the new card.
+- `wakeup` is a session-lifecycle helper rather than an operator UI;
+  exposed on the transport so future agent-bootstrap flows can call
+  it without another release.
+
 ## [0.36.2] — 2026-04-28 (Connection resilience completions)
 
 ### Changed

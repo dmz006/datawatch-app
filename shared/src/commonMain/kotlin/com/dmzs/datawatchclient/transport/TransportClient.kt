@@ -299,6 +299,55 @@ public interface TransportClient {
     /** POST /api/memory/delete {id} — delete a single memory by id. */
     public suspend fun memoryDelete(id: Long): Result<Unit>
 
+    // ---- v0.37.0 mempalace surfaces (datawatch v5.27.0 / #21) ----
+
+    /**
+     * POST /api/memory/pin `{id, pinned}` — toggle the always-surface
+     * flag so the entry sticks in L1 retrieval regardless of recency
+     * decay. Idempotent.
+     */
+    public suspend fun memoryPin(id: Long, pinned: Boolean): Result<Unit>
+
+    /**
+     * POST /api/memory/sweep_stale `{older_than_days, dry_run}` —
+     * similarity-stale eviction. Returns the count of entries that
+     * would be (or were) removed; the daemon runs dry by default.
+     */
+    public suspend fun memorySweepStale(
+        olderThanDays: Int,
+        dryRun: Boolean = true,
+    ): Result<Int>
+
+    /**
+     * POST /api/memory/spellcheck `{text, extra_words}` — Levenshtein
+     * suggestions; never rewrites the input. Returns a list of
+     * `{word, suggestions[]}` pairs.
+     */
+    public suspend fun memorySpellcheck(
+        text: String,
+        extraWords: List<String> = emptyList(),
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.SpellcheckSuggestionDto>>
+
+    /**
+     * POST /api/memory/extract_facts `{text}` — heuristic SVO triple
+     * extraction. Returns `[{subject, verb, object}]`.
+     */
+    public suspend fun memoryExtractFacts(
+        text: String,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.SvoTripleDto>>
+
+    /**
+     * GET /api/memory/wakeup — agent-state hydration on session
+     * start. Returns the wakeup body the daemon would hand a fresh
+     * agent for the supplied (project_dir, agent_id, parent_*).
+     */
+    public suspend fun memoryWakeup(
+        projectDir: String? = null,
+        agentId: String? = null,
+        parentAgentId: String? = null,
+        parentName: String? = null,
+    ): Result<String>
+
     /**
      * GET /api/memory/export — dump of every memory as a single
      * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes

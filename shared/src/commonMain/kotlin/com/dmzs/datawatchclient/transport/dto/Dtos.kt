@@ -369,3 +369,59 @@ public data class ObserverClusterNodeDto(
     @SerialName("cpu_pct") val cpuPct: Double = 0.0,
     @SerialName("mem_pct") val memPct: Double = 0.0,
 )
+
+// ============================================================
+// v0.37.0 — mempalace surfaces (datawatch v5.27.0 / #21)
+// ============================================================
+
+@Serializable
+public data class MemoryPinDto(
+    val id: Long,
+    val pinned: Boolean,
+)
+
+@Serializable
+public data class MemorySweepStaleRequestDto(
+    @SerialName("older_than_days") val olderThanDays: Int,
+    @SerialName("dry_run") val dryRun: Boolean = true,
+)
+
+@Serializable
+public data class MemorySweepStaleResponseDto(
+    val count: Int = 0,
+    @SerialName("dry_run") val dryRun: Boolean = true,
+)
+
+@Serializable
+public data class MemorySpellcheckRequestDto(
+    val text: String,
+    @SerialName("extra_words") val extraWords: List<String> = emptyList(),
+)
+
+@Serializable
+public data class SpellcheckSuggestionDto(
+    val word: String = "",
+    val suggestions: List<String> = emptyList(),
+)
+
+@Serializable
+public data class MemorySpellcheckResponseDto(
+    val suggestions: List<SpellcheckSuggestionDto> = emptyList(),
+)
+
+@Serializable
+public data class MemoryExtractFactsRequestDto(
+    val text: String,
+)
+
+@Serializable
+public data class SvoTripleDto(
+    val subject: String = "",
+    val verb: String = "",
+    @SerialName("object") val obj: String = "",
+)
+
+@Serializable
+public data class MemoryExtractFactsResponseDto(
+    val triples: List<SvoTripleDto> = emptyList(),
+)

@@ -608,6 +608,91 @@ public class RestTransport(
             }.body<ByteArray>()
         }
 
+    override suspend fun memoryPin(id: Long, pinned: Boolean): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/pin") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    com.dmzs.datawatchclient.transport.dto.MemoryPinDto(
+                        id = id,
+                        pinned = pinned,
+                    ),
+                )
+            }.body<Unit>()
+        }
+
+    override suspend fun memorySweepStale(
+        olderThanDays: Int,
+        dryRun: Boolean,
+    ): Result<Int> =
+        request {
+            val res: com.dmzs.datawatchclient.transport.dto.MemorySweepStaleResponseDto =
+                client.post("${profile.baseUrl}/api/memory/sweep_stale") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        com.dmzs.datawatchclient.transport.dto.MemorySweepStaleRequestDto(
+                            olderThanDays = olderThanDays,
+                            dryRun = dryRun,
+                        ),
+                    )
+                }.body()
+            res.count
+        }
+
+    override suspend fun memorySpellcheck(
+        text: String,
+        extraWords: List<String>,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.SpellcheckSuggestionDto>> =
+        request {
+            val res: com.dmzs.datawatchclient.transport.dto.MemorySpellcheckResponseDto =
+                client.post("${profile.baseUrl}/api/memory/spellcheck") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        com.dmzs.datawatchclient.transport.dto.MemorySpellcheckRequestDto(
+                            text = text,
+                            extraWords = extraWords,
+                        ),
+                    )
+                }.body()
+            res.suggestions
+        }
+
+    override suspend fun memoryExtractFacts(
+        text: String,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.SvoTripleDto>> =
+        request {
+            val res: com.dmzs.datawatchclient.transport.dto.MemoryExtractFactsResponseDto =
+                client.post("${profile.baseUrl}/api/memory/extract_facts") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        com.dmzs.datawatchclient.transport.dto.MemoryExtractFactsRequestDto(
+                            text = text,
+                        ),
+                    )
+                }.body()
+            res.triples
+        }
+
+    override suspend fun memoryWakeup(
+        projectDir: String?,
+        agentId: String?,
+        parentAgentId: String?,
+        parentName: String?,
+    ): Result<String> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/wakeup") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                projectDir?.let { parameter("project_dir", it) }
+                agentId?.let { parameter("agent_id", it) }
+                parentAgentId?.let { parameter("parent_agent_id", it) }
+                parentName?.let { parameter("parent_name", it) }
+            }.body<String>()
+        }
+
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             // PWA ships `{channels: [{id, type, enabled, ...}, ...]}`;
