@@ -9,6 +9,7 @@
     <ID>TooGenericExceptionCaught:WearVoiceRecorder.kt$WearVoiceRecorder$e: Throwable</ID>
     <ID>TooManyFunctions:MonitorTileService.kt$MonitorTileService : TileService</ID>
     <ID>TooManyFunctions:SessionsTileService.kt$SessionsTileService : TileService</ID>
+    <ID>TooManyFunctions:WearMainActivity.kt$WearSessionCountsViewModel : AndroidViewModel</ID>
     <ID>TooManyFunctions:WearMainActivity.kt$com.dmzs.datawatchclient.wear.WearMainActivity.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -78,6 +78,20 @@ public class WearSyncService(
                         scope.launch { forwardWatchReply(sessionId, text) }
                     }
                 }
+                PRD_ACTION_PATH -> {
+                    // Watch-initiated PRD action: payload is
+                    // "prdId\naction\nreason?". reason is optional and
+                    // only meaningful for `reject`.
+                    val body = runCatching { String(ev.data, Charsets.UTF_8) }
+                        .getOrNull().orEmpty()
+                    val parts = body.split("\n", limit = 3)
+                    val prdId = parts.getOrNull(0).orEmpty()
+                    val action = parts.getOrNull(1).orEmpty()
+                    val reason = parts.getOrNull(2).orEmpty()
+                    if (prdId.isNotEmpty() && action.isNotEmpty()) {
+                        scope.launch { forwardWatchPrdAction(prdId, action, reason) }
+                    }
+                }
                 AUDIO_PATH -> {
                     // v0.35.8 — watch-initiated voice transcribe.
                     // Payload is "sessionId\n<utf-8 garbage>" + raw
@@ -222,6 +236,35 @@ public class WearSyncService(
                                     ),
                                 )
                             }
+                            // v0.40.0 — also publish PRDs while
+                            // we already have the active profile +
+                            // transport. needs_review and running
+                            // PRDs only, capped at 8 (DataItem
+                            // budget; matches the sessions cap).
+                            ServiceLocator.transportFor(profile).listPrds().onSuccess { dto ->
+                                val items =
+                                    dto.prds
+                                        .filter {
+                                            val s = it.status.lowercase()
+                                            s == "needs_review" || s == "running" ||
+                                                s == "revisions_asked"
+                                        }
+                                        .take(8)
+                                        .map { p ->
+                                            PrdSnapshotItem(
+                                                id = p.id,
+                                                title = (p.title ?: p.name)
+                                                    .take(40),
+                                                status = p.status,
+                                            )
+                                        }
+                                publishPrds(items)
+                            }.onFailure {
+                                // Server has no autonomous surface or
+                                // older daemon — clear the list so
+                                // the watch hides the page gracefully.
+                                publishPrds(emptyList())
+                            }
                         }
                     }
                 }
@@ -233,6 +276,36 @@ public class WearSyncService(
     public fun stop() {
         runCatching {
             Wearable.getMessageClient(context).removeListener(messageListener)
+        }
+    }
+
+    /**
+     * Phone-side handler for the watch's PRD action round-trip
+     * (v0.40.0). Posts to /api/autonomous/prds/{id}/{action} with an
+     * optional reason payload (used by reject). Best-effort; failure
+     * is silently absorbed — the watch UI just won't see the PRD
+     * disappear from the needs_review list on the next refresh.
+     */
+    private suspend fun forwardWatchPrdAction(
+        prdId: String,
+        action: String,
+        reason: String,
+    ) {
+        runCatching {
+            val activeId = ServiceLocator.activeServerStore.get()
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return
+            val body =
+                if (reason.isNotEmpty()) {
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+                    }
+                } else {
+                    null
+                }
+            ServiceLocator.transportFor(profile).prdAction(prdId, action, body)
         }
     }
 
@@ -403,6 +476,32 @@ public class WearSyncService(
         }
     }
 
+    /**
+     * v0.40.0 — publish the active server's recent needs_review /
+     * running PRD list to the watch's PRDs page. Best-effort, polled
+     * on the same cadence as stats so it stays cheap. Card on the
+     * watch hides itself when this list is empty (no autonomous
+     * surface configured / no PRDs yet).
+     */
+    private fun publishPrds(items: List<PrdSnapshotItem>) {
+        runCatching {
+            val req =
+                PutDataMapRequest.create(PRDS_PATH).apply {
+                    dataMap.putStringArray("ids", items.map { it.id }.toTypedArray())
+                    dataMap.putStringArray("titles", items.map { it.title }.toTypedArray())
+                    dataMap.putStringArray("statuses", items.map { it.status }.toTypedArray())
+                    dataMap.putLong("ts", System.currentTimeMillis())
+                }.asPutDataRequest().setUrgent()
+            Wearable.getDataClient(context).putDataItem(req)
+        }
+    }
+
+    private data class PrdSnapshotItem(
+        val id: String,
+        val title: String,
+        val status: String,
+    )
+
     private fun publishSessions(snap: SessionsListSnapshot) {
         runCatching {
             val req =
@@ -461,8 +560,10 @@ public class WearSyncService(
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
+        public const val PRDS_PATH: String = "/datawatch/prds"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
         public const val REPLY_PATH: String = "/datawatch/reply"
+        public const val PRD_ACTION_PATH: String = "/datawatch/prdAction"
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val STATS_POLL_MS: Long = 15_000L
