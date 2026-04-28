@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.36.2] — 2026-04-28 (Connection resilience completions)
+
+### Changed
+
+- **Reachability dot pulses while probing.** When `reachable == null`
+  (no probe completed yet) the amber dot now scales 1.0 ↔ 1.4 on a
+  900 ms reverse loop so the user sees that work is happening
+  instead of a static unknown.
+- **Screen-unlock lifecycle observer.** `AppRoot` registers a
+  `LifecycleEventObserver` for `ON_RESUME` and pings every enabled
+  profile so the reachability dots reflect current state instead
+  of whatever was true when the screen turned off. The 5-second
+  poll loop in `SessionsViewModel` continues to drive subsequent
+  refresh; this just removes the "first-poll lag" on unlock.
+
 ## [0.36.1] — 2026-04-28 (Picker mkdir + response-noise filter)
 
 ### Added
