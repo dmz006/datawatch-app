@@ -759,6 +759,15 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun orchestratorGraph(
+        id: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto> =
+        request {
+            client.get("${profile.baseUrl}/api/orchestrator/graphs/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun editFiles(
         prdId: String,
         storyId: String?,

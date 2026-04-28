@@ -56,18 +56,28 @@ internal fun PrdDetailDialog(
     var rejectReason by remember { mutableStateOf("") }
     var editingStory: PrdStoryDto? by remember { mutableStateOf(null) }
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
+    var graphOpen by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "${prd.status.replace('_', ' ')} · ${prd.stories.size} stories",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "${prd.status.replace('_', ' ')} · ${prd.stories.size} stories",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    // v0.39.0 — open the orchestrator graph for this
+                    // PRD; renders the DAG nodes + per-node observer
+                    // summary if the daemon emits it.
+                    TextButton(onClick = { graphOpen = true }) {
+                        Text("📊 Graph", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                Spacer(Modifier.size(4.dp))
                 if (prd.stories.isEmpty()) {
                     Text(
                         "No stories yet (still decomposing?).",
@@ -155,6 +165,12 @@ internal fun PrdDetailDialog(
                 onEditFiles(story.id, files)
                 editingFilesFor = null
             },
+        )
+    }
+    if (graphOpen) {
+        com.dmzs.datawatchclient.ui.orchestrator.OrchestratorGraphDialog(
+            graphId = prd.id,
+            onDismiss = { graphOpen = false },
         )
     }
 }

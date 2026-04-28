@@ -494,3 +494,46 @@ public data class NewPrdRequestDto(
 public data class NewPrdResponseDto(
     val id: String = "",
 )
+
+// ============================================================
+// v0.39.0 — orchestrator PRD-DAG graph (datawatch v4.7.0 / S13)
+// ============================================================
+
+@Serializable
+public data class OrchestratorGraphDto(
+    val id: String = "",
+    val name: String? = null,
+    val nodes: List<OrchestratorNodeDto> = emptyList(),
+    val edges: List<OrchestratorEdgeDto> = emptyList(),
+)
+
+@Serializable
+public data class OrchestratorNodeDto(
+    val id: String = "",
+    val name: String? = null,
+    /** "running" / "complete" / "needs_review" / etc. */
+    val status: String = "",
+    val kind: String? = null,
+    /**
+     * S13 (v4.7.0) — present when the node is a Shape A peer that
+     * pushed a recent envelope. Omitted on agents that haven't
+     * registered or whose last push expired; the UI hides the
+     * badge in that case.
+     */
+    @SerialName("observer_summary") val observerSummary: ObserverSummaryDto? = null,
+)
+
+@Serializable
+public data class ObserverSummaryDto(
+    @SerialName("cpu_pct") val cpuPct: Double? = null,
+    @SerialName("rss_mb") val rssMb: Long? = null,
+    @SerialName("envelope_count") val envelopeCount: Int? = null,
+    @SerialName("last_push_at") val lastPushAt: String? = null,
+)
+
+@Serializable
+public data class OrchestratorEdgeDto(
+    val from: String = "",
+    val to: String = "",
+    val kind: String? = null,
+)

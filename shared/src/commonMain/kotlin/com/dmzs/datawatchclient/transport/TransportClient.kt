@@ -393,6 +393,14 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * GET /api/orchestrator/graphs/{id} — PRD-DAG graph with
+     * per-node observer_summary (datawatch v4.7.0 / S13). Issue #7.
+     */
+    public suspend fun orchestratorGraph(
+        id: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto>
+
+    /**
      * GET /api/memory/export — dump of every memory as a single
      * JSON/CSV/SQL blob (parent-negotiated). Returns the raw bytes
      * so the UI can hand them off to a SAF `ACTION_CREATE_DOCUMENT`
