@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.35.7] — 2026-04-28 (PWA v5.1.0–v5.2.0 alignment + data freshness)
+
+### Changed
+
+- **Terminal toolbar always renders** (closes [#8](https://github.com/dmz006/datawatch-app/issues/8)). The badge-row `Aa ▾ / Aa ▴` toggle added in v0.35.6 is gone — PWA v5.1.0 ripped the toggle, and the row reads cleanly at every viewport size. Upstream design-sync issue [dmz006/datawatch#24](https://github.com/dmz006/datawatch/issues/24) is now obsolete and will be closed.
+- **Sessions list — "Show / Hide history (N)" → "History (N)"** to match PWA v5.1.0 (drops the verb churn).
+- **Session detail — tmux arrow-key row** (mirrors PWA v5.2.0). Four AssistChips (`↑ ↓ ← →`) above the composer send the corresponding ANSI escape sequences via the existing `WsOutbound.sendInput` path. Same chip styling as the saved-commands quick row.
+- **Settings → About — Play Store row** added (mirrors PWA v5.2.0). Currently shows `(pending submission)`; URL slots in once the listing publishes.
+- **Settings → About — `ConfigViewerCard` removed** to align with the PWA About surface (which carries no raw-config blob). The general-config keys remain reachable via `Settings → General` config panels — the only place users actually edit them.
+
+### Fixed
+
+- **Live `last_response` is now refetched on demand** (BL178 / [#9](https://github.com/dmz006/datawatch-app/issues/9)). Tapping the `💾 Response` button on the session info bar now triggers a forced server re-read before opening `LastResponseSheet`. The daemon's `Manager.GetLastResponse` re-captures from live tmux on every read for `running` / `waiting_input` sessions; cached value from the 5-second list poll was up to 5 s stale and would flash a slightly older snippet.
+- **Input-Required banner refreshes on bulk WS state pushes** (mirrors PWA v5.26.49 fix). `SessionDetailViewModel.startStream` now triggers a `refreshFromServer()` on every `SessionEvent.StateChange` frame, so a session that flips to `waiting_input` via the bulk-sessions push surfaces the yellow banner + prompt-context text immediately instead of after the next 5-second poll. Closes the operator complaint *"if I'm in a session and it ends, the yellow box with prompt details doesn't show up, I have to exit and re-enter."*
+
 ## [0.35.6] — 2026-04-24 (Composer reshuffle + voice-reply fix + terminal toolbar toggle)
 
 ### Changed

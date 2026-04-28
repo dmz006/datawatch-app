@@ -119,12 +119,6 @@ public fun SessionDetailScreen(
     var scheduleOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
     var timelineOpen by remember { mutableStateOf(false) }
-    // v0.35.6 user 2026-04-24: terminal toolbar (font size / scroll)
-    // collapses behind a toggle on the badge line. Hidden by default
-    // so the badges + terminal get more vertical real-estate; the
-    // user toggles it on only when they need font-size / scroll
-    // controls. Upstream design-sync issue filed against PWA.
-    var terminalToolbarVisible by remember(sessionId) { mutableStateOf(false) }
 
     // Persistent mode preference — Terminal is the default (matches the
     // PWA), Chat re-renders the existing event list with quick-reply
@@ -366,10 +360,13 @@ public fun SessionDetailScreen(
                 // v0.35.3's move so both actions are one tap from
                 // their natural anchor.
                 hasResponse = hasResponse,
-                onResponse = { responseOpen = true },
-                terminalToolbarVisible = terminalToolbarVisible,
-                onToggleTerminalToolbar = {
-                    terminalToolbarVisible = !terminalToolbarVisible
+                onResponse = {
+                    // v0.35.8 — force a server refetch before opening
+                    // the sheet so the daemon's tmux re-capture
+                    // (BL178) lands; cached value would be up to 5 s
+                    // stale on running/waiting_input sessions.
+                    vm.refreshFromServer()
+                    responseOpen = true
                 },
             )
             if (responseOpen) {
@@ -432,9 +429,12 @@ public fun SessionDetailScreen(
                 )
             } else {
                 val terminalController = rememberTerminalController()
-                if (terminalToolbarVisible) {
-                    TerminalToolbar(controller = terminalController, sessionId = sessionId)
-                }
+                // v0.35.7 — toolbar always renders (per
+                // dmz006/datawatch-app#8 + PWA v5.1.0). The Aa toggle
+                // added in v0.35.6 was reverted because the row reads
+                // cleanly at every viewport size and the toggle just
+                // got in the way.
+                TerminalToolbar(controller = terminalController, sessionId = sessionId)
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
@@ -656,11 +656,6 @@ private fun SessionInfoBar(
     // a non-blank lastResponse. Taps open the response viewer sheet.
     hasResponse: Boolean = false,
     onResponse: () -> Unit = {},
-    // v0.35.6: badge-line toggle that shows / hides the
-    // font-size + scroll TerminalToolbar beneath the badges.
-    // Hidden by default so the badges row stays compact.
-    terminalToolbarVisible: Boolean = false,
-    onToggleTerminalToolbar: () -> Unit = {},
 ) {
     val isActive =
         state == SessionState.Running || state == SessionState.Waiting ||
@@ -770,27 +765,6 @@ private fun SessionInfoBar(
                 ) {
                     Text("💾 Response", style = MaterialTheme.typography.labelSmall)
                 }
-            }
-            // v0.35.6 — terminal-toolbar show/hide toggle. Keep the
-            // glyph compact so it reads as a "font controls" affordance
-            // without eating horizontal space in the badge row.
-            TextButton(
-                onClick = onToggleTerminalToolbar,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 8.dp,
-                    vertical = 2.dp,
-                ),
-            ) {
-                Text(
-                    if (terminalToolbarVisible) "Aa ▴" else "Aa ▾",
-                    style = MaterialTheme.typography.labelSmall,
-                    color =
-                        if (terminalToolbarVisible) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                )
             }
         }
     }
@@ -1677,6 +1651,36 @@ private fun ReplyComposer(
                     },
                 )
             }
+        }
+    }
+
+    // v0.35.7 — tmux arrow-key row mirrors PWA v5.2.0
+    // (saved-commands quick row neighbour). ANSI escape sequences
+    // sent via the WS hub `send_input` envelope, same path the
+    // QuickCommandsSheet keys ride. Always rendered when not in
+    // chat mode so the user can drive a TUI menu without hunting
+    // for the saved-commands sheet.
+    androidx.compose.foundation.lazy.LazyRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+    ) {
+        items(
+            listOf(
+                "[A" to "↑",
+                "[B" to "↓",
+                "[D" to "←",
+                "[C" to "→",
+            ),
+        ) { (seq, label) ->
+            androidx.compose.material3.AssistChip(
+                onClick = { onQuickReply(seq) },
+                label = {
+                    Text(label, style = MaterialTheme.typography.labelLarge)
+                },
+                colors = AssistChipDefaults.assistChipColors(
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
         }
     }
 

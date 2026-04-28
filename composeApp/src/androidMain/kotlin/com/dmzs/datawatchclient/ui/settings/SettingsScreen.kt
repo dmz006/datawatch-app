@@ -342,15 +342,15 @@ public fun SettingsScreen(
                     SettingsTab.About -> {
                         // Daemon admin cluster — About carries the
                         // actions that target daemon meta / process
-                        // lifecycle. Update + Restart moved here in
-                        // v0.33.13 (B19); Kill Orphans joins them in
-                        // v0.35.6 per user direction 2026-04-24.
+                        // lifecycle. v0.35.7 strips the raw
+                        // `ConfigViewerCard` to align with PWA About
+                        // (which has none); Settings → General config
+                        // panels already surface every actionable key.
                         AboutCard(activeProfile = activeProfile)
                         com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                         com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                         com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                         com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
-                        com.dmzs.datawatchclient.ui.config.ConfigViewerCard()
                     }
                 }
             }
@@ -759,6 +759,20 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                     "github.com/dmz006/datawatch",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            // v0.35.7 — Play Store placeholder mirroring PWA v5.2.0
+            // About link addition. Replace the URL with the listing
+            // URL once submission lands.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Play Store", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "(pending submission)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             // v0.33.13 (B25) sessions-details footer. Sourced from
