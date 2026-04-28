@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.39.0] — 2026-04-28 (Orchestrator PRD-DAG graph + observer_summary)
+
+### Added
+
+- **`OrchestratorGraphDialog`** — closes
+  [#7](https://github.com/dmz006/datawatch-app/issues/7) (S13).
+  Reachable via the new "📊 Graph" button on `PrdDetailDialog`.
+  Renders nodes as a list (no force-directed layout — overkill on a
+  phone screen) with each row carrying its `observer_summary` badge:
+  CPU %, RSS MB, envelope count. Outgoing edges render as
+  `→ targetId (kind)` lines below each node so the DAG topology is
+  legible without arrows.
+- **`OrchestratorGraphViewModel`** loads `/api/orchestrator/graphs/{id}`
+  on demand. Falls back gracefully when the daemon predates the
+  S13 endpoint or when a node has no `observer_summary` payload.
+- **Transport** — `orchestratorGraph(id)` on `TransportClient` +
+  `RestTransport`.
+- **DTOs** — `OrchestratorGraphDto` (id + name + nodes[] + edges[]),
+  `OrchestratorNodeDto` (id, name, status, kind, observer_summary?),
+  `ObserverSummaryDto` (cpu_pct, rss_mb, envelope_count, last_push_at),
+  `OrchestratorEdgeDto` (from, to, kind?).
+
 ## [0.38.1] — 2026-04-28 (Autonomous tab features)
 
 ### Added
