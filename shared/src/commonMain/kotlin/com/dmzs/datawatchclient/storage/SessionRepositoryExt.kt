@@ -39,6 +39,7 @@ public fun SessionRepository.observeForProfileAny(
                     lastResponse = it.last_response,
                     outputMode = it.output_mode,
                     inputMode = it.input_mode,
+                    agentId = it.agent_id,
                 )
             }
         }

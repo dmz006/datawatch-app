@@ -64,6 +64,12 @@ public data class SessionDto(
      * transcript), `"log"` (read-only). PWA branches on this at
      * app.js:1644 (`sess.output_mode === 'chat'`).
      */
+    /**
+     * v0.42.6 — Container Workers: when set, this session was spawned by
+     * a worker agent. PWA renders a purple ⬡ chip on the row so the
+     * provenance is visible at a glance. PWA v5.26.58.
+     */
+    @SerialName("agent_id") val agentId: String? = null,
     @SerialName("output_mode") val outputMode: String? = null,
     /**
      * Input mode. `"tmux"` (default), `"chat"`, or `"none"` for

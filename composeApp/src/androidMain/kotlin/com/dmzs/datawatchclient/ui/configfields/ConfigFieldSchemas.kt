@@ -76,19 +76,10 @@ public object ConfigFieldSchemas {
                 ),
         )
 
-    public val Rtk: ConfigSection =
-        ConfigSection(
-            id = "gc_rtk",
-            title = "RTK (Token Savings)",
-            fields =
-                listOf(
-                    Toggle("rtk.enabled", "Enable RTK integration"),
-                    TextField("rtk.binary", "RTK binary path", "rtk"),
-                    Toggle("rtk.show_savings", "Show savings in stats"),
-                    Toggle("rtk.auto_init", "Auto-init hooks if missing"),
-                    NumberField("rtk.discover_interval", "Discover check interval (sec, 0=off)"),
-                ),
-        )
+    // v0.42.6 — `gc_rtk` removed. PWA carries RTK only on the LLM tab
+    // (LLM_CONFIG_FIELDS / `lc_rtk`); the duplicate General-tab card
+    // was a mobile-only artifact that has been retired in lockstep
+    // with the SettingsScreen.kt General tab reorder.
 
     public val Pipelines: ConfigSection =
         ConfigSection(
@@ -127,6 +118,37 @@ public object ConfigFieldSchemas {
                     // runs. Operator UI for the gate already lives on
                     // PrdDetailDialog (v0.38.1).
                     Toggle("autonomous.per_story_approval", "Per-story approval gate"),
+                ),
+        )
+
+    /**
+     * v0.42.6 — Container Workers (cfg.Agents) settings (PWA v5.26.56
+     * parity, gap #4 from the 72h audit). Surfaces every server-side
+     * `agents.*` knob so the operator can configure containerized
+     * worker spawning from the phone instead of editing config.toml
+     * by hand.
+     */
+    public val Agents: ConfigSection =
+        ConfigSection(
+            id = "gc_agents",
+            title = "Container Workers",
+            fields =
+                listOf(
+                    TextField("agents.image_prefix", "Container image prefix", "datawatch/worker"),
+                    TextField("agents.image_tag", "Container image tag", "latest"),
+                    TextField("agents.docker_bin", "Docker binary path", "docker"),
+                    TextField("agents.kubectl_bin", "kubectl binary path", "kubectl"),
+                    TextField("agents.callback_url", "Worker callback URL (worker → daemon)"),
+                    NumberField(
+                        "agents.bootstrap_token_ttl_seconds",
+                        "Bootstrap token TTL (sec)",
+                        "300",
+                    ),
+                    NumberField(
+                        "agents.worker_bootstrap_deadline_seconds",
+                        "Worker bootstrap deadline (sec)",
+                        "120",
+                    ),
                 ),
         )
 

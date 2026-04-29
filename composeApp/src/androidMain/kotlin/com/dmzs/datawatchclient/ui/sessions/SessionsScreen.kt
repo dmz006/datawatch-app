@@ -683,6 +683,13 @@ private fun SessionRow(
                 Spacer(modifier = Modifier.width(6.dp))
                 PwaMetaBadge(text = backend)
             }
+            // v0.42.6 — Container Workers provenance chip (PWA v5.26.58).
+            // Purple ⬡ when this session was spawned by a worker agent.
+            // Hidden for user-spawned sessions (the common case).
+            if (!session.agentId.isNullOrBlank()) {
+                Spacer(modifier = Modifier.width(6.dp))
+                WorkerPill(agentId = session.agentId!!)
+            }
             Spacer(modifier = Modifier.weight(1f))
             Icon(
                 if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
@@ -1594,6 +1601,28 @@ private fun PwaMetaBadge(text: String) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = colors.accent2,
+        )
+    }
+}
+
+/**
+ * v0.42.6 — Container Workers provenance pill (PWA v5.26.58 parity).
+ * Purple ⬡ glyph + worker id when the session was spawned by a worker
+ * agent. The agentId is shown in full because PWA does too — workers
+ * are user-named and short.
+ */
+@Composable
+private fun WorkerPill(agentId: String) {
+    val purple = Color(0xFFA855F7)
+    Surface(
+        color = purple.copy(alpha = 0.15f),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+    ) {
+        Text(
+            "⬡ $agentId",
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = purple,
         )
     }
 }

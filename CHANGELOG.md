@@ -8,6 +8,43 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.6] — 2026-04-28 (Container Workers ⬡ pill + cfg.Agents settings + Settings reorder + auto-restart banner cleanup)
+
+### Changed
+
+- **Settings → General tab reordered to mirror PWA's
+  `GENERAL_CONFIG_FIELDS` array verbatim**: Datawatch → Auto-Update
+  → Session → Pipelines → Autonomous → **Orchestrator (PRD-DAG)**
+  → **Plugins** → Whisper, then explicit cards Project Profiles →
+  Cluster Profiles → **Container Workers** → Notifications. User
+  direction 2026-04-28: PRD-DAG orchestrator must precede the
+  plugin framework. The duplicate General-tab `gc_rtk` card was
+  retired — RTK lives in the LLM tab (`lc_rtk`) per PWA.
+- **`RestartNeededBanner` no longer shows the green
+  "auto-restarts on save" affirmation.** User direction
+  2026-04-28: green-state was visual noise on every healthy
+  server. Banner now renders only when there's something
+  actionable — auto-restart OFF (amber + restart button) or a
+  transient status ("Restarting daemon…").
+
+### Added
+
+- **`agent_id` deserialized + persisted.** New `agentId` field on
+  `SessionDto`, `Session`, and the `session` SQLDelight table.
+  Migration `5.sqm` runs `ALTER TABLE session ADD COLUMN agent_id
+  TEXT` so existing local DBs upgrade in place — no data loss for
+  sideload users.
+- **Worker pill on Sessions list rows.** Sessions spawned by a
+  Container Workers agent now render a purple `⬡ <agentId>` chip
+  next to the backend badge (PWA v5.26.58 parity). User-spawned
+  sessions are unchanged. Closes 72h-audit gap #1 (issue #22).
+- **Container Workers (`cfg.Agents`) settings panel.** New section
+  in the General settings tab with every server-side `agents.*`
+  knob: `image_prefix`, `image_tag`, `docker_bin`, `kubectl_bin`,
+  `callback_url`, `bootstrap_token_ttl_seconds`,
+  `worker_bootstrap_deadline_seconds`. Matches PWA v5.26.56.
+  Closes 72h-audit gap #4 (issue #23).
+
 ## [0.42.5] — 2026-04-28 (PRDs nav: full-color 🤖 + hide when not configured)
 
 ### Changed

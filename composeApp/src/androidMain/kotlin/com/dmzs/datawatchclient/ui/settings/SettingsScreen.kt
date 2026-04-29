@@ -247,11 +247,16 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                     }
                     SettingsTab.General -> {
-                        // Matches PWA `data-group="general"`: gc_* config
-                        // sections, Project Profiles, Cluster Profiles,
-                        // Notifications. Active-LLM picker lives here too
-                        // (session.llm_backend is a LlmSelect on the
-                        // Datawatch card — not on the LLM tab, per S8).
+                        // v0.42.6 — General tab now mirrors PWA's
+                        // GENERAL_CONFIG_FIELDS array order verbatim
+                        // (Datawatch → Auto-Update → Session → Pipelines
+                        // → Autonomous → Orchestrator → Plugins →
+                        // Whisper), then the explicit cards: Project
+                        // Profiles → Cluster Profiles → Container
+                        // Workers → Notifications. RTK lives in the
+                        // LLM tab now (PWA's LLM_CONFIG_FIELDS) — the
+                        // duplicate gc_rtk panel was a mobile-only
+                        // artifact and is gone.
                         SecurityCard()
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
@@ -263,19 +268,16 @@ public fun SettingsScreen(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Rtk,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
                         )
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
@@ -287,6 +289,9 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                             kind = "cluster",
                             title = "Cluster profiles",
+                        )
+                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
                         )
                         com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
                     }
@@ -949,8 +954,12 @@ private fun RestartNeededBanner(profile: ServerProfile?) {
     }
 
     val showAmber = autoRestart == false
-    val showGreen = autoRestart == true
-    if (!showAmber && !showGreen && message == null) return
+    // v0.42.6 — only show the banner when there's a problem to flag
+    // (auto-restart OFF) or a transient status to show ("Restarting
+    // daemon…"). User direction 2026-04-28: the green
+    // "auto-restarts on save" affirmation was visual noise on every
+    // healthy server.
+    if (!showAmber && message == null) return
 
     val bg =
         if (showAmber) {
@@ -975,11 +984,8 @@ private fun RestartNeededBanner(profile: ServerProfile?) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                message ?: if (showAmber) {
-                    "⚠ Daemon auto-restart is OFF. Some settings won't take effect until you restart."
-                } else {
-                    "✓ Daemon auto-restarts on save — changes apply immediately."
-                },
+                message
+                    ?: "⚠ Daemon auto-restart is OFF. Some settings won't take effect until you restart.",
                 style = MaterialTheme.typography.bodySmall,
                 color = fg,
                 modifier = Modifier.weight(1f),
