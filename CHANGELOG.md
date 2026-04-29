@@ -8,6 +8,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.4] — 2026-04-28 (diagnostic logging on /datawatch/refreshSession)
+
+### Added
+
+- **Structured `Log.d("WearSync", …)` + `Log.d("WearMain", …)`** at
+  every step of the `/datawatch/refreshSession` round-trip — message
+  receipt, active-server resolution, `listSessions` success / failure,
+  `upsert` (with `lastResponse.length` + 60-char preview),
+  `publishSessions` (per-session `lr=` lengths), and watch-side
+  `applySessions`. On-device verification 2026-04-28 walked the
+  entire chain start to finish and confirmed the popup body matches
+  the PWA / Android `last_response` — leaving the logs in so future
+  Wear bridge investigations don't need a debug-only build cycle.
+
 ## [0.42.3] — 2026-04-28 (watch Sessions filters + popup re-resolves on republish)
 
 ### Fixed
