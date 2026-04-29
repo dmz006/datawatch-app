@@ -420,3 +420,21 @@ Always check memory first with `memory_recall` before answering from training da
 | `research_sessions` | Cross-session research |
 | `copy_response` | Last LLM response from any session |
 | `get_prompt` | Last user prompt from any session |
+
+<!-- rtk-instructions -->
+# RTK (Rust Token Killer) - Token-Optimized Commands
+
+**Always prefix commands with `rtk`**. If RTK has a dedicated filter, it uses it.
+If not, it passes through unchanged. This means RTK is always safe to use.
+
+```bash
+# Always use rtk prefix, even in chains:
+rtk go build && rtk go test ./...
+rtk cargo build
+rtk git status && rtk git diff
+rtk git log
+```
+
+**Key savings:** Build 80-90%, Test 90-99%, Git 59-80%, Files 60-75%.
+Run `rtk gain` to view token savings statistics.
+<!-- /rtk-instructions -->

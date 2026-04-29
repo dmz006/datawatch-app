@@ -70,6 +70,9 @@ internal fun NewPrdDialog(
 
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
+    var backendOptions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var backendMenuOpen by remember { mutableStateOf(false) }
+    var effortMenuOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runCatching {
@@ -77,17 +80,21 @@ internal fun NewPrdDialog(
             val sp =
                 ServiceLocator.profileRepository.observeAll().first()
                     .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
-            ServiceLocator.transportFor(sp).listKindProfiles("project").onSuccess { list ->
+            val transport = ServiceLocator.transportFor(sp)
+            transport.listKindProfiles("project").onSuccess { list ->
                 projectProfiles =
                     list.mapNotNull { obj ->
                         (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
                     }
             }
-            ServiceLocator.transportFor(sp).listKindProfiles("cluster").onSuccess { list ->
+            transport.listKindProfiles("cluster").onSuccess { list ->
                 clusterProfiles =
                     list.mapNotNull { obj ->
                         (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
                     }
+            }
+            transport.listBackends().onSuccess { view ->
+                backendOptions = view.llm
             }
         }
     }
@@ -204,29 +211,52 @@ internal fun NewPrdDialog(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    ) {
+                    // Backend dropdown (from /api/backends)
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
-                            value = backend,
-                            onValueChange = { backend = it },
+                            value = backend.ifEmpty { "(inherit)" },
+                            onValueChange = {},
                             label = { Text("Backend") },
-                            singleLine = true,
-                            modifier = Modifier.padding(end = 4.dp),
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                TextButton(onClick = { backendMenuOpen = !backendMenuOpen }) { Text("▾") }
+                            },
                         )
+                        DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
+                            DropdownMenuItem(text = { Text("(inherit)") }, onClick = { backend = ""; backendMenuOpen = false })
+                            backendOptions.forEach { b ->
+                                DropdownMenuItem(text = { Text(b) }, onClick = { backend = b; backendMenuOpen = false })
+                            }
+                        }
+                    }
+                    // Effort dropdown (predefined values matching PWA)
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
-                            value = effort,
-                            onValueChange = { effort = it },
+                            value = effort.ifEmpty { "(inherit)" },
+                            onValueChange = {},
                             label = { Text("Effort") },
-                            singleLine = true,
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                TextButton(onClick = { effortMenuOpen = !effortMenuOpen }) { Text("▾") }
+                            },
                         )
+                        DropdownMenu(expanded = effortMenuOpen, onDismissRequest = { effortMenuOpen = false }) {
+                            listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough").forEach { e ->
+                                DropdownMenuItem(
+                                    text = { Text(if (e.isEmpty()) "(inherit)" else e) },
+                                    onClick = { effort = e; effortMenuOpen = false },
+                                )
+                            }
+                        }
                     }
                     OutlinedTextField(
                         value = model,
                         onValueChange = { model = it },
                         label = { Text("Model (optional)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
                 } else {
                     // Cluster dropdown — only shown when a project profile

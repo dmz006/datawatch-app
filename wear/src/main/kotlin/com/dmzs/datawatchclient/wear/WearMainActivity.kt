@@ -835,17 +835,20 @@ private fun SessionPopupCentre(
             style = MaterialTheme.typography.caption2,
             color = sessionBadgeColor(session.stateName),
         )
-        val responseBody = fullBody ?: session.lastLine
-        if (fullBody == null && session.lastLine.isBlank()) {
+        // B34: always show "Loading…" until the fresh /datawatch/sessionDetail
+        // reply arrives. Do NOT fall back to session.lastLine (stale DataLayer
+        // preview) — that causes the popup to render outdated content on first
+        // open while the reply is still in-flight.
+        if (fullBody == null) {
             Text(
                 "Loading…",
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.caption2,
                 color = MaterialTheme.colors.onSurfaceVariant,
             )
-        } else if (responseBody.isNotBlank()) {
+        } else if (fullBody.isNotBlank()) {
             Text(
-                responseBody,
+                fullBody,
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.caption2,
                 color = MaterialTheme.colors.onSurface,

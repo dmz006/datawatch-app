@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import com.dmzs.datawatchclient.transport.BackendsView
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdListDto
@@ -34,12 +35,15 @@ class AutonomousViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val noBackends = Result.success(BackendsView(llm = emptyList(), active = null))
+
     @Test
     fun `refresh populates prds on success`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()
             val prds = listOf(PrdDto(id = "p1", name = "x", status = "needs_review"))
             coEvery { t.listPrds() } returns Result.success(PrdListDto(prds = prds))
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.refresh()
@@ -79,6 +83,7 @@ class AutonomousViewModelTest {
             val captured = slot<NewPrdRequestDto>()
             coEvery { t.createPrd(capture(captured)) } returns Result.success("prd-new")
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.create(req)
@@ -94,6 +99,7 @@ class AutonomousViewModelTest {
             val (t, r) = fakeResolver()
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.approve("prd-1")
@@ -107,6 +113,7 @@ class AutonomousViewModelTest {
             val (t, r) = fakeResolver()
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.reject("prd-1", "not coherent")
@@ -121,11 +128,126 @@ class AutonomousViewModelTest {
         }
 
     @Test
+    fun `decompose calls prdAction decompose and refreshes`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.decompose("prd-1")
+
+            coVerify { t.prdAction("prd-1", "decompose", null) }
+        }
+
+    @Test
+    fun `setLlm sends backend effort model in body`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.setLlm("prd-1", "openai", "high", "gpt-4o")
+
+            coVerify {
+                t.prdAction(
+                    "prd-1",
+                    "set_llm",
+                    match { body ->
+                        body.toString().let {
+                            it.contains("openai") && it.contains("high") && it.contains("gpt-4o")
+                        }
+                    },
+                )
+            }
+        }
+
+    @Test
+    fun `runPrd calls prdAction run`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.runPrd("prd-1")
+
+            coVerify { t.prdAction("prd-1", "run", null) }
+        }
+
+    @Test
+    fun `cancelPrd calls deletePrd with hard false`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.deletePrd(any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.cancelPrd("prd-1")
+
+            coVerify { t.deletePrd("prd-1", false) }
+        }
+
+    @Test
+    fun `hardDeletePrd calls deletePrd with hard true`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.deletePrd(any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.hardDeletePrd("prd-1")
+
+            coVerify { t.deletePrd("prd-1", true) }
+        }
+
+    @Test
+    fun `requestRevision sends note in body`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.requestRevision("prd-1", "needs more detail")
+
+            coVerify {
+                t.prdAction(
+                    "prd-1",
+                    "request_revision",
+                    match { it.toString().contains("needs more detail") },
+                )
+            }
+        }
+
+    @Test
+    fun `editPrd calls patchPrd with non-blank fields`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.patchPrd(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
+
+            val vm = AutonomousViewModel(r)
+            vm.editPrd("prd-1", "New title", "  ")
+
+            coVerify { t.patchPrd("prd-1", "New title", null) }
+        }
+
+    @Test
     fun `editStory passes only blank-stripped fields through`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()
             coEvery { t.editStory(any(), any(), any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.editStory(prdId = "prd-1", storyId = "s1", newTitle = "  ", newDescription = "new")
@@ -139,6 +261,7 @@ class AutonomousViewModelTest {
             val (t, r) = fakeResolver()
             coEvery { t.editFiles(any(), any(), any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
+            coEvery { t.listBackends() } returns noBackends
 
             val vm = AutonomousViewModel(r)
             vm.editFiles(prdId = "prd-1", storyId = "s1", files = listOf("a.go", "b.go"))
