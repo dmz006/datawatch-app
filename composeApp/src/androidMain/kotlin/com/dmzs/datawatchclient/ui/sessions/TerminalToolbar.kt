@@ -2,10 +2,14 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -134,7 +138,7 @@ public fun TerminalToolbarControls(
         )
         TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
         TermToolBtn(
-            label = if (state.scrollMode) "⏹" else "↕",
+            label = if (state.scrollMode) "⏹" else "📜",
             onClick = {
                 if (sessionId == null) return@TermToolBtn
                 if (state.scrollMode) {
@@ -153,10 +157,14 @@ public fun TerminalToolbarControls(
 }
 
 /**
- * Scroll-mode navigation strip (PgUp / PgDn / ↑ / ↓ / ESC). Renders
- * only when [state.scrollMode] is on. Caller decides where this
- * lives in the layout — typically directly under the terminal
- * viewport so the buttons are reachable.
+ * Full-width scroll-mode overlay. Replaces the composer/mic/send area
+ * while [state.scrollMode] is active, matching the PWA scroll mode UX:
+ * large PgUp / PgDn / Line-Up / Line-Down / ESC targets are easier to
+ * tap than the tiny quick-action row, and covering the input area makes
+ * the intent obvious — you're reading, not typing.
+ *
+ * Returns `true` if scroll mode is active (callers can skip rendering
+ * the composer when this returns true).
  */
 @Composable
 public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
@@ -166,49 +174,92 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TermToolBtn(
-                label = "PgUp",
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: PageUp")
-                },
-            )
-            TermToolBtn(
-                label = "PgDn",
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: PageDown")
-                },
-            )
-            TermToolBtn(
-                label = "↑",
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: Up")
-                },
-            )
-            TermToolBtn(
-                label = "↓",
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: Down")
-                },
-            )
-            TermToolBtn(
-                label = "ESC — Exit",
-                onClick = {
-                    com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                    state.scrollMode = false
-                },
-                highlight = true,
-            )
+            // Top row: PgUp / PgDn (primary scroll actions)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                BigScrollBtn(
+                    label = "Page Up",
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: PageUp")
+                    },
+                )
+                BigScrollBtn(
+                    label = "Page Down",
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: PageDown")
+                    },
+                )
+            }
+            // Bottom row: line up/down + ESC exit
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                BigScrollBtn(
+                    label = "↑",
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Up")
+                    },
+                )
+                BigScrollBtn(
+                    label = "↓",
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Down")
+                    },
+                )
+                BigScrollBtn(
+                    label = "ESC / Exit",
+                    modifier = Modifier.weight(2f),
+                    highlight = true,
+                    onClick = {
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound
+                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                        state.scrollMode = false
+                    },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun BigScrollBtn(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    highlight: Boolean = false,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 48.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+        colors = if (highlight) {
+            ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            ButtonDefaults.outlinedButtonColors()
+        },
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
+        )
     }
 }
 

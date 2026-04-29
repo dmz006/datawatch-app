@@ -80,8 +80,12 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B43 | Wear session popup: voice transcription review before send | After transcription, show `TranscriptReviewPopup` (full-screen overlay over session popup) with transcript text + Cancel/Send. Removed inline transcript text + left-edge Send chip from session popup. Done (v0.44.0). Also fixed pre-existing curly-quote compile errors in WearMainActivity. |
 | B44 | Session detail: animated processing indicators when Running | Added pulsing Running badge (alpha 0.55→1.0, 700 ms) in `SessionInfoBar`. Added `GeneratingIndicator` (three animated dots) below terminal when state=Running. Done (v0.44.0). |
 | B45 | Session terminal scroll-back broken — page up/down ignored | Screen keeps auto-scrolling to bottom even while user scrolls up; PWA supports page-up/page-down pagination. Need to detect user-initiated scroll and pause auto-scroll, resume on swipe-to-bottom. Also: page-up/page-down quick-action buttons in the toolbar. |
-| B46 | Session toolbar: remove ↑↓ arrows; replace with Page Up / Page Down | Up/Down arrows redundant now that PgUp/PgDn exist. Replace with dedicated scroll-page buttons matching PWA. |
+| B46 | Session toolbar: remove ↑↓ arrows; scroll mode overlay | ↑↓ removed from quick-actions row. Scroll icon changed to 📜. When scroll mode is on the full composer+mic+send area is replaced with big PgUp/PgDn/↑/↓/ESC overlay. Done (v0.45.0). |
 | B47 | New session start: error shown even though session starts | `StartSessionResponseDto.state` was non-nullable — if server omits it, parse fails after session is created. Made optional (v0.44.0). |
+| B48 | Settings → LLM → claude-code: add auto-accept disclaimer toggle | `session.claude_auto_accept_disclaimer` toggle added to LlmBackendSchemas claude-code block. Done (v0.45.0). Tracked at datawatch-app#27. |
+| B49 | Settings → Operations: subsystem hot-reload card | `SubsystemReloadCard` added (POST /api/reload?subsystem=config|filters|memory). Shows applied[] + requires_restart[] from response. Done (v0.45.0). Tracked at datawatch-app#28. |
+| B50 | Update check: use GET /api/update/check (404-fallback to POST) | `checkUpdate()` added to TransportClient + RestTransport. `UpdateDaemonCard` now calls GET for check, POST only for install. Older daemons fallback transparently. Done (v0.45.0). Tracked at datawatch-app#30. |
+| B51 | Quick commands: add Enter key | `\n` → "Enter" added to system commands in `QuickCommandsSheet`. Hard-coded pending datawatch#28 (server-side quick commands). Tracked at datawatch-app#31. Done (v0.45.0). |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 

@@ -315,16 +315,13 @@ public fun KillOrphansCard() {
 /**
  * Three-state update flow:
  *   IDLE → user taps "Check for Update" → CHECKING
- *   CHECKING → API returns up_to_date → IDLE (banner set)
- *   CHECKING → API returns update found → UPDATE_AVAILABLE (version stored)
+ *   CHECKING → GET /api/update/check returns up_to_date → IDLE (banner set)
+ *   CHECKING → GET /api/update/check returns update_available → UPDATE_AVAILABLE
  *   UPDATE_AVAILABLE → user taps "Install Update" → INSTALLING
- *   INSTALLING → API call completes → IDLE (banner set)
+ *   INSTALLING → POST /api/update completes → IDLE (banner set)
  *
- * The server's POST /api/update both checks and installs in a single call.
- * "Check for Update" calls the API; if up_to_date it stops there; if an
- * update is found the user sees the version and must tap "Install Update"
- * before the daemon re-execs. A GH issue tracks adding a check-only endpoint
- * (dmz006/datawatch) to enable true separation.
+ * Older daemons (pre-v5.27.4) that 404 on GET /api/update/check fall back to
+ * the original POST /api/update check-and-install flow transparently.
  */
 private enum class UpdateState { IDLE, CHECKING, UPDATE_AVAILABLE, INSTALLING }
 
@@ -384,7 +381,9 @@ public fun UpdateDaemonCard() {
                             updateState = UpdateState.IDLE
                             return@launch
                         }
-                        ServiceLocator.transportFor(profile).updateDaemon().fold(
+                        // Use GET /api/update/check (v5.27.4+); older daemons
+                        // 404 → checkUpdate() falls back to POST internally.
+                        ServiceLocator.transportFor(profile).checkUpdate().fold(
                             onSuccess = { obj ->
                                 val status =
                                     (obj["status"] as? kotlinx.serialization.json.JsonPrimitive)
@@ -398,7 +397,7 @@ public fun UpdateDaemonCard() {
                                         updateState = UpdateState.IDLE
                                     }
                                     else -> {
-                                        // update is available — surface install button
+                                        // update_available — surface install button
                                         pendingVersion = version
                                         updateState = UpdateState.UPDATE_AVAILABLE
                                     }
@@ -538,5 +537,96 @@ public fun RestartDaemonCard() {
                 TextButton(onClick = { confirmOpen = false }) { Text("Cancel") }
             },
         )
+    }
+}
+
+private val RELOAD_SUBSYSTEMS = listOf("config", "filters", "memory")
+
+@Composable
+public fun SubsystemReloadCard() {
+    var selected by remember { mutableStateOf(RELOAD_SUBSYSTEMS[0]) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var banner by remember { mutableStateOf<String?>(null) }
+    var reloading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    ) {
+        PwaSectionTitle("Hot-reload subsystem")
+        Text(
+            "Reload a subsystem on the active server without restarting the daemon. " +
+                "Changes to config files, filter rules, or memory are picked up immediately.",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        banner?.let {
+            val isOk = it.startsWith("Reloaded")
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isOk) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+        }
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.layout.Box {
+                OutlinedButton(onClick = { menuOpen = true }) { Text(selected) }
+                androidx.compose.material3.DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = { menuOpen = false },
+                ) {
+                    RELOAD_SUBSYSTEMS.forEach { sub ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(sub) },
+                            onClick = { selected = sub; menuOpen = false },
+                        )
+                    }
+                }
+            }
+            Button(
+                enabled = !reloading,
+                onClick = {
+                    reloading = true
+                    banner = null
+                    scope.launch {
+                        val profile = resolveActiveProfile()
+                        if (profile == null) {
+                            banner = "No enabled server."
+                            reloading = false
+                            return@launch
+                        }
+                        ServiceLocator.transportFor(profile).reloadSubsystem(selected).fold(
+                            onSuccess = { obj ->
+                                val applied =
+                                    (obj["applied"] as? kotlinx.serialization.json.JsonArray)
+                                        ?.mapNotNull {
+                                            (it as? kotlinx.serialization.json.JsonPrimitive)?.content
+                                        } ?: emptyList()
+                                val restart =
+                                    (obj["requires_restart"] as? kotlinx.serialization.json.JsonArray)
+                                        ?.mapNotNull {
+                                            (it as? kotlinx.serialization.json.JsonPrimitive)?.content
+                                        } ?: emptyList()
+                                banner = buildString {
+                                    append("Reloaded $selected.")
+                                    if (applied.isNotEmpty()) append(" Applied: ${applied.joinToString(", ")}.")
+                                    if (restart.isNotEmpty()) append(" Restart required: ${restart.joinToString(", ")}.")
+                                }
+                            },
+                            onFailure = {
+                                banner = "Reload failed — ${it.message ?: it::class.simpleName}"
+                            },
+                        )
+                        reloading = false
+                    }
+                },
+            ) { Text(if (reloading) "Reloading…" else "Reload") }
+        }
     }
 }

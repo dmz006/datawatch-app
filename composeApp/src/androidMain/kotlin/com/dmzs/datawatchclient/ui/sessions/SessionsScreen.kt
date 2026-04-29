@@ -1400,6 +1400,7 @@ internal fun QuickCommandsSheet(
                     "continue" to "continue",
                     "skip" to "skip",
                     "/exit" to "quit",
+                    "\n" to "Enter",
                     "\u001B" to "ESC",
                     "\u0002" to "Ctrl-b",
                     // Arrow keys + PageUp/Down as ANSI escape sequences.

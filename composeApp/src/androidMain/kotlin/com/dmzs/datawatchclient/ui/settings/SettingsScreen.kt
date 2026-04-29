@@ -359,6 +359,7 @@ public fun SettingsScreen(
                                 AboutCard(activeProfile = activeProfile)
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
+                                com.dmzs.datawatchclient.ui.ops.SubsystemReloadCard()
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
                             }

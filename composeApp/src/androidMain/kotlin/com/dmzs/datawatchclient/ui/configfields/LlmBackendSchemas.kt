@@ -125,6 +125,7 @@ public object LlmBackendSchemas {
                             placeholder = "claude",
                         ),
                         Toggle("session.skip_permissions", "Skip permissions"),
+                        Toggle("session.claude_auto_accept_disclaimer", "Auto-accept disclaimer"),
                         Toggle("session.channel_enabled", "Channel mode"),
                         TextField(
                             "session.fallback_chain",
