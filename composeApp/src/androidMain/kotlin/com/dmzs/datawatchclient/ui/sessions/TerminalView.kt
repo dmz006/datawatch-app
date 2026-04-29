@@ -177,6 +177,19 @@ public class TerminalController internal constructor() {
     }
 
     /**
+     * Tell xterm whether the user has entered tmux scroll / copy-mode.
+     * While true, pane_capture writes are paused so the live screen-wipe
+     * (ESC[2J ESC[3J) doesn't reset the user's scroll position.
+     * On exit (false) the terminal jumps back to the live tail.
+     */
+    public fun setScrollMode(on: Boolean) {
+        webView?.evaluateJavascript(
+            "window.dwSetScrollMode && window.dwSetScrollMode($on);",
+            null,
+        )
+    }
+
+    /**
      * Freeze further pane_capture writes. Called when the session
      * transitions to complete/failed/killed so the final screenshot
      * isn't overwritten by subsequent shell-prompt frames.
