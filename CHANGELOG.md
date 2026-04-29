@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.1] — 2026-04-28 (Wear session popup shows last response)
+
+### Fixed
+
+- **Wear session-detail popup** now renders the same "view last
+  response" content the phone shows in its `LastResponseSheet`
+  instead of the one-line preview. User report 2026-04-28: tapping
+  a session on the watch should auto-load the latest last response,
+  it didn't. Phone publishes a new `lastResponses` string array on
+  `/datawatch/sessions` (per-session, capped at 600 chars to stay
+  well under the 100 KB DataLayer ceiling); the watch popup prefers
+  it over `lastLine` and bumps `maxLines` from 4 → 12 so multi-line
+  bodies stay readable. Older phone builds without `lastResponses`
+  fall back to the previous one-liner — no contract break.
+
 ## [0.42.0] — 2026-04-28 (compact tmux/channel tabs + inline terminal toolbar)
 
 ### Changed
