@@ -137,6 +137,117 @@ public fun MatrixLogoAnimated(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Standalone animated eye — no tablet/scene chrome. Fills the given modifier
+ * with a large iris + matrix rain background. Used in Settings → About as the
+ * card header so the eye is prominent rather than a tiny detail inside the
+ * tablet frame.
+ */
+@Composable
+public fun EyeOnlyAnimated(modifier: Modifier = Modifier) {
+    val infinite = rememberInfiniteTransition(label = "eye-only")
+
+    val pupilScale by infinite.animateFloat(
+        initialValue = 0.90f,
+        targetValue = 1.10f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "pupil",
+    )
+    val glowPulse by infinite.animateFloat(
+        initialValue = 0.10f,
+        targetValue = 0.28f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(3200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "glow",
+    )
+    val rainTime by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(5000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "rain",
+    )
+    val flickers: List<Float> =
+        (0 until 16).map { i ->
+            infinite.animateFloat(
+                initialValue = 0.15f,
+                targetValue = 0.60f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation =
+                            tween(
+                                durationMillis = 900 + (i * 73 % 900),
+                                delayMillis = (i * 41) % 500,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "flicker-$i",
+            ).value
+        }
+
+    val eyeColumns: List<ColumnSpec> =
+        remember {
+            val rng = kotlin.random.Random(7979)
+            List(7) {
+                ColumnSpec(
+                    xFrac = 0.08f + it * (0.84f / 6f),
+                    durMs = 4200 + rng.nextInt(2400),
+                    delayFrac = rng.nextFloat(),
+                    charCount = 6 + rng.nextInt(4),
+                )
+            }
+        }
+    val eyeColumnChars: List<List<Char>> =
+        remember(eyeColumns) {
+            val rng = kotlin.random.Random(31)
+            eyeColumns.map { col -> List(col.charCount) { MATRIX_CHARS[rng.nextInt(MATRIX_CHARS.size)] } }
+        }
+
+    Box(modifier = modifier.background(SplashPalette.Bg), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+
+            // Sparse matrix rain behind the eye
+            eyeColumns.forEachIndexed { colIdx, col ->
+                val phase = ((rainTime + col.delayFrac) % 1f)
+                val colY = -20f + phase * (size.height + 40f)
+                val colX = col.xFrac * size.width
+                col.charCount.let {
+                    eyeColumnChars[colIdx].forEachIndexed { rowIdx, ch ->
+                        val y = colY + rowIdx * 18f
+                        if (y < -16f || y > size.height) return@forEachIndexed
+                        val flickerIdx = (colIdx * 5 + rowIdx) % flickers.size
+                        val alpha =
+                            (flickers[flickerIdx] * (0.4f + 0.6f * (1f - rowIdx.toFloat() / col.charCount)))
+                                .coerceIn(0f, 1f)
+                        drawCircle(
+                            color = SplashPalette.Matrix.copy(alpha = alpha * 0.6f),
+                            radius = 3f,
+                            center = Offset(colX, y),
+                        )
+                    }
+                }
+            }
+
+            // Draw the eye large and centered
+            val radius = minOf(size.width, size.height) * 0.37f
+            drawEye(center = Offset(cx, cy), radius = radius, pupilScale = pupilScale, glowAlpha = glowPulse)
+        }
+    }
+}
+
 // -- artwork ------------------------------------------------------------------
 
 private object SplashPalette {
@@ -513,7 +624,7 @@ private fun MatrixSplashArtwork(compact: Boolean = false) {
         val eyeCenterY = screenTop + screenHeight / 2f
         drawEye(
             center = Offset(cx, eyeCenterY),
-            radius = discRadius * 0.34f,
+            radius = discRadius * 0.44f,
             pupilScale = pupilScale,
         )
     }
@@ -559,71 +670,107 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawEye(
     center: Offset,
     radius: Float,
     pupilScale: Float,
+    glowAlpha: Float = 0f,
 ) {
-    // Sclera ellipse
-    val ellipseRx = radius * 1.85f
-    val ellipseRy = radius * 1.15f
+    // Outer glow halo (used by EyeOnlyAnimated; 0 on splash so it doesn't bleed over the tablet)
+    if (glowAlpha > 0f) {
+        drawCircle(
+            color = SplashPalette.IrisMid.copy(alpha = glowAlpha * 0.55f),
+            radius = radius * 2.3f,
+            center = center,
+        )
+        drawCircle(
+            color = SplashPalette.IrisInner.copy(alpha = glowAlpha * 0.28f),
+            radius = radius * 1.75f,
+            center = center,
+        )
+    }
+
+    // Sclera ellipse — slightly wider and taller than before
+    val ellipseRx = radius * 1.92f
+    val ellipseRy = radius * 1.20f
     drawOval(
         color = Color(0xFF080518),
         topLeft = Offset(center.x - ellipseRx, center.y - ellipseRy),
         size = Size(ellipseRx * 2f, ellipseRy * 2f),
     )
+    // Bold outer border
     drawOval(
         color = SplashPalette.Border,
         topLeft = Offset(center.x - ellipseRx, center.y - ellipseRy),
         size = Size(ellipseRx * 2f, ellipseRy * 2f),
-        style = Stroke(width = 2f),
+        style = Stroke(width = 3.5f),
     )
-    // Iris (solid gradient-ish by layered circles)
+    // Inner glow ring just inside the sclera
+    drawOval(
+        color = SplashPalette.IrisMid.copy(alpha = 0.40f),
+        topLeft = Offset(center.x - ellipseRx * 0.91f, center.y - ellipseRy * 0.91f),
+        size = Size(ellipseRx * 1.82f, ellipseRy * 1.82f),
+        style = Stroke(width = 1.5f),
+    )
+
+    // Iris — layered circles for gradient depth
     drawCircle(color = SplashPalette.IrisOuter, radius = radius, center = center)
-    drawCircle(color = SplashPalette.IrisMid, radius = radius * 0.85f, center = center)
-    drawCircle(color = SplashPalette.IrisInner.copy(alpha = 0.6f), radius = radius * 0.55f, center = center)
-    // Pupil (pulsing)
+    drawCircle(color = SplashPalette.IrisMid, radius = radius * 0.82f, center = center)
+    drawCircle(color = SplashPalette.IrisInner.copy(alpha = 0.75f), radius = radius * 0.52f, center = center)
+    // Visible iris ring boundary
     drawCircle(
-        color = SplashPalette.Pupil,
-        radius = radius * 0.40f * pupilScale,
+        color = SplashPalette.IrisInner.copy(alpha = 0.55f),
+        radius = radius * 0.80f,
         center = center,
+        style = Stroke(width = 1.8f),
     )
-    // Crosshair
-    val cr = radius * 0.32f
-    val crGap = radius * 0.15f
-    val strokeCrosshair = Stroke(width = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+
+    // Pupil (pulsing)
+    drawCircle(color = SplashPalette.Pupil, radius = radius * 0.38f * pupilScale, center = center)
+    // Pupil ring
+    drawCircle(
+        color = SplashPalette.IrisOuter.copy(alpha = 0.65f),
+        radius = radius * 0.42f * pupilScale,
+        center = center,
+        style = Stroke(width = 1.2f),
+    )
+
+    // Crosshair — bolder, extends further toward sclera edge
+    val cr = radius * 0.40f
+    val crGap = radius * 0.13f
     drawLine(
         color = SplashPalette.Crosshair,
         start = Offset(center.x, center.y - cr),
         end = Offset(center.x, center.y - crGap),
-        strokeWidth = 3f,
+        strokeWidth = 4.5f,
     )
     drawLine(
         color = SplashPalette.Crosshair,
         start = Offset(center.x, center.y + crGap),
         end = Offset(center.x, center.y + cr),
-        strokeWidth = 3f,
+        strokeWidth = 4.5f,
     )
     drawLine(
         color = SplashPalette.Crosshair,
         start = Offset(center.x - cr, center.y),
         end = Offset(center.x - crGap, center.y),
-        strokeWidth = 3f,
+        strokeWidth = 4.5f,
     )
     drawLine(
         color = SplashPalette.Crosshair,
         start = Offset(center.x + crGap, center.y),
         end = Offset(center.x + cr, center.y),
-        strokeWidth = 3f,
+        strokeWidth = 4.5f,
     )
+
     // Center highlight (pulses with pupil)
     drawCircle(
         color = SplashPalette.Highlight,
-        radius = radius * 0.07f * pupilScale,
+        radius = radius * 0.09f * pupilScale,
         center = center,
     )
-    // Lens highlight (static, subtle)
+    // Lens highlight (upper-left, static)
     rotate(-30f, Offset(center.x - radius * 0.42f, center.y - radius * 0.28f)) {
         drawOval(
-            color = Color.White.copy(alpha = 0.08f),
+            color = Color.White.copy(alpha = 0.13f),
             topLeft = Offset(center.x - radius * 0.55f, center.y - radius * 0.32f),
-            size = Size(radius * 0.25f, radius * 0.11f),
+            size = Size(radius * 0.28f, radius * 0.13f),
         )
     }
 }

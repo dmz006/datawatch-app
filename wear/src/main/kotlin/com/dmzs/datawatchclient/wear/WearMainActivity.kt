@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -287,13 +288,6 @@ private fun WearRoot(
                             }
                         }
                     },
-                    onConfirm = {
-                        vm.sendReply(item.id, pendingTranscript)
-                        pendingTranscript = ""
-                        recording = false
-                        transcribing = false
-                        openSession = null
-                    },
                     onDismiss = {
                         runCatching { recorder.cancel() }
                         pendingTranscript = ""
@@ -302,6 +296,22 @@ private fun WearRoot(
                         openSession = null
                     },
                 )
+                // Transcript review popup overlays the session popup once
+                // transcription completes. User reads the text and chooses
+                // Cancel (discard) or Send.
+                if (pendingTranscript.isNotBlank() && !recording && !transcribing) {
+                    TranscriptReviewPopup(
+                        transcript = pendingTranscript,
+                        onCancel = {
+                            pendingTranscript = ""
+                        },
+                        onSend = {
+                            vm.sendReply(item.id, pendingTranscript)
+                            pendingTranscript = ""
+                            openSession = null
+                        },
+                    )
+                }
             }
         }
     }
@@ -706,13 +716,100 @@ private data class VoiceUiState(
     val transcribing: Boolean,
 )
 
+/**
+ * Full-screen overlay shown after transcription completes. Lets the user
+ * read the transcribed text and choose to Send it or Cancel (discards the
+ * transcript and returns to the session popup).
+ */
+@Composable
+private fun TranscriptReviewPopup(
+    transcript: String,
+    onCancel: () -> Unit,
+    onSend: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color(0xEE000000)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colors.surface, androidx.compose.foundation.shape.CircleShape)
+                    .border(
+                        2.dp,
+                        MaterialTheme.colors.primary,
+                        androidx.compose.foundation.shape.CircleShape,
+                    )
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "Send?",
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    transcript,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(vertical = 6.dp)
+                            .verticalScroll(rememberScrollState()),
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    Text(
+                        "Cancel",
+                        style = MaterialTheme.typography.button,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                        modifier =
+                            Modifier
+                                .background(
+                                    Color(0x33FFFFFF),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                )
+                                .clickable(onClick = onCancel)
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                    Text(
+                        "Send",
+                        style = MaterialTheme.typography.button,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier =
+                            Modifier
+                                .background(
+                                    MaterialTheme.colors.primary.copy(alpha = 0.22f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                )
+                                .clickable(onClick = onSend)
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun SessionDetailPopup(
     session: WearSessionCountsViewModel.SessionItem,
     fullBody: String?,
     voice: VoiceUiState,
     onRecord: () -> Unit,
-    onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val transcript = voice.transcript
@@ -755,9 +852,6 @@ private fun SessionDetailPopup(
                 onDismiss = onDismiss,
             )
             BoxScopeMicButton(recording = recording, onRecord = onRecord)
-            if (transcript.isNotBlank() && !recording && !transcribing) {
-                BoxScopeSendChip(onConfirm = onConfirm)
-            }
         }
     }
 }
@@ -783,30 +877,6 @@ private fun androidx.compose.foundation.layout.BoxScope.BoxScopeMicButton(
                     .background(tint.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape)
                     .clickable(onClick = onRecord)
                     .padding(10.dp),
-        )
-    }
-}
-
-/**
- * v0.42.9 — send chip pinned to the left edge of the popup safe
- * area, only when a transcript has been staged.
- */
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.BoxScopeSendChip(onConfirm: () -> Unit) {
-    Box(modifier = Modifier.align(Alignment.CenterStart)) {
-        Text(
-            "Send",
-            style = MaterialTheme.typography.button,
-            color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.SemiBold,
-            modifier =
-                Modifier
-                    .background(
-                        MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                    )
-                    .clickable(onClick = onConfirm)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
 }
@@ -895,9 +965,9 @@ private fun SessionPopupCentre(
                 )
             transcript.isNotBlank() ->
                 Text(
-                    "“$transcript”",
+                    "Tap Send to confirm",
                     modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.caption1,
                     color = MaterialTheme.colors.primary,
                     maxLines = 3,
                 )

@@ -76,6 +76,12 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B39 | App launcher icon: eye too small | Eye sclera expanded to ±40×26 (from ±22×14), iris to r=22, pupil to r=9 to fill most of the 108dp canvas. Done (v0.43.x). |
 | B40 | Play Store + in-app alternate icon variants | Need 2-3 icon variants (teal, dark-high-contrast, monochrome) in SVG/PNG for Play Store chooser. Pending. |
 | B41 | Server: `GET /api/update/check` check-only endpoint | Filed at [dmz006/datawatch#25](https://github.com/dmz006/datawatch/issues/25). Enables true "check → confirm → install" UX on mobile without double-calling POST /api/update. |
+| B42 | Splash + About eye: bigger/bolder; standalone eye in About | Splash eye radius ↑ (0.34→0.44×discRadius), sclera stroke 3.5 dp, crosshair 4.5 dp; `EyeOnlyAnimated` composable added; About card now shows large standalone animated eye instead of tiny tablet-scene eye. Done (v0.44.0). |
+| B43 | Wear session popup: voice transcription review before send | After transcription, show `TranscriptReviewPopup` (full-screen overlay over session popup) with transcript text + Cancel/Send. Removed inline transcript text + left-edge Send chip from session popup. Done (v0.44.0). Also fixed pre-existing curly-quote compile errors in WearMainActivity. |
+| B44 | Session detail: animated processing indicators when Running | Added pulsing Running badge (alpha 0.55→1.0, 700 ms) in `SessionInfoBar`. Added `GeneratingIndicator` (three animated dots) below terminal when state=Running. Done (v0.44.0). |
+| B45 | Session terminal scroll-back broken — page up/down ignored | Screen keeps auto-scrolling to bottom even while user scrolls up; PWA supports page-up/page-down pagination. Need to detect user-initiated scroll and pause auto-scroll, resume on swipe-to-bottom. Also: page-up/page-down quick-action buttons in the toolbar. |
+| B46 | Session toolbar: remove ↑↓ arrows; replace with Page Up / Page Down | Up/Down arrows redundant now that PgUp/PgDn exist. Replace with dedicated scroll-page buttons matching PWA. |
+| B47 | New session start: error shown even though session starts | `StartSessionResponseDto.state` was non-nullable — if server omits it, parse fails after session is created. Made optional (v0.44.0). |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 

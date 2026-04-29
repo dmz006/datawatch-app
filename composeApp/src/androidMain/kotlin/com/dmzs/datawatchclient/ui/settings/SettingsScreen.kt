@@ -65,7 +65,7 @@ import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportError
-import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
+import com.dmzs.datawatchclient.ui.splash.EyeOnlyAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -704,7 +704,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-                    MatrixLogoAnimated(
+                    EyeOnlyAnimated(
                         modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)),
                     )
                 }

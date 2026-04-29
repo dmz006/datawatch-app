@@ -107,8 +107,9 @@ public data class StartSessionDto(
 
 @Serializable
 public data class StartSessionResponseDto(
-    @SerialName("session_id") val sessionId: String,
-    val state: String,
+    @SerialName("session_id") val sessionId: String? = null,
+    val id: String? = null,
+    val state: String? = null,
 )
 
 @Serializable

@@ -1,5 +1,11 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -474,6 +480,11 @@ public fun SessionDetailScreen(
                     terminalController.setFrozen(frozen)
                 }
                 InlineNotices(state.events)
+                // Animated "generating…" row — visible only when the session
+                // is actively running. Mirrors the PWA's processing indicator.
+                if (state.session?.state == SessionState.Running) {
+                    GeneratingIndicator()
+                }
             }
 
             // Per-session "Scheduled" strip — mirrors PWA
@@ -674,6 +685,22 @@ private fun SessionInfoBar(
     val isDone =
         state == SessionState.Completed || state == SessionState.Killed ||
             state == SessionState.Error
+
+    // Pulse the Running badge so the user can see the session is actively
+    // generating. Waiting / RateLimited are static — they already have
+    // distinct colour cues. Other states never animate.
+    val runPulse = rememberInfiniteTransition(label = "run-pulse")
+    val runBadgeAlpha by runPulse.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1.0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(700, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "run-badge-alpha",
+    )
+
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
@@ -694,12 +721,13 @@ private fun SessionInfoBar(
             }
             state?.let {
                 Box {
+                    val effectiveAlpha = if (it == SessionState.Running) runBadgeAlpha else 1f
                     Box(
                         modifier =
                             Modifier
                                 .clickable(onClick = onStateClick)
                                 .background(
-                                    color = stateBgColor(it),
+                                    color = stateBgColor(it).copy(alpha = stateBgColor(it).alpha * effectiveAlpha),
                                     shape = RoundedCornerShape(10.dp),
                                 )
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
@@ -707,7 +735,7 @@ private fun SessionInfoBar(
                         Text(
                             stateLabel(it),
                             fontSize = 10.sp,
-                            color = stateFgColor(it),
+                            color = stateFgColor(it).copy(alpha = effectiveAlpha),
                             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                             letterSpacing = 0.3.sp,
                         )
@@ -861,6 +889,46 @@ private fun stateLabel(s: SessionState): String =
         SessionState.Error -> "failed"
         SessionState.New -> "new"
     }
+
+/**
+ * Animated "generating…" row shown at the bottom of the terminal/output
+ * area when the session is actively Running. Mirrors the PWA's processing
+ * indicator so the user gets visual feedback without scrolling to the composer.
+ */
+@Composable
+private fun GeneratingIndicator() {
+    val infinite = rememberInfiniteTransition(label = "generating")
+    val dot1 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 0), RepeatMode.Reverse),
+        label = "d1",
+    )
+    val dot2 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 200), RepeatMode.Reverse),
+        label = "d2",
+    )
+    val dot3 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 400), RepeatMode.Reverse),
+        label = "d3",
+    )
+    val dw = LocalDatawatchColors.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "generating",
+            fontSize = 10.sp,
+            color = dw.success.copy(alpha = 0.55f),
+        )
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot1))
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot2))
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot3))
+    }
+}
 
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
