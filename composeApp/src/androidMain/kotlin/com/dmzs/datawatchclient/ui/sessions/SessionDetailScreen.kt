@@ -56,6 +56,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -1420,8 +1421,14 @@ private fun ChatEventList(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+    val isAtBottom by remember {
+        derivedStateOf {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            last == null || last >= events.size - 1
+        }
+    }
     LaunchedEffect(events.size) {
-        if (events.isNotEmpty()) listState.animateScrollToItem(events.size - 1)
+        if (events.isNotEmpty() && isAtBottom) listState.animateScrollToItem(events.size - 1)
     }
     if (events.isEmpty()) {
         Box(
@@ -1586,8 +1593,14 @@ private fun EventList(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+    val isAtBottom by remember {
+        derivedStateOf {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            last == null || last >= events.size - 1
+        }
+    }
     LaunchedEffect(events.size) {
-        if (events.isNotEmpty()) listState.animateScrollToItem(events.size - 1)
+        if (events.isNotEmpty() && isAtBottom) listState.animateScrollToItem(events.size - 1)
     }
     if (events.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {

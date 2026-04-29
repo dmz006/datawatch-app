@@ -69,6 +69,7 @@ public class TerminalToolbarState internal constructor(
         get() = scrollModeState.value
         set(value) {
             scrollModeState.value = value
+            controller.setScrollMode(value)
         }
 }
 

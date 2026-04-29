@@ -354,10 +354,37 @@
     //    screenshot.
     var _lastPaneWrite = 0;
     var _frozen = false;
+    // Pause pane_capture writes while the user is in tmux scroll/copy-mode.
+    // The ESC[2J ESC[3J wipe would reset their scroll position.
+    var _scrollMode = false;
+    // True when the user has manually scrolled away from the live tail.
+    var _userScrolled = false;
+
     window.dwSetFrozen = function (frozen) { _frozen = !!frozen; };
+
+    // Called by Kotlin when the user enters/exits the 📜 scroll overlay.
+    // Pausing writes keeps the terminal frozen at the frame the user wants
+    // to read; resuming jumps back to the live tail.
+    window.dwSetScrollMode = function (on) {
+      _scrollMode = !!on;
+      if (!on) {
+        _userScrolled = false;
+        try { term.scrollToBottom(); } catch (e) {}
+      }
+    };
+
+    // Detect user-initiated scroll (they scrolled away from live tail).
+    term.onScroll(function () {
+      var vp = document.querySelector('.xterm-viewport');
+      if (!vp) return;
+      // User is "at bottom" if within 2px of scrollable end.
+      _userScrolled = vp.scrollTop < vp.scrollHeight - vp.clientHeight - 2;
+    });
+
     window.dwPaneCapture = function (linesJson, isFirst) {
       try {
-        if (_frozen) return;
+        // Skip writes while frozen (terminal ended) or in scroll mode.
+        if (_frozen || _scrollMode) return;
         var now = (performance && performance.now) ? performance.now() : Date.now();
         if (_lastPaneWrite && (now - _lastPaneWrite) < 33) return;
         var lines;
@@ -376,14 +403,11 @@
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
         }
-        // Force viewport to the bottom after the write batch so the
-        // visible 40 rows show the *tail* of the capture, not an
-        // arbitrary scrollback position. Parent PWA does this
-        // implicitly because its xterm `scrollOnOutput` default is
-        // true; we make it explicit after a large paste since a
-        // CapturePaneANSI-style first capture can contain thousands
-        // of lines and xterm's auto-scroll can end up mid-buffer.
-        try { term.scrollToBottom(); } catch (e) {}
+        // Scroll to tail only when the user hasn't manually scrolled away.
+        // If they have scrolled up to read history, respect that position.
+        if (!_userScrolled) {
+          try { term.scrollToBottom(); } catch (e) {}
+        }
       } catch (e) {
         log('paneCapture failed: ' + e);
       }
