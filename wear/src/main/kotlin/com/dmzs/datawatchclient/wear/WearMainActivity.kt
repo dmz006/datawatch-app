@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.wear
 
 import android.app.Application
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -1172,6 +1173,10 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 lastResponse = lastResponses.getOrNull(i).orEmpty(),
             )
         }
+        Log.d(
+            "WearMain",
+            "applySessions n=${items.size} lr=${items.take(3).joinToString { "${it.id}/${it.lastResponse.length}" }}",
+        )
         _state.value = _state.value.copy(sessions = items)
     }
 
@@ -1202,14 +1207,20 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
      */
     public fun refreshSession(sessionId: String) {
         if (sessionId.isBlank()) return
+        Log.d("WearMain", "refreshSession ENTER sid=$sessionId")
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val body = sessionId.toByteArray(Charsets.UTF_8)
                 val nodes: List<Node> = nodeClient.connectedNodes.await()
-                nodes.forEach { node ->
-                    messageClient.sendMessage(node.id, REFRESH_SESSION_PATH, body).await()
+                Log.d("WearMain", "refreshSession nodes=${nodes.size} ${nodes.joinToString { it.displayName }}")
+                if (nodes.isEmpty()) {
+                    Log.w("WearMain", "refreshSession NO CONNECTED PHONE — message will not be delivered")
                 }
-            }
+                nodes.forEach { node ->
+                    val rc = messageClient.sendMessage(node.id, REFRESH_SESSION_PATH, body).await()
+                    Log.d("WearMain", "refreshSession sent to ${node.id} requestId=$rc")
+                }
+            }.onFailure { Log.w("WearMain", "refreshSession FAILED", it) }
         }
     }
 

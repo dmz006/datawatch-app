@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.wear
 
 import android.content.Context
+import android.util.Log
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -93,6 +94,7 @@ public class WearSyncService(
                     }
                 }
                 REFRESH_SESSION_PATH -> {
+                    Log.d(TAG, "MSG REFRESH_SESSION_PATH from=${ev.sourceNodeId} bytes=${ev.data.size}")
                     // v0.42.2 — watch-initiated session refetch.
                     // Payload is the sessionId. The phone calls
                     // listSessions() against the active profile and
@@ -406,16 +408,43 @@ public class WearSyncService(
      * any failure is silent — the watch keeps the cached preview.
      */
     private suspend fun forwardWatchRefreshSession(sessionId: String) {
+        Log.d(TAG, "refreshSession ENTER sid=$sessionId")
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            Log.d(TAG, "refreshSession activeId=$activeId")
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                Log.d(TAG, "refreshSession ABORT no active server")
+                return
+            }
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return
-            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
-                list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
-                    ?.let { fresh -> ServiceLocator.sessionRepository.upsert(fresh) }
+                    .firstOrNull { it.id == activeId && it.enabled }
+            if (profile == null) {
+                Log.d(TAG, "refreshSession ABORT profile not found / disabled for $activeId")
+                return
             }
+            ServiceLocator.transportFor(profile).listSessions().fold(
+                onSuccess = { list ->
+                    Log.d(TAG, "refreshSession listSessions OK count=${list.size}")
+                    val fresh = list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                    if (fresh == null) {
+                        Log.d(TAG, "refreshSession session $sessionId not in list")
+                    } else {
+                        val lr = fresh.lastResponse.orEmpty()
+                        Log.d(
+                            TAG,
+                            "refreshSession upsert id=${fresh.id} lastResponse.len=${lr.length} " +
+                                "preview=${lr.take(60).replace("\n", "\\n")}",
+                        )
+                        ServiceLocator.sessionRepository.upsert(fresh)
+                    }
+                },
+                onFailure = { err ->
+                    Log.w(TAG, "refreshSession listSessions FAILED ${err.message}", err)
+                },
+            )
+        }.onFailure { err ->
+            Log.w(TAG, "refreshSession outer FAILED ${err.message}", err)
         }
     }
 
@@ -558,6 +587,11 @@ public class WearSyncService(
 
     private fun publishSessions(snap: SessionsListSnapshot) {
         runCatching {
+            Log.d(
+                TAG,
+                "publishSessions n=${snap.items.size} " +
+                    snap.items.take(3).joinToString { "${it.id}/lr=${it.lastResponse.length}" },
+            )
             val req =
                 PutDataMapRequest.create(SESSIONS_PATH).apply {
                     dataMap.putStringArray("ids", snap.items.map { it.id }.toTypedArray())
@@ -569,7 +603,7 @@ public class WearSyncService(
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
-        }
+        }.onFailure { Log.w(TAG, "publishSessions FAILED", it) }
     }
 
     private fun publishProfiles(snap: ProfilesSnapshot) {
@@ -611,6 +645,7 @@ public class WearSyncService(
     }
 
     public companion object {
+        private const val TAG: String = "WearSync"
         public const val COUNTS_PATH: String = "/datawatch/counts"
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
