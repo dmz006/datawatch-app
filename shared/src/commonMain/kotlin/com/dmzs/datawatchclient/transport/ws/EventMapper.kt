@@ -42,6 +42,16 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
             ?: Clock.System.now()
     val obj = data as? JsonObject
     return when (type) {
+        // v0.42.7 — bulk `sessions` frame: scan for our session id and
+        // emit a StateChange when the state differs from the last
+        // bulk-emitted value. Without this, daemon state transitions
+        // delivered ONLY via the bulk frame (waiting_input → running,
+        // etc.) never fired SessionDetailViewModel.startStream's
+        // refresh, leaving the input-required banner stale until the
+        // user exited and re-entered the session. PWA v5.26.49 parity
+        // (gap #2 from the 72h audit). De-duped per session so we
+        // don't spam REST on every push of an unchanged state.
+        "sessions" -> buildBulkStateChangeEvents(obj, ts, forSessionId)
         "pane_capture" -> buildPaneCaptureEvents(obj, ts, forSessionId)
         "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId)
         "chat_message" -> listOfNotNull(buildChatMessage(obj, ts, forSessionId))
@@ -93,7 +103,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
                 ),
             )
         // Frames we intentionally don't forward to the per-session UI.
-        "sessions", "session_aware", "channel_reply", "channel_notify", "response",
+        "session_aware", "channel_reply", "channel_notify", "response",
         "ack",
         -> emptyList()
         else -> listOf(SessionEvent.Unknown(sessionId = forSessionId, ts = ts, type = type))
@@ -107,6 +117,53 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
  * practice (users don't open 10k sessions per app install).
  */
 private val firstCaptureSeen: MutableSet<String> = mutableSetOf()
+
+/**
+ * Last bulk-frame state observed per session id. Used to dedupe the
+ * synthetic StateChange events the bulk `sessions` frame emits — the
+ * daemon ships the same state on every periodic broadcast, but we
+ * only want to nudge SessionDetailViewModel.refreshFromServer() when
+ * the state actually flipped.
+ */
+private val lastBulkStateByid: MutableMap<String, String> = mutableMapOf()
+
+private fun buildBulkStateChangeEvents(
+    obj: JsonObject?,
+    ts: Instant,
+    forSessionId: String,
+): List<SessionEvent> {
+    if (obj == null) return emptyList()
+    // Daemon ships either { sessions: [{id, state, ...}, ...] } or a
+    // flat top-level array we'd have parsed as JsonArray — we only
+    // handle the object shape here since WsFrameDto.data is JsonObject.
+    val arr = runCatching { obj["sessions"]?.jsonArray }.getOrNull() ?: return emptyList()
+    arr.forEach { el ->
+        val itemObj = el as? JsonObject ?: return@forEach
+        val sid = itemObj.jsonString("id") ?: itemObj.jsonString("session_id") ?: return@forEach
+        // Match by short or fully-qualified id; the daemon emits whichever
+        // shape it stored at session create time.
+        if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return@forEach
+        val stateStr = itemObj.jsonString("state") ?: return@forEach
+        val previous = lastBulkStateByid[sid]
+        if (previous == stateStr) return@forEach
+        lastBulkStateByid[sid] = stateStr
+        // Don't emit a StateChange on the very first observation —
+        // SessionDetailScreen already does an initial REST refresh on
+        // entry, so duplicating that would be wasteful. Only emit on
+        // an actual transition.
+        if (previous != null) {
+            return listOf(
+                SessionEvent.StateChange(
+                    sessionId = sid,
+                    ts = ts,
+                    from = SessionState.fromWire(previous),
+                    to = SessionState.fromWire(stateStr),
+                ),
+            )
+        }
+    }
+    return emptyList()
+}
 
 /**
  * Expose a reset entry point so the UI can clear the first-capture flag

@@ -62,6 +62,8 @@ public fun MempalaceActionsCard(vm: MempalaceActionsViewModel = viewModel()) {
             SpellcheckRow(state, vm)
             Spacer(Modifier.height(12.dp))
             ExtractFactsRow(state, vm)
+            Spacer(Modifier.height(12.dp))
+            SchemaVersionRow(state, vm)
             state.banner?.let { msg ->
                 Text(
                     msg,
@@ -216,6 +218,47 @@ private fun ExtractFactsRow(
     }
 }
 
+/**
+ * v0.42.7 — Schema version probe (PWA v5.27.0 parity, gap #5).
+ * Hits `/api/memory/stats` and surfaces the `schema_version` field
+ * so operators can confirm the active backend is at a known
+ * migration level before running maintenance against it.
+ */
+@Composable
+private fun SchemaVersionRow(
+    state: MempalaceActionsViewModel.UiState,
+    vm: MempalaceActionsViewModel,
+) {
+    Text(
+        "Schema version",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Highest schema_version row applied to the active memory backend.",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(
+            onClick = { vm.runSchemaVersion() },
+            enabled = !state.busy,
+        ) { Text("Check") }
+    }
+    state.schemaVersion?.let { v ->
+        Text(
+            "schema_version: $v",
+            modifier = Modifier.padding(top = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 public class MempalaceActionsViewModel(
     private val resolver: com.dmzs.datawatchclient.ui.common.ProfileResolver =
         com.dmzs.datawatchclient.ui.common.ProfileResolver.Default,
@@ -228,6 +271,11 @@ public class MempalaceActionsViewModel(
         val spellcheckResult: List<SpellcheckSuggestionDto>? = null,
         val factsText: String = "",
         val factsResult: List<SvoTripleDto>? = null,
+        // v0.42.7 — schema version probe result; null until the user
+        // taps Check. Stored as a String so the UI can show a
+        // graceful "(not reported)" when the backend doesn't expose
+        // it (PWA v5.27.0 fallback wording).
+        val schemaVersion: String? = null,
         val busy: Boolean = false,
         val banner: String? = null,
     )
@@ -286,6 +334,30 @@ public class MempalaceActionsViewModel(
                         )
                     },
                 )
+        }
+    }
+
+    public fun runSchemaVersion() {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            _state.value = _state.value.copy(busy = true, banner = null)
+            transport.memoryStats().fold(
+                onSuccess = { stats ->
+                    val v = stats["schema_version"]?.let {
+                        (it as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    }
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        schemaVersion = v ?: "(not reported by this backend)",
+                    )
+                },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        banner = "Schema check failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
         }
     }
 

@@ -282,6 +282,7 @@ public fun SettingsScreen(
                         com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                             com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                         )
+                        com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
                         com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                             kind = "project",
                             title = "Project profiles",
