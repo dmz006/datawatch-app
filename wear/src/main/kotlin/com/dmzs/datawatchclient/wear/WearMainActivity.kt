@@ -176,7 +176,15 @@ private fun WearRoot(
                     1 ->
                         SessionsPage(
                             state = state,
-                            onSessionTap = { item -> openSession = item },
+                            onSessionTap = { item ->
+                                openSession = item
+                                // v0.42.2 — ask the phone to refetch
+                                // /api/sessions immediately so the
+                                // popup shows the same lastResponse
+                                // body the PWA / Android app render
+                                // (instead of the cached snapshot).
+                                vm.refreshSession(item.id)
+                            },
                         )
                     2 ->
                         PrdsPage(
@@ -1104,6 +1112,27 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     /**
+     * v0.42.2 — ask the phone to refetch the latest `/api/sessions`
+     * for the active profile and re-publish `/datawatch/sessions`.
+     * Triggered when the user opens the session-detail popup so the
+     * watch shows the same `lastResponse` body the PWA / Android app
+     * render. Best-effort: failure leaves the cached snapshot in
+     * place.
+     */
+    public fun refreshSession(sessionId: String) {
+        if (sessionId.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val body = sessionId.toByteArray(Charsets.UTF_8)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, REFRESH_SESSION_PATH, body).await()
+                }
+            }
+        }
+    }
+
+    /**
      * Send a PRD action to the phone for forwarding to
      * /api/autonomous/prds/{id}/{action}. Payload format is
      * "prdId\naction\nreason?" — `reason` only meaningful for
@@ -1200,6 +1229,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val PRD_ACTION_PATH: String = "/datawatch/prdAction"
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
+        public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
     }
 }
 

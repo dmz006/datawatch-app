@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.2] — 2026-04-28 (watch refetches /api/sessions on popup open + larger response cap)
+
+### Fixed
+
+- **Wear session popup** still showed a stale/short response when
+  what the PWA + Android app rendered had moved on. The watch now
+  triggers a fresh refetch the moment the popup opens — no more
+  waiting for the next phone-side WS frame to arrive.
+
+### Added
+
+- **`/datawatch/refreshSession` MessageClient round-trip.** Watch
+  sends the sessionId on tap; phone calls
+  `transportFor(profile).listSessions()`, upserts the matching
+  record into `sessionRepository`, and the existing reactive
+  `/datawatch/sessions` publisher ships the fresh
+  `lastResponse` body to the wrist. Best-effort — failure leaves
+  the cached snapshot in place. New constant `REFRESH_SESSION_PATH`
+  on both phone and watch.
+
+### Changed
+
+- **`SESSION_LAST_RESPONSE_MAX` raised 600 → 4000 chars.** The
+  watch popup is vertically scrollable, so trimming to 600 was
+  hiding the bulk of long LLM replies. 12 sessions × 4000 ≈ 48 KB
+  worst case, still well under the 100 KB DataLayer ceiling once
+  the other arrays are accounted for.
+
 ## [0.42.1] — 2026-04-28 (Wear session popup shows last response)
 
 ### Fixed

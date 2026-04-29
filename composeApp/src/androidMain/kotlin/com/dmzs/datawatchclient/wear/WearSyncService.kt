@@ -92,6 +92,21 @@ public class WearSyncService(
                         scope.launch { forwardWatchPrdAction(prdId, action, reason) }
                     }
                 }
+                REFRESH_SESSION_PATH -> {
+                    // v0.42.2 — watch-initiated session refetch.
+                    // Payload is the sessionId. The phone calls
+                    // listSessions() against the active profile and
+                    // upserts the matching record into the session
+                    // repository; the existing reactive
+                    // /datawatch/sessions publisher then ships a
+                    // fresh snapshot (including lastResponse) to the
+                    // watch on the next emission.
+                    val sid = runCatching { String(ev.data, Charsets.UTF_8) }
+                        .getOrNull().orEmpty()
+                    if (sid.isNotEmpty()) {
+                        scope.launch { forwardWatchRefreshSession(sid) }
+                    }
+                }
                 AUDIO_PATH -> {
                     // v0.35.8 — watch-initiated voice transcribe.
                     // Payload is "sessionId\n<utf-8 garbage>" + raw
@@ -383,6 +398,28 @@ public class WearSyncService(
     }
 
     /**
+     * v0.42.2 — watch-side refresh trigger. The Wear popup opens
+     * with the cached snapshot; this call refetches `/api/sessions`
+     * for the active profile and upserts the matching session into
+     * the repository so the next reactive `/datawatch/sessions`
+     * publish carries the freshest `lastResponse` body. Best-effort:
+     * any failure is silent — the watch keeps the cached preview.
+     */
+    private suspend fun forwardWatchRefreshSession(sessionId: String) {
+        runCatching {
+            val activeId = ServiceLocator.activeServerStore.get()
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return
+            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+                list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                    ?.let { fresh -> ServiceLocator.sessionRepository.upsert(fresh) }
+            }
+        }
+    }
+
+    /**
      * Open a transient WS subscription to [sessionId], emit a `send_input`
      * frame with [text], wait briefly for the server to ack, then cancel.
      *
@@ -584,6 +621,7 @@ public class WearSyncService(
         public const val PRD_ACTION_PATH: String = "/datawatch/prdAction"
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
+        public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
         public const val STATS_POLL_MS: Long = 15_000L
         // v0.35.5 watch-reply plumbing — see forwardWatchReply. These
         // are tuned conservatively: Ktor WS subscribe typically completes
@@ -598,9 +636,11 @@ public class WearSyncService(
         public const val SESSIONS_PUBLISH_LIMIT: Int = 12
         public const val SESSION_LAST_LINE_MAX: Int = 160
 
-        // v0.42.1 — per-session lastResponse cap. 12 sessions × 600
-        // chars ≈ 7.2 KB, leaving plenty of headroom under the 100 KB
-        // DataLayer ceiling alongside the other arrays.
-        public const val SESSION_LAST_RESPONSE_MAX: Int = 600
+        // v0.42.2 — per-session lastResponse cap raised so the watch
+        // popup (vertically scrollable) shows the same body the PWA /
+        // Android app render. 12 sessions × 4000 chars ≈ 48 KB worst
+        // case, still well under the 100 KB DataLayer ceiling once
+        // the other arrays are accounted for.
+        public const val SESSION_LAST_RESPONSE_MAX: Int = 4000
     }
 }
