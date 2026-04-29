@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    datawatch eye — teal palette for the Wear OS splash screen.
+    Viewport 108×108; eye centered at (54,54). Replaces the purple
+    launcher variant with the watch primary teal (#00E5A0) so the
+    logo is legible against the dark (#0B0F14) watch surface.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Sclera (almond-shaped eye background) -->
+    <path android:pathData="M 54,54 m -26,0 a 26,16 0 1 0 52,0 a 26,16 0 1 0 -52,0 z"
+        android:fillColor="#0D1F18"
+        android:strokeColor="#00E5A0"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.55"/>
+
+    <!-- Iris with radial gradient (teal lit from upper-left) -->
+    <path android:pathData="M 54,54 m -13,0 a 13,13 0 1 0 26,0 a 13,13 0 1 0 -26,0 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial"
+                android:centerX="50" android:centerY="44"
+                android:gradientRadius="14"
+                android:startColor="#00E5A0"
+                android:centerColor="#00A872"
+                android:endColor="#003D2A"/>
+        </aapt:attr>
+    </path>
+
+    <!-- Iris outer ring -->
+    <path android:pathData="M 54,54 m -13,0 a 13,13 0 1 0 26,0 a 13,13 0 1 0 -26,0 z"
+        android:strokeColor="#00E5A0"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.9"
+        android:fillColor="#00000000"/>
+
+    <!-- Inner iris detail ring -->
+    <path android:pathData="M 54,54 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z"
+        android:strokeColor="#4DFFD4"
+        android:strokeWidth="0.4"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000"/>
+
+    <!-- Pupil (very dark core) -->
+    <path android:pathData="M 54,54 m -5.5,0 a 5.5,5.5 0 1 0 11,0 a 5.5,5.5 0 1 0 -11,0 z"
+        android:fillColor="#020A06"/>
+
+    <!-- Pupil ring -->
+    <path android:pathData="M 54,54 m -5.5,0 a 5.5,5.5 0 1 0 11,0 a 5.5,5.5 0 1 0 -11,0 z"
+        android:strokeColor="#00E5A0"
+        android:strokeWidth="0.5"
+        android:strokeAlpha="0.7"
+        android:fillColor="#00000000"/>
+
+    <!-- Crosshair (datawatch surveillance signature) — bright teal -->
+    <path android:pathData="M 54,42 v 6 M 54,60 v 6 M 42,54 h 6 M 60,54 h 6"
+        android:strokeColor="#00FFB8"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Center highlight dot -->
+    <path android:pathData="M 54,54 m -1.1,0 a 1.1,1.1 0 1 0 2.2,0 a 1.1,1.1 0 1 0 -2.2,0 z"
+        android:fillColor="#CCFFE8"/>
+
+    <!-- Lens highlight (upper-left glint) -->
+    <path android:pathData="M 47.5,48.5 m -2.5,-1.2 a 2.5,1.2 0 1 0 5,0 a 2.5,1.2 0 1 0 -5,0 z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.30"/>
+
+</vector>

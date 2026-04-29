@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -390,12 +394,32 @@ private fun PageScaffold(
 }
 
 @Composable
+private fun WearSplash() {
+    PageScaffold(title = "") {
+        Image(
+            painter = painterResource(id = R.drawable.ic_dw_eye),
+            contentDescription = "datawatch eye",
+            modifier = Modifier.size(68.dp).padding(top = 4.dp),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "datawatch",
+            style = MaterialTheme.typography.title2,
+            color = MaterialTheme.colors.primary,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(10.dp))
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
 private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
+    if (state.loading) {
+        WearSplash()
+        return
+    }
     PageScaffold("Monitor") {
-        if (state.loading) {
-            CircularProgressIndicator(modifier = Modifier.padding(top = 12.dp))
-            return@PageScaffold
-        }
         if (state.pairedServer.isEmpty()) {
             Text(
                 "Open datawatch on your phone",
@@ -1230,8 +1254,15 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
+            val splashStart = System.currentTimeMillis()
             runCatching {
                 val items = dataClient.dataItems.await()
+                // Hold splash for at least MIN_SPLASH_MS before applying
+                // cached data (which clears loading). Live DataLayer pushes
+                // that arrive after launch bypass this gate intentionally.
+                val elapsed = System.currentTimeMillis() - splashStart
+                val remaining = MIN_SPLASH_MS - elapsed
+                if (remaining > 0) kotlinx.coroutines.delay(remaining)
                 try {
                     items.forEach { item ->
                         when (item.uri.path) {
@@ -1486,6 +1517,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     public companion object {
+        public const val MIN_SPLASH_MS: Long = 1_400L
         public const val COUNTS_PATH: String = "/datawatch/counts"
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
