@@ -54,10 +54,12 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readBytes
+import io.ktor.client.request.forms.append
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.utils.io.core.writeFully
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -312,18 +314,16 @@ public class RestTransport(
                         io.ktor.client.request.forms.MultiPartFormDataContent(
                             parts =
                                 io.ktor.client.request.forms.formData {
+                                    // Use filename overload — generates one Content-Disposition
+                                    // with name+filename so Go's multipart parser sees the ext.
                                     append(
                                         key = "audio",
-                                        value = audio,
-                                        headers =
-                                            io.ktor.http.Headers.build {
-                                                append(io.ktor.http.HttpHeaders.ContentType, audioMime)
-                                                append(
-                                                    io.ktor.http.HttpHeaders.ContentDisposition,
-                                                    "filename=\"voice.${audioMime.substringAfter('/')}\"",
-                                                )
-                                            },
-                                    )
+                                        filename = "voice.${audioMime.substringAfter('/')}",
+                                        contentType = ContentType.parse(audioMime),
+                                        size = audio.size.toLong(),
+                                    ) {
+                                        writeFully(audio)
+                                    }
                                     sessionId?.let { append("session_id", it) }
                                     append("auto_exec", if (autoExec) "true" else "false")
                                     append(
