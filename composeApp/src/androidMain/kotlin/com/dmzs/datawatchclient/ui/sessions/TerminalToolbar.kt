@@ -252,6 +252,16 @@ private fun TermToolBtn(
     ) {
         Text(
             label,
+            // v0.42.11 — `maxLines = 1, softWrap = false` keep the
+            // button on a single row even when the inline toolbar is
+            // squished against the screen edge. Without this, the
+            // last button ("↕ Scroll" / "⏹ Exit") was wrapping into
+            // ~5 stacked lines on phone widths and dragging the row
+            // 154 dp tall via Compose's CenterVertically alignment —
+            // surfaced as the empty band above the tabs row that
+            // user reported 2026-04-29.
+            maxLines = 1,
+            softWrap = false,
             fontSize = 11.sp,
             fontWeight = if (highlight) FontWeight.Medium else FontWeight.Normal,
             color =

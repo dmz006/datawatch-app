@@ -231,7 +231,7 @@ private fun WearRoot(
                             onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
                         )
                     3 -> ServersPage(state) { id -> vm.requestActiveServer(id) }
-                    4 -> AboutPage()
+                    4 -> AboutPage(state)
                 }
             }
             PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
@@ -337,6 +337,16 @@ private fun PageScaffold(
     // ~45% alpha. Inner padding is diamond-shaped (more horizontal,
     // less vertical) because a circular viewport cuts the corners
     // anyway — content stays within the safe area.
+    //
+    // v0.42.11 user direction 2026-04-29: "all pages on watch should
+    // have circle clipping" — `Modifier.clip(cardShape)` on the inner
+    // Box clips the verticalScroll Column's children (long lists,
+    // multi-line text) to the round bezel so content doesn't bleed
+    // into the rectangular face corners.
+    //
+    // v0.42.11 — pass an empty title to suppress the page header;
+    // the About page does this since its body already opens with the
+    // datawatch logo + name.
     Box(
         modifier =
             Modifier
@@ -349,6 +359,7 @@ private fun PageScaffold(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .clip(cardShape)
                     .background(MaterialTheme.colors.surface, shape = cardShape)
                     .border(
                         width = 1.5.dp,
@@ -364,12 +375,14 @@ private fun PageScaffold(
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.title3,
-                    color = MaterialTheme.colors.primary,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                if (title.isNotBlank()) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.title3,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
                 content()
             }
         }
@@ -998,28 +1011,71 @@ private fun ServersPage(
     }
 }
 
+/**
+ * v0.42.11 — About page rewritten to mirror the phone's About card
+ * (which itself mirrors the PWA's About surface). User direction
+ * 2026-04-29: drop the "About" page header; the body already opens
+ * with the datawatch logotype and name. The bezel circle clipping
+ * comes from PageScaffold v0.42.11.
+ */
 @Composable
-private fun AboutPage() {
-    PageScaffold("About") {
+private fun AboutPage(state: WearSessionCountsViewModel.UiState) {
+    PageScaffold(title = "") {
         Text(
             "datawatch",
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.title2,
             color = MaterialTheme.colors.primary,
             fontWeight = FontWeight.Bold,
         )
         Text(
+            "AI Session Monitor & Bridge",
+            modifier = Modifier.padding(top = 2.dp),
+            style = MaterialTheme.typography.caption3,
+            color = MaterialTheme.colors.onSurfaceVariant,
+        )
+        Text(
             "v${Version.VERSION} (${Version.VERSION_CODE})",
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.body2,
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.caption1,
             color = MaterialTheme.colors.onSurface,
             fontFamily = FontFamily.Monospace,
         )
+        if (state.pairedServer.isNotEmpty() && state.serverName.isNotEmpty()) {
+            Text(
+                "● ${state.serverName}",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.primary,
+            )
+        }
+        if (state.total > 0) {
+            Text(
+                "${state.total} sessions · ${state.running} run · ${state.waiting} wait",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+        }
+        if (state.uptimeSeconds > 0) {
+            Text(
+                "up ${state.uptimeText()}",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+        }
         Text(
-            "Wear OS companion",
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.caption2,
+            "Polyform Noncommercial 1.0.0",
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.caption3,
             color = MaterialTheme.colors.onSurfaceVariant,
+        )
+        Text(
+            "github.com/dmz006/datawatch-app",
+            modifier = Modifier.padding(top = 2.dp),
+            style = MaterialTheme.typography.caption3,
+            color = MaterialTheme.colors.primary,
         )
     }
 }

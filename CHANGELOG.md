@@ -8,6 +8,36 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.11] — 2026-04-29 (close B35 + watch About + universal circle clip)
+
+### Changed
+
+- **Watch About page rewritten to mirror the phone's About card.**
+  User direction 2026-04-29: drop the "About" page header (the
+  body opens with the datawatch logotype) and bring the same
+  details the phone surfaces — version + build code, active server
+  + session counts, uptime, license (Polyform Noncommercial 1.0.0),
+  source link. PWA About content kept as the parity reference.
+- **All Wear pages now circle-clip their content.** User direction
+  2026-04-29: `Modifier.clip(CircleShape)` on `PageScaffold` so
+  long lists / multi-line text (sessions, PRDs, About body) get
+  visually clipped to the round bezel — matches the popup clip
+  added in v0.42.10. `PageScaffold` accepts a blank title to
+  suppress the page header, used by the new About page.
+
+### Fixed
+
+- **Empty black band above the tmux/channel tabs row.** Root cause
+  found via `uiautomator dump` 2026-04-29: the rightmost toolbar
+  button ("↕ Scroll" / "⏹ Exit Scroll") had only ~10 dp of usable
+  horizontal space after the font controls, so its label wrapped
+  to ~5 stacked lines and the button rendered 154 dp tall. The
+  Row's `verticalAlignment = CenterVertically` then stretched all
+  siblings to that height, leaving the visible empty band above
+  the short pills. Setting `maxLines = 1, softWrap = false` on
+  `TermToolBtn`'s Text keeps every button on one line; the row
+  collapses to its natural ~40 dp height. Closes backlog **B35**.
+
 ## [0.42.10] — 2026-04-29 (watch popup content clipped to circle + composer cleanup)
 
 ### Removed
