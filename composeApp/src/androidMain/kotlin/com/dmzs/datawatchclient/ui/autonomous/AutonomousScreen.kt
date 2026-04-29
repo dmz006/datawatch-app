@@ -106,9 +106,13 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     )
                     listOf(
                         "needs_review",
+                        "revisions_asked",
+                        "approved",
+                        "decomposing",
                         "running",
                         "complete",
                         "rejected",
+                        "cancelled",
                     ).forEach { s ->
                         FilterChip(
                             selected = statusFilter == s,

@@ -265,6 +265,7 @@ internal fun PrdDetailDialog(
     if (editPrdOpen) {
         EditPrdDialog(
             currentTitle = prd.title.orEmpty(),
+            currentSpec = prd.spec.orEmpty(),
             onDismiss = { editPrdOpen = false },
             onSave = { title, spec -> onEditPrd(title, spec); editPrdOpen = false },
         )
@@ -397,11 +398,12 @@ private fun LlmOverrideDialog(
 @Composable
 private fun EditPrdDialog(
     currentTitle: String,
+    currentSpec: String = "",
     onDismiss: () -> Unit,
     onSave: (title: String?, spec: String?) -> Unit,
 ) {
     var title by remember { mutableStateOf(currentTitle) }
-    var spec by remember { mutableStateOf("") }
+    var spec by remember { mutableStateOf(currentSpec) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
