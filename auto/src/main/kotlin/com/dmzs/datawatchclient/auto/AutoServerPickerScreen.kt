@@ -35,14 +35,16 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     loadJob?.cancel()
-                    loadJob = scope.launch {
-                        profiles =
-                            AutoServiceLocator.profileRepository.observeAll().first()
-                                .filter { it.enabled }
-                        activeId = AutoServiceLocator.activeServerStore.get()
-                        invalidate()
-                    }
+                    loadJob =
+                        scope.launch {
+                            profiles =
+                                AutoServiceLocator.profileRepository.observeAll().first()
+                                    .filter { it.enabled }
+                            activeId = AutoServiceLocator.activeServerStore.get()
+                            invalidate()
+                        }
                 }
+
                 override fun onStop(owner: LifecycleOwner) {
                     loadJob?.cancel()
                 }

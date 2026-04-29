@@ -83,8 +83,9 @@ public class WearSyncService(
                     // Watch-initiated PRD action: payload is
                     // "prdId\naction\nreason?". reason is optional and
                     // only meaningful for `reject`.
-                    val body = runCatching { String(ev.data, Charsets.UTF_8) }
-                        .getOrNull().orEmpty()
+                    val body =
+                        runCatching { String(ev.data, Charsets.UTF_8) }
+                            .getOrNull().orEmpty()
                     val parts = body.split("\n", limit = 3)
                     val prdId = parts.getOrNull(0).orEmpty()
                     val action = parts.getOrNull(1).orEmpty()
@@ -96,17 +97,16 @@ public class WearSyncService(
                 REFRESH_SESSION_PATH -> {
                     Log.d(TAG, "MSG REFRESH_SESSION_PATH from=${ev.sourceNodeId} bytes=${ev.data.size}")
                     // v0.42.2 — watch-initiated session refetch.
-                    // Payload is the sessionId. The phone calls
-                    // listSessions() against the active profile and
-                    // upserts the matching record into the session
-                    // repository; the existing reactive
-                    // /datawatch/sessions publisher then ships a
-                    // fresh snapshot (including lastResponse) to the
-                    // watch on the next emission.
-                    val sid = runCatching { String(ev.data, Charsets.UTF_8) }
-                        .getOrNull().orEmpty()
+                    // v0.42.9 — also reply on /datawatch/sessionDetail
+                    // with the full last_response body (capped at
+                    // ~95 KB to fit MessageClient's 100 KB envelope)
+                    // so the popup isn't limited to the DataLayer
+                    // broadcast's 4000-char per-session cap.
+                    val sid =
+                        runCatching { String(ev.data, Charsets.UTF_8) }
+                            .getOrNull().orEmpty()
                     if (sid.isNotEmpty()) {
-                        scope.launch { forwardWatchRefreshSession(sid) }
+                        scope.launch { forwardWatchRefreshSession(sid, ev.sourceNodeId) }
                     }
                 }
                 AUDIO_PATH -> {
@@ -163,52 +163,42 @@ public class WearSyncService(
                             )
                         val list =
                             SessionsListSnapshot(
-                                items = sessions
-                                    .asSequence()
-                                    .sortedByDescending { it.lastActivityAt }
-                                    .take(SESSIONS_PUBLISH_LIMIT)
-                                    .map { s ->
-                                        SessionItem(
-                                            id = s.id,
-                                            title = (s.name ?: s.taskSummary ?: s.id).take(40),
-                                            backend = s.backend.orEmpty(),
-                                            stateName = s.state.name,
-                                            // v0.35.8 — prefer
-                                            // lastResponse (the LLM's
-                                            // actual output) over
-                                            // lastPrompt (the question
-                                            // it's waiting on); a
-                                            // running session is
-                                            // mostly interesting for
-                                            // what it just produced.
-                                            // Falls back to
-                                            // lastPrompt → taskSummary
-                                            // → empty so the row is
-                                            // always anchored to
-                                            // something readable.
-                                            lastLine =
-                                                (
-                                                    s.lastResponse
-                                                        ?: s.lastPrompt
-                                                        ?: s.taskSummary
-                                                        ?: ""
-                                                ).replace("\n", " ")
-                                                    .trim()
-                                                    .take(SESSION_LAST_LINE_MAX),
-                                            // Preserve newlines for the
-                                            // popup view; trim trailing
-                                            // whitespace and cap at
-                                            // SESSION_LAST_RESPONSE_MAX
-                                            // so we stay well under the
-                                            // 100 KB DataLayer ceiling.
-                                            lastResponse =
-                                                s.lastResponse
-                                                    .orEmpty()
-                                                    .trimEnd()
-                                                    .take(SESSION_LAST_RESPONSE_MAX),
-                                        )
-                                    }
-                                    .toList(),
+                                items =
+                                    sessions
+                                        .asSequence()
+                                        .sortedByDescending { it.lastActivityAt }
+                                        .take(SESSIONS_PUBLISH_LIMIT)
+                                        .map { s ->
+                                            SessionItem(
+                                                id = s.id,
+                                                title = (s.name ?: s.taskSummary ?: s.id).take(40),
+                                                backend = s.backend.orEmpty(),
+                                                stateName = s.state.name,
+                                                // v0.35.8 — prefer
+                                                // lastResponse (the LLM's
+                                                // actual output) over
+                                                // lastPrompt (the question
+                                                // it's waiting on); a
+                                                // running session is
+                                                // mostly interesting for
+                                                // what it just produced.
+                                                // Falls back to
+                                                // lastPrompt → taskSummary
+                                                // → empty so the row is
+                                                // always anchored to
+                                                // something readable.
+                                                lastLine =
+                                                    (
+                                                        s.lastResponse
+                                                            ?: s.lastPrompt
+                                                            ?: s.taskSummary
+                                                            ?: ""
+                                                    ).replace("\n", " ")
+                                                        .trim()
+                                                        .take(SESSION_LAST_LINE_MAX),
+                                            )
+                                        }
+                                        .toList(),
                             )
                         count to list
                     }
@@ -298,8 +288,9 @@ public class WearSyncService(
                                         .map { p ->
                                             PrdSnapshotItem(
                                                 id = p.id,
-                                                title = (p.title ?: p.name)
-                                                    .take(40),
+                                                title =
+                                                    (p.title ?: p.name)
+                                                        .take(40),
                                                 status = p.status,
                                             )
                                         }
@@ -407,8 +398,11 @@ public class WearSyncService(
             buildString {
                 append(sessionId)
                 append('\n')
-                if (error.isEmpty()) append(text)
-                else append("error:").append(error)
+                if (error.isEmpty()) {
+                    append(text)
+                } else {
+                    append("error:").append(error)
+                }
             }.toByteArray(Charsets.UTF_8)
         runCatching {
             Wearable.getMessageClient(context)
@@ -424,8 +418,11 @@ public class WearSyncService(
      * publish carries the freshest `lastResponse` body. Best-effort:
      * any failure is silent — the watch keeps the cached preview.
      */
-    private suspend fun forwardWatchRefreshSession(sessionId: String) {
-        Log.d(TAG, "refreshSession ENTER sid=$sessionId")
+    private suspend fun forwardWatchRefreshSession(
+        sessionId: String,
+        sourceNodeId: String,
+    ) {
+        Log.d(TAG, "refreshSession ENTER sid=$sessionId from=$sourceNodeId")
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
             Log.d(TAG, "refreshSession activeId=$activeId")
@@ -454,6 +451,26 @@ public class WearSyncService(
                                 "preview=${lr.take(60).replace("\n", "\\n")}",
                         )
                         ServiceLocator.sessionRepository.upsert(fresh)
+                        // v0.42.9 — full last_response body sent
+                        // back as a dedicated MessageClient reply so
+                        // the watch popup can render the entire
+                        // buffer without the per-session 4000-char
+                        // cap on the DataLayer broadcast. Capped at
+                        // SESSION_DETAIL_BODY_MAX to stay under the
+                        // 100 KB MessageClient envelope.
+                        val capped = lr.take(SESSION_DETAIL_BODY_MAX)
+                        val payload =
+                            ("${fresh.id}\n$capped").toByteArray(Charsets.UTF_8)
+                        Log.d(
+                            TAG,
+                            "sessionDetail send id=${fresh.id} bytes=${payload.size}",
+                        )
+                        runCatching {
+                            Wearable.getMessageClient(context)
+                                .sendMessage(sourceNodeId, SESSION_DETAIL_PATH, payload)
+                        }.onFailure {
+                            Log.w(TAG, "sessionDetail send FAILED ${it.message}")
+                        }
                     }
                 },
                 onFailure = { err ->
@@ -474,7 +491,10 @@ public class WearSyncService(
      * only accepts input while a subscriber is collecting the session's
      * events flow — so for watch-initiated replies we open + send + close.
      */
-    private suspend fun forwardWatchReply(sessionId: String, text: String) {
+    private suspend fun forwardWatchReply(
+        sessionId: String,
+        text: String,
+    ) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
             if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
@@ -530,12 +550,6 @@ public class WearSyncService(
         val backend: String,
         val stateName: String,
         val lastLine: String,
-        // v0.42.1 — full lastResponse body (multi-line, capped at
-        // SESSION_LAST_RESPONSE_MAX) so the watch's session-detail
-        // popup can render the same "view last response" content the
-        // phone shows in its LastResponseSheet. lastLine is still the
-        // single-line preview rendered on the Sessions row.
-        val lastResponse: String,
     )
 
     private data class SessionsListSnapshot(
@@ -604,11 +618,7 @@ public class WearSyncService(
 
     private fun publishSessions(snap: SessionsListSnapshot) {
         runCatching {
-            Log.d(
-                TAG,
-                "publishSessions n=${snap.items.size} " +
-                    snap.items.take(3).joinToString { "${it.id}/lr=${it.lastResponse.length}" },
-            )
+            Log.d(TAG, "publishSessions n=${snap.items.size}")
             val req =
                 PutDataMapRequest.create(SESSIONS_PATH).apply {
                     dataMap.putStringArray("ids", snap.items.map { it.id }.toTypedArray())
@@ -616,7 +626,6 @@ public class WearSyncService(
                     dataMap.putStringArray("backends", snap.items.map { it.backend }.toTypedArray())
                     dataMap.putStringArray("states", snap.items.map { it.stateName }.toTypedArray())
                     dataMap.putStringArray("lastLines", snap.items.map { it.lastLine }.toTypedArray())
-                    dataMap.putStringArray("lastResponses", snap.items.map { it.lastResponse }.toTypedArray())
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
@@ -674,7 +683,15 @@ public class WearSyncService(
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
+        public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
+
+        // v0.42.9 — full last_response body cap for the
+        // /datawatch/sessionDetail MessageClient reply. The Wearable
+        // API allows up to 100 KB per message; we leave headroom for
+        // the sessionId prefix + delimiter + UTF-8 expansion.
+        public const val SESSION_DETAIL_BODY_MAX: Int = 95_000
         public const val STATS_POLL_MS: Long = 15_000L
+
         // v0.35.5 watch-reply plumbing — see forwardWatchReply. These
         // are tuned conservatively: Ktor WS subscribe typically completes
         // in <300 ms on LAN, but self-signed TLS on first connect can
@@ -682,17 +699,17 @@ public class WearSyncService(
         // the frame to flush through the write queue.
         public const val WATCH_REPLY_SUBSCRIBE_GRACE_MS: Long = 1_200L
         public const val WATCH_REPLY_DRAIN_MS: Long = 400L
+
         // Max sessions published to the watch list. Wearable DataItem
         // has a hard 100 KB limit per item — this cap keeps us well
         // under it even with long session titles + last-line snippets.
         public const val SESSIONS_PUBLISH_LIMIT: Int = 12
         public const val SESSION_LAST_LINE_MAX: Int = 160
 
-        // v0.42.2 — per-session lastResponse cap raised so the watch
-        // popup (vertically scrollable) shows the same body the PWA /
-        // Android app render. 12 sessions × 4000 chars ≈ 48 KB worst
-        // case, still well under the 100 KB DataLayer ceiling once
-        // the other arrays are accounted for.
-        public const val SESSION_LAST_RESPONSE_MAX: Int = 4000
+        // v0.42.9 — `lastResponse` no longer rides the DataLayer
+        // broadcast. Body is fetched on-demand for the popped-open
+        // session via /datawatch/sessionDetail (see
+        // SESSION_DETAIL_BODY_MAX). Drop the previous 4000-char cap
+        // — the broadcast is now metadata-only.
     }
 }

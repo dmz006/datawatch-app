@@ -1,10 +1,9 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -24,25 +22,25 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Reorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -55,12 +53,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -68,7 +66,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,14 +73,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -97,6 +90,8 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaStateEdge
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
 /**
@@ -216,9 +211,10 @@ public fun SessionsScreen(
                 // centre now.
                 FloatingActionButton(
                     onClick = onNewSession,
-                    modifier = Modifier
-                        .offset(y = 36.dp)
-                        .padding(end = 4.dp),
+                    modifier =
+                        Modifier
+                            .offset(y = 36.dp)
+                            .padding(end = 4.dp),
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "New session")
                 }
@@ -266,9 +262,10 @@ public fun SessionsScreen(
                 // the row content.
                 androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
                     androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(
-                            id = com.dmzs.datawatchclient.R.drawable.ic_launcher_foreground,
-                        ),
+                        painter =
+                            androidx.compose.ui.res.painterResource(
+                                id = com.dmzs.datawatchclient.R.drawable.ic_launcher_foreground,
+                            ),
                         contentDescription = null,
                         modifier =
                             Modifier
@@ -278,82 +275,82 @@ public fun SessionsScreen(
                                 .alpha(0.10f),
                     )
                     LazyColumn {
-                    // Key = profile:id to avoid LazyColumn duplicate-key crashes
-                    // when the same session id appears under both a server's
-                    // primary list and another server's federation fan-out.
-                    items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
-                        // Per-row drag state. The user long-presses the row
-                        // to start dragging; while dragging, the row floats
-                        // via `translationY` and other rows stay put. On
-                        // release, `moveSessionByOffset` applies the delta
-                        // in one shot, matching PWA `sessionDrop()` (app.js
-                        // :1414-1415). Row height is approximated at 72 dp
-                        // — exact height varies with task-context lines,
-                        // but rounding errors self-correct within ~1 row
-                        // and users seldom drag > 5 rows in one gesture.
-                        val density = LocalDensity.current
-                        val rowHeightPx =
-                            with(density) { ROW_HEIGHT_GUESS_DP.dp.toPx() }
-                        var dragOffsetY by remember(session.id) {
-                            mutableStateOf(0f)
-                        }
-                        var isDragging by remember(session.id) {
-                            mutableStateOf(false)
-                        }
-                        SessionRow(
-                            session = session,
-                            backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
-                            reorderMode = state.reorderMode,
-                            onMoveUp = { vm.moveUp(session.id) },
-                            onMoveDown = { vm.moveDown(session.id) },
-                            onQuickReply = { text -> vm.quickReply(session.id, text) },
-                            fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
-                            deleteSupported = state.deleteSupported,
-                            selectionMode = selectionMode,
-                            isSelected = session.id in selectedIds,
-                            dragOffsetY = dragOffsetY,
-                            isDragging = isDragging,
-                            onDragStart = {
-                                // Ignore drags while multi-select is
-                                // active — long-press is repurposed for
-                                // selection toggle there.
-                                if (selectionMode) return@SessionRow
-                                isDragging = true
-                            },
-                            onDrag = { delta -> dragOffsetY += delta },
-                            onDragEnd = {
-                                if (!selectionMode && isDragging) {
-                                    val shift = (dragOffsetY / rowHeightPx).toInt()
-                                    if (shift != 0) {
-                                        vm.moveSessionByOffset(session.id, shift)
+                        // Key = profile:id to avoid LazyColumn duplicate-key crashes
+                        // when the same session id appears under both a server's
+                        // primary list and another server's federation fan-out.
+                        items(visible, key = { "${it.serverProfileId}:${it.id}" }) { session ->
+                            // Per-row drag state. The user long-presses the row
+                            // to start dragging; while dragging, the row floats
+                            // via `translationY` and other rows stay put. On
+                            // release, `moveSessionByOffset` applies the delta
+                            // in one shot, matching PWA `sessionDrop()` (app.js
+                            // :1414-1415). Row height is approximated at 72 dp
+                            // — exact height varies with task-context lines,
+                            // but rounding errors self-correct within ~1 row
+                            // and users seldom drag > 5 rows in one gesture.
+                            val density = LocalDensity.current
+                            val rowHeightPx =
+                                with(density) { ROW_HEIGHT_GUESS_DP.dp.toPx() }
+                            var dragOffsetY by remember(session.id) {
+                                mutableStateOf(0f)
+                            }
+                            var isDragging by remember(session.id) {
+                                mutableStateOf(false)
+                            }
+                            SessionRow(
+                                session = session,
+                                backend = session.backend ?: state.backendByProfileId[session.serverProfileId],
+                                reorderMode = state.reorderMode,
+                                onMoveUp = { vm.moveUp(session.id) },
+                                onMoveDown = { vm.moveDown(session.id) },
+                                onQuickReply = { text -> vm.quickReply(session.id, text) },
+                                fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
+                                deleteSupported = state.deleteSupported,
+                                selectionMode = selectionMode,
+                                isSelected = session.id in selectedIds,
+                                dragOffsetY = dragOffsetY,
+                                isDragging = isDragging,
+                                onDragStart = {
+                                    // Ignore drags while multi-select is
+                                    // active — long-press is repurposed for
+                                    // selection toggle there.
+                                    if (selectionMode) return@SessionRow
+                                    isDragging = true
+                                },
+                                onDrag = { delta -> dragOffsetY += delta },
+                                onDragEnd = {
+                                    if (!selectionMode && isDragging) {
+                                        val shift = (dragOffsetY / rowHeightPx).toInt()
+                                        if (shift != 0) {
+                                            vm.moveSessionByOffset(session.id, shift)
+                                        }
                                     }
-                                }
-                                dragOffsetY = 0f
-                                isDragging = false
-                            },
-                            onClick = {
-                                if (selectionMode) {
-                                    selectedIds = selectedIds.toggle(session.id)
-                                } else {
-                                    onOpenSession(session.id)
-                                }
-                            },
-                            onLongPress = {
-                                // In multi-select, long-press selects the
-                                // row. Outside multi-select the gesture is
-                                // reclaimed by the drag detector in
-                                // SessionRow itself.
-                                selectedIds = selectedIds + session.id
-                            },
-                            onSwipeMute = {
-                                if (!selectionMode) vm.toggleMute(session.id, session.muted)
-                            },
-                            onRename = { newName -> vm.rename(session.id, newName) },
-                            onRestart = { vm.restart(session.id) },
-                            onKill = { vm.kill(session.id) },
-                            onDelete = { vm.delete(session.id) },
-                        )
-                    }
+                                    dragOffsetY = 0f
+                                    isDragging = false
+                                },
+                                onClick = {
+                                    if (selectionMode) {
+                                        selectedIds = selectedIds.toggle(session.id)
+                                    } else {
+                                        onOpenSession(session.id)
+                                    }
+                                },
+                                onLongPress = {
+                                    // In multi-select, long-press selects the
+                                    // row. Outside multi-select the gesture is
+                                    // reclaimed by the drag detector in
+                                    // SessionRow itself.
+                                    selectedIds = selectedIds + session.id
+                                },
+                                onSwipeMute = {
+                                    if (!selectionMode) vm.toggleMute(session.id, session.muted)
+                                },
+                                onRename = { newName -> vm.rename(session.id, newName) },
+                                onRestart = { vm.restart(session.id) },
+                                onKill = { vm.kill(session.id) },
+                                onDelete = { vm.delete(session.id) },
+                            )
+                        }
                     } // LazyColumn close
                 } // watermark Box close
             }
@@ -460,8 +457,9 @@ private fun SessionsToolbar(
     // something filter-related is active (stale state we don't want
     // to hide). Collapsed state = nothing renders here; the search
     // icon lives on the TopAppBar above.
-    val show = expanded || filterText.isNotEmpty() ||
-        activeBackendFilter != null || showHistory
+    val show =
+        expanded || filterText.isNotEmpty() ||
+            activeBackendFilter != null || showHistory
     if (!show) return
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
         run {
@@ -514,7 +512,11 @@ private fun SessionsToolbar(
                 if (historyCount > 0) {
                     OutlinedButton(
                         onClick = onToggleShowHistory,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
                     ) {
                         Text(
                             // v0.35.7 — drop the verb churn, match
@@ -527,7 +529,11 @@ private fun SessionsToolbar(
                 Box {
                     OutlinedButton(
                         onClick = { sortMenuOpen = true },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
                     ) {
                         Text("Sort: ${sortOrder.label}", style = MaterialTheme.typography.labelSmall)
                     }
@@ -875,10 +881,11 @@ private fun SessionRow(
                     SessionState.Running, SessionState.Waiting -> {
                         OutlinedButton(
                             onClick = { killConfirmOpen = true },
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 10.dp,
-                                vertical = 4.dp,
-                            ),
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
                         ) {
                             Icon(
                                 Icons.Filled.Stop,
@@ -896,10 +903,11 @@ private fun SessionRow(
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(
                                 onClick = { quickCmdsOpen = true },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
+                                contentPadding =
+                                    androidx.compose.foundation.layout.PaddingValues(
+                                        horizontal = 10.dp,
+                                        vertical = 4.dp,
+                                    ),
                             ) {
                                 Icon(
                                     Icons.Filled.Keyboard,
@@ -917,10 +925,11 @@ private fun SessionRow(
                     -> {
                         OutlinedButton(
                             onClick = { restartConfirmOpen = true },
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 10.dp,
-                                vertical = 4.dp,
-                            ),
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
                         ) {
                             Icon(
                                 Icons.Filled.PlayArrow,
@@ -934,10 +943,11 @@ private fun SessionRow(
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(
                                 onClick = { deleteConfirmOpen = true },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp,
-                                ),
+                                contentPadding =
+                                    androidx.compose.foundation.layout.PaddingValues(
+                                        horizontal = 10.dp,
+                                        vertical = 4.dp,
+                                    ),
                             ) {
                                 Icon(
                                     Icons.Filled.Delete,
@@ -1247,7 +1257,10 @@ private fun ReachabilityDot(
             modifier =
                 Modifier
                     .size(12.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale },
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
             shape = CircleShape,
         ) {}
     }

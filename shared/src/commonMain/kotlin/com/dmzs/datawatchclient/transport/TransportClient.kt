@@ -235,9 +235,7 @@ public interface TransportClient {
      * the file wholesale. Guarded per ADR-0019: mobile only offers
      * structured field edits, never raw YAML.
      */
-    public suspend fun writeConfig(
-        raw: kotlinx.serialization.json.JsonObject,
-    ): Result<Unit>
+    public suspend fun writeConfig(raw: kotlinx.serialization.json.JsonObject): Result<Unit>
 
     /**
      * GET /api/logs?lines=<n>&offset=<m> — paged daemon log tail.
@@ -292,9 +290,7 @@ public interface TransportClient {
     ): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /** GET /api/memory/search?q=<query> — semantic search over memories. */
-    public suspend fun memorySearch(
-        query: String,
-    ): Result<List<kotlinx.serialization.json.JsonObject>>
+    public suspend fun memorySearch(query: String): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /** POST /api/memory/delete {id} — delete a single memory by id. */
     public suspend fun memoryDelete(id: Long): Result<Unit>
@@ -306,7 +302,10 @@ public interface TransportClient {
      * flag so the entry sticks in L1 retrieval regardless of recency
      * decay. Idempotent.
      */
-    public suspend fun memoryPin(id: Long, pinned: Boolean): Result<Unit>
+    public suspend fun memoryPin(
+        id: Long,
+        pinned: Boolean,
+    ): Result<Unit>
 
     /**
      * POST /api/memory/sweep_stale `{older_than_days, dry_run}` —
@@ -354,9 +353,7 @@ public interface TransportClient {
     public suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto>
 
     /** POST /api/autonomous/prds — create a new PRD (issue #11). */
-    public suspend fun createPrd(
-        request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto,
-    ): Result<String>
+    public suspend fun createPrd(request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto): Result<String>
 
     /** POST /api/autonomous/prds/{id}/{action} — approve|reject|request_revision|cancel|instantiate. */
     public suspend fun prdAction(
@@ -407,9 +404,7 @@ public interface TransportClient {
      * `image_pair` rather than a flat `backend` field. Issue #20
      * (PWA v5.26.63 unified-Profile dropdown routing).
      */
-    public suspend fun startAgent(
-        request: com.dmzs.datawatchclient.transport.dto.StartAgentRequestDto,
-    ): Result<String>
+    public suspend fun startAgent(request: com.dmzs.datawatchclient.transport.dto.StartAgentRequestDto): Result<String>
 
     /**
      * GET /api/memory/export — dump of every memory as a single
@@ -539,9 +534,7 @@ public interface TransportClient {
      * `profiles` array from the `{profiles: [...]}` response so
      * callers can render fields as the schema evolves.
      */
-    public suspend fun listKindProfiles(
-        kind: String,
-    ): Result<List<kotlinx.serialization.json.JsonObject>>
+    public suspend fun listKindProfiles(kind: String): Result<List<kotlinx.serialization.json.JsonObject>>
 
     /** DELETE /api/profiles/<kind>s/<name>. */
     public suspend fun deleteKindProfile(

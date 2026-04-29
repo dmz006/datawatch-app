@@ -280,26 +280,42 @@ private fun HomeShell(
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)
     var prdsSupported by remember { mutableStateOf(false) }
-    LaunchedEffect(activeId) {
-        prdsSupported = false
+
+    // v0.42.9 — probe `autonomous.enabled` from /api/config on
+    // active-server change AND on every successful config save
+    // (ConfigSaveBus). Event-driven instead of polling — user
+    // direction 2026-04-28: no timed refresh; the queue / event
+    // mechanism (`ConfigSaveBus`) flips the PRDs nav tab as soon
+    // as the user toggles autonomous in Settings.
+    suspend fun probeAutonomous() {
         val id = activeId
-        if (id == null) return@LaunchedEffect
+        if (id == null) {
+            prdsSupported = false
+            return
+        }
         if (id == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS) {
             prdsSupported = true
-            return@LaunchedEffect
+            return
         }
-        val profile = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == id && it.enabled } ?: return@LaunchedEffect
-        // v0.42.8 — match PWA v5.26.8: probe /api/config for
-        // `autonomous.enabled == true`. Earlier (v0.42.5) we hit
-        // /api/autonomous/prds and treated success as supported, but
-        // that endpoint returns a 200 OK with `{"prds":[]}` on
-        // disabled servers — so the tab stayed visible everywhere.
+        val profile =
+            ServiceLocator.profileRepository.observeAll().first()
+                .firstOrNull { it.id == id && it.enabled } ?: return
         ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
             val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
-            val enabled = (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
-                ?.content?.lowercase() == "true"
+            val enabled =
+                (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
+                    ?.content?.lowercase() == "true"
             prdsSupported = enabled
+        }
+    }
+
+    LaunchedEffect(activeId) {
+        prdsSupported = false
+        probeAutonomous()
+    }
+    LaunchedEffect(activeId) {
+        com.dmzs.datawatchclient.events.ConfigSaveBus.events.collect {
+            probeAutonomous()
         }
     }
 

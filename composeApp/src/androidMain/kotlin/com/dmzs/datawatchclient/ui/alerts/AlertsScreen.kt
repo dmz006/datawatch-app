@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -136,8 +133,10 @@ public fun AlertsScreen(
                         val expanded =
                             group.sessionId in state.expandedSessionIds ||
                                 // Active groups default-expand; inactive default-collapse.
-                                (state.selectedTab == AlertsViewModel.Tab.Active &&
-                                    group.sessionId !in state.expandedSessionIds)
+                                (
+                                    state.selectedTab == AlertsViewModel.Tab.Active &&
+                                        group.sessionId !in state.expandedSessionIds
+                                )
                         AlertGroupCard(
                             group = group,
                             expanded = expanded,
@@ -343,10 +342,11 @@ private fun AlertCard(
                 if (showQuickReply) {
                     OutlinedButton(
                         onClick = onQuickReply,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
                     ) {
                         Text("Reply…", style = MaterialTheme.typography.labelSmall)
                     }
@@ -354,20 +354,22 @@ private fun AlertCard(
                 }
                 OutlinedButton(
                     onClick = onSchedule,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 10.dp,
-                        vertical = 4.dp,
-                    ),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 4.dp,
+                        ),
                 ) {
                     Text("Schedule…", style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 OutlinedButton(
                     onClick = onOpenSession,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 10.dp,
-                        vertical = 4.dp,
-                    ),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 4.dp,
+                        ),
                 ) {
                     Text("Open", style = MaterialTheme.typography.labelSmall)
                 }
@@ -375,10 +377,11 @@ private fun AlertCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     TextButton(
                         onClick = onMarkRead,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 4.dp,
+                            ),
                     ) {
                         Text("✓", style = MaterialTheme.typography.labelSmall)
                     }

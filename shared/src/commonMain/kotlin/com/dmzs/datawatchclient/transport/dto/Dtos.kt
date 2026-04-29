@@ -155,7 +155,6 @@ public data class StatsDto(
     @SerialName("sessions_running") val sessionsRunning: Int = 0,
     @SerialName("sessions_waiting") val sessionsWaiting: Int = 0,
     @SerialName("uptime_seconds") val uptimeSeconds: Long = 0,
-
     // ---- PWA flat fields renderStatsData reads directly ----
     val timestamp: String? = null,
     @SerialName("cpu_load_avg_1") val cpuLoad1: Double? = null,
@@ -166,13 +165,11 @@ public data class StatsDto(
     @SerialName("disk_total") val diskTotal: Long? = null,
     @SerialName("swap_used") val swapUsed: Long = 0,
     @SerialName("swap_total") val swapTotal: Long = 0,
-
     @SerialName("gpu_name") val gpuName: String? = null,
     @SerialName("gpu_util_pct") val gpuUtilPct: Double? = null,
     @SerialName("gpu_temp") val gpuTemp: Double? = null,
     @SerialName("gpu_mem_used_mb") val gpuMemUsedMb: Long? = null,
     @SerialName("gpu_mem_total_mb") val gpuMemTotalMb: Long? = null,
-
     @SerialName("ebpf_active") val ebpfActive: Boolean = false,
     /**
      * `ebpf_enabled` — daemon was built with eBPF capture support. When
@@ -190,11 +187,9 @@ public data class StatsDto(
     @SerialName("ebpf_message") val ebpfMessage: String? = null,
     @SerialName("net_rx_bytes") val netRxBytes: Long = 0,
     @SerialName("net_tx_bytes") val netTxBytes: Long = 0,
-
     @SerialName("daemon_rss_bytes") val daemonRssBytes: Long = 0,
     val goroutines: Int = 0,
     @SerialName("open_fds") val openFds: Int = 0,
-
     @SerialName("bound_interfaces") val boundInterfaces: List<String> = emptyList(),
     @SerialName("web_port") val webPort: Int? = null,
     @SerialName("tls_port") val tlsPort: Int = 0,
@@ -203,7 +198,6 @@ public data class StatsDto(
     @SerialName("mcp_sse_host") val mcpSseHost: String? = null,
     @SerialName("tmux_sessions") val tmuxSessions: Int = 0,
     @SerialName("orphaned_tmux") val orphanedTmux: List<String> = emptyList(),
-
     @SerialName("rtk_installed") val rtkInstalled: Boolean = false,
     @SerialName("rtk_version") val rtkVersion: String? = null,
     @SerialName("rtk_update_available") val rtkUpdateAvailable: Boolean = false,
@@ -211,7 +205,6 @@ public data class StatsDto(
     @SerialName("rtk_total_saved") val rtkTotalSaved: Long = 0,
     @SerialName("rtk_avg_savings_pct") val rtkAvgSavingsPct: Double? = null,
     @SerialName("rtk_total_commands") val rtkTotalCommands: Int = 0,
-
     @SerialName("memory_enabled") val memoryEnabled: Boolean = false,
     @SerialName("memory_encrypted") val memoryEncrypted: Boolean = false,
     @SerialName("memory_key_fingerprint") val memoryKeyFingerprint: String? = null,
@@ -222,9 +215,7 @@ public data class StatsDto(
     @SerialName("memory_session_count") val memorySessionCount: Int = 0,
     @SerialName("memory_learning_count") val memoryLearningCount: Int = 0,
     @SerialName("memory_db_size_bytes") val memoryDbSizeBytes: Long = 0,
-
     @SerialName("ollama_stats") val ollamaStats: OllamaStatsDto? = null,
-
     // ---- v4.1.0 observer envelopes (BL171) ----
     val envelopes: List<StatEnvelopeDto> = emptyList(),
     val backends: List<BackendStatusDto> = emptyList(),

@@ -64,7 +64,10 @@ public fun KindProfilesCard(
                 return
             }
         ServiceLocator.transportFor(profile).listKindProfiles(kind).fold(
-            onSuccess = { profiles = it; banner = null },
+            onSuccess = {
+                profiles = it
+                banner = null
+            },
             onFailure = {
                 banner = "$title unavailable — ${it.message ?: it::class.simpleName}"
             },
@@ -220,8 +223,7 @@ public fun KindProfilesCard(
     }
 }
 
-private fun JsonObject.stringField(key: String): String? =
-    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
 /**
  * Minimal profile-edit dialog. Mobile exposes the most-common

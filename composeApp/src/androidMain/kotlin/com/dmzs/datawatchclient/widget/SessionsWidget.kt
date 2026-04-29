@@ -39,7 +39,10 @@ public class SessionsWidget : AppWidgetProvider() {
         scope.launch { refresh(context) }
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         super.onReceive(context, intent)
         if (intent.action == WidgetActions.ACTION_CYCLE_SERVER) {
             scope.launch {

@@ -1,10 +1,10 @@
 package com.dmzs.datawatchclient.ui.stats
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -111,8 +111,9 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
 private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     val enabled = s.ebpfEnabled ?: return
     if (!enabled || s.ebpfActive) return
-    val msg = s.ebpfMessage?.takeIf { it.isNotBlank() }
-        ?: "eBPF support is built into the daemon but probes aren't loaded. Run `datawatch setup ebpf` to enable."
+    val msg =
+        s.ebpfMessage?.takeIf { it.isNotBlank() }
+            ?: "eBPF support is built into the daemon but probes aren't loaded. Run `datawatch setup ebpf` to enable."
     androidx.compose.material3.Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -177,8 +178,9 @@ private fun InfrastructureCard(
             MonoRow("HTTP", "http://$host:$httpPort${if (hasTls) " (→ HTTPS)" else ""}")
             if (hasTls) MonoRow("HTTPS", "https://$host:${s.tlsPort}")
             s.mcpSsePort?.let { MonoRow("MCP SSE", "${s.mcpSseHost ?: "0.0.0.0"}:$it") }
-            val tmux = "${s.tmuxSessions} sessions" +
-                (if (s.orphanedTmux.isNotEmpty()) " · ${s.orphanedTmux.size} orphan" else "")
+            val tmux =
+                "${s.tmuxSessions} sessions" +
+                    (if (s.orphanedTmux.isNotEmpty()) " · ${s.orphanedTmux.size} orphan" else "")
             MonoRow("Tmux", tmux)
         }
     }
@@ -191,10 +193,17 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow("Version", s.rtkVersion ?: "?")
             val hooksColor =
-                if (s.rtkHooksActive) LocalDatawatchColors.current.success
-                else LocalDatawatchColors.current.warning
+                if (s.rtkHooksActive) {
+                    LocalDatawatchColors.current.success
+                } else {
+                    LocalDatawatchColors.current.warning
+                }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Hooks", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Hooks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text(
                     if (s.rtkHooksActive) "active" else "inactive",
                     style = MaterialTheme.typography.bodySmall,
@@ -218,7 +227,11 @@ private fun MemoryStatsCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) 
         PwaSectionTitle("Episodic Memory")
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Status", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Status",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text(
                     if (s.memoryEnabled) "enabled" else "disabled",
                     style = MaterialTheme.typography.bodySmall,
@@ -253,7 +266,11 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow("Host", o.host ?: "—")
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Status", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Status",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text(
                     if (o.available) "online" else "offline",
                     style = MaterialTheme.typography.bodySmall,
@@ -270,7 +287,11 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(it.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    Text(formatBytes(it.sizeVram), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        formatBytes(it.sizeVram),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }
@@ -363,7 +384,10 @@ private fun BackendHealthCard(backends: List<com.dmzs.datawatchclient.transport.
 }
 
 @Composable
-private fun MonoRow(label: String, value: String) {
+private fun MonoRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -384,7 +408,6 @@ private fun formatBytes(bytes: Long): String =
         bytes >= 1_000 -> "%.1f KB".format(bytes / 1_000.0)
         else -> "$bytes B"
     }
-
 
 @Composable
 private fun ServerInfoCard(

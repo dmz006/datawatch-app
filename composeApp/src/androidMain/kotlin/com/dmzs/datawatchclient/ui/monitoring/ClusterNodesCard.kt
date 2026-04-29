@@ -18,19 +18,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.dmzs.datawatchclient.di.ServiceLocator
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.transport.dto.ObserverClusterNodeDto
 import com.dmzs.datawatchclient.ui.settings.Section
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -115,7 +113,10 @@ private fun ClusterNodeRow(node: ObserverClusterNodeDto) {
 }
 
 @Composable
-private fun UsageBar(label: String, pct: Double) {
+private fun UsageBar(
+    label: String,
+    pct: Double,
+) {
     val fraction = (pct / 100.0).toFloat().coerceIn(0f, 1f)
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
@@ -148,6 +149,7 @@ public class ClusterNodesViewModel(
         val nodes: List<ObserverClusterNodeDto> = emptyList(),
         val error: String? = null,
     )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -156,16 +158,18 @@ public class ClusterNodesViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.observerStats().fold(
                 onSuccess = { dto ->
-                    _state.value = _state.value.copy(
-                        nodes = dto.cluster?.nodes.orEmpty(),
-                        error = null,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            nodes = dto.cluster?.nodes.orEmpty(),
+                            error = null,
+                        )
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        nodes = emptyList(),
-                        error = err.message,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            nodes = emptyList(),
+                            error = err.message,
+                        )
                 },
             )
         }

@@ -164,7 +164,10 @@ public class TerminalController internal constructor() {
      * at least these dimensions; container scrolls horizontally
      * when narrower.
      */
-    public fun setMinSize(cols: Int, rows: Int) {
+    public fun setMinSize(
+        cols: Int,
+        rows: Int,
+    ) {
         pendingMinCols = cols
         pendingMinRows = rows
         webView?.evaluateJavascript(
@@ -322,7 +325,10 @@ public fun TerminalView(
                          * at the new dimensions. Matches PWA `syncTmuxSize`.
                          */
                         @JavascriptInterface
-                        fun onResize(cols: Int, rows: Int) {
+                        fun onResize(
+                            cols: Int,
+                            rows: Int,
+                        ) {
                             com.dmzs.datawatchclient.transport.ws.WsOutbound
                                 .sendResizeTerm(sessionId, cols, rows)
                             Log.d("DwTerm", "resize_term → $cols×$rows")

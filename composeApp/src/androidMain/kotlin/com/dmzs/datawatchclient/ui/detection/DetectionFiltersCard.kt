@@ -34,7 +34,6 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -76,10 +75,11 @@ public fun DetectionFiltersCard() {
         }
 
     LaunchedEffect(Unit) {
-        val profile = resolveProfile() ?: run {
-            banner = "No enabled server."
-            return@LaunchedEffect
-        }
+        val profile =
+            resolveProfile() ?: run {
+                banner = "No enabled server."
+                return@LaunchedEffect
+            }
         ServiceLocator.transportFor(profile).fetchConfig().fold(
             onSuccess = { cfg ->
                 raw = JsonObject(cfg.raw.toMap())
@@ -199,29 +199,53 @@ public fun DetectionFiltersCard() {
             title = "Prompt patterns",
             patterns = promptPatterns,
             defaults = BUILTIN_PROMPT_PATTERNS,
-            onAdd = { p -> promptPatterns = promptPatterns + p; save() },
-            onRemove = { p -> promptPatterns = promptPatterns - p; save() },
+            onAdd = { p ->
+                promptPatterns = promptPatterns + p
+                save()
+            },
+            onRemove = { p ->
+                promptPatterns = promptPatterns - p
+                save()
+            },
         )
         PatternSection(
             title = "Completion patterns",
             patterns = completionPatterns,
             defaults = BUILTIN_COMPLETION_PATTERNS,
-            onAdd = { p -> completionPatterns = completionPatterns + p; save() },
-            onRemove = { p -> completionPatterns = completionPatterns - p; save() },
+            onAdd = { p ->
+                completionPatterns = completionPatterns + p
+                save()
+            },
+            onRemove = { p ->
+                completionPatterns = completionPatterns - p
+                save()
+            },
         )
         PatternSection(
             title = "Rate-limit patterns",
             patterns = rateLimitPatterns,
             defaults = BUILTIN_RATE_LIMIT_PATTERNS,
-            onAdd = { p -> rateLimitPatterns = rateLimitPatterns + p; save() },
-            onRemove = { p -> rateLimitPatterns = rateLimitPatterns - p; save() },
+            onAdd = { p ->
+                rateLimitPatterns = rateLimitPatterns + p
+                save()
+            },
+            onRemove = { p ->
+                rateLimitPatterns = rateLimitPatterns - p
+                save()
+            },
         )
         PatternSection(
             title = "Input-needed patterns",
             patterns = inputNeededPatterns,
             defaults = BUILTIN_INPUT_NEEDED_PATTERNS,
-            onAdd = { p -> inputNeededPatterns = inputNeededPatterns + p; save() },
-            onRemove = { p -> inputNeededPatterns = inputNeededPatterns - p; save() },
+            onAdd = { p ->
+                inputNeededPatterns = inputNeededPatterns + p
+                save()
+            },
+            onRemove = { p ->
+                inputNeededPatterns = inputNeededPatterns - p
+                save()
+            },
         )
 
         Row(
@@ -234,7 +258,11 @@ public fun DetectionFiltersCard() {
 }
 
 @Composable
-private fun TimingRow(label: String, value: String, onChange: (String) -> Unit) {
+private fun TimingRow(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -345,8 +373,10 @@ private val BUILTIN_COMPLETION_PATTERNS: List<String> =
     listOf("DATAWATCH_COMPLETE:")
 private val BUILTIN_RATE_LIMIT_PATTERNS: List<String> =
     listOf(
-        "DATAWATCH_RATE_LIMITED:", "You've hit your limit",
-        "rate limit exceeded", "quota exceeded",
+        "DATAWATCH_RATE_LIMITED:",
+        "You've hit your limit",
+        "rate limit exceeded",
+        "quota exceeded",
     )
 private val BUILTIN_INPUT_NEEDED_PATTERNS: List<String> =
     listOf("DATAWATCH_NEEDS_INPUT:")

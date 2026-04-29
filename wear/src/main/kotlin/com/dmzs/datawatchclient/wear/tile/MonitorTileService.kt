@@ -1,10 +1,10 @@
 package com.dmzs.datawatchclient.wear.tile
 
+import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.DimensionBuilders.dp
 import androidx.wear.protolayout.DimensionBuilders.sp
 import androidx.wear.protolayout.LayoutElementBuilders
-import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.LayoutElementBuilders.FontWeightProp
 import androidx.wear.protolayout.ModifiersBuilders
@@ -138,7 +138,9 @@ public class MonitorTileService : TileService() {
                         FontStyle.Builder()
                             .setSize(sp(14f))
                             .setColor(argb(valueColor))
-                            .setWeight(FontWeightProp.Builder().setValue(LayoutElementBuilders.FONT_WEIGHT_MEDIUM).build())
+                            .setWeight(
+                                FontWeightProp.Builder().setValue(LayoutElementBuilders.FONT_WEIGHT_MEDIUM).build(),
+                            )
                             .build(),
                     )
                     .build(),

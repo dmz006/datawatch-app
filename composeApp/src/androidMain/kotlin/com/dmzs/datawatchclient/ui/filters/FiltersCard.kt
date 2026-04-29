@@ -69,7 +69,10 @@ public fun FiltersCard() {
                 return
             }
         ServiceLocator.transportFor(profile).listFilters().fold(
-            onSuccess = { filters = it; banner = null },
+            onSuccess = {
+                filters = it
+                banner = null
+            },
             onFailure = { banner = "Filters unavailable — ${it.message ?: it::class.simpleName}" },
         )
     }
@@ -252,8 +255,6 @@ private fun NewFilterForm(onCreate: (pattern: String, action: String, value: Str
     }
 }
 
-private fun JsonObject.stringField(key: String): String? =
-    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-private fun JsonObject.boolField(key: String): Boolean? =
-    (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
+private fun JsonObject.boolField(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()

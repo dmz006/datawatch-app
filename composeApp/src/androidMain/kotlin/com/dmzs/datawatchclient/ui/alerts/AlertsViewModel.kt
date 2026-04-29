@@ -231,9 +231,10 @@ public class AlertsViewModel : ViewModel() {
                     ?.firstOrNull { it.enabled } ?: return@launch
             ServiceLocator.transportFor(profile).markAlertRead(alertId, all = false)
             // Optimistic local drop so the UI updates before next poll.
-            _alerts.value = _alerts.value.map {
-                if (it.id == alertId) it.copy(read = true) else it
-            }
+            _alerts.value =
+                _alerts.value.map {
+                    if (it.id == alertId) it.copy(read = true) else it
+                }
         }
     }
 

@@ -47,7 +47,10 @@ public class MonitorWidget : AppWidgetProvider() {
         scope.launch { refresh(context) }
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         super.onReceive(context, intent)
         if (intent.action == WidgetActions.ACTION_CYCLE_SERVER) {
             scope.launch {
@@ -147,7 +150,7 @@ public class MonitorWidget : AppWidgetProvider() {
                                 val vramStr =
                                     if (vramTotal != null && vramTotal > 0) {
                                         val used = s.gpuMemUsedMb ?: 0L
-                                        "${used}/${vramTotal}M"
+                                        "$used/${vramTotal}M"
                                     } else {
                                         null
                                     }
@@ -171,7 +174,7 @@ public class MonitorWidget : AppWidgetProvider() {
                                 gpuTemp?.let { parts += "${it.toInt()}°C" }
                                 if (vramTotal != null && vramTotal > 0) {
                                     val used = s.gpuMemUsedMb ?: 0L
-                                    parts += "${used}/${vramTotal}M"
+                                    parts += "$used/${vramTotal}M"
                                 }
                                 parts.joinToString(" · ").ifBlank { "—" }
                             } else {
@@ -369,4 +372,3 @@ private fun formatUptimeShort(seconds: Long): String {
         else -> "${m}m"
     }
 }
-

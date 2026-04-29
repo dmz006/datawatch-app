@@ -35,9 +35,10 @@ public fun ChannelConfigDialog(
         title = { Text("$channelId · $type") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 ConfigFieldsPanel(section)
                 Text(

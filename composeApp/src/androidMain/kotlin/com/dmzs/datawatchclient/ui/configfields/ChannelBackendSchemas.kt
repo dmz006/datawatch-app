@@ -26,20 +26,26 @@ public object ChannelBackendSchemas {
             "ntfy", "email", "twilio", "webhook", "github_webhook",
         )
 
-    private fun enabled(prefix: String): Toggle =
-        Toggle("$prefix.enabled", "Enabled")
+    private fun enabled(prefix: String): Toggle = Toggle("$prefix.enabled", "Enabled")
 
     /**
      * Field list for channel [type]. Prefix is applied by caller
      * (either `channels.<id>` or `messaging.<type>`). This keeps the
      * schema reusable across per-instance and global address spaces.
      */
-    public fun fieldsFor(prefix: String, type: String): List<ConfigField> =
+    public fun fieldsFor(
+        prefix: String,
+        type: String,
+    ): List<ConfigField> =
         when (type.lowercase()) {
             "signal" ->
                 listOf(
                     enabled(prefix),
-                    TextField("$prefix.service_url", "signal-cli REST URL", placeholder = "http://signal-cli-rest-api:8080"),
+                    TextField(
+                        "$prefix.service_url",
+                        "signal-cli REST URL",
+                        placeholder = "http://signal-cli-rest-api:8080",
+                    ),
                     TextField("$prefix.phone_number", "Registered phone (E.164)", placeholder = "+15551234567"),
                     TextField("$prefix.recipient", "Default recipient (phone or group id)"),
                 )
@@ -133,7 +139,10 @@ public object ChannelBackendSchemas {
      * Per-channel-instance section: `channels.<id>.*`. Used when a
      * row exists in `/api/channels`.
      */
-    public fun instanceSectionFor(channelId: String, type: String): ConfigSection =
+    public fun instanceSectionFor(
+        channelId: String,
+        type: String,
+    ): ConfigSection =
         ConfigSection(
             id = "cc_channel_$channelId",
             title = "$channelId · $type",

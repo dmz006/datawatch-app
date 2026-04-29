@@ -1,7 +1,8 @@
 package com.dmzs.datawatchclient.ui.memory
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -345,8 +344,11 @@ private fun MemoryRow(
                     if (pinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                     contentDescription = if (pinned) "Unpin memory" else "Pin memory",
                     tint =
-                        if (pinned) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (pinned) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
             IconButton(onClick = { onDelete(id) }) {
@@ -360,17 +362,13 @@ private fun MemoryRow(
     }
 }
 
-private fun JsonObject.stringField(key: String): String? =
-    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-private fun JsonObject.longField(key: String): Long? =
-    (get(key) as? JsonPrimitive)?.content?.toLongOrNull()
+private fun JsonObject.longField(key: String): Long? = (get(key) as? JsonPrimitive)?.content?.toLongOrNull()
 
-private fun JsonObject.doubleField(key: String): Double? =
-    (get(key) as? JsonPrimitive)?.content?.toDoubleOrNull()
+private fun JsonObject.doubleField(key: String): Double? = (get(key) as? JsonPrimitive)?.content?.toDoubleOrNull()
 
-private fun JsonObject.bool(key: String): Boolean? =
-    (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
+private fun JsonObject.bool(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
 
 private fun formatBytes(b: Long): String =
     when {

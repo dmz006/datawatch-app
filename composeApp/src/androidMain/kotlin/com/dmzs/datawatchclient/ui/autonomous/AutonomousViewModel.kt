@@ -27,20 +27,22 @@ public class AutonomousViewModel(
 
     public fun refresh() {
         viewModelScope.launch {
-            val (_, transport) = resolver.resolve() ?: run {
-                _state.value = UiState(loading = false, banner = "No enabled server.")
-                return@launch
-            }
+            val (_, transport) =
+                resolver.resolve() ?: run {
+                    _state.value = UiState(loading = false, banner = "No enabled server.")
+                    return@launch
+                }
             transport.listPrds().fold(
                 onSuccess = { dto ->
                     _state.value = UiState(loading = false, prds = dto.prds)
                 },
                 onFailure = { err ->
-                    _state.value = UiState(
-                        loading = false,
-                        prds = emptyList(),
-                        banner = "Load failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        UiState(
+                            loading = false,
+                            prds = emptyList(),
+                            banner = "Load failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -52,9 +54,10 @@ public class AutonomousViewModel(
             transport.createPrd(req).fold(
                 onSuccess = { _ -> refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Create failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Create failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -66,15 +69,19 @@ public class AutonomousViewModel(
             transport.prdAction(prdId, "approve").fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Approve failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Approve failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
     }
 
-    public fun reject(prdId: String, reason: String) {
+    public fun reject(
+        prdId: String,
+        reason: String,
+    ) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             val body =
@@ -84,9 +91,10 @@ public class AutonomousViewModel(
             transport.prdAction(prdId, "reject", body).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Reject failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Reject failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -108,9 +116,10 @@ public class AutonomousViewModel(
             ).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Edit story failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Edit story failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -126,9 +135,10 @@ public class AutonomousViewModel(
             transport.editFiles(prdId = prdId, storyId = storyId, files = files).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Edit files failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Edit files failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }

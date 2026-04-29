@@ -109,7 +109,10 @@ public fun McpToolsCard() {
 }
 
 @Composable
-private fun ToolRow(name: String, desc: String) {
+private fun ToolRow(
+    name: String,
+    desc: String,
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         Text(name, style = MaterialTheme.typography.bodyMedium)
         if (desc.isNotBlank()) {

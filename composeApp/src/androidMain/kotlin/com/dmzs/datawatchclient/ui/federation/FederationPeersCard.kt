@@ -97,8 +97,6 @@ public fun FederationPeersCard() {
     }
 }
 
-private fun JsonObject.stringField(key: String): String? =
-    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-private fun JsonObject.boolField(key: String): Boolean? =
-    (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
+private fun JsonObject.boolField(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()

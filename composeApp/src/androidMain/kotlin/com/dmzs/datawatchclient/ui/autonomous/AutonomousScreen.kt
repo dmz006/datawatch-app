@@ -55,9 +55,7 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun AutonomousScreen(
-    vm: AutonomousViewModel = viewModel(),
-) {
+public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
     // v0.38.1 (#13) — filter row hidden behind a magnifier toggle in
@@ -194,7 +192,10 @@ public fun AutonomousScreen(
 }
 
 @Composable
-private fun PrdRow(prd: PrdDto, onClick: () -> Unit = {}) {
+private fun PrdRow(
+    prd: PrdDto,
+    onClick: () -> Unit = {},
+) {
     Row(
         modifier =
             Modifier

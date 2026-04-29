@@ -63,8 +63,9 @@ public class SessionSchedulesViewModel(
                         } else {
                             _state.value =
                                 _state.value.copy(
-                                    banner = "Couldn't load session schedules — " +
-                                        (err.message ?: err::class.simpleName),
+                                    banner =
+                                        "Couldn't load session schedules — " +
+                                            (err.message ?: err::class.simpleName),
                                 )
                         }
                     },
