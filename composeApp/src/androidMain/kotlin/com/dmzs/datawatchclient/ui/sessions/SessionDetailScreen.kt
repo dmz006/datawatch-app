@@ -106,15 +106,20 @@ public fun SessionDetailScreen(
             com.dmzs.datawatchclient.push.ForegroundSessionTracker.leave(sessionId)
         }
     }
-    // B58 — refresh session state on screen resume (unlock / foreground).
-    // The VM's init already refreshes on first open; this catches the
-    // lock-screen-then-unlock path where the WS may have dropped while
-    // the screen was off and the cached state is stale.
+    // B58 + B60 — lifecycle-aware stream control.
+    // ON_RESUME: refresh session state so stale cache doesn't confuse the user.
+    // ON_STOP: pause the WS stream to avoid background reconnect storms
+    //          when the screen is locked or the app is backgrounded (Tailscale
+    //          may be disconnected; reconnect retries are wasteful and noisy).
+    // ON_START: resume the stream so live events flow as soon as the user returns.
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, vm) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                vm.refreshFromServer()
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> vm.refreshFromServer()
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> vm.pauseStream()
+                androidx.lifecycle.Lifecycle.Event.ON_START -> vm.resumeStream()
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

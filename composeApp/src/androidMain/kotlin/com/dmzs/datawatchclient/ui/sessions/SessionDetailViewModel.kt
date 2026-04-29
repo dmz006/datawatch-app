@@ -191,6 +191,28 @@ public class SessionDetailViewModel(
         return profiles.firstOrNull { it.enabled }
     }
 
+    /**
+     * B60 — pause WS stream when screen goes to background (ON_STOP).
+     * Sets dot to gray (null = not established) so the UI doesn't show
+     * a stale green or confusing red while intentionally paused.
+     */
+    public fun pauseStream() {
+        streamJob?.cancel()
+        streamJob = null
+        _reachable.value = null
+    }
+
+    /**
+     * B60 — resume WS stream when screen comes to foreground (ON_START).
+     * No-op if the stream is already running (guards against double-resume
+     * on orientation change where ON_STOP/ON_START fire in quick succession).
+     */
+    public fun resumeStream() {
+        if (streamJob?.isActive == true) return
+        val profile = profileCache ?: return
+        startStream(profile)
+    }
+
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         val transport = ServiceLocator.wsTransportFor(profile)
