@@ -608,13 +608,22 @@ private fun SessionDetailPopup(
                     style = MaterialTheme.typography.caption2,
                     color = sessionBadgeColor(session.stateName),
                 )
-                if (session.lastLine.isNotBlank()) {
+                // v0.42.1 — prefer the full last-response body so the
+                // popup shows the same "view last response" content
+                // the phone surfaces in its LastResponseSheet. Falls
+                // back to lastLine when the session has no recorded
+                // response yet (or when an older phone build is the
+                // bridge and never published lastResponses).
+                val responseBody =
+                    session.lastResponse.takeIf { it.isNotBlank() }
+                        ?: session.lastLine
+                if (responseBody.isNotBlank()) {
                     Text(
-                        session.lastLine,
+                        responseBody,
                         modifier = Modifier.padding(top = 6.dp),
                         style = MaterialTheme.typography.caption2,
                         color = MaterialTheme.colors.onSurface,
-                        maxLines = 4,
+                        maxLines = 12,
                     )
                 }
                 when {
@@ -940,6 +949,11 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val backend: String,
         val stateName: String,
         val lastLine: String,
+        // v0.42.1 — full response body (multi-line, trimmed by phone
+        // to SESSION_LAST_RESPONSE_MAX). Empty when the session has
+        // no recorded response yet — the popup falls back to lastLine
+        // in that case.
+        val lastResponse: String = "",
     )
 
     public data class PrdItem(
@@ -1054,6 +1068,11 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val backends = map.getStringArray("backends") ?: emptyArray()
         val states = map.getStringArray("states") ?: emptyArray()
         val lastLines = map.getStringArray("lastLines") ?: emptyArray()
+        // v0.42.1 — phone publishes the full last-response body so the
+        // tap-popup can show "view last response" content. Older
+        // phones without this field fall through to an empty array
+        // and the popup falls back to lastLine.
+        val lastResponses = map.getStringArray("lastResponses") ?: emptyArray()
         val items = ids.indices.map { i ->
             SessionItem(
                 id = ids[i],
@@ -1061,6 +1080,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 backend = backends.getOrNull(i).orEmpty(),
                 stateName = states.getOrNull(i).orEmpty(),
                 lastLine = lastLines.getOrNull(i).orEmpty(),
+                lastResponse = lastResponses.getOrNull(i).orEmpty(),
             )
         }
         _state.value = _state.value.copy(sessions = items)

@@ -178,6 +178,17 @@ public class WearSyncService(
                                                 ).replace("\n", " ")
                                                     .trim()
                                                     .take(SESSION_LAST_LINE_MAX),
+                                            // Preserve newlines for the
+                                            // popup view; trim trailing
+                                            // whitespace and cap at
+                                            // SESSION_LAST_RESPONSE_MAX
+                                            // so we stay well under the
+                                            // 100 KB DataLayer ceiling.
+                                            lastResponse =
+                                                s.lastResponse
+                                                    .orEmpty()
+                                                    .trimEnd()
+                                                    .take(SESSION_LAST_RESPONSE_MAX),
                                         )
                                     }
                                     .toList(),
@@ -436,6 +447,12 @@ public class WearSyncService(
         val backend: String,
         val stateName: String,
         val lastLine: String,
+        // v0.42.1 — full lastResponse body (multi-line, capped at
+        // SESSION_LAST_RESPONSE_MAX) so the watch's session-detail
+        // popup can render the same "view last response" content the
+        // phone shows in its LastResponseSheet. lastLine is still the
+        // single-line preview rendered on the Sessions row.
+        val lastResponse: String,
     )
 
     private data class SessionsListSnapshot(
@@ -511,6 +528,7 @@ public class WearSyncService(
                     dataMap.putStringArray("backends", snap.items.map { it.backend }.toTypedArray())
                     dataMap.putStringArray("states", snap.items.map { it.stateName }.toTypedArray())
                     dataMap.putStringArray("lastLines", snap.items.map { it.lastLine }.toTypedArray())
+                    dataMap.putStringArray("lastResponses", snap.items.map { it.lastResponse }.toTypedArray())
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
@@ -579,5 +597,10 @@ public class WearSyncService(
         // under it even with long session titles + last-line snippets.
         public const val SESSIONS_PUBLISH_LIMIT: Int = 12
         public const val SESSION_LAST_LINE_MAX: Int = 160
+
+        // v0.42.1 — per-session lastResponse cap. 12 sessions × 600
+        // chars ≈ 7.2 KB, leaving plenty of headroom under the 100 KB
+        // DataLayer ceiling alongside the other arrays.
+        public const val SESSION_LAST_RESPONSE_MAX: Int = 600
     }
 }
