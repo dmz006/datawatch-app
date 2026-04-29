@@ -243,6 +243,23 @@ public class WearSyncService(
                             ServiceLocator.profileRepository.observeAll().first()
                                 .firstOrNull { it.id == activeId && it.enabled }
                         if (profile != null) {
+                            // v0.42.8 — refresh the session list from
+                            // /api/sessions on every poll tick. Without
+                            // this, the watch's published snapshot only
+                            // updated when the phone user opened the
+                            // Sessions tab — new sessions never appeared
+                            // and lastResponse went stale on existing
+                            // ones. The reactive
+                            // ServiceLocator.sessionRepository publisher
+                            // (above) picks up the upserted rows
+                            // automatically and re-emits to
+                            // /datawatch/sessions.
+                            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+                                Log.d(TAG, "poll listSessions OK count=${list.size}")
+                                ServiceLocator.sessionRepository.replaceAll(profile.id, list)
+                            }.onFailure { err ->
+                                Log.w(TAG, "poll listSessions FAILED ${err.message}")
+                            }
                             ServiceLocator.transportFor(profile).stats().onSuccess { s ->
                                 publishStats(
                                     StatsSnapshot(

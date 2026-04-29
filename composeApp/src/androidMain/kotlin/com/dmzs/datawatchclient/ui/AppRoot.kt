@@ -290,10 +290,17 @@ private fun HomeShell(
         }
         val profile = ServiceLocator.profileRepository.observeAll().first()
             .firstOrNull { it.id == id && it.enabled } ?: return@LaunchedEffect
-        ServiceLocator.transportFor(profile).listPrds().fold(
-            onSuccess = { prdsSupported = true },
-            onFailure = { prdsSupported = false },
-        )
+        // v0.42.8 — match PWA v5.26.8: probe /api/config for
+        // `autonomous.enabled == true`. Earlier (v0.42.5) we hit
+        // /api/autonomous/prds and treated success as supported, but
+        // that endpoint returns a 200 OK with `{"prds":[]}` on
+        // disabled servers — so the tab stayed visible everywhere.
+        ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
+            val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
+            val enabled = (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
+                ?.content?.lowercase() == "true"
+            prdsSupported = enabled
+        }
     }
 
     Scaffold(

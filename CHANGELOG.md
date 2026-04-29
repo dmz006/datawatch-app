@@ -8,6 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.8] — 2026-04-28 (WearSyncService periodically refetches /api/sessions + PRDs probe correctness)
+
+### Fixed
+
+- **Phone's PRDs nav tab now correctly hides on autonomous-disabled
+  servers.** v0.42.5 probed `/api/autonomous/prds` and treated
+  success as "supported", but that endpoint returns `200 OK
+  {"prds":[]}` even when autonomous is off — so the tab was always
+  visible. Now matches PWA v5.26.8: probe
+  `transport.fetchConfig()` and check
+  `autonomous.enabled == true`. Federated "All servers" mode
+  still keeps the tab visible.
+- **Watch's session list no longer goes stale.** Until v0.42.7,
+  `WearSyncService` published whatever the local SQLDelight cache
+  held — and that cache was only refreshed when the phone user
+  opened the Sessions tab. Result: brand-new sessions never showed
+  up on the wrist, and existing sessions' `last_response` froze at
+  whatever value the phone last fetched. The 15-second poll loop
+  now also calls `transport.listSessions()` and replaces the
+  active profile's repository rows; the existing reactive
+  `/datawatch/sessions` publisher fans the fresh snapshot through
+  to the watch automatically. Closes the user-reported "selecting
+  a session still doesn't show the last response" + "sessions
+  list isn't updating" regressions.
+
 ## [0.42.7] — 2026-04-28 (closes 72h-audit gaps #2, #3, #5)
 
 ### Added
