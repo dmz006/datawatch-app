@@ -269,8 +269,41 @@ private fun HomeShell(
     val tabNav = rememberNavController()
     val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
+
+    // v0.42.5 — probe whether the active server exposes the
+    // autonomous surface (`/api/autonomous/prds`). Local-only setups
+    // and older daemons return 404 / never have the route; in that
+    // case the PRDs tab disappears from the bottom nav so it doesn't
+    // dead-end the user. Probe re-runs whenever the active server
+    // changes. Federated "All servers" mode keeps the tab visible —
+    // any one of the fanned-out profiles may have it.
+    val activeId by ServiceLocator.activeServerStore.observe()
+        .collectAsState(initial = null)
+    var prdsSupported by remember { mutableStateOf(false) }
+    LaunchedEffect(activeId) {
+        prdsSupported = false
+        val id = activeId
+        if (id == null) return@LaunchedEffect
+        if (id == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS) {
+            prdsSupported = true
+            return@LaunchedEffect
+        }
+        val profile = ServiceLocator.profileRepository.observeAll().first()
+            .firstOrNull { it.id == id && it.enabled } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listPrds().fold(
+            onSuccess = { prdsSupported = true },
+            onFailure = { prdsSupported = false },
+        )
+    }
+
     Scaffold(
-        bottomBar = { BottomNavBar(tabNav, alertsBadge = alertsState.count) },
+        bottomBar = {
+            BottomNavBar(
+                tabNav,
+                alertsBadge = alertsState.count,
+                prdsSupported = prdsSupported,
+            )
+        },
     ) { inner ->
         NavHost(
             navController = tabNav,
