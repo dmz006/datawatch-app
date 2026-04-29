@@ -8,7 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
-## [0.42.2] — 2026-04-28 (watch refetches /api/sessions on popup open + larger response cap)
+## [0.42.3] — 2026-04-28 (watch Sessions filters + popup re-resolves on republish)
+
+### Fixed
+
+- **Watch session popup never showed the post-refresh body.** Even
+  though v0.42.2 wired the `/datawatch/refreshSession` round-trip,
+  the popup captured the `SessionItem` at tap time and Compose
+  never re-read `state.sessions` after the phone republished. The
+  popup now re-resolves `openSession` against the latest published
+  list on every recomposition; the freshly-refetched
+  `lastResponse` body lands as soon as the phone fans the new
+  snapshot through DataLayer.
+
+### Added
+
+- **Sessions page filter row.** User direction 2026-04-28: tap
+  **wait** (default) for waiting_input only, **run** for running,
+  **total** for everything in the published window including
+  completed / killed / error. Order is wait / run / total because
+  wait is the most actionable surface (sessions blocked on a
+  reply). The existing count tiles double as the filter buttons —
+  selected one is highlighted with a translucent fill in its
+  state colour.
+
+
 
 ### Fixed
 
