@@ -338,15 +338,12 @@ public fun SessionDetailScreen(
                     stateMenuOpen = false
                     vm.overrideState(s)
                 },
-                hasResponse = hasResponse,
-                onResponse = {
-                    // v0.35.8 — force a server refetch before opening
-                    // the sheet so the daemon's tmux re-capture
-                    // (BL178) lands; cached value would be up to 5 s
-                    // stale on running/waiting_input sessions.
-                    vm.refreshFromServer()
-                    responseOpen = true
-                },
+                // v0.42.12 — Response affordance lives on the
+                // quick-actions row above the composer (📄 button,
+                // ReplyComposer line ~1729). User direction
+                // 2026-04-29: don't duplicate it on the chip bar.
+                hasResponse = false,
+                onResponse = {},
             )
             // v0.42.0 — PWA-style compact tabs: tmux/channel pill
             // buttons (width of the label) on the left, font + Fit +
