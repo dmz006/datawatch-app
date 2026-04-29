@@ -197,6 +197,12 @@ public class SessionDetailViewModel(
         streamJob =
             transport.events(sessionId)
                 .onEach { ev ->
+                    // B59 — WS-connection state drives the reachability dot.
+                    // Error events mean the WS disconnected; any live event means
+                    // it's connected. REST-based isReachable also writes _reachable
+                    // on poll success, so a transient WS blip (while server is still
+                    // REST-reachable) correctly recovers to green after the next poll.
+                    _reachable.value = ev !is com.dmzs.datawatchclient.domain.SessionEvent.Error
                     ServiceLocator.sessionEventRepository.insert(ev)
                     // v0.35.8 — mirror PWA v5.26.49 fix:
                     // bulk-session WS pushes can flip a session to

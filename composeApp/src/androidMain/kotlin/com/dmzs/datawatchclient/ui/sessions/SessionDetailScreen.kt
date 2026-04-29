@@ -106,6 +106,20 @@ public fun SessionDetailScreen(
             com.dmzs.datawatchclient.push.ForegroundSessionTracker.leave(sessionId)
         }
     }
+    // B58 — refresh session state on screen resume (unlock / foreground).
+    // The VM's init already refreshes on first open; this catches the
+    // lock-screen-then-unlock path where the WS may have dropped while
+    // the screen was off and the cached state is stale.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner, vm) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                vm.refreshFromServer()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel = viewModel()
     val sessionSchedulesVm: SessionSchedulesViewModel =
         viewModel(
