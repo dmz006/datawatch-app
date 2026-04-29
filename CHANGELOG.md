@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-04-28 (compact tmux/channel tabs + inline terminal toolbar)
+
+### Changed
+
+- **Session detail tabs row** rewritten to PWA's compact layout: the
+  full-width Material `TabRow` (`tmux` / `channel`) is gone; the two
+  buttons are now rounded pills sized to their label, left-justified,
+  with the font / Fit / Scroll buttons inlined on the right of the
+  same row. User direction 2026-04-28: *"tmux and channel tabs should
+  be small (width of words) and the font buttons and scroll button
+  should be on the same line as the tmux and channel tabs, like in
+  PWA."* Saves a vertical strip of phone real estate and matches PWA
+  muscle memory when switching surfaces.
+- **`TerminalToolbar.kt` refactored** into a hoisted-state API so the
+  controls can sit on the tabs row while the scroll-mode nav strip
+  (PgUp / PgDn / ↑ / ↓ / ESC) renders separately under the terminal
+  viewport — closest to where the user is reading. New public surface:
+  `rememberTerminalToolbarState(controller, sessionId)`,
+  `TerminalToolbarControls(state)`, `TerminalScrollModeStrip(state)`.
+  The legacy `TerminalToolbar(controller, modifier, sessionId)` wrapper
+  is kept for any out-of-tree caller and marked deprecated.
+
 ## [0.41.1] — 2026-04-28 (PRDs nav icon → SmartToy)
 
 ### Changed

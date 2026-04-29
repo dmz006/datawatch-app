@@ -39,132 +39,202 @@ import androidx.compose.ui.unit.sp
  * were removed in v0.33.18 because they don't exist in PWA and the four-button
  * row matches user muscle-memory when switching between web and phone.
  */
+/**
+ * Hoisted state for [TerminalToolbarControls] + [TerminalScrollModeStrip].
+ *
+ * v0.42.0 (user direction 2026-04-28): the toolbar no longer renders
+ * its own row — the font / scroll buttons inline next to the
+ * tmux/channel pills like in the PWA. Hoisting the state lets the
+ * caller place [TerminalToolbarControls] inline in the tabs row and
+ * [TerminalScrollModeStrip] separately under the terminal viewport.
+ */
+public class TerminalToolbarState internal constructor(
+    public val controller: TerminalController,
+    public val sessionId: String?,
+    private val fontSizeState: androidx.compose.runtime.MutableState<Int>,
+    private val scrollModeState: androidx.compose.runtime.MutableState<Boolean>,
+) {
+    public var fontSize: Int
+        get() = fontSizeState.value
+        set(value) {
+            fontSizeState.value = value
+        }
+
+    public var scrollMode: Boolean
+        get() = scrollModeState.value
+        set(value) {
+            scrollModeState.value = value
+        }
+}
+
+@Composable
+public fun rememberTerminalToolbarState(
+    controller: TerminalController,
+    sessionId: String? = null,
+): TerminalToolbarState {
+    val context: Context = LocalContext.current
+    val fontPrefs =
+        remember(context) {
+            context.getSharedPreferences("dw.terminal.v1", Context.MODE_PRIVATE)
+        }
+    val fontSizeState =
+        remember {
+            mutableStateOf(fontPrefs.getInt("font_size_px", DEFAULT_TERM_FONT_PX))
+        }
+    val scrollModeState = remember(sessionId) { mutableStateOf(false) }
+
+    LaunchedEffect(fontSizeState.value) {
+        controller.setFontSize(fontSizeState.value)
+        fontPrefs.edit().putInt("font_size_px", fontSizeState.value).apply()
+    }
+
+    return remember(controller, sessionId) {
+        TerminalToolbarState(controller, sessionId, fontSizeState, scrollModeState)
+    }
+}
+
+/**
+ * The font / fit / scroll buttons. v0.42.0 — inline-only (no Surface
+ * wrap) so the caller can drop the controls into a tabs Row beside
+ * the tmux/channel pills (PWA layout).
+ */
+@Composable
+public fun TerminalToolbarControls(
+    state: TerminalToolbarState,
+    modifier: Modifier = Modifier,
+) {
+    val controller = state.controller
+    val sessionId = state.sessionId
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        TermToolBtn(
+            label = "A−",
+            onClick = {
+                if (state.fontSize > MIN_TERM_FONT_PX) state.fontSize -= FONT_STEP_PX
+            },
+            enabled = state.fontSize > MIN_TERM_FONT_PX,
+        )
+        Text(
+            "${state.fontSize}px",
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        TermToolBtn(
+            label = "A+",
+            onClick = {
+                if (state.fontSize < MAX_TERM_FONT_PX) state.fontSize += FONT_STEP_PX
+            },
+            enabled = state.fontSize < MAX_TERM_FONT_PX,
+        )
+        Separator()
+        TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
+        Separator()
+        TermToolBtn(
+            label = if (state.scrollMode) "⏹ Exit" else "↕ Scroll",
+            onClick = {
+                if (sessionId == null) return@TermToolBtn
+                if (state.scrollMode) {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                } else {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "tmux-copy-mode $sessionId")
+                }
+                state.scrollMode = !state.scrollMode
+            },
+            enabled = sessionId != null,
+            highlight = state.scrollMode,
+        )
+    }
+}
+
+/**
+ * Scroll-mode navigation strip (PgUp / PgDn / ↑ / ↓ / ESC). Renders
+ * only when [state.scrollMode] is on. Caller decides where this
+ * lives in the layout — typically directly under the terminal
+ * viewport so the buttons are reachable.
+ */
+@Composable
+public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
+    val sessionId = state.sessionId ?: return
+    if (!state.scrollMode) return
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            TermToolBtn(
+                label = "PgUp",
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: PageUp")
+                },
+            )
+            TermToolBtn(
+                label = "PgDn",
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: PageDown")
+                },
+            )
+            TermToolBtn(
+                label = "↑",
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: Up")
+                },
+            )
+            TermToolBtn(
+                label = "↓",
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: Down")
+                },
+            )
+            TermToolBtn(
+                label = "ESC — Exit",
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                    state.scrollMode = false
+                },
+                highlight = true,
+            )
+        }
+    }
+}
+
+/**
+ * Legacy wrapper kept for any caller still passing the bundled
+ * toolbar shape. Renders the controls in their own Surface row.
+ *
+ * **Deprecated** in v0.42.0 — prefer [rememberTerminalToolbarState] +
+ * [TerminalToolbarControls] + [TerminalScrollModeStrip] so the
+ * controls can sit on the tmux/channel tabs row and the strip can
+ * sit under the terminal viewport (PWA layout).
+ */
 @Composable
 public fun TerminalToolbar(
     controller: TerminalController,
     modifier: Modifier = Modifier,
     sessionId: String? = null,
 ) {
-    val context: Context = LocalContext.current
-    val fontPrefs =
-        remember(context) {
-            context.getSharedPreferences("dw.terminal.v1", Context.MODE_PRIVATE)
-        }
-    var fontSize by remember {
-        mutableStateOf(fontPrefs.getInt("font_size_px", DEFAULT_TERM_FONT_PX))
-    }
-    var scrollMode by remember(sessionId) { mutableStateOf(false) }
-
-    LaunchedEffect(fontSize) {
-        controller.setFontSize(fontSize)
-        fontPrefs.edit().putInt("font_size_px", fontSize).apply()
-    }
-
-    // User 2026-04-24: trim vertical padding so the toolbar sits
-    // flush against the SessionInfoBar badges (no "empty line"
-    // between the font controls and the badge row).
+    val state = rememberTerminalToolbarState(controller, sessionId)
     Surface(
         color = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            TermToolBtn(
-                label = "A−",
-                onClick = {
-                    if (fontSize > MIN_TERM_FONT_PX) fontSize -= FONT_STEP_PX
-                },
-                enabled = fontSize > MIN_TERM_FONT_PX,
-            )
-            Text(
-                "${fontSize}px",
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-            TermToolBtn(
-                label = "A+",
-                onClick = {
-                    if (fontSize < MAX_TERM_FONT_PX) fontSize += FONT_STEP_PX
-                },
-                enabled = fontSize < MAX_TERM_FONT_PX,
-            )
-            Separator()
-            TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
-            Separator()
-            TermToolBtn(
-                label = if (scrollMode) "⏹ Exit" else "↕ Scroll",
-                onClick = {
-                    if (sessionId == null) return@TermToolBtn
-                    if (scrollMode) {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                    } else {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "tmux-copy-mode $sessionId")
-                    }
-                    scrollMode = !scrollMode
-                },
-                enabled = sessionId != null,
-                highlight = scrollMode,
-            )
-        }
+        TerminalToolbarControls(state, modifier = Modifier.padding(horizontal = 4.dp))
     }
-    // Scroll-mode navigation strip — shown only while in scroll mode,
-    // mirrors PWA's `.scroll-bar` element inserted by toggleScrollMode().
-    if (scrollMode && sessionId != null) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                TermToolBtn(
-                    label = "PgUp",
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: PageUp")
-                    },
-                )
-                TermToolBtn(
-                    label = "PgDn",
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: PageDown")
-                    },
-                )
-                TermToolBtn(
-                    label = "↑",
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Up")
-                    },
-                )
-                TermToolBtn(
-                    label = "↓",
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Down")
-                    },
-                )
-                TermToolBtn(
-                    label = "ESC — Exit",
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                        scrollMode = false
-                    },
-                    highlight = true,
-                )
-            }
-        }
-    }
+    TerminalScrollModeStrip(state)
 }
 
 @Composable
