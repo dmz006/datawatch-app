@@ -1,10 +1,10 @@
 package com.dmzs.datawatchclient.ui.shell
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -36,10 +36,15 @@ internal fun BottomNavBar(
     // v0.38.0 — Autonomous tab added between Sessions and Alerts to
     // surface the PRD lifecycle (#11–13, #18, #19). Mirrors PWA's
     // dedicated `data-view="autonomous"` view.
+    //
+    // v0.41.1 user direction 2026-04-28: match the PWA's 🤖 emoji
+    // (U+1F916) on the autonomous nav button. Material's
+    // `Icons.Filled.SmartToy` is the closest stock equivalent —
+    // same rounded-robot silhouette as the PWA emoji.
     val items =
         listOf(
             BottomNavItem(Destinations.Tabs.Sessions, "Sessions", Icons.Filled.Chat),
-            BottomNavItem(Destinations.Tabs.Autonomous, "PRDs", Icons.Filled.AutoAwesome),
+            BottomNavItem(Destinations.Tabs.Autonomous, "PRDs", Icons.Filled.SmartToy),
             BottomNavItem(Destinations.Tabs.Alerts, "Alerts", Icons.Filled.NotificationsActive),
             BottomNavItem(Destinations.Tabs.Settings, "Settings", Icons.Filled.Settings),
         )
