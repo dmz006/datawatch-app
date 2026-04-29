@@ -73,21 +73,21 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B52 | PRD: `PrdDto` missing `spec` field — EditPrdDialog starts blank | `spec: String? = null` added to `PrdDto`. `EditPrdDialog` now pre-populates the spec text area from `prd.spec`. Done (v0.45.0). |
 | B53 | PRD: AutonomousScreen filter chips missing statuses | Added `revisions_asked`, `approved`, `decomposing`, `cancelled` chips to the filter row — all 8 PRD statuses now reachable. Done (v0.45.0). |
 
-### Sprint II — session layout + connection resilience (v0.46.x)
+### Sprint II — session connection resilience (v0.46.x)
 
-Items from live-device testing 2026-04-29. Layout changes bring the phone session view to PWA visual parity; connection resilience items prevent silent stalls when Tailscale is not reachable.
+Items from live-device testing 2026-04-29. Layout items (B54–B57) were already implemented in v0.35.9/v0.42.0 and closed on review. Remaining items are the connection-resilience + visual-polish gaps.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B54 | Session detail: input bar order doesn't match PWA | PWA order: input box → send → scheduled → mic. Android currently has mic before scheduled. Reorder composables in `ReplyComposer`. |
-| B55 | Session detail: quick-actions row layout — last-response + quick-cmd icon + arrows | Row should be: last-response button → saved-commands icon → ←→ arrows (↑↓ already removed in B46). Quick-commands icon under mic can be removed since row has it. |
-| B56 | Session detail: status badge above tabs; tabs tighter + left-justified | Badge (running/complete/etc.) should sit above the tmux/channel tab row, not inside SessionInfoBar. Tabs should be left-aligned with font/scroll buttons at the far right, matching PWA layout. |
-| B57 | Session detail: delete only shown when stopped; show restart when stoppable | PWA: `Delete` only available in terminal states. `Restart` available when session is stopped. `SessionInfoBar` action button logic needs update. |
-| B58 | Session detail: refresh state on open or screen unlock | On navigating to detail or on screen unlock, force a WS reconnect + fetch current session state. Prevents stale view when lock-screen hides an active session. |
-| B59 | Connection status indicator should go red on disconnect | The dot/indicator in the top bar never turns red. Should track WS state and show red when disconnected, amber when reconnecting, green when live. |
-| B60 | Tailscale awareness: back-off + retry on unreachable server | When WS connect fails while screen is locked or off, use exponential back-off instead of tight-retry loop. Resume normal polling when screen becomes active again. |
-| B61 | Session terminal: live processing animation (PWA parity) | PWA shows animated processing indicators during `running` state. Android added pulsing badge (B44) but lacks the fine-grained per-message spinner the PWA shows during active generation. |
-| B62 | Session detail: last-response icon inconsistent across surfaces | The icon used on the session detail's "last response" button differs from the one used on the session list and other surfaces. Unify to a single icon resource. |
+| B54 | Session detail: input bar order doesn't match PWA | ✅ Already done (v0.35.9) — Send → Schedule → Mic in `ReplyComposer`. |
+| B55 | Session detail: quick-actions row layout — last-response + quick-cmd icon + arrows | ✅ Already done (v0.35.9) — Row: Description icon → Keyboard icon → ← →. Quick-cmd button removed from under mic. |
+| B56 | Session detail: status badge above tabs; tabs tighter + left-justified | ✅ Already done (v0.35.9 badges above, v0.42.0 compact tabs row with font/scroll right). |
+| B57 | Session detail: delete only shown when stopped; show restart when stoppable | ✅ Already done — `SessionInfoBar` shows Restart+Delete only when `isDone` (Completed/Killed/Error). |
+| B58 | Session detail: refresh state on open or screen unlock | On navigating to detail or on screen unlock, force WS reconnect + fetch current session state. Prevents stale view when lock hides an active session. |
+| B59 | Connection status indicator should go red on disconnect | The dot in the top bar never turns red. Should track WS state: green=live, amber=reconnecting, red=disconnected. |
+| B60 | Tailscale awareness: back-off + retry on unreachable server | When WS connect fails while screen is locked/off, use exponential back-off instead of tight-retry. Resume normal polling when screen becomes active. |
+| B61 | Session terminal: per-message generation spinner (PWA parity) | PWA shows fine-grained per-message spinner during active generation. Android has the pulsing badge (B44) but not the inline dots indicator during chat-message receipt. |
+| B62 | Session detail: last-response icon inconsistent across surfaces | The "last response" button icon (Description) may differ from the session-list and other surfaces. Audit and unify to a single canonical glyph. |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
