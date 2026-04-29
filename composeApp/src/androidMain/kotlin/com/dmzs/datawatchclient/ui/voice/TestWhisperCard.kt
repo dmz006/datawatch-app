@@ -185,7 +185,10 @@ public fun TestWhisperCard() {
             ) {
                 TextButton(
                     enabled = transcript.isNotBlank() && !recording && !transcribing,
-                    onClick = { transcript = ""; status = "idle" },
+                    onClick = {
+                        transcript = ""
+                        status = "idle"
+                    },
                 ) { Text("Clear") }
             }
         }

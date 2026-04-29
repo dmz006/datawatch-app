@@ -11,7 +11,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +23,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -416,7 +416,10 @@ public class SessionsViewModel : ViewModel() {
      * the long-press drag-drop gesture on SessionsScreen — a single
      * drag emits one call instead of looping through moveUp/moveDown.
      */
-    public fun moveSessionByOffset(sessionId: String, rowOffset: Int) {
+    public fun moveSessionByOffset(
+        sessionId: String,
+        rowOffset: Int,
+    ) {
         if (rowOffset == 0) return
         // Seed customOrder from the current visible snapshot if the
         // user drags before toggling reorder mode — matches PWA
@@ -606,8 +609,7 @@ public class SessionsViewModel : ViewModel() {
     }
 
     /** Bulk counterpart for multi-select deletion. */
-    private fun fullIdsFor(sessionIds: List<String>): List<String> =
-        sessionIds.map { fullIdFor(it) }
+    private fun fullIdsFor(sessionIds: List<String>): List<String> = sessionIds.map { fullIdFor(it) }
 
     public fun refresh() {
         if (allServersMode.value) {

@@ -229,8 +229,9 @@ public class SessionDetailViewModel(
         // the open hub socket — fire-and-forget since the server
         // doesn't ack replies; success is observed via the next
         // pane_capture frame showing the input landing.
-        val ok = com.dmzs.datawatchclient.transport.ws.WsOutbound
-            .sendInput(sessionId, text)
+        val ok =
+            com.dmzs.datawatchclient.transport.ws.WsOutbound
+                .sendInput(sessionId, text)
         if (ok) {
             _replyText.value = ""
             _replying.value = false
@@ -253,8 +254,9 @@ public class SessionDetailViewModel(
         _replying.value = true
         _banner.value = null
         viewModelScope.launch {
-            val ok = com.dmzs.datawatchclient.transport.ws.WsOutbound
-                .sendInput(sessionId, trimmed)
+            val ok =
+                com.dmzs.datawatchclient.transport.ws.WsOutbound
+                    .sendInput(sessionId, trimmed)
             _replying.value = false
             if (!ok) {
                 _banner.value = "Quick reply failed: WS not connected."

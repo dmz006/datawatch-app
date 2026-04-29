@@ -2,7 +2,6 @@ package com.dmzs.datawatchclient.ui.configfields
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LocalTextStyle
@@ -21,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,9 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -46,7 +43,6 @@ import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -100,10 +96,11 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
         rawConfig = null
         values.clear()
         loaded.clear()
-        val profile = resolveProfile() ?: run {
-            banner = "No enabled server."
-            return@LaunchedEffect
-        }
+        val profile =
+            resolveProfile() ?: run {
+                banner = "No enabled server."
+                return@LaunchedEffect
+            }
         val transport = ServiceLocator.transportFor(profile)
         transport.fetchConfig().fold(
             onSuccess = { cfg ->
@@ -203,6 +200,9 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
                     values[f.key]?.let { v -> loaded[f.key] = v }
                 }
                 banner = null
+                // v0.42.9 — fire ConfigSaveBus so capability-gated
+                // UI (PRDs nav tab, etc.) re-probes server config.
+                com.dmzs.datawatchclient.events.ConfigSaveBus.fire()
             },
             onFailure = { banner = "Save failed — ${it.message ?: it::class.simpleName}" },
         )
@@ -225,12 +225,10 @@ private val ROW_PADDING_V = 4.dp
 private val INPUT_WIDTH = 160.dp
 
 @Composable
-private fun rowLabelStyle() =
-    MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
+private fun rowLabelStyle() = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
 
 @Composable
-private fun inputTextStyle() =
-    MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
+private fun inputTextStyle() = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp)
 
 @Composable
 private fun FieldRow(
@@ -253,24 +251,26 @@ private fun FieldRow(
                 )
             }
         }
-        is ConfigField.NumberField -> InputRow(field.label) {
-            CompactInput(
-                value = value,
-                onChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
-                placeholder = field.placeholder,
-                password = false,
-                keyboardType = KeyboardType.Number,
-            )
-        }
-        is ConfigField.TextField -> InputRow(field.label) {
-            CompactInput(
-                value = value,
-                onChange = onChange,
-                placeholder = field.placeholder,
-                password = field.password,
-                keyboardType = KeyboardType.Text,
-            )
-        }
+        is ConfigField.NumberField ->
+            InputRow(field.label) {
+                CompactInput(
+                    value = value,
+                    onChange = { s -> onChange(s.filter { it.isDigit() || it == '-' }) },
+                    placeholder = field.placeholder,
+                    password = false,
+                    keyboardType = KeyboardType.Number,
+                )
+            }
+        is ConfigField.TextField ->
+            InputRow(field.label) {
+                CompactInput(
+                    value = value,
+                    onChange = onChange,
+                    placeholder = field.placeholder,
+                    password = field.password,
+                    keyboardType = KeyboardType.Text,
+                )
+            }
         is ConfigField.Select -> SelectRow(field.label, field.options, value, onChange)
         is ConfigField.InterfaceSelect -> SelectRow(field.label, interfaces, value, onChange)
         is ConfigField.LlmSelect -> SelectRow(field.label, backends, value, onChange)
@@ -278,7 +278,10 @@ private fun FieldRow(
 }
 
 @Composable
-private fun InputRow(label: String, trailing: @Composable () -> Unit) {
+private fun InputRow(
+    label: String,
+    trailing: @Composable () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
         verticalAlignment = Alignment.CenterVertically,
@@ -330,7 +333,10 @@ private fun SelectRow(
 }
 
 /** Read a dotted key like `session.log_level` from the config root, stringified. */
-internal fun readDottedAsString(root: JsonObject, dottedKey: String): String {
+internal fun readDottedAsString(
+    root: JsonObject,
+    dottedKey: String,
+): String {
     val parts = dottedKey.split('.')
     var cur: JsonElement = root
     for (p in parts) {
@@ -339,8 +345,11 @@ internal fun readDottedAsString(root: JsonObject, dottedKey: String): String {
     }
     return when (cur) {
         is JsonPrimitive ->
-            if (cur.isString) cur.content
-            else cur.content.removeSurrounding("\"")
+            if (cur.isString) {
+                cur.content
+            } else {
+                cur.content.removeSurrounding("\"")
+            }
         else -> cur.toString()
     }
 }
@@ -450,4 +459,3 @@ private fun CompactInput(
         )
     }
 }
-

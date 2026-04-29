@@ -29,7 +29,10 @@ public class PrdActionScreen(
 ) : Screen(carContext) {
     private val scope = CoroutineScope(Dispatchers.Main)
 
-    private fun fire(action: String, reason: String? = null) {
+    private fun fire(
+        action: String,
+        reason: String? = null,
+    ) {
         scope.launch {
             try {
                 val profiles = AutoServiceLocator.profileRepository.observeAll().first()

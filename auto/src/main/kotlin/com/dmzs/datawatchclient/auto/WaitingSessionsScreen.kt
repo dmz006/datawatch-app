@@ -33,6 +33,7 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
                     pollJob?.cancel()
                     pollJob = scope.launch { pollLoop() }
                 }
+
                 override fun onStop(owner: LifecycleOwner) {
                     pollJob?.cancel()
                     pollJob = null
@@ -52,11 +53,12 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
     private suspend fun refresh() {
         try {
             val profiles = AutoServiceLocator.profileRepository.observeAll().first()
-            val profile = profiles.firstOrNull { it.enabled } ?: run {
-                error = "No enabled server"
-                sessions = emptyList()
-                return
-            }
+            val profile =
+                profiles.firstOrNull { it.enabled } ?: run {
+                    error = "No enabled server"
+                    sessions = emptyList()
+                    return
+                }
             AutoServiceLocator.transportFor(profile).listSessions().fold(
                 onSuccess = { list ->
                     error = null

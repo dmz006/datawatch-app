@@ -2,8 +2,6 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.unit.sp
-import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,15 +23,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -44,17 +36,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,19 +57,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import com.dmzs.datawatchclient.storage.observeForProfileAny
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -173,21 +167,24 @@ public fun SessionDetailScreen(
                                     MaterialTheme.typography.titleMedium.copy(
                                         color = MaterialTheme.colorScheme.onSurface,
                                     ),
-                                cursorBrush = androidx.compose.ui.graphics.SolidColor(
-                                    MaterialTheme.colorScheme.primary,
-                                ),
-                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                    imeAction = androidx.compose.ui.text.input.ImeAction.Done,
-                                ),
-                                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                    onDone = {
-                                        val trimmed = draft.trim()
-                                        if (trimmed.isNotBlank() && trimmed != headerTitle) {
-                                            vm.rename(trimmed)
-                                        }
-                                        editingHeader = false
-                                    },
-                                ),
+                                cursorBrush =
+                                    androidx.compose.ui.graphics.SolidColor(
+                                        MaterialTheme.colorScheme.primary,
+                                    ),
+                                keyboardOptions =
+                                    androidx.compose.foundation.text.KeyboardOptions(
+                                        imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                                    ),
+                                keyboardActions =
+                                    androidx.compose.foundation.text.KeyboardActions(
+                                        onDone = {
+                                            val trimmed = draft.trim()
+                                            if (trimmed.isNotBlank() && trimmed != headerTitle) {
+                                                vm.rename(trimmed)
+                                            }
+                                            editingHeader = false
+                                        },
+                                    ),
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
@@ -212,10 +209,11 @@ public fun SessionDetailScreen(
                                 softWrap = false,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.clickable {
-                                    draft = headerTitle
-                                    editingHeader = true
-                                },
+                                modifier =
+                                    Modifier.clickable {
+                                        draft = headerTitle
+                                        editingHeader = true
+                                    },
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -638,6 +636,7 @@ public fun SessionDetailScreen(
  * Kept intentionally terse — the terminal carries the main narrative; this
  * is a status strip.
  */
+
 /**
  * Byte-for-byte mirror of PWA's `.session-info-bar > .meta` (app.js:1672-1680):
  * backend chip, mode chip, clickable state pill, primary action button
@@ -737,7 +736,14 @@ private fun SessionInfoBar(
             }
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
             if (isActive) {
-                TextButton(onClick = onStop, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                TextButton(
+                    onClick = onStop,
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 2.dp,
+                        ),
+                ) {
                     Text(
                         "■ Stop",
                         style = MaterialTheme.typography.labelSmall,
@@ -745,7 +751,14 @@ private fun SessionInfoBar(
                     )
                 }
             } else if (isDone) {
-                TextButton(onClick = onRestart, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                TextButton(
+                    onClick = onRestart,
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 2.dp,
+                        ),
+                ) {
                     Text("↻ Restart", style = MaterialTheme.typography.labelSmall)
                 }
                 // Delete is only offered after the session has reached a terminal
@@ -754,7 +767,11 @@ private fun SessionInfoBar(
                 // live sessions from the UI.
                 TextButton(
                     onClick = onDelete,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 2.dp,
+                        ),
                 ) {
                     Text(
                         "🗑 Delete",
@@ -763,16 +780,20 @@ private fun SessionInfoBar(
                     )
                 }
             }
-            TextButton(onClick = onTimeline, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+            TextButton(
+                onClick = onTimeline,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+            ) {
                 Text("⏱ Timeline", style = MaterialTheme.typography.labelSmall)
             }
             if (hasResponse) {
                 TextButton(
                     onClick = onResponse,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 10.dp,
-                        vertical = 2.dp,
-                    ),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 2.dp,
+                        ),
                 ) {
                     Text("💾 Response", style = MaterialTheme.typography.labelSmall)
                 }
@@ -782,7 +803,10 @@ private fun SessionInfoBar(
 }
 
 @Composable
-private fun InfoBadge(text: String, color: Color) {
+private fun InfoBadge(
+    text: String,
+    color: Color,
+) {
     Box(
         modifier =
             Modifier
@@ -910,7 +934,10 @@ private fun InlineNotices(events: List<SessionEvent>) {
 }
 
 @Composable
-private fun StatePill(state: SessionState, onClick: () -> Unit = {}) {
+private fun StatePill(
+    state: SessionState,
+    onClick: () -> Unit = {},
+) {
     // Wire-format labels matching PWA (see PwaComponents.label()).
     val (label, color) =
         when (state) {
@@ -1471,7 +1498,10 @@ private fun QuickReplyButtons(onQuickReply: (String) -> Unit) {
 }
 
 @Composable
-private fun QuickReplyChip(label: String, onClick: () -> Unit) {
+private fun QuickReplyChip(
+    label: String,
+    onClick: () -> Unit,
+) {
     AssistChip(
         onClick = onClick,
         label = { Text(label) },
@@ -1689,8 +1719,11 @@ private fun ReplyComposer(
                 Icons.Filled.Description,
                 contentDescription = "View last response",
                 tint =
-                    if (hasResponse) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (hasResponse) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
         IconButton(
@@ -1716,9 +1749,10 @@ private fun ReplyComposer(
                 label = {
                     Text(label, style = MaterialTheme.typography.labelLarge)
                 },
-                colors = AssistChipDefaults.assistChipColors(
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
+                colors =
+                    AssistChipDefaults.assistChipColors(
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -1777,8 +1811,11 @@ private fun ReplyComposer(
                     Icons.Filled.Send,
                     contentDescription = "Send",
                     tint =
-                        if (text.isNotBlank()) MaterialTheme.colorScheme.primary
-                        else Color.Gray,
+                        if (text.isNotBlank()) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.Gray
+                        },
                 )
             }
         }

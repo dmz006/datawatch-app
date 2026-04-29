@@ -39,9 +39,10 @@ public fun BackendConfigDialog(
         title = { Text("Configure $backendName") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 ConfigFieldsPanel(section)
                 Text(

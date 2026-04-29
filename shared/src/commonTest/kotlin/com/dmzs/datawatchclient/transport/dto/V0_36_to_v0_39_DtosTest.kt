@@ -14,13 +14,18 @@ import kotlin.test.assertTrue
  * datawatch parent.
  */
 class V0_36_to_v0_39_DtosTest {
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     // ---- v0.36.0 federated monitoring (#2-#6) ----
 
     @Test
     fun `observer peers parses the v4_4_0 wire shape`() {
-        val src = """
+        val src =
+            """
             {"peers":[
               {
                 "name":"agent-7af3",
@@ -32,7 +37,7 @@ class V0_36_to_v0_39_DtosTest {
               },
               {"name":"node-2","shape":"standalone"}
             ]}
-        """.trimIndent()
+            """.trimIndent()
         val dto = json.decodeFromString(ObserverPeersDto.serializer(), src)
         assertEquals(2, dto.peers.size)
         assertEquals("agent", dto.peers[0].shape)
@@ -43,14 +48,15 @@ class V0_36_to_v0_39_DtosTest {
 
     @Test
     fun `observer stats carries host_ebpf and cluster_nodes`() {
-        val src = """
+        val src =
+            """
             {
               "host":{"ebpf":{"configured":true,"capability":true,"kprobes_loaded":false,"message":"Degraded — kernel<5.10"}},
               "cluster":{"nodes":[
                 {"name":"k8s-1","ready":true,"pressures":["memory"],"pod_count":12,"cpu_pct":78.5,"mem_pct":91.2}
               ]}
             }
-        """.trimIndent()
+            """.trimIndent()
         val dto = json.decodeFromString(ObserverStatsDto.serializer(), src)
         assertNotNull(dto.host?.ebpf)
         assertTrue(dto.host?.ebpf?.configured == true)
@@ -62,12 +68,13 @@ class V0_36_to_v0_39_DtosTest {
 
     @Test
     fun `plugins payload separates subprocess from native`() {
-        val src = """
+        val src =
+            """
             {
               "plugins":[{"name":"git-hook","kind":"subprocess","enabled":true}],
               "native":[{"name":"datawatch-observer","kind":"native","enabled":true,"version":"5.27.0"}]
             }
-        """.trimIndent()
+            """.trimIndent()
         val dto = json.decodeFromString(PluginsDto.serializer(), src)
         assertEquals(1, dto.plugins.size)
         assertEquals(1, dto.native.size)
@@ -115,7 +122,8 @@ class V0_36_to_v0_39_DtosTest {
 
     @Test
     fun `prd list parses depth and template flag`() {
-        val src = """
+        val src =
+            """
             {"prds":[
               {
                 "id":"prd-1","name":"refactor","title":"Refactor X",
@@ -127,7 +135,7 @@ class V0_36_to_v0_39_DtosTest {
                 ]
               }
             ]}
-        """.trimIndent()
+            """.trimIndent()
         val dto = json.decodeFromString(PrdListDto.serializer(), src)
         val prd = dto.prds.first()
         assertEquals(2, prd.depth)
@@ -155,12 +163,13 @@ class V0_36_to_v0_39_DtosTest {
 
     @Test
     fun `orchestrator graph parses observer_summary on node`() {
-        val src = """
+        val src =
+            """
             {"id":"prd-1","nodes":[
               {"id":"n1","status":"running","observer_summary":{"cpu_pct":42.5,"rss_mb":256,"envelope_count":7,"last_push_at":"2026-04-28T00:00:00Z"}},
               {"id":"n2","status":"complete"}
             ],"edges":[{"from":"n1","to":"n2","kind":"dep"}]}
-        """.trimIndent()
+            """.trimIndent()
         val dto = json.decodeFromString(OrchestratorGraphDto.serializer(), src)
         assertEquals(2, dto.nodes.size)
         assertNotNull(dto.nodes[0].observerSummary)

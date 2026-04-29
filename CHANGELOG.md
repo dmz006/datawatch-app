@@ -8,6 +8,40 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.9] — 2026-04-28 (full-buffer last_response on watch popup, on-demand)
+
+### Added
+
+- **`ConfigSaveBus` event flow.** Every successful
+  `transport.writeConfig` from `ConfigFieldsPanel` fires the bus.
+  `AppRoot` subscribes and re-probes `autonomous.enabled` so the
+  PRDs nav tab appears / disappears the instant the user toggles
+  autonomous in Settings — no app restart, no polling. User
+  direction 2026-04-28: *"there shouldn't be a timed refresh,
+  there should be a queue and a message saying there is an
+  event."*
+
+### Changed
+
+- **Watch popup body is now fetched on-demand for the open session
+  only** — no longer rides the DataLayer broadcast. User direction
+  2026-04-28: *"only 1 session will be displayed at a time. the
+  list is there but the last message is only loaded when
+  viewing."* New flow: tap a session → watch sends
+  `/datawatch/refreshSession` → phone refetches `/api/sessions` →
+  phone replies on `/datawatch/sessionDetail` with the full
+  `last_response` body (capped at 95 KB to fit the
+  100 KB MessageClient envelope). Watch popup renders the full
+  buffer (vertically scrollable, no maxLines cap), with a
+  "Loading…" placeholder until the reply arrives.
+- **`lastResponses` array dropped from `/datawatch/sessions`
+  broadcast.** Was 4000 chars × 12 sessions = 48 KB of bandwidth
+  for content the user only ever read for one row at a time.
+  Broadcast is now metadata-only (id + title + state + backend +
+  one-line preview); the per-tap MessageClient reply carries the
+  bulk. `SESSION_LAST_RESPONSE_MAX` retired; new
+  `SESSION_DETAIL_BODY_MAX = 95_000` lives next to the new path.
+
 ## [0.42.8] — 2026-04-28 (WearSyncService periodically refetches /api/sessions + PRDs probe correctness)
 
 ### Fixed

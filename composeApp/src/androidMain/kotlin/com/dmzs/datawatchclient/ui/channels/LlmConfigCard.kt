@@ -75,10 +75,11 @@ public fun LlmConfigCard() {
         .collectAsState(initial = ServiceLocator.activeServerStore.get())
 
     LaunchedEffect(activeId, refreshTick) {
-        val profile = resolveActiveProfile() ?: run {
-            banner = "No enabled server."
-            return@LaunchedEffect
-        }
+        val profile =
+            resolveActiveProfile() ?: run {
+                banner = "No enabled server."
+                return@LaunchedEffect
+            }
         val transport = ServiceLocator.transportFor(profile)
         // Names the server reports as available.
         transport.listBackends().fold(
@@ -237,7 +238,10 @@ private fun BackendRow(
  * per parity audit G45 — the prior implementation scanned
  * `backends.<name>.*` which is not where the server stores these.
  */
-private fun isBackendConfigured(config: JsonObject, name: String): Boolean {
+private fun isBackendConfigured(
+    config: JsonObject,
+    name: String,
+): Boolean {
     val section = sectionNameFor(name)
     val enabledLeaf = enabledLeafFor(name)
     // /api/config returns a nested tree; iterate the section object
@@ -246,7 +250,10 @@ private fun isBackendConfigured(config: JsonObject, name: String): Boolean {
     return sec.entries.any { (k, v) -> k != enabledLeaf && hasValue(v) }
 }
 
-private fun readBackendEnabled(config: JsonObject, name: String): Boolean {
+private fun readBackendEnabled(
+    config: JsonObject,
+    name: String,
+): Boolean {
     val section = sectionNameFor(name)
     val leaf = enabledLeafFor(name)
     val sec = config[section] as? JsonObject ?: return false
@@ -274,8 +281,9 @@ private fun hasValue(e: kotlinx.serialization.json.JsonElement): Boolean =
         is JsonPrimitive ->
             when {
                 e.isString -> e.content.isNotBlank()
-                else -> e.content.isNotBlank() && e.content != "null" && e.content != "false" &&
-                    e.content != "0"
+                else ->
+                    e.content.isNotBlank() && e.content != "null" && e.content != "false" &&
+                        e.content != "0"
             }
         else -> true
     }

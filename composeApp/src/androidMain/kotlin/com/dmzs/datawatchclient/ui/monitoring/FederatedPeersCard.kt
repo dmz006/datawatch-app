@@ -17,8 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,12 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.settings.Section
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -213,18 +209,20 @@ public class FederatedPeersViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.observerPeers().fold(
                 onSuccess = { dto ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        peers = dto.peers,
-                        error = null,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            peers = dto.peers,
+                            error = null,
+                        )
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        peers = emptyList(),
-                        error = err.message,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            peers = emptyList(),
+                            error = err.message,
+                        )
                 },
             )
         }

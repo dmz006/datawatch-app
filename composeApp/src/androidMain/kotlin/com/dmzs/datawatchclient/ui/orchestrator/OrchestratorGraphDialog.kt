@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.orchestrator
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,20 +18,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.dmzs.datawatchclient.di.ServiceLocator
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.transport.dto.ObserverSummaryDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorNodeDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -123,11 +120,12 @@ private fun GraphNodeRow(
 
 @Composable
 private fun ObserverBadge(s: ObserverSummaryDto) {
-    val parts = buildList {
-        s.cpuPct?.let { add("%.0f%%".format(it)) }
-        s.rssMb?.let { add("${it} MB") }
-        s.envelopeCount?.let { add("${it}p") }
-    }
+    val parts =
+        buildList {
+            s.cpuPct?.let { add("%.0f%%".format(it)) }
+            s.rssMb?.let { add("$it MB") }
+            s.envelopeCount?.let { add("${it}p") }
+        }
     if (parts.isEmpty()) return
     Box(
         modifier =
@@ -163,6 +161,7 @@ public class OrchestratorGraphViewModel(
         val graph: OrchestratorGraphDto? = null,
         val banner: String? = null,
     )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -172,9 +171,10 @@ public class OrchestratorGraphViewModel(
             transport.orchestratorGraph(id).fold(
                 onSuccess = { dto -> _state.value = UiState(graph = dto) },
                 onFailure = { err ->
-                    _state.value = UiState(
-                        banner = "Load failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        UiState(
+                            banner = "Load failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }

@@ -535,8 +535,9 @@ public fun NewSessionScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                val profile = profiles.firstOrNull { it.id == selectedProfileId }
-                                    ?: return@OutlinedButton
+                                val profile =
+                                    profiles.firstOrNull { it.id == selectedProfileId }
+                                        ?: return@OutlinedButton
                                 scope.launch {
                                     ServiceLocator.transportFor(profile)
                                         .restartSession(s.id)
@@ -576,8 +577,8 @@ public fun NewSessionScreen(
                                     transport.setActiveBackend(backendToUse).onFailure { err ->
                                         banner =
                                             "Couldn't switch backend to $backendToUse — " +
-                                                "${err.message ?: err::class.simpleName}. " +
-                                                "Starting with server's current backend."
+                                            "${err.message ?: err::class.simpleName}. " +
+                                            "Starting with server's current backend."
                                     }
                                 }
                                 // v0.39.1 (#20) — branch the spawn

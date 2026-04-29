@@ -52,6 +52,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     pollJob?.cancel()
                     pollJob = scope.launch { pollLoop() }
                 }
+
                 override fun onStop(owner: LifecycleOwner) {
                     pollJob?.cancel()
                     pollJob = null
@@ -74,12 +75,15 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refresh() {
         try {
-            val profile = resolveActiveProfile() ?: run {
-                error = "No enabled server (configure on phone)"
-                activeProfile = null
-                running = 0; waiting = 0; total = 0
-                return
-            }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server (configure on phone)"
+                    activeProfile = null
+                    running = 0
+                    waiting = 0
+                    total = 0
+                    return
+                }
             activeProfile = profile
             AutoServiceLocator.transportFor(profile).listSessions().fold(
                 onSuccess = { list ->
@@ -110,9 +114,10 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     .build(),
             )
         }
-        val runningText = CarText.Builder("$running sessions")
-            .addVariant("$running")
-            .build()
+        val runningText =
+            CarText.Builder("$running sessions")
+                .addVariant("$running")
+                .build()
         builder.addItem(
             Row.Builder()
                 .setTitle(colored("Running", CarColor.GREEN))
@@ -201,7 +206,10 @@ internal suspend fun resolveActiveProfile(): ServerProfile? {
  * Library allows a narrow subset of [CarColor] spans; GREEN / YELLOW
  * mirror the PWA's "running / waiting" palette exactly.
  */
-internal fun colored(text: String, color: CarColor): CarText {
+internal fun colored(
+    text: String,
+    color: CarColor,
+): CarText {
     val spannable = android.text.SpannableString(text)
     spannable.setSpan(
         ForegroundCarColorSpan.create(color),
@@ -215,11 +223,12 @@ internal fun colored(text: String, color: CarColor): CarText {
 /** Reusable datawatch-brand icon for template headers. */
 internal fun brandIcon(carContext: CarContext): CarIcon? =
     runCatching {
-        val resId = carContext.resources.getIdentifier(
-            "ic_launcher",
-            "mipmap",
-            carContext.packageName,
-        )
+        val resId =
+            carContext.resources.getIdentifier(
+                "ic_launcher",
+                "mipmap",
+                carContext.packageName,
+            )
         if (resId != 0) {
             CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         } else {

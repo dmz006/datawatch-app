@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
  * were removed in v0.33.18 because they don't exist in PWA and the four-button
  * row matches user muscle-memory when switching between web and phone.
  */
+
 /**
  * Hoisted state for [TerminalToolbarControls] + [TerminalScrollModeStrip].
  *

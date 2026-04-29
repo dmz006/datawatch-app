@@ -21,8 +21,13 @@ public object ForegroundSessionTracker {
     init {
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
-                override fun onStart(owner: LifecycleOwner) { foreground.set(true) }
-                override fun onStop(owner: LifecycleOwner) { foreground.set(false) }
+                override fun onStart(owner: LifecycleOwner) {
+                    foreground.set(true)
+                }
+
+                override fun onStop(owner: LifecycleOwner) {
+                    foreground.set(false)
+                }
             },
         )
     }
@@ -42,6 +47,5 @@ public object ForegroundSessionTracker {
      * the foreground. Callers should suppress push notifications
      * for such sessions since the content is already on screen.
      */
-    public fun isForeground(sessionId: String): Boolean =
-        foreground.get() && currentSessionId.get() == sessionId
+    public fun isForeground(sessionId: String): Boolean = foreground.get() && currentSessionId.get() == sessionId
 }

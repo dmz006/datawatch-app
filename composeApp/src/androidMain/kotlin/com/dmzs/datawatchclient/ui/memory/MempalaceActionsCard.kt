@@ -16,8 +16,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,13 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.SpellcheckSuggestionDto
 import com.dmzs.datawatchclient.transport.dto.SvoTripleDto
 import com.dmzs.datawatchclient.ui.settings.Section
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -119,8 +115,11 @@ private fun SweepRow(
     }
     state.sweepResult?.let { count ->
         Text(
-            if (state.sweepDryRun) "$count entries would be removed"
-            else "$count entries removed",
+            if (state.sweepDryRun) {
+                "$count entries would be removed"
+            } else {
+                "$count entries removed"
+            },
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -279,18 +278,22 @@ public class MempalaceActionsViewModel(
         val busy: Boolean = false,
         val banner: String? = null,
     )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
     public fun setSweepDays(v: String) {
         _state.value = _state.value.copy(sweepDays = v.filter { it.isDigit() })
     }
+
     public fun setSweepDryRun(v: Boolean) {
         _state.value = _state.value.copy(sweepDryRun = v)
     }
+
     public fun setSpellcheckText(v: String) {
         _state.value = _state.value.copy(spellcheckText = v)
     }
+
     public fun setFactsText(v: String) {
         _state.value = _state.value.copy(factsText = v)
     }
@@ -308,10 +311,11 @@ public class MempalaceActionsViewModel(
                     _state.value = _state.value.copy(busy = false, sweepResult = count)
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        banner = "Sweep failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            busy = false,
+                            banner = "Sweep failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -324,16 +328,17 @@ public class MempalaceActionsViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             _state.value = _state.value.copy(busy = true, banner = null)
             transport.memorySpellcheck(text = text, extraWords = emptyList()).fold(
-                    onSuccess = { sug ->
-                        _state.value = _state.value.copy(busy = false, spellcheckResult = sug)
-                    },
-                    onFailure = { err ->
-                        _state.value = _state.value.copy(
+                onSuccess = { sug ->
+                    _state.value = _state.value.copy(busy = false, spellcheckResult = sug)
+                },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
                             busy = false,
                             banner = "Spellcheck failed — ${err.message ?: err::class.simpleName}",
                         )
-                    },
-                )
+                },
+            )
         }
     }
 
@@ -343,19 +348,22 @@ public class MempalaceActionsViewModel(
             _state.value = _state.value.copy(busy = true, banner = null)
             transport.memoryStats().fold(
                 onSuccess = { stats ->
-                    val v = stats["schema_version"]?.let {
-                        (it as? kotlinx.serialization.json.JsonPrimitive)?.content
-                    }
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        schemaVersion = v ?: "(not reported by this backend)",
-                    )
+                    val v =
+                        stats["schema_version"]?.let {
+                            (it as? kotlinx.serialization.json.JsonPrimitive)?.content
+                        }
+                    _state.value =
+                        _state.value.copy(
+                            busy = false,
+                            schemaVersion = v ?: "(not reported by this backend)",
+                        )
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        banner = "Schema check failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            busy = false,
+                            banner = "Schema check failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -372,10 +380,11 @@ public class MempalaceActionsViewModel(
                     _state.value = _state.value.copy(busy = false, factsResult = triples)
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        banner = "Extract failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            busy = false,
+                            banner = "Extract failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }

@@ -56,6 +56,7 @@ public data class AlertsListResponseDto(
  * superset of fields observed across recent server versions. Missing fields
  * default to safe values so version skew doesn't break the client.
  */
+
 /**
  * Matches the live `/api/alerts` row shape (verified 2026-04-23 against
  * localhost:8443): `{id, level, title, body, session_id, read, created_at}`.

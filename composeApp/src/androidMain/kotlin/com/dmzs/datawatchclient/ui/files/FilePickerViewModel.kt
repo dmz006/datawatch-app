@@ -103,26 +103,31 @@ public class FilePickerViewModel : ViewModel() {
         val safeName = name.trim()
         if (safeName.isEmpty()) return
         if (safeName.contains('/') || safeName.contains('\\')) {
-            _state.value = _state.value.copy(
-                banner = "Folder name can't contain '/' or '\\\\'.",
-            )
+            _state.value =
+                _state.value.copy(
+                    banner = "Folder name can't contain '/' or '\\\\'.",
+                )
             return
         }
         val parent = _state.value.path ?: return
         viewModelScope.launch {
             val profile = resolveActiveProfile() ?: return@launch
             val newPath =
-                if (parent.endsWith("/")) "$parent$safeName"
-                else "$parent/$safeName"
+                if (parent.endsWith("/")) {
+                    "$parent$safeName"
+                } else {
+                    "$parent/$safeName"
+                }
             ServiceLocator.transportFor(profile).mkdir(newPath).fold(
                 onSuccess = {
                     // Re-browse current dir to surface the new folder.
                     browse(parent)
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Create folder failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Create folder failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }

@@ -42,6 +42,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     pollJob?.cancel()
                     pollJob = scope.launch { pollLoop() }
                 }
+
                 override fun onStop(owner: LifecycleOwner) {
                     pollJob?.cancel()
                     pollJob = null
@@ -64,12 +65,13 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refresh() {
         try {
-            val p = resolveActiveProfile() ?: run {
-                error = "No enabled server (configure on phone)"
-                profile = null
-                stats = null
-                return
-            }
+            val p =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server (configure on phone)"
+                    profile = null
+                    stats = null
+                    return
+                }
             profile = p
             AutoServiceLocator.transportFor(p).stats().fold(
                 onSuccess = { dto ->
@@ -100,12 +102,13 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
             // CPU row — prefer load1/cores, fall back to flat pct.
             val load1 = s.cpuLoad1
             val cores = s.cpuCores
-            val cpuText = when {
-                load1 != null && cores != null && cores > 0 ->
-                    "%.2f load · %d cores".format(load1, cores)
-                s.cpuPct != null -> "%.1f%%".format(s.cpuPct)
-                else -> "—"
-            }
+            val cpuText =
+                when {
+                    load1 != null && cores != null && cores > 0 ->
+                        "%.2f load · %d cores".format(load1, cores)
+                    s.cpuPct != null -> "%.1f%%".format(s.cpuPct)
+                    else -> "—"
+                }
             items.addItem(
                 Row.Builder()
                     .setTitle("CPU")
@@ -114,12 +117,13 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
             )
             val memUsed = s.memUsed
             val memTotal = s.memTotal
-            val memText = when {
-                memUsed != null && memTotal != null && memTotal > 0 ->
-                    "${fmt(memUsed)} / ${fmt(memTotal)}"
-                s.memPct != null -> "%.1f%%".format(s.memPct)
-                else -> "—"
-            }
+            val memText =
+                when {
+                    memUsed != null && memTotal != null && memTotal > 0 ->
+                        "${fmt(memUsed)} / ${fmt(memTotal)}"
+                    s.memPct != null -> "%.1f%%".format(s.memPct)
+                    else -> "—"
+                }
             items.addItem(
                 Row.Builder()
                     .setTitle("Memory")

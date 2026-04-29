@@ -1,6 +1,5 @@
 package com.dmzs.datawatchclient.ui.channels
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -73,7 +72,10 @@ public fun ChannelsCard() {
                 return
             }
         ServiceLocator.transportFor(profile).listChannels().fold(
-            onSuccess = { channels = it; banner = null },
+            onSuccess = {
+                channels = it
+                banner = null
+            },
             onFailure = {
                 banner = "Couldn't load channels — ${it.message ?: it::class.simpleName}"
             },
@@ -331,7 +333,10 @@ private fun AddChannelDialog(
                     types.forEach { t ->
                         DropdownMenuItem(
                             text = { Text(t) },
-                            onClick = { type = t; typeMenuOpen = false },
+                            onClick = {
+                                type = t
+                                typeMenuOpen = false
+                            },
                         )
                     }
                 }
@@ -374,8 +379,6 @@ private fun AddChannelDialog(
     )
 }
 
-private fun JsonObject.stringField(key: String): String? =
-    (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+private fun JsonObject.stringField(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-private fun JsonObject.boolField(key: String): Boolean? =
-    (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
+private fun JsonObject.boolField(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()

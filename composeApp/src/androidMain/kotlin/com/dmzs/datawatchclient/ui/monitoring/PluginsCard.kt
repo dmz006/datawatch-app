@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.monitoring
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,12 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.PluginDto
 import com.dmzs.datawatchclient.ui.settings.Section
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -136,6 +133,7 @@ public class PluginsCardViewModel(
         val native: List<PluginDto> = emptyList(),
         val error: String? = null,
     )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -144,20 +142,22 @@ public class PluginsCardViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.listPlugins().fold(
                 onSuccess = { dto ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        plugins = dto.plugins,
-                        native = dto.native,
-                        error = null,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            plugins = dto.plugins,
+                            native = dto.native,
+                            error = null,
+                        )
                 },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        plugins = emptyList(),
-                        native = emptyList(),
-                        error = err.message,
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            plugins = emptyList(),
+                            native = emptyList(),
+                            error = err.message,
+                        )
                 },
             )
         }

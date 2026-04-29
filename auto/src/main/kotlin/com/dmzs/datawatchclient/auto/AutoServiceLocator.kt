@@ -43,20 +43,22 @@ public object AutoServiceLocator {
     }
 
     public val profileRepository: ServerProfileRepository
-        get() = _profileRepo ?: run {
-            val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
-            val keystore = KeystoreManager(ctx)
-            val factory = DatabaseFactory(ctx, keystore)
-            val db = DatawatchDb(factory.driver()).also { _db = it }
-            ServerProfileRepository(db, Dispatchers.IO).also { _profileRepo = it }
-        }
+        get() =
+            _profileRepo ?: run {
+                val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
+                val keystore = KeystoreManager(ctx)
+                val factory = DatabaseFactory(ctx, keystore)
+                val db = DatawatchDb(factory.driver()).also { _db = it }
+                ServerProfileRepository(db, Dispatchers.IO).also { _profileRepo = it }
+            }
 
     public val sessionRepository: SessionRepository
-        get() = _sessionRepo ?: run {
-            // Trigger profileRepository initialisation so _db is non-null.
-            profileRepository
-            SessionRepository(_db!!, Dispatchers.IO).also { _sessionRepo = it }
-        }
+        get() =
+            _sessionRepo ?: run {
+                // Trigger profileRepository initialisation so _db is non-null.
+                profileRepository
+                SessionRepository(_db!!, Dispatchers.IO).also { _sessionRepo = it }
+            }
 
     private val httpClient: HttpClient
         get() = _httpClient ?: createHttpClient().also { _httpClient = it }
@@ -70,8 +72,9 @@ public object AutoServiceLocator {
      * change next observe() tick.
      */
     public val activeServerStore: ActiveServerStore
-        get() = _activeStore ?: run {
-            val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
-            ActiveServerStore(ctx).also { _activeStore = it }
-        }
+        get() =
+            _activeStore ?: run {
+                val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
+                ActiveServerStore(ctx).also { _activeStore = it }
+            }
 }

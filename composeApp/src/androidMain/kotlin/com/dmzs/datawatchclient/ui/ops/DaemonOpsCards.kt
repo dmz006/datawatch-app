@@ -70,7 +70,10 @@ public fun DaemonLogCard() {
                 ServiceLocator.transportFor(profile)
                     .fetchLogs(lines = 50, offset = offset)
                     .fold(
-                        onSuccess = { view = it; banner = null },
+                        onSuccess = {
+                            view = it
+                            banner = null
+                        },
                         onFailure = { banner = "Logs unavailable — ${it.message ?: it::class.simpleName}" },
                     )
             }

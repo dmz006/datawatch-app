@@ -4,10 +4,9 @@ import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -119,6 +119,11 @@ private fun WearRoot(
     }
     // v0.42.3 — Sessions page filter (Wait default, then Run, Total).
     var sessionFilter by remember { mutableStateOf(SessionFilter.Wait) }
+    // v0.42.9 — full last_response buffer keyed by sessionId, populated
+    // from the phone's /datawatch/sessionDetail MessageClient reply.
+    // The popup prefers this over `session.lastResponse` (which is
+    // capped at 4000 chars in the DataLayer broadcast budget).
+    var fullDetailBodies by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var pendingTranscript by remember { mutableStateOf("") }
     var recording by remember { mutableStateOf(false) }
     var transcribing by remember { mutableStateOf(false) }
@@ -133,22 +138,46 @@ private fun WearRoot(
         val listener =
             com.google.android.gms.wearable.MessageClient
                 .OnMessageReceivedListener { ev ->
-                    if (ev.path == WearSessionCountsViewModel.TRANSCRIPT_PATH) {
-                        val body = runCatching { String(ev.data, Charsets.UTF_8) }
-                            .getOrNull().orEmpty()
-                        val (sid, text) =
-                            body.split("\n", limit = 2).let { p ->
-                                p.firstOrNull().orEmpty() to
-                                    p.getOrNull(1).orEmpty()
-                            }
-                        if (sid == openSession?.id) {
-                            transcribing = false
-                            pendingTranscript =
-                                if (text.startsWith("error:")) {
-                                    "[transcribe failed: ${text.removePrefix("error:")}]"
-                                } else {
-                                    text
+                    when (ev.path) {
+                        WearSessionCountsViewModel.TRANSCRIPT_PATH -> {
+                            val body =
+                                runCatching { String(ev.data, Charsets.UTF_8) }
+                                    .getOrNull().orEmpty()
+                            val (sid, text) =
+                                body.split("\n", limit = 2).let { p ->
+                                    p.firstOrNull().orEmpty() to
+                                        p.getOrNull(1).orEmpty()
                                 }
+                            if (sid == openSession?.id) {
+                                transcribing = false
+                                pendingTranscript =
+                                    if (text.startsWith("error:")) {
+                                        "[transcribe failed: ${text.removePrefix("error:")}]"
+                                    } else {
+                                        text
+                                    }
+                            }
+                        }
+                        WearSessionCountsViewModel.SESSION_DETAIL_PATH -> {
+                            // v0.42.9 — full last_response body for the
+                            // session the user just tapped. Stored in
+                            // the per-id map; the popup picks it up on
+                            // recomposition.
+                            val body =
+                                runCatching { String(ev.data, Charsets.UTF_8) }
+                                    .getOrNull().orEmpty()
+                            val (sid, text) =
+                                body.split("\n", limit = 2).let { p ->
+                                    p.firstOrNull().orEmpty() to
+                                        p.getOrNull(1).orEmpty()
+                                }
+                            if (sid.isNotEmpty()) {
+                                Log.d(
+                                    "WearMain",
+                                    "sessionDetail recv sid=$sid bytes=${text.length}",
+                                )
+                                fullDetailBodies = fullDetailBodies + (sid to text)
+                            }
                         }
                     }
                 }
@@ -183,11 +212,14 @@ private fun WearRoot(
                             onFilterChange = { sessionFilter = it },
                             onSessionTap = { item ->
                                 openSession = item
-                                // v0.42.2 — ask the phone to refetch
-                                // /api/sessions immediately so the
-                                // popup shows the same lastResponse
-                                // body the PWA / Android app render
-                                // (instead of the cached snapshot).
+                                // v0.42.9 — clear any cached full body
+                                // for this session so the popup shows
+                                // a "Loading…" placeholder while the
+                                // phone refetches. The phone replies
+                                // on /datawatch/sessionDetail with the
+                                // full last_response body (uncapped
+                                // by the DataLayer broadcast budget).
+                                fullDetailBodies = fullDetailBodies - item.id
                                 vm.refreshSession(item.id)
                             },
                         )
@@ -211,15 +243,20 @@ private fun WearRoot(
             // Falls back to the captured item if the session was
             // dropped from the published window between tap and
             // republish.
-            val popupSession = openSession?.let { o ->
-                state.sessions.firstOrNull { it.id == o.id } ?: o
-            }
+            val popupSession =
+                openSession?.let { o ->
+                    state.sessions.firstOrNull { it.id == o.id } ?: o
+                }
             popupSession?.let { item ->
                 SessionDetailPopup(
                     session = item,
-                    transcript = pendingTranscript,
-                    recording = recording,
-                    transcribing = transcribing,
+                    fullBody = fullDetailBodies[item.id],
+                    voice =
+                        VoiceUiState(
+                            transcript = pendingTranscript,
+                            recording = recording,
+                            transcribing = transcribing,
+                        ),
                     onRecord = {
                         if (!recording) {
                             pendingTranscript = ""
@@ -266,23 +303,31 @@ private fun WearRoot(
 }
 
 @Composable
-private fun PagerDots(selected: Int, count: Int, modifier: Modifier = Modifier) {
+private fun PagerDots(
+    selected: Int,
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         repeat(count) { i ->
             val c = if (i == selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurfaceVariant
             val dot = if (i == selected) 6 else 4
             Box(
-                modifier = Modifier
-                    .padding(1.dp)
-                    .size(dot.dp)
-                    .background(c, shape = androidx.compose.foundation.shape.CircleShape),
+                modifier =
+                    Modifier
+                        .padding(1.dp)
+                        .size(dot.dp)
+                        .background(c, shape = androidx.compose.foundation.shape.CircleShape),
             )
         }
     }
 }
 
 @Composable
-private fun PageScaffold(title: String, content: @Composable () -> Unit) {
+private fun PageScaffold(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     // Per user 2026-04-24 "the wear app should have borders around each
     // screen like cards" + "the watch is a samsung watch, the cards
     // should be round to match bezel" — each pager page renders inside
@@ -292,27 +337,30 @@ private fun PageScaffold(title: String, content: @Composable () -> Unit) {
     // less vertical) because a circular viewport cuts the corners
     // anyway — content stays within the safe area.
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(6.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(6.dp),
         contentAlignment = Alignment.Center,
     ) {
         val cardShape = androidx.compose.foundation.shape.CircleShape
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.surface, shape = cardShape)
-                .border(
-                    width = 1.5.dp,
-                    color = MaterialTheme.colors.primary.copy(alpha = 0.45f),
-                    shape = cardShape,
-                )
-                .padding(horizontal = 28.dp, vertical = 20.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colors.surface, shape = cardShape)
+                    .border(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colors.primary.copy(alpha = 0.45f),
+                        shape = cardShape,
+                    )
+                    .padding(horizontal = 28.dp, vertical = 20.dp),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -356,48 +404,7 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
             style = MaterialTheme.typography.caption1,
             color = MaterialTheme.colors.primary,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            GaugeRing(
-                label = "CPU",
-                pct = state.cpuPctFor(),
-                center = cpuCenterText(state),
-            )
-            GaugeRing(
-                label = "MEM",
-                pct = state.memPct(),
-                center =
-                    if (state.memTotal > 0) "%.0f%%".format(state.memPct())
-                    else "—",
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            GaugeRing(
-                label = "DISK",
-                pct = state.diskPct(),
-                center =
-                    if (state.diskTotal > 0) "%.0f%%".format(state.diskPct())
-                    else "—",
-            )
-            if (state.hasGpu()) {
-                GaugeRing(
-                    label = "GPU",
-                    pct = state.gpuPct(),
-                    center =
-                        if (state.gpuPct() > 0) "%.0f%%".format(state.gpuPct())
-                        else "—",
-                )
-            } else {
-                // Empty slot keeps the 2-up grid symmetric when the
-                // phone hasn't published GPU stats yet.
-                Box(modifier = Modifier.size(GAUGE_SIZE_DP.dp))
-            }
-        }
+        MonitorGaugeGrid(state)
         if (state.uptimeSeconds > 0) {
             Text(
                 "up ${state.uptimeText()}",
@@ -412,6 +419,44 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
                 style = MaterialTheme.typography.caption3,
                 color = MaterialTheme.colors.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/**
+ * v0.42.9 — extracted gauge grid (CPU/MEM, DISK/GPU) so MonitorPage
+ * stays under detekt's LongMethod cap.
+ */
+@Composable
+private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        GaugeRing(label = "CPU", pct = state.cpuPctFor(), center = cpuCenterText(state))
+        GaugeRing(
+            label = "MEM",
+            pct = state.memPct(),
+            center = if (state.memTotal > 0) "%.0f%%".format(state.memPct()) else "—",
+        )
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        GaugeRing(
+            label = "DISK",
+            pct = state.diskPct(),
+            center = if (state.diskTotal > 0) "%.0f%%".format(state.diskPct()) else "—",
+        )
+        if (state.hasGpu()) {
+            GaugeRing(
+                label = "GPU",
+                pct = state.gpuPct(),
+                center = if (state.gpuPct() > 0) "%.0f%%".format(state.gpuPct()) else "—",
+            )
+        } else {
+            Box(modifier = Modifier.size(GAUGE_SIZE_DP.dp))
         }
     }
 }
@@ -514,15 +559,16 @@ private fun SessionsPage(
         // the count exceeds visible area on the round face.
         filtered.forEach { item ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
-                    .background(
-                        color = sessionBadgeColor(item.stateName).copy(alpha = 0.25f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                    )
-                    .clickable { onSessionTap(item) }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .background(
+                            color = sessionBadgeColor(item.stateName).copy(alpha = 0.25f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        )
+                        .clickable { onSessionTap(item) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -610,162 +656,203 @@ private fun sessionBadgeColor(stateName: String): Color =
  * `/datawatch/transcript` and populates the transcript box for the
  * user to validate before tapping Send.
  */
+
+/**
+ * Voice-input UI state for [SessionDetailPopup]. Bundling the three
+ * fields keeps the popup signature under detekt's 8-param cap and
+ * keeps the call site readable.
+ */
+private data class VoiceUiState(
+    val transcript: String,
+    val recording: Boolean,
+    val transcribing: Boolean,
+)
+
 @Composable
 private fun SessionDetailPopup(
     session: WearSessionCountsViewModel.SessionItem,
-    transcript: String,
-    recording: Boolean,
-    transcribing: Boolean,
+    fullBody: String?,
+    voice: VoiceUiState,
     onRecord: () -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val transcript = voice.transcript
+    val recording = voice.recording
+    val transcribing = voice.transcribing
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xE6000000)),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color(0xE6000000)),
         contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(6.dp)
-                .background(
-                    MaterialTheme.colors.surface,
-                    androidx.compose.foundation.shape.CircleShape,
-                )
-                .border(
-                    1.5.dp,
-                    MaterialTheme.colors.primary.copy(alpha = 0.55f),
-                    androidx.compose.foundation.shape.CircleShape,
-                )
-                .padding(horizontal = 16.dp, vertical = 18.dp),
-        ) {
-            // Centre content stack — title, state, last-line, transcript.
-            Column(
-                modifier = Modifier
+            modifier =
+                Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 8.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Text(
-                        "✕",
-                        style = MaterialTheme.typography.caption1,
-                        color = MaterialTheme.colors.onSurfaceVariant,
-                        modifier = Modifier
-                            .clickable(onClick = onDismiss)
-                            .padding(4.dp),
+                    .padding(6.dp)
+                    .background(
+                        MaterialTheme.colors.surface,
+                        androidx.compose.foundation.shape.CircleShape,
                     )
-                }
-                Text(
-                    session.title,
-                    style = MaterialTheme.typography.title3,
-                    color = MaterialTheme.colors.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                )
-                Text(
-                    session.stateName.lowercase(),
-                    style = MaterialTheme.typography.caption2,
-                    color = sessionBadgeColor(session.stateName),
-                )
-                // v0.42.1 — prefer the full last-response body so the
-                // popup shows the same "view last response" content
-                // the phone surfaces in its LastResponseSheet. Falls
-                // back to lastLine when the session has no recorded
-                // response yet (or when an older phone build is the
-                // bridge and never published lastResponses).
-                val responseBody =
-                    session.lastResponse.takeIf { it.isNotBlank() }
-                        ?: session.lastLine
-                if (responseBody.isNotBlank()) {
-                    Text(
-                        responseBody,
-                        modifier = Modifier.padding(top = 6.dp),
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurface,
-                        maxLines = 12,
+                    .border(
+                        1.5.dp,
+                        MaterialTheme.colors.primary.copy(alpha = 0.55f),
+                        androidx.compose.foundation.shape.CircleShape,
                     )
-                }
-                when {
-                    recording ->
-                        Text(
-                            "Listening…",
-                            modifier = Modifier.padding(top = 6.dp),
-                            style = MaterialTheme.typography.caption1,
-                            color = Color(0xFFEF4444),
-                        )
-                    transcribing ->
-                        Text(
-                            "…transcribing",
-                            modifier = Modifier.padding(top = 6.dp),
-                            style = MaterialTheme.typography.caption1,
-                            color = MaterialTheme.colors.onSurfaceVariant,
-                        )
-                    transcript.isNotBlank() ->
-                        Text(
-                            "“$transcript”",
-                            modifier = Modifier.padding(top = 6.dp),
-                            style = MaterialTheme.typography.body2,
-                            color = MaterialTheme.colors.primary,
-                            maxLines = 3,
-                        )
-                }
-            }
-            // Mic button anchored to the right edge of the safe area.
-            // Stop icon when recording, mic glyph when idle. Tinting
-            // tells the user at a glance which state they're in.
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 0.dp),
-            ) {
-                Text(
-                    if (recording) "■" else "🎤",
-                    style = MaterialTheme.typography.title2,
-                    color =
-                        if (recording) Color(0xFFEF4444)
-                        else MaterialTheme.colors.primary,
-                    modifier = Modifier
-                        .background(
-                            (
-                                if (recording) Color(0xFFEF4444)
-                                else MaterialTheme.colors.primary
-                            ).copy(alpha = 0.18f),
-                            androidx.compose.foundation.shape.CircleShape,
-                        )
-                        .clickable(onClick = onRecord)
-                        .padding(10.dp),
-                )
-            }
-            // Send chip anchored to the left edge once a transcript
-            // is staged. Hidden during record / transcribe / no-text.
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+        ) {
+            SessionPopupCentre(
+                session = session,
+                fullBody = fullBody,
+                voice = voice,
+                onDismiss = onDismiss,
+            )
+            BoxScopeMicButton(recording = recording, onRecord = onRecord)
             if (transcript.isNotBlank() && !recording && !transcribing) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 0.dp),
-                ) {
-                    Text(
-                        "Send",
-                        style = MaterialTheme.typography.button,
-                        color = MaterialTheme.colors.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                            )
-                            .clickable(onClick = onConfirm)
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    )
-                }
+                BoxScopeSendChip(onConfirm = onConfirm)
             }
+        }
+    }
+}
+
+/**
+ * v0.42.9 — mic/stop affordance pinned to the right edge of the
+ * round popup safe area. Extracted so [SessionDetailPopup] stays
+ * under detekt's LongMethod cap.
+ */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.BoxScopeMicButton(
+    recording: Boolean,
+    onRecord: () -> Unit,
+) {
+    val tint = if (recording) Color(0xFFEF4444) else MaterialTheme.colors.primary
+    Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+        Text(
+            if (recording) "■" else "🎤",
+            style = MaterialTheme.typography.title2,
+            color = tint,
+            modifier =
+                Modifier
+                    .background(tint.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape)
+                    .clickable(onClick = onRecord)
+                    .padding(10.dp),
+        )
+    }
+}
+
+/**
+ * v0.42.9 — send chip pinned to the left edge of the popup safe
+ * area, only when a transcript has been staged.
+ */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.BoxScopeSendChip(onConfirm: () -> Unit) {
+    Box(modifier = Modifier.align(Alignment.CenterStart)) {
+        Text(
+            "Send",
+            style = MaterialTheme.typography.button,
+            color = MaterialTheme.colors.primary,
+            fontWeight = FontWeight.SemiBold,
+            modifier =
+                Modifier
+                    .background(
+                        MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    )
+                    .clickable(onClick = onConfirm)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/**
+ * v0.42.9 — extracted centre column of [SessionDetailPopup] so the
+ * outer composable stays under detekt's LongMethod cap. Renders
+ * dismiss button, title + state, the (possibly large) lastResponse
+ * body, and the recording / transcribing / staged-transcript
+ * status line.
+ */
+@Composable
+private fun SessionPopupCentre(
+    session: WearSessionCountsViewModel.SessionItem,
+    fullBody: String?,
+    voice: VoiceUiState,
+    onDismiss: () -> Unit,
+) {
+    val transcript = voice.transcript
+    val recording = voice.recording
+    val transcribing = voice.transcribing
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp)
+                .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            Text(
+                "✕",
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurfaceVariant,
+                modifier = Modifier.clickable(onClick = onDismiss).padding(4.dp),
+            )
+        }
+        Text(
+            session.title,
+            style = MaterialTheme.typography.title3,
+            color = MaterialTheme.colors.primary,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 2,
+        )
+        Text(
+            session.stateName.lowercase(),
+            style = MaterialTheme.typography.caption2,
+            color = sessionBadgeColor(session.stateName),
+        )
+        val responseBody = fullBody ?: session.lastLine
+        if (fullBody == null && session.lastLine.isBlank()) {
+            Text(
+                "Loading…",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
+        } else if (responseBody.isNotBlank()) {
+            Text(
+                responseBody,
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.onSurface,
+            )
+        }
+        when {
+            recording ->
+                Text(
+                    "Listening…",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.caption1,
+                    color = Color(0xFFEF4444),
+                )
+            transcribing ->
+                Text(
+                    "…transcribing",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                )
+            transcript.isNotBlank() ->
+                Text(
+                    "“$transcript”",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.primary,
+                    maxLines = 3,
+                )
         }
     }
 }
@@ -802,23 +889,25 @@ private fun PrdsPage(
         )
         state.prds.forEach { prd ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
-                    .background(
-                        prdStatusColor(prd.status).copy(alpha = 0.18f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                    )
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .background(
+                            prdStatusColor(prd.status).copy(alpha = 0.18f),
+                            androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        )
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     prd.title,
                     style = MaterialTheme.typography.caption1,
                     color = MaterialTheme.colors.onSurface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(end = 4.dp),
                     maxLines = 2,
                 )
                 if (prd.status.lowercase() == "needs_review" ||
@@ -826,17 +915,19 @@ private fun PrdsPage(
                 ) {
                     Text(
                         "✓",
-                        modifier = Modifier
-                            .clickable { onApprove(prd.id) }
-                            .padding(horizontal = 4.dp),
+                        modifier =
+                            Modifier
+                                .clickable { onApprove(prd.id) }
+                                .padding(horizontal = 4.dp),
                         style = MaterialTheme.typography.title3,
                         color = Color(0xFF22C55E),
                     )
                     Text(
                         "✕",
-                        modifier = Modifier
-                            .clickable { onReject(prd.id) }
-                            .padding(horizontal = 4.dp),
+                        modifier =
+                            Modifier
+                                .clickable { onReject(prd.id) }
+                                .padding(horizontal = 4.dp),
                         style = MaterialTheme.typography.title3,
                         color = Color(0xFFEF4444),
                     )
@@ -871,15 +962,16 @@ private fun ServersPage(
         state.profiles.forEach { (id, name) ->
             val isActive = id == state.pairedServer
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .background(
-                        color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                    )
-                    .clickable { onPick(id) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                        .background(
+                            color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                        )
+                        .clickable { onPick(id) }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -935,14 +1027,18 @@ private fun CountTile(
     val mod = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = mod
-            .background(
-                color =
-                    if (selected) color.copy(alpha = 0.2f)
-                    else Color.Transparent,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier =
+            mod
+                .background(
+                    color =
+                        if (selected) {
+                            color.copy(alpha = 0.2f)
+                        } else {
+                            Color.Transparent
+                        },
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             value.toString(),
@@ -953,8 +1049,11 @@ private fun CountTile(
             label,
             style = MaterialTheme.typography.caption3,
             color =
-                if (selected) color
-                else MaterialTheme.colors.onSurfaceVariant,
+                if (selected) {
+                    color
+                } else {
+                    MaterialTheme.colors.onSurfaceVariant
+                },
         )
     }
 }
@@ -1007,10 +1106,11 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 cpuLoad1 > 0 -> "%.1f%%".format(cpuLoad1)
                 else -> "—"
             }
-        public fun memText(): String =
-            if (memTotal > 0) "${fmt(memUsed)} / ${fmt(memTotal)}" else "—"
-        public fun diskText(): String =
-            if (diskTotal > 0) "${fmt(diskUsed)} / ${fmt(diskTotal)}" else "—"
+
+        public fun memText(): String = if (memTotal > 0) "${fmt(memUsed)} / ${fmt(memTotal)}" else "—"
+
+        public fun diskText(): String = if (diskTotal > 0) "${fmt(diskUsed)} / ${fmt(diskTotal)}" else "—"
+
         public fun uptimeText(): String = if (uptimeSeconds > 0) fmtUptime(uptimeSeconds) else "—"
 
         // Percentages used by the round-bezel gauge rings. 0..100 with
@@ -1025,11 +1125,15 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 cpuLoad1 in 0.0..100.0 -> cpuLoad1.toFloat()
                 else -> 0f
             }
+
         public fun memPct(): Float =
             if (memTotal > 0) ((memUsed.toDouble() / memTotal.toDouble()) * 100.0).toFloat() else 0f
+
         public fun diskPct(): Float =
             if (diskTotal > 0) ((diskUsed.toDouble() / diskTotal.toDouble()) * 100.0).toFloat() else 0f
+
         public fun gpuPct(): Float = gpuUtilPct.coerceIn(0.0, 100.0).toFloat()
+
         public fun hasGpu(): Boolean = gpuName.isNotBlank() || gpuUtilPct > 0 || gpuMemTotalMb > 0
     }
 
@@ -1039,11 +1143,6 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val backend: String,
         val stateName: String,
         val lastLine: String,
-        // v0.42.1 — full response body (multi-line, trimmed by phone
-        // to SESSION_LAST_RESPONSE_MAX). Empty when the session has
-        // no recorded response yet — the popup falls back to lastLine
-        // in that case.
-        val lastResponse: String = "",
     )
 
     public data class PrdItem(
@@ -1142,13 +1241,14 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val ids = map.getStringArray("ids") ?: emptyArray()
         val titles = map.getStringArray("titles") ?: emptyArray()
         val statuses = map.getStringArray("statuses") ?: emptyArray()
-        val items = ids.indices.map { i ->
-            PrdItem(
-                id = ids[i],
-                title = titles.getOrNull(i).orEmpty(),
-                status = statuses.getOrNull(i).orEmpty(),
-            )
-        }
+        val items =
+            ids.indices.map { i ->
+                PrdItem(
+                    id = ids[i],
+                    title = titles.getOrNull(i).orEmpty(),
+                    status = statuses.getOrNull(i).orEmpty(),
+                )
+            }
         _state.value = _state.value.copy(prds = items)
     }
 
@@ -1158,25 +1258,17 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val backends = map.getStringArray("backends") ?: emptyArray()
         val states = map.getStringArray("states") ?: emptyArray()
         val lastLines = map.getStringArray("lastLines") ?: emptyArray()
-        // v0.42.1 — phone publishes the full last-response body so the
-        // tap-popup can show "view last response" content. Older
-        // phones without this field fall through to an empty array
-        // and the popup falls back to lastLine.
-        val lastResponses = map.getStringArray("lastResponses") ?: emptyArray()
-        val items = ids.indices.map { i ->
-            SessionItem(
-                id = ids[i],
-                title = titles.getOrNull(i).orEmpty(),
-                backend = backends.getOrNull(i).orEmpty(),
-                stateName = states.getOrNull(i).orEmpty(),
-                lastLine = lastLines.getOrNull(i).orEmpty(),
-                lastResponse = lastResponses.getOrNull(i).orEmpty(),
-            )
-        }
-        Log.d(
-            "WearMain",
-            "applySessions n=${items.size} lr=${items.take(3).joinToString { "${it.id}/${it.lastResponse.length}" }}",
-        )
+        val items =
+            ids.indices.map { i ->
+                SessionItem(
+                    id = ids[i],
+                    title = titles.getOrNull(i).orEmpty(),
+                    backend = backends.getOrNull(i).orEmpty(),
+                    stateName = states.getOrNull(i).orEmpty(),
+                    lastLine = lastLines.getOrNull(i).orEmpty(),
+                )
+            }
+        Log.d("WearMain", "applySessions n=${items.size}")
         _state.value = _state.value.copy(sessions = items)
     }
 
@@ -1184,7 +1276,10 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
      * Send a voice-reply to the phone for forwarding to the active
      * server's send_input hub. Payload format is "sessionId\ntext".
      */
-    public fun sendReply(sessionId: String, text: String) {
+    public fun sendReply(
+        sessionId: String,
+        text: String,
+    ) {
         if (sessionId.isBlank() || text.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -1231,13 +1326,20 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
      * `reject`. Best-effort; failure is silent (the watch UI just
      * won't see the PRD disappear from needs_review on next refresh).
      */
-    public fun sendPrdAction(prdId: String, action: String, reason: String = "") {
+    public fun sendPrdAction(
+        prdId: String,
+        action: String,
+        reason: String = "",
+    ) {
         if (prdId.isBlank() || action.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val body =
-                    if (reason.isNotEmpty()) "$prdId\n$action\n$reason"
-                    else "$prdId\n$action"
+                    if (reason.isNotEmpty()) {
+                        "$prdId\n$action\n$reason"
+                    } else {
+                        "$prdId\n$action"
+                    }
                 val payload = body.toByteArray(Charsets.UTF_8)
                 val nodes: List<Node> = nodeClient.connectedNodes.await()
                 nodes.forEach { node ->
@@ -1254,7 +1356,10 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
      * newline so the audio body isn't UTF-8 decoded. Reply lands on
      * [TRANSCRIPT_PATH] handled by [WearMainActivity]'s listener.
      */
-    public fun sendAudio(sessionId: String, audio: ByteArray) {
+    public fun sendAudio(
+        sessionId: String,
+        audio: ByteArray,
+    ) {
         if (sessionId.isBlank() || audio.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -1272,14 +1377,15 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     private fun applyCounts(map: DataMap) {
-        _state.value = _state.value.copy(
-            loading = false,
-            pairedServer = map.getString("serverId", ""),
-            serverName = map.getString("serverName", ""),
-            running = map.getInt("running", 0),
-            waiting = map.getInt("waiting", 0),
-            total = map.getInt("total", 0),
-        )
+        _state.value =
+            _state.value.copy(
+                loading = false,
+                pairedServer = map.getString("serverId", ""),
+                serverName = map.getString("serverName", ""),
+                running = map.getInt("running", 0),
+                waiting = map.getInt("waiting", 0),
+                total = map.getInt("total", 0),
+            )
     }
 
     private fun applyProfiles(map: DataMap) {
@@ -1287,27 +1393,29 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val names = map.getStringArray("names") ?: emptyArray()
         val pairs = ids.zip(names).map { (id, name) -> id to name }
         val activeId = map.getString("activeId", _state.value.pairedServer)
-        _state.value = _state.value.copy(
-            profiles = pairs,
-            pairedServer = activeId,
-        )
+        _state.value =
+            _state.value.copy(
+                profiles = pairs,
+                pairedServer = activeId,
+            )
     }
 
     private fun applyStats(map: DataMap) {
-        _state.value = _state.value.copy(
-            cpuLoad1 = map.getDouble("cpuLoad1", 0.0),
-            cpuCores = map.getInt("cpuCores", 0),
-            memUsed = map.getLong("memUsed", 0),
-            memTotal = map.getLong("memTotal", 0),
-            diskUsed = map.getLong("diskUsed", 0),
-            diskTotal = map.getLong("diskTotal", 0),
-            uptimeSeconds = map.getLong("uptimeSeconds", 0),
-            gpuUtilPct = map.getDouble("gpuUtilPct", 0.0),
-            gpuTempC = map.getDouble("gpuTempC", 0.0),
-            gpuMemUsedMb = map.getLong("gpuMemUsedMb", 0L),
-            gpuMemTotalMb = map.getLong("gpuMemTotalMb", 0L),
-            gpuName = map.getString("gpuName", ""),
-        )
+        _state.value =
+            _state.value.copy(
+                cpuLoad1 = map.getDouble("cpuLoad1", 0.0),
+                cpuCores = map.getInt("cpuCores", 0),
+                memUsed = map.getLong("memUsed", 0),
+                memTotal = map.getLong("memTotal", 0),
+                diskUsed = map.getLong("diskUsed", 0),
+                diskTotal = map.getLong("diskTotal", 0),
+                uptimeSeconds = map.getLong("uptimeSeconds", 0),
+                gpuUtilPct = map.getDouble("gpuUtilPct", 0.0),
+                gpuTempC = map.getDouble("gpuTempC", 0.0),
+                gpuMemUsedMb = map.getLong("gpuMemUsedMb", 0L),
+                gpuMemTotalMb = map.getLong("gpuMemTotalMb", 0L),
+                gpuName = map.getString("gpuName", ""),
+            )
     }
 
     public companion object {
@@ -1322,6 +1430,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val AUDIO_PATH: String = "/datawatch/audio"
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
+        public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
     }
 }
 

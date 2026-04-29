@@ -8,9 +8,9 @@ import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.transport.AlertsView
-import com.dmzs.datawatchclient.transport.LogsView
 import com.dmzs.datawatchclient.transport.DeviceKind
 import com.dmzs.datawatchclient.transport.DevicePlatform
+import com.dmzs.datawatchclient.transport.LogsView
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.AlertsListResponseDto
@@ -45,9 +45,9 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.patch
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -193,24 +193,21 @@ public class RestTransport(
             }.body()
         }
 
-    override suspend fun observerStats():
-        Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto> =
+    override suspend fun observerStats(): Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto> =
         request {
             client.get("${profile.baseUrl}/api/observer/stats") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
 
-    override suspend fun observerPeers():
-        Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersDto> =
+    override suspend fun observerPeers(): Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersDto> =
         request {
             client.get("${profile.baseUrl}/api/observer/peers") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
 
-    override suspend fun listPlugins():
-        Result<com.dmzs.datawatchclient.transport.dto.PluginsDto> =
+    override suspend fun listPlugins(): Result<com.dmzs.datawatchclient.transport.dto.PluginsDto> =
         request {
             client.get("${profile.baseUrl}/api/plugins") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
@@ -500,9 +497,7 @@ public class RestTransport(
             }.toMap()
         }
 
-    override suspend fun writeConfig(
-        raw: kotlinx.serialization.json.JsonObject,
-    ): Result<Unit> =
+    override suspend fun writeConfig(raw: kotlinx.serialization.json.JsonObject): Result<Unit> =
         request {
             client.put("${profile.baseUrl}/api/config") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
@@ -580,9 +575,7 @@ public class RestTransport(
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
-    override suspend fun memorySearch(
-        query: String,
-    ): Result<List<kotlinx.serialization.json.JsonObject>> =
+    override suspend fun memorySearch(query: String): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val arr: kotlinx.serialization.json.JsonArray =
                 client.get("${profile.baseUrl}/api/memory/search") {
@@ -597,7 +590,14 @@ public class RestTransport(
             client.post("${profile.baseUrl}/api/memory/delete") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(kotlinx.serialization.json.buildJsonObject { put("id", kotlinx.serialization.json.JsonPrimitive(id)) })
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put(
+                            "id",
+                            kotlinx.serialization.json.JsonPrimitive(id),
+                        )
+                    },
+                )
             }
         }
 
@@ -608,7 +608,10 @@ public class RestTransport(
             }.body<ByteArray>()
         }
 
-    override suspend fun memoryPin(id: Long, pinned: Boolean): Result<Unit> =
+    override suspend fun memoryPin(
+        id: Long,
+        pinned: Boolean,
+    ): Result<Unit> =
         request {
             client.post("${profile.baseUrl}/api/memory/pin") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
@@ -693,17 +696,14 @@ public class RestTransport(
             }.body<String>()
         }
 
-    override suspend fun listPrds():
-        Result<com.dmzs.datawatchclient.transport.dto.PrdListDto> =
+    override suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto> =
         request {
             client.get("${profile.baseUrl}/api/autonomous/prds") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
 
-    override suspend fun createPrd(
-        request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto,
-    ): Result<String> {
+    override suspend fun createPrd(request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto): Result<String> {
         val req = request
         return request {
             val res: com.dmzs.datawatchclient.transport.dto.NewPrdResponseDto =
@@ -1004,9 +1004,7 @@ public class RestTransport(
             }.body()
         }
 
-    override suspend fun listKindProfiles(
-        kind: String,
-    ): Result<List<kotlinx.serialization.json.JsonObject>> =
+    override suspend fun listKindProfiles(kind: String): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val raw: kotlinx.serialization.json.JsonObject =
                 client.get("${profile.baseUrl}/api/profiles/${kind}s") {

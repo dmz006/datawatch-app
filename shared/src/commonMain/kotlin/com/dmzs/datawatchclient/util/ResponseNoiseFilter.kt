@@ -144,15 +144,15 @@ public object ResponseNoiseFilter {
      * v5.26.31. Add patterns sparingly — every entry here drops
      * matching lines unconditionally.
      */
-    internal fun matchesNoisePattern(s: String): Boolean =
-        NOISE_PATTERNS.any { it.containsMatchIn(s) }
+    internal fun matchesNoisePattern(s: String): Boolean = NOISE_PATTERNS.any { it.containsMatchIn(s) }
 
     // Box-drawing block: U+2500..U+257F, plus a few common ASCII
     // border chars often paired with them.
-    private val BOX_DRAWING: Set<Char> = buildSet {
-        for (cp in 0x2500..0x257F) add(cp.toChar())
-        addAll(setOf('|', '-', '=', '+', '─', '│', '╭', '╮', '╯', '╰'))
-    }
+    private val BOX_DRAWING: Set<Char> =
+        buildSet {
+            for (cp in 0x2500..0x257F) add(cp.toChar())
+            addAll(setOf('|', '-', '=', '+', '─', '│', '╭', '╮', '╯', '╰'))
+        }
 
     // Subset of the Braille spinner glyphs used by ora / cli-spinners.
     private val SPINNER_GLYPHS: Set<Char> =

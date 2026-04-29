@@ -33,17 +33,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,7 +54,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -201,170 +201,170 @@ public fun SettingsScreen(
                 colorScheme = MaterialTheme.colorScheme,
                 typography = settingsTypography,
             ) {
-            // LocalTextStyle drives OutlinedTextField / OutlinedButton
-            // default text rendering — without overriding it those
-            // widgets keep the outer 16sp bodyLarge even inside our
-            // shrunken MaterialTheme. Providing a 13sp default here
-            // lines up every input to PWA's `.form-input` density.
-            CompositionLocalProvider(
-                LocalTextStyle provides TextStyle(fontSize = 13.sp),
-            ) {
-            Column(
-                modifier =
-                    Modifier
-                        .verticalScroll(rememberScrollState())
-                        .fillMaxWidth(),
-            ) {
-                // Restart-needed banner — visible on every Settings tab
-                // when `server.auto_restart_on_config` is false.
-                // ConfigFieldsPanel auto-saves on every change, and the
-                // server writes to config.yaml synchronously, but many
-                // fields (TLS, bind interface, backend configs, etc.)
-                // only take effect on daemon restart. With auto-restart
-                // off the user has no signal that their save hasn't yet
-                // activated — hence this always-visible affordance.
-                // User-flagged 2026-04-24: "make sure settings tab saves
-                // changes and restarts as needed and settings actually
-                // work."
-                RestartNeededBanner(activeProfile)
+                // LocalTextStyle drives OutlinedTextField / OutlinedButton
+                // default text rendering — without overriding it those
+                // widgets keep the outer 16sp bodyLarge even inside our
+                // shrunken MaterialTheme. Providing a 13sp default here
+                // lines up every input to PWA's `.form-input` density.
+                CompositionLocalProvider(
+                    LocalTextStyle provides TextStyle(fontSize = 13.sp),
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .verticalScroll(rememberScrollState())
+                                .fillMaxWidth(),
+                    ) {
+                        // Restart-needed banner — visible on every Settings tab
+                        // when `server.auto_restart_on_config` is false.
+                        // ConfigFieldsPanel auto-saves on every change, and the
+                        // server writes to config.yaml synchronously, but many
+                        // fields (TLS, bind interface, backend configs, etc.)
+                        // only take effect on daemon restart. With auto-restart
+                        // off the user has no signal that their save hasn't yet
+                        // activated — hence this always-visible affordance.
+                        // User-flagged 2026-04-24: "make sure settings tab saves
+                        // changes and restarts as needed and settings actually
+                        // work."
+                        RestartNeededBanner(activeProfile)
 
-                when (activeTab) {
-                    SettingsTab.Monitor -> {
-                        // v0.36.0 federated monitoring suite. Cards
-                        // self-hide when their backing endpoint
-                        // returns nothing useful (older daemons,
-                        // single-node setups), so the Monitor tab
-                        // stays readable on minimal deployments and
-                        // grows on richer ones.
-                        com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                        com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
-                        com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
-                        com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
-                        com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
-                        com.dmzs.datawatchclient.ui.memory.MemoryCard()
-                        com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
-                        com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                        com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                        when (activeTab) {
+                            SettingsTab.Monitor -> {
+                                // v0.36.0 federated monitoring suite. Cards
+                                // self-hide when their backing endpoint
+                                // returns nothing useful (older daemons,
+                                // single-node setups), so the Monitor tab
+                                // stays readable on minimal deployments and
+                                // grows on richer ones.
+                                com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
+                                com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
+                                com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
+                                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
+                                com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
+                                com.dmzs.datawatchclient.ui.memory.MemoryCard()
+                                com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
+                                com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
+                                com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                            }
+                            SettingsTab.General -> {
+                                // v0.42.6 — General tab now mirrors PWA's
+                                // GENERAL_CONFIG_FIELDS array order verbatim
+                                // (Datawatch → Auto-Update → Session → Pipelines
+                                // → Autonomous → Orchestrator → Plugins →
+                                // Whisper), then the explicit cards: Project
+                                // Profiles → Cluster Profiles → Container
+                                // Workers → Notifications. RTK lives in the
+                                // LLM tab now (PWA's LLM_CONFIG_FIELDS) — the
+                                // duplicate gc_rtk panel was a mobile-only
+                                // artifact and is gone.
+                                SecurityCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.AutoUpdate,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
+                                )
+                                com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
+                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                                    kind = "project",
+                                    title = "Project profiles",
+                                )
+                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                                    kind = "cluster",
+                                    title = "Cluster profiles",
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
+                                )
+                                com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
+                            }
+                            SettingsTab.Comms -> {
+                                // Matches PWA `data-group="comms"` order:
+                                // Authentication → Servers → cc_* → Proxy →
+                                // Communication Configuration (channels).
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.CommsAuth,
+                                )
+                                ServersCard(
+                                    profiles = profiles,
+                                    onAddServer = onAddServer,
+                                    onEditServer = onEditServer,
+                                    onDelete = { profile ->
+                                        GlobalScope.launch(Dispatchers.IO) {
+                                            if (profile.bearerTokenRef.isNotBlank()) {
+                                                ServiceLocator.tokenVault.remove(profile.bearerTokenRef)
+                                            }
+                                            ServiceLocator.profileRepository.delete(profile.id)
+                                        }
+                                    },
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebServer,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.McpServer,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
+                                )
+                                com.dmzs.datawatchclient.ui.channels.ChannelsCard()
+                                com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
+                                com.dmzs.datawatchclient.ui.cert.CertInstallCard()
+                            }
+                            SettingsTab.Llm -> {
+                                // Matches PWA `data-group="llm"`: LLM
+                                // Configuration → lc_* (Memory, LlmRtk) →
+                                // Detection Filters → Saved Commands →
+                                // Output Filters.
+                                //
+                                // v0.33.13 (B22): LlmConfigCard at the top
+                                // shows each registered backend + "(default)"
+                                // badge, matching PWA's first card.
+                                com.dmzs.datawatchclient.ui.channels.LlmConfigCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                                )
+                                com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
+                                com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
+                                com.dmzs.datawatchclient.ui.filters.FiltersCard()
+                            }
+                            SettingsTab.About -> {
+                                // Daemon admin cluster — About carries the
+                                // actions that target daemon meta / process
+                                // lifecycle. v0.35.7 strips the raw
+                                // `ConfigViewerCard` to align with PWA About
+                                // (which has none); Settings → General config
+                                // panels already surface every actionable key.
+                                AboutCard(activeProfile = activeProfile)
+                                com.dmzs.datawatchclient.ui.about.ApiLinksCard()
+                                com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
+                                com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
+                                com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
+                            }
+                        }
                     }
-                    SettingsTab.General -> {
-                        // v0.42.6 — General tab now mirrors PWA's
-                        // GENERAL_CONFIG_FIELDS array order verbatim
-                        // (Datawatch → Auto-Update → Session → Pipelines
-                        // → Autonomous → Orchestrator → Plugins →
-                        // Whisper), then the explicit cards: Project
-                        // Profiles → Cluster Profiles → Container
-                        // Workers → Notifications. RTK lives in the
-                        // LLM tab now (PWA's LLM_CONFIG_FIELDS) — the
-                        // duplicate gc_rtk panel was a mobile-only
-                        // artifact and is gone.
-                        SecurityCard()
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.AutoUpdate,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
-                        )
-                        com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
-                        com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
-                            kind = "project",
-                            title = "Project profiles",
-                        )
-                        com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
-                            kind = "cluster",
-                            title = "Cluster profiles",
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
-                        )
-                        com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
-                    }
-                    SettingsTab.Comms -> {
-                        // Matches PWA `data-group="comms"` order:
-                        // Authentication → Servers → cc_* → Proxy →
-                        // Communication Configuration (channels).
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.CommsAuth,
-                        )
-                        ServersCard(
-                            profiles = profiles,
-                            onAddServer = onAddServer,
-                            onEditServer = onEditServer,
-                            onDelete = { profile ->
-                                GlobalScope.launch(Dispatchers.IO) {
-                                    if (profile.bearerTokenRef.isNotBlank()) {
-                                        ServiceLocator.tokenVault.remove(profile.bearerTokenRef)
-                                    }
-                                    ServiceLocator.profileRepository.delete(profile.id)
-                                }
-                            },
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebServer,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.McpServer,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
-                        )
-                        com.dmzs.datawatchclient.ui.channels.ChannelsCard()
-                        com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
-                        com.dmzs.datawatchclient.ui.cert.CertInstallCard()
-                    }
-                    SettingsTab.Llm -> {
-                        // Matches PWA `data-group="llm"`: LLM
-                        // Configuration → lc_* (Memory, LlmRtk) →
-                        // Detection Filters → Saved Commands →
-                        // Output Filters.
-                        //
-                        // v0.33.13 (B22): LlmConfigCard at the top
-                        // shows each registered backend + "(default)"
-                        // badge, matching PWA's first card.
-                        com.dmzs.datawatchclient.ui.channels.LlmConfigCard()
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
-                        )
-                        com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                            com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
-                        )
-                        com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
-                        com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
-                        com.dmzs.datawatchclient.ui.filters.FiltersCard()
-                    }
-                    SettingsTab.About -> {
-                        // Daemon admin cluster — About carries the
-                        // actions that target daemon meta / process
-                        // lifecycle. v0.35.7 strips the raw
-                        // `ConfigViewerCard` to align with PWA About
-                        // (which has none); Settings → General config
-                        // panels already surface every actionable key.
-                        AboutCard(activeProfile = activeProfile)
-                        com.dmzs.datawatchclient.ui.about.ApiLinksCard()
-                        com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
-                        com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
-                        com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
-                    }
-                }
-            }
-            } // end LocalTextStyle provider
+                } // end LocalTextStyle provider
             } // end settings-scale MaterialTheme
         }
     }
@@ -1011,10 +1011,11 @@ private fun RestartNeededBanner(profile: ServerProfile?) {
                         }
                     },
                     enabled = !restarting,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 12.dp,
-                        vertical = 4.dp,
-                    ),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 12.dp,
+                            vertical = 4.dp,
+                        ),
                 ) {
                     Text(
                         if (restarting) "…" else "Restart now",

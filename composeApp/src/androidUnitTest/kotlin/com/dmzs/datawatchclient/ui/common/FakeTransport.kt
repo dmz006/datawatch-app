@@ -16,16 +16,16 @@ internal fun fakeTransport(): TransportClient = mockk(relaxed = true)
 /** Convenience: build a [ProfileResolver] backed by a relaxed mockk transport. */
 internal fun fakeResolver(
     transport: TransportClient = fakeTransport(),
-    profile: ServerProfile = ServerProfile(
-        id = "p1",
-        displayName = "Test",
-        baseUrl = "https://localhost:8443",
-        bearerTokenRef = "",
-        reachabilityProfileId = "p1",
-        createdTs = 0,
-    ),
-): Pair<TransportClient, ProfileResolver> =
-    transport to ProfileResolver { profile to transport }
+    profile: ServerProfile =
+        ServerProfile(
+            id = "p1",
+            displayName = "Test",
+            baseUrl = "https://localhost:8443",
+            bearerTokenRef = "",
+            reachabilityProfileId = "p1",
+            createdTs = 0,
+        ),
+): Pair<TransportClient, ProfileResolver> = transport to ProfileResolver { profile to transport }
 
 /** Build a resolver that always returns null (no enabled profile). */
 internal val nullResolver: ProfileResolver = ProfileResolver { null }
