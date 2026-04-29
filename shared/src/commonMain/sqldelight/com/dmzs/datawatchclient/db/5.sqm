@@ -1,0 +1,9 @@
+-- Migration 5 → 6 (Container Workers: agent_id provenance).
+--
+-- PWA v5.26.58 surfaces a purple ⬡ chip on session rows when the
+-- session was spawned by a worker agent (Container Workers feature).
+-- Mobile mirrors that — render the pill when [Session.agentId] is
+-- non-null. Existing sessions in the cache get NULL on upgrade and
+-- back-fill on the next /api/sessions refresh.
+
+ALTER TABLE session ADD COLUMN agent_id TEXT;

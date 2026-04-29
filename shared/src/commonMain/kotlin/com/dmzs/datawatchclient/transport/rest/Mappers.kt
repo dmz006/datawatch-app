@@ -40,6 +40,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         backend = llmBackend,
         outputMode = outputMode,
         inputMode = inputMode,
+        agentId = agentId,
     )
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert {

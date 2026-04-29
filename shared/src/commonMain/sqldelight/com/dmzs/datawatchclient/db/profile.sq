@@ -34,7 +34,8 @@ CREATE TABLE session (
     prompt_context      TEXT,
     last_response       TEXT,
     output_mode         TEXT,
-    input_mode          TEXT
+    input_mode          TEXT,
+    agent_id            TEXT
 );
 CREATE INDEX session_by_activity ON session(server_profile_id, last_activity_ts DESC);
 

@@ -64,6 +64,7 @@ public class SessionRepository(
             last_response = session.lastResponse,
             output_mode = session.outputMode,
             input_mode = session.inputMode,
+            agent_id = session.agentId,
         )
     }
 
@@ -84,5 +85,6 @@ public class SessionRepository(
             lastResponse = last_response,
             outputMode = output_mode,
             inputMode = input_mode,
+            agentId = agent_id,
         )
 }

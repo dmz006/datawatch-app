@@ -30,8 +30,8 @@ selectSessionById:
 SELECT * FROM session WHERE id = ?;
 
 upsertSession:
-INSERT OR REPLACE INTO session(id, server_profile_id, hostname_prefix, state, task_summary, created_ts, last_activity_ts, muted, last_prompt, name, backend, prompt_context, last_response, output_mode, input_mode)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO session(id, server_profile_id, hostname_prefix, state, task_summary, created_ts, last_activity_ts, muted, last_prompt, name, backend, prompt_context, last_response, output_mode, input_mode, agent_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteSessionsForProfile:
 DELETE FROM session WHERE server_profile_id = ?;

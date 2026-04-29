@@ -60,6 +60,12 @@ public data class Session(
      * is read-only, hide composer). Null = assume `"tmux"`.
      */
     val inputMode: String? = null,
+    /**
+     * Container Workers: id of the worker agent that spawned this session
+     * (PWA v5.26.58). Null on user-spawned sessions; non-null sessions
+     * surface a purple ⬡ chip on the row for provenance.
+     */
+    val agentId: String? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =
