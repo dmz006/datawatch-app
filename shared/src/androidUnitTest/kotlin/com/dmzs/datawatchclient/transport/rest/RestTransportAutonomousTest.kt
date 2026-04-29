@@ -373,8 +373,9 @@ class RestTransportAutonomousTest {
             val channels = res.getOrThrow()
             assertEquals(2, channels.size)
             assertEquals("signal", (channels[0]["id"] as? kotlinx.serialization.json.JsonPrimitive)?.content)
-            assertEquals("GET", server.takeRequest().method)
-            assertEquals("/api/channels", server.takeRequest().path)
+            val sent = server.takeRequest()
+            assertEquals("GET", sent.method)
+            assertEquals("/api/channels", sent.path)
         }
 
     @Test
