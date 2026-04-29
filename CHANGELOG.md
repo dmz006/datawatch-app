@@ -8,6 +8,37 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.7] — 2026-04-28 (closes 72h-audit gaps #2, #3, #5)
+
+### Added
+
+- **Test Whisper interactive card** — record/transcribe flow under
+  the Whisper config panel on Settings → General. Tap 🎤 to start,
+  ■ to stop; audio ships to `/api/voice/transcribe` against the
+  active server, transcript renders inline with round-trip ms.
+  Replaces the silent-WAV health check (which only proved the
+  endpoint responded). PWA v5.26.56 parity, gap #3 (issue #24).
+- **Memory schema_version probe** — new "Check" button on the
+  Mempalace card. Hits `/api/memory/stats` and surfaces the
+  reported `schema_version`, falling back to "(not reported by
+  this backend)" when the active backend doesn't expose it. PWA
+  v5.27.0 parity, gap #5 (issue #26).
+
+### Fixed
+
+- **Bulk WS `sessions` frames now nudge the active session detail
+  view to refresh.** Previously the bulk frame was unconditionally
+  dropped (`emptyList()` in `EventMapper`), so daemon state
+  transitions delivered ONLY via the periodic broadcast (e.g.,
+  waiting_input → running) left the input-required banner stale
+  until the user exited and re-entered the session. The mapper
+  now scans the bulk payload for the active session's id and
+  emits a synthetic `SessionEvent.StateChange` when the state
+  flips — `SessionDetailViewModel.startStream` already reacts to
+  StateChange by calling `refreshFromServer`. De-duped per
+  session so unchanged states don't spam REST. PWA v5.26.49
+  parity, gap #2 (issue #25).
+
 ## [0.42.6] — 2026-04-28 (Container Workers ⬡ pill + cfg.Agents settings + Settings reorder + auto-restart banner cleanup)
 
 ### Changed
