@@ -350,21 +350,30 @@ public fun SessionDetailScreen(
                     responseOpen = true
                 },
             )
-            // PWA-style output-surface tabs: tmux (terminal) / chat.
-            androidx.compose.material3.TabRow(
-                selectedTabIndex = if (chatMode) 1 else 0,
-                modifier = Modifier.fillMaxWidth(),
+            // v0.42.0 — PWA-style compact tabs: tmux/channel pill
+            // buttons (width of the label) on the left, font + Fit +
+            // Scroll buttons inline on the right. Replaces the
+            // full-width Material TabRow because the previous layout
+            // wasted a vertical strip of phone real estate and split
+            // the controls onto a separate row from the mode tabs —
+            // the PWA carries them on the same line.
+            val terminalController = rememberTerminalController()
+            val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                androidx.compose.material3.Tab(
-                    selected = !chatMode,
-                    onClick = { chatMode = false },
-                    text = { Text("tmux") },
-                )
-                androidx.compose.material3.Tab(
-                    selected = chatMode,
-                    onClick = { chatMode = true },
-                    text = { Text("channel") },
-                )
+                SessionModeTab(label = "tmux", selected = !chatMode, onClick = { chatMode = false })
+                SessionModeTab(label = "channel", selected = chatMode, onClick = { chatMode = true })
+                Spacer(Modifier.weight(1f))
+                val showToolbar = !chatMode && state.session?.isChatMode != true
+                if (showToolbar) {
+                    TerminalToolbarControls(toolbarState)
+                }
             }
             if (responseOpen) {
                 LastResponseSheet(
@@ -425,19 +434,19 @@ public fun SessionDetailScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             } else {
-                val terminalController = rememberTerminalController()
-                // v0.35.7 — toolbar always renders (per
-                // dmz006/datawatch-app#8 + PWA v5.1.0). The Aa toggle
-                // added in v0.35.6 was reverted because the row reads
-                // cleanly at every viewport size and the toggle just
-                // got in the way.
-                TerminalToolbar(controller = terminalController, sessionId = sessionId)
+                // v0.42.0 — controller + toolbar state are hoisted
+                // above the tabs row so the font / scroll buttons
+                // render inline next to the tmux/channel pills.
+                // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
+                // appears directly under the terminal viewport so
+                // the keys land where the user is reading.
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     controller = terminalController,
                 )
+                TerminalScrollModeStrip(toolbarState)
                 // Backend-specific minimum cols/rows. Matches parent
                 // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
                 // Without this, claude's TUI wraps on phone widths.
@@ -1978,3 +1987,41 @@ private fun Modifier.headerRenameFocusChain(
         .onFocusChanged { focusState ->
             if (!focusState.isFocused) onBlurCommit()
         }
+
+/**
+ * Compact pill-button used for the tmux / channel mode toggle in the
+ * session header (v0.42.0). Replaces the previous full-width
+ * Material TabRow so the buttons take only the width of their label
+ * and leave room for the inline font / scroll toolbar to the right —
+ * matches PWA's session-info-bar layout.
+ */
+@Composable
+private fun SessionModeTab(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val dw = LocalDatawatchColors.current
+    Surface(
+        shape = RoundedCornerShape(50),
+        color =
+            if (selected) {
+                dw.accent2.copy(alpha = 0.15f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(
+            label,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            fontSize = 12.sp,
+            color =
+                if (selected) {
+                    dw.accent2
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+        )
+    }
+}
