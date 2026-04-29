@@ -9,23 +9,7 @@ architecture).
 
 ---
 ## Open - Not Assessed
-- there are open issues for parity with PWA, make backlog
-- there are changes to UI from testing that need to be updated
--- in a session
---- the PWA has resiliaence on the server connection that datawatch-app needs
---- tailscale may not be connected when session is not active and screen is locked. datawatch-app should be aware of this and not overload the system if connection is not possible.  Retry when sessoin becomes active again
---- the status indicator never goes red; but it should show the active status of the connection
---- when going into a session or unlocking the session it should refresh to get the current state like going in from session list
---- if unlocking screen it should test, show status and reconnect automatically to server and if session is being viewed it shoudl refresh
---- the session window does not show live status and appears to be lagged or delayed. PWA is more responsive and shows animated processing indications that datawatch-app isn't
---- delete shouldn't be an option unless the sesion is stopped then should show restart & delete
--- layout changes inside viewing a session
---- tmux and channel should be tighter and left justified like PWA with font size & scroll button to the right of them
---- the badget shoudl be above the tabs and the latest response should be to the left of the saved commands on tmux bar at bottom.  
---- the saved commands (quick commands) have an icon under the microphone, so the list above the input isn't needed; however the line that has the quick commands should have the last response button, followed by the saved response/quick commands icon followed by the the arrows (up down left right)
---- the quick commands icon can be removed from under the microphone since it is now in the line above
---- the order of the input box should be: input box, send message, scheduled message, microphone/record - matching PWA
---- the last response icon inside a sessoin is not the same icon as used elsewhere make sure icons are all the same
+*(cleared 2026-04-29 — items converted to B52–B62 below)*
 
 ### P0 closed in v0.34.6
 - ✅ **/api/sessions/kill 404** — mobile sent `session_id` key + short id;
@@ -86,6 +70,24 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B49 | Settings → Operations: subsystem hot-reload card | `SubsystemReloadCard` added (POST /api/reload?subsystem=config|filters|memory). Shows applied[] + requires_restart[] from response. Done (v0.45.0). Tracked at datawatch-app#28. |
 | B50 | Update check: use GET /api/update/check (404-fallback to POST) | `checkUpdate()` added to TransportClient + RestTransport. `UpdateDaemonCard` now calls GET for check, POST only for install. Older daemons fallback transparently. Done (v0.45.0). Tracked at datawatch-app#30. |
 | B51 | Quick commands: add Enter key | `\n` → "Enter" added to system commands in `QuickCommandsSheet`. Hard-coded pending datawatch#28 (server-side quick commands). Tracked at datawatch-app#31. Done (v0.45.0). |
+| B52 | PRD: `PrdDto` missing `spec` field — EditPrdDialog starts blank | `spec: String? = null` added to `PrdDto`. `EditPrdDialog` now pre-populates the spec text area from `prd.spec`. Done (v0.45.0). |
+| B53 | PRD: AutonomousScreen filter chips missing statuses | Added `revisions_asked`, `approved`, `decomposing`, `cancelled` chips to the filter row — all 8 PRD statuses now reachable. Done (v0.45.0). |
+
+### Sprint II — session layout + connection resilience (v0.46.x)
+
+Items from live-device testing 2026-04-29. Layout changes bring the phone session view to PWA visual parity; connection resilience items prevent silent stalls when Tailscale is not reachable.
+
+| ID | Title | Notes |
+|----|-------|-------|
+| B54 | Session detail: input bar order doesn't match PWA | PWA order: input box → send → scheduled → mic. Android currently has mic before scheduled. Reorder composables in `ReplyComposer`. |
+| B55 | Session detail: quick-actions row layout — last-response + quick-cmd icon + arrows | Row should be: last-response button → saved-commands icon → ←→ arrows (↑↓ already removed in B46). Quick-commands icon under mic can be removed since row has it. |
+| B56 | Session detail: status badge above tabs; tabs tighter + left-justified | Badge (running/complete/etc.) should sit above the tmux/channel tab row, not inside SessionInfoBar. Tabs should be left-aligned with font/scroll buttons at the far right, matching PWA layout. |
+| B57 | Session detail: delete only shown when stopped; show restart when stoppable | PWA: `Delete` only available in terminal states. `Restart` available when session is stopped. `SessionInfoBar` action button logic needs update. |
+| B58 | Session detail: refresh state on open or screen unlock | On navigating to detail or on screen unlock, force a WS reconnect + fetch current session state. Prevents stale view when lock-screen hides an active session. |
+| B59 | Connection status indicator should go red on disconnect | The dot/indicator in the top bar never turns red. Should track WS state and show red when disconnected, amber when reconnecting, green when live. |
+| B60 | Tailscale awareness: back-off + retry on unreachable server | When WS connect fails while screen is locked or off, use exponential back-off instead of tight-retry loop. Resume normal polling when screen becomes active again. |
+| B61 | Session terminal: live processing animation (PWA parity) | PWA shows animated processing indicators during `running` state. Android added pulsing badge (B44) but lacks the fine-grained per-message spinner the PWA shows during active generation. |
+| B62 | Session detail: last-response icon inconsistent across surfaces | The icon used on the session detail's "last response" button differs from the one used on the session list and other surfaces. Unify to a single icon resource. |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 

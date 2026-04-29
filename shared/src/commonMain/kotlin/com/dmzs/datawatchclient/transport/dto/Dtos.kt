@@ -454,6 +454,7 @@ public data class PrdDto(
     val depth: Int = 0,
     @SerialName("is_template") val isTemplate: Boolean = false,
     @SerialName("created_at") val createdAt: String? = null,
+    val spec: String? = null,
     val stories: List<PrdStoryDto> = emptyList(),
 )
 
