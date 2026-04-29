@@ -8,6 +8,36 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.12] — 2026-04-29 (toolbar fits Scroll button + header Response gone + About PWA-aligned)
+
+### Fixed
+
+- **Terminal toolbar Scroll button now visible on phone widths.**
+  v0.42.11's `softWrap = false` fixed the wrap that was producing
+  the empty band, but the rightmost button still overflowed past
+  the screen edge because the toolbar was 306 dp wide on a 360 dp
+  screen. Compact labels — "↕" / "⏹" instead of "↕ Scroll" /
+  "⏹ Exit" — plus dropping the "{N}px" font-size readout and the
+  decorative `|` separators trim the toolbar to ~140 dp; every
+  button now fits at any phone width.
+
+### Removed
+
+- **Response button removed from `SessionInfoBar` (chip bar).**
+  User direction 2026-04-29: redundant with the 📄 quick-action
+  on the row above the composer. `hasResponse` always false on
+  the chip bar now; the Response surface lives only in the
+  bottom quick-actions row.
+
+### Changed
+
+- **Phone About card aligned to PWA's About surface
+  (app.js:4233-4277).** Drops `Package` and `License` rows
+  (PWA carries neither). Renames `Parent project` → `Project`
+  and `Source` → `Mobile app` to match PWA's labels exactly.
+  Adds the PWA's "Play Store link will land here once the app
+  is published." caption directly under the Mobile app row.
+
 ## [0.42.11] — 2026-04-29 (close B35 + watch About + universal circle clip)
 
 ### Changed

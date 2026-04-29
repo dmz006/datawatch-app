@@ -106,10 +106,17 @@ public fun TerminalToolbarControls(
 ) {
     val controller = state.controller
     val sessionId = state.sessionId
+    // v0.42.12 — tighten the inline toolbar so the Scroll button
+    // stays visible at phone widths. Drop the "{N}px" font-size
+    // label (the A−/A+ buttons themselves communicate the action;
+    // the size only matters when actively tweaking) and the two
+    // visual `|` separators (decorative, ~20 dp saved). Compact
+    // labels — "F" for Fit, "↕" for Scroll, "⏹" for Exit — keep
+    // every button on one line at any phone width.
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         TermToolBtn(
             label = "A−",
@@ -118,12 +125,6 @@ public fun TerminalToolbarControls(
             },
             enabled = state.fontSize > MIN_TERM_FONT_PX,
         )
-        Text(
-            "${state.fontSize}px",
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
         TermToolBtn(
             label = "A+",
             onClick = {
@@ -131,11 +132,9 @@ public fun TerminalToolbarControls(
             },
             enabled = state.fontSize < MAX_TERM_FONT_PX,
         )
-        Separator()
         TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
-        Separator()
         TermToolBtn(
-            label = if (state.scrollMode) "⏹ Exit" else "↕ Scroll",
+            label = if (state.scrollMode) "⏹" else "↕",
             onClick = {
                 if (sessionId == null) return@TermToolBtn
                 if (state.scrollMode) {

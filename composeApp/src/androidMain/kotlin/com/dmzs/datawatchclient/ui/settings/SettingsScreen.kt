@@ -727,64 +727,39 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 serverInfo = serverInfo,
                 error = serverInfoError,
             )
+            // v0.42.12 — relabel + trim to match PWA About card
+            // (app.js:4233-4277). Drop "Package" + "License" rows
+            // (PWA carries neither); rename "Parent project" →
+            // "Project" and "Source" → "Mobile app" to match PWA's
+            // labels exactly.
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Package", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "com.dmzs.datawatchclient",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("License", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "Polyform Noncommercial 1.0.0",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("Source", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "github.com/dmz006/datawatch-app",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("Parent project", style = MaterialTheme.typography.bodyMedium)
+                Text("Project", style = MaterialTheme.typography.bodyMedium)
                 Text(
                     "github.com/dmz006/datawatch",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            // v0.35.7 — Play Store placeholder mirroring PWA v5.2.0
-            // About link addition. Replace the URL with the listing
-            // URL once submission lands.
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Play Store", style = MaterialTheme.typography.bodyMedium)
+                Text("Mobile app", style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    "(pending submission)",
+                    "github.com/dmz006/datawatch-app",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
+            Text(
+                "Play Store link will land here once the app is published.",
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             // v0.33.13 (B25) sessions-details footer. Sourced from
             // `/api/stats` alongside the daemon-info fetch so the
             // About card communicates server activity at a glance.
