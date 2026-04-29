@@ -116,6 +116,8 @@ private fun WearRoot(
     var openSession: WearSessionCountsViewModel.SessionItem? by remember {
         mutableStateOf(null)
     }
+    // v0.42.3 — Sessions page filter (Wait default, then Run, Total).
+    var sessionFilter by remember { mutableStateOf(SessionFilter.Wait) }
     var pendingTranscript by remember { mutableStateOf("") }
     var recording by remember { mutableStateOf(false) }
     var transcribing by remember { mutableStateOf(false) }
@@ -176,6 +178,8 @@ private fun WearRoot(
                     1 ->
                         SessionsPage(
                             state = state,
+                            filter = sessionFilter,
+                            onFilterChange = { sessionFilter = it },
                             onSessionTap = { item ->
                                 openSession = item
                                 // v0.42.2 — ask the phone to refetch
@@ -197,7 +201,19 @@ private fun WearRoot(
                 }
             }
             PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
-            openSession?.let { item ->
+            // v0.42.3 — re-resolve the open session against the
+            // latest published list so the popup shows the freshest
+            // lastResponse body the moment the phone republishes (in
+            // response to the refreshSession round-trip from tap).
+            // Without this, `openSession` captured the SessionItem at
+            // tap time and Compose never saw the post-refresh values.
+            // Falls back to the captured item if the session was
+            // dropped from the published window between tap and
+            // republish.
+            val popupSession = openSession?.let { o ->
+                state.sessions.firstOrNull { it.id == o.id } ?: o
+            }
+            popupSession?.let { item ->
                 SessionDetailPopup(
                     session = item,
                     transcript = pendingTranscript,
@@ -461,6 +477,8 @@ private const val GAUGE_RED_THRESHOLD: Float = 80f
 @Composable
 private fun SessionsPage(
     state: WearSessionCountsViewModel.UiState,
+    filter: SessionFilter,
+    onFilterChange: (SessionFilter) -> Unit,
     onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
 ) {
     PageScaffold("Sessions") {
@@ -472,21 +490,18 @@ private fun SessionsPage(
             )
             return@PageScaffold
         }
-        // Counts strip at top — pre-existing glance remains the
-        // first-impression read ("is anything waiting on me?"). The
-        // per-session rows below are the v0.35.5 tap-to-reply
-        // affordance; each row opens the popup with voice input.
-        Row(
-            modifier = Modifier.padding(top = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            CountTile(value = state.running, label = "run", color = MaterialTheme.colors.primary)
-            CountTile(value = state.waiting, label = "wait", color = MaterialTheme.colors.secondary)
-            CountTile(value = state.total, label = "total", color = MaterialTheme.colors.onSurface)
-        }
-        if (state.sessions.isEmpty()) {
+        SessionsFilterRow(state, filter, onFilterChange)
+        val filtered =
+            when (filter) {
+                SessionFilter.Wait ->
+                    state.sessions.filter { it.stateName.equals("Waiting", ignoreCase = true) }
+                SessionFilter.Run ->
+                    state.sessions.filter { it.stateName.equals("Running", ignoreCase = true) }
+                SessionFilter.Total -> state.sessions
+            }
+        if (filtered.isEmpty()) {
             Text(
-                state.serverName,
+                if (state.sessions.isEmpty()) state.serverName else "no ${filter.name.lowercase()} sessions",
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.caption2,
                 color = MaterialTheme.colors.onSurfaceVariant,
@@ -496,7 +511,7 @@ private fun SessionsPage(
         // Per-session rows. Bezel-scrollable column above already
         // exists via PageScaffold, so rows naturally paginate when
         // the count exceeds visible area on the round face.
-        state.sessions.forEach { item ->
+        filtered.forEach { item ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -523,6 +538,48 @@ private fun SessionsPage(
                 )
             }
         }
+    }
+}
+
+/**
+ * v0.42.3 — counts row repurposed as the filter selector. Tap
+ * **wait** (default) to show waiting_input only, **run** to show
+ * running only, **total** to show all sessions in the published
+ * window including completed / killed. Order is wait / run / total
+ * because wait is the most actionable surface (sessions blocked on
+ * a reply).
+ */
+@Composable
+private fun SessionsFilterRow(
+    state: WearSessionCountsViewModel.UiState,
+    filter: SessionFilter,
+    onFilterChange: (SessionFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier.padding(top = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CountTile(
+            value = state.waiting,
+            label = "wait",
+            color = MaterialTheme.colors.secondary,
+            selected = filter == SessionFilter.Wait,
+            onClick = { onFilterChange(SessionFilter.Wait) },
+        )
+        CountTile(
+            value = state.running,
+            label = "run",
+            color = MaterialTheme.colors.primary,
+            selected = filter == SessionFilter.Run,
+            onClick = { onFilterChange(SessionFilter.Run) },
+        )
+        CountTile(
+            value = state.total,
+            label = "total",
+            color = MaterialTheme.colors.onSurface,
+            selected = filter == SessionFilter.Total,
+            onClick = { onFilterChange(SessionFilter.Total) },
+        )
     }
 }
 
@@ -871,8 +928,21 @@ private fun CountTile(
     value: Int,
     label: String,
     color: Color,
+    selected: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    val mod = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = mod
+            .background(
+                color =
+                    if (selected) color.copy(alpha = 0.2f)
+                    else Color.Transparent,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
         Text(
             value.toString(),
             style = MaterialTheme.typography.display3,
@@ -881,10 +951,21 @@ private fun CountTile(
         Text(
             label,
             style = MaterialTheme.typography.caption3,
-            color = MaterialTheme.colors.onSurfaceVariant,
+            color =
+                if (selected) color
+                else MaterialTheme.colors.onSurfaceVariant,
         )
     }
 }
+
+/**
+ * Sessions list filter — controls which subset of the published
+ * snapshot the per-session rows show. Default is [Wait] because
+ * waiting_input sessions are the actionable ones (they're blocking
+ * on a reply); Run lists active workers; Total shows everything in
+ * the published window including completed / killed.
+ */
+public enum class SessionFilter { Wait, Run, Total }
 
 public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app) {
     public data class UiState(
