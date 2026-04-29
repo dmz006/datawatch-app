@@ -1670,32 +1670,11 @@ private fun ReplyComposer(
             }
         }
 
-    // When the session is waiting_input, show a compact row of quick-
-    // reply chips above the text field — PWA composer shows the same
-    // yes/no/continue/skip shortcuts so users can answer a prompt
-    // without typing.
-    if (waitingInput) {
-        androidx.compose.foundation.lazy.LazyRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-        ) {
-            items(listOf("yes", "no", "continue", "skip", "/exit")) { cmd ->
-                androidx.compose.material3.AssistChip(
-                    onClick = { onQuickReply(cmd) },
-                    label = {
-                        Text(
-                            when (cmd) {
-                                "yes" -> "approve"
-                                "no" -> "reject"
-                                "/exit" -> "quit"
-                                else -> cmd
-                            },
-                        )
-                    },
-                )
-            }
-        }
-    }
+    // v0.42.10 — quick-reply chip row removed (user direction
+    // 2026-04-29). Saved Commands sheet (⌨ button below) already
+    // exposes yes / no / continue / skip / quit alongside saved
+    // and custom commands; the redundant chip row was eating ~40 dp
+    // of vertical space the terminal viewport could use instead.
 
     // v0.35.9 — unified quick-actions row above the composer.
     // PWA-aligned per user direction 2026-04-28: the Last Response

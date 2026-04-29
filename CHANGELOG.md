@@ -8,6 +8,27 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.10] — 2026-04-29 (watch popup content clipped to circle + composer cleanup)
+
+### Removed
+
+- **Quick-reply chip row above the composer.** User direction
+  2026-04-29: the redundant approve / reject / continue / skip /
+  quit chips ate ~40 dp of vertical space the terminal viewport
+  could use. The Saved Commands sheet (⌨ button below) already
+  exposes those same five plus saved + custom commands.
+
+### Fixed
+
+- **Watch popup body no longer bleeds past the green bezel ring.**
+  Long `last_response` bodies (now up to ~95 KB on demand from
+  v0.42.9) rendered to the rectangular `Box` bounds, so scrolled
+  text could leak into the corners of the round-bezel safe area.
+  Added `Modifier.clip(CircleShape)` to the popup's outer Box so
+  the `verticalScroll` column gets visually clipped to the
+  circular surface — text disappears cleanly at the green ring
+  instead of clipping at a square edge.
+
 ## [0.42.9] — 2026-04-28 (full-buffer last_response on watch popup, on-demand)
 
 ### Added

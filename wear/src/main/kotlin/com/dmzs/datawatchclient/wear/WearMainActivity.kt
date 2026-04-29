@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -692,6 +693,13 @@ private fun SessionDetailPopup(
                 Modifier
                     .fillMaxSize()
                     .padding(6.dp)
+                    // v0.42.10 — clip the popup contents to the
+                    // circular surface so long lastResponse bodies
+                    // (now scrollable up to ~95 KB on demand) don't
+                    // visually leak past the green bezel ring on
+                    // round-bezel faces. Without clip, the verticalScroll
+                    // column draws to the rectangular Box bounds.
+                    .clip(androidx.compose.foundation.shape.CircleShape)
                     .background(
                         MaterialTheme.colors.surface,
                         androidx.compose.foundation.shape.CircleShape,
