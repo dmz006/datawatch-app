@@ -36,6 +36,10 @@ gets two levels of validation:
 | Phone | DNS TXT covert channel | No | No | 3 | | |
 | Phone | Proxy drill-down (breadcrumb) | No | No | 3 | | |
 | Phone | All-servers fan-out | No | No | 3 | | |
+| Phone | `AutonomousViewModel` — refresh, create, approve, reject, decompose, setLlm, run, cancel, requestRevision, editPrd, hardDelete, editStory, editFiles | Yes | No | FF | androidUnitTest (`AutonomousViewModelTest`) | 15 tests; explicit stubs for `listPrds` + `listBackends` + each CRUD op |
+| Phone | Autonomous PRD list + filter UI | No | No | FF | | `AutonomousScreen` — requires live server with `autonomous.enabled=true` |
+| Phone | Autonomous New PRD dialog (profile / dir / cluster / backend / effort) | No | No | FF | | `NewPrdDialog` — all three mode paths |
+| Phone | Autonomous PRD detail — all action buttons + story edit + file association | No | No | FF | | `PrdDetailDialog` — test each action path against a real PRD |
 | Wear | Notification + reply actions | No | No | 4 | | |
 | Wear | Watchface complication | No | No | 4 | | |
 | Wear | Rich Wear app dictation | No | No | 4 | | |
