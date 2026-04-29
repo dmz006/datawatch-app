@@ -25,14 +25,18 @@ swipe_next() {
 adb -s "$DEVICE" shell am force-stop com.dmzs.datawatchclient.debug || true
 sleep 0.5
 adb -s "$DEVICE" shell am start -n com.dmzs.datawatchclient.debug/com.dmzs.datawatchclient.wear.WearMainActivity > /dev/null
-sleep 4
+sleep 1.2
+shot "00-splash"
+sleep 3
 
 shot "01-monitor"
 swipe_next
 shot "02-sessions"
 swipe_next
-shot "03-servers"
+shot "03-prds"
 swipe_next
-shot "04-about"
+shot "04-servers"
+swipe_next
+shot "05-about"
 
 echo "done"
