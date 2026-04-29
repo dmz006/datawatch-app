@@ -141,7 +141,7 @@ public class RestTransport(
                         ),
                     )
                 }.body()
-            res.sessionId
+            res.sessionId ?: res.id ?: error("server returned no session id")
         }
 
     override suspend fun replyToSession(
