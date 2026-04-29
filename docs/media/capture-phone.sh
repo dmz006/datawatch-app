@@ -26,57 +26,98 @@ shot() {
 tap() { adb -s "$DEVICE" shell input tap "$1" "$2"; sleep "${3:-1.2}"; }
 key() { adb -s "$DEVICE" shell input keyevent "$1"; sleep "${2:-0.8}"; }
 
-# Launch (cold start).
+# Launch (cold start). Splash screen (matrix-eye animation) lives
+# ~3.2 s — capture it at the 1.4 s mark so the eye + matrix rain are
+# fully painted but the navigation hasn't started yet. Then wait
+# for the rest of the dwell + navigation to Sessions.
 adb -s "$DEVICE" shell am force-stop "$PKG" || true
 sleep 0.5
 adb -s "$DEVICE" shell am start -n "$ACT" > /dev/null
+sleep 1.4
+shot "01-splash"
 sleep 4
-shot "01-sessions"
+shot "02-sessions"
 
-# Bottom nav positions (3-tab, 1440 wide, nav at ~y=3000).
-# Sessions / Alerts / Settings roughly at x = 240, 720, 1200.
-tap 720 3000  # Alerts
+# v0.42.x bottom nav: 4 tabs (Sessions / PRDs / Alerts / Settings)
+# on a 1440-wide phone, nav row centered at ~y=2780.
+# Tab centers: Sessions ~180, PRDs ~540, Alerts ~900, Settings ~1260.
+tap 540 2780  # PRDs
 sleep 2
-shot "02-alerts"
+shot "03-prds"
 
-tap 1200 3000  # Settings
+# Open New PRD dialog via FAB (same position as Sessions FAB),
+# screenshot it, then cancel back before moving to Alerts.
+tap 1280 2620  # FAB
 sleep 2
-shot "03-settings-monitor"
+shot "03b-new-prd"
+key KEYCODE_BACK 1.5
 
-# Settings has 5 sub-tabs; tap successive x offsets along the
-# ScrollableTabRow at y~210. Tabs: Monitor, General, Comms, LLM, About.
-tap 430 210  # General (approx)
+tap 900 2780  # Alerts
 sleep 2
-shot "04-settings-general"
+shot "04-alerts"
 
-tap 720 210  # Comms
+tap 1260 2780  # Settings
 sleep 2
-shot "05-settings-comms"
+shot "05-settings-monitor"
 
-tap 1000 210  # LLM
+# Settings sub-tabs are a ScrollableTabRow at y=556. Tab x-centers
+# (verified via uiautomator dump 2026-04-29): Monitor=199,
+# General=537, Comms=875, LLM=1213; About lives past the right edge
+# until the tab row is scrolled.
+tap 537 556  # General
 sleep 2
-shot "06-settings-llm"
+shot "06-settings-general"
 
-tap 1260 210  # About
+tap 875 556  # Comms
+sleep 1
+# v0.42.x — Comms tab opens with the server list at the top
+# (sensitive: hostnames, base URLs). Scroll down past it before
+# screenshotting so Authentication + WebServer + Proxy + Channels
+# are what's framed.
+adb -s "$DEVICE" shell input swipe 720 1800 720 400 400
 sleep 2
-shot "07-settings-about"
+shot "07-settings-comms"
+
+tap 1213 556  # LLM
+sleep 1
+# v0.42.x — the Comms-page scroll above persists when we switch
+# to LLM (each tab keeps its own ScrollState since the parent
+# Column has its own verticalScroll). Scroll the LLM panel back
+# to the top so the LLM Configuration card is the first thing
+# in frame, not Episodic Memory.
+adb -s "$DEVICE" shell input swipe 720 1000 720 2400 400
+sleep 1
+adb -s "$DEVICE" shell input swipe 720 1000 720 2400 400
+sleep 2
+shot "08-settings-llm"
+
+# Scroll the tab row to expose About, then tap it.
+adb -s "$DEVICE" shell input swipe 1200 556 100 556 200
+sleep 1
+tap 1240 556  # About
+sleep 1
+# Same scroll-reset for About.
+adb -s "$DEVICE" shell input swipe 720 1000 720 2400 400
+sleep 1
+adb -s "$DEVICE" shell input swipe 720 1000 720 2400 400
+sleep 2
+shot "09-settings-about"
 
 # Back to Sessions + open New Session via FAB.
-tap 240 3000  # Sessions
+tap 180 2780  # Sessions
 sleep 2
-# FAB bottom-right
-tap 1300 2820
+# FAB bottom-right (above bottom nav)
+tap 1280 2620
 sleep 3
-shot "08-new-session"
+shot "10-new-session"
 
-# Back to list.
 key KEYCODE_BACK 2
 sleep 2
 
 # Open first session detail — tap near top of list.
-tap 720 700
+tap 720 540
 sleep 4
-shot "09-session-detail"
+shot "11-session-detail"
 
 key KEYCODE_BACK 2
 sleep 1

@@ -171,15 +171,17 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
         if (prd != null) {
             PrdDetailDialog(
                 prd = prd,
+                backends = state.backends,
                 onDismiss = { openPrdId = null },
-                onApprove = {
-                    vm.approve(id)
-                    openPrdId = null
-                },
-                onReject = { reason ->
-                    vm.reject(id, reason)
-                    openPrdId = null
-                },
+                onApprove = { vm.approve(id); openPrdId = null },
+                onReject = { reason -> vm.reject(id, reason); openPrdId = null },
+                onDecompose = { vm.decompose(id) },
+                onSetLlm = { backend, effort, model -> vm.setLlm(id, backend, effort, model) },
+                onRun = { vm.runPrd(id) },
+                onCancel = { vm.cancelPrd(id) },
+                onRequestRevision = { note -> vm.requestRevision(id, note) },
+                onEditPrd = { title, spec -> vm.editPrd(id, title, spec) },
+                onDelete = { vm.hardDeletePrd(id) },
                 onEditStory = { storyId, newTitle, newDescription ->
                     vm.editStory(id, storyId, newTitle, newDescription)
                 },

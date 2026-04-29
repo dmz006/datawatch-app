@@ -816,6 +816,35 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun patchPrd(
+        prdId: String,
+        title: String?,
+        spec: String?,
+    ): Result<Unit> =
+        request {
+            val body =
+                kotlinx.serialization.json.buildJsonObject {
+                    title?.let { put("title", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    spec?.let { put("spec", kotlinx.serialization.json.JsonPrimitive(it)) }
+                }
+            client.patch("${profile.baseUrl}/api/autonomous/prds/$prdId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun deletePrd(
+        prdId: String,
+        hard: Boolean,
+    ): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/autonomous/prds/$prdId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                if (hard) parameter("hard", "true")
+            }.body<Unit>()
+        }
+
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             // PWA ships `{channels: [{id, type, enabled, ...}, ...]}`;

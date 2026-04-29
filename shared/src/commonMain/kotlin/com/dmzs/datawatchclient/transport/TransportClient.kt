@@ -390,6 +390,26 @@ public interface TransportClient {
     ): Result<Unit>
 
     /**
+     * PATCH /api/autonomous/prds/{id} — update PRD title and/or spec
+     * on any non-running PRD (PWA v5.19.0 openPRDEditModal).
+     */
+    public suspend fun patchPrd(
+        prdId: String,
+        title: String? = null,
+        spec: String? = null,
+    ): Result<Unit>
+
+    /**
+     * DELETE /api/autonomous/prds/{id} — cancel (hard=false) or hard-delete
+     * (hard=true, removes descendants). PWA: cancel = bare DELETE, hard-delete
+     * = DELETE ?hard=true.
+     */
+    public suspend fun deletePrd(
+        prdId: String,
+        hard: Boolean = false,
+    ): Result<Unit>
+
+    /**
      * GET /api/orchestrator/graphs/{id} — PRD-DAG graph with
      * per-node observer_summary (datawatch v4.7.0 / S13). Issue #7.
      */
