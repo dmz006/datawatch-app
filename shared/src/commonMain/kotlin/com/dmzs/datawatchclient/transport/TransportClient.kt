@@ -269,6 +269,20 @@ public interface TransportClient {
     public suspend fun restartDaemon(): Result<Unit>
 
     /**
+     * GET /api/update/check — check-only endpoint shipped in datawatch
+     * v5.27.4. Returns `{status: "up_to_date"|"update_available", version}`.
+     * Callers must 404-fallback to [updateDaemon] (POST) for older daemons.
+     */
+    public suspend fun checkUpdate(): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
+     * POST /api/reload?subsystem=<name> — hot-reload a subsystem without
+     * restarting the daemon. [subsystem] is one of `config`, `filters`,
+     * `memory`. Response: `{ok, subsystem, applied[], requires_restart[]}`.
+     */
+    public suspend fun reloadSubsystem(subsystem: String): Result<kotlinx.serialization.json.JsonObject>
+
+    /**
      * POST /api/update — daemon self-update. PWA-observed response:
      * `{status: "up_to_date" | "installing" | ..., version: "…"}`.
      * Not in parent openapi.yaml today (undocumented but shipped —

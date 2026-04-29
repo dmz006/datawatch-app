@@ -497,34 +497,37 @@ public fun SessionDetailScreen(
                 )
             }
 
-            var savedCmdsOpen by remember { mutableStateOf(false) }
-            ReplyComposer(
-                text = state.replyText,
-                onTextChange = vm::onReplyTextChange,
-                onSend = vm::sendReply,
-                sending = state.replying,
-                sessionId = sessionId,
-                onTranscribed = { vm.onReplyTextChange(it) },
-                onSchedule = { scheduleOpen = true },
-                waitingInput = state.session?.state == SessionState.Waiting,
-                onQuickReply = vm::sendQuickReply,
-                onResponse = {
-                    vm.refreshFromServer()
-                    responseOpen = true
-                },
-                hasResponse = hasResponse,
-                onSavedCommands = { savedCmdsOpen = true },
-            )
-            if (savedCmdsOpen) {
-                QuickCommandsSheet(
-                    fetchSavedCommands = { vm.fetchSavedCommands() },
-                    onSend = { cmd ->
-                        vm.sendQuickReply(cmd)
-                        savedCmdsOpen = false
-                    },
-                    onDismiss = { savedCmdsOpen = false },
+            // In scroll mode the big PgUp/PgDn overlay replaces the composer.
+            if (!toolbarState.scrollMode) {
+                var savedCmdsOpen by remember { mutableStateOf(false) }
+                ReplyComposer(
+                    text = state.replyText,
+                    onTextChange = vm::onReplyTextChange,
+                    onSend = vm::sendReply,
+                    sending = state.replying,
                     sessionId = sessionId,
+                    onTranscribed = { vm.onReplyTextChange(it) },
+                    onSchedule = { scheduleOpen = true },
+                    waitingInput = state.session?.state == SessionState.Waiting,
+                    onQuickReply = vm::sendQuickReply,
+                    onResponse = {
+                        vm.refreshFromServer()
+                        responseOpen = true
+                    },
+                    hasResponse = hasResponse,
+                    onSavedCommands = { savedCmdsOpen = true },
                 )
+                if (savedCmdsOpen) {
+                    QuickCommandsSheet(
+                        fetchSavedCommands = { vm.fetchSavedCommands() },
+                        onSend = { cmd ->
+                            vm.sendQuickReply(cmd)
+                            savedCmdsOpen = false
+                        },
+                        onDismiss = { savedCmdsOpen = false },
+                        sessionId = sessionId,
+                    )
+                }
             }
         }
     }
@@ -1785,10 +1788,8 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        // ANSI arrow-key chips — ESC + [A/B/C/D via send_input hub.
+        // Left/right arrow chips only — ↑↓ live in the 📜 scroll mode overlay.
         listOf(
-            "[A" to "↑",
-            "[B" to "↓",
             "[D" to "←",
             "[C" to "→",
         ).forEach { (seq, label) ->

@@ -592,10 +592,33 @@ public class RestTransport(
             }
         }
 
+    override suspend fun checkUpdate(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            val response = client.get("${profile.baseUrl}/api/update/check") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            if (response.status == HttpStatusCode.NotFound) {
+                // Older daemon — fall back to the POST check-and-install endpoint.
+                client.post("${profile.baseUrl}/api/update") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            } else {
+                response.body()
+            }
+        }
+
     override suspend fun updateDaemon(): Result<kotlinx.serialization.json.JsonObject> =
         request {
             client.post("${profile.baseUrl}/api/update") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun reloadSubsystem(subsystem: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/reload") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("subsystem", subsystem)
             }.body()
         }
 
