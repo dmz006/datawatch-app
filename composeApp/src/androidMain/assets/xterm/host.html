@@ -383,8 +383,7 @@
 
     window.dwPaneCapture = function (linesJson, isFirst) {
       try {
-        // Skip writes while frozen (terminal ended) or in scroll mode.
-        if (_frozen || _scrollMode) return;
+        if (_frozen) return;
         var now = (performance && performance.now) ? performance.now() : Date.now();
         if (_lastPaneWrite && (now - _lastPaneWrite) < 33) return;
         var lines;
@@ -403,9 +402,10 @@
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
         }
-        // Scroll to tail only when the user hasn't manually scrolled away.
-        // If they have scrolled up to read history, respect that position.
-        if (!_userScrolled) {
+        // Scroll to tail when not in scroll mode and user hasn't manually scrolled.
+        // In scroll mode the tmux copy-mode buffer manages its own position —
+        // scrollToBottom would jump away from whatever the user is reading.
+        if (!_scrollMode && !_userScrolled) {
           try { term.scrollToBottom(); } catch (e) {}
         }
       } catch (e) {

@@ -175,64 +175,37 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        // Single row: Page Up | Page Down | ESC / Exit — fits one line on any phone.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Top row: PgUp / PgDn (primary scroll actions)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                BigScrollBtn(
-                    label = "Page Up",
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: PageUp")
-                    },
-                )
-                BigScrollBtn(
-                    label = "Page Down",
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: PageDown")
-                    },
-                )
-            }
-            // Bottom row: line up/down + ESC exit
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                BigScrollBtn(
-                    label = "↑",
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Up")
-                    },
-                )
-                BigScrollBtn(
-                    label = "↓",
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Down")
-                    },
-                )
-                BigScrollBtn(
-                    label = "ESC / Exit",
-                    modifier = Modifier.weight(2f),
-                    highlight = true,
-                    onClick = {
-                        com.dmzs.datawatchclient.transport.ws.WsOutbound
-                            .sendCommand(sessionId, "sendkey $sessionId: Escape")
-                        state.scrollMode = false
-                    },
-                )
-            }
+            BigScrollBtn(
+                label = "Page Up",
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: PageUp")
+                },
+            )
+            BigScrollBtn(
+                label = "Page Down",
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: PageDown")
+                },
+            )
+            BigScrollBtn(
+                label = "ESC / Exit",
+                modifier = Modifier.weight(1f),
+                highlight = true,
+                onClick = {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: Escape")
+                    state.scrollMode = false
+                },
+            )
         }
     }
 }
