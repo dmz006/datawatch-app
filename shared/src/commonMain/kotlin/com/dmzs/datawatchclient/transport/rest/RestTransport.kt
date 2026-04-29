@@ -216,8 +216,10 @@ public class RestTransport(
 
     override suspend fun listBackends(): Result<com.dmzs.datawatchclient.transport.BackendsView> =
         request {
-            // PWA ships `{llm: [{name, ...}, ...], active}`; older servers
+            // PWA ships `{llm: [{name, enabled, ...}, ...], active}`; older servers
             // sent `{llm: ["ollama", ...]}`. Accept both without a DTO.
+            // Mirrors PWA renderBackendSelect: skip enabled===false and "shell".
+            val nonLlm = setOf("shell")
             val root: kotlinx.serialization.json.JsonObject =
                 client.get("${profile.baseUrl}/api/backends") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
@@ -228,10 +230,16 @@ public class RestTransport(
                     .mapNotNull { el ->
                         when (el) {
                             is kotlinx.serialization.json.JsonPrimitive ->
-                                el.content
-                            is kotlinx.serialization.json.JsonObject ->
+                                el.content.takeIf { it.isNotEmpty() && it !in nonLlm }
+                            is kotlinx.serialization.json.JsonObject -> {
+                                val enabled = el["enabled"]
+                                // skip explicitly disabled backends (content == "false" covers both quoted and unquoted)
+                                if (enabled is kotlinx.serialization.json.JsonPrimitive &&
+                                    enabled.content == "false"
+                                ) return@mapNotNull null
                                 (el["name"] as? kotlinx.serialization.json.JsonPrimitive)
-                                    ?.content
+                                    ?.content?.takeIf { it.isNotEmpty() && it !in nonLlm }
+                            }
                             else -> null
                         }
                     }
@@ -239,6 +247,54 @@ public class RestTransport(
                 (root["active"] as? kotlinx.serialization.json.JsonPrimitive)
                     ?.takeIf { it.isString }?.content
             com.dmzs.datawatchclient.transport.BackendsView(llm = llm, active = active)
+        }
+
+    override suspend fun listOllamaModels(): Result<List<String>> =
+        request {
+            val root: kotlinx.serialization.json.JsonElement =
+                client.get("${profile.baseUrl}/api/ollama/models") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            // Shape: { models: [{name,...}, ...] } or bare array
+            val arr = when (root) {
+                is kotlinx.serialization.json.JsonObject ->
+                    root["models"] as? kotlinx.serialization.json.JsonArray
+                is kotlinx.serialization.json.JsonArray -> root
+                else -> null
+            } ?: kotlinx.serialization.json.JsonArray(emptyList())
+            arr.mapNotNull { el ->
+                when (el) {
+                    is kotlinx.serialization.json.JsonPrimitive -> el.content
+                    is kotlinx.serialization.json.JsonObject ->
+                        (el["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    else -> null
+                }
+            }
+        }
+
+    override suspend fun listOpenWebUiModels(): Result<List<String>> =
+        request {
+            val root: kotlinx.serialization.json.JsonElement =
+                client.get("${profile.baseUrl}/api/openwebui/models") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            // Shape: { data: [{id,...}, ...] } or bare array
+            val arr = when (root) {
+                is kotlinx.serialization.json.JsonObject ->
+                    root["data"] as? kotlinx.serialization.json.JsonArray
+                        ?: root["models"] as? kotlinx.serialization.json.JsonArray
+                is kotlinx.serialization.json.JsonArray -> root
+                else -> null
+            } ?: kotlinx.serialization.json.JsonArray(emptyList())
+            arr.mapNotNull { el ->
+                when (el) {
+                    is kotlinx.serialization.json.JsonPrimitive -> el.content
+                    is kotlinx.serialization.json.JsonObject ->
+                        (el["id"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                            ?: (el["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    else -> null
+                }
+            }
         }
 
     override suspend fun transcribeAudio(

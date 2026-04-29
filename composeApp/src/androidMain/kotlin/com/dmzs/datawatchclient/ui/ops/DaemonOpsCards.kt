@@ -312,23 +312,37 @@ public fun KillOrphansCard() {
     }
 }
 
+/**
+ * Three-state update flow:
+ *   IDLE → user taps "Check for Update" → CHECKING
+ *   CHECKING → API returns up_to_date → IDLE (banner set)
+ *   CHECKING → API returns update found → UPDATE_AVAILABLE (version stored)
+ *   UPDATE_AVAILABLE → user taps "Install Update" → INSTALLING
+ *   INSTALLING → API call completes → IDLE (banner set)
+ *
+ * The server's POST /api/update both checks and installs in a single call.
+ * "Check for Update" calls the API; if up_to_date it stops there; if an
+ * update is found the user sees the version and must tap "Install Update"
+ * before the daemon re-execs. A GH issue tracks adding a check-only endpoint
+ * (dmz006/datawatch) to enable true separation.
+ */
+private enum class UpdateState { IDLE, CHECKING, UPDATE_AVAILABLE, INSTALLING }
+
 @Composable
 public fun UpdateDaemonCard() {
+    var updateState by remember { mutableStateOf(UpdateState.IDLE) }
     var banner by remember { mutableStateOf<String?>(null) }
-    var checking by remember { mutableStateOf(false) }
+    var pendingVersion by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    // Progress indicator while the server downloads + re-execs.
-    // We don't get mid-flight progress events from the parent so
-    // the bar is indeterminate — matches PWA v4.0.6's "Downloading
-    // update…" strip.
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
         PwaSectionTitle("Daemon update")
         Text(
-            "Check for and install a new datawatch daemon version on " +
-                "the active server. If an update is available the daemon " +
-                "downloads it and re-execs automatically — active WS " +
+            "Check whether a new datawatch daemon version is available on " +
+                "the active server. If an update is found you can choose to " +
+                "install it — the daemon downloads and re-execs; active WS " +
                 "connections blip but sessions survive.",
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
@@ -341,33 +355,33 @@ public fun UpdateDaemonCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color =
                     when {
-                        it.startsWith("Already") ->
+                        it.startsWith("Already") || it.startsWith("Installing") ->
                             MaterialTheme.colorScheme.primary
-                        it.startsWith("Installing") ->
-                            MaterialTheme.colorScheme.primary
-                        else ->
-                            MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.error
                     },
             )
         }
-        if (checking) {
+        if (updateState == UpdateState.CHECKING || updateState == UpdateState.INSTALLING) {
             androidx.compose.material3.LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         ) {
+            // "Check for Update" — always shown; disabled while any async op runs
             Button(
-                enabled = !checking,
+                enabled = updateState == UpdateState.IDLE || updateState == UpdateState.UPDATE_AVAILABLE,
                 onClick = {
-                    checking = true
+                    updateState = UpdateState.CHECKING
                     banner = null
+                    pendingVersion = null
                     scope.launch {
                         val profile = resolveActiveProfile()
                         if (profile == null) {
                             banner = "No enabled server."
-                            checking = false
+                            updateState = UpdateState.IDLE
                             return@launch
                         }
                         ServiceLocator.transportFor(profile).updateDaemon().fold(
@@ -378,22 +392,70 @@ public fun UpdateDaemonCard() {
                                 val version =
                                     (obj["version"] as? kotlinx.serialization.json.JsonPrimitive)
                                         ?.content
-                                banner =
-                                    when (status) {
-                                        "up_to_date" -> "Already up to date (v${version ?: "?"})."
-                                        null -> "Update requested."
-                                        else -> "Installing v${version ?: "?"} — daemon will restart."
+                                when (status) {
+                                    "up_to_date" -> {
+                                        banner = "Already up to date (v${version ?: "?"})."
+                                        updateState = UpdateState.IDLE
                                     }
-                                checking = false
+                                    else -> {
+                                        // update is available — surface install button
+                                        pendingVersion = version
+                                        updateState = UpdateState.UPDATE_AVAILABLE
+                                    }
+                                }
                             },
                             onFailure = {
-                                banner = "Update failed — ${it.message ?: it::class.simpleName}"
-                                checking = false
+                                banner = "Check failed — ${it.message ?: it::class.simpleName}"
+                                updateState = UpdateState.IDLE
                             },
                         )
                     }
                 },
-            ) { Text(if (checking) "Checking…" else "Check for update") }
+            ) {
+                Text(
+                    when (updateState) {
+                        UpdateState.CHECKING -> "Checking…"
+                        else -> "Check for Update"
+                    },
+                )
+            }
+
+            // "Install Update" — only shown when an update was found
+            if (updateState == UpdateState.UPDATE_AVAILABLE) {
+                Button(
+                    onClick = {
+                        updateState = UpdateState.INSTALLING
+                        scope.launch {
+                            val profile = resolveActiveProfile()
+                            if (profile == null) {
+                                banner = "No enabled server."
+                                updateState = UpdateState.IDLE
+                                return@launch
+                            }
+                            ServiceLocator.transportFor(profile).updateDaemon().fold(
+                                onSuccess = { obj ->
+                                    val version =
+                                        (obj["version"] as? kotlinx.serialization.json.JsonPrimitive)
+                                            ?.content
+                                    banner = "Installing v${version ?: pendingVersion ?: "?"} — daemon will restart."
+                                    updateState = UpdateState.IDLE
+                                },
+                                onFailure = {
+                                    banner = "Install failed — ${it.message ?: it::class.simpleName}"
+                                    updateState = UpdateState.IDLE
+                                },
+                            )
+                        }
+                    },
+                ) {
+                    Text(
+                        when (updateState) {
+                            UpdateState.INSTALLING -> "Installing…"
+                            else -> "Install Update${pendingVersion?.let { " v$it" } ?: ""}"
+                        },
+                    )
+                }
+            }
         }
     }
 }

@@ -52,6 +52,7 @@ kotlin {
                 implementation(libs.mockwebserver)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.sqldelight.sqlite.driver)
             }
         }
         val androidMain by getting {

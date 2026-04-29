@@ -89,9 +89,22 @@ public interface TransportClient {
 
     /**
      * GET /api/backends — list of registered LLM backends + which is active.
-     * Mobile uses this to populate the Channels / LLM backends tab.
+     * Only returns backends where `enabled != false` (mirrors PWA renderBackendSelect
+     * filter). The `shell` non-LLM backend is also excluded.
      */
     public suspend fun listBackends(): Result<BackendsView>
+
+    /**
+     * GET /api/ollama/models — model names available on the connected Ollama instance.
+     * Returns an empty list when the endpoint 404s (Ollama not configured).
+     */
+    public suspend fun listOllamaModels(): Result<List<String>>
+
+    /**
+     * GET /api/openwebui/models — model IDs available on the connected Open WebUI.
+     * Returns an empty list when the endpoint 404s (Open WebUI not configured).
+     */
+    public suspend fun listOpenWebUiModels(): Result<List<String>>
 
     /**
      * POST /api/voice/transcribe — parent issue #2 (Whisper-backed).

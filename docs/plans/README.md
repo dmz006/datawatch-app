@@ -66,6 +66,17 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 |----|-------|-------|
 | B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. |
 
+### Sprint FF2 — PRD/About/icon polish (user request 2026-04-29)
+
+| ID | Title | Notes |
+|----|-------|-------|
+| B36 | New PRD dialog: LLM backend list shows all, not filtered | PWA's `renderBackendSelect` skips `enabled=false` + `shell`. `listBackends()` now filters correctly (v0.43.x). |
+| B37 | New PRD dialog: model should be a per-backend dropdown, not free text | PWA fetches `/api/ollama/models` and `/api/openwebui/models` separately; model field is hidden for all other backends. Implemented in `NewPrdDialog` (v0.43.x). |
+| B38 | About → "Check for Update" auto-installs without confirmation | Should check first; if update found show "Install Update vX.Y.Z" button + progress bar. Two-step UX implemented in `UpdateDaemonCard` (v0.43.x). Blocked on [dmz006/datawatch#25](https://github.com/dmz006/datawatch/issues/25) for true check-only. |
+| B39 | App launcher icon: eye too small | Eye sclera expanded to ±40×26 (from ±22×14), iris to r=22, pupil to r=9 to fill most of the 108dp canvas. Done (v0.43.x). |
+| B40 | Play Store + in-app alternate icon variants | Need 2-3 icon variants (teal, dark-high-contrast, monochrome) in SVG/PNG for Play Store chooser. Pending. |
+| B41 | Server: `GET /api/update/check` check-only endpoint | Filed at [dmz006/datawatch#25](https://github.com/dmz006/datawatch/issues/25). Enables true "check → confirm → install" UX on mobile without double-calling POST /api/update. |
+
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
 In-flight fixes from the current test pass. Small / cosmetic; aim
