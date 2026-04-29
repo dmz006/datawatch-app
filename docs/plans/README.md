@@ -74,9 +74,6 @@ for one commit per batch.
 | ID | Title | Notes |
 |----|-------|-------|
 | B28 | Watch + Auto need to view monitoring stats for all connected servers | User request (2026-04-22). Depends on server-side shape landing from [dmz006/datawatch#20](https://github.com/dmz006/datawatch/issues/20); mobile-side plan in [docs/plans/2026-04-22-unified-monitoring.md](2026-04-22-unified-monitoring.md). **Wear** subscribes to the stats DataItem (infra from v0.33.12) and renders a compact dashboard. **Auto** adds a Monitoring screen with one row per connected server. |
-| B29 | Session-detail TopAppBar title is sometimes cropped | On wide-name sessions (long task summary) the title + connection dot compete. Put connection dot in a fixed-width pill and ellipsize the title column with trailing ID. |
-| B34 | Watch popup loads stale `last_response` on first open | User report 2026-04-29: tapped session 17db on the watch, popup rendered v0.42.9-era content even though the phone had already published v0.42.10. Means the `/datawatch/sessionDetail` reply hadn't landed (or wasn't applied) by the time the popup composed. **Acceptance:** either (a) popup loads the latest content directly on open before showing anything, or (b) shows an explicit "stale — refreshing…" indicator until the fresh body arrives, then swaps in. **Repro:** use a session OTHER than 17db (which moves fast — its content will have rotated by the time you debug). User direction 2026-04-29: tomorrow's work. |
-| B35 | Phone session-detail empty band between SessionInfoBar and tabs row | User report 2026-04-29: ~200 dp of empty black space between the chip row (claude-code / waiting_input / Stop / Timeline / Response) and the tmux/channel/font tabs row. Suspected to come from a popup that, when dismissed, should reflow the layout. Investigation 2026-04-29 traced every conditional banner and found no structural cause; need to dump live view hierarchy via `uiautomator dump` while the band is visible. **Acceptance:** verify `uiautomator dump` shows what occupies the band; layout collapses to 0 dp when empty. |
 
 ### Sprint GG — unified monitoring Phase 1 (v0.34.x)
 
@@ -165,6 +162,9 @@ or retracted rather than scheduled.
 | widgets-monitor | Home-screen Monitor widget + tap-to-cycle servers | v0.34.0 | New `MonitorWidget` renders CPU / memory / session counts from the active profile; both Sessions and Monitor widgets share `WidgetActions.cycleActiveServer` so tapping the profile label advances `ActiveServerStore` to the next enabled profile and refreshes both widget types in lockstep. |
 | tile-sessions-wired | Wear Sessions tile reads DataLayer | v0.34.0 | `SessionsTileService` was still the Phase-1 placeholder rendering zeros. Now reads `/datawatch/counts` from the phone's `WearSyncService` and uses the datawatch palette (teal / amber) instead of legacy purple. Tap → launches Wear companion. |
 | tile-monitor | Wear Monitor tile | v0.34.0 | New `MonitorTileService` reading `/datawatch/stats` (CPU load / cores, memory %, session summary, uptime). Colour thresholds mirror the PWA Monitor card. |
+| B34 | Watch popup loads stale last_response on first open | v0.42.13 | Removed `lastLine` fallback — popup now always shows "Loading…" until the fresh `/datawatch/sessionDetail` reply arrives. |
+| B35 | Phone session-detail empty band between SessionInfoBar and tabs row | v0.42.11 | Composer chip-row removed; empty-space root cause eliminated. |
+| B29 | Session-detail TopAppBar title sometimes cropped | v0.42.14 | Added `fillMaxWidth()` to title Column, title Text, and subtitle Row so Ellipsis kicks in before the connection dot is displaced. |
 
 ### Backlog (already shipped)
 

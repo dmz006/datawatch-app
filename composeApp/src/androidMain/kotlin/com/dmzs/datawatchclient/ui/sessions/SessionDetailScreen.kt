@@ -137,11 +137,10 @@ public fun SessionDetailScreen(
             TopAppBar(
                 title = {
                     // Tap title to rename — same wire as Sessions-list overflow.
-                    // Every Text uses softWrap=false + TextOverflow.Ellipsis so
-                    // a narrow title column truncates instead of wrapping each
-                    // character onto its own line.
+                    // fillMaxWidth() lets Compose apply the TopAppBar's width
+                    // constraint so Ellipsis kicks in before the dot is pushed out.
                     Column(
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         // G11 — inline tap-to-edit header. Click the
                         // title to switch to a TextField in-place; Enter
@@ -210,13 +209,18 @@ public fun SessionDetailScreen(
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier =
-                                    Modifier.clickable {
-                                        draft = headerTitle
-                                        editingHeader = true
-                                    },
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            draft = headerTitle
+                                            editingHeader = true
+                                        },
                             )
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(
                                 sessionId,
                                 maxLines = 1,
