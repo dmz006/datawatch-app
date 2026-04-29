@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.41.1] — 2026-04-28 (PRDs nav icon → SmartToy)
+
+### Changed
+
+- **Bottom-nav PRDs icon** swapped from `Icons.Filled.AutoAwesome` to
+  `Icons.Filled.SmartToy` to match PWA's `🤖` (U+1F916) on the
+  autonomous nav button — same rounded-robot silhouette.
+
 ## [0.41.0] — 2026-04-28 (VM unit tests via ProfileResolver shim)
 
 ### Added
