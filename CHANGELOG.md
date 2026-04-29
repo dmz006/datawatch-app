@@ -8,6 +8,26 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.42.5] — 2026-04-28 (PRDs nav: full-color 🤖 + hide when not configured)
+
+### Changed
+
+- **PRDs bottom-nav glyph rendered as the literal 🤖 emoji**
+  (U+1F916). Material's `Icons.Filled.SmartToy` was a flat
+  single-color outline — the system emoji renders in full colour
+  at the same size and matches the PWA exactly.
+
+### Fixed
+
+- **PRDs tab now hides on servers without the autonomous
+  surface.** User direction 2026-04-28: the PWA's local-host
+  profile doesn't show PRDs (no `/api/autonomous/prds`); the
+  `ralfthewise` remote does. Mobile now mirrors that — `HomeShell`
+  probes `transport.listPrds()` whenever the active server flips,
+  and `BottomNavBar` filters the PRDs item out of the nav when
+  the probe fails. Federated "All servers" mode keeps the tab
+  visible since any one of the fanned-out profiles may carry it.
+
 ## [0.42.4] — 2026-04-28 (diagnostic logging on /datawatch/refreshSession)
 
 ### Added
