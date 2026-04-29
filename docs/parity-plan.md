@@ -78,7 +78,29 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 | Directory picker (`/api/files`) | ✅ | v0.12.0 — `FilePickerDialog` wired into New Session working-dir. Modes: folder / file / both |
 | Voice-to-new-session | ✅ | v0.15.0 — composer mic detects `new:` prefix on transcript and routes through `startSession` instead of composer insert |
 
-## 4. Alerts (`data-view="alerts"`)
+## 4. Autonomous (`data-view="autonomous"`)
+
+PRD lifecycle tab added to the phone app in v0.38.0; full CRUD parity
+with PWA closed in v0.42.13.
+
+| PWA capability | Mobile | Notes |
+|---|---|---|
+| PRD list with status chips | ✅ | v0.38.0 — AutonomousScreen; status dot + pill per row |
+| Filter by status / show templates | ✅ | v0.38.1 — magnifier toggle → filter chip row |
+| Create PRD (name, title, profile, cluster, decomp, backend, effort) | ✅ | v0.38.0 / v0.42.13 — unified profile dropdown; backend/effort dropdowns populated from `/api/backends`; decomp profile dropdown |
+| View PRD detail (spec, stories, files) | ✅ | v0.38.1 — PrdDetailDialog; story list with title + description + files |
+| Approve / Reject (with reason) | ✅ | v0.42.13 — action buttons gated by status; reject dialog with reason field |
+| Decompose | ✅ | v0.42.13 |
+| Set LLM (backend / effort / model) | ✅ | v0.42.13 — LlmOverrideDialog with backend dropdown from `/api/backends`, effort dropdown |
+| Run | ✅ | v0.42.13 |
+| Cancel (soft-delete) | ✅ | v0.42.13 |
+| Request revision (with note) | ✅ | v0.42.13 |
+| Edit PRD title + spec | ✅ | v0.42.13 — EditPrdDialog |
+| Hard delete | ✅ | v0.42.13 — delete button with confirm dialog |
+| Edit story (title, description) | ✅ | v0.38.1 — per-story edit sheet |
+| Associate files with a story | ✅ | v0.38.1 — EditFilesSheet |
+
+## 5. Alerts (`data-view="alerts"`)
 
 | PWA capability | Mobile | Notes |
 |---|---|---|
