@@ -83,11 +83,11 @@ Items from live-device testing 2026-04-29. Layout items (B54–B57) were already
 | B55 | Session detail: quick-actions row layout — last-response + quick-cmd icon + arrows | ✅ Already done (v0.35.9) — Row: Description icon → Keyboard icon → ← →. Quick-cmd button removed from under mic. |
 | B56 | Session detail: status badge above tabs; tabs tighter + left-justified | ✅ Already done (v0.35.9 badges above, v0.42.0 compact tabs row with font/scroll right). |
 | B57 | Session detail: delete only shown when stopped; show restart when stoppable | ✅ Already done — `SessionInfoBar` shows Restart+Delete only when `isDone` (Completed/Killed/Error). |
-| B58 | Session detail: refresh state on open or screen unlock | On navigating to detail or on screen unlock, force WS reconnect + fetch current session state. Prevents stale view when lock hides an active session. |
-| B59 | Connection status indicator should go red on disconnect | The dot in the top bar never turns red. Should track WS state: green=live, amber=reconnecting, red=disconnected. |
+| B58 | Session detail: refresh state on open or screen unlock | `LifecycleEventObserver(ON_RESUME)` added in `SessionDetailScreen` calls `vm.refreshFromServer()` on each resume. VM's init already handles first-open; the observer catches lock/unlock and background→foreground transitions. Done (v0.45.0). |
+| B59 | Connection status indicator should go red on disconnect | Fixed (v0.45.0): `startStream.onEach` now sets `_reachable = false` on `SessionEvent.Error` (WS disconnect). Non-Error events set `_reachable = true`. REST-based `isReachable` also writes on each poll, so REST-only failures also go red. |
 | B60 | Tailscale awareness: back-off + retry on unreachable server | When WS connect fails while screen is locked/off, use exponential back-off instead of tight-retry. Resume normal polling when screen becomes active. |
 | B61 | Session terminal: per-message generation spinner (PWA parity) | PWA shows fine-grained per-message spinner during active generation. Android has the pulsing badge (B44) but not the inline dots indicator during chat-message receipt. |
-| B62 | Session detail: last-response icon inconsistent across surfaces | The "last response" button icon (Description) may differ from the session-list and other surfaces. Audit and unify to a single canonical glyph. |
+| B62 | Session detail: last-response icon inconsistent across surfaces | ✅ Already consistent — `Icons.Filled.Description` used in both the quick-actions row and the sessions-list row. SessionInfoBar's response button is suppressed (`hasResponse=false`). |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
