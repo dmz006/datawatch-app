@@ -35,6 +35,12 @@
     <string name="action_browse">Browse…</string>
     <string name="action_back">Back</string>
     <string name="action_kill">Kill</string>
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+
+    <!-- ── Common states ── -->
+    <string name="common_loading">Loading…</string>
+    <string name="common_no_alerts">No alerts.</string>
 
     <!-- ── Settings tabs ── -->
     <string name="settings_title">Settings</string>

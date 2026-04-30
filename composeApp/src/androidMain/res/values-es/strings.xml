@@ -29,6 +29,12 @@
     <string name="action_browse">Explorar…</string>
     <string name="action_back">Atrás</string>
     <string name="action_kill">Terminar</string>
+    <string name="action_yes">Sí</string>
+    <string name="action_no">No</string>
+
+    <!-- ── Common states ── -->
+    <string name="common_loading">Cargando…</string>
+    <string name="common_no_alerts">No hay alertas.</string>
 
     <!-- ── Settings tabs ── -->
     <string name="settings_title">Ajustes</string>

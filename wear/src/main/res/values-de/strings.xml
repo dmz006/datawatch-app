@@ -39,4 +39,9 @@
     <string name="wear_about_tagline">KI-Sitzungsmonitor &amp; Brücke</string>
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
+
+    <string name="action_yes">Ja</string>
+    <string name="action_no">Nein</string>
+    <string name="common_loading">Wird geladen…</string>
+    <string name="common_no_alerts">Keine Alarme.</string>
 </resources>
