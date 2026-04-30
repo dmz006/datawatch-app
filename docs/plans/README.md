@@ -124,10 +124,10 @@ to land pre-1.0.
 | ID | Title | Notes |
 |----|-------|-------|
 | BL1 | Split consolidated `decisions/README.md` into per-ADR MADR files | 41 ADRs. Docs-only; can land at any time. |
-| BL3 | Tablet two-pane layout | Responsive audit + design pass. |
+| BL3 | Tablet two-pane layout | Done (v0.48.0) — responsive pass: `HomeScreen` NavHost wrapped in a centered `Box` with `widthIn(max = 840.dp)` so single-column content doesn't stretch to full tablet width. On phones (<840 dp) `fillMaxWidth` wins and layout is unchanged. Full two-pane sessions-list + detail side by side deferred to post-v1 (requires NavController restructuring + tablet to test). |
 | BL5 | iOS content phase | Skeleton-only today; real content after Android parity stabilises. |
 | BL7 | Foldable layout (Pixel Fold / Z Fold) | Post-tablet. |
-| BL13 | Adjustable terminal dimensions | Depends on xterm reflow UX. |
+| BL13 | Adjustable terminal dimensions | Done (v0.48.0) — `resize_term` is sent automatically on every xterm fit event: `host.html:safeFit()` calls `DwBridge.onResize(cols, rows)` → `WsOutbound.sendResizeTerm()`. Backend minimum sizes (claude-code: 120×40, else 80×24) trigger resize on session open. Manual "Fit" button re-syncs after font changes. |
 | BL14 | Raw YAML config editor (behind biometric + confirm) | Revisits ADR-0019 scope. |
 | BL15 | Localization (DE, ES, FR, JA) | i18n extraction + translation pipeline. |
 | BL16 | Biometric-bound DB passphrase | Wrap the Keystore key with an auth-required spec so the DB can't open without a challenge. |

@@ -1,10 +1,13 @@
 package com.dmzs.datawatchclient.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -13,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -328,10 +332,17 @@ private fun HomeShell(
             )
         },
     ) { inner ->
+        // BL3: cap content at 840 dp and centre so the phone layout
+        // doesn't stretch absurdly wide on landscape tablets or foldables.
+        // On phones (<840 dp) fillMaxWidth wins, so there is no change.
+        Box(
+            modifier = Modifier.fillMaxSize().padding(inner),
+            contentAlignment = Alignment.TopCenter,
+        ) {
         NavHost(
             navController = tabNav,
             startDestination = Destinations.Tabs.Sessions,
-            modifier = Modifier.padding(inner),
+            modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight(),
         ) {
             composable(Destinations.Tabs.Sessions) {
                 SessionsScreen(
@@ -353,6 +364,7 @@ private fun HomeShell(
                     onEditServer = onEditServer,
                 )
             }
+        }
         }
     }
 }
