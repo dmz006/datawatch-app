@@ -618,8 +618,11 @@ private fun savePemToDownloads(
 private fun SecurityCard() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val gate = remember { com.dmzs.datawatchclient.security.BiometricGate(context) }
+    val keystore = remember { com.dmzs.datawatchclient.security.KeystoreManager(context) }
     var enabled by remember { mutableStateOf(gate.enabled()) }
     val canAuth = remember { gate.canAuthenticate(context) }
+    var migrating by remember { mutableStateOf(false) }
+    var migrationError by remember { mutableStateOf<String?>(null) }
 
     Section(title = "Security") {
         androidx.compose.foundation.layout.Row(
@@ -630,21 +633,53 @@ private fun SecurityCard() {
                 Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     if (canAuth) {
-                        "Require fingerprint or face on every app open."
+                        "Require fingerprint or face on every app open. Database key is biometric-bound when enabled."
                     } else {
                         "Unavailable — no Class-3 biometric enrolled on this device."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                migrationError?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
             androidx.compose.material3.Switch(
                 checked = enabled,
-                onCheckedChange = {
-                    gate.setEnabled(it)
-                    enabled = it
+                onCheckedChange = { newValue ->
+                    migrationError = null
+                    val activity =
+                        context as? androidx.fragment.app.FragmentActivity ?: return@Switch
+                    migrating = true
+                    gate.prompt(
+                        activity = activity,
+                        onSuccess = {
+                            runCatching {
+                                if (newValue) {
+                                    val passphrase = keystore.deriveDatabasePassphrase()
+                                    keystore.migratePassphraseToBiometricKey(passphrase)
+                                    passphrase.fill(0)
+                                } else {
+                                    keystore.migratePassphraseFromBiometricKey()
+                                }
+                                gate.setEnabled(newValue)
+                                enabled = newValue
+                            }.onFailure { e ->
+                                migrationError = "Key migration failed: ${e.message}"
+                            }
+                            migrating = false
+                        },
+                        onFailure = { msg ->
+                            migrationError = msg
+                            migrating = false
+                        },
+                    )
                 },
-                enabled = canAuth,
+                enabled = canAuth && !migrating,
             )
         }
     }
