@@ -36,6 +36,7 @@ class AutonomousViewModelTest {
     }
 
     private val noBackends = Result.success(BackendsView(llm = emptyList(), active = null))
+    private val noPermModes = Result.success(emptyList<String>())
 
     @Test
     fun `refresh populates prds on success`() =
@@ -44,6 +45,7 @@ class AutonomousViewModelTest {
             val prds = listOf(PrdDto(id = "p1", name = "x", status = "needs_review"))
             coEvery { t.listPrds() } returns Result.success(PrdListDto(prds = prds))
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.refresh()
@@ -84,6 +86,7 @@ class AutonomousViewModelTest {
             coEvery { t.createPrd(capture(captured)) } returns Result.success("prd-new")
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.create(req)
@@ -100,6 +103,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.approve("prd-1")
@@ -114,6 +118,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.reject("prd-1", "not coherent")
@@ -134,6 +139,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.decompose("prd-1")
@@ -148,6 +154,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.setLlm("prd-1", "openai", "high", "gpt-4o")
@@ -172,6 +179,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.runPrd("prd-1")
@@ -186,6 +194,7 @@ class AutonomousViewModelTest {
             coEvery { t.deletePrd(any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.cancelPrd("prd-1")
@@ -200,6 +209,7 @@ class AutonomousViewModelTest {
             coEvery { t.deletePrd(any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.hardDeletePrd("prd-1")
@@ -214,6 +224,7 @@ class AutonomousViewModelTest {
             coEvery { t.prdAction(any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.requestRevision("prd-1", "needs more detail")
@@ -231,14 +242,15 @@ class AutonomousViewModelTest {
     fun `editPrd calls patchPrd with non-blank fields`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()
-            coEvery { t.patchPrd(any(), any(), any()) } returns Result.success(Unit)
+            coEvery { t.patchPrd(any(), any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.editPrd("prd-1", "New title", "  ")
 
-            coVerify { t.patchPrd("prd-1", "New title", null) }
+            coVerify { t.patchPrd("prd-1", "New title", null, null) }
         }
 
     @Test
@@ -248,6 +260,7 @@ class AutonomousViewModelTest {
             coEvery { t.editStory(any(), any(), any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.editStory(prdId = "prd-1", storyId = "s1", newTitle = "  ", newDescription = "new")
@@ -262,6 +275,7 @@ class AutonomousViewModelTest {
             coEvery { t.editFiles(any(), any(), any(), any(), any()) } returns Result.success(Unit)
             coEvery { t.listPrds() } returns Result.success(PrdListDto())
             coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
 
             val vm = AutonomousViewModel(r)
             vm.editFiles(prdId = "prd-1", storyId = "s1", files = listOf("a.go", "b.go"))

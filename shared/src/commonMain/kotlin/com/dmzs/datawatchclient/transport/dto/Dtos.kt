@@ -461,6 +461,7 @@ public data class PrdDto(
     @SerialName("is_template") val isTemplate: Boolean = false,
     @SerialName("created_at") val createdAt: String? = null,
     val spec: String? = null,
+    @SerialName("permission_mode") val permissionMode: String? = null,
     val stories: List<PrdStoryDto> = emptyList(),
 )
 

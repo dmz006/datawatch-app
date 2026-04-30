@@ -929,12 +929,14 @@ public class RestTransport(
         prdId: String,
         title: String?,
         spec: String?,
+        permissionMode: String?,
     ): Result<Unit> =
         request {
             val body =
                 kotlinx.serialization.json.buildJsonObject {
                     title?.let { put("title", kotlinx.serialization.json.JsonPrimitive(it)) }
                     spec?.let { put("spec", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    permissionMode?.let { put("permission_mode", kotlinx.serialization.json.JsonPrimitive(it)) }
                 }
             client.patch("${profile.baseUrl}/api/autonomous/prds/$prdId") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }

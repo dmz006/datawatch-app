@@ -55,6 +55,7 @@ private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick",
 internal fun PrdDetailDialog(
     prd: PrdDto,
     backends: List<String> = emptyList(),
+    permissionModes: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onApprove: () -> Unit,
     onReject: (String) -> Unit,
@@ -63,7 +64,7 @@ internal fun PrdDetailDialog(
     onRun: () -> Unit,
     onCancel: () -> Unit,
     onRequestRevision: (note: String) -> Unit,
-    onEditPrd: (title: String?, spec: String?) -> Unit,
+    onEditPrd: (title: String?, spec: String?, permissionMode: String?) -> Unit,
     onDelete: () -> Unit,
     onEditStory: (storyId: String, newTitle: String?, newDescription: String?) -> Unit,
     onEditFiles: (storyId: String, files: List<String>) -> Unit,
@@ -78,6 +79,7 @@ internal fun PrdDetailDialog(
     var reviseNote by remember { mutableStateOf("") }
     var llmOpen by remember { mutableStateOf(false) }
     var editPrdOpen by remember { mutableStateOf(false) }
+    var prdPermissionModeOptions by remember { mutableStateOf<List<String>>(emptyList()) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var editingStory: PrdStoryDto? by remember { mutableStateOf(null) }
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
@@ -266,8 +268,10 @@ internal fun PrdDetailDialog(
         EditPrdDialog(
             currentTitle = prd.title.orEmpty(),
             currentSpec = prd.spec.orEmpty(),
+            currentPermissionMode = prd.permissionMode.orEmpty(),
+            permissionModes = permissionModes,
             onDismiss = { editPrdOpen = false },
-            onSave = { title, spec -> onEditPrd(title, spec); editPrdOpen = false },
+            onSave = { title, spec, pm -> onEditPrd(title, spec, pm); editPrdOpen = false },
         )
     }
 
@@ -399,11 +403,15 @@ private fun LlmOverrideDialog(
 private fun EditPrdDialog(
     currentTitle: String,
     currentSpec: String = "",
+    currentPermissionMode: String = "",
+    permissionModes: List<String> = emptyList(),
     onDismiss: () -> Unit,
-    onSave: (title: String?, spec: String?) -> Unit,
+    onSave: (title: String?, spec: String?, permissionMode: String?) -> Unit,
 ) {
     var title by remember { mutableStateOf(currentTitle) }
     var spec by remember { mutableStateOf(currentSpec) }
+    var permissionMode by remember { mutableStateOf(currentPermissionMode) }
+    var pmMenuOpen by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -421,13 +429,40 @@ private fun EditPrdDialog(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     maxLines = 8,
                 )
+                if (permissionModes.isNotEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        OutlinedTextField(
+                            value = permissionMode.ifEmpty { "(inherit)" },
+                            onValueChange = {},
+                            label = { Text("Permission mode") },
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                TextButton(onClick = { pmMenuOpen = !pmMenuOpen }) { Text("▾") }
+                            },
+                        )
+                        DropdownMenu(expanded = pmMenuOpen, onDismissRequest = { pmMenuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("(inherit)") },
+                                onClick = { permissionMode = ""; pmMenuOpen = false },
+                            )
+                            permissionModes.forEach { pm ->
+                                DropdownMenuItem(
+                                    text = { Text(pm) },
+                                    onClick = { permissionMode = pm; pmMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val newTitle = title.takeIf { it != currentTitle && it.isNotBlank() }
                 val newSpec = spec.takeIf { it.isNotBlank() }
-                onSave(newTitle, newSpec)
+                val newPm = permissionMode.takeIf { it != currentPermissionMode }
+                onSave(newTitle, newSpec, newPm)
             }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },

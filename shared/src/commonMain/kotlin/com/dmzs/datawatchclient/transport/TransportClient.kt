@@ -437,6 +437,7 @@ public interface TransportClient {
         prdId: String,
         title: String? = null,
         spec: String? = null,
+        permissionMode: String? = null,
     ): Result<Unit>
 
     /**

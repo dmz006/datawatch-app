@@ -194,6 +194,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
             PrdDetailDialog(
                 prd = prd,
                 backends = state.backends,
+                permissionModes = state.permissionModes,
                 onDismiss = { openPrdId = null },
                 onApprove = { vm.approve(id); openPrdId = null },
                 onReject = { reason -> vm.reject(id, reason); openPrdId = null },
@@ -202,7 +203,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },
-                onEditPrd = { title, spec -> vm.editPrd(id, title, spec) },
+                onEditPrd = { title, spec, pm -> vm.editPrd(id, title, spec, pm) },
                 onDelete = { vm.hardDeletePrd(id) },
                 onEditStory = { storyId, newTitle, newDescription ->
                     vm.editStory(id, storyId, newTitle, newDescription)
