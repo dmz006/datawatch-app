@@ -48,7 +48,7 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. |
+| B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. Tracked at [datawatch-app#36](https://github.com/dmz006/datawatch-app/issues/36). |
 
 ### Sprint FF2 — PRD/About/icon polish (user request 2026-04-29)
 
@@ -58,7 +58,7 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | B37 | New PRD dialog: model should be a per-backend dropdown, not free text | PWA fetches `/api/ollama/models` and `/api/openwebui/models` separately; model field is hidden for all other backends. Implemented in `NewPrdDialog` (v0.43.x). |
 | B38 | About → "Check for Update" auto-installs without confirmation | Should check first; if update found show "Install Update vX.Y.Z" button + progress bar. Two-step UX implemented in `UpdateDaemonCard` (v0.43.x). Blocked on [dmz006/datawatch#25](https://github.com/dmz006/datawatch/issues/25) for true check-only. |
 | B39 | App launcher icon: eye too small | Eye sclera expanded to ±40×26 (from ±22×14), iris to r=22, pupil to r=9 to fill most of the 108dp canvas. Done (v0.43.x). |
-| B40 | Play Store + in-app alternate icon variants | Need 2-3 icon variants (teal, dark-high-contrast, monochrome) in SVG/PNG for Play Store chooser. Pending. |
+| B40 | Play Store + in-app alternate icon variants | Need 2-3 icon variants (teal, dark-high-contrast, monochrome) in SVG/PNG for Play Store chooser. Pending. Tracked at [datawatch-app#35](https://github.com/dmz006/datawatch-app/issues/35). |
 | B41 | Server: `GET /api/update/check` check-only endpoint | Filed at [dmz006/datawatch#25](https://github.com/dmz006/datawatch/issues/25). Enables true "check → confirm → install" UX on mobile without double-calling POST /api/update. |
 | B42 | Splash + About eye: bigger/bolder; standalone eye in About | Splash eye radius ↑ (0.34→0.44×discRadius), sclera stroke 3.5 dp, crosshair 4.5 dp; `EyeOnlyAnimated` composable added; About card now shows large standalone animated eye instead of tiny tablet-scene eye. Done (v0.44.0). |
 | B43 | Wear session popup: voice transcription review before send | After transcription, show `TranscriptReviewPopup` (full-screen overlay over session popup) with transcript text + Cancel/Send. Removed inline transcript text + left-edge Send chip from session popup. Done (v0.44.0). Also fixed pre-existing curly-quote compile errors in WearMainActivity. |
@@ -88,6 +88,8 @@ Items from live-device testing 2026-04-29. Layout items (B54–B57) were already
 | B60 | Tailscale awareness: back-off + retry on unreachable server | Fixed (v0.45.0): `pauseStream()` / `resumeStream()` added to `SessionDetailViewModel`. Lifecycle observer in `SessionDetailScreen` calls `pauseStream()` on `ON_STOP` (screen locked/app backgrounded) and `resumeStream()` on `ON_START`. WS reconnect loop no longer runs while the screen is off. |
 | B61 | Session terminal: per-message generation spinner (PWA parity) | ✅ Already done (B44) — `GeneratingIndicator` (3 animated dots + "generating" label) shown below terminal when state=Running. Pulsing badge in `SessionInfoBar`. |
 | B62 | Session detail: last-response icon inconsistent across surfaces | ✅ Already consistent — `Icons.Filled.Description` used in both the quick-actions row and the sessions-list row. SessionInfoBar's response button is suppressed (`hasResponse=false`). |
+| B63 | Stats: per-process eBPF network viewer | Read-only panel under Settings → Monitor; server already exposes data. Deferred post-1.0. Tracked at [datawatch-app#34](https://github.com/dmz006/datawatch-app/issues/34). |
+| B64 | Docs: README screenshots, Android section, Android Auto demo GIF | README missing latest captures, Android surface section, Auto emulator GIF. Tracked at [datawatch-app#37](https://github.com/dmz006/datawatch-app/issues/37). |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
