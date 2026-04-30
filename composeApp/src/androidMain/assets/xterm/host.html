@@ -400,17 +400,23 @@
         _lastPaneWrite = now;
         var joined = lines.join('\r\n');
         if (isFirst) {
+          // Fresh render — user hasn't scrolled yet. Reset the flag now so the
+          // onScroll events fired by term.write() don't falsely latch _userScrolled.
+          // Use the write callback (fires after xterm flushes the buffer) to
+          // scroll to the live tail, overriding any intermediate onScroll state.
+          _userScrolled = false;
           term.reset();
-          term.write(joined);
+          term.write(joined, function () {
+            _userScrolled = false;
+            if (!_scrollMode) try { term.scrollToBottom(); } catch (e) {}
+          });
         } else {
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
-        }
-        // Scroll to tail when not in scroll mode and user hasn't manually scrolled.
-        // In scroll mode the tmux copy-mode buffer manages its own position —
-        // scrollToBottom would jump away from whatever the user is reading.
-        if (!_scrollMode && !_userScrolled) {
-          try { term.scrollToBottom(); } catch (e) {}
+          // Scroll to tail when not in scroll mode and user hasn't manually scrolled.
+          if (!_scrollMode && !_userScrolled) {
+            try { term.scrollToBottom(); } catch (e) {}
+          }
         }
       } catch (e) {
         log('paneCapture failed: ' + e);
