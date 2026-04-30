@@ -79,7 +79,9 @@ The app runs natively on **Android Automotive OS** (AAOS) — no phone required.
 Install the APK directly on any AAOS head unit and connect to your datawatch
 daemon over Tailscale or local Wi-Fi.
 
-![auto slideshow](docs/media/auto-slideshow.gif)
+| Night mode (official release) | Day mode (debug build) |
+|:---:|:---:|
+| ![auto dark](docs/media/auto-slideshow.gif) | ![auto debug](docs/media/auto-slideshow-debug.gif) |
 
 *Dark mode activates automatically when the vehicle sets night mode (ambient
 light sensor or time-of-day). Day/night is AAOS-controlled, not app-controlled.*
