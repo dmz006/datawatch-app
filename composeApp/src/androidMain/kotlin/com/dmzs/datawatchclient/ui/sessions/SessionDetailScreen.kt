@@ -75,7 +75,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.drawBehind
+import com.dmzs.datawatchclient.R
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -302,7 +304,7 @@ public fun SessionDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.Close, contentDescription = "Back")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 // v0.33.22: connection dot moved from SessionInfoBar to
@@ -410,8 +412,8 @@ public fun SessionDetailScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                SessionModeTab(label = "tmux", selected = !chatMode, onClick = { chatMode = false })
-                SessionModeTab(label = "channel", selected = chatMode, onClick = { chatMode = true })
+                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode, onClick = { chatMode = false })
+                SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode, onClick = { chatMode = true })
                 Spacer(Modifier.weight(1f))
                 val showToolbar = !chatMode && state.session?.isChatMode != true
                 if (showToolbar) {
@@ -436,7 +438,7 @@ public fun SessionDetailScreen(
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
+                        TextButton(onClick = vm::dismissBanner) { Text(stringResource(R.string.action_dismiss)) }
                     }
                 }
             }
@@ -573,12 +575,9 @@ public fun SessionDetailScreen(
     if (killConfirm) {
         AlertDialog(
             onDismissRequest = { killConfirm = false },
-            title = { Text("Kill session?") },
+            title = { Text(stringResource(R.string.session_detail_kill_title)) },
             text = {
-                Text(
-                    "This stops the tmux session on the server. The session cannot " +
-                        "be resumed (a new session would need to be started).",
-                )
+                Text(stringResource(R.string.session_detail_kill_body))
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -586,13 +585,13 @@ public fun SessionDetailScreen(
                     vm.kill()
                 }) {
                     Text(
-                        "Kill",
+                        stringResource(R.string.action_kill),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { killConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { killConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -600,12 +599,9 @@ public fun SessionDetailScreen(
     if (deleteConfirm) {
         AlertDialog(
             onDismissRequest = { deleteConfirm = false },
-            title = { Text("Delete session?") },
+            title = { Text(stringResource(R.string.session_detail_delete_title)) },
             text = {
-                Text(
-                    "This removes the session record from the server. " +
-                        "Tracking data on disk is preserved. This cannot be undone.",
-                )
+                Text(stringResource(R.string.session_detail_delete_body))
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -613,13 +609,13 @@ public fun SessionDetailScreen(
                     vm.delete(onDeleted = onBack)
                 }) {
                     Text(
-                        "Delete",
+                        stringResource(R.string.action_delete),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleteConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { deleteConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -668,7 +664,7 @@ public fun SessionDetailScreen(
             }
         com.dmzs.datawatchclient.ui.schedules.ScheduleDialog(
             initialTask = seededTask,
-            title = "Schedule reply",
+            title = stringResource(R.string.session_detail_schedule_reply),
             onConfirm = { task, cron, enabled ->
                 // Attach the new schedule to this session so it shows up in
                 // the per-session "Scheduled" strip below. Refresh the
@@ -961,7 +957,7 @@ private fun GeneratingIndicator() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "generating",
+            stringResource(R.string.session_detail_generating),
             fontSize = 10.sp,
             color = dw.success.copy(alpha = 0.55f),
         )
@@ -1011,7 +1007,7 @@ private fun InlineNotices(events: List<SessionEvent>) {
                     ) {
                         Icon(
                             Icons.Filled.Close,
-                            "Dismiss",
+                            stringResource(R.string.action_dismiss),
                             modifier = Modifier.size(16.dp),
                             tint = yellowText,
                         )
@@ -1032,7 +1028,7 @@ private fun InlineNotices(events: List<SessionEvent>) {
                     ) {
                         Icon(
                             Icons.Filled.Close,
-                            "Dismiss",
+                            stringResource(R.string.action_dismiss),
                             modifier = Modifier.size(16.dp),
                             tint = yellowText,
                         )
@@ -1094,10 +1090,10 @@ private fun RenameDialog(
             TextButton(
                 onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank(),
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -1119,7 +1115,7 @@ private fun ConnectionBanner(onRetry: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Server unreachable — terminal stream paused, last frame shown.",
+                stringResource(R.string.session_detail_unreachable_banner),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
@@ -1169,7 +1165,7 @@ private fun InputRequiredBanner(prompt: String?) {
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        "Input Required",
+                        stringResource(R.string.session_detail_input_required),
                         fontSize = 11.sp,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         color = Color.White,
@@ -1189,7 +1185,7 @@ private fun InputRequiredBanner(prompt: String?) {
                     }
                 } else {
                     Text(
-                        "Session is waiting on a reply.",
+                        stringResource(R.string.session_detail_waiting_reply),
                         modifier = Modifier.padding(top = 6.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = amberFg,
@@ -1199,7 +1195,7 @@ private fun InputRequiredBanner(prompt: String?) {
             IconButton(onClick = { dismissed = true }, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Filled.Close,
-                    contentDescription = "Dismiss",
+                    contentDescription = stringResource(R.string.action_dismiss),
                     modifier = Modifier.size(16.dp),
                     tint = amberFg,
                 )
@@ -1259,7 +1255,7 @@ private fun TimelineSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text("Timeline", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.session_detail_timeline), style = MaterialTheme.typography.titleMedium)
             val usingServer = serverLines != null && serverLines!!.isNotEmpty()
             val subtitle =
                 when {
@@ -1279,8 +1275,7 @@ private fun TimelineSheet(
                 }
             } else if (localItems.isEmpty()) {
                 Text(
-                    "No events yet — open a session that has produced output to see " +
-                        "state transitions, prompts, and completions here.",
+                    stringResource(R.string.session_detail_no_events),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1411,10 +1406,11 @@ private fun SessionSchedulesStrip(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val onInputLabel = stringResource(R.string.session_detail_on_input)
                 val when_ =
                     sc.runAt?.toString()?.substringBefore('.')?.replace('T', ' ')
                         ?: sc.cron
-                        ?: "on input"
+                        ?: onInputLabel
                 Text(
                     when_,
                     style = MaterialTheme.typography.labelSmall,
@@ -1433,7 +1429,7 @@ private fun SessionSchedulesStrip(
                 ) {
                     Icon(
                         Icons.Filled.Close,
-                        contentDescription = "Cancel schedule",
+                        contentDescription = stringResource(R.string.session_detail_cancel_schedule),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(14.dp),
                     )
@@ -1473,7 +1469,7 @@ private fun ChatEventList(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "No messages yet. Waiting for session output…",
+                stringResource(R.string.session_detail_no_messages),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1607,8 +1603,8 @@ private fun QuickReplyButtons(onQuickReply: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        QuickReplyChip("Yes", onClick = { onQuickReply("yes") })
-        QuickReplyChip("No", onClick = { onQuickReply("no") })
+        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_yes), onClick = { onQuickReply("yes") })
+        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_no), onClick = { onQuickReply("no") })
         QuickReplyChip("Stop", onClick = { onQuickReply("stop") })
     }
 }
@@ -1642,7 +1638,7 @@ private fun EventList(
     if (events.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
             Text(
-                "No messages yet. Waiting for session output…",
+                stringResource(R.string.session_detail_no_messages),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1834,7 +1830,7 @@ private fun ReplyComposer(
         ) {
             Icon(
                 Icons.Filled.Keyboard,
-                contentDescription = "Saved commands",
+                contentDescription = stringResource(R.string.session_detail_saved_commands),
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -1845,7 +1841,7 @@ private fun ReplyComposer(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = "Left arrow",
+                contentDescription = stringResource(R.string.session_detail_left_arrow),
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1856,7 +1852,7 @@ private fun ReplyComposer(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Right arrow",
+                contentDescription = stringResource(R.string.session_detail_right_arrow),
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1867,7 +1863,7 @@ private fun ReplyComposer(
         ) {
             Icon(
                 Icons.Filled.KeyboardArrowUp,
-                contentDescription = "Up arrow",
+                contentDescription = stringResource(R.string.session_detail_up_arrow),
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1878,7 +1874,7 @@ private fun ReplyComposer(
         ) {
             Icon(
                 Icons.Filled.KeyboardArrowDown,
-                contentDescription = "Down arrow",
+                contentDescription = stringResource(R.string.session_detail_down_arrow),
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1896,8 +1892,8 @@ private fun ReplyComposer(
                 Text(
                     when {
                         recording -> "Listening…"
-                        waitingInput -> "Reply (input required)…"
-                        else -> "Reply…"
+                        waitingInput -> stringResource(R.string.session_detail_reply_waiting)
+                        else -> stringResource(R.string.session_detail_reply_hint)
                     },
                 )
             },
@@ -1927,7 +1923,7 @@ private fun ReplyComposer(
             } else {
                 Icon(
                     Icons.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = stringResource(R.string.action_send),
                     modifier = Modifier.size(18.dp),
                     tint =
                         if (text.isNotBlank()) {
@@ -1941,7 +1937,7 @@ private fun ReplyComposer(
         IconButton(onClick = onSchedule, enabled = !sending, modifier = Modifier.size(36.dp)) {
             Icon(
                 Icons.Filled.Schedule,
-                contentDescription = "Schedule reply",
+                contentDescription = stringResource(R.string.session_detail_schedule_action),
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -2115,7 +2111,7 @@ private fun StateOverrideDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Override state") },
+        title = { Text(stringResource(R.string.session_detail_override_state)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 SessionState.values().forEach { s ->
@@ -2126,7 +2122,7 @@ private fun StateOverrideDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 

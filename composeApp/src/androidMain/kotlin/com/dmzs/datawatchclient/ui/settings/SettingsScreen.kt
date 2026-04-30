@@ -69,6 +69,9 @@ import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -92,12 +95,12 @@ import java.io.FileOutputStream
  * active tab in `localStorage.cs_settings_tab = 'monitor'` so users
  * land on Monitor first.
  */
-private enum class SettingsTab(val label: String) {
-    Monitor("Monitor"),
-    General("General"),
-    Comms("Comms"),
-    Llm("LLM"),
-    About("About"),
+private enum class SettingsTab(@StringRes val labelRes: Int) {
+    Monitor(R.string.settings_tab_monitor),
+    General(R.string.settings_tab_general),
+    Comms(R.string.settings_tab_comms),
+    Llm(R.string.settings_tab_llm),
+    About(R.string.settings_tab_about),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,7 +131,7 @@ public fun SettingsScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Settings")
+                        Text(stringResource(R.string.settings_title))
                         activeProfile?.let {
                             Text(
                                 it.displayName,
@@ -148,7 +151,7 @@ public fun SettingsScreen(
                     IconButton(onClick = { serverPickerOpen = true }) {
                         Icon(
                             Icons.Filled.Storage,
-                            contentDescription = "Switch server",
+                            contentDescription = stringResource(R.string.settings_switch_server),
                         )
                     }
                 },
@@ -184,7 +187,7 @@ public fun SettingsScreen(
                         onClick = { activeTab = tab },
                         selectedContentColor = dw.accent2,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        text = { Text(tab.label, style = MaterialTheme.typography.labelMedium) },
+                        text = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelMedium) },
                     )
                 }
             }
@@ -623,6 +626,7 @@ private fun SecurityCard() {
     val canAuth = remember { gate.canAuthenticate(context) }
     var migrating by remember { mutableStateOf(false) }
     var migrationError by remember { mutableStateOf<String?>(null) }
+    val migrationFailedFmt = stringResource(R.string.security_migration_failed)
 
     Section(title = "Security") {
         androidx.compose.foundation.layout.Row(
@@ -630,12 +634,12 @@ private fun SecurityCard() {
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
-                Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.security_biometric_title), style = MaterialTheme.typography.bodyLarge)
                 Text(
                     if (canAuth) {
-                        "Require fingerprint or face on every app open. Database key is biometric-bound when enabled."
+                        stringResource(R.string.security_biometric_desc)
                     } else {
-                        "Unavailable — no Class-3 biometric enrolled on this device."
+                        stringResource(R.string.security_biometric_unavailable)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -669,7 +673,7 @@ private fun SecurityCard() {
                                 gate.setEnabled(newValue)
                                 enabled = newValue
                             }.onFailure { e ->
-                                migrationError = "Key migration failed: ${e.message}"
+                                migrationError = migrationFailedFmt.format(e.message ?: "")
                             }
                             migrating = false
                         },

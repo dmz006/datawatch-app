@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">datawatch</string>
+
+    <!-- ── Bottom navigation ── -->
+    <string name="nav_sessions">Sessions</string>
+    <string name="nav_autonomous">Autonome</string>
+    <string name="nav_alerts">Alertes</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <!-- ── Common actions ── -->
+    <string name="action_cancel">Annuler</string>
+    <string name="action_save">Enregistrer</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_create">Créer</string>
+    <string name="action_send">Envoyer</string>
+    <string name="action_close">Fermer</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="action_dismiss">Ignorer</string>
+    <string name="action_rename">Renommer</string>
+    <string name="action_restart">Redémarrer</string>
+    <string name="action_stop">Arrêter</string>
+    <string name="action_start">Démarrer</string>
+    <string name="action_open">Ouvrir</string>
+    <string name="action_run">Exécuter</string>
+    <string name="action_approve">Approuver</string>
+    <string name="action_reject">Rejeter</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_browse">Parcourir…</string>
+    <string name="action_back">Retour</string>
+    <string name="action_kill">Terminer</string>
+
+    <!-- ── Settings tabs ── -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_tab_monitor">Moniteur</string>
+    <string name="settings_tab_general">Général</string>
+    <string name="settings_tab_comms">Comms</string>
+    <string name="settings_tab_llm">LLM</string>
+    <string name="settings_tab_about">À propos</string>
+    <string name="settings_switch_server">Changer de serveur</string>
+
+    <!-- ── Sessions screen ── -->
+    <string name="sessions_filter_hint">Filtrer les sessions…</string>
+    <string name="sessions_filter_expand">Filtrer / trier les sessions</string>
+    <string name="sessions_filter_collapse">Réduire le filtre</string>
+    <string name="sessions_fab_new">Nouvelle session</string>
+    <string name="sessions_clear_filter">Effacer le filtre</string>
+    <string name="sessions_collapse_toolbar">Réduire la barre</string>
+    <string name="sessions_sort_prefix">Tri : %1$s</string>
+    <string name="sessions_history_count">Historique (%1$d)</string>
+    <string name="sessions_empty_state">Aucune session pour l\'instant. Utilisez `new : &lt;tâche&gt;` depuis un backend de messagerie ou attendez que le daemon en envoie une.</string>
+    <string name="sessions_no_task">(aucune tâche)</string>
+    <string name="sessions_selected_count">%1$d sélectionné(s)</string>
+    <string name="sessions_cancel_selection">Annuler la sélection</string>
+    <string name="sessions_delete_selected">Supprimer la sélection</string>
+    <string name="sessions_move_up">Monter</string>
+    <string name="sessions_move_down">Descendre</string>
+    <string name="sessions_more_menu">Plus</string>
+    <string name="sessions_view_response">Voir la dernière réponse</string>
+    <string name="sessions_quick_commands">Commandes</string>
+    <string name="sessions_last_response_sheet">Dernière réponse</string>
+    <string name="sessions_quick_commands_sheet">Commandes rapides</string>
+    <string name="sessions_cmd_system">Système</string>
+    <string name="sessions_cmd_saved">Enregistré</string>
+    <string name="sessions_cmd_custom">Personnalisé</string>
+    <string name="sessions_listening">Écoute en cours…</string>
+    <string name="sessions_reply_hint">Saisir une réponse…</string>
+    <string name="sessions_voice_reply">Réponse vocale</string>
+    <string name="sessions_stop_recording">Arrêter l\'enregistrement</string>
+    <string name="sessions_server_online">Serveur en ligne</string>
+    <string name="sessions_server_unreachable">Serveur inaccessible</string>
+    <string name="sessions_probing">Vérification…</string>
+    <string name="sessions_switch_server">Changer de serveur</string>
+    <string name="sessions_all_servers">Tous les serveurs</string>
+    <string name="sessions_no_servers">Aucun serveur configuré</string>
+    <string name="sessions_add_server">Ajouter un serveur…</string>
+    <string name="sessions_no_server">Aucun serveur</string>
+    <string name="sessions_just_now">à l\'instant</string>
+    <string name="sessions_never">jamais</string>
+    <string name="sessions_retry_now">Réessayer maintenant</string>
+
+    <string name="dialog_delete_sessions_title">Supprimer %1$d sessions ?</string>
+    <string name="dialog_delete_sessions_body">Ces sessions seront supprimées du serveur. Cette action est irréversible.</string>
+    <string name="dialog_rename_session">Renommer la session</string>
+    <string name="dialog_restart_session_title">Redémarrer la session ?</string>
+    <string name="dialog_restart_session_body">La session sera reprise sur le serveur. Toute invite en cours peut être interrompue.</string>
+    <string name="dialog_stop_session_title">Arrêter la session ?</string>
+    <string name="dialog_stop_session_body">Le serveur sera invité à terminer cette session. Le travail en cours peut être perdu.</string>
+    <string name="dialog_delete_session_title">Supprimer la session ?</string>
+    <string name="dialog_delete_session_body">L\'historique de session sera supprimé du serveur. Cette action est irréversible.</string>
+
+    <!-- ── Session detail ── -->
+    <string name="session_detail_tab_tmux">tmux</string>
+    <string name="session_detail_tab_channel">canal</string>
+    <string name="session_detail_input_required">Saisie requise</string>
+    <string name="session_detail_waiting_reply">La session attend une réponse.</string>
+    <string name="session_detail_timeline">Chronologie</string>
+    <string name="session_detail_schedule_reply">Planifier une réponse</string>
+    <string name="session_detail_generating">génération</string>
+    <string name="session_detail_no_messages">Aucun message pour l\'instant. En attente de la sortie de la session…</string>
+    <string name="session_detail_no_events">Aucun événement pour l\'instant — ouvrez une session avec une sortie pour voir les transitions d\'état, les invites et les complétions.</string>
+    <string name="session_detail_unreachable_banner">Serveur inaccessible — flux du terminal en pause, dernière image affichée.</string>
+    <string name="session_detail_kill_title">Terminer la session ?</string>
+    <string name="session_detail_kill_body">Cela arrête la session tmux sur le serveur. La session ne peut pas être reprise.</string>
+    <string name="session_detail_delete_title">Supprimer la session ?</string>
+    <string name="session_detail_delete_body">L\'enregistrement de session sera supprimé du serveur. Les données sur le disque sont préservées. Cette action est irréversible.</string>
+    <string name="session_detail_override_state">Forcer l\'état</string>
+    <string name="session_detail_reply_waiting">Répondre (saisie requise)…</string>
+    <string name="session_detail_reply_hint">Répondre…</string>
+    <string name="session_detail_saved_commands">Commandes enregistrées</string>
+    <string name="session_detail_schedule_action">Planifier une réponse</string>
+    <string name="session_detail_on_input">à la saisie</string>
+    <string name="session_detail_cancel_schedule">Annuler la planification</string>
+    <string name="session_detail_left_arrow">Flèche gauche</string>
+    <string name="session_detail_right_arrow">Flèche droite</string>
+    <string name="session_detail_up_arrow">Flèche haut</string>
+    <string name="session_detail_down_arrow">Flèche bas</string>
+    <string name="session_detail_quick_reply_yes">Oui</string>
+    <string name="session_detail_quick_reply_no">Non</string>
+
+    <!-- ── New session ── -->
+    <string name="new_session_title">Nouvelle session</string>
+    <string name="new_session_name_label">Nom de la session</string>
+    <string name="new_session_name_hint">ex : Refactorisation Auth</string>
+    <string name="new_session_task_label">Tâche</string>
+    <string name="new_session_task_hint">ex : refactoriser le module de paiement pour utiliser le nouveau auth</string>
+    <string name="new_session_server_label">Serveur</string>
+    <string name="new_session_backend_label">Backend LLM</string>
+    <string name="new_session_profile_label">Profil</string>
+    <string name="new_session_cluster_label">Cluster</string>
+    <string name="new_session_model_label">Modèle</string>
+    <string name="new_session_working_dir_label">Répertoire de travail (optionnel)</string>
+    <string name="new_session_working_dir_hint">Chemin serveur — ex : /home/user/code</string>
+    <string name="new_session_resume_label">Reprendre la précédente (optionnel)</string>
+    <string name="new_session_start_fresh">Recommencer</string>
+    <string name="new_session_recent_sessions">Sessions récentes</string>
+    <string name="new_session_git_label">Git</string>
+    <string name="new_session_auto_git_init">Auto git init</string>
+    <string name="new_session_auto_git_commit">Auto git commit</string>
+    <string name="new_session_advanced_claude">Avancé (options claude)</string>
+    <string name="new_session_permission_mode_label">Mode de permission</string>
+    <string name="new_session_effort_label">Effort</string>
+    <string name="new_session_error_empty_task">La tâche ne peut pas être vide.</string>
+    <string name="new_session_error_no_servers">Aucun serveur configuré — ajoutez-en un dans les Paramètres.</string>
+    <string name="new_session_pick_server">Choisir un serveur</string>
+    <string name="new_session_no_profile">Par défaut (sans profil)</string>
+    <string name="new_session_config_default">(config par défaut)</string>
+    <string name="new_session_inherit">(hériter)</string>
+    <string name="new_session_from_library">De la bibliothèque ▾</string>
+
+    <!-- ── Alerts ── -->
+    <string name="alerts_title">Alertes</string>
+    <string name="alerts_active_tab">Actif (%1$d)</string>
+    <string name="alerts_inactive_tab">Inactif (%1$d)</string>
+    <string name="alerts_empty_active">Aucune session n\'attend de saisie. Vous êtes à jour.</string>
+    <string name="alerts_empty_inactive">Aucune alerte historique.</string>
+    <string name="alerts_action_reply">Répondre…</string>
+    <string name="alerts_action_schedule">Planifier…</string>
+
+    <!-- ── Autonomous ── -->
+    <string name="autonomous_title">Autonome</string>
+    <string name="autonomous_filter_open">Filtrer</string>
+    <string name="autonomous_filter_close">Fermer le filtre</string>
+    <string name="autonomous_fab_new">Nouveau plan autonome</string>
+    <string name="autonomous_filter_all">Tous</string>
+    <string name="autonomous_filter_templates">Modèles</string>
+    <string name="autonomous_empty_state">Aucun plan ne correspond.</string>
+    <string name="autonomous_depth">profondeur %1$d</string>
+    <string name="autonomous_template_label">modèle</string>
+    <string name="autonomous_story_count">%1$d stories</string>
+
+    <string name="new_prd_title">Nouveau PRD</string>
+    <string name="new_prd_name_label">Nom (obligatoire)</string>
+    <string name="new_prd_display_title_label">Titre (optionnel)</string>
+    <string name="new_prd_profile_label">Profil</string>
+    <string name="new_prd_decomp_profile_label">Profil de décomposition</string>
+    <string name="new_prd_project_dir_label">Répertoire du projet</string>
+    <string name="new_prd_backend_label">Backend</string>
+    <string name="new_prd_effort_label">Effort</string>
+    <string name="new_prd_model_label">Modèle</string>
+    <string name="new_prd_permission_mode_label">Mode de permission</string>
+    <string name="new_prd_cluster_label">Cluster</string>
+    <string name="new_prd_inherit">(hériter)</string>
+    <string name="new_prd_backend_default">(défaut du backend)</string>
+
+    <string name="prd_detail_decompose">Décomposer</string>
+    <string name="prd_detail_run">Exécuter</string>
+    <string name="prd_detail_revise">Réviser</string>
+    <string name="prd_detail_graph">📊 Graphe</string>
+    <string name="prd_detail_llm">LLM</string>
+    <string name="prd_detail_no_stories">Pas encore de stories (en cours de décomposition ?).</string>
+    <string name="prd_detail_reject_title">Rejeter le PRD ?</string>
+    <string name="prd_detail_reject_reason_label">Raison (obligatoire)</string>
+    <string name="prd_detail_revise_title">Demander des révisions</string>
+    <string name="prd_detail_revise_label">Qu\'est-ce qui doit être révisé ?</string>
+    <string name="prd_detail_set_llm_title">Définir le remplacement LLM</string>
+    <string name="prd_detail_edit_prd_title">Modifier le PRD</string>
+    <string name="prd_detail_spec_label">Spécification</string>
+    <string name="prd_detail_edit_story_title">Modifier la story</string>
+    <string name="prd_detail_title_label">Titre</string>
+    <string name="prd_detail_description_label">Description</string>
+    <string name="prd_detail_files_label">Fichiers</string>
+    <string name="prd_detail_files_hint">Un chemin par ligne, max. 50.</string>
+    <string name="prd_detail_delete_title">Supprimer le PRD ?</string>
+    <string name="prd_detail_delete_body">Supprime définitivement « %1$s » et tous les PRDs enfants. Cette action est irréversible.</string>
+    <string name="prd_detail_edit_files">✎ fichiers</string>
+
+    <!-- ── Monitor ── -->
+    <string name="stats_section_server">Serveur</string>
+    <string name="stats_section_sessions">Statistiques de sessions</string>
+    <string name="stats_section_system">Statistiques système</string>
+    <string name="stats_section_daemon">Daemon</string>
+    <string name="stats_section_infrastructure">Infrastructure</string>
+    <string name="stats_section_rtk">Économies de tokens RTK</string>
+    <string name="stats_section_memory">Mémoire épisodique</string>
+    <string name="stats_section_ollama">Serveur Ollama</string>
+    <string name="stats_section_envelopes">Enveloppes de processus</string>
+    <string name="stats_section_backends">Santé des backends</string>
+    <string name="stats_row_download">↓ Téléchargement</string>
+    <string name="stats_row_upload">↑ Envoi</string>
+    <string name="stats_row_memory">Mémoire</string>
+    <string name="stats_row_goroutines">Goroutines</string>
+    <string name="stats_row_open_fds">Descripteurs de fichiers</string>
+    <string name="stats_row_uptime">Temps de fonctionnement</string>
+    <string name="stats_row_hostname">Nom d\'hôte</string>
+    <string name="stats_row_daemon">Daemon</string>
+    <string name="stats_row_messaging">Messagerie</string>
+    <string name="stats_row_bound_to">Lié à</string>
+    <string name="stats_row_cpu">CPU</string>
+    <string name="stats_row_version">Version</string>
+    <string name="stats_row_hooks">Hooks</string>
+    <string name="stats_row_tokens_saved">Tokens économisés</string>
+    <string name="stats_row_avg_savings">Économie moyenne</string>
+    <string name="stats_row_commands">Commandes</string>
+    <string name="stats_row_total">Total</string>
+    <string name="stats_row_manual">Manuel</string>
+    <string name="stats_row_sessions">Sessions</string>
+    <string name="stats_row_learnings">Apprentissages</string>
+    <string name="stats_row_db_size">Taille BDD</string>
+    <string name="stats_row_host">Hôte</string>
+    <string name="stats_row_status">Statut</string>
+    <string name="stats_row_models">Modèles</string>
+    <string name="stats_row_disk_used">Disque utilisé</string>
+    <string name="stats_row_running">En cours</string>
+    <string name="stats_row_vram_used">VRAM utilisée</string>
+    <string name="stats_row_http">HTTP</string>
+    <string name="stats_row_https">HTTPS</string>
+    <string name="stats_row_mcp_sse">MCP SSE</string>
+    <string name="stats_row_tmux">Tmux</string>
+    <string name="stats_label_running">En cours</string>
+    <string name="stats_label_waiting">En attente</string>
+    <string name="stats_label_idle">Inactif</string>
+    <string name="stats_label_enabled">activé</string>
+    <string name="stats_label_disabled">désactivé</string>
+    <string name="stats_label_online">en ligne</string>
+    <string name="stats_label_offline">hors ligne</string>
+    <string name="stats_label_per_core">Par cœur</string>
+    <string name="stats_ebpf_degraded_title">⚠ eBPF dégradé</string>
+    <string name="stats_ebpf_degraded_default">La prise en charge eBPF est intégrée au daemon mais les sondes ne sont pas chargées. Exécutez `datawatch setup ebpf` pour les activer.</string>
+
+    <!-- ── Security ── -->
+    <string name="security_biometric_title">Déverrouillage biométrique</string>
+    <string name="security_biometric_desc">Exige une empreinte digitale ou un visage à chaque ouverture de l\'app. La clé de base de données est liée à la biométrie quand activé.</string>
+    <string name="security_biometric_unavailable">Indisponible — aucune biométrie de classe 3 enregistrée sur cet appareil.</string>
+    <string name="security_migration_failed">Échec de la migration de clé : %1$s</string>
+</resources>

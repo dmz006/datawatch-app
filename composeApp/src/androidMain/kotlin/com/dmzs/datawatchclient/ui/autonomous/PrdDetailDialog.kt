@@ -34,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 
@@ -102,7 +104,7 @@ internal fun PrdDetailDialog(
                     )
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = { graphOpen = true }) {
-                        Text("📊 Graph", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
@@ -113,42 +115,42 @@ internal fun PrdDetailDialog(
                 ) {
                     if (status == "draft" || status == "revisions_asked") {
                         TextButton(onClick = { onDecompose(); onDismiss() }) {
-                            Text("Decompose", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.prd_detail_decompose), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (canReview) {
                         TextButton(onClick = { onApprove(); onDismiss() }) {
-                            Text("Approve", color = Color(0xFF10B981), style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.action_approve), color = Color(0xFF10B981), style = MaterialTheme.typography.labelSmall)
                         }
                         TextButton(onClick = { rejectOpen = true }) {
-                            Text("Reject", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                         }
                         TextButton(onClick = { reviseOpen = true }) {
-                            Text("Revise", color = Color(0xFFF59E0B), style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.prd_detail_revise), color = Color(0xFFF59E0B), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (status == "approved") {
                         TextButton(onClick = { onRun(); onDismiss() }) {
-                            Text("Run", color = Color(0xFF3B82F6), style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.prd_detail_run), color = Color(0xFF3B82F6), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (status == "running") {
                         TextButton(onClick = { onCancel(); onDismiss() }) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (status != "running" && status != "completed") {
                         TextButton(onClick = { llmOpen = true }) {
-                            Text("LLM", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.prd_detail_llm), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (canEdit) {
                         TextButton(onClick = { editPrdOpen = true }) {
-                            Text("Edit", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.action_edit), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     TextButton(onClick = { deleteConfirmOpen = true }) {
-                        Text("Delete", color = Color(0xFF7C2D12), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.action_delete), color = Color(0xFF7C2D12), style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
@@ -156,7 +158,7 @@ internal fun PrdDetailDialog(
 
                 if (prd.stories.isEmpty()) {
                     Text(
-                        "No stories yet (still decomposing?).",
+                        stringResource(R.string.prd_detail_no_stories),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -189,7 +191,7 @@ internal fun PrdDetailDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
         dismissButton = null,
     )
 
@@ -198,12 +200,12 @@ internal fun PrdDetailDialog(
     if (rejectOpen) {
         AlertDialog(
             onDismissRequest = { rejectOpen = false },
-            title = { Text("Reject PRD?") },
+            title = { Text(stringResource(R.string.prd_detail_reject_title)) },
             text = {
                 OutlinedTextField(
                     value = rejectReason,
                     onValueChange = { rejectReason = it },
-                    label = { Text("Reason (required)") },
+                    label = { Text(stringResource(R.string.prd_detail_reject_reason_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 4,
                 )
@@ -218,21 +220,21 @@ internal fun PrdDetailDialog(
                         }
                     },
                     enabled = rejectReason.isNotBlank(),
-                ) { Text("Reject", color = MaterialTheme.colorScheme.error) }
+                ) { Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { rejectOpen = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { rejectOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 
     if (reviseOpen) {
         AlertDialog(
             onDismissRequest = { reviseOpen = false },
-            title = { Text("Request revisions") },
+            title = { Text(stringResource(R.string.prd_detail_revise_title)) },
             text = {
                 OutlinedTextField(
                     value = reviseNote,
                     onValueChange = { reviseNote = it },
-                    label = { Text("What needs revision?") },
+                    label = { Text(stringResource(R.string.prd_detail_revise_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 4,
                 )
@@ -247,9 +249,9 @@ internal fun PrdDetailDialog(
                         }
                     },
                     enabled = reviseNote.isNotBlank(),
-                ) { Text("Send") }
+                ) { Text(stringResource(R.string.action_send)) }
             },
-            dismissButton = { TextButton(onClick = { reviseOpen = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { reviseOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 
@@ -278,19 +280,19 @@ internal fun PrdDetailDialog(
     if (deleteConfirmOpen) {
         AlertDialog(
             onDismissRequest = { deleteConfirmOpen = false },
-            title = { Text("Delete PRD?") },
+            title = { Text(stringResource(R.string.prd_detail_delete_title)) },
             text = {
                 Text(
-                    "Permanently removes \"${prd.title ?: prd.name}\" and all child PRDs. This cannot be undone.",
+                    stringResource(R.string.prd_detail_delete_body, prd.title ?: prd.name),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = { onDelete(); deleteConfirmOpen = false; onDismiss() },
-                ) { Text("Delete", color = Color(0xFF7C2D12)) }
+                ) { Text(stringResource(R.string.action_delete), color = Color(0xFF7C2D12)) }
             },
-            dismissButton = { TextButton(onClick = { deleteConfirmOpen = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleteConfirmOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 
@@ -339,16 +341,17 @@ private fun LlmOverrideDialog(
     var backendMenuOpen by remember { mutableStateOf(false) }
     var effortMenuOpen by remember { mutableStateOf(false) }
 
+    val inheritLabel = stringResource(R.string.new_prd_inherit)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set LLM override") },
+        title = { Text(stringResource(R.string.prd_detail_set_llm_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
-                        value = backend.ifEmpty { "(inherit)" },
+                        value = backend.ifEmpty { inheritLabel },
                         onValueChange = {},
-                        label = { Text("Backend") },
+                        label = { Text(stringResource(R.string.new_prd_backend_label)) },
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
@@ -356,7 +359,7 @@ private fun LlmOverrideDialog(
                         },
                     )
                     DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
-                        DropdownMenuItem(text = { Text("(inherit)") }, onClick = { backend = ""; backendMenuOpen = false })
+                        DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { backend = ""; backendMenuOpen = false })
                         backends.forEach { b ->
                             DropdownMenuItem(text = { Text(b) }, onClick = { backend = b; backendMenuOpen = false })
                         }
@@ -364,9 +367,9 @@ private fun LlmOverrideDialog(
                 }
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     OutlinedTextField(
-                        value = effort.ifEmpty { "(inherit)" },
+                        value = effort.ifEmpty { inheritLabel },
                         onValueChange = {},
-                        label = { Text("Effort") },
+                        label = { Text(stringResource(R.string.new_prd_effort_label)) },
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
@@ -376,7 +379,7 @@ private fun LlmOverrideDialog(
                     DropdownMenu(expanded = effortMenuOpen, onDismissRequest = { effortMenuOpen = false }) {
                         EFFORT_OPTIONS.forEach { e ->
                             DropdownMenuItem(
-                                text = { Text(if (e.isEmpty()) "(inherit)" else e) },
+                                text = { Text(if (e.isEmpty()) inheritLabel else e) },
                                 onClick = { effort = e; effortMenuOpen = false },
                             )
                         }
@@ -391,8 +394,8 @@ private fun LlmOverrideDialog(
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(backend, effort, model) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(backend, effort, model) }) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -413,28 +416,29 @@ private fun EditPrdDialog(
     var permissionMode by remember { mutableStateOf(currentPermissionMode) }
     var pmMenuOpen by remember { mutableStateOf(false) }
 
+    val inheritLabel = stringResource(R.string.new_prd_inherit)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit PRD") },
+        title = { Text(stringResource(R.string.prd_detail_edit_prd_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = title, onValueChange = { title = it },
-                    label = { Text("Title") }, singleLine = true,
+                    label = { Text(stringResource(R.string.prd_detail_title_label)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = spec, onValueChange = { spec = it },
-                    label = { Text("Spec") },
+                    label = { Text(stringResource(R.string.prd_detail_spec_label)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     maxLines = 8,
                 )
                 if (permissionModes.isNotEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
-                            value = permissionMode.ifEmpty { "(inherit)" },
+                            value = permissionMode.ifEmpty { inheritLabel },
                             onValueChange = {},
-                            label = { Text("Permission mode") },
+                            label = { Text(stringResource(R.string.new_prd_permission_mode_label)) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
@@ -443,7 +447,7 @@ private fun EditPrdDialog(
                         )
                         DropdownMenu(expanded = pmMenuOpen, onDismissRequest = { pmMenuOpen = false }) {
                             DropdownMenuItem(
-                                text = { Text("(inherit)") },
+                                text = { Text(inheritLabel) },
                                 onClick = { permissionMode = ""; pmMenuOpen = false },
                             )
                             permissionModes.forEach { pm ->
@@ -463,9 +467,9 @@ private fun EditPrdDialog(
                 val newSpec = spec.takeIf { it.isNotBlank() }
                 val newPm = permissionMode.takeIf { it != currentPermissionMode }
                 onSave(newTitle, newSpec, newPm)
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -492,7 +496,7 @@ private fun StoryRow(
             StoryStatusPill(story.status)
             if (canEdit) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Edit story", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.prd_detail_edit_story_title), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -511,7 +515,7 @@ private fun StoryRow(
                 story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF22C55E)) }
                 if (canEdit) {
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onEditFiles) { Text("✎ files", style = MaterialTheme.typography.labelSmall) }
+                    TextButton(onClick = onEditFiles) { Text(stringResource(R.string.prd_detail_edit_files), style = MaterialTheme.typography.labelSmall) }
                 }
             }
         }
@@ -550,19 +554,19 @@ private fun EditStoryDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (
     var description by remember(story.id) { mutableStateOf(story.description.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit story") },
+        title = { Text(stringResource(R.string.prd_detail_edit_story_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 6)
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(stringResource(R.string.prd_detail_title_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.prd_detail_description_label)) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 6)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 onSave(title.takeIf { it != story.title }, description.takeIf { it != story.description.orEmpty() })
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -575,15 +579,15 @@ private fun EditFilesDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (
         title = { Text("Files for ${story.title.ifBlank { story.id }}") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("One path per line, max 50.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("Files") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 8)
+                Text(stringResource(R.string.prd_detail_files_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text(stringResource(R.string.prd_detail_files_label)) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 8)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 onSave(text.lines().map { it.trim() }.filter { it.isNotEmpty() }.take(50))
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

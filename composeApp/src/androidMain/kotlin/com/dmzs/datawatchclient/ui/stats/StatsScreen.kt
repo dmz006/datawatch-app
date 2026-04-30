@@ -24,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
@@ -111,9 +113,8 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
 private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     val enabled = s.ebpfEnabled ?: return
     if (!enabled || s.ebpfActive) return
-    val msg =
-        s.ebpfMessage?.takeIf { it.isNotBlank() }
-            ?: "eBPF support is built into the daemon but probes aren't loaded. Run `datawatch setup ebpf` to enable."
+    val ebpfDefaultMsg = stringResource(R.string.stats_ebpf_degraded_default)
+    val msg = s.ebpfMessage?.takeIf { it.isNotBlank() } ?: ebpfDefaultMsg
     androidx.compose.material3.Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -124,7 +125,7 @@ private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDt
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "⚠ eBPF Degraded",
+                stringResource(R.string.stats_ebpf_degraded_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
@@ -145,8 +146,8 @@ private fun NetworkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     PwaCardContainer {
         PwaSectionTitle(if (s.ebpfActive) "Network (datawatch)" else "Network (system)")
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            MonoRow("↓ Download", formatBytes(s.netRxBytes))
-            MonoRow("↑ Upload", formatBytes(s.netTxBytes))
+            MonoRow(stringResource(R.string.stats_row_download), formatBytes(s.netRxBytes))
+            MonoRow(stringResource(R.string.stats_row_upload), formatBytes(s.netTxBytes))
         }
     }
 }
@@ -154,12 +155,12 @@ private fun NetworkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
 @Composable
 private fun DaemonCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     PwaCardContainer {
-        PwaSectionTitle("Daemon")
+        PwaSectionTitle(stringResource(R.string.stats_section_daemon))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            if (s.daemonRssBytes > 0) MonoRow("Memory", "${formatBytes(s.daemonRssBytes)} RSS")
-            if (s.goroutines > 0) MonoRow("Goroutines", s.goroutines.toString())
-            if (s.openFds > 0) MonoRow("File descriptors", s.openFds.toString())
-            MonoRow("Uptime", formatUptime(s.uptimeSeconds))
+            if (s.daemonRssBytes > 0) MonoRow(stringResource(R.string.stats_row_memory), "${formatBytes(s.daemonRssBytes)} RSS")
+            if (s.goroutines > 0) MonoRow(stringResource(R.string.stats_row_goroutines), s.goroutines.toString())
+            if (s.openFds > 0) MonoRow(stringResource(R.string.stats_row_open_fds), s.openFds.toString())
+            MonoRow(stringResource(R.string.stats_row_uptime), formatUptime(s.uptimeSeconds))
         }
     }
 }
@@ -173,15 +174,15 @@ private fun InfrastructureCard(
     val httpPort = s.webPort ?: info?.serverPort ?: 8080
     val hasTls = s.tlsEnabled && s.tlsPort > 0
     PwaCardContainer {
-        PwaSectionTitle("Infrastructure")
+        PwaSectionTitle(stringResource(R.string.stats_section_infrastructure))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            MonoRow("HTTP", "http://$host:$httpPort${if (hasTls) " (→ HTTPS)" else ""}")
-            if (hasTls) MonoRow("HTTPS", "https://$host:${s.tlsPort}")
-            s.mcpSsePort?.let { MonoRow("MCP SSE", "${s.mcpSseHost ?: "0.0.0.0"}:$it") }
+            MonoRow(stringResource(R.string.stats_row_http), "http://$host:$httpPort${if (hasTls) " (→ HTTPS)" else ""}")
+            if (hasTls) MonoRow(stringResource(R.string.stats_row_https), "https://$host:${s.tlsPort}")
+            s.mcpSsePort?.let { MonoRow(stringResource(R.string.stats_row_mcp_sse), "${s.mcpSseHost ?: "0.0.0.0"}:$it") }
             val tmux =
                 "${s.tmuxSessions} sessions" +
                     (if (s.orphanedTmux.isNotEmpty()) " · ${s.orphanedTmux.size} orphan" else "")
-            MonoRow("Tmux", tmux)
+            MonoRow(stringResource(R.string.stats_row_tmux), tmux)
         }
     }
 }
@@ -189,9 +190,9 @@ private fun InfrastructureCard(
 @Composable
 private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     PwaCardContainer {
-        PwaSectionTitle("RTK Token Savings")
+        PwaSectionTitle(stringResource(R.string.stats_section_rtk))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            MonoRow("Version", s.rtkVersion ?: "?")
+            MonoRow(stringResource(R.string.stats_row_version), s.rtkVersion ?: "?")
             val hooksColor =
                 if (s.rtkHooksActive) {
                     LocalDatawatchColors.current.success
@@ -200,7 +201,7 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
                 }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "Hooks",
+                    stringResource(R.string.stats_row_hooks),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -210,12 +211,12 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
                     color = hooksColor,
                 )
             }
-            MonoRow("Tokens saved", s.rtkTotalSaved.toString())
+            MonoRow(stringResource(R.string.stats_row_tokens_saved), s.rtkTotalSaved.toString())
             MonoRow(
-                "Avg savings",
+                stringResource(R.string.stats_row_avg_savings),
                 if (s.rtkAvgSavingsPct != null) "%.1f%%".format(s.rtkAvgSavingsPct) else "—",
             )
-            MonoRow("Commands", s.rtkTotalCommands.toString())
+            MonoRow(stringResource(R.string.stats_row_commands), s.rtkTotalCommands.toString())
         }
     }
 }
@@ -224,16 +225,16 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
 private fun MemoryStatsCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     val dw = LocalDatawatchColors.current
     PwaCardContainer {
-        PwaSectionTitle("Episodic Memory")
+        PwaSectionTitle(stringResource(R.string.stats_section_memory))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "Status",
+                    stringResource(R.string.stats_row_status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (s.memoryEnabled) "enabled" else "disabled",
+                    if (s.memoryEnabled) stringResource(R.string.stats_label_enabled) else stringResource(R.string.stats_label_disabled),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (s.memoryEnabled) dw.success else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -246,11 +247,11 @@ private fun MemoryStatsCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) 
                 } else {
                     MonoRow("Encryption", "plaintext")
                 }
-                MonoRow("Total", s.memoryTotalCount.toString())
-                MonoRow("Manual", s.memoryManualCount.toString())
-                MonoRow("Sessions", s.memorySessionCount.toString())
-                MonoRow("Learnings", s.memoryLearningCount.toString())
-                MonoRow("DB Size", formatBytes(s.memoryDbSizeBytes))
+                MonoRow(stringResource(R.string.stats_row_total), s.memoryTotalCount.toString())
+                MonoRow(stringResource(R.string.stats_row_manual), s.memoryManualCount.toString())
+                MonoRow(stringResource(R.string.stats_row_sessions), s.memorySessionCount.toString())
+                MonoRow(stringResource(R.string.stats_row_learnings), s.memoryLearningCount.toString())
+                MonoRow(stringResource(R.string.stats_row_db_size), formatBytes(s.memoryDbSizeBytes))
             }
         }
     }
@@ -262,25 +263,25 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
     val running = o.runningModels
     val totalVram = running.sumOf { it.sizeVram }
     PwaCardContainer {
-        PwaSectionTitle("Ollama Server")
+        PwaSectionTitle(stringResource(R.string.stats_section_ollama))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            MonoRow("Host", o.host ?: "—")
+            MonoRow(stringResource(R.string.stats_row_host), o.host ?: "—")
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "Status",
+                    stringResource(R.string.stats_row_status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (o.available) "online" else "offline",
+                    if (o.available) stringResource(R.string.stats_label_online) else stringResource(R.string.stats_label_offline),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (o.available) dw.success else MaterialTheme.colorScheme.error,
                 )
             }
-            MonoRow("Models", o.modelCount.toString())
-            MonoRow("Disk Used", formatBytes(o.totalSizeBytes))
-            MonoRow("Running", running.size.toString())
-            MonoRow("VRAM Used", formatBytes(totalVram))
+            MonoRow(stringResource(R.string.stats_row_models), o.modelCount.toString())
+            MonoRow(stringResource(R.string.stats_row_disk_used), formatBytes(o.totalSizeBytes))
+            MonoRow(stringResource(R.string.stats_row_running), running.size.toString())
+            MonoRow(stringResource(R.string.stats_row_vram_used), formatBytes(totalVram))
             running.forEach {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
@@ -301,7 +302,7 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
 @Composable
 private fun EnvelopesCard(envs: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>) {
     PwaCardContainer {
-        PwaSectionTitle("Process envelopes")
+        PwaSectionTitle(stringResource(R.string.stats_section_envelopes))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             envs.sortedByDescending { it.cpuPct }.forEach { env ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -338,7 +339,7 @@ private fun EnvelopesCard(envs: List<com.dmzs.datawatchclient.transport.dto.Stat
 private fun BackendHealthCard(backends: List<com.dmzs.datawatchclient.transport.dto.BackendStatusDto>) {
     val dw = LocalDatawatchColors.current
     PwaCardContainer {
-        PwaSectionTitle("Backend health")
+        PwaSectionTitle(stringResource(R.string.stats_section_backends))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             backends.forEach { b ->
                 Row(
@@ -419,12 +420,12 @@ private fun ServerInfoCard(
     // the per-session badge in sessions list is the right surface for
     // that. Backends card below shows reachability.
     PwaCardContainer {
-        PwaSectionTitle("Server")
-        InfoRow("Hostname", info.hostname)
-        InfoRow("Daemon", "v${info.version}")
-        info.messagingBackend?.let { InfoRow("Messaging", it) }
+        PwaSectionTitle(stringResource(R.string.stats_section_server))
+        InfoRow(stringResource(R.string.stats_row_hostname), info.hostname)
+        InfoRow(stringResource(R.string.stats_row_daemon), "v${info.version}")
+        info.messagingBackend?.let { InfoRow(stringResource(R.string.stats_row_messaging), it) }
         if (info.serverHost != null && info.serverPort != null) {
-            InfoRow("Bound to", "${info.serverHost}:${info.serverPort}")
+            InfoRow(stringResource(R.string.stats_row_bound_to), "${info.serverHost}:${info.serverPort}")
         }
         stats?.let { s ->
             // Live CPU load — prefer the richer `cpu_load_avg_1 / cores`
@@ -439,7 +440,7 @@ private fun ServerInfoCard(
                     cpuPctFlat != null -> "%.1f%%".format(cpuPctFlat)
                     else -> null
                 }
-            cpuText?.let { InfoRow("CPU", it) }
+            cpuText?.let { InfoRow(stringResource(R.string.stats_row_cpu), it) }
             val memUsed = s.memUsed
             val memTotal = s.memTotal
             val memPctFlat = s.memPct
@@ -452,8 +453,8 @@ private fun ServerInfoCard(
                 } else {
                     null
                 }
-            memText?.let { InfoRow("Memory", it) }
-            if (s.uptimeSeconds > 0) InfoRow("Uptime", formatUptime(s.uptimeSeconds))
+            memText?.let { InfoRow(stringResource(R.string.stats_row_memory), it) }
+            if (s.uptimeSeconds > 0) InfoRow(stringResource(R.string.stats_row_uptime), formatUptime(s.uptimeSeconds))
         }
     }
 }
@@ -499,7 +500,7 @@ private fun SessionStatisticsCard(
             else -> dw.success
         }
     PwaCardContainer {
-        PwaSectionTitle("Session Statistics")
+        PwaSectionTitle(stringResource(R.string.stats_section_sessions))
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -540,10 +541,10 @@ private fun SessionStatisticsCard(
                 modifier = Modifier.weight(1f).padding(start = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                StatPill("Running", s.sessionsRunning, dw.success)
-                StatPill("Waiting", s.sessionsWaiting, dw.waiting)
+                StatPill(stringResource(R.string.stats_label_running), s.sessionsRunning, dw.success)
+                StatPill(stringResource(R.string.stats_label_waiting), s.sessionsWaiting, dw.waiting)
                 val idle = (s.sessionsTotal - s.sessionsRunning - s.sessionsWaiting).coerceAtLeast(0)
-                StatPill("Idle", idle, MaterialTheme.colorScheme.onSurfaceVariant)
+                StatPill(stringResource(R.string.stats_label_idle), idle, MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -593,7 +594,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
     // for disk, swap_used / swap_total when present, and the gpu_* block
     // when the host has a GPU. Mirror the same fields here.
     PwaCardContainer {
-        PwaSectionTitle("System Statistics")
+        PwaSectionTitle(stringResource(R.string.stats_section_system))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             // CPU Load — fraction against core count, cap bar at 100%.
             val load1 = s.cpuLoad1
@@ -688,7 +689,7 @@ private fun PerCoreCpuStrip(cores: List<Double>) {
     if (cores.isEmpty()) return
     Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
         Text(
-            "Per-core",
+            stringResource(R.string.stats_label_per_core),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

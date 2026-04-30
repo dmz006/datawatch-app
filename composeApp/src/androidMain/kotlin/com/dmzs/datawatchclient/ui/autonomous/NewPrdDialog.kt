@@ -21,7 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import kotlinx.coroutines.async
@@ -76,6 +78,9 @@ internal fun NewPrdDialog(
     var backendOptions by remember { mutableStateOf<List<String>>(emptyList()) }
     var permissionModeOptions by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    val inheritLabel = stringResource(R.string.new_prd_inherit)
+    val backendDefaultLabel = stringResource(R.string.new_prd_backend_default)
+
     /** Models keyed by backend name; only ollama and openwebui are fetched. */
     var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
 
@@ -125,7 +130,7 @@ internal fun NewPrdDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New PRD") },
+        title = { Text(stringResource(R.string.new_prd_title)) },
         text = {
             Column(
                 modifier = Modifier
@@ -135,14 +140,14 @@ internal fun NewPrdDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name (required)") },
+                    label = { Text(stringResource(R.string.new_prd_name_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title (optional)") },
+                    label = { Text(stringResource(R.string.new_prd_display_title_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
@@ -152,7 +157,7 @@ internal fun NewPrdDialog(
                     OutlinedTextField(
                         value = if (profile == "__dir__") "— project directory —" else profile,
                         onValueChange = {},
-                        label = { Text("Profile") },
+                        label = { Text(stringResource(R.string.new_prd_profile_label)) },
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
@@ -178,7 +183,7 @@ internal fun NewPrdDialog(
                     OutlinedTextField(
                         value = decomp.ifEmpty { "— inherit —" },
                         onValueChange = {},
-                        label = { Text("Decomposition profile") },
+                        label = { Text(stringResource(R.string.new_prd_decomp_profile_label)) },
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
@@ -204,7 +209,7 @@ internal fun NewPrdDialog(
                     OutlinedTextField(
                         value = projectDir,
                         onValueChange = { projectDir = it },
-                        label = { Text("Project directory") },
+                        label = { Text(stringResource(R.string.new_prd_project_dir_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
@@ -212,9 +217,9 @@ internal fun NewPrdDialog(
                     // ── Backend dropdown (enabled only, shell excluded) ────
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
-                            value = backend.ifEmpty { "(inherit)" },
+                            value = backend.ifEmpty { inheritLabel },
                             onValueChange = {},
-                            label = { Text("Backend") },
+                            label = { Text(stringResource(R.string.new_prd_backend_label)) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
@@ -223,7 +228,7 @@ internal fun NewPrdDialog(
                         )
                         DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
                             DropdownMenuItem(
-                                text = { Text("(inherit)") },
+                                text = { Text(inheritLabel) },
                                 onClick = { backend = ""; backendMenuOpen = false },
                             )
                             backendOptions.forEach { b ->
@@ -238,9 +243,9 @@ internal fun NewPrdDialog(
                     // ── Effort dropdown ───────────────────────────────────
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
-                            value = effort.ifEmpty { "(inherit)" },
+                            value = effort.ifEmpty { inheritLabel },
                             onValueChange = {},
-                            label = { Text("Effort") },
+                            label = { Text(stringResource(R.string.new_prd_effort_label)) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
@@ -251,7 +256,7 @@ internal fun NewPrdDialog(
                             listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
                                 .forEach { e ->
                                     DropdownMenuItem(
-                                        text = { Text(if (e.isEmpty()) "(inherit)" else e) },
+                                        text = { Text(if (e.isEmpty()) inheritLabel else e) },
                                         onClick = { effort = e; effortMenuOpen = false },
                                     )
                                 }
@@ -262,9 +267,9 @@ internal fun NewPrdDialog(
                     if (modelsForBackend.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                             OutlinedTextField(
-                                value = model.ifEmpty { "(backend default)" },
+                                value = model.ifEmpty { backendDefaultLabel },
                                 onValueChange = {},
-                                label = { Text("Model") },
+                                label = { Text(stringResource(R.string.new_prd_model_label)) },
                                 readOnly = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 trailingIcon = {
@@ -273,7 +278,7 @@ internal fun NewPrdDialog(
                             )
                             DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("(backend default)") },
+                                    text = { Text(backendDefaultLabel) },
                                     onClick = { model = ""; modelMenuOpen = false },
                                 )
                                 modelsForBackend.forEach { m ->
@@ -302,9 +307,9 @@ internal fun NewPrdDialog(
                     if (permissionModeOptions.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                             OutlinedTextField(
-                                value = permissionMode.ifEmpty { "(inherit)" },
+                                value = permissionMode.ifEmpty { inheritLabel },
                                 onValueChange = {},
-                                label = { Text("Permission mode") },
+                                label = { Text(stringResource(R.string.new_prd_permission_mode_label)) },
                                 readOnly = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 trailingIcon = {
@@ -313,7 +318,7 @@ internal fun NewPrdDialog(
                             )
                             DropdownMenu(expanded = permissionModeMenuOpen, onDismissRequest = { permissionModeMenuOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("(inherit)") },
+                                    text = { Text(inheritLabel) },
                                     onClick = { permissionMode = ""; permissionModeMenuOpen = false },
                                 )
                                 permissionModeOptions.forEach { pm ->
@@ -331,7 +336,7 @@ internal fun NewPrdDialog(
                         OutlinedTextField(
                             value = cluster.ifEmpty { "— Local service instance —" },
                             onValueChange = {},
-                            label = { Text("Cluster") },
+                            label = { Text(stringResource(R.string.new_prd_cluster_label)) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
@@ -382,10 +387,10 @@ internal fun NewPrdDialog(
                     if (req.name.isNotBlank()) onCreate(req)
                 },
                 enabled = name.isNotBlank(),
-            ) { Text("Create") }
+            ) { Text(stringResource(R.string.action_create)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }

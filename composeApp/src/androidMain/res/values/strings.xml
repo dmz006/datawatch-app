@@ -7,4 +7,269 @@
     <string name="widget_monitor_description">CPU load, memory and session counts from the active datawatch server.</string>
     <string name="widget_monitor_label">datawatch Monitor</string>
     <string name="widget_sessions_label">datawatch Sessions</string>
+
+    <!-- ── Bottom navigation ── -->
+    <string name="nav_sessions">Sessions</string>
+    <string name="nav_autonomous">Autonomous</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- ── Common actions ── -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_create">Create</string>
+    <string name="action_send">Send</string>
+    <string name="action_close">Close</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_restart">Restart</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_start">Start</string>
+    <string name="action_open">Open</string>
+    <string name="action_run">Run</string>
+    <string name="action_approve">Approve</string>
+    <string name="action_reject">Reject</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_browse">Browse…</string>
+    <string name="action_back">Back</string>
+    <string name="action_kill">Kill</string>
+
+    <!-- ── Settings tabs ── -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_tab_monitor">Monitor</string>
+    <string name="settings_tab_general">General</string>
+    <string name="settings_tab_comms">Comms</string>
+    <string name="settings_tab_llm">LLM</string>
+    <string name="settings_tab_about">About</string>
+    <string name="settings_switch_server">Switch server</string>
+
+    <!-- ── Sessions screen ── -->
+    <string name="sessions_filter_hint">Filter sessions…</string>
+    <string name="sessions_filter_expand">Filter / sort sessions</string>
+    <string name="sessions_filter_collapse">Collapse filter</string>
+    <string name="sessions_fab_new">New session</string>
+    <string name="sessions_clear_filter">Clear filter</string>
+    <string name="sessions_collapse_toolbar">Collapse toolbar</string>
+    <string name="sessions_sort_prefix">Sort: %1$s</string>
+    <string name="sessions_history_count">History (%1$d)</string>
+    <string name="sessions_empty_state">No sessions yet. Use `new: &lt;task&gt;` from a messaging backend to start one, or wait for the daemon to push one here.</string>
+    <string name="sessions_no_task">(no task)</string>
+    <string name="sessions_selected_count">%1$d selected</string>
+    <string name="sessions_cancel_selection">Cancel selection</string>
+    <string name="sessions_delete_selected">Delete selected</string>
+    <string name="sessions_move_up">Move up</string>
+    <string name="sessions_move_down">Move down</string>
+    <string name="sessions_more_menu">More</string>
+    <string name="sessions_view_response">View last response</string>
+    <string name="sessions_quick_commands">Commands</string>
+    <string name="sessions_last_response_sheet">Last response</string>
+    <string name="sessions_quick_commands_sheet">Quick commands</string>
+    <string name="sessions_cmd_system">System</string>
+    <string name="sessions_cmd_saved">Saved</string>
+    <string name="sessions_cmd_custom">Custom</string>
+    <string name="sessions_listening">Listening…</string>
+    <string name="sessions_reply_hint">Type a reply…</string>
+    <string name="sessions_voice_reply">Voice reply</string>
+    <string name="sessions_stop_recording">Stop recording</string>
+    <string name="sessions_server_online">Server online</string>
+    <string name="sessions_server_unreachable">Server unreachable</string>
+    <string name="sessions_probing">Probing…</string>
+    <string name="sessions_switch_server">Switch server</string>
+    <string name="sessions_all_servers">All servers</string>
+    <string name="sessions_no_servers">No servers configured</string>
+    <string name="sessions_add_server">Add server…</string>
+    <string name="sessions_no_server">No server</string>
+    <string name="sessions_just_now">just now</string>
+    <string name="sessions_never">never</string>
+    <string name="sessions_retry_now">Retry now</string>
+
+    <!-- Delete / confirm dialogs for sessions -->
+    <string name="dialog_delete_sessions_title">Delete %1$d sessions?</string>
+    <string name="dialog_delete_sessions_body">These sessions will be removed from the server. This cannot be undone.</string>
+    <string name="dialog_rename_session">Rename session</string>
+    <string name="dialog_restart_session_title">Restart session?</string>
+    <string name="dialog_restart_session_body">Warm-resume this session on the server. Any in-progress prompt may be interrupted.</string>
+    <string name="dialog_stop_session_title">Stop session?</string>
+    <string name="dialog_stop_session_body">Signal the server to terminate this running session. Unsaved in-flight work may be lost.</string>
+    <string name="dialog_delete_session_title">Delete session?</string>
+    <string name="dialog_delete_session_body">The session history will be removed from the server. This cannot be undone.</string>
+
+    <!-- ── Session detail ── -->
+    <string name="session_detail_tab_tmux">tmux</string>
+    <string name="session_detail_tab_channel">channel</string>
+    <string name="session_detail_input_required">Input Required</string>
+    <string name="session_detail_waiting_reply">Session is waiting on a reply.</string>
+    <string name="session_detail_timeline">Timeline</string>
+    <string name="session_detail_schedule_reply">Schedule reply</string>
+    <string name="session_detail_generating">generating</string>
+    <string name="session_detail_no_messages">No messages yet. Waiting for session output…</string>
+    <string name="session_detail_no_events">No events yet — open a session that has produced output to see state transitions, prompts, and completions here.</string>
+    <string name="session_detail_unreachable_banner">Server unreachable — terminal stream paused, last frame shown.</string>
+    <string name="session_detail_kill_title">Kill session?</string>
+    <string name="session_detail_kill_body">This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).</string>
+    <string name="session_detail_delete_title">Delete session?</string>
+    <string name="session_detail_delete_body">This removes the session record from the server. Tracking data on disk is preserved. This cannot be undone.</string>
+    <string name="session_detail_override_state">Override state</string>
+    <string name="session_detail_reply_waiting">Reply (input required)…</string>
+    <string name="session_detail_reply_hint">Reply…</string>
+    <string name="session_detail_saved_commands">Saved commands</string>
+    <string name="session_detail_schedule_action">Schedule reply</string>
+    <string name="session_detail_on_input">on input</string>
+    <string name="session_detail_cancel_schedule">Cancel schedule</string>
+    <string name="session_detail_left_arrow">Left arrow</string>
+    <string name="session_detail_right_arrow">Right arrow</string>
+    <string name="session_detail_up_arrow">Up arrow</string>
+    <string name="session_detail_down_arrow">Down arrow</string>
+    <string name="session_detail_quick_reply_yes">Yes</string>
+    <string name="session_detail_quick_reply_no">No</string>
+
+    <!-- ── New session ── -->
+    <string name="new_session_title">New session</string>
+    <string name="new_session_name_label">Session name</string>
+    <string name="new_session_name_hint">e.g. Auth refactor</string>
+    <string name="new_session_task_label">Task</string>
+    <string name="new_session_task_hint">e.g. refactor payments module to use new auth</string>
+    <string name="new_session_server_label">Server</string>
+    <string name="new_session_backend_label">LLM backend</string>
+    <string name="new_session_profile_label">Profile</string>
+    <string name="new_session_cluster_label">Cluster</string>
+    <string name="new_session_model_label">Model</string>
+    <string name="new_session_working_dir_label">Working directory (optional)</string>
+    <string name="new_session_working_dir_hint">Server path — e.g. /home/user/code</string>
+    <string name="new_session_resume_label">Resume previous (optional)</string>
+    <string name="new_session_start_fresh">Start fresh</string>
+    <string name="new_session_recent_sessions">Recent sessions</string>
+    <string name="new_session_git_label">Git</string>
+    <string name="new_session_auto_git_init">Auto git init</string>
+    <string name="new_session_auto_git_commit">Auto git commit</string>
+    <string name="new_session_advanced_claude">Advanced (claude options)</string>
+    <string name="new_session_permission_mode_label">Permission mode</string>
+    <string name="new_session_effort_label">Effort</string>
+    <string name="new_session_error_empty_task">Task cannot be empty.</string>
+    <string name="new_session_error_no_servers">No servers configured — add one in Settings first.</string>
+    <string name="new_session_pick_server">Pick a server</string>
+    <string name="new_session_no_profile">Default (no profile)</string>
+    <string name="new_session_config_default">(config default)</string>
+    <string name="new_session_inherit">(inherit)</string>
+    <string name="new_session_from_library">From library ▾</string>
+
+    <!-- ── Alerts screen ── -->
+    <string name="alerts_title">Alerts</string>
+    <string name="alerts_active_tab">Active (%1$d)</string>
+    <string name="alerts_inactive_tab">Inactive (%1$d)</string>
+    <string name="alerts_empty_active">No sessions need input. You\'re caught up.</string>
+    <string name="alerts_empty_inactive">No historical alerts.</string>
+    <string name="alerts_action_reply">Reply…</string>
+    <string name="alerts_action_schedule">Schedule…</string>
+
+    <!-- ── Autonomous (PRD) screen ── -->
+    <string name="autonomous_title">Autonomous</string>
+    <string name="autonomous_filter_open">Filter</string>
+    <string name="autonomous_filter_close">Close filter</string>
+    <string name="autonomous_fab_new">New autonomous plan</string>
+    <string name="autonomous_filter_all">All</string>
+    <string name="autonomous_filter_templates">Templates</string>
+    <string name="autonomous_empty_state">No plans match.</string>
+    <string name="autonomous_depth">depth %1$d</string>
+    <string name="autonomous_template_label">template</string>
+    <string name="autonomous_story_count">%1$d stories</string>
+
+    <!-- New PRD dialog -->
+    <string name="new_prd_title">New PRD</string>
+    <string name="new_prd_name_label">Name (required)</string>
+    <string name="new_prd_display_title_label">Title (optional)</string>
+    <string name="new_prd_profile_label">Profile</string>
+    <string name="new_prd_decomp_profile_label">Decomposition profile</string>
+    <string name="new_prd_project_dir_label">Project directory</string>
+    <string name="new_prd_backend_label">Backend</string>
+    <string name="new_prd_effort_label">Effort</string>
+    <string name="new_prd_model_label">Model</string>
+    <string name="new_prd_permission_mode_label">Permission mode</string>
+    <string name="new_prd_cluster_label">Cluster</string>
+    <string name="new_prd_inherit">(inherit)</string>
+    <string name="new_prd_backend_default">(backend default)</string>
+
+    <!-- PRD detail dialog -->
+    <string name="prd_detail_decompose">Decompose</string>
+    <string name="prd_detail_run">Run</string>
+    <string name="prd_detail_revise">Revise</string>
+    <string name="prd_detail_graph">📊 Graph</string>
+    <string name="prd_detail_llm">LLM</string>
+    <string name="prd_detail_no_stories">No stories yet (still decomposing?).</string>
+    <string name="prd_detail_reject_title">Reject PRD?</string>
+    <string name="prd_detail_reject_reason_label">Reason (required)</string>
+    <string name="prd_detail_revise_title">Request revisions</string>
+    <string name="prd_detail_revise_label">What needs revision?</string>
+    <string name="prd_detail_set_llm_title">Set LLM override</string>
+    <string name="prd_detail_edit_prd_title">Edit PRD</string>
+    <string name="prd_detail_spec_label">Spec</string>
+    <string name="prd_detail_edit_story_title">Edit story</string>
+    <string name="prd_detail_title_label">Title</string>
+    <string name="prd_detail_description_label">Description</string>
+    <string name="prd_detail_files_label">Files</string>
+    <string name="prd_detail_files_hint">One path per line, max 50.</string>
+    <string name="prd_detail_delete_title">Delete PRD?</string>
+    <string name="prd_detail_delete_body">Permanently removes \"%1$s\" and all child PRDs. This cannot be undone.</string>
+    <string name="prd_detail_edit_files">✎ files</string>
+
+    <!-- ── Monitor / Stats screen ── -->
+    <string name="stats_section_server">Server</string>
+    <string name="stats_section_sessions">Session Statistics</string>
+    <string name="stats_section_system">System Statistics</string>
+    <string name="stats_section_daemon">Daemon</string>
+    <string name="stats_section_infrastructure">Infrastructure</string>
+    <string name="stats_section_rtk">RTK Token Savings</string>
+    <string name="stats_section_memory">Episodic Memory</string>
+    <string name="stats_section_ollama">Ollama Server</string>
+    <string name="stats_section_envelopes">Process envelopes</string>
+    <string name="stats_section_backends">Backend health</string>
+    <string name="stats_row_download">↓ Download</string>
+    <string name="stats_row_upload">↑ Upload</string>
+    <string name="stats_row_memory">Memory</string>
+    <string name="stats_row_goroutines">Goroutines</string>
+    <string name="stats_row_open_fds">File descriptors</string>
+    <string name="stats_row_uptime">Uptime</string>
+    <string name="stats_row_hostname">Hostname</string>
+    <string name="stats_row_daemon">Daemon</string>
+    <string name="stats_row_messaging">Messaging</string>
+    <string name="stats_row_bound_to">Bound to</string>
+    <string name="stats_row_cpu">CPU</string>
+    <string name="stats_row_version">Version</string>
+    <string name="stats_row_hooks">Hooks</string>
+    <string name="stats_row_tokens_saved">Tokens saved</string>
+    <string name="stats_row_avg_savings">Avg savings</string>
+    <string name="stats_row_commands">Commands</string>
+    <string name="stats_row_total">Total</string>
+    <string name="stats_row_manual">Manual</string>
+    <string name="stats_row_sessions">Sessions</string>
+    <string name="stats_row_learnings">Learnings</string>
+    <string name="stats_row_db_size">DB Size</string>
+    <string name="stats_row_host">Host</string>
+    <string name="stats_row_status">Status</string>
+    <string name="stats_row_models">Models</string>
+    <string name="stats_row_disk_used">Disk Used</string>
+    <string name="stats_row_running">Running</string>
+    <string name="stats_row_vram_used">VRAM Used</string>
+    <string name="stats_row_http">HTTP</string>
+    <string name="stats_row_https">HTTPS</string>
+    <string name="stats_row_mcp_sse">MCP SSE</string>
+    <string name="stats_row_tmux">Tmux</string>
+    <string name="stats_label_running">Running</string>
+    <string name="stats_label_waiting">Waiting</string>
+    <string name="stats_label_idle">Idle</string>
+    <string name="stats_label_enabled">enabled</string>
+    <string name="stats_label_disabled">disabled</string>
+    <string name="stats_label_online">online</string>
+    <string name="stats_label_offline">offline</string>
+    <string name="stats_label_per_core">Per-core</string>
+    <string name="stats_ebpf_degraded_title">⚠ eBPF Degraded</string>
+    <string name="stats_ebpf_degraded_default">eBPF support is built into the daemon but probes aren\'t loaded. Run `datawatch setup ebpf` to enable.</string>
+
+    <!-- ── Security / Settings ── -->
+    <string name="security_biometric_title">Biometric unlock</string>
+    <string name="security_biometric_desc">Require fingerprint or face on every app open. Database key is biometric-bound when enabled.</string>
+    <string name="security_biometric_unavailable">Unavailable — no Class-3 biometric enrolled on this device.</string>
+    <string name="security_migration_failed">Key migration failed: %1$s</string>
 </resources>

@@ -37,7 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -249,10 +251,10 @@ public fun NewSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New session") },
+                title = { Text(stringResource(R.string.new_session_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
             )
@@ -281,7 +283,7 @@ public fun NewSessionScreen(
             }
 
             Text(
-                "Session name",
+                stringResource(R.string.new_session_name_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 4.dp),
@@ -289,7 +291,7 @@ public fun NewSessionScreen(
             OutlinedTextField(
                 value = sessionName,
                 onValueChange = { sessionName = it },
-                placeholder = { Text("e.g. Auth refactor") },
+                placeholder = { Text(stringResource(R.string.new_session_name_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -299,7 +301,7 @@ public fun NewSessionScreen(
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
                 Text(
-                    "Task",
+                    stringResource(R.string.new_session_task_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
@@ -311,7 +313,7 @@ public fun NewSessionScreen(
             OutlinedTextField(
                 value = task,
                 onValueChange = { task = it },
-                placeholder = { Text("e.g. refactor payments module to use new auth") },
+                placeholder = { Text(stringResource(R.string.new_session_task_hint)) },
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -320,7 +322,7 @@ public fun NewSessionScreen(
             )
 
             Text(
-                "Server",
+                stringResource(R.string.new_session_server_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -343,7 +345,7 @@ public fun NewSessionScreen(
             // confusing "no backends" state on older parents).
             if (!backendsBlocked && backends.isNotEmpty()) {
                 Text(
-                    "LLM backend",
+                    stringResource(R.string.new_session_backend_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -368,7 +370,7 @@ public fun NewSessionScreen(
             // working dir + backend (the historic mobile path).
             if (serverProfiles.isNotEmpty()) {
                 Text(
-                    "Profile",
+                    stringResource(R.string.new_session_profile_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -386,7 +388,7 @@ public fun NewSessionScreen(
             // profiles. Mirrors PWA v5.26.34.
             if (pickedServerProfile != null) {
                 Text(
-                    "Cluster",
+                    stringResource(R.string.new_session_cluster_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -467,37 +469,37 @@ public fun NewSessionScreen(
                 (pickedBackend == null && activeBackend?.lowercase()?.contains("claude") == true)
             if (claudeOptionsAvailable && isClaudeCode) {
                 Text(
-                    "Advanced (claude options)",
+                    stringResource(R.string.new_session_advanced_claude),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                 )
                 if (claudePermissionModes.isNotEmpty()) {
                     SimpleDropdown(
-                        label = "Permission mode",
+                        label = stringResource(R.string.new_session_permission_mode_label),
                         options = claudePermissionModes,
                         selected = pickedPermissionMode,
-                        noneLabel = "(config default)",
+                        noneLabel = stringResource(R.string.new_session_config_default),
                         onSelect = { pickedPermissionMode = it },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 if (claudeModels.isNotEmpty()) {
                     SimpleDropdown(
-                        label = "Model",
+                        label = stringResource(R.string.new_session_model_label),
                         options = claudeModels,
                         selected = pickedClaudeModel,
-                        noneLabel = "(config default)",
+                        noneLabel = stringResource(R.string.new_session_config_default),
                         onSelect = { pickedClaudeModel = it },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
                 }
                 if (claudeEfforts.isNotEmpty()) {
                     SimpleDropdown(
-                        label = "Effort",
+                        label = stringResource(R.string.new_session_effort_label),
                         options = claudeEfforts,
                         selected = pickedClaudeEffort,
-                        noneLabel = "(config default)",
+                        noneLabel = stringResource(R.string.new_session_config_default),
                         onSelect = { pickedClaudeEffort = it },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
@@ -505,7 +507,7 @@ public fun NewSessionScreen(
             }
 
             Text(
-                "Working directory (optional)",
+                stringResource(R.string.new_session_working_dir_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -517,7 +519,7 @@ public fun NewSessionScreen(
                 OutlinedTextField(
                     value = workingDir,
                     onValueChange = { workingDir = it },
-                    placeholder = { Text("Server path — e.g. /home/user/code") },
+                    placeholder = { Text(stringResource(R.string.new_session_working_dir_hint)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -534,7 +536,7 @@ public fun NewSessionScreen(
             // rather than start fresh.
             if (recentDone.isNotEmpty()) {
                 Text(
-                    "Resume previous (optional)",
+                    stringResource(R.string.new_session_resume_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -547,7 +549,7 @@ public fun NewSessionScreen(
             }
 
             Text(
-                "Git",
+                stringResource(R.string.new_session_git_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -561,7 +563,7 @@ public fun NewSessionScreen(
                     onCheckedChange = { autoGitInit = it },
                 )
                 Text(
-                    "Auto git init",
+                    stringResource(R.string.new_session_auto_git_init),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 8.dp, end = 16.dp),
                 )
@@ -570,7 +572,7 @@ public fun NewSessionScreen(
                     onCheckedChange = { autoGitCommit = it },
                 )
                 Text(
-                    "Auto git commit",
+                    stringResource(R.string.new_session_auto_git_commit),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -582,7 +584,7 @@ public fun NewSessionScreen(
             // toggle.
             if (recentDone.isNotEmpty()) {
                 Text(
-                    "Recent sessions",
+                    stringResource(R.string.new_session_recent_sessions),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
@@ -620,11 +622,12 @@ public fun NewSessionScreen(
                 }
             }
 
+            val errorEmptyTask = stringResource(R.string.new_session_error_empty_task)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onCancel, enabled = !submitting) { Text("Cancel") }
+                TextButton(onClick = onCancel, enabled = !submitting) { Text(stringResource(R.string.action_cancel)) }
                 Box(modifier = Modifier.padding(start = 8.dp)) {
                     Button(
                         onClick = {
@@ -632,7 +635,7 @@ public fun NewSessionScreen(
                                 profiles.firstOrNull { it.id == selectedProfileId }
                                     ?: return@Button
                             if (task.isBlank()) {
-                                banner = "Task cannot be empty."
+                                banner = errorEmptyTask
                                 return@Button
                             }
                             submitting = true
@@ -707,7 +710,7 @@ public fun NewSessionScreen(
                                 modifier = Modifier.padding(horizontal = 4.dp),
                             )
                         } else {
-                            Text("Start")
+                            Text(stringResource(R.string.action_start))
                         }
                     }
                 }
@@ -742,7 +745,7 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         TextButton(onClick = { expanded = true }) {
-            Text("From library ▾", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.new_session_from_library), style = MaterialTheme.typography.labelMedium)
         }
         androidx.compose.material3.DropdownMenu(
             expanded = expanded,
