@@ -19,18 +19,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Auto — PRD review screen.
+ * Auto — Autonomous plans screen (B69).
  *
- * v0.40.1 (autonomous-tab parity for the car surface). Lists the
- * active server's PRDs in `needs_review` / `revisions_asked` so a
- * driver can hands-free approve / reject between drives without
- * pulling out the phone. Tap a row → [PrdActionScreen] (confirm
- * dialog with two big buttons + a back action).
- *
- * Hides itself behind the existing AutoSummaryScreen entry-point
- * — a 0-count list still renders a friendly "All caught up" row
- * so the driver sees a deterministic outcome rather than an empty
- * pane.
+ * v0.40.1 initial: needs_review + revisions_asked only.
+ * v0.47.0: expanded to also show running plans so the driver can
+ * cancel/stop them hands-free. Tap a row → [PrdActionScreen] which
+ * renders Approve/Reject for review-state or Stop for running.
  */
 public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
     private var prds: List<PrdDto> = emptyList()
@@ -77,7 +71,7 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
                     prds =
                         dto.prds.filter {
                             val s = it.status.lowercase()
-                            s == "needs_review" || s == "revisions_asked"
+                            s == "needs_review" || s == "revisions_asked" || s == "running"
                         }
                 },
                 onFailure = { err ->
@@ -95,7 +89,7 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
             builder.addItem(
                 Row.Builder()
                     .setTitle(if (error != null) "Error" else "All caught up")
-                    .addText(error ?: "No PRDs waiting for review.")
+                    .addText(error ?: "No autonomous plans active.")
                     .build(),
             )
         } else {
@@ -113,7 +107,7 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
                         .addText(sub)
                         .setOnClickListener {
                             screenManager.push(
-                                PrdActionScreen(carContext, p.id, body),
+                                PrdActionScreen(carContext, p.id, body, p.status),
                             )
                         }
                         .build(),
@@ -121,7 +115,7 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
             }
         }
         return ListTemplate.Builder()
-            .setTitle("PRDs to review")
+            .setTitle("Autonomous plans")
             .setHeaderAction(Action.BACK)
             .setSingleList(builder.build())
             .build()
