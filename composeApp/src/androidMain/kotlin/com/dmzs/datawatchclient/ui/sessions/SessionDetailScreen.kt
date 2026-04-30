@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Keyboard
@@ -1823,14 +1825,27 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        listOf("[D" to "←", "[C" to "→").forEach { (seq, label) ->
-            TextButton(
-                onClick = { onQuickReply(seq) },
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                modifier = Modifier.height(28.dp),
-            ) {
-                Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        IconButton(
+            onClick = { onQuickReply("\u001B[D") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Left arrow",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(
+            onClick = { onQuickReply("\u001B[C") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Right arrow",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 

@@ -487,10 +487,9 @@ public class SessionsViewModel : ViewModel() {
         text: String,
     ) {
         val profile = profileForSession(sessionId) ?: return
-        val trimmed = text.trim()
-        if (trimmed.isEmpty()) return
+        if (text.isEmpty()) return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).replyToSession(sessionId, trimmed).fold(
+            ServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
                     _banner.value = "Reply failed — ${err.message ?: err::class.simpleName}"
