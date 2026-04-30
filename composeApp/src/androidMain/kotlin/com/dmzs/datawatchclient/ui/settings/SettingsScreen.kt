@@ -258,6 +258,7 @@ public fun SettingsScreen(
                                 // duplicate gc_rtk panel was a mobile-only
                                 // artifact and is gone.
                                 SecurityCard()
+                                RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
                                 )

@@ -1,201 +1,60 @@
-# Approved Decisions (ADRs 0001–0043)
+# Architecture Decision Records (ADRs 0001–0043)
 
-All decisions approved by user on 2026-04-17 during the four-batch design Q&A.
-One consolidated file for pre-scaffold; will be split into `docs/decisions/NNNN-<slug>.md`
-(MADR format) when the repo is scaffolded.
+All decisions approved by user on 2026-04-17 during the four-batch design Q&A, with subsequent additions through 2026-04-20. Individual MADR files live alongside this index.
 
-## Status legend
+## Status Legend
 
 - **Accepted** — locked and load-bearing
 - **Accepted (with variant mock)** — primary approved, alternative to be sketched for comparison
+- **Accepted (superseded in part by ADR-NNNN)** — core decision stands; specific portion replaced by the referenced ADR
 - **Deferred** — captured but not acted on until a later phase
-- **Superseded by N** — replaced; reference retained for history
 
 ---
 
-### Stack & platform
+## ADR Index
 
-- **ADR-0001 — KMP + Compose Multiplatform.** Shared business logic; Wear OS + Android Auto
-  native Kotlin modules; iOS app ships a skeleton pre-wired to KMP shared module.
-- **ADR-0002 — Android SDK targets.** `minSdk = 29` (Android 10), `targetSdk = 35` (Android 15).
-- **ADR-0003 — Repo + signing.** `github.com/dmz006/datawatch-app`, public, Polyform NC 1.0.0,
-  CI = GitHub Actions, signing = Google Play App Signing.
-
-### Messaging + reachability
-
-- **ADR-0004 — Transport priority.** Primary direct API (REST/WS/MCP) → fallback Android Intent
-  to on-device Signal/SMS/etc. apps targeting the number/ID the datawatch server already watches.
-- **ADR-0009 — Reachability profiles.** Tailscale, local Wi-Fi LAN, DNS TXT covert channel,
-  messaging-backend relay via Intent handoff. No Cloudflare. No public HTTPS exposure.
-- **ADR-0010 — TLS / certs.** NetworkSecurityConfig per-profile trust anchors; self-signed
-  supported via user-confirmed CA import; cert pinning opt-in per server.
-
-### Scope + parity
-
-- **ADR-0005 — Client parity scope.** 1:1 client-side parity with the datawatch server API +
-  MCP; no local LLM/code execution. Flag items that don't make sense for user sign-off.
-- **ADR-0008 — Pure client identity.** No local server process, no queue, no replay.
-- **ADR-0019 — Flagged parity exclusions.**
-  - eBPF network tracking → view only
-  - GPU/CPU/memory stats → view only
-  - `kill-orphans` → confirmation dialog, no biometric
-  - Editing server token / crypto keys → blocked on mobile
-  - Session pipelines/DAGs editor → read-only on phone, editable in PWA
-  - Raw YAML config editor → disabled, structured form only
-
-### Auth + identity
-
-- **ADR-0011 — Auth.** Static bearer token per server profile (same as parent). Stored in
-  EncryptedSharedPreferences backed by Android Keystore. No pairing flow, no biometric in v1.
-  Domain abstracts a `Principal` for future multi-user.
-
-### Push + realtime + offline
-
-- **ADR-0012 — Push stack.** FCM primary (wake ping), ntfy fallback where configured,
-  WebSocket realtime once app is open.
-- **ADR-0013 — No offline queue.** Writes fail fast; user retries manually. Cached reads show
-  stale timestamp; grey out after 30 s of unreachability.
-- **ADR-0018 — Notification defaults.** Server-level enable; per-session mute; always-notify
-  on "input needed." Wear actions: Approve / Deny / Reply / Mute 10m.
-- **ADR-0027 — Offline voice refinement.** Recorded audio may persist in a retry UI — user taps
-  retry; no background replay.
-
-### MCP + real-time
-
-- **ADR-0014 — Transport set.** REST + WebSocket `/ws` + MCP HTTP SSE, all three simultaneously.
-- **ADR-0015 — Quick commands v1.** `session_list`, `session_reply`, `system_stats`. Expand
-  as usage teaches us.
-
-### Storage + backup
-
-- **ADR-0016 — Local DB.** SQLDelight over SQLCipher-encrypted SQLite. Master key in Keystore.
-- **ADR-0017 — Backup.** Android Auto Backup to Google Drive enabled. Encrypted DB + non-secret
-  prefs included; Keystore material re-binds on restore (user re-enters token).
-
-### Voice
-
-- **ADR-0006 — Voice pipeline.** Record on device → upload to datawatch server → server
-  Whisper transcribes. No on-device STT in v1.
-- **ADR-0025 — Voice invocation.** Four surfaces: global FAB, chat composer mic, Android
-  quick-tile, ASSIST intent for "Hey Google, talk to datawatch."
-- **ADR-0026 — Transcript handling.** Default: auto-send for recognized prefixes
-  (`new:`, `reply:`, `status:`); preview-before-send for free-text. User-configurable.
-
-### UX / navigation
-
-- **ADR-0020 — Server-first navigation.** Bottom nav = Sessions / Channels / Stats / Settings;
-  server switcher as top-bar pill with tree drawer.
-- **ADR-0021 — Proxy drill-down.** Primary: breadcrumb bar. Also mock breadcrumb + chips
-  variant for comparison before finalizing.
-- **ADR-0022 — Server tabs.** Unlimited; no pinning in v1.
-- **ADR-0023 — Session detail layout.** Bottom-sheet pattern — chat is the spine;
-  Terminal/Logs/Timeline/Memory slide up from sheets.
-- **ADR-0024 — Terminal.** xterm.js in WebView for byte-for-byte PWA parity.
-
-### Surfaces
-
-- **ADR-0028 — Wear OS MVP surfaces.** Ongoing notification (w1), watchface complication (w3),
-  rich Wear app with dictation reply (w4). Tile (w2) deferred.
-- **ADR-0029 — Wear auth inheritance.** Token pulled from phone over Wearable Data Layer API.
-  No separate pairing.
-- **ADR-0031 — Android Auto dual-track.**
-  - **Public build** (`com.dmzs.datawatchclient`, Play Store) — Messaging template only,
-    compliant with Google Driver Distraction Guidelines.
-  - **Internal build** (`com.dmzs.datawatchclient.dev`, Internal Testing only) — full
-    passenger UI, voice-first, never promoted public.
-  - Both installable simultaneously (distinct applicationIds, icons, FCM senders, signing keys).
-
-### Branding
-
-- **ADR-0030 — Identity (partially superseded by ADR-0041).** Theme ships dark (matching
-  datawatch `#7c3aed` purple) + light + Material You; dark default. Icon direction in
-  `branding.md`. App name portion is superseded by ADR-0041 at the bottom of this file.
-- **ADR-0034 — Brand home.** dmzs.com hosts privacy, terms, support links. Source at
-  dmz006/datawatch-app.
-
-### Project delivery
-
-- **ADR-0032 — Timeline.** MVP → internal track 2026-06-12 (8 weeks). Production → public
-  production track 2026-07-10 (+4 weeks). 2-week sprints.
-- **ADR-0033 — Play Console account.** Recreate under davidzendzian@gmail.com, personal
-  registration ($25 one-time fee).
-- **ADR-0035 — Data Safety declarations (draft).** See `data-safety-declarations.md`.
-- **ADR-0036 — Sprint + release cadence.** See `sprint-plan.md`. Sprint 0 = design + scaffold;
-  Sprints 1–4 = MVP; 5–6 = hardening + Play submission.
-
-### Telemetry
-
-- **ADR-0007 — Closed-loop telemetry.** No Crashlytics, no Sentry SaaS, no Firebase Analytics,
-  no Google Analytics. Diagnostics stay local to device + user's datawatch server.
-
-### Final pre-scaffold decisions (batch 5)
-
-- **ADR-0037 — Icon concept B.** Phone silhouette with miniature datawatch eye on the
-  screen and signal arcs above. Old-school handset reference; preserves datawatch purple
-  palette.
-- **ADR-0038 — Wear voice fallback chain.** Priority: (1) phone-proxy via Wearable Data
-  Layer → phone → server Whisper; (2) direct watch-to-server if watch has its own
-  reachability; (3) native Wear RemoteInput STT → send transcript as text command.
-  Never show "Open on phone."
-- **ADR-0039 — Upstream parent coordination.** The three mobile-needed parent endpoints
-  are tracked as upstream issues: [#1](https://github.com/dmz006/datawatch/issues/1)
-  device registration · [#2](https://github.com/dmz006/datawatch/issues/2) voice
-  transcribe · [#3](https://github.com/dmz006/datawatch/issues/3) federation fan-out.
-  Mobile ships MVP workarounds until upstream lands; see `api-parity.md`.
-- **ADR-0040 — Play publisher name.** Display "dmz" if Play Console accepts it; fallback
-  "dmzs" → "dmzs.com" → "Datawatch". Website field points at `https://dmzs.com`.
-
-### Brand naming (adjustment)
-
-- **ADR-0041 — App display name is `datawatch` (lowercase).** Supersedes the name
-  portion of ADR-0030 ("Datawatch Client"). Rationale: align user-facing naming with the
-  parent project brand — Play Store listing, launcher icon label, Wear watchface, Android
-  Auto surface, iOS bundle display, and in-app word mark all read `datawatch`. The dev
-  build reads `datawatch (dev)` to keep the two installs visually distinct. Technical
-  identifiers (Kotlin packages, applicationId `com.dmzs.datawatchclient[.dev]`, GitHub
-  repo name `dmz006/datawatch-app`, keystore file names) are unchanged — renaming those
-  would be expensive busywork without user benefit. In prose docs, "datawatch mobile
-  client" or "the datawatch mobile app" is used when disambiguation from the parent
-  server daemon is needed.
-
-### MVP scope (adjustment)
-
-- **ADR-0042 — Five items promoted from post-MVP backlog to v0.10.0 scope** (2026-04-18;
-  originally written as "v1.0.0" — see ADR-0043 for the version-label correction).
-  User decision: the following were previously deferred to post-MVP but are now
-  required for the ADR-0042 scope-close release (shipped as v0.10.0 2026-04-19).
-  Partially supersedes ADR-0011
-  (biometric deferred) and ADR-0028 (Wear Tile deferred):
-    1. **Home-screen widget** — session count + voice quick-action. Lands Sprint 3.
-    2. **Wear Tile (w2)** — at-a-glance session state on the watchface tile surface
-       alongside the already-planned complication + rich app. Lands Sprint 4.
-    3. **Android Auto Tile** — parked-state dashboard for the internal (dev)
-       build; public build stays Messaging-only per ADR-0031 Play compliance.
-       Lands Sprint 4.
-    4. **Biometric unlock** — optional fingerprint / face gate on the token
-       vault + app resume. Disabled by default, user opts in during onboarding
-       or Settings. Single-user model from ADR-0011 stays. Lands Sprint 5
-       (hardening).
-    5. **3-finger-swipe-up server picker** — Home Assistant-style gesture for
-       fast server switching, in addition to the tap-to-open tree drawer.
-       Lands Sprint 2 alongside the multi-server picker work.
-
-  Sprint timeline effect: Sprint 2–5 budgets tightened; MVP target 2026-06-12
-  and production target 2026-07-10 held. If any of the five threatens those
-  dates, the weakest (candidate: 3-finger gesture) slips back to post-MVP
-  rather than pushing the release. User notified at sprint retro.
-
-### Version-label correction (2026-04-20)
-
-- **ADR-0043 — 1.0.0 is reserved for full PWA parity.** User direction
-  2026-04-20: the v1.0.0 tag created 2026-04-19 on the ADR-0042 scope-close
-  commit was mislabelled. 1.0.0 labels only the release that reaches 100 %
-  client-side parity with the PWA at
-  [dmz006/datawatch](https://github.com/dmz006/datawatch/) —
-  i.e. every row in `docs/parity-status.md` flipped to ✅. The earlier
-  v1.0.0/v1.0.1 tags are renumbered to v0.10.0/v0.10.1 (same commits, same
-  artefacts). The v1.1 → v1.4 roadmap in `docs/parity-plan.md` is
-  renumbered v0.11 → v0.14 accordingly. ADR-0042 keeps its original text
-  (the scope-close decision stands) but every "v1.0.0" reference in that
-  ADR now reads v0.10.0. No functional change to scope, timeline, or
-  release artefacts — this is a labelling correction only.
+| ADR | Title | Status | File |
+|-----|-------|--------|------|
+| 0001 | KMP + Compose Multiplatform | Accepted | [0001-kmp-compose-multiplatform.md](0001-kmp-compose-multiplatform.md) |
+| 0002 | Android SDK Targets | Accepted | [0002-android-sdk-targets.md](0002-android-sdk-targets.md) |
+| 0003 | Repo + Signing | Accepted | [0003-repo-signing.md](0003-repo-signing.md) |
+| 0004 | Transport Priority | Accepted | [0004-transport-priority.md](0004-transport-priority.md) |
+| 0005 | Client Parity Scope | Accepted | [0005-client-parity-scope.md](0005-client-parity-scope.md) |
+| 0006 | Voice Pipeline | Accepted | [0006-voice-pipeline.md](0006-voice-pipeline.md) |
+| 0007 | Closed-Loop Telemetry | Accepted | [0007-closed-loop-telemetry.md](0007-closed-loop-telemetry.md) |
+| 0008 | Pure Client Identity | Accepted | [0008-pure-client-identity.md](0008-pure-client-identity.md) |
+| 0009 | Reachability Profiles | Accepted | [0009-reachability-profiles.md](0009-reachability-profiles.md) |
+| 0010 | TLS / Certs | Accepted | [0010-tls-certs.md](0010-tls-certs.md) |
+| 0011 | Auth | Accepted (superseded in part by ADR-0042) | [0011-auth.md](0011-auth.md) |
+| 0012 | Push Stack | Accepted | [0012-push-stack.md](0012-push-stack.md) |
+| 0013 | No Offline Queue | Accepted | [0013-no-offline-queue.md](0013-no-offline-queue.md) |
+| 0014 | Transport Set | Accepted | [0014-transport-set.md](0014-transport-set.md) |
+| 0015 | Quick Commands v1 | Accepted | [0015-quick-commands-v1.md](0015-quick-commands-v1.md) |
+| 0016 | Local DB | Accepted | [0016-local-db.md](0016-local-db.md) |
+| 0017 | Backup | Accepted | [0017-backup.md](0017-backup.md) |
+| 0018 | Notification Defaults | Accepted | [0018-notification-defaults.md](0018-notification-defaults.md) |
+| 0019 | Flagged Parity Exclusions | Accepted | [0019-flagged-parity-exclusions.md](0019-flagged-parity-exclusions.md) |
+| 0020 | Server-First Navigation | Accepted | [0020-server-first-navigation.md](0020-server-first-navigation.md) |
+| 0021 | Proxy Drill-Down | Accepted (with variant mock) | [0021-proxy-drill-down.md](0021-proxy-drill-down.md) |
+| 0022 | Server Tabs | Accepted | [0022-server-tabs.md](0022-server-tabs.md) |
+| 0023 | Session Detail Layout | Accepted | [0023-session-detail-layout.md](0023-session-detail-layout.md) |
+| 0024 | Terminal | Accepted | [0024-terminal.md](0024-terminal.md) |
+| 0025 | Voice Invocation | Accepted | [0025-voice-invocation.md](0025-voice-invocation.md) |
+| 0026 | Transcript Handling | Accepted | [0026-transcript-handling.md](0026-transcript-handling.md) |
+| 0027 | Offline Voice Refinement | Accepted | [0027-offline-voice-refinement.md](0027-offline-voice-refinement.md) |
+| 0028 | Wear OS MVP Surfaces | Accepted (superseded in part by ADR-0042) | [0028-wear-os-mvp-surfaces.md](0028-wear-os-mvp-surfaces.md) |
+| 0029 | Wear Auth Inheritance | Accepted | [0029-wear-auth-inheritance.md](0029-wear-auth-inheritance.md) |
+| 0030 | Identity (Branding + Theme) | Accepted (superseded in part by ADR-0041) | [0030-identity.md](0030-identity.md) |
+| 0031 | Android Auto Dual-Track | Accepted | [0031-android-auto-dual-track.md](0031-android-auto-dual-track.md) |
+| 0032 | Timeline | Accepted | [0032-timeline.md](0032-timeline.md) |
+| 0033 | Play Console Account | Accepted | [0033-play-console-account.md](0033-play-console-account.md) |
+| 0034 | Brand Home | Accepted | [0034-brand-home.md](0034-brand-home.md) |
+| 0035 | Data Safety Declarations | Accepted | [0035-data-safety-declarations.md](0035-data-safety-declarations.md) |
+| 0036 | Sprint + Release Cadence | Accepted | [0036-sprint-release-cadence.md](0036-sprint-release-cadence.md) |
+| 0037 | Icon Concept B | Accepted | [0037-icon-concept-b.md](0037-icon-concept-b.md) |
+| 0038 | Wear Voice Fallback Chain | Accepted | [0038-wear-voice-fallback-chain.md](0038-wear-voice-fallback-chain.md) |
+| 0039 | Upstream Parent Coordination | Accepted | [0039-upstream-parent-coordination.md](0039-upstream-parent-coordination.md) |
+| 0040 | Play Publisher Name | Accepted | [0040-play-publisher-name.md](0040-play-publisher-name.md) |
+| 0041 | App Display Name | Accepted | [0041-app-display-name.md](0041-app-display-name.md) |
+| 0042 | MVP Scope Promotion | Accepted | [0042-mvp-scope-promotion.md](0042-mvp-scope-promotion.md) |
+| 0043 | Version Label Correction | Accepted | [0043-version-label-correction.md](0043-version-label-correction.md) |
