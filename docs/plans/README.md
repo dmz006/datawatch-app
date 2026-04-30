@@ -94,7 +94,7 @@ Items from live-device testing 2026-04-29. Layout items (B54–B57) were already
 | B66 | PRDs/Autonomous page: card-style layout matching Sessions page | Done (v0.47.0) — `PrdRow` now wrapped in `pwaCard()` with horizontal+vertical padding matching Sessions cards. Eye watermark (ic_launcher_foreground, 85% width, 10% alpha) added as Box background behind LazyColumn, matching Sessions page. |
 | B67 | AAOS: app crashes on launch — AppWidgetManager null on Automotive | Done (v0.46.0) — `SessionsWidget.requestUpdate` crashes with NPE on AAOS because `AppWidgetManager.getInstance()` returns null (no home-screen widgets on Automotive OS). Fixed: null-check guard added in `SessionsWidget.kt:155`. |
 | B68 | Android Auto: app icon eye overflows icon boundary | Done (v0.47.0) — Foreground sclera shrunk from ±40×26 to ±33×21 (fits within the 66dp safe zone, positions 21–87 on 108dp canvas). Iris r=22→18, pupil r=9→7, crosshairs and matrix rain repositioned within safe zone. |
-| B69 | Android Auto: Autonomous tab with contextual actions | Auto surface currently has Sessions, Alerts, Settings. Add Autonomous tab: list of PRDs/plans grouped by status. Actions per card: **Accept** (pending plans), **Stop** (running autonomous sessions), **Open** (jump to associated session) — 3 buttons allowed on AAOS (full Compose UI). For Car App Library phone-projection mode (ListTemplate), cap to 2: Accept + Open for pending; Stop + Open for running. Schedule (delay/reschedule) as optional 3rd on AAOS only. |
+| B69 | Android Auto: Autonomous tab with contextual actions | Done (v0.47.0) — `WaitingPrdsScreen` expanded to include running plans (needs_review + revisions_asked + running). `PrdActionScreen` is now status-aware: shows Approve/Reject for review states, Stop (cancel) for running plans. `AutoSummaryScreen` row renamed to "Autonomous". `WaitingPrdsScreen` title updated to "Autonomous plans". Both text strings de-PRD'd to "plans". |
 
 ### Sprint FF — live-device polish (next, v0.33.24+)
 
@@ -103,12 +103,11 @@ for one commit per batch.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B28 | Watch + Auto need to view monitoring stats for all connected servers | User request (2026-04-22). Depends on server-side shape landing from [dmz006/datawatch#20](https://github.com/dmz006/datawatch/issues/20); mobile-side plan in [docs/plans/2026-04-22-unified-monitoring.md](2026-04-22-unified-monitoring.md). **Wear** subscribes to the stats DataItem (infra from v0.33.12) and renders a compact dashboard. **Auto** adds a Monitoring screen with one row per connected server. |
+| B28 | Watch + Auto need to view monitoring stats for all connected servers | User request (2026-04-22). Issue #20 closed — unblocked. Mobile-side plan in [docs/plans/2026-04-22-unified-monitoring.md](2026-04-22-unified-monitoring.md). **Wear** subscribes to the stats DataItem (infra from v0.33.12) and renders a compact dashboard. **Auto** adds a Monitoring screen with one row per connected server. |
 
 ### Sprint GG — unified monitoring Phase 1 (v0.34.x)
 
-Depends on parent server shipping the v2 stats shape per
-[dmz006/datawatch#20](https://github.com/dmz006/datawatch/issues/20).
+Issue dmz006/datawatch#20 is closed — these items are now unblocked.
 
 | ID | Title | Notes |
 |----|-------|-------|

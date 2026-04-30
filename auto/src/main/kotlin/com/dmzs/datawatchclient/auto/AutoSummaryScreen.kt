@@ -139,14 +139,10 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .addText("$total sessions")
                 .build(),
         )
-        // v0.40.1 — PRDs needing review. Tap to drill into the
-        // approve / reject screen. List populates on first
-        // refresh of the screen; until then the row is a static
-        // entry-point.
         builder.addItem(
             Row.Builder()
-                .setTitle(colored("PRDs to review", CarColor.YELLOW))
-                .addText("Approve / reject hands-free")
+                .setTitle(colored("Autonomous", CarColor.YELLOW))
+                .addText("Review, approve, or stop plans")
                 .setOnClickListener {
                     screenManager.push(WaitingPrdsScreen(carContext))
                 }

@@ -14,18 +14,17 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Auto — PRD approve / reject confirmation screen.
+ * Auto — autonomous plan action screen (B69).
  *
- * v0.40.1. Two big buttons, plus a Back action. Reject ships an
- * automatic "rejected from car" reason so the daemon's
- * `request_revision` workflow has something to record without a
- * keyboard input on a moving vehicle. Full rejection-with-reason
- * stays on the phone.
+ * v0.40.1: approve/reject for needs_review plans.
+ * v0.47.0: status-aware — shows Stop/Cancel for running plans,
+ * Approve/Reject for needs_review / revisions_asked.
  */
 public class PrdActionScreen(
     carContext: CarContext,
     private val prdId: String,
     private val title: String,
+    private val status: String = "needs_review",
 ) : Screen(carContext) {
     private val scope = CoroutineScope(Dispatchers.Main)
 
@@ -73,27 +72,35 @@ public class PrdActionScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val approve =
-            Action.Builder()
-                .setTitle("Approve")
-                .setBackgroundColor(CarColor.GREEN)
-                .setOnClickListener { fire("approve") }
-                .build()
-        val reject =
-            Action.Builder()
-                .setTitle("Reject")
-                .setBackgroundColor(CarColor.RED)
-                .setOnClickListener { fire("reject", "rejected from car") }
-                .build()
-        return MessageTemplate.Builder("Review $title")
-            .setTitle("PRD review")
+        val actionStrip =
+            if (status.lowercase() == "running") {
+                val stop =
+                    Action.Builder()
+                        .setTitle("Stop")
+                        .setBackgroundColor(CarColor.RED)
+                        .setOnClickListener { fire("cancel") }
+                        .build()
+                ActionStrip.Builder().addAction(stop).build()
+            } else {
+                val approve =
+                    Action.Builder()
+                        .setTitle("Approve")
+                        .setBackgroundColor(CarColor.GREEN)
+                        .setOnClickListener { fire("approve") }
+                        .build()
+                val reject =
+                    Action.Builder()
+                        .setTitle("Reject")
+                        .setBackgroundColor(CarColor.RED)
+                        .setOnClickListener { fire("reject", "rejected from car") }
+                        .build()
+                ActionStrip.Builder().addAction(approve).addAction(reject).build()
+            }
+        val prompt = if (status.lowercase() == "running") "Stop plan?" else "Review $title"
+        return MessageTemplate.Builder(prompt)
+            .setTitle("Autonomous plan")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(approve)
-                    .addAction(reject)
-                    .build(),
-            )
+            .setActionStrip(actionStrip)
             .build()
     }
 }
