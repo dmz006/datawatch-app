@@ -25,6 +25,8 @@ public class AutonomousViewModel(
         val banner: String? = null,
         /** Backend names from /api/backends — used for LLM dropdowns. */
         val backends: List<String> = emptyList(),
+        /** Permission modes from /api/llm/claude/permission_modes (v5.27.5+; empty on older daemons). */
+        val permissionModes: List<String> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -42,7 +44,8 @@ public class AutonomousViewModel(
                 onSuccess = { dto ->
                     val backends = transport.listBackends()
                         .getOrNull()?.llm.orEmpty()
-                    _state.value = UiState(loading = false, prds = dto.prds, backends = backends)
+                    val permModes = transport.listClaudePermissionModes().getOrElse { emptyList() }
+                    _state.value = UiState(loading = false, prds = dto.prds, backends = backends, permissionModes = permModes)
                 },
                 onFailure = { err ->
                     _state.value =
@@ -120,12 +123,13 @@ public class AutonomousViewModel(
         prdOp("Request revision") { it.prdAction(prdId, "request_revision", body) }
     }
 
-    public fun editPrd(prdId: String, title: String?, spec: String?) {
+    public fun editPrd(prdId: String, title: String?, spec: String?, permissionMode: String? = null) {
         prdOp("Edit PRD") {
             it.patchPrd(
                 prdId = prdId,
                 title = title?.takeIf { t -> t.isNotBlank() },
                 spec = spec?.takeIf { t -> t.isNotBlank() },
+                permissionMode = permissionMode?.ifBlank { null },
             )
         }
     }
