@@ -119,7 +119,6 @@ private fun WearRoot(
     val pagerState = rememberPagerState(initialPage = 0) { 5 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     // Show splash on every launch — even warm restarts where the ViewModel
     // is already loaded. 800ms on warm restart (ViewModel pre-loaded),
@@ -134,6 +133,9 @@ private fun WearRoot(
         WearSplash()
         return
     }
+
+    // Pager is now composed — safe to request rotary focus.
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     // v0.35.5 — session tap popup with voice reply.
     // v0.35.8 — replaced RecognizerIntent with phone-relayed Whisper.
