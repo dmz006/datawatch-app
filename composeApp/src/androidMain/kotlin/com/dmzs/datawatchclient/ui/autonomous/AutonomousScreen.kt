@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -95,7 +96,10 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
             // PRDs FAB: hidden when a detail panel is open so the
             // affordance only appears on the list view (PWA v5.26.36).
             if (openPrdId == null) {
-                FloatingActionButton(onClick = { newOpen = true }) {
+                FloatingActionButton(
+                    onClick = { newOpen = true },
+                    modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.autonomous_fab_new))
                 }
             }
