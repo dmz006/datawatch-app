@@ -31,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
@@ -73,7 +75,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -388,13 +393,22 @@ public fun SessionDetailScreen(
             // the PWA carries them on the same line.
             val terminalController = rememberTerminalController()
             val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
+            val tabRowBorderColor = LocalDatawatchColors.current.border
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 8.dp)
+                        .drawBehind {
+                            drawLine(
+                                color = tabRowBorderColor,
+                                start = Offset(0f, size.height),
+                                end = Offset(size.width, size.height),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        },
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
                 SessionModeTab(label = "tmux", selected = !chatMode, onClick = { chatMode = false })
                 SessionModeTab(label = "channel", selected = chatMode, onClick = { chatMode = true })
@@ -1847,6 +1861,28 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        IconButton(
+            onClick = { onQuickReply("\u001B[A") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.Filled.KeyboardArrowUp,
+                contentDescription = "Up arrow",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(
+            onClick = { onQuickReply("\u001B[B") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Down arrow",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 
     Row(
@@ -2110,11 +2146,13 @@ private fun Modifier.headerRenameFocusChain(
         }
 
 /**
- * Compact pill-button used for the tmux / channel mode toggle in the
- * session header (v0.42.0). Replaces the previous full-width
- * Material TabRow so the buttons take only the width of their label
- * and leave room for the inline font / scroll toolbar to the right —
- * matches PWA's session-info-bar layout.
+ * PWA-style mode tab for the tmux / channel toggle.
+ *
+ * Selected tab: surface background with 3-sided border (top + sides, no
+ * bottom) so it visually "connects" to the content below — the parent
+ * Row draws a full-width bottom border, which the selected tab's surface
+ * fill covers in that region, creating the classic browser-tab join.
+ * Unselected tabs are transparent with muted text.
  */
 @Composable
 private fun SessionModeTab(
@@ -2123,26 +2161,33 @@ private fun SessionModeTab(
     onClick: () -> Unit,
 ) {
     val dw = LocalDatawatchColors.current
-    Surface(
-        shape = RoundedCornerShape(50),
-        color =
-            if (selected) {
-                dw.accent2.copy(alpha = 0.15f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        modifier = Modifier.clickable(onClick = onClick),
+    val surfaceBg = MaterialTheme.colorScheme.surface
+    val borderColor = dw.border
+    val textColor = if (selected) dw.accent2 else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .then(
+                if (selected) {
+                    Modifier.drawBehind {
+                        val stroke = 1.dp.toPx()
+                        drawRect(surfaceBg)
+                        drawLine(borderColor, Offset(stroke / 2f, 0f), Offset(stroke / 2f, size.height), stroke)
+                        drawLine(borderColor, Offset(size.width - stroke / 2f, 0f), Offset(size.width - stroke / 2f, size.height), stroke)
+                        drawLine(borderColor, Offset(0f, stroke / 2f), Offset(size.width, stroke / 2f), stroke)
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Text(
             label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             fontSize = 12.sp,
-            color =
-                if (selected) {
-                    dw.accent2
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+            color = textColor,
+            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
         )
     }
 }

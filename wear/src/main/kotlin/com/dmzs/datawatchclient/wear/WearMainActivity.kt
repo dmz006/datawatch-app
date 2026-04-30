@@ -111,6 +111,20 @@ private fun WearRoot(
     val state by vm.state.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 5 }
 
+    // Show splash on every launch — even warm restarts where the ViewModel
+    // is already loaded. 800ms on warm restart (ViewModel pre-loaded),
+    // or until ViewModel loading completes (whichever is longer — the
+    // ViewModel already enforces MIN_SPLASH_MS = 1400ms on cold starts).
+    var warmSplashDone by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(800L)
+        warmSplashDone = true
+    }
+    if (!warmSplashDone || state.loading) {
+        WearSplash()
+        return
+    }
+
     // v0.35.5 — session tap popup with voice reply.
     // v0.35.8 — replaced RecognizerIntent with phone-relayed Whisper.
     // Watch records audio locally via WearVoiceRecorder, ships bytes
@@ -405,21 +419,31 @@ private fun PageScaffold(
 
 @Composable
 private fun WearSplash() {
-    PageScaffold(title = "") {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF000000)),
+        contentAlignment = Alignment.Center,
+    ) {
         Image(
             painter = painterResource(id = R.drawable.ic_dw_eye),
             contentDescription = "datawatch eye",
-            modifier = Modifier.size(68.dp).padding(top = 4.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
         )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "datawatch",
-            style = MaterialTheme.typography.title2,
-            color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(10.dp))
-        CircularProgressIndicator()
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(bottom = 20.dp)
+                    .size(18.dp),
+                indicatorColor = MaterialTheme.colors.primary,
+                trackColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
+            )
+        }
     }
 }
 
