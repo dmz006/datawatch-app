@@ -825,6 +825,7 @@ private fun ResumePickerDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selected = sessions.firstOrNull { it.id == selectedId }
+    val startFreshLabel = stringResource(R.string.new_session_start_fresh)
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -832,7 +833,7 @@ private fun ResumePickerDropdown(
         OutlinedTextField(
             value =
                 when {
-                    selectedId == null -> "Start fresh"
+                    selectedId == null -> startFreshLabel
                     selected == null -> selectedId
                     else ->
                         (selected.name ?: selected.taskSummary?.take(60) ?: selected.id)
@@ -850,7 +851,7 @@ private fun ResumePickerDropdown(
             onDismissRequest = { expanded = false },
         ) {
             DropdownMenuItem(
-                text = { Text("Start fresh") },
+                text = { Text(startFreshLabel) },
                 onClick = {
                     onSelect(null)
                     expanded = false
@@ -889,8 +890,9 @@ private fun ProfilePickerDropdown(
     onSelect: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val noProfileLabel = stringResource(R.string.new_session_no_profile)
     val display =
-        selected ?: "Default (no profile)"
+        selected ?: noProfileLabel
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -910,7 +912,7 @@ private fun ProfilePickerDropdown(
             onDismissRequest = { expanded = false },
         ) {
             DropdownMenuItem(
-                text = { Text("Default (no profile)") },
+                text = { Text(noProfileLabel) },
                 onClick = {
                     onSelect(null)
                     expanded = false
@@ -1042,7 +1044,7 @@ private fun ServerPickerDropdown(
     val selected = profiles.firstOrNull { it.id == selectedId }
     if (profiles.isEmpty()) {
         Text(
-            "No servers configured — add one in Settings first.",
+            stringResource(R.string.new_session_error_no_servers),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
@@ -1053,7 +1055,7 @@ private fun ServerPickerDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value = selected?.displayName ?: "Pick a server",
+            value = selected?.displayName ?: stringResource(R.string.new_session_pick_server),
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
