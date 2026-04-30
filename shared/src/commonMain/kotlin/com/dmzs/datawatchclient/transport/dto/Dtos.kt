@@ -226,6 +226,8 @@ public data class StatsDto(
     // ---- v4.1.0 observer envelopes (BL171) ----
     val envelopes: List<StatEnvelopeDto> = emptyList(),
     val backends: List<BackendStatusDto> = emptyList(),
+    // B5 — per-core CPU utilisation strip (server emits when eBPF/proc available)
+    @SerialName("cpu_cores_detail") val cpuCoresDetail: List<Double> = emptyList(),
 )
 
 @Serializable
