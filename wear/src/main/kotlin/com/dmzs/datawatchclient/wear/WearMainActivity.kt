@@ -116,7 +116,7 @@ private fun WearRoot(
         ),
 ) {
     val state by vm.state.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0) { 5 }
+    val pagerState = rememberPagerState(initialPage = 0) { 4 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
 
@@ -238,21 +238,23 @@ private fun WearRoot(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .focusRequester(focusRequester)
-                    .focusable()
                     .onRotaryScrollEvent { event ->
+                        val delta = if (event.verticalScrollPixels != 0f) event.verticalScrollPixels
+                                    else event.horizontalScrollPixels
                         coroutineScope.launch {
-                            if (event.verticalScrollPixels > 0) {
-                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(4))
-                            } else {
+                            if (delta > 0) {
+                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(3))
+                            } else if (delta < 0) {
                                 pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
                             }
                         }
                         true
-                    },
+                    }
+                    .focusRequester(focusRequester)
+                    .focusable(),
             ) { page ->
                 when (page) {
-                    0 -> MonitorPage(state)
+                    0 -> MonitorPage(state, onSelectServer = { id -> vm.requestActiveServer(id) })
                     1 ->
                         SessionsPage(
                             state = state,
@@ -260,13 +262,6 @@ private fun WearRoot(
                             onFilterChange = { sessionFilter = it },
                             onSessionTap = { item ->
                                 openSession = item
-                                // v0.42.9 — clear any cached full body
-                                // for this session so the popup shows
-                                // a "Loading…" placeholder while the
-                                // phone refetches. The phone replies
-                                // on /datawatch/sessionDetail with the
-                                // full last_response body (uncapped
-                                // by the DataLayer broadcast budget).
                                 fullDetailBodies = fullDetailBodies - item.id
                                 vm.refreshSession(item.id)
                             },
@@ -277,11 +272,10 @@ private fun WearRoot(
                             onApprove = { id -> vm.sendPrdAction(id, "approve") },
                             onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
                         )
-                    3 -> ServersPage(state) { id -> vm.requestActiveServer(id) }
-                    4 -> AboutPage(state)
+                    3 -> AboutPage(state)
                 }
             }
-            PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            PagerDots(pagerState.currentPage, 4, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
             // v0.42.3 — re-resolve the open session against the
             // latest published list so the popup shows the freshest
             // lastResponse body the moment the phone republishes (in
@@ -476,87 +470,114 @@ private fun WearSplash() {
 }
 
 @Composable
-private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
+private fun MonitorPage(
+    state: WearSessionCountsViewModel.UiState,
+    onSelectServer: (String) -> Unit = {},
+) {
     if (state.loading) {
         WearSplash()
         return
     }
     var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
 
-    PageScaffold(stringResource(R.string.wear_page_monitor)) {
-        if (state.pairedServer.isEmpty()) {
-            Text(
-                stringResource(R.string.wear_monitor_open_phone),
-                modifier = Modifier.padding(top = 10.dp),
-                style = MaterialTheme.typography.body2,
-            )
-            return@PageScaffold
-        }
-        if (state.allServerStats.size > 1) {
-            // Multi-server: compact mini-gauge rows for every server; tap for full detail.
-            state.allServerStats.forEach { s ->
-                val isActive = s.name == state.serverName
-                val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                        .background(
-                            color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    // Explicit Box so ServerDetailOverlay renders on top of PageScaffold.
+    Box(Modifier.fillMaxSize()) {
+        PageScaffold(stringResource(R.string.wear_page_monitor)) {
+            if (state.pairedServer.isEmpty()) {
+                Text(
+                    stringResource(R.string.wear_monitor_open_phone),
+                    modifier = Modifier.padding(top = 10.dp),
+                    style = MaterialTheme.typography.body2,
+                )
+                return@PageScaffold
+            }
+            if (state.allServerStats.size > 1) {
+                // Multi-server: row per server.
+                // Tap the server name → switch active server.
+                // Tap the gauge rings → open full detail overlay.
+                state.allServerStats.forEach { s ->
+                    val isActive = s.name == state.serverName
+                    val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
+                    val profileId = state.profiles.firstOrNull { it.second == s.name }?.first
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                            .background(
+                                color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                            )
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Server name — tap to select as active server
+                        Text(
+                            "${if (s.online) "●" else "○"} ${s.name}",
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = profileId != null && !isActive) {
+                                    onSelectServer(profileId!!)
+                                },
+                            style = MaterialTheme.typography.caption2,
+                            color = dotColor,
                         )
-                        .clickable { detailServer = s }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "${if (s.online) "●" else "○"} ${s.name}",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.caption2,
-                        color = dotColor,
-                    )
-                    if (s.online) {
-                        GaugeRing("CPU", s.cpuPct, "${s.cpuPct.toInt()}%", sizeDp = 38)
-                        Spacer(Modifier.size(2.dp))
-                        GaugeRing("MEM", s.memPct, "${s.memPct.toInt()}%", sizeDp = 38)
+                        // Gauge rings — tap to open detail popup
+                        if (s.online) {
+                            Row(
+                                modifier = Modifier.clickable { detailServer = s },
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                GaugeRing("CPU", s.cpuPct, "${s.cpuPct.toInt()}%", sizeDp = 38)
+                                GaugeRing("MEM", s.memPct, "${s.memPct.toInt()}%", sizeDp = 38)
+                            }
+                        }
                     }
                 }
-            }
-        } else {
-            // Single server: full gauge rings.
-            Text(
-                "● ${state.serverName}",
-                modifier = Modifier.padding(top = 2.dp),
-                style = MaterialTheme.typography.caption1,
-                color = MaterialTheme.colors.primary,
-            )
-            MonitorGaugeGrid(state)
-            if (state.uptimeSeconds > 0) {
-                Text(
-                    "up ${state.uptimeText()}",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.onSurfaceVariant,
+            } else {
+                // Single server: server name + tappable gauge grid.
+                val activeStat = WearSessionCountsViewModel.AllServerStat(
+                    name = state.serverName,
+                    cpuPct = state.cpuPctFor(),
+                    memPct = state.memPct(),
+                    sessionsTotal = state.total,
+                    online = state.pairedServer.isNotEmpty(),
                 )
-            }
-            if (state.hasGpu() && state.gpuMemTotalMb > 0) {
                 Text(
-                    "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
-                    style = MaterialTheme.typography.caption3,
-                    color = MaterialTheme.colors.onSurfaceVariant,
+                    "● ${state.serverName}",
+                    modifier = Modifier.padding(top = 2.dp),
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.primary,
                 )
+                Box(modifier = Modifier.clickable { detailServer = activeStat }) {
+                    MonitorGaugeGrid(state)
+                }
+                if (state.uptimeSeconds > 0) {
+                    Text(
+                        "up ${state.uptimeText()}",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                    )
+                }
+                if (state.hasGpu() && state.gpuMemTotalMb > 0) {
+                    Text(
+                        "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
+                        style = MaterialTheme.typography.caption3,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                    )
+                }
             }
         }
-    }
 
-    // Server detail popup — full gauge view for the tapped server.
-    detailServer?.let { s ->
-        ServerDetailOverlay(
-            stat = s,
-            isActive = s.name == state.serverName,
-            activeState = state,
-            onDismiss = { detailServer = null },
-        )
+        // Full-screen detail popup — rendered in the Box so it overlays PageScaffold.
+        detailServer?.let { s ->
+            ServerDetailOverlay(
+                stat = s,
+                isActive = s.name == state.serverName,
+                activeState = state,
+                onDismiss = { detailServer = null },
+            )
+        }
     }
 }
 
