@@ -11,10 +11,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -504,11 +506,6 @@ public fun SessionDetailScreen(
                     terminalController.setFrozen(frozen)
                 }
                 InlineNotices(state.events)
-                // Animated "generating…" row — visible only when the session
-                // is actively running. Mirrors the PWA's processing indicator.
-                if (state.session?.state == SessionState.Running) {
-                    GeneratingIndicator()
-                }
             }
 
             // Per-session "Scheduled" strip — mirrors PWA
@@ -533,6 +530,7 @@ public fun SessionDetailScreen(
                     onTranscribed = { vm.onReplyTextChange(it) },
                     onSchedule = { scheduleOpen = true },
                     waitingInput = state.session?.state == SessionState.Waiting,
+                    isRunning = state.session?.state == SessionState.Running,
                     onQuickReply = vm::sendQuickReply,
                     onResponse = {
                         vm.refreshFromServer()
@@ -1734,15 +1732,14 @@ private fun ReplyComposer(
     onTranscribed: (String) -> Unit,
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
+    isRunning: Boolean = false,
     onQuickReply: (String) -> Unit = {},
-    // v0.35.9: Last-Response + Saved-Commands moved to a unified
-    // quick-actions strip ABOVE the composer (rendered by the parent
-    // detail screen). The composer no longer carries either button.
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
     onSavedCommands: () -> Unit = {},
 ) {
     HorizontalDivider()
+    if (isRunning) GeneratingIndicator()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
@@ -1793,18 +1790,19 @@ private fun ReplyComposer(
     // keys. Same `Description` icon as the SessionInfoBar's 1F4BE
     // Response button — single canonical glyph for the action.
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp),
     ) {
         IconButton(
             onClick = onResponse,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(32.dp),
             enabled = !sending,
         ) {
             Icon(
                 Icons.Filled.Description,
                 contentDescription = "View last response",
+                modifier = Modifier.size(16.dp),
                 tint =
                     if (hasResponse) {
                         MaterialTheme.colorScheme.primary
@@ -1815,42 +1813,29 @@ private fun ReplyComposer(
         }
         IconButton(
             onClick = onSavedCommands,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(32.dp),
             enabled = !sending,
         ) {
             Icon(
                 Icons.Filled.Keyboard,
                 contentDescription = "Saved commands",
+                modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        // Left/right arrow chips only — ↑↓ live in the 📜 scroll mode overlay.
-        listOf(
-            "[D" to "←",
-            "[C" to "→",
-        ).forEach { (seq, label) ->
-            androidx.compose.material3.AssistChip(
+        listOf("[D" to "←", "[C" to "→").forEach { (seq, label) ->
+            TextButton(
                 onClick = { onQuickReply(seq) },
-                label = {
-                    Text(label, style = MaterialTheme.typography.labelLarge)
-                },
-                colors =
-                    AssistChipDefaults.assistChipColors(
-                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-            )
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                modifier = Modifier.height(28.dp),
+            ) {
+                Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 
     Row(
-        // `imePadding()` here (not on the outer Column) lifts only the
-        // composer row above the soft keyboard. Mirrors PWA behaviour —
-        // output area keeps its bounds; input bar floats above the IME.
-        // User-flagged 2026-04-23: the text field was being occluded by
-        // the keyboard when typing; SDK 35 edge-to-edge requires explicit
-        // IME handling and the prior Column-level imePadding was fighting
-        // Scaffold's content insets.
-        modifier = Modifier.fillMaxWidth().imePadding().padding(8.dp),
+        modifier = Modifier.fillMaxWidth().imePadding().padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
@@ -1867,16 +1852,12 @@ private fun ReplyComposer(
             },
             modifier = Modifier.weight(1f),
             singleLine = false,
-            maxLines = 4,
+            maxLines = 3,
             enabled = !sending && !recording,
-            // v0.33.23: explicit onSurface text color. Without this the
-            // composer inherited LocalContentColor from whichever Surface
-            // was closest in the tree — when the amber InputRequiredBanner
-            // was above it, the banner's contentColor tinted the text
-            // dark-amber-on-dark-surface → invisible black-on-black.
             textStyle =
                 LocalTextStyle.current.copy(
                     color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 13.sp,
                 ),
             colors =
                 OutlinedTextFieldDefaults.colors(
@@ -1885,16 +1866,18 @@ private fun ReplyComposer(
                     disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
         )
-        // v0.35.9 — Send first, then Schedule, then Mic (PWA order).
-        // Saved-Commands stack under mic removed; that button now
-        // lives on the unified quick-actions row above the composer.
-        IconButton(onClick = onSend, enabled = !sending && text.isNotBlank()) {
+        IconButton(
+            onClick = onSend,
+            enabled = !sending && text.isNotBlank(),
+            modifier = Modifier.size(36.dp),
+        ) {
             if (sending) {
-                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(8.dp))
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))
             } else {
                 Icon(
                     Icons.Filled.Send,
                     contentDescription = "Send",
+                    modifier = Modifier.size(18.dp),
                     tint =
                         if (text.isNotBlank()) {
                             MaterialTheme.colorScheme.primary
@@ -1904,10 +1887,11 @@ private fun ReplyComposer(
                 )
             }
         }
-        IconButton(onClick = onSchedule, enabled = !sending) {
+        IconButton(onClick = onSchedule, enabled = !sending, modifier = Modifier.size(36.dp)) {
             Icon(
                 Icons.Filled.Schedule,
                 contentDescription = "Schedule reply",
+                modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }

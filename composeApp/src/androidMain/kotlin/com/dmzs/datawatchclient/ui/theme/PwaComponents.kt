@@ -1,5 +1,11 @@
 package com.dmzs.datawatchclient.ui.theme
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -7,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -51,16 +58,27 @@ public fun PwaStatePill(state: SessionState) {
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f) to
                     MaterialTheme.colorScheme.onSurfaceVariant
         }
+    val runPulse = rememberInfiniteTransition(label = "pill-pulse")
+    val pillAlpha by runPulse.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pill-alpha",
+    )
+    val alpha = if (state == SessionState.Running) pillAlpha else 1f
     Box(
         modifier =
             Modifier
-                .background(color = bg, shape = RoundedCornerShape(10.dp))
+                .background(color = bg.copy(alpha = bg.alpha * alpha), shape = RoundedCornerShape(10.dp))
                 .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
         Text(
             state.label(),
             fontSize = 10.sp,
-            color = fg,
+            color = fg.copy(alpha = alpha),
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.3.sp,
         )
