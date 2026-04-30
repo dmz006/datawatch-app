@@ -26,6 +26,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.collectAsState
@@ -111,6 +117,9 @@ private fun WearRoot(
 ) {
     val state by vm.state.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 5 }
+    val coroutineScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     // Show splash on every launch — even warm restarts where the ViewModel
     // is already loaded. 800ms on warm restart (ViewModel pre-loaded),
@@ -223,7 +232,23 @@ private fun WearRoot(
 
     Scaffold {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .onRotaryScrollEvent { event ->
+                        coroutineScope.launch {
+                            if (event.verticalScrollPixels > 0) {
+                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(4))
+                            } else {
+                                pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
+                            }
+                        }
+                        true
+                    },
+            ) { page ->
                 when (page) {
                     0 -> MonitorPage(state)
                     1 ->
@@ -454,6 +479,8 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
         WearSplash()
         return
     }
+    var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
+
     PageScaffold(stringResource(R.string.wear_page_monitor)) {
         if (state.pairedServer.isEmpty()) {
             Text(
@@ -463,16 +490,38 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
             )
             return@PageScaffold
         }
-        // B28: multi-server mode — one compact row per server.
-        // Single-server mode keeps the original gauge grid.
         if (state.allServerStats.size > 1) {
-            MultiServerMonitor(state.allServerStats)
+            // Multi-server: compact mini-gauge rows for every server; tap for full detail.
+            state.allServerStats.forEach { s ->
+                val isActive = s.name == state.serverName
+                val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .background(
+                            color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                        )
+                        .clickable { detailServer = s }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${if (s.online) "●" else "○"} ${s.name}",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.caption2,
+                        color = dotColor,
+                    )
+                    if (s.online) {
+                        GaugeRing("CPU", s.cpuPct, "${s.cpuPct.toInt()}%", sizeDp = 38)
+                        Spacer(Modifier.size(2.dp))
+                        GaugeRing("MEM", s.memPct, "${s.memPct.toInt()}%", sizeDp = 38)
+                    }
+                }
+            }
         } else {
-            // v0.35.4 — color-gauge redesign. Active-server name stays at
-            // top; CPU / Memory / Disk / GPU render as 2-up gauge rings
-            // with threshold-coloured arcs (green → amber → red). GPU
-            // shows only when the phone has published a real snapshot.
-            // Uptime hangs below as a single-line caption.
+            // Single server: full gauge rings.
             Text(
                 "● ${state.serverName}",
                 modifier = Modifier.padding(top = 2.dp),
@@ -483,7 +532,7 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
             if (state.uptimeSeconds > 0) {
                 Text(
                     "up ${state.uptimeText()}",
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.caption2,
                     color = MaterialTheme.colors.onSurfaceVariant,
                 )
@@ -495,6 +544,81 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
                     color = MaterialTheme.colors.onSurfaceVariant,
                 )
             }
+        }
+    }
+
+    // Server detail popup — full gauge view for the tapped server.
+    detailServer?.let { s ->
+        ServerDetailOverlay(
+            stat = s,
+            isActive = s.name == state.serverName,
+            activeState = state,
+            onDismiss = { detailServer = null },
+        )
+    }
+}
+
+/** Full-screen overlay showing gauge details for a tapped server. */
+@Composable
+private fun ServerDetailOverlay(
+    stat: WearSessionCountsViewModel.AllServerStat,
+    isActive: Boolean,
+    activeState: WearSessionCountsViewModel.UiState,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background)
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "● ${stat.name}",
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.primary,
+            )
+            if (isActive) {
+                MonitorGaugeGrid(activeState)
+                if (activeState.uptimeSeconds > 0) {
+                    Text(
+                        "up ${activeState.uptimeText()}",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                    )
+                }
+                if (activeState.hasGpu() && activeState.gpuMemTotalMb > 0) {
+                    Text(
+                        "vram ${activeState.gpuMemUsedMb}/${activeState.gpuMemTotalMb}M",
+                        style = MaterialTheme.typography.caption3,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    GaugeRing("CPU", stat.cpuPct, "${stat.cpuPct.toInt()}%")
+                    GaugeRing("MEM", stat.memPct, "${stat.memPct.toInt()}%")
+                }
+                if (stat.sessionsTotal > 0) {
+                    Text(
+                        "${stat.sessionsTotal} sessions",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                "✕ tap to close",
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
         }
     }
 }
@@ -537,35 +661,6 @@ private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
     }
 }
 
-/** B28: compact multi-server list — one row per enabled server. */
-@Composable
-private fun MultiServerMonitor(servers: List<WearSessionCountsViewModel.AllServerStat>) {
-    val offlineLabel = stringResource(R.string.wear_label_offline)
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-        servers.forEach { s ->
-            val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
-            val summary = when {
-                !s.online -> offlineLabel
-                else -> buildString {
-                    append("CPU ${"%.0f".format(s.cpuPct)}%")
-                    append(" · Mem ${"%.0f".format(s.memPct)}%")
-                    if (s.sessionsTotal > 0) append(" · ${s.sessionsTotal}s")
-                }
-            }
-            Text(
-                "● ${s.name}",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.caption1,
-                color = dotColor,
-            )
-            Text(
-                summary,
-                style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
-        }
-    }
-}
 
 /**
  * Threshold-coloured ring gauge sized for a round-bezel watch.
@@ -578,6 +673,7 @@ private fun GaugeRing(
     label: String,
     pct: Float,
     center: String,
+    sizeDp: Int = GAUGE_SIZE_DP,
 ) {
     val safePct = pct.coerceIn(0f, 100f)
     val ringColor =
@@ -589,7 +685,7 @@ private fun GaugeRing(
         }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier.size(GAUGE_SIZE_DP.dp),
+            modifier = Modifier.size(sizeDp.dp),
             contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator(
@@ -1144,6 +1240,8 @@ private fun ServersPage(
     state: WearSessionCountsViewModel.UiState,
     onPick: (String) -> Unit,
 ) {
+    var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
+
     PageScaffold(stringResource(R.string.wear_page_server)) {
         if (state.profiles.isEmpty()) {
             Text(
@@ -1155,6 +1253,12 @@ private fun ServersPage(
         }
         state.profiles.forEach { (id, name) ->
             val isActive = id == state.pairedServer
+            val serverStat = state.allServerStats.firstOrNull { it.name == name }
+            val dotColor = when {
+                isActive -> MaterialTheme.colors.primary
+                serverStat?.online == false -> MaterialTheme.colors.error
+                else -> MaterialTheme.colors.onSurfaceVariant
+            }
             Row(
                 modifier =
                     Modifier
@@ -1164,23 +1268,53 @@ private fun ServersPage(
                             color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                         )
-                        .clickable { onPick(id) }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .clickable {
+                            if (serverStat != null) detailServer = serverStat
+                            onPick(id)
+                        }
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    if (isActive) "●" else "○",
-                    style = MaterialTheme.typography.body2,
-                    color = if (isActive) MaterialTheme.colors.primary else MaterialTheme.colors.onSurfaceVariant,
-                )
-                Text(
-                    name,
-                    modifier = Modifier.padding(start = 8.dp),
-                    style = MaterialTheme.typography.body2,
-                    color = MaterialTheme.colors.onSurface,
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (serverStat?.online == false) "○" else "●",
+                            style = MaterialTheme.typography.caption2,
+                            color = dotColor,
+                        )
+                        Text(
+                            name,
+                            modifier = Modifier.padding(start = 6.dp),
+                            style = MaterialTheme.typography.caption2,
+                            color = if (isActive) MaterialTheme.colors.onSurface else MaterialTheme.colors.onSurfaceVariant,
+                        )
+                    }
+                    serverStat?.let { s ->
+                        if (s.online) {
+                            Text(
+                                "${"%.0f".format(s.cpuPct)}% CPU · ${"%.0f".format(s.memPct)}% Mem",
+                                style = MaterialTheme.typography.caption3,
+                                color = MaterialTheme.colors.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                if (serverStat?.online == true) {
+                    GaugeRing("CPU", serverStat.cpuPct, "${serverStat.cpuPct.toInt()}%", sizeDp = 34)
+                    Spacer(Modifier.size(2.dp))
+                    GaugeRing("MEM", serverStat.memPct, "${serverStat.memPct.toInt()}%", sizeDp = 34)
+                }
             }
         }
+    }
+
+    detailServer?.let { s ->
+        ServerDetailOverlay(
+            stat = s,
+            isActive = s.name == state.serverName,
+            activeState = state,
+            onDismiss = { detailServer = null },
+        )
     }
 }
 

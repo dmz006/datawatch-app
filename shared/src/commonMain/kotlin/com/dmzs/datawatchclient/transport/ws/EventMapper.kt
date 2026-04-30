@@ -171,7 +171,10 @@ private fun buildBulkStateChangeEvents(
  * session is treated as first — fresh terminal paint).
  */
 public fun resetPaneCaptureSeen(sessionId: String) {
-    firstCaptureSeen.remove(sessionId)
+    // Use the same contains-in-both-directions logic as buildPaneCaptureEvents so
+    // short IDs ("2db6") correctly evict full wire IDs ("ring-2db6") and vice versa.
+    val toRemove = firstCaptureSeen.filter { it.contains(sessionId) || sessionId.contains(it) }
+    firstCaptureSeen.removeAll(toRemove.toSet())
 }
 
 private fun buildPaneCaptureEvents(

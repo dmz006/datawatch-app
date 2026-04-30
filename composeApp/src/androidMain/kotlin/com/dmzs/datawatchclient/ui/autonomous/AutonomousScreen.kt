@@ -7,16 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -41,6 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -152,30 +152,30 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     (includeTemplates || !prd.isTemplate) &&
                         (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true))
                 }
-            if (visible.isEmpty() && !state.loading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.autonomous_empty_state),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth(0.85f)
-                                .aspectRatio(1f)
-                                .align(Alignment.Center)
-                                .alpha(0.10f),
-                    )
-                    LazyColumn {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(0.85f)
+                            .aspectRatio(1f)
+                            .align(Alignment.Center)
+                            .alpha(0.10f),
+                )
+                if (visible.isEmpty() && !state.loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            stringResource(R.string.autonomous_empty_state),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(visible, key = { it.id }) { prd ->
                             PrdRow(prd, onClick = { openPrdId = prd.id })
                         }
@@ -227,42 +227,43 @@ private fun PrdRow(
     prd: PrdDto,
     onClick: () -> Unit = {},
 ) {
+    val statusColor = prdStatusColor(prd.status)
+    val storyLabel = if (prd.stories.isNotEmpty()) stringResource(R.string.autonomous_story_count, prd.stories.size) else null
+    val metaText = listOfNotNull(
+        storyLabel,
+        prd.backend?.takeIf { it.isNotBlank() },
+        prd.effort?.takeIf { it.isNotBlank() },
+    ).joinToString(" · ").ifEmpty { null }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .pwaCard()
+                .drawBehind {
+                    drawRect(
+                        color = statusColor,
+                        topLeft = Offset.Zero,
+                        size = Size(4.dp.toPx(), size.height),
+                    )
+                }
                 .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(10.dp)
-                    .background(prdStatusColor(prd.status), CircleShape),
-        )
-        Spacer(Modifier.size(8.dp))
-        Column(modifier = Modifier.fillMaxWidth().padding(end = 8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 prd.title?.takeIf { it.isNotBlank() } ?: prd.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
             )
             Row(
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = 3.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 StatusPill(prd.status)
-                if (prd.depth > 0) {
-                    Text(
-                        stringResource(R.string.autonomous_depth, prd.depth),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
                 if (prd.isTemplate) {
                     Text(
                         stringResource(R.string.autonomous_template_label),
@@ -270,19 +271,36 @@ private fun PrdRow(
                         color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
-                prd.projectProfile?.takeIf { it.isNotBlank() }?.let {
+                if (prd.depth > 0) {
                     Text(
-                        it,
+                        stringResource(R.string.autonomous_depth, prd.depth),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
+                    Text(
+                        profile,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            if (prd.stories.isNotEmpty()) {
+            metaText?.let {
                 Text(
-                    stringResource(R.string.autonomous_story_count, prd.stories.size),
+                    it,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            prd.spec?.lines()?.firstOrNull()?.takeIf { it.isNotBlank() }?.let { firstLine ->
+                Text(
+                    firstLine.take(80),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }

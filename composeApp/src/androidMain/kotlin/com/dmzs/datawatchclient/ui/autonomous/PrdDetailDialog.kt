@@ -17,9 +17,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -95,48 +99,98 @@ internal fun PrdDetailDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "${status.replace('_', ' ')} · ${prd.stories.size} stories",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                // Status + graph row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PrdStatusBadge(status)
+                    if (prd.stories.isNotEmpty()) {
+                        Text(
+                            "${prd.stories.size} stories",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = { graphOpen = true }) {
                         Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
-                // Action row — PWA renderPRDActions parity
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    if (status == "draft" || status == "revisions_asked") {
-                        TextButton(onClick = { onDecompose(); onDismiss() }) {
-                            Text(stringResource(R.string.prd_detail_decompose), style = MaterialTheme.typography.labelSmall)
+                // Spec preview
+                prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
+                    Text(
+                        spec.take(240),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 4,
+                    )
+                }
+
+                HorizontalDivider()
+
+                // Primary action — one tonal button for the most important action per status
+                val hasPrimaryAction = canReview || status == "approved" || status == "running" ||
+                    status == "draft" || status == "revisions_asked"
+                if (hasPrimaryAction) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (canReview) {
+                            FilledTonalButton(
+                                onClick = { onApprove(); onDismiss() },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = Color(0xFF10B981).copy(alpha = 0.18f),
+                                    contentColor = Color(0xFF10B981),
+                                ),
+                            ) { Text(stringResource(R.string.action_approve)) }
+                        }
+                        if (status == "approved") {
+                            FilledTonalButton(
+                                onClick = { onRun(); onDismiss() },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = Color(0xFF3B82F6).copy(alpha = 0.18f),
+                                    contentColor = Color(0xFF3B82F6),
+                                ),
+                            ) { Text(stringResource(R.string.prd_detail_run)) }
+                        }
+                        if (status == "running") {
+                            FilledTonalButton(
+                                onClick = { onCancel(); onDismiss() },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
+                            ) { Text(stringResource(R.string.action_cancel)) }
+                        }
+                        if (status == "draft" || status == "revisions_asked") {
+                            FilledTonalButton(
+                                onClick = { onDecompose(); onDismiss() },
+                                modifier = Modifier.weight(1f),
+                            ) { Text(stringResource(R.string.prd_detail_decompose)) }
                         }
                     }
+                }
+
+                // Secondary / management actions
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
                     if (canReview) {
-                        TextButton(onClick = { onApprove(); onDismiss() }) {
-                            Text(stringResource(R.string.action_approve), color = Color(0xFF10B981), style = MaterialTheme.typography.labelSmall)
-                        }
                         TextButton(onClick = { rejectOpen = true }) {
                             Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                         }
                         TextButton(onClick = { reviseOpen = true }) {
                             Text(stringResource(R.string.prd_detail_revise), color = Color(0xFFF59E0B), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    if (status == "approved") {
-                        TextButton(onClick = { onRun(); onDismiss() }) {
-                            Text(stringResource(R.string.prd_detail_run), color = Color(0xFF3B82F6), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    if (status == "running") {
-                        TextButton(onClick = { onCancel(); onDismiss() }) {
-                            Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (status != "running" && status != "completed") {
@@ -150,12 +204,29 @@ internal fun PrdDetailDialog(
                         }
                     }
                     TextButton(onClick = { deleteConfirmOpen = true }) {
-                        Text(stringResource(R.string.action_delete), color = Color(0xFF7C2D12), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
-                Spacer(Modifier.size(4.dp))
+                HorizontalDivider()
 
+                // Stories section
+                val conflicts = buildMap<String, List<String>> {
+                    val byPath = mutableMapOf<String, MutableList<String>>()
+                    prd.stories
+                        .filter {
+                            it.status.lowercase() != "complete" &&
+                                it.status.lowercase() != "rejected"
+                        }
+                        .forEach { story ->
+                            story.files.forEach { f ->
+                                byPath.getOrPut(f) { mutableListOf() }.add(story.id)
+                            }
+                        }
+                    byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
+                        put(path, ids)
+                    }
+                }
                 if (prd.stories.isEmpty()) {
                     Text(
                         stringResource(R.string.prd_detail_no_stories),
@@ -163,22 +234,11 @@ internal fun PrdDetailDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    val conflicts = buildMap<String, List<String>> {
-                        val byPath = mutableMapOf<String, MutableList<String>>()
-                        prd.stories
-                            .filter {
-                                it.status.lowercase() != "complete" &&
-                                    it.status.lowercase() != "rejected"
-                            }
-                            .forEach { story ->
-                                story.files.forEach { f ->
-                                    byPath.getOrPut(f) { mutableListOf() }.add(story.id)
-                                }
-                            }
-                        byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
-                            put(path, ids)
-                        }
-                    }
+                    Text(
+                        stringResource(R.string.prd_detail_stories_header, prd.stories.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     prd.stories.forEach { story ->
                         StoryRow(
                             story = story,
@@ -319,6 +379,22 @@ internal fun PrdDetailDialog(
         com.dmzs.datawatchclient.ui.orchestrator.OrchestratorGraphDialog(
             graphId = prd.id,
             onDismiss = { graphOpen = false },
+        )
+    }
+}
+
+@Composable
+private fun PrdStatusBadge(status: String) {
+    val color = prdStatusColor(status)
+    Box(
+        modifier = Modifier
+            .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    ) {
+        Text(
+            status.lowercase().replace('_', ' '),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
         )
     }
 }

@@ -20,15 +20,15 @@
 #      what a tablet user would actually see.
 #
 # Output layout:
-#   assets/play-store/phone/      *.png at native 1440×3120
-#   assets/play-store/tablet-7/   *.png at 1080×1920 portrait
-#   assets/play-store/tablet-10/  *.png at 1600×2560 portrait
+#   docs/media/store/phone/      *.png at native 1440×3120
+#   docs/media/store/tablet-7/   *.png at 1080×1920 portrait
+#   docs/media/store/tablet-10/  *.png at 1600×2560 portrait
 #
 set -euo pipefail
 
 DEVICE="${DEVICE:-R5CXB186B6L}"
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-PLAY_DIR="$ROOT/assets/play-store"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+PLAY_DIR="$ROOT/docs/media/store"
 PHONE_DIR="$ROOT/docs/media/phone"
 PHONE_OUT="$PLAY_DIR/phone"
 T7_OUT="$PLAY_DIR/tablet-7"

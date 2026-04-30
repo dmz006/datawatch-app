@@ -2,16 +2,16 @@
 
 Staging directory for everything needed to fill in the Play Console listing.
 
-## Status (2026-04-27)
+## Status (2026-04-30)
 
 | Asset | Spec | Status | Path |
 |---|---|---|---|
 | **App icon** | 512 × 512 PNG (32-bit RGBA) | ✅ Generated | `icon-512.png` |
 | **Feature graphic** | 1024 × 500 PNG (24-bit RGB) | ✅ Generated | `feature-graphic-1024x500.png` |
-| **Phone screenshots** | 2–8 PNG, ratio 9:16 to 16:9, 320–3840 px each side | ⏳ Pending phone reconnect | `phone/phone-*.png` |
+| **Phone screenshots** | 2–8 PNG, ratio 9:16 to 16:9, 320–3840 px each side | ⏳ Run build script | `phone/phone-*.png` |
 | **7-inch tablet screenshots** | 1080 × 1920 portrait (or wider) | ⏳ Auto-generated from phone capture | `tablet-7/phone-*.png` |
 | **10-inch tablet screenshots** | 1600 × 2560 portrait (or wider) | ⏳ Auto-generated from phone capture | `tablet-10/phone-*.png` |
-| **Wear screenshots** | 384 × 384 to 480 × 480 round | ⚠️ Stale (pre-v0.35.4 redesign) | `wear/0?-*.png` |
+| **Wear screenshots** | 384 × 384 to 480 × 480 round | ✅ v0.52.0 fresh captures | `wear/0?-*.png` |
 
 ## How to build the screenshot set
 
@@ -19,7 +19,7 @@ Plug in the phone (`R5CXB186B6L`) over USB **and unlock the keyguard manually**,
 
 ```bash
 cd /home/dmz/workspace/datawatch-app
-./assets/play-store/build-play-store-screenshots.sh
+./docs/media/store/build-play-store-screenshots.sh
 ```
 
 The script:
@@ -52,7 +52,7 @@ wear/01-monitor.png .. 04-about.png            Wear OS screenshots (×4)
 ## Source-of-truth
 
 The icon master + feature graphic master are SVG files at
-`assets/icon-master-512.svg` and `assets/feature-graphic-1024x500.svg`.
+`docs/media/store/icon-master-512.svg` and `docs/media/store/feature-graphic-master.svg`.
 The PNG renders here are reproducible from those — see the build
 section of [`docs/play-store-registration.md`](../../docs/play-store-registration.md).
 

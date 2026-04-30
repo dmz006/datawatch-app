@@ -213,6 +213,7 @@
     <string name="prd_detail_delete_title">Delete PRD?</string>
     <string name="prd_detail_delete_body">Permanently removes \"%1$s\" and all child PRDs. This cannot be undone.</string>
     <string name="prd_detail_edit_files">✎ files</string>
+    <string name="prd_detail_stories_header">Stories (%1$d)</string>
 
     <!-- ── Monitor / Stats screen ── -->
     <string name="stats_section_server">Server</string>
