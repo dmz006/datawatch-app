@@ -497,8 +497,14 @@ private fun MonitorPage(
                 // Tap the gauge rings → open full detail overlay.
                 state.allServerStats.forEach { s ->
                     val isActive = s.name == state.serverName
-                    val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
                     val profileId = state.profiles.firstOrNull { it.second == s.name }?.first
+                    // Active server: teal ✓ + bold; inactive: ●/○ in muted colour
+                    val prefix = if (isActive) "✓" else if (s.online) "●" else "○"
+                    val nameColor = when {
+                        isActive -> MaterialTheme.colors.primary
+                        s.online -> MaterialTheme.colors.onSurface
+                        else -> MaterialTheme.colors.error
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -512,14 +518,15 @@ private fun MonitorPage(
                     ) {
                         // Server name — tap to select as active server
                         Text(
-                            "${if (s.online) "●" else "○"} ${s.name}",
+                            "$prefix ${s.name}",
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable(enabled = profileId != null && !isActive) {
                                     onSelectServer(profileId!!)
                                 },
                             style = MaterialTheme.typography.caption2,
-                            color = dotColor,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                            color = nameColor,
                         )
                         // Gauge rings — tap to open detail popup
                         if (s.online) {
