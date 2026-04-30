@@ -434,8 +434,12 @@ public fun SessionDetailScreen(
             // session is `waiting_input`, mirroring the PWA's amber prompt
             // strip. Body shows the latest prompt text so users can decide
             // before scrolling the terminal.
-            state.session?.takeIf { it.state == SessionState.Waiting }?.let {
-                InputRequiredBanner(prompt = state.pendingPromptText)
+            // Suppress while in scroll mode — the banner causes a layout shift
+            // that shrinks the WebView and jumps the copy-mode position.
+            if (!toolbarState.scrollMode) {
+                state.session?.takeIf { it.state == SessionState.Waiting }?.let {
+                    InputRequiredBanner(prompt = state.pendingPromptText)
+                }
             }
 
             // Server-reported chat-mode sessions (output_mode=chat, e.g.

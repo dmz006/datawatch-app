@@ -54,6 +54,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readBytes
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.append
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -310,6 +311,9 @@ public class RestTransport(
             val dto: com.dmzs.datawatchclient.transport.dto.VoiceTranscribeResponseDto =
                 client.post("${profile.baseUrl}/api/voice/transcribe") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    // Whisper / OpenAI transcription can take 30-60 s on slow
+                    // hardware; override the 15 s global request timeout.
+                    timeout { requestTimeoutMillis = 120_000 }
                     setBody(
                         io.ktor.client.request.forms.MultiPartFormDataContent(
                             parts =
