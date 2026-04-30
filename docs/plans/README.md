@@ -118,7 +118,7 @@ Issue dmz006/datawatch#20 is closed — these items are now unblocked.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B5 | Stats density + GPU / eBPF detail | Mostly done (v0.46.x) — StatsScreen has GPU row (gpuName/gpuUtilPct/gpuMemUsedMb/gpuMemTotalMb), BackendHealthCard, EnvelopesCard (observer envelopes), OllamaStatsCard, eBPF Degraded banner, RTK card. **Remaining:** per-core CPU strip (needs server to emit `cpu_cores_detail: []`). Unblocked now that issue #20 closed. |
+| B5 | Stats density + GPU / eBPF detail | Done (v0.50.0) — StatsScreen has GPU row, BackendHealthCard, EnvelopesCard, OllamaStatsCard, eBPF Degraded banner, RTK card. Per-core CPU strip added: `StatsDto.cpuCoresDetail` field (`cpu_cores_detail: []`), rendered as a compact 8-per-row grid of colour-coded mini-bars (green/amber/red thresholds at 60%/80%) below the aggregate CPU Load bar. Renders only when server emits the field; absent on older daemons. |
 | B10 | Live system-stats streaming | Done (v0.47.0) — `StatsHub` singleton (SharedFlow) added to `shared/transport/ws/`. `WebSocketTransport` routes `stats`-type frames to `StatsHub` before EventMapper sees them. `StatsViewModel` subscribes to `StatsHub.flow` and overlays live values on top of the 5 s REST poll — when a session WS is active the Monitor tab updates at the server's broadcast cadence without a separate REST round-trip. |
 | B11 | Per-session stats panel w/ wheels + graphs | [Phase 3 of spec](2026-04-22-unified-monitoring.md) — per-process eBPF taps from the cluster container. Mobile surface is view-only per ADR-0019 — but ships pre-1.0. Unblocked. |
 

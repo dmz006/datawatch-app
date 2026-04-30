@@ -613,6 +613,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
                     null
                 }
             UsageBar("CPU Load", cpuPct, cpuSub)
+            PerCoreCpuStrip(s.cpuCoresDetail)
 
             // Memory — show used/total under the bar.
             val memUsed = s.memUsed
@@ -678,6 +679,75 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 )
             }
         }
+    }
+}
+
+/** B5 — per-core CPU strip, rendered when server emits `cpu_cores_detail`. */
+@Composable
+private fun PerCoreCpuStrip(cores: List<Double>) {
+    if (cores.isEmpty()) return
+    Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
+        Text(
+            "Per-core",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        cores.chunked(8).forEachIndexed { chunkIdx, chunk ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                chunk.forEachIndexed { colIdx, pct ->
+                    CoreMiniBar(
+                        label = "C${chunkIdx * 8 + colIdx}",
+                        pct = pct,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoreMiniBar(
+    label: String,
+    pct: Double,
+    modifier: Modifier = Modifier,
+) {
+    val clamped = pct.coerceIn(0.0, 100.0)
+    val barColor =
+        when {
+            clamped >= 80 -> Color(0xFFEF4444)
+            clamped >= 60 -> Color(0xFFF59E0B)
+            else -> Color(0xFF22C55E)
+        }
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth((clamped / 100.0).toFloat())
+                        .height(4.dp)
+                        .background(barColor),
+            )
+        }
+        Text(
+            "${"%.0f".format(clamped)}%",
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }
 
