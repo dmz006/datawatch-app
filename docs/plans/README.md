@@ -49,6 +49,7 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 | ID | Title | Notes |
 |----|-------|-------|
 | B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. Tracked at [datawatch-app#36](https://github.com/dmz006/datawatch-app/issues/36). |
+| BL21 | Wear Monitor: active-server selection indicator | When user taps a server name on the Monitor tab to select it as active, that row should show a clear "selected" visual (e.g. teal checkmark or filled dot) so the active server is always obvious at a glance. Currently `isActive = s.name == state.serverName` is computed but only used for the row background tint — a dedicated icon/badge is needed. `WearMainActivity.kt MonitorPage` multi-server branch. |
 
 ### Sprint FF3 — claude-code advanced options (v5.27.5 parity)
 
