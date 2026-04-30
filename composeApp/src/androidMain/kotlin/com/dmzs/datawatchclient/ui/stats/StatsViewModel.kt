@@ -6,6 +6,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
+import com.dmzs.datawatchclient.transport.ws.StatsHub
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +44,24 @@ public class StatsViewModel : ViewModel() {
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
+        // B10: subscribe to live stats frames arriving on any active
+        // session WS connection. These overlay REST poll values —
+        // typically arrive at the server's own broadcast cadence
+        // (~5 s on most configs) and bypass the REST round-trip.
+        viewModelScope.launch {
+            StatsHub.flow.collect { liveDto ->
+                val current = _state.value
+                if (current.stats != null) {
+                    _state.value =
+                        current.copy(
+                            stats = liveDto,
+                            refreshing = false,
+                            banner = null,
+                        )
+                    ServiceLocator.refreshHomeWidgets()
+                }
+            }
+        }
         viewModelScope.launch {
             while (isActive) {
                 refresh()

@@ -23,6 +23,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import kotlin.random.Random
 
@@ -119,6 +120,14 @@ public class WebSocketTransport(
                                         println("WsTransport: unparseable frame: ${text.take(120)}")
                                         continue
                                     }
+                                    // B10: stats frames are global (not
+                                    // session-scoped) — route to StatsHub
+                                    // so StatsViewModel gets live updates
+                                    // from any active session WS.
+                                    if (dto.type == "stats") {
+                                        tryRouteStatsFrame(dto.data, json)
+                                        continue
+                                    }
                                     // v0.33.19: trace every inbound frame
                                     // type + count mapped → events, so we
                                     // can see when pane_captures arrive but
@@ -184,6 +193,18 @@ public class WebSocketTransport(
         val port = if (base.port == base.protocol.defaultPort) "" else ":${base.port}"
         return "$wsScheme://${base.host}$port/ws"
     }
+}
+
+/** Parse a `stats` WS frame and forward to [StatsHub] (B10). */
+private fun tryRouteStatsFrame(
+    data: kotlinx.serialization.json.JsonElement?,
+    json: Json,
+) {
+    if (data == null) return
+    runCatching {
+        val dto = json.decodeFromJsonElement(com.dmzs.datawatchclient.transport.dto.StatsDto.serializer(), data)
+        StatsHub.emit(dto)
+    }.onFailure { println("WsTransport: failed to parse stats frame: ${it.message}") }
 }
 
 // Preserve the old signature for test compatibility (takes sessionId but

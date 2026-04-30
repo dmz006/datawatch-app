@@ -111,9 +111,9 @@ Issue dmz006/datawatch#20 is closed — these items are now unblocked.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B5 | Stats density + GPU / eBPF detail | [Phase 1 of spec](2026-04-22-unified-monitoring.md) — structured StatsDto, per-core strip, GPU rows, backend health dots. |
-| B10 | Live system-stats streaming | [Phase 2 of spec](2026-04-22-unified-monitoring.md) — subscribe to `MsgStats` WS broadcast, replace 5 s poll. Server already broadcasts (ws.go:42); EventMapper needs a `stats` branch. |
-| B11 | Per-session stats panel w/ wheels + graphs | [Phase 3 of spec](2026-04-22-unified-monitoring.md) — per-process eBPF taps from the cluster container. Mobile surface is view-only per ADR-0019 — but ships pre-1.0. |
+| B5 | Stats density + GPU / eBPF detail | Mostly done (v0.46.x) — StatsScreen has GPU row (gpuName/gpuUtilPct/gpuMemUsedMb/gpuMemTotalMb), BackendHealthCard, EnvelopesCard (observer envelopes), OllamaStatsCard, eBPF Degraded banner, RTK card. **Remaining:** per-core CPU strip (needs server to emit `cpu_cores_detail: []`). Unblocked now that issue #20 closed. |
+| B10 | Live system-stats streaming | Done (v0.47.0) — `StatsHub` singleton (SharedFlow) added to `shared/transport/ws/`. `WebSocketTransport` routes `stats`-type frames to `StatsHub` before EventMapper sees them. `StatsViewModel` subscribes to `StatsHub.flow` and overlays live values on top of the 5 s REST poll — when a session WS is active the Monitor tab updates at the server's broadcast cadence without a separate REST round-trip. |
+| B11 | Per-session stats panel w/ wheels + graphs | [Phase 3 of spec](2026-04-22-unified-monitoring.md) — per-process eBPF taps from the cluster container. Mobile surface is view-only per ADR-0019 — but ships pre-1.0. Unblocked. |
 
 ### Sprint HH — BL backlog pulls (v0.35.x)
 
