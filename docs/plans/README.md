@@ -139,7 +139,7 @@ to land pre-1.0.
 | BL15 | Localization (DE, ES, FR, JA) | Done (v0.52.0) — Full string-resource extraction across all UI screens (SettingsScreen, StatsScreen, AlertsScreen, AutonomousScreen, SessionsScreen, SessionDetailScreen, NewSessionScreen, NewPrdDialog, PrdDetailDialog, BottomNavBar) + Wear OS (WearMainActivity: page titles, session popup, filter row, transcript review, Autonomous/Server pages, About). EN base + DE/ES/FR/JA translations for both composeApp and wear modules. `SettingsTab` enum migrated to `@StringRes Int` labels; SecurityCard migration error uses format string. |
 | BL16 | Biometric-bound DB passphrase | Done (v0.50.0) — `KeystoreManager` gains `ensureBiometricKeyExists()` (AES-256-GCM Keystore key with `setUserAuthenticationRequired(true)` + 30 s window, API-level-split for API 29 vs 30+). `migratePassphraseToBiometricKey()` / `migratePassphraseFromBiometricKey()` run within the biometric auth window. `AndroidDatabaseFactory.driver()` prefers the biometric key when `hasBiometricPassphrase()` is true, with silent fallback to EncryptedSharedPreferences copy. `SecurityCard` in Settings triggers the biometric confirmation prompt on toggle instead of toggling directly — migration runs on success. |
 | BL19 | Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | User vision. Needs its own ADR for the orchestration model. |
-| BL21 | Signal device-linking (`/api/link/*` + QR SSE) | Needs QR rendering from SSE frames + paired-state persistence. |
+| BL21 | Signal device-linking (`/api/link/*` + QR SSE) | Needs QR rendering from SSE frames + paired-state persistence. Server issue: [datawatch#31](https://github.com/dmz006/datawatch/issues/31). |
 
 ### Parking lot (waiting on upstream / user gesture)
 
