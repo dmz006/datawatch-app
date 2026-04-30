@@ -226,7 +226,9 @@ public fun TerminalView(
     modifier: Modifier = Modifier,
     controller: TerminalController? = null,
 ) {
-    var ready by remember { mutableStateOf(false) }
+    // Keyed to sessionId so navigating A → B resets ready to false, preventing
+    // stale-true from causing dwPaneCapture to fire against a not-yet-loaded WebView.
+    var ready by remember(sessionId) { mutableStateOf(false) }
     // Keyed to sessionId so navigating A → B resets the write cursor. Without
     // this, the LaunchedEffect's initial-flush branch (lastWrittenIndex == 0)
     // fails to fire for session B and nothing is ever written into xterm —
