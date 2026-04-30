@@ -390,8 +390,12 @@
         try { lines = JSON.parse(String(linesJson || '[]')); }
         catch (e) { lines = []; }
         if (!Array.isArray(lines) || lines.length === 0) return;
-        for (var i = 0; i < lines.length; i++) {
-          if (String(lines[i]).indexOf('DATAWATCH_COMPLETE:') !== -1) return;
+        // In scroll mode the user is reading historical output — don't bail
+        // on DATAWATCH_COMPLETE: lines that are just part of the history.
+        if (!_scrollMode) {
+          for (var i = 0; i < lines.length; i++) {
+            if (String(lines[i]).indexOf('DATAWATCH_COMPLETE:') !== -1) return;
+          }
         }
         _lastPaneWrite = now;
         var joined = lines.join('\r\n');
