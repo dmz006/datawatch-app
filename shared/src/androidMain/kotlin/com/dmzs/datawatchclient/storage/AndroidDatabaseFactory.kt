@@ -12,16 +12,22 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
  * in a SQLCipher-backed `SupportOpenHelperFactory`, with the passphrase derived from
  * the Keystore-bound master key (see [KeystoreManager]).
  *
+ * **BL16 (v0.50.0)**: When the biometric gate is enabled, the passphrase is instead
+ * decrypted from the biometric-bound Keystore key (within the 30 s window granted by
+ * the launch biometric prompt). If decryption fails (window expired), the implementation
+ * falls back to the [EncryptedSharedPreferences]-wrapped copy so the DB always opens —
+ * the EncryptedSharedPreferences copy is kept as a warm standby and is never deleted.
+ *
  * **Native lib prerequisite:** callers MUST have invoked
  * `System.loadLibrary("sqlcipher")` exactly once before the first `driver()` call.
  * The `composeApp` module does this in `DatawatchApp.onCreate()`.
  *
  * **What this guarantees** (docs/security-model.md § "At-rest protection"):
  * - Database is encrypted with AES-256 by SQLCipher using HMAC-SHA256-derived key.
- * - Master key never leaves the Android Keystore (not even to this process memory
- *   beyond the derivation step).
- * - App uninstall or factory reset irrecoverably destroys the key and therefore the
- *   data.
+ * - Master key never leaves the Android Keystore.
+ * - App uninstall or factory reset irrecoverably destroys the key and therefore the data.
+ * - When biometric is enabled: key additionally requires a fresh biometric event within
+ *   30 seconds, binding DB access to the user's enrolled biometric.
  */
 public actual class DatabaseFactory(
     private val context: Context,
@@ -29,7 +35,13 @@ public actual class DatabaseFactory(
 ) {
     public actual fun driver(): SqlDriver {
         keystore.ensureMasterKey()
-        val passphrase = keystore.deriveDatabasePassphrase()
+        val passphrase =
+            if (keystore.hasBiometricPassphrase()) {
+                runCatching { keystore.deriveDatabasePassphraseFromBiometricKey() }
+                    .getOrElse { keystore.deriveDatabasePassphrase() }
+            } else {
+                keystore.deriveDatabasePassphrase()
+            }
         val factory = SupportOpenHelperFactory(passphrase)
         return AndroidSqliteDriver(
             schema = DatawatchDb.Schema,
