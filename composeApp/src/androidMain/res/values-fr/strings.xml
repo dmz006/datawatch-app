@@ -29,6 +29,12 @@
     <string name="action_browse">Parcourir…</string>
     <string name="action_back">Retour</string>
     <string name="action_kill">Terminer</string>
+    <string name="action_yes">Oui</string>
+    <string name="action_no">Non</string>
+
+    <!-- ── Common states ── -->
+    <string name="common_loading">Chargement…</string>
+    <string name="common_no_alerts">Aucune alerte.</string>
 
     <!-- ── Settings tabs ── -->
     <string name="settings_title">Paramètres</string>

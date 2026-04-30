@@ -49,4 +49,10 @@
     <string name="wear_about_tagline">AI Session Monitor &amp; Bridge</string>
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
+
+    <!-- Common actions / states -->
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_no_alerts">No alerts.</string>
 </resources>

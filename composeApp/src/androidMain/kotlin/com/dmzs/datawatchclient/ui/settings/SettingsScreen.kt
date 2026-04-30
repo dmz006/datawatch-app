@@ -865,7 +865,7 @@ private fun DaemonInfoRow(
             activeProfile == null -> "No active server"
             serverInfo != null -> "${serverInfo.hostname} · datawatch v${serverInfo.version}"
             error != null -> "— (${activeProfile.displayName} unreachable)"
-            else -> "Loading…"
+            else -> stringResource(R.string.common_loading)
         }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
