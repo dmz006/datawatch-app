@@ -103,6 +103,12 @@ public data class StartSessionDto(
     @SerialName("resume_id") val resumeId: String? = null,
     @SerialName("auto_git_init") val autoGitInit: Boolean? = null,
     @SerialName("auto_git_commit") val autoGitCommit: Boolean? = null,
+    /** claude-code per-session permission mode (v5.27.5+). */
+    @SerialName("permission_mode") val permissionMode: String? = null,
+    /** claude-code per-session model alias (v5.27.5+). */
+    val model: String? = null,
+    /** claude-code per-session effort level (v5.27.5+). */
+    @SerialName("claude_effort") val claudeEffort: String? = null,
 )
 
 @Serializable
@@ -487,6 +493,8 @@ public data class NewPrdRequestDto(
     val effort: String? = null,
     val model: String? = null,
     @SerialName("decomposition_profile") val decompositionProfile: String? = null,
+    /** claude-code per-PRD permission mode (v5.27.5+). Most-specific-wins: task > PRD > session default. */
+    @SerialName("permission_mode") val permissionMode: String? = null,
 )
 
 @Serializable

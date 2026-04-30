@@ -50,6 +50,13 @@ surface per batch. All sprints are **pre-1.0** per user direction.
 |----|-------|-------|
 | B31 | Wear + Auto: Sessions tab with snapshot + quick-command + voice | **HOLD** 2026-04-22: Auto already ships `AutoSummaryScreen` / `WaitingSessionsScreen` / `SessionReplyScreen` with Yes/No/Continue/Stop quick-reply. Wear's Sessions page (v0.33.25) shows counts only. User evaluating whether existing Auto scope counts as "done" before scheduling watch snapshot + voice work. Tracked at [datawatch-app#36](https://github.com/dmz006/datawatch-app/issues/36). |
 
+### Sprint FF3 — claude-code advanced options (v5.27.5 parity)
+
+| ID | Title | Notes |
+|----|-------|-------|
+| B70 | New Session: claude-code Advanced options block (permission mode + model + effort) | Done (v0.49.0) — fetches from /api/llm/claude/{models,efforts,permission_modes}; shown when backend = claude-code AND server ≥v5.27.5 (404 = hidden). Passes to POST /api/sessions/start. Closes [datawatch-app#32](https://github.com/dmz006/datawatch-app/issues/32). |
+| B71 | PRD dialog: permission mode dropdown | Done (v0.49.0) — added to `NewPrdDialog` alongside backend/effort/model. Fetches from /api/llm/claude/permission_modes (same probe as #32). Sent as `permission_mode` on PRD create. Closes [datawatch-app#33](https://github.com/dmz006/datawatch-app/issues/33). |
+
 ### Sprint FF2 — PRD/About/icon polish (user request 2026-04-29)
 
 | ID | Title | Notes |

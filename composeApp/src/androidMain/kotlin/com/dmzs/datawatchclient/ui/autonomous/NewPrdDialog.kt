@@ -68,9 +68,13 @@ internal fun NewPrdDialog(
     var decomp by remember { mutableStateOf("") }
     var decompMenuOpen by remember { mutableStateOf(false) }
 
+    var permissionMode by remember { mutableStateOf("") }
+    var permissionModeMenuOpen by remember { mutableStateOf(false) }
+
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var backendOptions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var permissionModeOptions by remember { mutableStateOf<List<String>>(emptyList()) }
 
     /** Models keyed by backend name; only ollama and openwebui are fetched. */
     var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
@@ -92,6 +96,7 @@ internal fun NewPrdDialog(
                 val clusterD = async { transport.listKindProfiles("cluster") }
                 val ollamaD = async { transport.listOllamaModels() }
                 val owuiD = async { transport.listOpenWebUiModels() }
+                val pmD = async { transport.listClaudePermissionModes() }
 
                 backendsD.await().onSuccess { view -> backendOptions = view.llm }
                 projectD.await().onSuccess { list ->
@@ -108,6 +113,7 @@ internal fun NewPrdDialog(
                 ollamaD.await().onSuccess { if (it.isNotEmpty()) models["ollama"] = it }
                 owuiD.await().onSuccess { if (it.isNotEmpty()) models["openwebui"] = it }
                 availableModels = models
+                pmD.await().onSuccess { permissionModeOptions = it }
             }
         }
     }
@@ -291,6 +297,34 @@ internal fun NewPrdDialog(
                             }
                         }
                     }
+
+                    // ── Permission mode (v5.27.5+) — only when server provides the list
+                    if (permissionModeOptions.isNotEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                            OutlinedTextField(
+                                value = permissionMode.ifEmpty { "(inherit)" },
+                                onValueChange = {},
+                                label = { Text("Permission mode") },
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                trailingIcon = {
+                                    TextButton(onClick = { permissionModeMenuOpen = !permissionModeMenuOpen }) { Text("▾") }
+                                },
+                            )
+                            DropdownMenu(expanded = permissionModeMenuOpen, onDismissRequest = { permissionModeMenuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("(inherit)") },
+                                    onClick = { permissionMode = ""; permissionModeMenuOpen = false },
+                                )
+                                permissionModeOptions.forEach { pm ->
+                                    DropdownMenuItem(
+                                        text = { Text(pm) },
+                                        onClick = { permissionMode = pm; permissionModeMenuOpen = false },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 } else {
                     // ── Profile mode: cluster dropdown ────────────────────
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
@@ -333,6 +367,7 @@ internal fun NewPrdDialog(
                                 effort = effort.ifBlank { null },
                                 model = model.ifBlank { null },
                                 decompositionProfile = decomp.ifBlank { null },
+                                permissionMode = permissionMode.ifBlank { null },
                             )
                         } else {
                             NewPrdRequestDto(
@@ -341,6 +376,7 @@ internal fun NewPrdDialog(
                                 projectProfile = profile,
                                 clusterProfile = cluster.ifBlank { null },
                                 decompositionProfile = decomp.ifBlank { null },
+                                permissionMode = permissionMode.ifBlank { null },
                             )
                         }
                     if (req.name.isNotBlank()) onCreate(req)
