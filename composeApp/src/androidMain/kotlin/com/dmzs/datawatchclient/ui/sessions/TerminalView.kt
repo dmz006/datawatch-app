@@ -234,6 +234,10 @@ public fun TerminalView(
     // fails to fire for session B and nothing is ever written into xterm —
     // the WebView keeps session A's DOM and looks frozen. See B1.
     var lastWrittenIndex by remember(sessionId) { mutableStateOf(0) }
+    // Whether the output-event baseline has been set for the current session.
+    // Reset on session change so historical output from previous WS sessions
+    // (stored in DB) is not replayed into a freshly opened terminal.
+    var outputBaselined by remember(sessionId) { mutableStateOf(false) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     // When the session changes, wipe the xterm DOM so session A's scrollback
@@ -389,6 +393,39 @@ public fun TerminalView(
             null,
         )
         Log.d("DwTerm", "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})")
+        lastWrittenIndex = events.size
+    }
+
+    // Set the output-write baseline the first time the WebView becomes ready.
+    // Any output events already in the DB (from previous WS sessions) are
+    // intentionally skipped — they're historical and would be rendered
+    // out-of-order relative to the pane_capture that shows the current screen.
+    LaunchedEffect(ready) {
+        if (!ready || outputBaselined) return@LaunchedEffect
+        outputBaselined = true
+        lastWrittenIndex = events.size
+    }
+
+    // Incrementally write new raw-output events between pane_captures.
+    // The server sends pane_capture only when the tmux pane changes; between
+    // captures it streams raw PTY bytes as "output" events at ~100ms.
+    // Writing them here gives the user real-time feedback (visible typing,
+    // command echo) while pane_capture remains the authoritative full-screen
+    // reset. When a pane_capture arrives, dwPaneCapture clears + rewrites the
+    // terminal, overriding any incremental output accumulated since the last
+    // snapshot. Keying on events.size (not latestPaneCapture) so this fires
+    // on new Output rows but NOT on replacement pane_captures (size unchanged).
+    LaunchedEffect(events.size, ready, outputBaselined) {
+        if (!ready || !outputBaselined) return@LaunchedEffect
+        val webView = webViewRef.value ?: return@LaunchedEffect
+        val newOutputEvents =
+            events.drop(lastWrittenIndex).filterIsInstance<SessionEvent.Output>()
+        if (newOutputEvents.isEmpty()) return@LaunchedEffect
+        val batch = newOutputEvents.joinToString("") { it.body }
+        webView.evaluateJavascript(
+            "window.dwWrite && window.dwWrite(${jsonString(batch)});",
+            null,
+        )
         lastWrittenIndex = events.size
     }
 
