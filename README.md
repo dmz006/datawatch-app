@@ -4,15 +4,15 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Status:** `v0.39.1` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
+**Status:** `v0.46.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
 
 ## At a glance
 
-| Watch | PWA reference |
-|:---:|:---:|
-| ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
+| Phone | Watch | PWA reference |
+|:---:|:---:|:---:|
+| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
 
-*Slideshows loop at ~2.5 s per frame. Watch cards are circle-shaped to follow the Samsung Galaxy Watch bezel; PWA shots are from `localhost:8443` captured via Playwright. Phone slideshow is pending a clean re-capture (prior captures were compromised by the device's home screen).*
+*Slideshows loop at ~2.5 s per frame. Watch cards follow the Samsung Galaxy Watch bezel curve. PWA shots from `localhost:8443` via Playwright.*
 
 ## What it does
 
@@ -32,6 +32,53 @@ phone, watch, or car display:
   tokens + optional biometric unlock (BL2).
 
 Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
+
+## Android
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/phone/01-splash.png" width="180"/><br/><sub>Splash</sub></td>
+<td align="center"><img src="docs/media/phone/02-sessions.png" width="180"/><br/><sub>Sessions list</sub></td>
+<td align="center"><img src="docs/media/phone/11-session-running.png" width="180"/><br/><sub>Live session</sub></td>
+<td align="center"><img src="docs/media/phone/04-alerts.png" width="180"/><br/><sub>Alerts</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/phone/03-prds.png" width="180"/><br/><sub>PRDs</sub></td>
+<td align="center"><img src="docs/media/phone/10-new-session.png" width="180"/><br/><sub>New session</sub></td>
+<td align="center"><img src="docs/media/phone/05-settings-monitor.png" width="180"/><br/><sub>Settings — Monitor</sub></td>
+<td align="center"><img src="docs/media/phone/09-settings-about.png" width="180"/><sub>About</sub></td>
+</tr>
+</table>
+
+The session detail view streams chat and terminal output side-by-side with a
+browser-style tab switcher. The composer row gives you arrow keys, PgUp/PgDn,
+and a saved-commands picker — no need to type `\033[A` by hand.
+
+## Wear OS
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/watch/00-splash.png" width="160"/><br/><sub>Splash</sub></td>
+<td align="center"><img src="docs/media/watch/01-monitor.png" width="160"/><br/><sub>Monitor</sub></td>
+<td align="center"><img src="docs/media/watch/02-sessions.png" width="160"/><br/><sub>Sessions</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/watch/03-prds.png" width="160"/><br/><sub>PRDs</sub></td>
+<td align="center"><img src="docs/media/watch/04-servers.png" width="160"/><br/><sub>Servers</sub></td>
+<td align="center"><img src="docs/media/watch/05-about.png" width="160"/><br/><sub>About</sub></td>
+</tr>
+</table>
+
+Tap a session to see its live status and send a voice reply — the watch
+transcribes on-device and shows "Processing…" while the server handles it.
+Haptic confirmation on send.
+
+## Android Auto
+
+Android Auto support is in active development (BL10). The app registers as a
+**Messaging** category app and projects a session list, per-session status
+detail, and quick-reply actions onto the car display. See
+[docs/plans/README.md](docs/plans/README.md) for the full backlog.
 
 ## Platforms
 
