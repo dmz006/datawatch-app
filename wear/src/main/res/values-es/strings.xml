@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">datawatch</string>
+    <string name="tile_sessions_label">Sesiones datawatch</string>
+    <string name="tile_monitor_label">Monitor datawatch</string>
+
+    <string name="wear_page_monitor">Monitor</string>
+    <string name="wear_page_sessions">Sesiones</string>
+    <string name="wear_page_autonomous">Autónomo</string>
+    <string name="wear_page_server">Servidor</string>
+
+    <string name="wear_splash_cd">ojo de datawatch</string>
+
+    <string name="wear_monitor_open_phone">Abre datawatch en tu teléfono</string>
+    <string name="wear_label_offline">sin conexión</string>
+
+    <string name="wear_sessions_no_wait">sin sesiones en espera</string>
+    <string name="wear_sessions_no_run">sin sesiones en ejecución</string>
+    <string name="wear_sessions_no_total">sin sesiones</string>
+
+    <string name="wear_filter_wait">espera</string>
+    <string name="wear_filter_run">ejec.</string>
+    <string name="wear_filter_total">total</string>
+
+    <string name="wear_session_loading">Cargando…</string>
+    <string name="wear_session_listening">Escuchando…</string>
+    <string name="wear_session_processing">Procesando…</string>
+    <string name="wear_session_tap_send">Toca Enviar para confirmar</string>
+
+    <string name="wear_transcript_send_title">¿Enviar?</string>
+    <string name="wear_action_cancel">Cancelar</string>
+    <string name="wear_action_send">Enviar</string>
+
+    <string name="wear_prds_empty">Sin planes en revisión.</string>
+    <string name="wear_prds_pending">%1$d pendiente(s)</string>
+
+    <string name="wear_servers_empty">Sin servidores habilitados</string>
+
+    <string name="wear_about_tagline">Monitor de IA &amp; Puente</string>
+    <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
+    <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
+</resources>

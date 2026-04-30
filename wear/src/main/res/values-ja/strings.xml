@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">datawatch</string>
+    <string name="tile_sessions_label">datawatchセッション</string>
+    <string name="tile_monitor_label">datawatchモニター</string>
+
+    <string name="wear_page_monitor">モニター</string>
+    <string name="wear_page_sessions">セッション</string>
+    <string name="wear_page_autonomous">自律</string>
+    <string name="wear_page_server">サーバー</string>
+
+    <string name="wear_splash_cd">datawatchアイ</string>
+
+    <string name="wear_monitor_open_phone">スマホでdatawatchを開いてください</string>
+    <string name="wear_label_offline">オフライン</string>
+
+    <string name="wear_sessions_no_wait">待機中のセッションなし</string>
+    <string name="wear_sessions_no_run">実行中のセッションなし</string>
+    <string name="wear_sessions_no_total">セッションなし</string>
+
+    <string name="wear_filter_wait">待機</string>
+    <string name="wear_filter_run">実行</string>
+    <string name="wear_filter_total">全体</string>
+
+    <string name="wear_session_loading">読み込み中…</string>
+    <string name="wear_session_listening">聴取中…</string>
+    <string name="wear_session_processing">処理中…</string>
+    <string name="wear_session_tap_send">送信をタップして確認</string>
+
+    <string name="wear_transcript_send_title">送信しますか？</string>
+    <string name="wear_action_cancel">キャンセル</string>
+    <string name="wear_action_send">送信</string>
+
+    <string name="wear_prds_empty">レビュー中のプランなし。</string>
+    <string name="wear_prds_pending">%1$d 件保留中</string>
+
+    <string name="wear_servers_empty">有効なサーバーなし</string>
+
+    <string name="wear_about_tagline">AIセッションモニター＆ブリッジ</string>
+    <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
+    <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
+</resources>

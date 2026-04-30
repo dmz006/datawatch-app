@@ -3,4 +3,50 @@
     <string name="app_name">datawatch</string>
     <string name="tile_sessions_label">datawatch Sessions</string>
     <string name="tile_monitor_label">datawatch Monitor</string>
+
+    <!-- Page titles -->
+    <string name="wear_page_monitor">Monitor</string>
+    <string name="wear_page_sessions">Sessions</string>
+    <string name="wear_page_autonomous">Autonomous</string>
+    <string name="wear_page_server">Server</string>
+
+    <!-- Splash -->
+    <string name="wear_splash_cd">datawatch eye</string>
+
+    <!-- Monitor page -->
+    <string name="wear_monitor_open_phone">Open datawatch on your phone</string>
+    <string name="wear_label_offline">offline</string>
+
+    <!-- Sessions page -->
+    <string name="wear_sessions_no_wait">no waiting sessions</string>
+    <string name="wear_sessions_no_run">no running sessions</string>
+    <string name="wear_sessions_no_total">no sessions</string>
+
+    <!-- Filter row labels -->
+    <string name="wear_filter_wait">wait</string>
+    <string name="wear_filter_run">run</string>
+    <string name="wear_filter_total">total</string>
+
+    <!-- Session detail popup -->
+    <string name="wear_session_loading">Loading…</string>
+    <string name="wear_session_listening">Listening…</string>
+    <string name="wear_session_processing">Processing…</string>
+    <string name="wear_session_tap_send">Tap Send to confirm</string>
+
+    <!-- Transcript review popup -->
+    <string name="wear_transcript_send_title">Send?</string>
+    <string name="wear_action_cancel">Cancel</string>
+    <string name="wear_action_send">Send</string>
+
+    <!-- Autonomous page -->
+    <string name="wear_prds_empty">No plans in review.</string>
+    <string name="wear_prds_pending">%1$d pending</string>
+
+    <!-- Server page -->
+    <string name="wear_servers_empty">No enabled servers</string>
+
+    <!-- About page -->
+    <string name="wear_about_tagline">AI Session Monitor &amp; Bridge</string>
+    <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
+    <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 </resources>
