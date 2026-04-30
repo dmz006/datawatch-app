@@ -239,8 +239,14 @@ public fun MemoryCard() {
             }
         }
         if (memories.isEmpty()) {
+            val totalCount = stats?.longField("total_count") ?: 0L
+            val emptyMsg = when {
+                searchText.isNotBlank() -> "No matches."
+                totalCount > 0L -> "No manually saved memories yet — $totalCount session memories are searchable above."
+                else -> "No memories stored yet."
+            }
             Text(
-                if (searchText.isBlank()) "No memories stored yet." else "No matches.",
+                emptyMsg,
                 modifier = Modifier.padding(12.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

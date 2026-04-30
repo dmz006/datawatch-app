@@ -393,6 +393,60 @@ skip this.
 *These guardrails apply when Claude operates on this repository. They do not restrict what
 datawatch sessions run from this app can do on the server side.*
 
+---
+
+## Workflow Rules & Preferences
+
+Rules accumulated from working sessions. These override default habits.
+
+### GitHub Issues Scope (2026-04-29)
+
+GitHub issues are **only** for cross-repo alignment between `dmz006/datawatch-app` and `dmz006/datawatch`. Internal bugs, features, backlog, and polish belong in `docs/plans/README.md` only — never in GitHub issues.
+
+- `gh issue create --repo dmz006/datawatch` — only when mobile needs a server/PWA change (new endpoint, schema gap, contract mismatch)
+- `gh issue create --repo dmz006/datawatch-app` — only when a server-side change requires mobile follow-up
+- Internal-only items → `docs/plans/README.md` exclusively
+- If an existing issue is internal-only, close it with "tracking internally in docs/plans/README.md"
+
+When filing a cross-repo gap: verify the PWA source first — `openapi.yaml` has been stale before (issues #14+#15 filed wrong; endpoints already existed in `app.js`). Grep `internal/server/web/app.js` before filing "endpoint doesn't exist."
+
+### Install & Upgrade (adb)
+
+- **Never `adb uninstall` to upgrade** — uninstall wipes the SQLCipher DB + Keystore key; server profiles and tokens are unrecoverable.
+- Always use `adb install -r <apk>`. Only consider uninstall if `install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, and warn the user first.
+- **Sideload both flavors** on every release-install: `composeApp-publicTrack-debug.apk` (holds user's live server configs) **and** `composeApp-dev-debug.apk` (sandbox for devPassenger Auto surface). When user says "install" without specifying, install both.
+
+### Version Sync (2026-04-21)
+
+When bumping app version, update **both** files in the same commit:
+1. `gradle.properties` — `DATAWATCH_APP_VERSION` + `DATAWATCH_APP_VERSION_CODE`
+2. `shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt` — `Version.VERSION` + `Version.VERSION_CODE`
+
+CI `check-version` job rejects any mismatch. Sanity check:
+```bash
+grep -E 'DATAWATCH_APP_VERSION=|VERSION\s*:\s*String' gradle.properties shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt
+```
+
+### Commit & Release Cadence (2026-04-24)
+
+On a multi-release arc: when tests are green, commit + push + continue without asking. Don't hold commits waiting for review. Stop only when tasks are exhausted or a destructive action needs approval.
+
+At parity milestone: do a full GitHub release with ~100% test coverage, refactored backlog docs (done items in a closed section, remaining on top, clearly dated). Create the GH release via `gh release create` with tag, title `vX.Y.Z — <milestone>`, and changelog link.
+
+### Wear & Auto Visual Style
+
+Wear OS and Auto screens must match the datawatch PWA dark palette — dark surfaces, teal/green accents, monospace where appropriate. No stock Material light defaults. Reuse `LocalDatawatchColors` tokens; within Auto `CarColor` constraints, use GREEN for success and YELLOW for warning.
+
+### Media Capture Rules
+
+- **Never capture the phone home screen** — launcher, widgets, notifications, wallpaper are all confidential. Only capture in-app screens. If a home-screen frame slips into a commit, purge with `git-filter-repo --path <file> --invert-paths --force` + force-push; a `git rm` commit is not sufficient.
+- Phone screenshots in `docs/media/phone/` — frame-validate before generating GIF (identical-md5 frames = taps missed, phone was on home screen).
+
+### Dev Tool Install Location
+
+Install SDKs and toolchains under `/home/dmz/workspace/<tool>/` not `$HOME`. Android SDK → `/home/dmz/workspace/Android/Sdk`.
+
+---
 
 # Memory & Knowledge (datawatch)
 
