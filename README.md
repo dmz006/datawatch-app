@@ -8,11 +8,11 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 ## At a glance
 
-| Phone | Watch | PWA reference |
-|:---:|:---:|:---:|
-| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
+| Phone | Watch | Auto (AAOS) | PWA reference |
+|:---:|:---:|:---:|:---:|
+| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![auto slideshow](docs/media/auto-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
 
-*Slideshows loop at ~2.5 s per frame. Watch cards follow the Samsung Galaxy Watch bezel curve. PWA shots from `localhost:8443` via Playwright.*
+*Slideshows loop at ~2.5 s per frame. Watch cards follow the Samsung Galaxy Watch bezel curve. Auto shots from AAOS emulator (android-33 automotive). PWA shots from `localhost:8443` via Playwright.*
 
 ## What it does
 
@@ -73,12 +73,31 @@ Tap a session to see its live status and send a voice reply — the watch
 transcribes on-device and shows "Processing…" while the server handles it.
 Haptic confirmation on send.
 
-## Android Auto
+## Android Auto / AAOS
 
-Android Auto support is in active development (BL10). The app registers as a
-**Messaging** category app and projects a session list, per-session status
-detail, and quick-reply actions onto the car display. See
-[docs/plans/README.md](docs/plans/README.md) for the full backlog.
+The app runs natively on **Android Automotive OS** (AAOS) — no phone required.
+Install the APK directly on any AAOS head unit and connect to your datawatch
+daemon over Tailscale or local Wi-Fi.
+
+![auto slideshow](docs/media/auto-slideshow.gif)
+
+*Dark mode activates automatically when the vehicle sets night mode (ambient
+light sensor or time-of-day). Day/night is AAOS-controlled, not app-controlled.*
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/auto/01-splash.png" width="270"/><br/><sub>Splash</sub></td>
+<td align="center"><img src="docs/media/auto/02-sessions.png" width="270"/><br/><sub>Sessions</sub></td>
+<td align="center"><img src="docs/media/auto/03-alerts.png" width="270"/><br/><sub>Alerts</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/media/auto/04-settings-monitor.png" width="270"/><br/><sub>Monitor stats</sub></td>
+<td align="center"><img src="docs/media/auto/05-settings-about.png" width="270"/><br/><sub>About</sub></td>
+<td></td>
+</tr>
+</table>
+
+Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline reply/schedule/open), and **Settings** (Monitor · General · Comms · LLM · About). The eye watermark and server-selector dropdown carry over from the phone layout.
 
 ## Platforms
 
