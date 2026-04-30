@@ -14,11 +14,13 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 
 @Composable
@@ -45,16 +47,16 @@ internal fun BottomNavBar(
     // same size on every Android target.
     val items =
         buildList {
-            add(BottomNavItem(Destinations.Tabs.Sessions, "Sessions", icon = Icons.Filled.Chat))
+            add(BottomNavItem(Destinations.Tabs.Sessions, stringResource(R.string.nav_sessions), icon = Icons.Filled.Chat))
             // v0.42.5 — only render PRDs when the active server
             // actually exposes the autonomous surface. Local-only
             // setups + older daemons would otherwise dead-end into
             // an empty list.
             if (prdsSupported) {
-                add(BottomNavItem(Destinations.Tabs.Autonomous, "Autonomous", emoji = "🤖"))
+                add(BottomNavItem(Destinations.Tabs.Autonomous, stringResource(R.string.nav_autonomous), emoji = "🤖"))
             }
-            add(BottomNavItem(Destinations.Tabs.Alerts, "Alerts", icon = Icons.Filled.NotificationsActive))
-            add(BottomNavItem(Destinations.Tabs.Settings, "Settings", icon = Icons.Filled.Settings))
+            add(BottomNavItem(Destinations.Tabs.Alerts, stringResource(R.string.nav_alerts), icon = Icons.Filled.NotificationsActive))
+            add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), icon = Icons.Filled.Settings))
         }
 
     val dw = LocalDatawatchColors.current

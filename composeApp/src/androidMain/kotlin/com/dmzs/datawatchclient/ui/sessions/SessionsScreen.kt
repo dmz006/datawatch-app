@@ -81,7 +81,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
@@ -179,7 +181,7 @@ public fun SessionsScreen(
                             Icon(
                                 if (toolbarExpanded) Icons.Filled.Close else Icons.Filled.Search,
                                 contentDescription =
-                                    if (toolbarExpanded) "Collapse filter" else "Filter / sort sessions",
+                                    if (toolbarExpanded) stringResource(R.string.sessions_filter_collapse) else stringResource(R.string.sessions_filter_expand),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -216,7 +218,7 @@ public fun SessionsScreen(
                             .offset(y = 36.dp)
                             .padding(end = 4.dp),
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = "New session")
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.sessions_fab_new))
                 }
             }
         },
@@ -361,10 +363,10 @@ public fun SessionsScreen(
         val ids = selectedIds.toList()
         AlertDialog(
             onDismissRequest = { bulkDeleteConfirmOpen = false },
-            title = { Text("Delete ${ids.size} sessions?") },
+            title = { Text(stringResource(R.string.dialog_delete_sessions_title, ids.size)) },
             text = {
                 Text(
-                    "These sessions will be removed from the server. This cannot be undone.",
+                    stringResource(R.string.dialog_delete_sessions_body),
                 )
             },
             confirmButton = {
@@ -379,10 +381,10 @@ public fun SessionsScreen(
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError,
                         ),
-                ) { Text("Delete") }
+                ) { Text(stringResource(R.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { bulkDeleteConfirmOpen = false }) { Text("Cancel") }
+                TextButton(onClick = { bulkDeleteConfirmOpen = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -399,17 +401,17 @@ private fun SelectionTopAppBar(
     onDelete: () -> Unit,
 ) {
     TopAppBar(
-        title = { Text("$count selected") },
+        title = { Text(stringResource(R.string.sessions_selected_count, count)) },
         navigationIcon = {
             IconButton(onClick = onCancel) {
-                Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.sessions_cancel_selection))
             }
         },
         actions = {
             IconButton(onClick = onDelete, enabled = canDelete) {
                 Icon(
                     Icons.Filled.Delete,
-                    contentDescription = "Delete selected",
+                    contentDescription = stringResource(R.string.sessions_delete_selected),
                     tint =
                         if (canDelete) {
                             MaterialTheme.colorScheme.error
@@ -466,13 +468,13 @@ private fun SessionsToolbar(
             OutlinedTextField(
                 value = filterText,
                 onValueChange = onFilterTextChange,
-                placeholder = { Text("Filter sessions…") },
+                placeholder = { Text(stringResource(R.string.sessions_filter_hint)) },
                 singleLine = true,
                 trailingIcon = {
                     Row {
                         if (filterText.isNotEmpty()) {
                             IconButton(onClick = { onFilterTextChange("") }) {
-                                Icon(Icons.Filled.Close, contentDescription = "Clear filter")
+                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.sessions_clear_filter))
                             }
                         }
                         IconButton(onClick = {
@@ -481,7 +483,7 @@ private fun SessionsToolbar(
                         }) {
                             Icon(
                                 Icons.Filled.Close,
-                                contentDescription = "Collapse toolbar",
+                                contentDescription = stringResource(R.string.sessions_collapse_toolbar),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -521,7 +523,7 @@ private fun SessionsToolbar(
                         Text(
                             // v0.35.7 — drop the verb churn, match
                             // PWA v5.1.0 ("History (N)").
-                            "History ($historyCount)",
+                            stringResource(R.string.sessions_history_count, historyCount),
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
@@ -535,7 +537,7 @@ private fun SessionsToolbar(
                                 vertical = 4.dp,
                             ),
                     ) {
-                        Text("Sort: ${sortOrder.label}", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.sessions_sort_prefix, sortOrder.label), style = MaterialTheme.typography.labelSmall)
                     }
                     DropdownMenu(
                         expanded = sortMenuOpen,
@@ -572,8 +574,7 @@ private fun SessionsToolbar(
 private fun EmptyState() {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Text(
-            "No sessions yet. Use `new: <task>` from a messaging backend " +
-                "to start one, or wait for the daemon to push one here.",
+            stringResource(R.string.sessions_empty_state),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -710,10 +711,10 @@ private fun SessionRow(
             )
             if (reorderMode) {
                 IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.ArrowUpward, contentDescription = "Move up")
+                    Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.sessions_move_up))
                 }
                 IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.ArrowDownward, contentDescription = "Move down")
+                    Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.sessions_move_down))
                 }
             } else if (!selectionMode) {
                 Box {
@@ -721,21 +722,21 @@ private fun SessionRow(
                         onClick = { menuOpen = true },
                         modifier = Modifier.size(32.dp),
                     ) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.sessions_more_menu))
                     }
                     DropdownMenu(
                         expanded = menuOpen,
                         onDismissRequest = { menuOpen = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(R.string.action_rename)) },
                             onClick = {
                                 menuOpen = false
                                 renameOpen = true
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Restart") },
+                            text = { Text(stringResource(R.string.action_restart)) },
                             onClick = {
                                 menuOpen = false
                                 restartConfirmOpen = true
@@ -744,7 +745,7 @@ private fun SessionRow(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    "Delete",
+                                    stringResource(R.string.action_delete),
                                     color =
                                         if (deleteSupported && session.state != SessionState.Running) {
                                             MaterialTheme.colorScheme.error
@@ -770,7 +771,7 @@ private fun SessionRow(
         val displayText = session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary
         val taskText =
             when {
-                displayText == null -> "(no task)"
+                displayText == null -> stringResource(R.string.sessions_no_task)
                 displayText.length > 80 -> displayText.take(80) + "…"
                 else -> displayText
             }
@@ -794,7 +795,7 @@ private fun SessionRow(
                 ) {
                     Icon(
                         Icons.Filled.Description,
-                        contentDescription = "View last response",
+                        contentDescription = stringResource(R.string.sessions_view_response),
                         modifier = Modifier.size(14.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -894,7 +895,7 @@ private fun SessionRow(
                                 tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Stop", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
                         }
                         // Quick commands — only visible on waiting_input
                         // rows (PWA shows the ▶ triangle only when a
@@ -915,7 +916,7 @@ private fun SessionRow(
                                     modifier = Modifier.size(14.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Commands")
+                                Text(stringResource(R.string.sessions_quick_commands))
                             }
                         }
                     }
@@ -937,7 +938,7 @@ private fun SessionRow(
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Restart")
+                            Text(stringResource(R.string.action_restart))
                         }
                         if (deleteSupported) {
                             Spacer(modifier = Modifier.width(4.dp))
@@ -956,7 +957,7 @@ private fun SessionRow(
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Delete", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -994,11 +995,9 @@ private fun SessionRow(
     }
     if (restartConfirmOpen) {
         ConfirmDialog(
-            title = "Restart session?",
-            body =
-                "Warm-resume this session on the server. Any in-progress " +
-                    "prompt may be interrupted.",
-            confirmLabel = "Restart",
+            title = stringResource(R.string.dialog_restart_session_title),
+            body = stringResource(R.string.dialog_restart_session_body),
+            confirmLabel = stringResource(R.string.action_restart),
             onConfirm = {
                 restartConfirmOpen = false
                 onRestart()
@@ -1009,11 +1008,9 @@ private fun SessionRow(
     }
     if (killConfirmOpen) {
         ConfirmDialog(
-            title = "Stop session?",
-            body =
-                "Signal the server to terminate this running session. " +
-                    "Unsaved in-flight work may be lost.",
-            confirmLabel = "Stop",
+            title = stringResource(R.string.dialog_stop_session_title),
+            body = stringResource(R.string.dialog_stop_session_body),
+            confirmLabel = stringResource(R.string.action_stop),
             onConfirm = {
                 killConfirmOpen = false
                 onKill()
@@ -1024,11 +1021,9 @@ private fun SessionRow(
     }
     if (deleteConfirmOpen) {
         ConfirmDialog(
-            title = "Delete session?",
-            body =
-                "The session history will be removed from the server. " +
-                    "This cannot be undone.",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.dialog_delete_session_title),
+            body = stringResource(R.string.dialog_delete_session_body),
+            confirmLabel = stringResource(R.string.action_delete),
             onConfirm = {
                 deleteConfirmOpen = false
                 onDelete()
@@ -1048,7 +1043,7 @@ private fun RenameSessionDialog(
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename session") },
+        title = { Text(stringResource(R.string.dialog_rename_session)) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -1061,10 +1056,10 @@ private fun RenameSessionDialog(
             TextButton(
                 onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank(),
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -1097,7 +1092,7 @@ private fun ConfirmDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -1126,10 +1121,10 @@ private fun ServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(if (allMode) "All servers" else (active?.displayName ?: "No server"))
+            Text(if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)))
             Icon(
                 Icons.Filled.ArrowDropDown,
-                contentDescription = "Switch server",
+                contentDescription = stringResource(R.string.sessions_switch_server),
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
@@ -1139,7 +1134,7 @@ private fun ServerPickerTitle(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "All servers",
+                                stringResource(R.string.sessions_all_servers),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -1158,7 +1153,7 @@ private fun ServerPickerTitle(
             }
             if (profiles.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text("No servers configured") },
+                    text = { Text(stringResource(R.string.sessions_no_servers)) },
                     onClick = onDismiss,
                     enabled = false,
                 )
@@ -1192,7 +1187,7 @@ private fun ServerPickerTitle(
             }
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Add server…") },
+                text = { Text(stringResource(R.string.sessions_add_server)) },
                 onClick = onAdd,
             )
         }
@@ -1225,9 +1220,9 @@ private fun ReachabilityDot(
         }
     val description =
         when (reachable) {
-            true -> "Server online"
-            false -> "Server unreachable"
-            null -> "Probing…"
+            true -> stringResource(R.string.sessions_server_online)
+            false -> stringResource(R.string.sessions_server_unreachable)
+            null -> stringResource(R.string.sessions_probing)
         }
     // v0.36.2 — pulse the dot when actively probing (reachable == null)
     // so the user sees that work is happening rather than a static
@@ -1273,7 +1268,7 @@ private fun ReachabilityDot(
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(description, style = MaterialTheme.typography.titleMedium)
-                val relLabel = lastProbeEpochMs?.let { relativeTimeLabel(it) } ?: "never"
+                val relLabel = lastProbeEpochMs?.let { relativeTimeLabel(it) } ?: stringResource(R.string.sessions_never)
                 Text(
                     "Last successful probe: $relLabel",
                     style = MaterialTheme.typography.bodyMedium,
@@ -1286,7 +1281,7 @@ private fun ReachabilityDot(
                         sheetOpen = false
                     },
                     modifier = Modifier.padding(top = 16.dp),
-                ) { Text("Retry now") }
+                ) { Text(stringResource(R.string.sessions_retry_now)) }
             }
         }
     }
@@ -1333,7 +1328,7 @@ internal fun LastResponseSheet(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
         ) {
-            Text("Last response", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.sessions_last_response_sheet), style = MaterialTheme.typography.titleMedium)
             Text(
                 cleaned,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1377,9 +1372,9 @@ internal fun QuickCommandsSheet(
     }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text("Quick commands", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.sessions_quick_commands_sheet), style = MaterialTheme.typography.titleMedium)
             Text(
-                "System",
+                stringResource(R.string.sessions_cmd_system),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
@@ -1422,7 +1417,7 @@ internal fun QuickCommandsSheet(
             }
             if (saved.isNotEmpty()) {
                 Text(
-                    "Saved",
+                    stringResource(R.string.sessions_cmd_saved),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -1447,7 +1442,7 @@ internal fun QuickCommandsSheet(
                 }
             }
             Text(
-                "Custom",
+                stringResource(R.string.sessions_cmd_custom),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -1487,7 +1482,7 @@ internal fun QuickCommandsSheet(
                     value = customText,
                     onValueChange = { customText = it },
                     placeholder = {
-                        Text(if (recording) "Listening…" else "Type a reply…")
+                        Text(if (recording) stringResource(R.string.sessions_listening) else stringResource(R.string.sessions_reply_hint))
                     },
                     singleLine = true,
                     enabled = !recording,
@@ -1573,7 +1568,7 @@ internal fun QuickCommandsSheet(
                                 Icons.Filled.Mic
                             },
                             contentDescription =
-                                if (recording) "Stop recording" else "Voice reply",
+                                if (recording) stringResource(R.string.sessions_stop_recording) else stringResource(R.string.sessions_voice_reply),
                             tint =
                                 if (recording) {
                                     MaterialTheme.colorScheme.error

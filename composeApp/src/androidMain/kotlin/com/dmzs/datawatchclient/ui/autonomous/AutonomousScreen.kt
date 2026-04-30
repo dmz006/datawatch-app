@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
@@ -77,13 +78,14 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Autonomous") },
+                title = { Text(stringResource(R.string.autonomous_title)) },
                 actions = {
                     IconButton(onClick = { filterOpen = !filterOpen }) {
                         Icon(
                             if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
                             contentDescription =
-                                if (filterOpen) "Close filter" else "Filter",
+                                if (filterOpen) stringResource(R.string.autonomous_filter_close)
+                                else stringResource(R.string.autonomous_filter_open),
                         )
                     }
                 },
@@ -94,7 +96,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
             // affordance only appears on the list view (PWA v5.26.36).
             if (openPrdId == null) {
                 FloatingActionButton(onClick = { newOpen = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = "New autonomous plan")
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.autonomous_fab_new))
                 }
             }
         },
@@ -108,7 +110,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     FilterChip(
                         selected = statusFilter == null,
                         onClick = { statusFilter = null },
-                        label = { Text("All") },
+                        label = { Text(stringResource(R.string.autonomous_filter_all)) },
                     )
                     listOf(
                         "needs_review",
@@ -129,7 +131,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     FilterChip(
                         selected = includeTemplates,
                         onClick = { includeTemplates = !includeTemplates },
-                        label = { Text("Templates") },
+                        label = { Text(stringResource(R.string.autonomous_filter_templates)) },
                     )
                 }
             }
@@ -152,7 +154,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No plans match.",
+                        stringResource(R.string.autonomous_empty_state),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -252,14 +254,14 @@ private fun PrdRow(
                 StatusPill(prd.status)
                 if (prd.depth > 0) {
                     Text(
-                        "depth ${prd.depth}",
+                        stringResource(R.string.autonomous_depth, prd.depth),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (prd.isTemplate) {
                     Text(
-                        "template",
+                        stringResource(R.string.autonomous_template_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
@@ -274,7 +276,7 @@ private fun PrdRow(
             }
             if (prd.stories.isNotEmpty()) {
                 Text(
-                    "${prd.stories.size} stories",
+                    stringResource(R.string.autonomous_story_count, prd.stories.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

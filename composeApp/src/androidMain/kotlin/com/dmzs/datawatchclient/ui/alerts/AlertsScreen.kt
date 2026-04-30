@@ -36,9 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.Session
@@ -66,7 +68,7 @@ public fun AlertsScreen(
         androidx.lifecycle.viewmodel.compose.viewModel()
     var scheduleFor by remember { mutableStateOf<Session?>(null) }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Alerts") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.alerts_title)) }) }) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             // Tab row — PWA puts Active first and defaults to it when
             // there's any active group, else Inactive (app.js:5627).
@@ -80,7 +82,7 @@ public fun AlertsScreen(
                     onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
                     text = {
                         Text(
-                            "Active (${state.active.sumOf { it.alerts.size }})",
+                            stringResource(R.string.alerts_active_tab, state.active.sumOf { it.alerts.size }),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     },
@@ -90,7 +92,7 @@ public fun AlertsScreen(
                     onClick = { vm.selectTab(AlertsViewModel.Tab.Inactive) },
                     text = {
                         Text(
-                            "Inactive (${state.inactive.sumOf { it.alerts.size }})",
+                            stringResource(R.string.alerts_inactive_tab, state.inactive.sumOf { it.alerts.size }),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     },
@@ -109,7 +111,7 @@ public fun AlertsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
-                        TextButton(onClick = vm::dismissBanner) { Text("Dismiss") }
+                        TextButton(onClick = vm::dismissBanner) { Text(stringResource(R.string.action_dismiss)) }
                     }
                 }
             }
@@ -120,8 +122,8 @@ public fun AlertsScreen(
                     Text(
                         text =
                             when (state.selectedTab) {
-                                AlertsViewModel.Tab.Active -> "No sessions need input. You're caught up."
-                                AlertsViewModel.Tab.Inactive -> "No historical alerts."
+                                AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
+                                AlertsViewModel.Tab.Inactive -> stringResource(R.string.alerts_empty_inactive)
                             },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -348,7 +350,7 @@ private fun AlertCard(
                                 vertical = 4.dp,
                             ),
                     ) {
-                        Text("Reply…", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.alerts_action_reply), style = MaterialTheme.typography.labelSmall)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                 }
@@ -360,7 +362,7 @@ private fun AlertCard(
                             vertical = 4.dp,
                         ),
                 ) {
-                    Text("Schedule…", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.alerts_action_schedule), style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 OutlinedButton(
@@ -371,7 +373,7 @@ private fun AlertCard(
                             vertical = 4.dp,
                         ),
                 ) {
-                    Text("Open", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.action_open), style = MaterialTheme.typography.labelSmall)
                 }
                 if (!alert.read) {
                     Spacer(modifier = Modifier.width(4.dp))
