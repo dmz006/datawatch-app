@@ -303,7 +303,7 @@ public fun SessionsScreen(
                                 reorderMode = state.reorderMode,
                                 onMoveUp = { vm.moveUp(session.id) },
                                 onMoveDown = { vm.moveDown(session.id) },
-                                onQuickReply = { text -> vm.quickReply(session.id, text) },
+                                onQuickReply = { text -> vm.quickReply(session.fullId, text) },
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,

@@ -851,7 +851,7 @@ private fun SessionDetailPopup(
                 voice = voice,
                 onDismiss = onDismiss,
             )
-            BoxScopeMicButton(recording = recording, onRecord = onRecord)
+            BoxScopeMicButton(recording = recording, transcribing = transcribing, onRecord = onRecord)
         }
     }
 }
@@ -860,24 +860,38 @@ private fun SessionDetailPopup(
  * v0.42.9 — mic/stop affordance pinned to the right edge of the
  * round popup safe area. Extracted so [SessionDetailPopup] stays
  * under detekt's LongMethod cap.
+ *
+ * While transcribing, shows a spinner instead of the mic icon so the
+ * user knows the audio is being processed on the phone.
  */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.BoxScopeMicButton(
     recording: Boolean,
+    transcribing: Boolean,
     onRecord: () -> Unit,
 ) {
-    val tint = if (recording) Color(0xFFEF4444) else MaterialTheme.colors.primary
     Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-        Text(
-            if (recording) "■" else "🎤",
-            style = MaterialTheme.typography.title2,
-            color = tint,
-            modifier =
-                Modifier
-                    .background(tint.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape)
-                    .clickable(onClick = onRecord)
-                    .padding(10.dp),
-        )
+        if (transcribing) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(44.dp)
+                    .padding(4.dp),
+                indicatorColor = MaterialTheme.colors.primary,
+                trackColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
+            )
+        } else {
+            val tint = if (recording) Color(0xFFEF4444) else MaterialTheme.colors.primary
+            Text(
+                if (recording) "■" else "🎤",
+                style = MaterialTheme.typography.title2,
+                color = tint,
+                modifier =
+                    Modifier
+                        .background(tint.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape)
+                        .clickable(onClick = onRecord)
+                        .padding(10.dp),
+            )
+        }
     }
 }
 
@@ -958,10 +972,10 @@ private fun SessionPopupCentre(
                 )
             transcribing ->
                 Text(
-                    "…transcribing",
+                    "Processing…",
                     modifier = Modifier.padding(top = 6.dp),
                     style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.onSurfaceVariant,
+                    color = MaterialTheme.colors.primary,
                 )
             transcript.isNotBlank() ->
                 Text(
