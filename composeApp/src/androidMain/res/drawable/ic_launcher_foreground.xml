@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Launcher icon foreground — eye fills most of the 108dp canvas.
-    Sclera: ±40×26 (80 wide, 52 tall) centered at (54,54).
-    Iris r=22, pupil r=9, crosshair extends to sclera edge.
+    Launcher icon foreground — eye fits within the 66dp safe zone
+    (inner 66dp of the 108dp adaptive icon canvas = positions 21–87).
+    Sclera: ±33×21 centered at (54,54) → left=21, right=87.
+    Iris r=18, pupil r=7, crosshair stays within safe zone.
+    Shrunk from ±40×26 (B68 — eye overflowed AAOS icon boundary).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -11,32 +13,30 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Matrix rain — sparse columns so the large eye dominates -->
-    <path android:pathData="M 16,14 h 1 v 1 h -1 z M 16,18 h 1 v 1 h -1 z M 16,22 h 1 v 1 h -1 z
-                            M 16,82 h 1 v 1 h -1 z M 16,86 h 1 v 1 h -1 z M 16,90 h 1 v 1 h -1 z
-                            M 27,12 h 1 v 1 h -1 z M 27,16 h 1 v 1 h -1 z M 27,20 h 1 v 1 h -1 z
-                            M 27,84 h 1 v 1 h -1 z M 27,88 h 1 v 1 h -1 z M 27,92 h 1 v 1 h -1 z
-                            M 80,14 h 1 v 1 h -1 z M 80,18 h 1 v 1 h -1 z M 80,22 h 1 v 1 h -1 z
-                            M 80,82 h 1 v 1 h -1 z M 80,86 h 1 v 1 h -1 z M 80,90 h 1 v 1 h -1 z
-                            M 91,12 h 1 v 1 h -1 z M 91,16 h 1 v 1 h -1 z M 91,20 h 1 v 1 h -1 z
-                            M 91,84 h 1 v 1 h -1 z M 91,88 h 1 v 1 h -1 z M 91,92 h 1 v 1 h -1 z
-                            M 53,10 h 1 v 1 h -1 z M 53,94 h 1 v 1 h -1 z
-                            M 54,10 h 1 v 1 h -1 z M 54,94 h 1 v 1 h -1 z"
+    <!-- Matrix rain — sparse columns inside the safe zone -->
+    <path android:pathData="M 24,24 h 1 v 1 h -1 z M 24,28 h 1 v 1 h -1 z M 24,32 h 1 v 1 h -1 z
+                            M 24,74 h 1 v 1 h -1 z M 24,78 h 1 v 1 h -1 z M 24,82 h 1 v 1 h -1 z
+                            M 33,22 h 1 v 1 h -1 z M 33,26 h 1 v 1 h -1 z M 33,30 h 1 v 1 h -1 z
+                            M 33,76 h 1 v 1 h -1 z M 33,80 h 1 v 1 h -1 z M 33,84 h 1 v 1 h -1 z
+                            M 74,24 h 1 v 1 h -1 z M 74,28 h 1 v 1 h -1 z M 74,32 h 1 v 1 h -1 z
+                            M 74,74 h 1 v 1 h -1 z M 74,78 h 1 v 1 h -1 z M 74,82 h 1 v 1 h -1 z
+                            M 83,22 h 1 v 1 h -1 z M 83,26 h 1 v 1 h -1 z M 83,30 h 1 v 1 h -1 z
+                            M 83,76 h 1 v 1 h -1 z M 83,80 h 1 v 1 h -1 z M 83,84 h 1 v 1 h -1 z"
         android:fillColor="#A855F7"
         android:fillAlpha="0.45"/>
 
-    <!-- Sclera: wide almond — fills most of the icon width -->
-    <path android:pathData="M 54,54 m -40,0 a 40,26 0 1 0 80,0 a 40,26 0 1 0 -80,0 z"
+    <!-- Sclera: wide almond — fits within 66dp safe zone -->
+    <path android:pathData="M 54,54 m -33,0 a 33,21 0 1 0 66,0 a 33,21 0 1 0 -66,0 z"
         android:fillColor="#080518"
         android:strokeColor="#7C3AED"
         android:strokeWidth="0.8"/>
 
     <!-- Iris with radial gradient -->
-    <path android:pathData="M 54,54 m -22,0 a 22,22 0 1 0 44,0 a 22,22 0 1 0 -44,0 z">
+    <path android:pathData="M 54,54 m -18,0 a 18,18 0 1 0 36,0 a 18,18 0 1 0 -36,0 z">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial"
                 android:centerX="47" android:centerY="47"
-                android:gradientRadius="24"
+                android:gradientRadius="20"
                 android:startColor="#A855F7"
                 android:centerColor="#7C3AED"
                 android:endColor="#3B0764"/>
@@ -44,28 +44,28 @@
     </path>
 
     <!-- Iris ring detail -->
-    <path android:pathData="M 54,54 m -21,0 a 21,21 0 1 0 42,0 a 21,21 0 1 0 -42,0 z"
+    <path android:pathData="M 54,54 m -17,0 a 17,17 0 1 0 34,0 a 17,17 0 1 0 -34,0 z"
         android:strokeColor="#A855F7"
         android:strokeWidth="0.5"
         android:strokeAlpha="0.5"
         android:fillColor="#00000000"/>
-    <path android:pathData="M 54,54 m -16,0 a 16,16 0 1 0 32,0 a 16,16 0 1 0 -32,0 z"
+    <path android:pathData="M 54,54 m -13,0 a 13,13 0 1 0 26,0 a 13,13 0 1 0 -26,0 z"
         android:strokeColor="#C084FC"
         android:strokeWidth="0.4"
         android:strokeAlpha="0.4"
         android:fillColor="#00000000"/>
 
     <!-- Pupil -->
-    <path android:pathData="M 54,54 m -9,0 a 9,9 0 1 0 18,0 a 9,9 0 1 0 -18,0 z"
+    <path android:pathData="M 54,54 m -7,0 a 7,7 0 1 0 14,0 a 7,7 0 1 0 -14,0 z"
         android:fillColor="#04020E"/>
-    <path android:pathData="M 54,54 m -8.5,0 a 8.5,8.5 0 1 0 17,0 a 8.5,8.5 0 1 0 -17,0 z"
+    <path android:pathData="M 54,54 m -6.5,0 a 6.5,6.5 0 1 0 13,0 a 6.5,6.5 0 1 0 -13,0 z"
         android:strokeColor="#7C3AED"
         android:strokeWidth="0.4"
         android:strokeAlpha="0.5"
         android:fillColor="#00000000"/>
 
-    <!-- Crosshair — extends from just outside iris to just inside sclera edge -->
-    <path android:pathData="M 54,23 v 6 M 54,79 v 6 M 23,54 h 6 M 79,54 h 6"
+    <!-- Crosshair — stays within safe zone -->
+    <path android:pathData="M 54,28 v 5 M 54,75 v 5 M 27,54 h 5 M 76,54 h 5"
         android:strokeColor="#E879F9"
         android:strokeWidth="1.0"
         android:strokeLineCap="round"
@@ -76,7 +76,7 @@
         android:fillColor="#F0ABFC"/>
 
     <!-- Lens highlight: upper-left of iris -->
-    <path android:pathData="M 44,44 m -3.5,-1.5 a 3.5,1.5 0 1 0 7,0 a 3.5,1.5 0 1 0 -7,0 z"
+    <path android:pathData="M 46,46 m -2.8,-1.2 a 2.8,1.2 0 1 0 5.6,0 a 2.8,1.2 0 1 0 -5.6,0 z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.22"/>
 </vector>
