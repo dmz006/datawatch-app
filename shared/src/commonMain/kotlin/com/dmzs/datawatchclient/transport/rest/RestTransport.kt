@@ -1144,6 +1144,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun fetchChannelInfo(): Result<kotlinx.serialization.json.JsonElement> =
+        request {
+            client.get("${profile.baseUrl}/api/channel/info") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listKindProfiles(kind: String): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val raw: kotlinx.serialization.json.JsonObject =

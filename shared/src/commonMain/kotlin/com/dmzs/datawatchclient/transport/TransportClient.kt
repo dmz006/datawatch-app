@@ -590,6 +590,13 @@ public interface TransportClient {
     public suspend fun fetchMcpDocs(): Result<kotlinx.serialization.json.JsonElement>
 
     /**
+     * GET /api/channel/info — MCP channel bridge status.
+     * Returns an object with `kind` ("go"/"js"), `ready` bool,
+     * `path`, and optional `stale` list of outdated .mcp.json paths.
+     */
+    public suspend fun fetchChannelInfo(): Result<kotlinx.serialization.json.JsonElement>
+
+    /**
      * GET /api/profiles/<kind>s — list project or cluster profiles.
      * [kind] is `"project"` or `"cluster"`. Returns the raw
      * `profiles` array from the `{profiles: [...]}` response so
