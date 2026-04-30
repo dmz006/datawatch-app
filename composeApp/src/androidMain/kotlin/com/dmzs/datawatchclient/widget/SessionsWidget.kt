@@ -153,12 +153,13 @@ public class SessionsWidget : AppWidgetProvider() {
     public companion object {
         /** Force-refresh all active instances. Called from the app after a successful list pull. */
         public fun requestUpdate(context: Context) {
+            val manager = AppWidgetManager.getInstance(context) ?: return
             val intent =
                 Intent(context, SessionsWidget::class.java).apply {
                     action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
                     putExtra(
                         AppWidgetManager.EXTRA_APPWIDGET_IDS,
-                        AppWidgetManager.getInstance(context).getAppWidgetIds(
+                        manager.getAppWidgetIds(
                             ComponentName(context, SessionsWidget::class.java),
                         ),
                     )

@@ -339,12 +339,13 @@ public class MonitorWidget : AppWidgetProvider() {
          * AppWidgetManager cadence.
          */
         public fun requestUpdate(context: Context) {
+            val manager = AppWidgetManager.getInstance(context) ?: return
             val intent =
                 Intent(context, MonitorWidget::class.java).apply {
                     action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
                     putExtra(
                         AppWidgetManager.EXTRA_APPWIDGET_IDS,
-                        AppWidgetManager.getInstance(context).getAppWidgetIds(
+                        manager.getAppWidgetIds(
                             ComponentName(context, MonitorWidget::class.java),
                         ),
                     )
