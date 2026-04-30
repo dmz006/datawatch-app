@@ -27,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -427,7 +428,7 @@ private fun WearSplash() {
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_dw_eye),
-            contentDescription = "datawatch eye",
+            contentDescription = stringResource(R.string.wear_splash_cd),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(12.dp),
@@ -453,10 +454,10 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
         WearSplash()
         return
     }
-    PageScaffold("Monitor") {
+    PageScaffold(stringResource(R.string.wear_page_monitor)) {
         if (state.pairedServer.isEmpty()) {
             Text(
-                "Open datawatch on your phone",
+                stringResource(R.string.wear_monitor_open_phone),
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.body2,
             )
@@ -539,11 +540,12 @@ private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
 /** B28: compact multi-server list — one row per enabled server. */
 @Composable
 private fun MultiServerMonitor(servers: List<WearSessionCountsViewModel.AllServerStat>) {
+    val offlineLabel = stringResource(R.string.wear_label_offline)
     Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
         servers.forEach { s ->
             val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
             val summary = when {
-                !s.online -> "offline"
+                !s.online -> offlineLabel
                 else -> buildString {
                     append("CPU ${"%.0f".format(s.cpuPct)}%")
                     append(" · Mem ${"%.0f".format(s.memPct)}%")
@@ -631,7 +633,7 @@ private fun SessionsPage(
     onFilterChange: (SessionFilter) -> Unit,
     onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
 ) {
-    PageScaffold("Sessions") {
+    PageScaffold(stringResource(R.string.wear_page_sessions)) {
         if (state.pairedServer.isEmpty()) {
             Text(
                 "—",
@@ -651,7 +653,11 @@ private fun SessionsPage(
             }
         if (filtered.isEmpty()) {
             Text(
-                if (state.sessions.isEmpty()) state.serverName else "no ${filter.name.lowercase()} sessions",
+                if (state.sessions.isEmpty()) state.serverName else when (filter) {
+                SessionFilter.Wait -> stringResource(R.string.wear_sessions_no_wait)
+                SessionFilter.Run -> stringResource(R.string.wear_sessions_no_run)
+                SessionFilter.Total -> stringResource(R.string.wear_sessions_no_total)
+            },
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.caption2,
                 color = MaterialTheme.colors.onSurfaceVariant,
@@ -712,21 +718,21 @@ private fun SessionsFilterRow(
     ) {
         CountTile(
             value = state.waiting,
-            label = "wait",
+            label = stringResource(R.string.wear_filter_wait),
             color = MaterialTheme.colors.secondary,
             selected = filter == SessionFilter.Wait,
             onClick = { onFilterChange(SessionFilter.Wait) },
         )
         CountTile(
             value = state.running,
-            label = "run",
+            label = stringResource(R.string.wear_filter_run),
             color = MaterialTheme.colors.primary,
             selected = filter == SessionFilter.Run,
             onClick = { onFilterChange(SessionFilter.Run) },
         )
         CountTile(
             value = state.total,
-            label = "total",
+            label = stringResource(R.string.wear_filter_total),
             color = MaterialTheme.colors.onSurface,
             selected = filter == SessionFilter.Total,
             onClick = { onFilterChange(SessionFilter.Total) },
@@ -807,7 +813,7 @@ private fun TranscriptReviewPopup(
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    "Send?",
+                    stringResource(R.string.wear_transcript_send_title),
                     style = MaterialTheme.typography.title3,
                     color = MaterialTheme.colors.primary,
                     fontWeight = FontWeight.SemiBold,
@@ -828,7 +834,7 @@ private fun TranscriptReviewPopup(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     Text(
-                        "Cancel",
+                        stringResource(R.string.wear_action_cancel),
                         style = MaterialTheme.typography.button,
                         color = MaterialTheme.colors.onSurfaceVariant,
                         modifier =
@@ -841,7 +847,7 @@ private fun TranscriptReviewPopup(
                                 .padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                     Text(
-                        "Send",
+                        stringResource(R.string.wear_action_send),
                         style = MaterialTheme.typography.button,
                         color = MaterialTheme.colors.primary,
                         fontWeight = FontWeight.SemiBold,
@@ -1005,7 +1011,7 @@ private fun SessionPopupCentre(
         // open while the reply is still in-flight.
         if (fullBody == null) {
             Text(
-                "Loading…",
+                stringResource(R.string.wear_session_loading),
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.caption2,
                 color = MaterialTheme.colors.onSurfaceVariant,
@@ -1021,21 +1027,21 @@ private fun SessionPopupCentre(
         when {
             recording ->
                 Text(
-                    "Listening…",
+                    stringResource(R.string.wear_session_listening),
                     modifier = Modifier.padding(top = 6.dp),
                     style = MaterialTheme.typography.caption1,
                     color = Color(0xFFEF4444),
                 )
             transcribing ->
                 Text(
-                    "Processing…",
+                    stringResource(R.string.wear_session_processing),
                     modifier = Modifier.padding(top = 6.dp),
                     style = MaterialTheme.typography.caption1,
                     color = MaterialTheme.colors.primary,
                 )
             transcript.isNotBlank() ->
                 Text(
-                    "Tap Send to confirm",
+                    stringResource(R.string.wear_session_tap_send),
                     modifier = Modifier.padding(top = 6.dp),
                     style = MaterialTheme.typography.caption1,
                     color = MaterialTheme.colors.primary,
@@ -1059,10 +1065,10 @@ private fun PrdsPage(
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
 ) {
-    PageScaffold("Autonomous") {
+    PageScaffold(stringResource(R.string.wear_page_autonomous)) {
         if (state.prds.isEmpty()) {
             Text(
-                "No plans in review.",
+                stringResource(R.string.wear_prds_empty),
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.body2,
                 color = MaterialTheme.colors.onSurfaceVariant,
@@ -1070,7 +1076,7 @@ private fun PrdsPage(
             return@PageScaffold
         }
         Text(
-            "${state.prds.size} pending",
+            stringResource(R.string.wear_prds_pending, state.prds.size),
             modifier = Modifier.padding(top = 2.dp),
             style = MaterialTheme.typography.caption1,
             color = MaterialTheme.colors.primary,
@@ -1138,10 +1144,10 @@ private fun ServersPage(
     state: WearSessionCountsViewModel.UiState,
     onPick: (String) -> Unit,
 ) {
-    PageScaffold("Server") {
+    PageScaffold(stringResource(R.string.wear_page_server)) {
         if (state.profiles.isEmpty()) {
             Text(
-                "No enabled servers",
+                stringResource(R.string.wear_servers_empty),
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.body2,
             )
@@ -1196,7 +1202,7 @@ private fun AboutPage(state: WearSessionCountsViewModel.UiState) {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            "AI Session Monitor & Bridge",
+            stringResource(R.string.wear_about_tagline),
             modifier = Modifier.padding(top = 2.dp),
             style = MaterialTheme.typography.caption3,
             color = MaterialTheme.colors.onSurfaceVariant,
@@ -1233,13 +1239,13 @@ private fun AboutPage(state: WearSessionCountsViewModel.UiState) {
             )
         }
         Text(
-            "Polyform Noncommercial 1.0.0",
+            stringResource(R.string.wear_about_license),
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.caption3,
             color = MaterialTheme.colors.onSurfaceVariant,
         )
         Text(
-            "github.com/dmz006/datawatch-app",
+            stringResource(R.string.wear_about_github),
             modifier = Modifier.padding(top = 2.dp),
             style = MaterialTheme.typography.caption3,
             color = MaterialTheme.colors.primary,

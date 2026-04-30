@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">datawatch</string>
+    <string name="tile_sessions_label">datawatch Sitzungen</string>
+    <string name="tile_monitor_label">datawatch Monitor</string>
+
+    <string name="wear_page_monitor">Monitor</string>
+    <string name="wear_page_sessions">Sitzungen</string>
+    <string name="wear_page_autonomous">Autonom</string>
+    <string name="wear_page_server">Server</string>
+
+    <string name="wear_splash_cd">datawatch-Auge</string>
+
+    <string name="wear_monitor_open_phone">Öffne datawatch auf deinem Telefon</string>
+    <string name="wear_label_offline">offline</string>
+
+    <string name="wear_sessions_no_wait">keine wartenden Sitzungen</string>
+    <string name="wear_sessions_no_run">keine laufenden Sitzungen</string>
+    <string name="wear_sessions_no_total">keine Sitzungen</string>
+
+    <string name="wear_filter_wait">wart.</string>
+    <string name="wear_filter_run">läuft</string>
+    <string name="wear_filter_total">alle</string>
+
+    <string name="wear_session_loading">Lädt…</string>
+    <string name="wear_session_listening">Zuhören…</string>
+    <string name="wear_session_processing">Verarbeiten…</string>
+    <string name="wear_session_tap_send">Senden antippen</string>
+
+    <string name="wear_transcript_send_title">Senden?</string>
+    <string name="wear_action_cancel">Abbrechen</string>
+    <string name="wear_action_send">Senden</string>
+
+    <string name="wear_prds_empty">Keine Pläne in Überprüfung.</string>
+    <string name="wear_prds_pending">%1$d ausstehend</string>
+
+    <string name="wear_servers_empty">Keine aktiven Server</string>
+
+    <string name="wear_about_tagline">KI-Sitzungsmonitor &amp; Brücke</string>
+    <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
+    <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
+</resources>
