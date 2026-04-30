@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,10 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 
 /**
  * Autonomous tab — PRD lifecycle list.
@@ -71,13 +77,13 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PRDs") },
+                title = { Text("Autonomous") },
                 actions = {
                     IconButton(onClick = { filterOpen = !filterOpen }) {
                         Icon(
                             if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
                             contentDescription =
-                                if (filterOpen) "Close filter" else "Filter PRDs",
+                                if (filterOpen) "Close filter" else "Filter",
                         )
                     }
                 },
@@ -88,7 +94,7 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
             // affordance only appears on the list view (PWA v5.26.36).
             if (openPrdId == null) {
                 FloatingActionButton(onClick = { newOpen = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = "New PRD")
+                    Icon(Icons.Filled.Add, contentDescription = "New autonomous plan")
                 }
             }
         },
@@ -146,15 +152,27 @@ public fun AutonomousScreen(vm: AutonomousViewModel = viewModel()) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No PRDs match.",
+                        "No plans match.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
-                LazyColumn {
-                    items(visible, key = { it.id }) { prd ->
-                        PrdRow(prd, onClick = { openPrdId = prd.id })
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.85f)
+                                .aspectRatio(1f)
+                                .align(Alignment.Center)
+                                .alpha(0.10f),
+                    )
+                    LazyColumn {
+                        items(visible, key = { it.id }) { prd ->
+                            PrdRow(prd, onClick = { openPrdId = prd.id })
+                        }
                     }
                 }
             }
@@ -206,8 +224,10 @@ private fun PrdRow(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
                 .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

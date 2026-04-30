@@ -51,7 +51,7 @@ internal fun BottomNavBar(
             // setups + older daemons would otherwise dead-end into
             // an empty list.
             if (prdsSupported) {
-                add(BottomNavItem(Destinations.Tabs.Autonomous, "PRDs", emoji = "🤖"))
+                add(BottomNavItem(Destinations.Tabs.Autonomous, "Autonomous", emoji = "🤖"))
             }
             add(BottomNavItem(Destinations.Tabs.Alerts, "Alerts", icon = Icons.Filled.NotificationsActive))
             add(BottomNavItem(Destinations.Tabs.Settings, "Settings", icon = Icons.Filled.Settings))

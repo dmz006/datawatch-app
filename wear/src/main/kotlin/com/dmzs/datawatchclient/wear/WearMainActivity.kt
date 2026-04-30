@@ -1027,10 +1027,10 @@ private fun PrdsPage(
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
 ) {
-    PageScaffold("PRDs") {
+    PageScaffold("Autonomous") {
         if (state.prds.isEmpty()) {
             Text(
-                "No PRDs in review.",
+                "No plans in review.",
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.body2,
                 color = MaterialTheme.colors.onSurfaceVariant,
