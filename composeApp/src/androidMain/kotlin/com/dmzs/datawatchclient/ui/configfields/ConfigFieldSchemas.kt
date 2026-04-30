@@ -72,6 +72,7 @@ public object ConfigFieldSchemas {
                     NumberField("session.mcp_max_retries", "MCP auto-retry limit"),
                     NumberField("session.schedule_settle_ms", "Scheduled command settle (ms)"),
                     TextField("session.default_effort", "Default effort — quick/normal/thorough"),
+                    TextField("session.permission_mode", "Default permission mode — plan/acceptEdits/auto"),
                     Toggle("server.suppress_active_toasts", "Suppress toasts for active session"),
                 ),
         )
