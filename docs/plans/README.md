@@ -103,7 +103,7 @@ for one commit per batch.
 
 | ID | Title | Notes |
 |----|-------|-------|
-| B28 | Watch + Auto need to view monitoring stats for all connected servers | User request (2026-04-22). Issue #20 closed — unblocked. Mobile-side plan in [docs/plans/2026-04-22-unified-monitoring.md](2026-04-22-unified-monitoring.md). **Wear** subscribes to the stats DataItem (infra from v0.33.12) and renders a compact dashboard. **Auto** adds a Monitoring screen with one row per connected server. |
+| B28 | Watch + Auto need to view monitoring stats for all connected servers | Done (v0.48.0) — **Auto**: `AutoMonitorScreen` refactored to fetch all enabled servers in parallel (`coroutineScope { async{}.awaitAll() }`); single-server shows full detail gauge rows, multi-server shows one compact summary row per server (CPU · Mem · sessions). **Wear**: `WearSyncService` adds an all-servers parallel poll that publishes to `/datawatch/allStats` (parallel float arrays); `WearMainActivity` ViewModel consumes the new DataItem and `MonitorPage` switches between gauge grid (1 server) and `MultiServerMonitor` compact list (2+ servers). |
 
 ### Sprint GG — unified monitoring Phase 1 (v0.34.x)
 

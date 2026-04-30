@@ -15,6 +15,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -302,6 +305,48 @@ public class WearSyncService(
                                 publishPrds(emptyList())
                             }
                         }
+                    }
+                }
+                delay(STATS_POLL_MS)
+            }
+        }
+        // B28: all-servers compact summary — published to /datawatch/allStats
+        // so the watch Monitor page can show one row per enabled server when
+        // more than one server is configured. Shares the 15 s poll cadence
+        // with the single-server stats fetch above.
+        scope.launch {
+            while (isActive) {
+                runCatching {
+                    val all = ServiceLocator.profileRepository.observeAll().first()
+                        .filter { it.enabled }
+                    if (all.size > 1) {
+                        val rows = coroutineScope {
+                            all.map { p ->
+                                async {
+                                    ServiceLocator.transportFor(p).stats().fold(
+                                        onSuccess = { s ->
+                                            val cpuPct = when {
+                                                s.cpuLoad1 != null && (s.cpuCores ?: 0) > 0 ->
+                                                    (s.cpuLoad1!! / s.cpuCores!! * 100.0)
+                                                        .toFloat().coerceIn(0f, 100f)
+                                                s.cpuPct != null -> s.cpuPct!!.toFloat().coerceIn(0f, 100f)
+                                                else -> 0f
+                                            }
+                                            val memPct = when {
+                                                (s.memTotal ?: 0L) > 0 ->
+                                                    ((s.memUsed ?: 0L).toDouble() / s.memTotal!!.toDouble() * 100.0)
+                                                        .toFloat().coerceIn(0f, 100f)
+                                                s.memPct != null -> s.memPct!!.toFloat().coerceIn(0f, 100f)
+                                                else -> 0f
+                                            }
+                                            AllStatsRow(p.displayName, cpuPct, memPct, s.sessionsTotal, true)
+                                        },
+                                        onFailure = { AllStatsRow(p.displayName, 0f, 0f, 0, false) },
+                                    )
+                                }
+                            }.awaitAll()
+                        }
+                        publishAllStats(rows)
                     }
                 }
                 delay(STATS_POLL_MS)
@@ -616,6 +661,28 @@ public class WearSyncService(
         val status: String,
     )
 
+    private data class AllStatsRow(
+        val name: String,
+        val cpuPct: Float,
+        val memPct: Float,
+        val sessionsTotal: Int,
+        val online: Boolean,
+    )
+
+    private fun publishAllStats(rows: List<AllStatsRow>) {
+        runCatching {
+            val req = PutDataMapRequest.create(ALL_STATS_PATH).apply {
+                dataMap.putStringArray("names", rows.map { it.name }.toTypedArray())
+                dataMap.putFloatArray("cpuPcts", rows.map { it.cpuPct }.toFloatArray())
+                dataMap.putFloatArray("memPcts", rows.map { it.memPct }.toFloatArray())
+                dataMap.putFloatArray("totals", rows.map { it.sessionsTotal.toFloat() }.toFloatArray())
+                dataMap.putStringArray("statuses", rows.map { if (it.online) "ok" else "err" }.toTypedArray())
+                dataMap.putLong("ts", System.currentTimeMillis())
+            }.asPutDataRequest().setUrgent()
+            Wearable.getDataClient(context).putDataItem(req)
+        }
+    }
+
     private fun publishSessions(snap: SessionsListSnapshot) {
         runCatching {
             Log.d(TAG, "publishSessions n=${snap.items.size}")
@@ -675,6 +742,7 @@ public class WearSyncService(
         public const val COUNTS_PATH: String = "/datawatch/counts"
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
+        public const val ALL_STATS_PATH: String = "/datawatch/allStats"
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
         public const val PRDS_PATH: String = "/datawatch/prds"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"

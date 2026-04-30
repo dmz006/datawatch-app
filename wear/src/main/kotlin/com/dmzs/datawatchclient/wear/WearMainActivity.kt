@@ -462,35 +462,38 @@ private fun MonitorPage(state: WearSessionCountsViewModel.UiState) {
             )
             return@PageScaffold
         }
-        // v0.35.4 — color-gauge redesign. Active-server name stays at
-        // top; CPU / Memory / Disk / GPU render as 2-up gauge rings
-        // with threshold-coloured arcs (green → amber → red). GPU
-        // shows only when the phone has published a real snapshot.
-        // Uptime hangs below as a single-line caption. The whole
-        // column is vertically scrollable inside the round card
-        // (PageScaffold already wraps in verticalScroll) so content
-        // that overflows the bezel is reachable via bezel scroll.
-        Text(
-            "● ${state.serverName}",
-            modifier = Modifier.padding(top = 2.dp),
-            style = MaterialTheme.typography.caption1,
-            color = MaterialTheme.colors.primary,
-        )
-        MonitorGaugeGrid(state)
-        if (state.uptimeSeconds > 0) {
+        // B28: multi-server mode — one compact row per server.
+        // Single-server mode keeps the original gauge grid.
+        if (state.allServerStats.size > 1) {
+            MultiServerMonitor(state.allServerStats)
+        } else {
+            // v0.35.4 — color-gauge redesign. Active-server name stays at
+            // top; CPU / Memory / Disk / GPU render as 2-up gauge rings
+            // with threshold-coloured arcs (green → amber → red). GPU
+            // shows only when the phone has published a real snapshot.
+            // Uptime hangs below as a single-line caption.
             Text(
-                "up ${state.uptimeText()}",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.onSurfaceVariant,
+                "● ${state.serverName}",
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.primary,
             )
-        }
-        if (state.hasGpu() && state.gpuMemTotalMb > 0) {
-            Text(
-                "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
-                style = MaterialTheme.typography.caption3,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
+            MonitorGaugeGrid(state)
+            if (state.uptimeSeconds > 0) {
+                Text(
+                    "up ${state.uptimeText()}",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                )
+            }
+            if (state.hasGpu() && state.gpuMemTotalMb > 0) {
+                Text(
+                    "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -529,6 +532,35 @@ private fun MonitorGaugeGrid(state: WearSessionCountsViewModel.UiState) {
             )
         } else {
             Box(modifier = Modifier.size(GAUGE_SIZE_DP.dp))
+        }
+    }
+}
+
+/** B28: compact multi-server list — one row per enabled server. */
+@Composable
+private fun MultiServerMonitor(servers: List<WearSessionCountsViewModel.AllServerStat>) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        servers.forEach { s ->
+            val dotColor = if (s.online) MaterialTheme.colors.primary else MaterialTheme.colors.error
+            val summary = when {
+                !s.online -> "offline"
+                else -> buildString {
+                    append("CPU ${"%.0f".format(s.cpuPct)}%")
+                    append(" · Mem ${"%.0f".format(s.memPct)}%")
+                    if (s.sessionsTotal > 0) append(" · ${s.sessionsTotal}s")
+                }
+            }
+            Text(
+                "● ${s.name}",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption1,
+                color = dotColor,
+            )
+            Text(
+                summary,
+                style = MaterialTheme.typography.caption2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+            )
         }
     }
 }
@@ -1298,6 +1330,9 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val prds: List<PrdItem> = emptyList(),
         // Enabled profiles the user can switch between.
         val profiles: List<Pair<String, String>> = emptyList(),
+        // B28: compact summary for all enabled servers (multi-server mode).
+        // Empty when ≤1 server is enabled — Monitor page shows gauge grid.
+        val allServerStats: List<AllServerStat> = emptyList(),
     ) {
         public fun cpuText(): String =
             when {
@@ -1350,6 +1385,14 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val status: String,
     )
 
+    public data class AllServerStat(
+        val name: String,
+        val cpuPct: Float,
+        val memPct: Float,
+        val sessionsTotal: Int,
+        val online: Boolean,
+    )
+
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
@@ -1380,6 +1423,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                                 applyProfiles(DataMapItem.fromDataItem(item).dataMap)
                             STATS_PATH ->
                                 applyStats(DataMapItem.fromDataItem(item).dataMap)
+                            ALL_STATS_PATH ->
+                                applyAllStats(DataMapItem.fromDataItem(item).dataMap)
                             SESSIONS_PATH ->
                                 applySessions(DataMapItem.fromDataItem(item).dataMap)
                             PRDS_PATH ->
@@ -1431,6 +1476,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                             applyProfiles(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         STATS_PATH ->
                             applyStats(DataMapItem.fromDataItem(event.dataItem).dataMap)
+                        ALL_STATS_PATH ->
+                            applyAllStats(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         SESSIONS_PATH ->
                             applySessions(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         PRDS_PATH ->
@@ -1624,11 +1671,30 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
             )
     }
 
+    private fun applyAllStats(map: DataMap) {
+        val names = map.getStringArray("names") ?: emptyArray()
+        val cpuPcts = map.getFloatArray("cpuPcts") ?: FloatArray(0)
+        val memPcts = map.getFloatArray("memPcts") ?: FloatArray(0)
+        val totals = map.getFloatArray("totals") ?: FloatArray(0)
+        val statuses = map.getStringArray("statuses") ?: emptyArray()
+        val items = names.indices.map { i ->
+            AllServerStat(
+                name = names[i],
+                cpuPct = cpuPcts.getOrElse(i) { 0f },
+                memPct = memPcts.getOrElse(i) { 0f },
+                sessionsTotal = totals.getOrElse(i) { 0f }.toInt(),
+                online = statuses.getOrNull(i) != "err",
+            )
+        }
+        _state.value = _state.value.copy(allServerStats = items)
+    }
+
     public companion object {
         public const val MIN_SPLASH_MS: Long = 1_400L
         public const val COUNTS_PATH: String = "/datawatch/counts"
         public const val PROFILES_PATH: String = "/datawatch/profiles"
         public const val STATS_PATH: String = "/datawatch/stats"
+        public const val ALL_STATS_PATH: String = "/datawatch/allStats"
         public const val SESSIONS_PATH: String = "/datawatch/sessions"
         public const val PRDS_PATH: String = "/datawatch/prds"
         public const val SET_ACTIVE_PATH: String = "/datawatch/setActive"
