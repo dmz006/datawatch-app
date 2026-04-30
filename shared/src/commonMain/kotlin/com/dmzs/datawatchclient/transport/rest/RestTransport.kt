@@ -124,6 +124,9 @@ public class RestTransport(
         resumeId: String?,
         autoGitInit: Boolean?,
         autoGitCommit: Boolean?,
+        permissionMode: String?,
+        model: String?,
+        claudeEffort: String?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
@@ -141,6 +144,9 @@ public class RestTransport(
                             resumeId = resumeId,
                             autoGitInit = autoGitInit,
                             autoGitCommit = autoGitCommit,
+                            permissionMode = permissionMode,
+                            model = model,
+                            claudeEffort = claudeEffort,
                         ),
                     )
                 }.body()
@@ -539,6 +545,26 @@ public class RestTransport(
             // PWA-observed shape: a flat JSON array of model-name strings.
             val arr: kotlinx.serialization.json.JsonArray =
                 client.get("${profile.baseUrl}$path") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            arr.mapNotNull { el ->
+                (el as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            }
+        }
+
+    override suspend fun listClaudeModels(): Result<List<String>> =
+        listClaudeEndpoint("models")
+
+    override suspend fun listClaudeEfforts(): Result<List<String>> =
+        listClaudeEndpoint("efforts")
+
+    override suspend fun listClaudePermissionModes(): Result<List<String>> =
+        listClaudeEndpoint("permission_modes")
+
+    private suspend fun listClaudeEndpoint(sub: String): Result<List<String>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/llm/claude/$sub") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                 }.body()
             arr.mapNotNull { el ->

@@ -154,6 +154,34 @@ public fun NewSessionScreen(
         }
     }
 
+    // Claude-code advanced options — permission mode + model + effort.
+    // Fetched from /api/llm/claude/{models,efforts,permission_modes} (v5.27.5+).
+    // 404 = older daemon → hide the block entirely.
+    var claudeModels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var claudeEfforts by remember { mutableStateOf<List<String>>(emptyList()) }
+    var claudePermissionModes by remember { mutableStateOf<List<String>>(emptyList()) }
+    var claudeOptionsAvailable by remember { mutableStateOf(false) }
+    var pickedPermissionMode by remember { mutableStateOf("") }
+    var pickedClaudeModel by remember { mutableStateOf("") }
+    var pickedClaudeEffort by remember { mutableStateOf("") }
+    LaunchedEffect(selectedProfileId) {
+        claudeModels = emptyList()
+        claudeEfforts = emptyList()
+        claudePermissionModes = emptyList()
+        claudeOptionsAvailable = false
+        pickedPermissionMode = ""
+        pickedClaudeModel = ""
+        pickedClaudeEffort = ""
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        val transport = ServiceLocator.transportFor(profile)
+        transport.listClaudePermissionModes().onSuccess { modes ->
+            claudePermissionModes = modes
+            claudeOptionsAvailable = true
+        }
+        transport.listClaudeModels().onSuccess { claudeModels = it }
+        transport.listClaudeEfforts().onSuccess { claudeEfforts = it }
+    }
+
     // Server-defined F10 profiles (agent profiles). Keyed by name; each
     // value is the profile body — we only need the backend field for
     // display. Profile picker is optional ("Default (no profile)" on top).
@@ -433,6 +461,49 @@ public fun NewSessionScreen(
                 )
             }
 
+            // Advanced claude-code options (v5.27.5+) — only when backend
+            // is claude-code AND the server exposes /api/llm/claude/*.
+            val isClaudeCode = pickedBackend?.lowercase()?.contains("claude") == true ||
+                (pickedBackend == null && activeBackend?.lowercase()?.contains("claude") == true)
+            if (claudeOptionsAvailable && isClaudeCode) {
+                Text(
+                    "Advanced (claude options)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                if (claudePermissionModes.isNotEmpty()) {
+                    SimpleDropdown(
+                        label = "Permission mode",
+                        options = claudePermissionModes,
+                        selected = pickedPermissionMode,
+                        noneLabel = "(config default)",
+                        onSelect = { pickedPermissionMode = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (claudeModels.isNotEmpty()) {
+                    SimpleDropdown(
+                        label = "Model",
+                        options = claudeModels,
+                        selected = pickedClaudeModel,
+                        noneLabel = "(config default)",
+                        onSelect = { pickedClaudeModel = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
+                if (claudeEfforts.isNotEmpty()) {
+                    SimpleDropdown(
+                        label = "Effort",
+                        options = claudeEfforts,
+                        selected = pickedClaudeEffort,
+                        noneLabel = "(config default)",
+                        onSelect = { pickedClaudeEffort = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
+            }
+
             Text(
                 "Working directory (optional)",
                 style = MaterialTheme.typography.labelLarge,
@@ -610,6 +681,9 @@ public fun NewSessionScreen(
                                             resumeId = resumeId,
                                             autoGitInit = autoGitInit,
                                             autoGitCommit = autoGitCommit,
+                                            permissionMode = pickedPermissionMode.ifBlank { null },
+                                            model = pickedClaudeModel.ifBlank { null },
+                                            claudeEffort = pickedClaudeEffort.ifBlank { null },
                                         )
                                     }
                                 outcome.fold(
@@ -691,6 +765,48 @@ private fun SavedCommandLibraryDropdown(onPick: (String) -> Unit) {
                         onPick(cmd.command)
                         expanded = false
                     },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SimpleDropdown(
+    label: String,
+    options: List<String>,
+    selected: String,
+    noneLabel: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = selected.ifEmpty { noneLabel },
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                androidx.compose.material3.TextButton(
+                    onClick = { expanded = !expanded },
+                ) { Text("▾") }
+            },
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(noneLabel) },
+                onClick = { onSelect(""); expanded = false },
+            )
+            options.forEach { opt ->
+                DropdownMenuItem(
+                    text = { Text(opt) },
+                    onClick = { onSelect(opt); expanded = false },
                 )
             }
         }

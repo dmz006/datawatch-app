@@ -46,6 +46,9 @@ public interface TransportClient {
         resumeId: String? = null,
         autoGitInit: Boolean? = null,
         autoGitCommit: Boolean? = null,
+        permissionMode: String? = null,
+        model: String? = null,
+        claudeEffort: String? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */
@@ -232,6 +235,16 @@ public interface TransportClient {
      * so callers can grey out the picker without special-casing.
      */
     public suspend fun listModels(backend: String): Result<List<String>>
+
+    /**
+     * GET /api/llm/claude/{models,efforts,permission_modes} — static
+     * lists for the claude-code "Advanced options" block (v5.27.5+).
+     * Returns [TransportError.NotFound] on daemons that predate v5.27.5
+     * so callers can hide the block without special-casing.
+     */
+    public suspend fun listClaudeModels(): Result<List<String>>
+    public suspend fun listClaudeEfforts(): Result<List<String>>
+    public suspend fun listClaudePermissionModes(): Result<List<String>>
 
     /**
      * GET /api/profiles — map of profile-name → profile object, each
