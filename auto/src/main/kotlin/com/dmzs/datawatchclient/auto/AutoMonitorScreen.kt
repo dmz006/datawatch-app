@@ -17,23 +17,32 @@ import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
  * Driver-safe Monitor view — surfaces the same vitals the PWA
  * Monitor tab does, constrained to driver-distraction-friendly
- * rows. Default entry screen per user request 2026-04-22 so the
- * first thing a driver sees is the fleet's health, not a session
- * list. Tapping into sessions lives in the ActionStrip.
+ * rows. B28: when multiple servers are enabled, renders one summary
+ * row per server (CPU · Mem · sessions). Single-server detail rows
+ * expand when only one server is configured or only one has data.
  */
 public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
-    private var profile: ServerProfile? = null
-    private var stats: StatsDto? = null
-    private var error: String? = null
+    /** Snapshot per server: (profile, stats?, error?) */
+    private var serverRows: List<ServerRow> = emptyList()
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+
+    private data class ServerRow(
+        val profile: ServerProfile,
+        val stats: StatsDto? = null,
+        val error: String? = null,
+    )
 
     init {
         lifecycle.addObserver(
@@ -65,117 +74,79 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refresh() {
         try {
-            val p =
-                resolveActiveProfile() ?: run {
-                    error = "No enabled server (configure on phone)"
-                    profile = null
-                    stats = null
-                    return
-                }
-            profile = p
-            AutoServiceLocator.transportFor(p).stats().fold(
-                onSuccess = { dto ->
-                    error = null
-                    stats = dto
-                },
-                onFailure = { err ->
-                    error = "Unreachable: ${err.message ?: err::class.simpleName}"
-                },
-            )
+            val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+            val enabled = profiles.filter { it.enabled }
+            if (enabled.isEmpty()) {
+                serverRows = emptyList()
+                return
+            }
+            // B28: fetch all enabled servers in parallel.
+            val rows = coroutineScope {
+                enabled.map { p ->
+                    async {
+                        AutoServiceLocator.transportFor(p).stats().fold(
+                            onSuccess = { dto -> ServerRow(p, dto) },
+                            onFailure = { err ->
+                                ServerRow(p, error = err.message ?: err::class.simpleName ?: "error")
+                            },
+                        )
+                    }
+                }.awaitAll()
+            }
+            serverRows = rows
         } catch (e: Throwable) {
-            error = "Error: ${e.message ?: e::class.simpleName}"
+            serverRows = emptyList()
         }
     }
 
     override fun onGetTemplate(): Template {
         val items = ItemList.Builder()
-        profile?.let {
+        val rows = serverRows
+        if (rows.isEmpty()) {
             items.addItem(
                 Row.Builder()
-                    .setTitle(colored("● ${it.displayName}", CarColor.GREEN))
-                    .addText(it.baseUrl)
+                    .setTitle("No enabled servers")
+                    .addText("Configure a server on the paired phone")
                     .build(),
             )
-        }
-        val s = stats
-        if (s != null) {
-            // CPU row — prefer load1/cores, fall back to flat pct.
-            val load1 = s.cpuLoad1
-            val cores = s.cpuCores
-            val cpuText =
-                when {
-                    load1 != null && cores != null && cores > 0 ->
-                        "%.2f load · %d cores".format(load1, cores)
-                    s.cpuPct != null -> "%.1f%%".format(s.cpuPct)
-                    else -> "—"
-                }
+        } else if (rows.size == 1) {
+            // Single-server: show full detail rows (original layout).
+            val row = rows[0]
             items.addItem(
                 Row.Builder()
-                    .setTitle("CPU")
-                    .addText(cpuText)
+                    .setTitle(colored("● ${row.profile.displayName}", CarColor.GREEN))
+                    .addText(row.profile.baseUrl)
                     .build(),
             )
-            val memUsed = s.memUsed
-            val memTotal = s.memTotal
-            val memText =
-                when {
-                    memUsed != null && memTotal != null && memTotal > 0 ->
-                        "${fmt(memUsed)} / ${fmt(memTotal)}"
-                    s.memPct != null -> "%.1f%%".format(s.memPct)
-                    else -> "—"
-                }
-            items.addItem(
-                Row.Builder()
-                    .setTitle("Memory")
-                    .addText(memText)
-                    .build(),
-            )
-            val diskUsed = s.diskUsed
-            val diskTotal = s.diskTotal
-            if (diskUsed != null && diskTotal != null && diskTotal > 0) {
+            val s = row.stats
+            if (s != null) {
+                addDetailRows(items, s)
+            } else {
                 items.addItem(
                     Row.Builder()
-                        .setTitle("Disk")
-                        .addText("${fmt(diskUsed)} / ${fmt(diskTotal)}")
+                        .setTitle(row.error?.let { "Error" } ?: "Loading…")
+                        .addText(row.error ?: "Fetching server stats")
                         .build(),
                 )
             }
-            val vramTotal = s.gpuMemTotalMb
-            if (vramTotal != null && vramTotal > 0) {
-                val used = s.gpuMemUsedMb ?: 0L
-                val name = s.gpuName ?: "GPU"
+        } else {
+            // Multi-server (B28): one compact summary row per server.
+            rows.forEach { row ->
+                val s = row.stats
+                val summary =
+                    when {
+                        row.error != null -> "offline — ${row.error}"
+                        s == null -> "loading…"
+                        else -> buildServerSummary(s)
+                    }
+                val titleColor = if (row.error != null) CarColor.RED else CarColor.GREEN
                 items.addItem(
                     Row.Builder()
-                        .setTitle(name)
-                        .addText(
-                            "${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)} VRAM",
-                        )
+                        .setTitle(colored("● ${row.profile.displayName}", titleColor))
+                        .addText(summary)
                         .build(),
                 )
             }
-            items.addItem(
-                Row.Builder()
-                    .setTitle("Sessions")
-                    .addText(
-                        "${s.sessionsTotal} total · ${s.sessionsRunning} run · ${s.sessionsWaiting} wait",
-                    )
-                    .build(),
-            )
-            if (s.uptimeSeconds > 0) {
-                items.addItem(
-                    Row.Builder()
-                        .setTitle("Uptime")
-                        .addText(uptime(s.uptimeSeconds))
-                        .build(),
-                )
-            }
-        } else if (error == null) {
-            items.addItem(
-                Row.Builder()
-                    .setTitle("Loading…")
-                    .addText("Fetching server stats")
-                    .build(),
-            )
         }
         val actionStrip =
             ActionStrip.Builder()
@@ -206,12 +177,88 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 .build()
         val title = "datawatch ${Version.VERSION}"
         return ListTemplate.Builder()
-            .setTitle(error?.let { "$title · $it" } ?: title)
+            .setTitle(title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(actionStrip)
             .setSingleList(items.build())
             .build()
     }
+}
+
+/** Adds the full detail rows for a single server (single-server mode). */
+private fun addDetailRows(items: ItemList.Builder, s: StatsDto) {
+    val load1 = s.cpuLoad1
+    val cores = s.cpuCores
+    val cpuText =
+        when {
+            load1 != null && cores != null && cores > 0 ->
+                "%.2f load · %d cores".format(load1, cores)
+            s.cpuPct != null -> "%.1f%%".format(s.cpuPct)
+            else -> "—"
+        }
+    items.addItem(Row.Builder().setTitle("CPU").addText(cpuText).build())
+    val memUsed = s.memUsed
+    val memTotal = s.memTotal
+    val memText =
+        when {
+            memUsed != null && memTotal != null && memTotal > 0 ->
+                "${fmt(memUsed)} / ${fmt(memTotal)}"
+            s.memPct != null -> "%.1f%%".format(s.memPct)
+            else -> "—"
+        }
+    items.addItem(Row.Builder().setTitle("Memory").addText(memText).build())
+    val diskUsed = s.diskUsed
+    val diskTotal = s.diskTotal
+    if (diskUsed != null && diskTotal != null && diskTotal > 0) {
+        items.addItem(
+            Row.Builder().setTitle("Disk").addText("${fmt(diskUsed)} / ${fmt(diskTotal)}").build(),
+        )
+    }
+    val vramTotal = s.gpuMemTotalMb
+    if (vramTotal != null && vramTotal > 0) {
+        val used = s.gpuMemUsedMb ?: 0L
+        val name = s.gpuName ?: "GPU"
+        items.addItem(
+            Row.Builder()
+                .setTitle(name)
+                .addText(
+                    "${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)} VRAM",
+                )
+                .build(),
+        )
+    }
+    items.addItem(
+        Row.Builder()
+            .setTitle("Sessions")
+            .addText("${s.sessionsTotal} total · ${s.sessionsRunning} run · ${s.sessionsWaiting} wait")
+            .build(),
+    )
+    if (s.uptimeSeconds > 0) {
+        items.addItem(Row.Builder().setTitle("Uptime").addText(uptime(s.uptimeSeconds)).build())
+    }
+}
+
+/** Compact one-liner summary for multi-server mode: "CPU 45% · Mem 8.2/16 GB · 3 sessions". */
+private fun buildServerSummary(s: StatsDto): String {
+    val parts = mutableListOf<String>()
+    val load1 = s.cpuLoad1
+    val cores = s.cpuCores
+    val cpuPct =
+        when {
+            load1 != null && cores != null && cores > 0 -> (load1 / cores * 100).toInt()
+            s.cpuPct != null -> s.cpuPct!!.toInt()
+            else -> null
+        }
+    cpuPct?.let { parts += "CPU $it%" }
+    val memUsed = s.memUsed
+    val memTotal = s.memTotal
+    if (memUsed != null && memTotal != null && memTotal > 0) {
+        parts += "Mem ${fmt(memUsed)} / ${fmt(memTotal)}"
+    } else {
+        s.memPct?.let { parts += "Mem ${"%.0f".format(it)}%" }
+    }
+    if (s.sessionsTotal > 0) parts += "${s.sessionsTotal}s"
+    return parts.joinToString(" · ").ifBlank { "no data" }
 }
 
 // Named constants satisfy detekt's MagicNumber rule while keeping
