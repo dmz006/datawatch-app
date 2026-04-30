@@ -362,6 +362,7 @@ public fun SettingsScreen(
                                 // panels already surface every actionable key.
                                 AboutCard(activeProfile = activeProfile)
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
+                                com.dmzs.datawatchclient.ui.about.McpChannelCard()
                                 com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.SubsystemReloadCard()
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
