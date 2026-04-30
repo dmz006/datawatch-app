@@ -1,137 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="512" height="512" viewBox="0 0 108 108">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 108 108">
   <defs>
     <radialGradient id="bg" cx="50%" cy="50%" r="72%" gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="#220F42"/>
-      <stop offset="45%"  stop-color="#13072A"/>
+      <stop offset="0%" stop-color="#220F42"/>
+      <stop offset="45%" stop-color="#13072A"/>
       <stop offset="100%" stop-color="#08031A"/>
     </radialGradient>
-    <radialGradient id="iris" cx="46%" cy="46%" r="54%" gradientUnits="userSpaceOnUse"
-        fx="50" fy="50">
-      <stop offset="0%"   stop-color="#A855F7"/>
-      <stop offset="50%"  stop-color="#7C3AED"/>
+    <radialGradient id="iris" cx="43%" cy="43%" r="54%" gradientUnits="userSpaceOnUse" fx="47" fy="47">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="50%" stop-color="#7C3AED"/>
       <stop offset="100%" stop-color="#3B0764"/>
     </radialGradient>
   </defs>
-
-  <!-- Background -->
   <rect width="108" height="108" fill="url(#bg)"/>
-
-  <!-- Matrix rain — six columns of purple pixel squares, 50% alpha -->
-  <g fill="#A855F7" fill-opacity="0.50">
-    <!-- col 1 x=22 -->
-    <rect x="22" y="16" width="1" height="1"/>
-    <rect x="22" y="20" width="1" height="1"/>
-    <rect x="22" y="24" width="1" height="1"/>
-    <rect x="22" y="28" width="1" height="1"/>
-    <rect x="22" y="40" width="1" height="1"/>
-    <rect x="22" y="44" width="1" height="1"/>
-    <rect x="22" y="48" width="1" height="1"/>
-    <rect x="22" y="72" width="1" height="1"/>
-    <rect x="22" y="76" width="1" height="1"/>
-    <rect x="22" y="80" width="1" height="1"/>
-    <rect x="22" y="84" width="1" height="1"/>
-    <rect x="22" y="88" width="1" height="1"/>
-    <!-- col 2 x=32 -->
-    <rect x="32" y="18" width="1" height="1"/>
-    <rect x="32" y="22" width="1" height="1"/>
-    <rect x="32" y="26" width="1" height="1"/>
-    <rect x="32" y="30" width="1" height="1"/>
-    <rect x="32" y="34" width="1" height="1"/>
-    <rect x="32" y="38" width="1" height="1"/>
-    <rect x="32" y="72" width="1" height="1"/>
-    <rect x="32" y="76" width="1" height="1"/>
-    <rect x="32" y="80" width="1" height="1"/>
-    <rect x="32" y="84" width="1" height="1"/>
-    <rect x="32" y="88" width="1" height="1"/>
-    <rect x="32" y="92" width="1" height="1"/>
-    <!-- col 3 x=42 -->
-    <rect x="42" y="16" width="1" height="1"/>
-    <rect x="42" y="20" width="1" height="1"/>
-    <rect x="42" y="24" width="1" height="1"/>
-    <rect x="42" y="28" width="1" height="1"/>
-    <rect x="42" y="32" width="1" height="1"/>
-    <rect x="42" y="36" width="1" height="1"/>
-    <rect x="42" y="76" width="1" height="1"/>
-    <rect x="42" y="80" width="1" height="1"/>
-    <rect x="42" y="84" width="1" height="1"/>
-    <rect x="42" y="88" width="1" height="1"/>
-    <rect x="42" y="92" width="1" height="1"/>
-    <!-- col 4 x=65 -->
-    <rect x="65" y="18" width="1" height="1"/>
-    <rect x="65" y="22" width="1" height="1"/>
-    <rect x="65" y="26" width="1" height="1"/>
-    <rect x="65" y="30" width="1" height="1"/>
-    <rect x="65" y="34" width="1" height="1"/>
-    <rect x="65" y="38" width="1" height="1"/>
-    <rect x="65" y="76" width="1" height="1"/>
-    <rect x="65" y="80" width="1" height="1"/>
-    <rect x="65" y="84" width="1" height="1"/>
-    <rect x="65" y="88" width="1" height="1"/>
-    <rect x="65" y="92" width="1" height="1"/>
-    <!-- col 5 x=75 -->
-    <rect x="75" y="16" width="1" height="1"/>
-    <rect x="75" y="20" width="1" height="1"/>
-    <rect x="75" y="24" width="1" height="1"/>
-    <rect x="75" y="28" width="1" height="1"/>
-    <rect x="75" y="32" width="1" height="1"/>
-    <rect x="75" y="36" width="1" height="1"/>
-    <rect x="75" y="72" width="1" height="1"/>
-    <rect x="75" y="76" width="1" height="1"/>
-    <rect x="75" y="80" width="1" height="1"/>
-    <rect x="75" y="84" width="1" height="1"/>
-    <rect x="75" y="88" width="1" height="1"/>
-    <!-- col 6 x=85 -->
-    <rect x="85" y="18" width="1" height="1"/>
-    <rect x="85" y="22" width="1" height="1"/>
-    <rect x="85" y="26" width="1" height="1"/>
-    <rect x="85" y="30" width="1" height="1"/>
-    <rect x="85" y="34" width="1" height="1"/>
-    <rect x="85" y="38" width="1" height="1"/>
-    <rect x="85" y="72" width="1" height="1"/>
-    <rect x="85" y="76" width="1" height="1"/>
-    <rect x="85" y="80" width="1" height="1"/>
-    <rect x="85" y="84" width="1" height="1"/>
-    <rect x="85" y="88" width="1" height="1"/>
-    <rect x="85" y="92" width="1" height="1"/>
+  <g fill="#A855F7" fill-opacity="0.45">
+    <rect x="16" y="14" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/>
+    <rect x="16" y="82" width="1" height="1"/><rect x="16" y="86" width="1" height="1"/><rect x="16" y="90" width="1" height="1"/>
+    <rect x="27" y="12" width="1" height="1"/><rect x="27" y="16" width="1" height="1"/><rect x="27" y="20" width="1" height="1"/>
+    <rect x="27" y="84" width="1" height="1"/><rect x="27" y="88" width="1" height="1"/><rect x="27" y="92" width="1" height="1"/>
+    <rect x="80" y="14" width="1" height="1"/><rect x="80" y="18" width="1" height="1"/><rect x="80" y="22" width="1" height="1"/>
+    <rect x="80" y="82" width="1" height="1"/><rect x="80" y="86" width="1" height="1"/><rect x="80" y="90" width="1" height="1"/>
+    <rect x="91" y="12" width="1" height="1"/><rect x="91" y="16" width="1" height="1"/><rect x="91" y="20" width="1" height="1"/>
+    <rect x="91" y="84" width="1" height="1"/><rect x="91" y="88" width="1" height="1"/><rect x="91" y="92" width="1" height="1"/>
+    <rect x="53" y="10" width="1" height="1"/><rect x="54" y="10" width="1" height="1"/>
+    <rect x="53" y="94" width="1" height="1"/><rect x="54" y="94" width="1" height="1"/>
   </g>
-
-  <!-- EYE — centered at (54, 54) -->
-
-  <!-- Sclera (almond) -->
-  <ellipse cx="54" cy="54" rx="22" ry="14"
-    fill="#080518" stroke="#7C3AED" stroke-width="0.6"/>
-
-  <!-- Iris -->
-  <circle cx="54" cy="54" r="12" fill="url(#iris)"/>
-
-  <!-- Iris outer ring -->
-  <circle cx="54" cy="54" r="11.4"
-    fill="none" stroke="#A855F7" stroke-width="0.4" stroke-opacity="0.5"/>
-
-  <!-- Iris inner ring -->
-  <circle cx="54" cy="54" r="8.5"
-    fill="none" stroke="#C084FC" stroke-width="0.3" stroke-opacity="0.4"/>
-
-  <!-- Pupil -->
-  <circle cx="54" cy="54" r="5" fill="#04020E"/>
-  <circle cx="54" cy="54" r="4.6"
-    fill="none" stroke="#7C3AED" stroke-width="0.3" stroke-opacity="0.5"/>
-
-  <!-- Crosshair -->
-  <line x1="54" y1="49" x2="54" y2="51"
-    stroke="#E879F9" stroke-width="0.7" stroke-linecap="round"/>
-  <line x1="54" y1="57" x2="54" y2="59"
-    stroke="#E879F9" stroke-width="0.7" stroke-linecap="round"/>
-  <line x1="49" y1="54" x2="51" y2="54"
-    stroke="#E879F9" stroke-width="0.7" stroke-linecap="round"/>
-  <line x1="57" y1="54" x2="59" y2="54"
-    stroke="#E879F9" stroke-width="0.7" stroke-linecap="round"/>
-
-  <!-- Center highlight -->
-  <circle cx="54" cy="54" r="0.9" fill="#F0ABFC"/>
-
-  <!-- Lens glint -->
-  <ellipse cx="49" cy="49" rx="2.2" ry="1"
-    fill="white" fill-opacity="0.20"/>
+  <ellipse cx="54" cy="54" rx="40" ry="26" fill="#080518" stroke="#7C3AED" stroke-width="0.8"/>
+  <circle cx="54" cy="54" r="22" fill="url(#iris)"/>
+  <circle cx="54" cy="54" r="21" fill="none" stroke="#A855F7" stroke-width="0.5" stroke-opacity="0.5"/>
+  <circle cx="54" cy="54" r="16" fill="none" stroke="#C084FC" stroke-width="0.4" stroke-opacity="0.4"/>
+  <circle cx="54" cy="54" r="9" fill="#04020E"/>
+  <circle cx="54" cy="54" r="8.5" fill="none" stroke="#7C3AED" stroke-width="0.4" stroke-opacity="0.5"/>
+  <line x1="54" y1="23" x2="54" y2="29" stroke="#E879F9" stroke-width="1.0" stroke-linecap="round"/>
+  <line x1="54" y1="79" x2="54" y2="85" stroke="#E879F9" stroke-width="1.0" stroke-linecap="round"/>
+  <line x1="23" y1="54" x2="29" y2="54" stroke="#E879F9" stroke-width="1.0" stroke-linecap="round"/>
+  <line x1="79" y1="54" x2="85" y2="54" stroke="#E879F9" stroke-width="1.0" stroke-linecap="round"/>
+  <circle cx="54" cy="54" r="1.5" fill="#F0ABFC"/>
+  <ellipse cx="44" cy="44" rx="3.5" ry="1.5" fill="white" fill-opacity="0.22"/>
 </svg>
