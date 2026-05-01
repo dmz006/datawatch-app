@@ -243,7 +243,15 @@
     var pendingWrites = [];
     var opened = true; // term.open already called above
 
+    // Suppress dwWrite while pane_captures are flowing — mixing cursor-
+    // positioning pane_capture clears with incremental output writes causes
+    // visible ANSI garbling. Once pane_captures stop (server switches to
+    // output-only mode after initial snapshot), let writes through so the
+    // terminal keeps updating. 2-second grace window matches typical server
+    // pane_capture cadence (~100–200 ms).
     window.dwWrite = function (s) {
+      var now = (performance && performance.now) ? performance.now() : Date.now();
+      if (_lastPaneWrite && (now - _lastPaneWrite) < 2000) return;
       try {
         term.write(s);
       } catch (e) {

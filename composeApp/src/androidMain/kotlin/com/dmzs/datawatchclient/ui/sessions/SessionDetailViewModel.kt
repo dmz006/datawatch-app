@@ -85,6 +85,10 @@ public class SessionDetailViewModel(
             }
     }
 
+    /** Live terminal output — bypasses DB, fed directly to TerminalView dwWrite(). */
+    public val outputStream: kotlinx.coroutines.flow.Flow<com.dmzs.datawatchclient.domain.SessionEvent.Output> =
+        ServiceLocator.sessionEventRepository.observeOutput(sessionId)
+
     private val _replyText = MutableStateFlow("")
     private val _replying = MutableStateFlow(false)
     private val _killing = MutableStateFlow(false)
