@@ -23,6 +23,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -119,6 +121,7 @@ private fun WearRoot(
     val pagerState = rememberPagerState(initialPage = 0) { 4 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
+    val sessionScrollState = rememberScrollState()
 
     // Show splash on every launch — even warm restarts where the ViewModel
     // is already loaded. 800ms on warm restart (ViewModel pre-loaded),
@@ -242,7 +245,9 @@ private fun WearRoot(
                         val delta = if (event.verticalScrollPixels != 0f) event.verticalScrollPixels
                                     else event.horizontalScrollPixels
                         coroutineScope.launch {
-                            if (delta > 0) {
+                            if (pagerState.currentPage == 1) {
+                                sessionScrollState.scrollBy(delta)
+                            } else if (delta > 0) {
                                 pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(3))
                             } else if (delta < 0) {
                                 pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
@@ -265,6 +270,7 @@ private fun WearRoot(
                                 fullDetailBodies = fullDetailBodies - item.id
                                 vm.refreshSession(item.id)
                             },
+                            scrollState = sessionScrollState,
                         )
                     2 ->
                         PrdsPage(
@@ -331,6 +337,14 @@ private fun WearRoot(
                         transcribing = false
                         openSession = null
                     },
+                    onQuickReply = { text ->
+                        vm.sendReply(item.id, text)
+                        openSession = null
+                    },
+                    onStop = {
+                        vm.sendStopSession(item.id)
+                        openSession = null
+                    },
                 )
                 // Transcript review popup overlays the session popup once
                 // transcription completes. User reads the text and chooses
@@ -377,6 +391,7 @@ private fun PagerDots(
 @Composable
 private fun PageScaffold(
     title: String,
+    scrollState: ScrollState = rememberScrollState(),
     content: @Composable () -> Unit,
 ) {
     // Per user 2026-04-24 "the wear app should have borders around each
@@ -422,7 +437,7 @@ private fun PageScaffold(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (title.isNotBlank()) {
@@ -758,8 +773,9 @@ private fun SessionsPage(
     filter: SessionFilter,
     onFilterChange: (SessionFilter) -> Unit,
     onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
-    PageScaffold(stringResource(R.string.wear_page_sessions)) {
+    PageScaffold(stringResource(R.string.wear_page_sessions), scrollState = scrollState) {
         if (state.pairedServer.isEmpty()) {
             Text(
                 "—",
@@ -999,6 +1015,8 @@ private fun SessionDetailPopup(
     voice: VoiceUiState,
     onRecord: () -> Unit,
     onDismiss: () -> Unit,
+    onQuickReply: (String) -> Unit = {},
+    onStop: () -> Unit = {},
 ) {
     val transcript = voice.transcript
     val recording = voice.recording
@@ -1038,6 +1056,8 @@ private fun SessionDetailPopup(
                 fullBody = fullBody,
                 voice = voice,
                 onDismiss = onDismiss,
+                onQuickReply = onQuickReply,
+                onStop = onStop,
             )
             BoxScopeMicButton(recording = recording, transcribing = transcribing, onRecord = onRecord)
         }
@@ -1096,6 +1116,8 @@ private fun SessionPopupCentre(
     fullBody: String?,
     voice: VoiceUiState,
     onDismiss: () -> Unit,
+    onQuickReply: (String) -> Unit = {},
+    onStop: () -> Unit = {},
 ) {
     val transcript = voice.transcript
     val recording = voice.recording
@@ -1173,6 +1195,39 @@ private fun SessionPopupCentre(
                     color = MaterialTheme.colors.primary,
                     maxLines = 3,
                 )
+        }
+        if (session.stateName.equals("waiting", ignoreCase = true) && !recording && !transcribing) {
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    stringResource(R.string.wear_action_continue),
+                    style = MaterialTheme.typography.button,
+                    color = MaterialTheme.colors.primary,
+                    modifier =
+                        Modifier
+                            .background(
+                                MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            )
+                            .clickable { onQuickReply("y") }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+                Text(
+                    stringResource(R.string.wear_action_stop),
+                    style = MaterialTheme.typography.button,
+                    color = MaterialTheme.colors.error,
+                    modifier =
+                        Modifier
+                            .background(
+                                MaterialTheme.colors.error.copy(alpha = 0.2f),
+                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            )
+                            .clickable { onStop() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
         }
     }
 }
@@ -1773,6 +1828,22 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     /**
+     * W-4 — ask the phone to kill a session. Payload is the session id (UTF-8).
+     */
+    public fun sendStopSession(sessionId: String) {
+        if (sessionId.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val body = sessionId.toByteArray(Charsets.UTF_8)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, STOP_SESSION_PATH, body).await()
+                }
+            }
+        }
+    }
+
+    /**
      * Ship raw audio bytes to the phone for Whisper transcription.
      * Payload layout: `sessionId` UTF-8 + `\n` (0x0A) + raw audio
      * bytes. The phone's `WearSyncService` parses by the first
@@ -1874,6 +1945,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
         public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
+        public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
     }
 }
 

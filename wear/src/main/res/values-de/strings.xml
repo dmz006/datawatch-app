@@ -40,6 +40,14 @@
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 
+    <string name="tile_waiting_label">datawatch Wartend</string>
+
+    <string name="wear_action_continue">↩ Weiter</string>
+    <string name="wear_action_stop">✕ Stopp</string>
+
+    <string name="wear_notification_channel_name">datawatch-Alarme</string>
+    <string name="wear_notification_waiting_title">Sitzung wartet auf Eingabe</string>
+
     <string name="action_yes">Ja</string>
     <string name="action_no">Nein</string>
     <string name="common_loading">Wird geladen…</string>

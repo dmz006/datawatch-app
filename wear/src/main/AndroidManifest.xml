@@ -64,5 +64,121 @@
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@android:drawable/ic_menu_info_details"/>
         </service>
+
+        <!-- Wear Tile — Waiting sessions glance (W-8). -->
+        <service
+            android:name=".tile.WaitingTileService"
+            android:exported="true"
+            android:label="@string/tile_waiting_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER"/>
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@android:drawable/ic_menu_info_details"/>
+        </service>
+
+        <!-- Complications — W-2, W-9, W-10 -->
+        <service
+            android:name=".complication.WaitingComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch Waiting"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
+        <service
+            android:name=".complication.SessionsComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch Sessions"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
+        <service
+            android:name=".complication.CpuComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch CPU"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
+        <service
+            android:name=".complication.MemoryComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch Memory"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
+        <service
+            android:name=".complication.ServerSwitchComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch Server"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
+        <!-- BroadcastReceiver for server-switch complication tap (W-10). -->
+        <receiver
+            android:name=".complication.ServerSwitchReceiver"
+            android:exported="false"/>
+
+        <!-- WearableListenerService for session waiting_input alerts (BL27). -->
+        <service
+            android:name=".WearAlertListenerService"
+            android:exported="true"
+            android:permission="com.google.android.gms.wearable.BIND_LISTENER">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/alert"/>
+            </intent-filter>
+        </service>
     </application>
 </manifest>

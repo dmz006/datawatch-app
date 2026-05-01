@@ -55,6 +55,7 @@ public class WearSyncService(
     private val context: Context,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
+    private var prevWaitingIds: Set<String> = emptySet()
     private val messageListener =
         MessageClient.OnMessageReceivedListener { ev: MessageEvent ->
             when (ev.path) {
@@ -128,6 +129,16 @@ public class WearSyncService(
                                 forwardWatchAudio(ev.sourceNodeId, sessionId, audio)
                             }
                         }
+                    }
+                }
+                STOP_SESSION_PATH -> {
+                    // W-4 / BL27 — watch-initiated session stop.
+                    // Payload is the session's short or full id (UTF-8).
+                    val sid =
+                        runCatching { String(ev.data, Charsets.UTF_8) }
+                            .getOrNull().orEmpty()
+                    if (sid.isNotEmpty()) {
+                        scope.launch { forwardWatchStopSession(sid) }
                     }
                 }
             }
@@ -209,6 +220,16 @@ public class WearSyncService(
                 .collectLatest { (snap, list) ->
                     publishCounts(snap)
                     publishSessions(list)
+                    val currentWaitingIds = list.items
+                        .filter { it.stateName.equals("waiting", ignoreCase = true) }
+                        .map { it.id }.toSet()
+                    val newWaiting = currentWaitingIds - prevWaitingIds
+                    if (newWaiting.isNotEmpty() && prevWaitingIds.isNotEmpty()) {
+                        val title = list.items
+                            .firstOrNull { it.id in newWaiting }?.title.orEmpty()
+                        alertWatchNodes(title)
+                    }
+                    prevWaitingIds = currentWaitingIds
                 }
         }
         // Enabled profile list — watch's server-picker page reads this.
@@ -528,6 +549,47 @@ public class WearSyncService(
     }
 
     /**
+     * W-4 / BL27 — watch-initiated session stop. Resolves the session from
+     * the active server's list (tolerating short or full ids) then calls
+     * `killSession` on its transport. Best-effort; failure is silent.
+     */
+    private suspend fun forwardWatchStopSession(sessionId: String) {
+        runCatching {
+            val activeId = ServiceLocator.activeServerStore.get()
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return
+            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+                val target = list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                    ?: return@onSuccess
+                ServiceLocator.transportFor(profile).killSession(target.fullId)
+            }
+        }
+    }
+
+    /**
+     * BL27 — push a /datawatch/alert message to all connected watch nodes so the
+     * WearAlertListenerService can post a notification without the watch holding
+     * any open connections.
+     */
+    private fun alertWatchNodes(sessionTitle: String) {
+        scope.launch {
+            runCatching {
+                val nodes =
+                    com.google.android.gms.tasks.Tasks.await(
+                        Wearable.getNodeClient(context).connectedNodes,
+                    )
+                val payload = sessionTitle.toByteArray(Charsets.UTF_8)
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, ALERT_PATH, payload)
+                }
+            }
+        }
+    }
+
+    /**
      * Open a transient WS subscription to [sessionId], emit a `send_input`
      * frame with [text], wait briefly for the server to ack, then cancel.
      *
@@ -752,6 +814,8 @@ public class WearSyncService(
         public const val TRANSCRIPT_PATH: String = "/datawatch/transcript"
         public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
         public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
+        public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
+        public const val ALERT_PATH: String = "/datawatch/alert"
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable

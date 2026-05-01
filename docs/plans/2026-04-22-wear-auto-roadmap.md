@@ -38,15 +38,15 @@ or feature work.
 
 | ID | Surface | Why | Cost |
 |----|---------|-----|------|
-| W-2 | **Complication — pending input count** | Shows on the watch face as a number; glanceable without opening a tile. Reuses `/datawatch/counts`. | S |
+| W-2 | ✅ **Complication — pending input count** | Done (v0.56.0) — `WaitingComplicationService` reads `/datawatch/counts` → `waiting` int. Registered in manifest with `SHORT_TEXT` support. | S |
 | W-3 | **Ongoing notification — pending input** | Wear extends phone notifications already; add per-session inline reply actions (Yes / No / Continue / Stop) using existing WS `send_input`. Depends on a MessageClient reply path phone-side. | M |
-| W-4 | **Quick reply buttons on Sessions page** | Tap a waiting row → dedicated reply screen with Y/N/C/S buttons. Uses MessageClient to round-trip send_input via phone. | M |
+| W-4 | ✅ **Quick reply buttons on Sessions page** | Done (v0.56.0) — "↩ Continue" + "✕ Stop" chips shown in session detail popup for waiting sessions. Continue sends `"y"` via existing `REPLY_PATH`; Stop sends `STOP_SESSION_PATH` → phone calls `killSession`. | M |
 | W-5 | **Last pane-capture image on Sessions tap** | Phone publishes a downsampled pane_capture snapshot per active session; watch renders. Image bytes over Data Layer are heavy — do lossy JPEG ≤ 32 KB. | L |
 | W-6 | **Voice quick reply** | Wear's SpeechRecognizer → phone send_input. Distraction-free, optional. | M |
-| W-7 | **Rotary input on sessions list** | Scroll sessions via bezel / crown. Low-hanging fruit once the list exists. | S |
-| W-8 | **Tile — Waiting sessions list** | Third tile surface — up to 3 rows of waiting sessions with names + timestamps. Read `/datawatch/waiting` (new DataItem path). | M |
-| W-9 | **Wear watch-face complication pack** | Sessions, Waiting, CPU%, Memory%. Four complications. | M |
-| W-10 | **Server-switch complication** | Short-tap complication that cycles active server — mirrors widget cycle on phone. | S |
+| W-7 | ✅ **Rotary input on sessions list** | Done (v0.56.0) — `onRotaryScrollEvent` routes delta to `sessionScrollState.scrollBy()` when pager is on Sessions page (page 1); other pages keep page-advance behaviour. `PageScaffold` accepts optional external `ScrollState`. | S |
+| W-8 | ✅ **Tile — Waiting sessions list** | Done (v0.56.0) — `WaitingTileService` reads `/datawatch/sessions`, filters `state == "waiting"`, shows up to 3 amber session rows. Tap → `WearMainActivity`. | M |
+| W-9 | ✅ **Wear watch-face complication pack** | Done (v0.56.0) — four `ComplicationDataSourceService` subclasses: `WaitingComplicationService` (wait count), `SessionsComplicationService` (run/wait), `CpuComplicationService` (CPU%), `MemoryComplicationService` (Mem%). All registered in manifest. | M |
+| W-10 | ✅ **Server-switch complication** | Done (v0.56.0) — `ServerSwitchComplicationService` shows active server name (6 chars). Tap fires `ServerSwitchReceiver` which reads `/datawatch/profiles`, finds next enabled profile, sends `/datawatch/setActive` to phone. | S |
 
 ### Later / parked
 
