@@ -4,7 +4,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Status:** `v0.47.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
+**Status:** `v0.57.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
 
 ## At a glance
 
@@ -21,15 +21,19 @@ phone, watch, or car display:
 
 - **Live session view** — WebSocket-streamed chat + terminal + state events,
   with reply / kill / state-override actions.
-- **Push when attention is needed** — FCM + ntfy fallback, inline RemoteInput
-  reply straight from the notification shade.
+- **Per-session process stats** — CPU ring, RSS, net Rx/Tx, and GPU usage pulled
+  from the observer's eBPF envelope; shown in the "stats" tab of session detail.
+- **Push when attention is needed** — ntfy + Wear OS alert notification when a
+  session enters waiting-input state; inline RemoteInput reply from the shade.
 - **Voice reply** — tap, speak, confirm — no typing on a two-inch keyboard.
 - **Multi-server** — Tailscale, LAN, and public hosts side-by-side; 3-finger
   swipe to switch; "All servers" fan-out via `/api/federation/sessions`.
-- **Glance surfaces** — home-screen widget (BL6), Wear Tile (BL4), Android
-  Auto list screen (BL10).
+- **Glance surfaces** — home-screen widget, Wear Tile, Wear complications (CPU /
+  mem / session counts / server switch), and Android Auto list screen.
+- **Foldable + tablet two-pane** — sessions list and session detail render
+  side-by-side on screens ≥ 600 dp (Pixel Fold, Galaxy Z Fold, tablets).
 - **Secure at rest** — SQLCipher-backed storage + Android Keystore for bearer
-  tokens + optional biometric unlock (BL2).
+  tokens + optional biometric unlock.
 
 Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 
@@ -50,9 +54,10 @@ Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 </tr>
 </table>
 
-The session detail view streams chat and terminal output side-by-side with a
-browser-style tab switcher. The composer row gives you arrow keys, PgUp/PgDn,
-and a saved-commands picker — no need to type `\033[A` by hand.
+The session detail view streams chat and terminal output with a compact tab switcher
+(tmux / channel / stats). The **stats tab** shows live CPU, RSS, and network throughput
+from the observer's process envelope when eBPF is active. The composer row gives you
+arrow keys, PgUp/PgDn, and a saved-commands picker — no need to type `\033[A` by hand.
 
 ## Wear OS
 
@@ -103,7 +108,7 @@ Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline
 
 ## Platforms
 
-- Android phone / tablet (minSdk 29 — Android 10 — target 35)
+- Android phone / tablet / foldable (minSdk 29 — Android 10 — target 35; two-pane layout on ≥ 600 dp)
 - Wear OS 3+ (minSdk 30)
 - Android Auto (Messaging category — runs on any Auto-enabled head unit)
 - iOS skeleton (post-v1 content work)

@@ -198,7 +198,8 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 |---|---|---|
 | CPU / Memory / Disk / GPU | ✅ | StatsScreen |
 | Uptime | ✅ | |
-| Per-process eBPF network | ⏳ | Read-only viewer deferred to a post-1.0.0 batch per ADR-0019 (no write actions from mobile). Server already exposes the data; mobile UI not built. |
+| Per-process eBPF network | ✅ | v0.57.0 — `EBpfNetworkCard` in Settings → Monitor; reads `StatsDto.envelopes`, shows per-process Rx/Tx sorted by bandwidth; only rendered when `ebpfActive == true`. |
+| Per-session process stats (CPU / RSS / net) | ✅ | v0.57.0 — `SessionStatsPanel` "stats" tab in session detail; matches envelope by sessionId prefix. PWA does not yet have this surface — filed [datawatch#34](https://github.com/dmz006/datawatch/issues/34). |
 | Session counts | ✅ | |
 
 ---
