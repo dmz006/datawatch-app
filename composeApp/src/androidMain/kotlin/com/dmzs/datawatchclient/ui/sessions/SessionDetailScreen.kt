@@ -484,15 +484,14 @@ public fun SessionDetailScreen(
                 ConnectionBanner(onRetry = vm::dismissBanner)
             }
             // Input-required banner — top-of-terminal callout when the
-            // session is `waiting_input`, mirroring the PWA's amber prompt
-            // strip. Body shows the latest prompt text so users can decide
-            // before scrolling the terminal.
+            // session is `waiting_input` AND a PromptDetected event has
+            // arrived in the current stream. Using state.needsInput (not just
+            // session.state == Waiting) prevents stale banners when the
+            // server is between prompts or the client reconnects mid-run.
             // Suppress while in scroll mode — the banner causes a layout shift
             // that shrinks the WebView and jumps the copy-mode position.
-            if (!toolbarState.scrollMode) {
-                state.session?.takeIf { it.state == SessionState.Waiting }?.let {
-                    InputRequiredBanner(prompt = state.pendingPromptText)
-                }
+            if (!toolbarState.scrollMode && state.needsInput) {
+                InputRequiredBanner(prompt = state.pendingPromptText)
             }
 
             // Server-reported chat-mode sessions (output_mode=chat, e.g.
