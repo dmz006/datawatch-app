@@ -36,7 +36,22 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.refresh() }
 
     val stats = state.stats ?: return
-    if (!stats.ebpfActive) return
+
+    // When eBPF is configured but probes aren't active (server-side issue),
+    // show a placeholder rather than vanishing — so the user knows why data is missing.
+    if (!stats.ebpfActive) {
+        if (stats.ebpfEnabled == true) {
+            Section(title = stringResource(R.string.stats_section_process_network)) {
+                Text(
+                    text = stringResource(R.string.stats_ebpf_configured_not_active),
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        return
+    }
 
     val rows = stats.envelopes
         .filter { it.netRxBps > 0 || it.netTxBps > 0 }

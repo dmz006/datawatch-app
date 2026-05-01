@@ -276,6 +276,7 @@
     <string name="stats_ebpf_degraded_title">⚠ eBPF Degraded</string>
     <string name="stats_section_process_network">Network (by process)</string>
     <string name="stats_process_network_empty">No per-process network data — eBPF taps not active.</string>
+    <string name="stats_ebpf_configured_not_active">eBPF configured but probes not active. Check server logs or run: datawatch setup ebpf</string>
     <string name="monitor_no_session_selected">Select a session from the list</string>
     <string name="stats_ebpf_degraded_default">eBPF support is built into the daemon but probes aren\'t loaded. Run `datawatch setup ebpf` to enable.</string>
 
