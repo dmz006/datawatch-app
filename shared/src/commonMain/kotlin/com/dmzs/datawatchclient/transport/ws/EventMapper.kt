@@ -183,10 +183,13 @@ private fun buildPaneCaptureEvents(
     forSessionId: String,
 ): List<SessionEvent> {
     if (obj == null) return emptyList()
-    val sid = obj.jsonString("session_id") ?: forSessionId
-    // Filter by the session the UI is currently rendering — same logic as
-    // raw_output so stray frames for other sessions don't land.
-    if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return emptyList()
+    val rawSid = obj.jsonString("session_id") ?: forSessionId
+    // Filter by the session the UI is currently rendering.
+    if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return emptyList()
+    // Normalise to forSessionId so the stored id matches selectEventsForSession's
+    // exact-match query — the server may send the full "hostname-short" id while
+    // the observer holds only the short id returned from startSession().
+    val sid = forSessionId
     val lines =
         runCatching {
             obj["lines"]?.jsonArray?.mapNotNull { el ->
@@ -211,9 +214,11 @@ private fun buildOutputEvents(
     forSessionId: String,
 ): List<SessionEvent> {
     if (obj == null) return emptyList()
-    val sid = obj.jsonString("session_id") ?: forSessionId
+    val rawSid = obj.jsonString("session_id") ?: forSessionId
     // Only render frames that belong to the session the UI is showing.
-    if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return emptyList()
+    if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return emptyList()
+    // Normalise to forSessionId — see buildPaneCaptureEvents comment.
+    val sid = forSessionId
     val lines =
         runCatching {
             obj["lines"]?.jsonArray?.mapNotNull { el ->
@@ -251,7 +256,7 @@ private fun buildPrompt(
     forSessionId: String,
 ): SessionEvent? {
     if (obj == null) return null
-    val sid = obj.jsonString("session_id") ?: forSessionId
+    val sid = forSessionId
     val text = obj.jsonString("prompt") ?: obj.jsonString("message") ?: return null
     return SessionEvent.PromptDetected(
         sessionId = sid,
@@ -278,8 +283,8 @@ private fun buildNotification(
     forSessionId: String,
 ): SessionEvent? {
     val msg = obj?.jsonString("message") ?: return null
-    val sid = obj.jsonString("session_id") ?: forSessionId
-    return outputEvent(sid, ts, "\u001b[36m[notify] $msg\u001b[0m")
+    // Normalise to forSessionId — server may use the full "hostname-short" wire id.
+    return outputEvent(forSessionId, ts, "[36m[notify] $msg[0m")
 }
 
 private fun buildAlert(
@@ -288,9 +293,9 @@ private fun buildAlert(
     forSessionId: String,
 ): SessionEvent? {
     if (obj == null) return null
-    val sid = obj.jsonString("session_id") ?: forSessionId
     val msg = obj.jsonString("message") ?: obj.jsonString("summary") ?: return null
-    return outputEvent(sid, ts, "\u001b[33m[alert] $msg\u001b[0m")
+    // Normalise to forSessionId — server may use the full "hostname-short" wire id.
+    return outputEvent(forSessionId, ts, "[33m[alert] $msg[0m")
 }
 
 private fun buildChatMessage(
@@ -299,8 +304,10 @@ private fun buildChatMessage(
     forSessionId: String,
 ): SessionEvent? {
     if (obj == null) return null
-    val sid = obj.jsonString("session_id") ?: forSessionId
-    if (!sid.contains(forSessionId) && !forSessionId.contains(sid)) return null
+    val rawSid = obj.jsonString("session_id") ?: forSessionId
+    if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return null
+    // Normalise to forSessionId so the stored id matches selectEventsForSession's
+    // exact-match query — the server may send the full "hostname-short" id.
     val content = obj.jsonString("content") ?: ""
     val role =
         when (obj.jsonString("role")?.lowercase()) {
@@ -312,7 +319,7 @@ private fun buildChatMessage(
     val streaming =
         runCatching { obj["streaming"]?.jsonPrimitive?.booleanOrNull }.getOrNull() ?: false
     return SessionEvent.ChatMessage(
-        sessionId = sid,
+        sessionId = forSessionId,
         ts = ts,
         role = role,
         content = content,
