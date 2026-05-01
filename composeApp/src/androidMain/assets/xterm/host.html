@@ -238,28 +238,14 @@
       window.visualViewport.addEventListener('resize', safeFit);
     }
 
-    // Writes may arrive from Kotlin before xterm opens; buffer them so nothing
-    // gets lost.
-    var pendingWrites = [];
     var opened = true; // term.open already called above
 
-    // Suppress dwWrite while pane_captures are flowing — mixing cursor-
-    // positioning pane_capture clears with incremental output writes causes
-    // visible ANSI garbling. Once pane_captures stop (server switches to
-    // output-only mode after initial snapshot), let writes through so the
-    // terminal keeps updating. 500 ms grace window: server sends pane_captures
-    // every 100–300 ms so this covers 2–5 cycles; longer windows cause cursor
-    // drift because the PTY has advanced while dwWrite was suppressed.
-    window.dwWrite = function (s) {
-      var now = (performance && performance.now) ? performance.now() : Date.now();
-      if (_lastPaneWrite && (now - _lastPaneWrite) < 500) return;
-      try {
-        term.write(s);
-      } catch (e) {
-        log('write failed, buffering: ' + e);
-        pendingWrites.push(s);
-      }
-    };
+    // dwWrite is a no-op stub kept for forward-compatibility — the
+    // terminal is pane_capture-only (single display source T3). Raw
+    // PTY output bytes contain fragmentary ANSI state that garbles
+    // TUI sessions; pane_capture provides complete, self-consistent
+    // screen snapshots. See dmz006/datawatch@0393e262 for history.
+    window.dwWrite = function (s) { /* pane_capture-only mode */ };
 
     window.dwClear = function () {
       try { term.clear(); } catch (e) {}
