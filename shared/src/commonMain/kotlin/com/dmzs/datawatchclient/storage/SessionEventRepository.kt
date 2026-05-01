@@ -47,6 +47,25 @@ public class SessionEventRepository(
         kotlinx.coroutines.flow.MutableSharedFlow(replay = 1, extraBufferCapacity = 32)
 
     /**
+     * Live bus for raw terminal output. Mirrors [paneCaptureBus]: the
+     * SQLCipher round-trip (5–50 ms per insert) is too slow for 100 ms WS
+     * output bursts and adds a fragile list-index dependency in TerminalView.
+     * Output events stream here instead — zero DB latency, collect directly
+     * in TerminalView for immediate `dwWrite()` calls, matching the PWA's
+     * `term.write()` path. `replay = 0` so late subscribers get only live
+     * frames; pane_capture covers the current-screen snapshot on re-entry.
+     */
+    private val outputBus:
+        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.Output> =
+        kotlinx.coroutines.flow.MutableSharedFlow(replay = 0, extraBufferCapacity = 512)
+
+    /** Flow of live terminal output for the given session id. */
+    public fun observeOutput(sessionId: String): kotlinx.coroutines.flow.Flow<SessionEvent.Output> =
+        outputBus.filter { ev ->
+            ev.sessionId.contains(sessionId) || sessionId.contains(ev.sessionId)
+        }
+
+    /**
      * Live bus for chat-mode frames. Mirrors [paneCaptureBus] in purpose:
      * the PWA keeps chat history in memory only (datawatch app.js:560),
      * and doesn't push backfill from the server — the transcript is
@@ -97,20 +116,10 @@ public class SessionEventRepository(
         withContext(ioDispatcher) {
             when (event) {
                 is SessionEvent.Output ->
-                    db.eventQueries.insertEvent(
-                        session_id = event.sessionId,
-                        ts = event.ts.toEpochMilliseconds(),
-                        type = "output",
-                        body = event.body,
-                        stream = event.stream.name.lowercase(),
-                        from_state = null,
-                        to_state = null,
-                        prompt_text = null,
-                        prompt_kind = null,
-                        retry_after = null,
-                        exit_code = null,
-                        message = null,
-                    )
+                    // Route through in-memory bus instead of DB — same pattern
+                    // as paneCaptureBus. xterm.js owns the scrollback; no value
+                    // in a SQLCipher round-trip on every 100 ms WS output frame.
+                    outputBus.tryEmit(event)
                 is SessionEvent.StateChange ->
                     db.eventQueries.insertEvent(
                         session_id = event.sessionId,
@@ -214,8 +223,11 @@ public class SessionEventRepository(
                     // PWA also keeps chat history in-memory only.
                     chatMessageBus.tryEmit(event)
             }
-            // Prune oldest after each insert so the ring buffer stays bounded.
-            db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)
+            // Prune oldest after DB inserts so the ring buffer stays bounded.
+            // Output events bypass the DB so skip pruning for those.
+            if (event !is SessionEvent.Output && event !is SessionEvent.PaneCapture && event !is SessionEvent.ChatMessage) {
+                db.eventQueries.pruneOldEvents(event.sessionId, event.sessionId, RETAIN_PER_SESSION)
+            }
         }
 
     public suspend fun deleteForSession(sessionId: String): Unit =

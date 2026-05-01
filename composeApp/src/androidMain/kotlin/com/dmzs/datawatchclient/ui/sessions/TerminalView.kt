@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dmzs.datawatchclient.domain.SessionEvent
+import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 
 /**
@@ -225,19 +226,11 @@ public fun TerminalView(
     events: List<SessionEvent>,
     modifier: Modifier = Modifier,
     controller: TerminalController? = null,
+    liveOutput: Flow<SessionEvent.Output>? = null,
 ) {
     // Keyed to sessionId so navigating A → B resets ready to false, preventing
     // stale-true from causing dwPaneCapture to fire against a not-yet-loaded WebView.
     var ready by remember(sessionId) { mutableStateOf(false) }
-    // Keyed to sessionId so navigating A → B resets the write cursor. Without
-    // this, the LaunchedEffect's initial-flush branch (lastWrittenIndex == 0)
-    // fails to fire for session B and nothing is ever written into xterm —
-    // the WebView keeps session A's DOM and looks frozen. See B1.
-    var lastWrittenIndex by remember(sessionId) { mutableStateOf(0) }
-    // Whether the output-event baseline has been set for the current session.
-    // Reset on session change so historical output from previous WS sessions
-    // (stored in DB) is not replayed into a freshly opened terminal.
-    var outputBaselined by remember(sessionId) { mutableStateOf(false) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     // When the session changes, wipe the xterm DOM so session A's scrollback
@@ -393,52 +386,22 @@ public fun TerminalView(
             null,
         )
         Log.d("DwTerm", "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})")
-        lastWrittenIndex = events.size
     }
 
-    // Set the output-write baseline the first time the WebView becomes ready.
-    // Any output events already in the DB (from previous WS sessions) are
-    // intentionally skipped — they're historical and would be rendered
-    // out-of-order relative to the pane_capture that shows the current screen.
-    //
-    // Baseline is the count of Output events ONLY (not total list size).
-    // SessionEventRepository.observe() appends a PaneCapture at the end of
-    // the DB events via combine(dbFlow, liveFlow). If we base the index on
-    // events.size (which includes PC), new Output events that arrive after
-    // ready always fall BEFORE the PC in the combined list and get skipped
-    // by events.drop(lastWrittenIndex) — terminal never updates.
-    LaunchedEffect(ready) {
-        if (!ready || outputBaselined) return@LaunchedEffect
-        outputBaselined = true
-        lastWrittenIndex = events.count { it is SessionEvent.Output }
-    }
-
-    // Incrementally write new raw-output events between pane_captures.
-    // The server sends pane_capture only when the tmux pane changes; between
-    // captures it streams raw PTY bytes as "output" events at ~100ms.
-    // Writing them here gives the user real-time feedback (visible typing,
-    // command echo) while pane_capture remains the authoritative full-screen
-    // reset. When a pane_capture arrives, dwPaneCapture clears + rewrites the
-    // terminal, overriding any incremental output accumulated since the last
-    // snapshot. Keying on events.size (not latestPaneCapture) so this fires
-    // on new Output rows but NOT on replacement pane_captures (size unchanged).
-    //
-    // Track position in the Output-only slice to avoid the PaneCapture offset
-    // bug: the combined list is [Output..., PaneCapture], so using events.size
-    // as the cursor makes events.drop(cursor) always return [PaneCapture] and
-    // filterIsInstance<Output>() always empty after the first capture arrives.
-    LaunchedEffect(events.size, ready, outputBaselined) {
-        if (!ready || !outputBaselined) return@LaunchedEffect
-        val webView = webViewRef.value ?: return@LaunchedEffect
-        val outputEvents = events.filterIsInstance<SessionEvent.Output>()
-        val newOutputEvents = outputEvents.drop(lastWrittenIndex)
-        if (newOutputEvents.isEmpty()) return@LaunchedEffect
-        val batch = newOutputEvents.joinToString("") { it.body }
-        webView.evaluateJavascript(
-            "window.dwWrite && window.dwWrite(${jsonString(batch)});",
-            null,
-        )
-        lastWrittenIndex = outputEvents.size
+    // Stream raw terminal output directly from the live bus — same pattern
+    // as pane_capture but for incremental output between captures.
+    // Bypasses the DB (no SQLCipher round-trip) so dwWrite() fires within
+    // milliseconds of the WS frame arriving, matching the PWA's term.write()
+    // latency. Keyed on ready+sessionId; re-launches when WebView initialises
+    // or the session changes.
+    LaunchedEffect(ready, sessionId, liveOutput) {
+        if (!ready || liveOutput == null) return@LaunchedEffect
+        liveOutput.collect { ev ->
+            webViewRef.value?.evaluateJavascript(
+                "window.dwWrite && window.dwWrite(${jsonString(ev.body)});",
+                null,
+            )
+        }
     }
 
     DisposableEffect(Unit) {

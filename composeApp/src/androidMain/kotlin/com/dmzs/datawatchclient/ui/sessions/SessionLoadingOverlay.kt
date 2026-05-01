@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -46,6 +47,7 @@ private val Pink = Color(0xFFE879F9)
 public fun SessionLoadingOverlay(visible: Boolean) {
     AnimatedVisibility(
         visible = visible,
+        enter = EnterTransition.None,
         exit = fadeOut(animationSpec = tween(400)),
     ) {
         val infinite = rememberInfiniteTransition(label = "loading-overlay")
