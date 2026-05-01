@@ -7,7 +7,9 @@ import com.dmzs.datawatchclient.domain.Prompt
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -42,9 +44,18 @@ public class SessionEventRepository(
      * prefix match (same contract EventMapper uses for frame filtering).
      * replay = 1 so a late subscriber gets the latest capture.
      */
-    private val paneCaptureBus:
-        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.PaneCapture> =
-        kotlinx.coroutines.flow.MutableSharedFlow(replay = 1, extraBufferCapacity = 32)
+    // DROP_OLDEST: a pane_capture is a full-screen snapshot — a newer one
+    // always supersedes an older one. With SUSPEND (the default), a slow
+    // Compose consumer fills the 32-slot buffer in ~6.4 s (32 × 200 ms
+    // capture interval) and tryEmit silently drops every frame after that,
+    // freezing the terminal. DROP_OLDEST keeps the bus always accepting new
+    // snapshots while a backlog exists.
+    private val paneCaptureBus: MutableSharedFlow<SessionEvent.PaneCapture> =
+        MutableSharedFlow(
+            replay = 1,
+            extraBufferCapacity = 64,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     /**
      * Live bus for raw terminal output. Mirrors [paneCaptureBus]: the
@@ -55,12 +66,11 @@ public class SessionEventRepository(
      * `term.write()` path. `replay = 0` so late subscribers get only live
      * frames; pane_capture covers the current-screen snapshot on re-entry.
      */
-    private val outputBus:
-        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.Output> =
-        kotlinx.coroutines.flow.MutableSharedFlow(replay = 0, extraBufferCapacity = 512)
+    private val outputBus: MutableSharedFlow<SessionEvent.Output> =
+        MutableSharedFlow(replay = 0, extraBufferCapacity = 512)
 
     /** Flow of live terminal output for the given session id. */
-    public fun observeOutput(sessionId: String): kotlinx.coroutines.flow.Flow<SessionEvent.Output> =
+    public fun observeOutput(sessionId: String): Flow<SessionEvent.Output> =
         outputBus.filter { ev ->
             ev.sessionId.contains(sessionId) || sessionId.contains(ev.sessionId)
         }
@@ -76,9 +86,8 @@ public class SessionEventRepository(
      * late subscribers (navigating into a chat session after the first
      * message landed), while the UI holds its own growing list.
      */
-    private val chatMessageBus:
-        kotlinx.coroutines.flow.MutableSharedFlow<SessionEvent.ChatMessage> =
-        kotlinx.coroutines.flow.MutableSharedFlow(replay = 64, extraBufferCapacity = 64)
+    private val chatMessageBus: MutableSharedFlow<SessionEvent.ChatMessage> =
+        MutableSharedFlow(replay = 64, extraBufferCapacity = 64)
 
     /** Flow of live chat messages matching the given short-or-full session id. */
     public fun observeChat(sessionId: String): Flow<SessionEvent.ChatMessage> =
