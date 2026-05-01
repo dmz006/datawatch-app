@@ -145,15 +145,15 @@ public class SessionDetailViewModel(
         viewModelScope.launch {
             val profile = resolveProfile() ?: return@launch
             profileCache = profile
+            // v0.54.0 — await the REST refresh BEFORE opening the WS stream.
+            // Previous order (startStream → refreshFromServer) meant the WS
+            // delivered a pane_capture and dismissed the loading overlay while
+            // state.session was still null (REST in flight). Result: no
+            // GeneratingIndicator, no state badge until the REST eventually
+            // landed. Swapping the order ensures state.session is populated
+            // before the first frame from the WS arrives.
+            doRefreshFromServer(profile)
             startStream(profile)
-            // v0.35.10 — force a fresh server read on detail open so
-            // last_response / state are current the moment the screen
-            // appears (matches PWA load-on-open behavior). Without
-            // this the user would see whatever the 5-second list
-            // poll last cached. Mirrors the user's
-            // "should refresh to get the current state like going in
-            // from session list" complaint 2026-04-28.
-            refreshFromServer()
             // Mirror the owning profile's transport reachability into the
             // VM so the detail screen can render a connection banner.
             ServiceLocator.transportFor(profile).isReachable
@@ -213,8 +213,11 @@ public class SessionDetailViewModel(
         startStream(profile)
     }
 
+    private var wsSessionRefreshFired = false
+
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
+        wsSessionRefreshFired = false
         val transport = ServiceLocator.wsTransportFor(profile)
         streamJob =
             transport.events(sessionId)
@@ -236,6 +239,14 @@ public class SessionDetailViewModel(
                     // session re-read so the banner + prompt context
                     // update immediately.
                     if (ev is com.dmzs.datawatchclient.domain.SessionEvent.StateChange) {
+                        refreshFromServer()
+                    }
+                    // Safety net: if the initial REST refresh failed (network
+                    // blip) and the session is still absent from the DB when
+                    // the first WS frame arrives, trigger one more refresh so
+                    // state.session populates and GeneratingIndicator can render.
+                    if (!wsSessionRefreshFired && state.value.session == null) {
+                        wsSessionRefreshFired = true
                         refreshFromServer()
                     }
                 }
@@ -318,32 +329,25 @@ public class SessionDetailViewModel(
     }
 
     /**
-     * Force-refresh this session's record from the server.
-     *
-     * v0.35.8 (BL178 + dmz006/datawatch-app#9): for sessions in
-     * `running` / `waiting_input`, the daemon's `Manager.GetLastResponse`
-     * re-captures from live tmux on every read. Cached `last_response`
-     * from the last 5-second list-poll is therefore stale by up to 5 s
-     * — fine for a glance, not fine when the user just tapped the
-     * 💾 Response viewer expecting the very latest snippet.
-     *
-     * Triggered by:
-     *   - Tap on the Response button in SessionInfoBar.
-     *   - Any state-transition WS frame (running→complete etc.)
-     *
-     * Fire-and-forget — failure is silently absorbed; the user keeps
-     * whatever cached value the repository already had.
+     * Suspend-able core of the server refresh. Finds this session in
+     * the server list and upserts its record so [state.session] is
+     * populated with the latest REST state. Failure is silently absorbed.
+     */
+    private suspend fun doRefreshFromServer(profile: ServerProfile) {
+        ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+            list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                ?.let { fresh -> ServiceLocator.sessionRepository.upsert(fresh) }
+        }
+    }
+
+    /**
+     * Fire-and-forget wrapper around [doRefreshFromServer]. Used by
+     * state-change WS events and the Response button tap so callers
+     * don't need to manage the coroutine themselves.
      */
     public fun refreshFromServer() {
         val profile = profileCache ?: return
-        viewModelScope.launch {
-            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
-                list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
-                    ?.let { fresh ->
-                        ServiceLocator.sessionRepository.upsert(fresh)
-                    }
-            }
-        }
+        viewModelScope.launch { doRefreshFromServer(profile) }
     }
 
     public fun kill() {
