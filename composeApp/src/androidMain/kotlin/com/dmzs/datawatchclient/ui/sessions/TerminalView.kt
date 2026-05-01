@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dmzs.datawatchclient.domain.SessionEvent
-import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 
 /**
@@ -226,7 +225,6 @@ public fun TerminalView(
     events: List<SessionEvent>,
     modifier: Modifier = Modifier,
     controller: TerminalController? = null,
-    liveOutput: Flow<SessionEvent.Output>? = null,
 ) {
     // Keyed to sessionId so navigating A → B resets ready to false, preventing
     // stale-true from causing dwPaneCapture to fire against a not-yet-loaded WebView.
@@ -386,22 +384,6 @@ public fun TerminalView(
             null,
         )
         Log.d("DwTerm", "pane_capture: ${pc.lines.size} lines (first=${pc.isFirst})")
-    }
-
-    // Stream raw terminal output directly from the live bus — same pattern
-    // as pane_capture but for incremental output between captures.
-    // Bypasses the DB (no SQLCipher round-trip) so dwWrite() fires within
-    // milliseconds of the WS frame arriving, matching the PWA's term.write()
-    // latency. Keyed on ready+sessionId; re-launches when WebView initialises
-    // or the session changes.
-    LaunchedEffect(ready, sessionId, liveOutput) {
-        if (!ready || liveOutput == null) return@LaunchedEffect
-        liveOutput.collect { ev ->
-            webViewRef.value?.evaluateJavascript(
-                "window.dwWrite && window.dwWrite(${jsonString(ev.body)});",
-                null,
-            )
-        }
     }
 
     DisposableEffect(Unit) {

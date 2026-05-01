@@ -150,8 +150,7 @@ public fun SessionDetailScreen(
     var sessionLoaded by remember { mutableStateOf(!isNew) }
     androidx.compose.runtime.LaunchedEffect(state.events.size) {
         if (!sessionLoaded && state.events.any {
-                it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture ||
-                    it is com.dmzs.datawatchclient.domain.SessionEvent.Output
+                it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture
             }
         ) {
             sessionLoaded = true
@@ -528,7 +527,6 @@ public fun SessionDetailScreen(
                     events = state.events,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     controller = terminalController,
-                    liveOutput = vm.outputStream,
                 )
                 TerminalScrollModeStrip(toolbarState)
                 // Backend-specific minimum cols/rows. Matches parent
