@@ -241,6 +241,7 @@ public fun SettingsScreen(
                                 // grows on richer ones.
                                 com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                                 com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
+                                com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
                                 com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
                                 com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
                                 com.dmzs.datawatchclient.ui.monitoring.PluginsCard()

@@ -1,11 +1,16 @@
 package com.dmzs.datawatchclient.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.LaunchedEffect
@@ -15,8 +20,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -280,6 +288,12 @@ private fun HomeShell(
     val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
 
+    // BL7 — foldable / large-screen two-pane. On MEDIUM+ width (≥600 dp,
+    // covers unfolded foldables and tablets), sessions list and session detail
+    // render side-by-side. On narrow phones, existing full-screen nav applies.
+    val isWide = LocalConfiguration.current.screenWidthDp >= 600
+    var selectedSessionId by remember { mutableStateOf<String?>(null) }
+
     // v0.42.5 — probe whether the active server exposes the
     // autonomous surface (`/api/autonomous/prds`). Local-only setups
     // and older daemons return 404 / never have the route; in that
@@ -329,48 +343,78 @@ private fun HomeShell(
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            BottomNavBar(
-                tabNav,
-                alertsBadge = alertsState.count,
-                prdsSupported = prdsSupported,
-            )
-        },
-    ) { inner ->
-        // BL3: cap content at 840 dp and centre so the phone layout
-        // doesn't stretch absurdly wide on landscape tablets or foldables.
-        // On phones (<840 dp) fillMaxWidth wins, so there is no change.
-        Box(
-            modifier = Modifier.fillMaxSize().padding(inner),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-        NavHost(
-            navController = tabNav,
-            startDestination = Destinations.Tabs.Sessions,
-            modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight(),
-        ) {
-            composable(Destinations.Tabs.Sessions) {
-                SessionsScreen(
-                    onOpenSession = onOpenSession,
-                    onEditServer = onEditServer,
-                    onAddServer = onAddServer,
-                    onNewSession = onNewSession,
+    val mainPane: @Composable (Modifier) -> Unit = { mod ->
+        Scaffold(
+            modifier = mod,
+            bottomBar = {
+                BottomNavBar(
+                    tabNav,
+                    alertsBadge = alertsState.count,
+                    prdsSupported = prdsSupported,
                 )
-            }
-            composable(Destinations.Tabs.Autonomous) {
-                com.dmzs.datawatchclient.ui.autonomous.AutonomousScreen()
-            }
-            composable(Destinations.Tabs.Alerts) {
-                AlertsScreen(onOpenSession = onOpenSession, vm = alertsVm)
-            }
-            composable(Destinations.Tabs.Settings) {
-                SettingsScreen(
-                    onAddServer = onAddServer,
-                    onEditServer = onEditServer,
-                )
+            },
+        ) { inner ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(inner),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                NavHost(
+                    navController = tabNav,
+                    startDestination = Destinations.Tabs.Sessions,
+                    modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight(),
+                ) {
+                    composable(Destinations.Tabs.Sessions) {
+                        SessionsScreen(
+                            onOpenSession = if (isWide) { id -> selectedSessionId = id } else onOpenSession,
+                            onEditServer = onEditServer,
+                            onAddServer = onAddServer,
+                            onNewSession = onNewSession,
+                        )
+                    }
+                    composable(Destinations.Tabs.Autonomous) {
+                        com.dmzs.datawatchclient.ui.autonomous.AutonomousScreen()
+                    }
+                    composable(Destinations.Tabs.Alerts) {
+                        AlertsScreen(
+                            onOpenSession = if (isWide) { id -> selectedSessionId = id } else onOpenSession,
+                            vm = alertsVm,
+                        )
+                    }
+                    composable(Destinations.Tabs.Settings) {
+                        SettingsScreen(
+                            onAddServer = onAddServer,
+                            onEditServer = onEditServer,
+                        )
+                    }
+                }
             }
         }
+    }
+
+    if (isWide) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            mainPane(Modifier.width(360.dp).fillMaxHeight())
+            VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                val sid = selectedSessionId
+                if (sid != null) {
+                    SessionDetailScreen(
+                        sessionId = sid,
+                        isNew = false,
+                        onBack = { selectedSessionId = null },
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            stringResource(R.string.monitor_no_session_selected),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
+    } else {
+        mainPane(Modifier.fillMaxSize())
     }
 }

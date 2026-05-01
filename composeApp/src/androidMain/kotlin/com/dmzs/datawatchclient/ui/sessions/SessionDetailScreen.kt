@@ -205,6 +205,7 @@ public fun SessionDetailScreen(
     var chatMode by remember {
         mutableStateOf(modePrefs.getBoolean("chat_mode", false))
     }
+    var statsMode by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(chatMode) {
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
     }
@@ -453,10 +454,11 @@ public fun SessionDetailScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode, onClick = { chatMode = false })
-                SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode, onClick = { chatMode = true })
+                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode, onClick = { chatMode = false; statsMode = false })
+                SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode, onClick = { chatMode = true; statsMode = false })
+                SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode, onClick = { statsMode = true })
                 Spacer(Modifier.weight(1f))
-                val showToolbar = !chatMode && state.session?.isChatMode != true
+                val showToolbar = !chatMode && !statsMode && state.session?.isChatMode != true
                 if (showToolbar) {
                     TerminalToolbarControls(toolbarState)
                 }
@@ -498,7 +500,12 @@ public fun SessionDetailScreen(
             // transcript panel is the only sensible output surface; user's
             // Terminal/Chat view toggle doesn't apply.
             val serverChatMode = state.session?.isChatMode == true
-            if (serverChatMode) {
+            if (statsMode) {
+                SessionStatsPanel(
+                    sessionId = sessionId,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+            } else if (serverChatMode) {
                 ChatTranscriptPanel(
                     sessionId = sessionId,
                     modifier = Modifier.weight(1f).fillMaxWidth(),

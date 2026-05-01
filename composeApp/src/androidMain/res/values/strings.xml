@@ -105,6 +105,8 @@
     <!-- ── Session detail ── -->
     <string name="session_detail_tab_tmux">tmux</string>
     <string name="session_detail_tab_channel">channel</string>
+    <string name="session_detail_tab_stats">stats</string>
+    <string name="session_detail_stats_no_data">No process stats — eBPF may not be active for this session.</string>
     <string name="session_detail_input_required">Input Required</string>
     <string name="session_detail_waiting_reply">Session is waiting on a reply.</string>
     <string name="session_detail_timeline">Timeline</string>
@@ -272,6 +274,9 @@
     <string name="stats_label_offline">offline</string>
     <string name="stats_label_per_core">Per-core</string>
     <string name="stats_ebpf_degraded_title">⚠ eBPF Degraded</string>
+    <string name="stats_section_process_network">Network (by process)</string>
+    <string name="stats_process_network_empty">No per-process network data — eBPF taps not active.</string>
+    <string name="monitor_no_session_selected">Select a session from the list</string>
     <string name="stats_ebpf_degraded_default">eBPF support is built into the daemon but probes aren\'t loaded. Run `datawatch setup ebpf` to enable.</string>
 
     <!-- ── Security / Settings ── -->
