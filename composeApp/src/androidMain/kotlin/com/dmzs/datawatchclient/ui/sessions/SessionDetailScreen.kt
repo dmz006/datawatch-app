@@ -147,14 +147,32 @@ public fun SessionDetailScreen(
     val sessionSchedules by sessionSchedulesVm.state.collectAsState()
     // Loading overlay — shown for new sessions until the first content
     // arrives (pane_capture OR output event) or a terminal state is reached.
+    // overlayReady gates the dismiss: even if a pane_capture arrives within
+    // milliseconds (bus replay), the eye is always visible for at least 2 s
+    // so the user can perceive it.
     var sessionLoaded by remember { mutableStateOf(!isNew) }
+    var overlayMinWaitDone by remember { mutableStateOf(!isNew) }
+    var overlayDataArrived by remember { mutableStateOf(!isNew) }
+    // 2 s minimum display + 15 s safety-net dismiss — both in one block.
+    androidx.compose.runtime.LaunchedEffect(isNew) {
+        if (isNew) {
+            delay(2_000)
+            overlayMinWaitDone = true
+            delay(13_000) // 2 + 13 = 15 s total
+            sessionLoaded = true
+        }
+    }
     androidx.compose.runtime.LaunchedEffect(state.events.size) {
         if (!sessionLoaded && state.events.any {
                 it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture
             }
         ) {
-            sessionLoaded = true
+            overlayDataArrived = true
         }
+    }
+    // Dismiss once both the minimum time AND first data have arrived.
+    androidx.compose.runtime.LaunchedEffect(overlayMinWaitDone, overlayDataArrived) {
+        if (overlayMinWaitDone && overlayDataArrived) sessionLoaded = true
     }
     androidx.compose.runtime.LaunchedEffect(state.session?.state) {
         if (!sessionLoaded) {
@@ -162,16 +180,6 @@ public fun SessionDetailScreen(
             if (st == SessionState.Completed || st == SessionState.Killed || st == SessionState.Error) {
                 sessionLoaded = true
             }
-        }
-    }
-    // Safety net: dismiss after 15 s if the session never produces output
-    // (e.g. server-side startup stall, network hiccup). Prevents the
-    // overlay from hanging indefinitely on a new session that takes longer
-    // than expected to produce its first frame.
-    androidx.compose.runtime.LaunchedEffect(isNew) {
-        if (isNew) {
-            delay(15_000)
-            sessionLoaded = true
         }
     }
 

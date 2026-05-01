@@ -247,11 +247,12 @@
     // positioning pane_capture clears with incremental output writes causes
     // visible ANSI garbling. Once pane_captures stop (server switches to
     // output-only mode after initial snapshot), let writes through so the
-    // terminal keeps updating. 2-second grace window matches typical server
-    // pane_capture cadence (~100–200 ms).
+    // terminal keeps updating. 500 ms grace window: server sends pane_captures
+    // every 100–300 ms so this covers 2–5 cycles; longer windows cause cursor
+    // drift because the PTY has advanced while dwWrite was suppressed.
     window.dwWrite = function (s) {
       var now = (performance && performance.now) ? performance.now() : Date.now();
-      if (_lastPaneWrite && (now - _lastPaneWrite) < 2000) return;
+      if (_lastPaneWrite && (now - _lastPaneWrite) < 500) return;
       try {
         term.write(s);
       } catch (e) {
