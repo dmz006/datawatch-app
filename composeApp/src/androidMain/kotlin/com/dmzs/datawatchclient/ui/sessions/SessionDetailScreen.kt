@@ -98,6 +98,7 @@ import kotlinx.coroutines.launch
 public fun SessionDetailScreen(
     sessionId: String,
     onBack: () -> Unit,
+    isNew: Boolean = false,
     vm: SessionDetailViewModel =
         viewModel(
             key = sessionId,
@@ -143,6 +144,23 @@ public fun SessionDetailScreen(
             factory = viewModelFactory { initializer { SessionSchedulesViewModel(sessionId) } },
         )
     val sessionSchedules by sessionSchedulesVm.state.collectAsState()
+    // Loading overlay — shown when navigating from NewSession until the first
+    // pane_capture arrives (terminal is live) or the session reaches a terminal state.
+    var sessionLoaded by remember { mutableStateOf(!isNew) }
+    androidx.compose.runtime.LaunchedEffect(state.events.size) {
+        if (!sessionLoaded && state.events.any { it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture }) {
+            sessionLoaded = true
+        }
+    }
+    androidx.compose.runtime.LaunchedEffect(state.session?.state) {
+        if (!sessionLoaded) {
+            val st = state.session?.state
+            if (st == SessionState.Completed || st == SessionState.Killed || st == SessionState.Error) {
+                sessionLoaded = true
+            }
+        }
+    }
+
     var killConfirm by remember { mutableStateOf(false) }
     var deleteConfirm by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -169,6 +187,7 @@ public fun SessionDetailScreen(
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -677,6 +696,10 @@ public fun SessionDetailScreen(
             onDismiss = { scheduleOpen = false },
         )
     }
+    // Loading overlay — rendered on top of the Scaffold; fades out when
+    // the first pane_capture arrives (sessionLoaded = true).
+    SessionLoadingOverlay(visible = !sessionLoaded)
+    } // end Box
 }
 
 /**

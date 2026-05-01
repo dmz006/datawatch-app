@@ -220,7 +220,7 @@ private fun Nav(
         composable(Destinations.NewSession) {
             NewSessionScreen(
                 onStarted = { sessionId ->
-                    navController.navigate(Destinations.sessionDetail(sessionId)) {
+                    navController.navigate(Destinations.sessionDetail(sessionId, isNew = true)) {
                         popUpTo(Destinations.NewSession) { inclusive = true }
                         launchSingleTop = true
                     }
@@ -252,11 +252,17 @@ private fun Nav(
                     androidx.navigation.navArgument("sessionId") {
                         type = androidx.navigation.NavType.StringType
                     },
+                    androidx.navigation.navArgument("isNew") {
+                        type = androidx.navigation.NavType.BoolType
+                        defaultValue = false
+                    },
                 ),
         ) { entry ->
             val id = entry.arguments?.getString("sessionId") ?: return@composable
+            val isNew = entry.arguments?.getBoolean("isNew") ?: false
             SessionDetailScreen(
                 sessionId = id,
+                isNew = isNew,
                 onBack = { navController.popBackStack() },
             )
         }
