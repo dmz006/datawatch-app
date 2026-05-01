@@ -1,126 +1,236 @@
 # UX — Session Detail
 
-*Last updated 2026-04-22 for v0.33.0.*
+*Last updated 2026-05-01 for v0.57.0.*
 
-Terminal-primary (v0.10.1 swap, ADR-0024 xterm.js in WebView). Chat
-mode is available as a toggle; Logs / Memory / Timeline open as
-bottom sheets (ADR-0023).
+Terminal-primary (ADR-0024 xterm.js in WebView). Three inline view tabs —
+**tmux**, **channel**, **stats** — replace the old bottom-sheet picker row
+(removed post-v0.33). Timeline is still accessible via the overflow menu.
 
-## Layout
+---
+
+## Layout — phone (narrow, < 600 dp)
+
+### tmux tab (default)
 
 ```
-┌─────────────────────────────────────────┐
-│ ←  primary › us-west-2 › workstation-a3f2│  breadcrumb (ADR-0021)
-├─────────────────────────────────────────┤
-│ Session  a3f2  · running · 4m ago       │  title + state + last activity
-├─────────────────────────────────────────┤
-│                                         │
-│  [llm]  Running tests… 43 passed        │
-│  [user] replied: "continue"             │
-│  [sys]  rate-limit reset at 18:42       │
-│  [llm]  ⏳ waiting for prompt           │  ← pending prompt highlighted
-│                                         │
-│                                         │
-│                                         │
-├─────────────────────────────────────────┤
-│ [ 📟 Terminal ] [ 📋 Logs ] [ 🧠 Memory ] [ ⏱ Timeline ] │ ← sheet pickers
-├─────────────────────────────────────────┤
-│ [🎙]  Type reply…                 [send]│  composer (input-bar-h 60)
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ ←  workstation-a3f2              [⋮ menu]   │  TopAppBar — tap title to rename
+├─────────────────────────────────────────────┤
+│  ● running   ⠿⠿⠿ generating   [📄 response]│  state badges + generating indicator
+├─────────────────────────────────────────────┤
+│ ⚠ INPUT REQUIRED                            │  amber banner — conditional
+│   What should I do about the test failure?  │  shows prompt text from promptContext
+├─────────────────────────────────────────────┤
+│ [tmux] [channel] [stats]   [Aa] [⊡] [📜]  │  tab pills + terminal toolbar
+├─────────────────────────────────────────────┤
+│                                             │
+│  $ claude --resume                          │
+│  ✓ Running tests… 43 passed, 2 failed       │  xterm.js — pane_capture ANSI stream
+│  ⏳ Waiting for input…                      │
+│                                             │
+│                                             │
+├─────────────────────────────────────────────┤
+│  ⏰ in 10 min: "continue"   [✕]            │  schedules strip — conditional
+├─────────────────────────────────────────────┤
+│ [📅][🎙]  Type reply…              [▶][✉] │  composer
+└─────────────────────────────────────────────┘
 ```
 
-## Bottom-sheet variants
+### channel tab
 
-Tapping a picker chip opens a sheet that covers ~60% of the screen; dragging up expands it
-full-screen, down dismisses. Only one sheet open at a time.
+```
+├─────────────────────────────────────────────┤
+│ [tmux] [channel] [stats]                    │  no toolbar on channel/stats
+├─────────────────────────────────────────────┤
+│                                             │
+│  ╭─────────────────────────────────────╮   │
+│  │ assistant  Running tests… 43 passed │   │  role-labelled chat bubbles
+│  ╰─────────────────────────────────────╯   │
+│   ╭──────────────────╮                     │
+│   │ user  "continue" │                     │
+│   ╰──────────────────╯                     │
+│  ╭─────────────────────────────────────╮   │
+│  │ ⏳ Waiting — what should I do?      │   │  latest prompt highlighted
+│  │ [Yes] [No] [Continue] [Stop]        │   │  quick-reply chips inline
+│  ╰─────────────────────────────────────╯   │
+├─────────────────────────────────────────────┤
+│ [📅][🎙]  Type reply…              [▶][✉] │
+└─────────────────────────────────────────────┘
+```
 
-### Terminal sheet
+### stats tab (v0.57.0 — B11)
 
-- xterm.js WebView loaded from `assets/xterm/`.
-- Connects to `/ws?session=<id>` and streams ANSI frames.
-- Toolbar: clear, copy all, search, font size, toggle wrap.
-- On disconnect: greyed-out with reconnect button; no local replay.
+Shows the observer envelope for the current session. Self-hides data rows
+when no matching envelope exists (eBPF not active, or daemon predates
+observer v4.1.0).
 
-### Logs sheet
+```
+├─────────────────────────────────────────────┤
+│ [tmux] [channel] [stats]                    │
+├─────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────┐  │
+│  │ Process Stats                         │  │
+│  │                                       │  │
+│  │    ╭──────╮                           │  │
+│  │   ╱  42%  ╲   CPU      42.3%         │  │  ring colour: green/amber/red
+│  │   ╲        ╱   RSS      1.2 GB       │  │  at 70%/90% thresholds
+│  │    ╰──────╯    Threads  24            │  │
+│  │                FDs      512           │  │
+│  │                                       │  │
+│  │  Net ↓   125.4 KB/s                  │  │  only when eBPF active
+│  │  Net ↑    78.2 KB/s                  │  │
+│  │                                       │  │
+│  │  GPU      12.0%    GPU Mem  2.0 GB   │  │  only when GPU present
+│  │  PID      3401 (+3)                  │  │
+│  └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+```
 
-- Scrollable list of timeline events: session created, prompt detected, reply sent,
-  rate-limit, resumed, completed, error.
-- Each row timestamped, tap to expand details.
-- Search + date filter.
+### scroll-mode overlay (replaces composer when 📜 active)
 
-### Memory sheet
+```
+├─────────────────────────────────────────────┤
+│         [ PgUp ]   [ PgDn ]                 │
+│       [  ↑  ]  [ ↓ ]  [ESC]               │  full-width nav strip
+└─────────────────────────────────────────────┘
+```
 
-- Three tabs: Recall, Remember, Graph.
-- Recall: search box → calls `memory_recall` MCP tool → streams results.
-- Remember: pinned facts + "Add fact" composer.
-- Graph: small KG view around this session (nodes = entities, edges = relations), tap
-  node to drill.
+---
 
-### Timeline sheet
+## Layout — foldable / tablet (wide, ≥ 600 dp — BL7)
 
-- Chronological record of state transitions for this session.
-- Pure view of the `timeline_entry` table rows for this session, with source (server or
-  local observation).
+Sessions list and session detail render side-by-side. Tapping a session
+sets `selectedSessionId` state; no nav push occurs. BottomNavBar remains
+on the left pane (360 dp).
 
-## Chat message rendering (v0.32.0 update)
+```
+┌──────────────────────┬──────────────────────────────────────────┐
+│  Sessions   (360 dp) │  Session detail  (remaining width)        │
+│                      │                                           │
+│  ● workstation-a3f2  │ ←  workstation-a3f2           [⋮ menu]  │
+│  ○ staging-worker    │ ● running  ⠿⠿⠿ generating               │
+│  ● home-server       │ ⚠ INPUT REQUIRED — What should I do?     │
+│                      │ [tmux] [channel] [stats]   [Aa][⊡][📜]  │
+│                      │ ┌─────────────────────────────────────┐  │
+│                      │ │ $ claude --resume                   │  │
+│                      │ │ ✓ 43 passed, 2 failed               │  │
+│                      │ │ ⏳ Waiting for input…               │  │
+│                      │ └─────────────────────────────────────┘  │
+│ ─── BottomNavBar ─── │ [📅][🎙]  Type reply…          [▶][✉] │
+└──────────────────────┴──────────────────────────────────────────┘
+```
 
-Chat mode uses **bubble rendering** with avatar + role label + tinted
-surface colour per speaker (user / assistant / system). Plain text
-body; markdown rendering of assistant output is deferred to post-1.0.0
-to keep the xterm path authoritative for TUIs.
+Right pane shows "Select a session from the list" when nothing is selected.
+New Session (`+` FAB on Sessions tab) still uses full-screen nav over the
+two-pane layout.
 
-- Role color: user = accent purple, assistant = neutral on surface,
-  system = text2 italic.
-- Pending-prompt highlighted with accent border + **inline quick-reply
-  buttons** (Yes / No / Continue / Stop) fire `sendQuickReply` without
-  touching the composer draft.
+---
 
-## Quick Commands sheet (v0.14.0 + v0.32.0 arrow keys)
+## TopAppBar overflow menu
 
-▶ Commands on any waiting session row opens a bottom sheet with:
+| Item | Condition | Action |
+|---|---|---|
+| Rename | always | inline header editor (tap title also works) |
+| Kill | state = running / waiting | confirm dialog → `killSession` |
+| Restart | state = terminal | confirm dialog → `restartSession` |
+| Delete | state = terminal | confirm dialog → `deleteSession` |
+| Change state | always | dropdown override |
+| Timeline | always | `TimelineSheet` modal bottom sheet |
+| Saved commands | always | `SavedCommandsSheet` |
 
-- **System** presets — Yes / No / Continue / Stop.
-- **Saved** — named command snippets from Settings → Saved commands.
-- **Custom** — free-form text.
-- **Arrow keys** (v0.32.0) — ↑ ↓ ← → Tab PageUp PageDown chips send
-  the corresponding ANSI escape sequences via `session_reply`. Useful
-  for TUI navigation (Claude Code menus, vim, top).
+---
 
-## Session backlog grid (v0.32.0)
+## Tab bar
 
-Below the composer on **NewSessionScreen**, a grid of the 20 most
-recent done sessions with a **Restart** action per row.
+Three pill buttons flush-left; terminal toolbar controls right-aligned on
+the same row (only when tmux tab is active and session is not chat-mode).
+
+| Tab | Content | Toolbar visible |
+|---|---|---|
+| tmux | xterm.js WebView, pane_capture ANSI stream | yes |
+| channel | Chat bubble list, quick-reply chips | no |
+| stats | SessionStatsPanel (observer envelope) | no |
+
+Chat-mode sessions (output_mode=chat — OpenWebUI, Ollama) force the
+channel tab's `ChatTranscriptPanel` regardless of user toggle.
+
+---
+
+## Terminal toolbar (tmux tab only)
+
+Inline right of tab pills:
+
+- **Aa** — font size picker (decrements through 9/11/13/15 px)
+- **⊡** — Fit (calls `dwFit` JS bridge to re-sync xterm dimensions)
+- **📜** — Scroll mode toggle; activates PgUp/PgDn overlay, freezes
+  pane_capture writes so scrollback isn't stomped by live frames
+
+---
 
 ## Composer
 
-- Text field, mic button, send button.
-- Press-and-hold mic → voice capture, release → transcribe pipeline (ADR-0006).
-- Tapping mic toggles continuous mode (tap again to stop).
-- Attachments (post-MVP): file pick, image pick, paste clipboard.
+Normal mode (scroll mode off):
 
-## State handling
+```
+[📅]  [🎙]  Type reply…  [▶ Commands]  [📄 Response]  [✉ Send]
+```
 
-- Session state pill colors: running = success green, waiting = accent, rate-limited =
-  warning amber, completed = text2, killed = text2 strikethrough, error = error red.
-- Online/offline banner appears above the breadcrumb when the server is unreachable, per
-  ADR-0013 rules.
+- **📅** — Schedule reply dialog (seeds with composer text)
+- **🎙** — Voice capture (press-hold = continuous; tap = single shot)
+- **▶ Commands** — Quick commands sheet: System presets / Saved / Custom / Arrow-key chips
+- **📄 Response** — Last-response bottom sheet (shown when `hasResponse`)
+- **✉ Send** — `sendReply` via WS `send_input`
 
-## Parity tie-ins
+Scroll mode replaces the entire composer row with PgUp / PgDn / ↑ / ↓ / ESC buttons.
 
-- "Kill session" (ADR-0019): kebab menu → Kill → confirm modal "This stops the tmux session.
-  Cannot be undone." No biometric in v1.
-- "Override state": kebab menu → Change state → dropdown. Confirm modal.
-- "Edit schedule from session": kebab menu → Schedule this session → opens Schedules tab
-  pre-filled.
+---
+
+## State pill colours
+
+| State | Colour |
+|---|---|
+| running | success green |
+| waiting | teal accent |
+| rate_limited | amber warning |
+| completed | onSurfaceVariant |
+| killed | onSurfaceVariant |
+| error | error red |
+
+GeneratingIndicator (3 animated dots + "generating" label) appears below
+the terminal while state = running.
+
+---
+
+## Stats tab — data source
+
+`SessionStatsPanel` reads `StatsViewModel.state.stats.envelopes` (polled
+every 5 s + live WS overlay via `StatsHub`). Matches the first entry where
+`kind == "session"` and `id` prefix-matches `sessionId`. Fields rendered:
+
+| Field | Source |
+|---|---|
+| CPU % ring | `envelope.cpuPct` |
+| RSS | `envelope.rssBytes` |
+| Threads / FDs | `envelope.threads`, `envelope.fds` |
+| Net ↓ / ↑ | `envelope.netRxBps`, `envelope.netTxBps` |
+| GPU % / GPU mem | `envelope.gpuPct`, `envelope.gpuMemBytes` |
+| PID | `envelope.rootPid` (+ count if pids.size > 1) |
+
+Rendered only when the server emits `envelopes[]` and eBPF probes are
+loaded (`ebpfActive == true`).
+
+---
 
 ## Wear parity
 
-Notification-based reply maps to `session_reply`. Rich Wear app (w4) shows session list +
-dictation composer — same flow, smaller surface.
+Sessions page → session detail popup → "↩ Continue" / "✕ Stop" quick-reply
+chips for waiting sessions (v0.56.0). Wake-on-alert: watch receives
+`/datawatch/alert` MessageClient message when a session enters waiting_input.
 
 ## Auto parity
 
-Public build: inbound prompt → TTS readout; voice reply dictates body → `session_reply`.
-No terminal / logs / memory / timeline surfaces (not Messaging-template-compatible).
+Public build: voice reply + Yes/No/Continue/Stop quick-reply on
+`SessionReplyScreen`. No terminal / stats surfaces (Messaging template
+constraints — ADR-0031).
 
-Internal build: all four sheets available via the full passenger UI (ADR-0031).
+Internal / devPassenger build: full passenger UI (ADR-0031 Sprint 4 — post-1.0).
