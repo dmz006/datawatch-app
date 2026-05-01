@@ -50,6 +50,17 @@
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 
+    <!-- Tile: waiting sessions -->
+    <string name="tile_waiting_label">datawatch Waiting</string>
+
+    <!-- Session detail popup quick actions (W-4) -->
+    <string name="wear_action_continue">↩ Continue</string>
+    <string name="wear_action_stop">✕ Stop</string>
+
+    <!-- Alert notifications (BL27) -->
+    <string name="wear_notification_channel_name">datawatch Alerts</string>
+    <string name="wear_notification_waiting_title">Session waiting for input</string>
+
     <!-- Common actions / states -->
     <string name="action_yes">Yes</string>
     <string name="action_no">No</string>
