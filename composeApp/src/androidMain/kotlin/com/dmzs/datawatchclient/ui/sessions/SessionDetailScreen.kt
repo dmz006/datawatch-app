@@ -90,6 +90,7 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -144,11 +145,15 @@ public fun SessionDetailScreen(
             factory = viewModelFactory { initializer { SessionSchedulesViewModel(sessionId) } },
         )
     val sessionSchedules by sessionSchedulesVm.state.collectAsState()
-    // Loading overlay — shown when navigating from NewSession until the first
-    // pane_capture arrives (terminal is live) or the session reaches a terminal state.
+    // Loading overlay — shown for new sessions until the first content
+    // arrives (pane_capture OR output event) or a terminal state is reached.
     var sessionLoaded by remember { mutableStateOf(!isNew) }
     androidx.compose.runtime.LaunchedEffect(state.events.size) {
-        if (!sessionLoaded && state.events.any { it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture }) {
+        if (!sessionLoaded && state.events.any {
+                it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture ||
+                    it is com.dmzs.datawatchclient.domain.SessionEvent.Output
+            }
+        ) {
             sessionLoaded = true
         }
     }
@@ -158,6 +163,16 @@ public fun SessionDetailScreen(
             if (st == SessionState.Completed || st == SessionState.Killed || st == SessionState.Error) {
                 sessionLoaded = true
             }
+        }
+    }
+    // Safety net: dismiss after 15 s if the session never produces output
+    // (e.g. server-side startup stall, network hiccup). Prevents the
+    // overlay from hanging indefinitely on a new session that takes longer
+    // than expected to produce its first frame.
+    androidx.compose.runtime.LaunchedEffect(isNew) {
+        if (isNew) {
+            delay(15_000)
+            sessionLoaded = true
         }
     }
 

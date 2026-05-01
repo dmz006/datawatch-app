@@ -400,10 +400,17 @@ public fun TerminalView(
     // Any output events already in the DB (from previous WS sessions) are
     // intentionally skipped — they're historical and would be rendered
     // out-of-order relative to the pane_capture that shows the current screen.
+    //
+    // Baseline is the count of Output events ONLY (not total list size).
+    // SessionEventRepository.observe() appends a PaneCapture at the end of
+    // the DB events via combine(dbFlow, liveFlow). If we base the index on
+    // events.size (which includes PC), new Output events that arrive after
+    // ready always fall BEFORE the PC in the combined list and get skipped
+    // by events.drop(lastWrittenIndex) — terminal never updates.
     LaunchedEffect(ready) {
         if (!ready || outputBaselined) return@LaunchedEffect
         outputBaselined = true
-        lastWrittenIndex = events.size
+        lastWrittenIndex = events.count { it is SessionEvent.Output }
     }
 
     // Incrementally write new raw-output events between pane_captures.
@@ -415,18 +422,23 @@ public fun TerminalView(
     // terminal, overriding any incremental output accumulated since the last
     // snapshot. Keying on events.size (not latestPaneCapture) so this fires
     // on new Output rows but NOT on replacement pane_captures (size unchanged).
+    //
+    // Track position in the Output-only slice to avoid the PaneCapture offset
+    // bug: the combined list is [Output..., PaneCapture], so using events.size
+    // as the cursor makes events.drop(cursor) always return [PaneCapture] and
+    // filterIsInstance<Output>() always empty after the first capture arrives.
     LaunchedEffect(events.size, ready, outputBaselined) {
         if (!ready || !outputBaselined) return@LaunchedEffect
         val webView = webViewRef.value ?: return@LaunchedEffect
-        val newOutputEvents =
-            events.drop(lastWrittenIndex).filterIsInstance<SessionEvent.Output>()
+        val outputEvents = events.filterIsInstance<SessionEvent.Output>()
+        val newOutputEvents = outputEvents.drop(lastWrittenIndex)
         if (newOutputEvents.isEmpty()) return@LaunchedEffect
         val batch = newOutputEvents.joinToString("") { it.body }
         webView.evaluateJavascript(
             "window.dwWrite && window.dwWrite(${jsonString(batch)});",
             null,
         )
-        lastWrittenIndex = events.size
+        lastWrittenIndex = outputEvents.size
     }
 
     DisposableEffect(Unit) {
