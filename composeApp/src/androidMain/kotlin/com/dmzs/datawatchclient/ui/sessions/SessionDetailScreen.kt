@@ -516,6 +516,7 @@ public fun SessionDetailScreen(
                     events = state.events,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     controller = terminalController,
+                    liveOutput = vm.outputStream,
                 )
                 TerminalScrollModeStrip(toolbarState)
                 // Backend-specific minimum cols/rows. Matches parent
