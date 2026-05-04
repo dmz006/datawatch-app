@@ -10,6 +10,14 @@ rule not restated or contradicted here.
 
 ---
 
+## Rules File
+
+`AGENT.md` is the single source of rules for this project. **Never add rules to `CLAUDE.md`.**
+`CLAUDE.md` is a session-scoped scratch file managed by the Claude Code harness for guardrails
+and task context; it does not persist across sessions reliably and is not version-controlled
+as a rules document. All durable operating rules, workflow preferences, and accumulated
+decisions belong here in `AGENT.md`.
+
 ## Pre-Execution Rule
 
 Before executing any user prompt that involves code changes, new features, or bug fixes:
@@ -427,11 +435,18 @@ CI `check-version` job rejects any mismatch. Sanity check:
 grep -E 'DATAWATCH_APP_VERSION=|VERSION\s*:\s*String' gradle.properties shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt
 ```
 
-### Commit & Release Cadence (2026-04-24)
+### Commit & Release Cadence (2026-04-24, expanded 2026-05-04)
 
-On a multi-release arc: when tests are green, commit + push + continue without asking. Don't hold commits waiting for review. Stop only when tasks are exhausted or a destructive action needs approval.
+On a multi-release arc (e.g. v0.58.0 → v0.65.0), follow this sequence at the end of every phase:
 
-At parity milestone: do a full GitHub release with ~100% test coverage, refactored backlog docs (done items in a closed section, remaining on top, clearly dated). Create the GH release via `gh release create` with tag, title `vX.Y.Z — <milestone>`, and changelog link.
+1. **Update docs in the same commit** — `CHANGELOG.md` `[Unreleased]` block promoted with the new version header; `docs/plans/README.md` and the active backlog plan refactored so shipped items move to a closed/shipped section and remaining items stay on top. Any parity-plan rows the release closes get ✅ flipped.
+2. **Bump version in lockstep** — `gradle.properties` (`DATAWATCH_APP_VERSION` + `DATAWATCH_APP_VERSION_CODE`) and `shared/.../Version.kt` (`VERSION` + `VERSION_CODE`) updated in the same commit. CI rejects any mismatch.
+3. **Commit message** — names what changed, why, upstream issue refs (closed: #N), and what's next.
+4. **Commit + push.** Do not hold commits locally waiting for review on a multi-release arc.
+5. **Continue to the next phase without asking.** Stop only when: tasks are exhausted, or a destructive action (force-push, `adb uninstall`, DB migration with no rollback) needs explicit approval.
+6. **Do NOT stop at a build or CI workflow failure — fix and retry.** CI failures (ProGuard, version parity, task names, lint) are part of the phase. Root-cause the failure, push the fix, re-trigger, and continue. A failed workflow is not a stopping point.
+
+At parity milestone (all planned phases done): do a full GitHub release with ~100% test coverage on newly shipped logic, refactored backlog docs (done items in a clearly labelled closed section at the bottom, remaining items on top with dates). Create the GH release via `gh release create` with tag matching `Version.kt`, title `vX.Y.Z — <milestone name>`, and a body linking the CHANGELOG section.
 
 ### Wear & Auto Visual Style
 
