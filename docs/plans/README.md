@@ -7,6 +7,13 @@ Plans: individual dated documents live as `YYYY-MM-DD-<slug>.md` in this
 directory when work warrants formal planning (3+ files or non-trivial
 architecture).
 
+## Active roadmap plan
+
+**[backlog-plan-2026-05-04.md](backlog-plan-2026-05-04.md)** — sequenced
+v0.58.0–v0.65.0 implementation plan for all open GH issues (#31, #40, #41,
+#43–#49) plus non-GH backlog items (BL21, BL19, B31, store assets). Written
+2026-05-04. This is the single authoritative sequencing until v1.0.0.
+
 ---
 ## Open - Not Assessed
 *(cleared 2026-04-29 — items converted to B52–B62 below)*
@@ -144,14 +151,17 @@ to land pre-1.0.
 | BL14 | Raw YAML config editor (behind biometric + confirm) | Done (v0.48.0) — `RawConfigCard` in Settings → General tab. Fetches /api/config, renders pretty-printed JSON in a monospace 360dp dialog, gated behind explicit Overwrite confirm dialog per ADR-0019. |
 | BL15 | Localization (DE, ES, FR, JA) | Done (v0.52.0) — Full string-resource extraction across all UI screens (SettingsScreen, StatsScreen, AlertsScreen, AutonomousScreen, SessionsScreen, SessionDetailScreen, NewSessionScreen, NewPrdDialog, PrdDetailDialog, BottomNavBar) + Wear OS (WearMainActivity: page titles, session popup, filter row, transcript review, Autonomous/Server pages, About). EN base + DE/ES/FR/JA translations for both composeApp and wear modules. `SettingsTab` enum migrated to `@StringRes Int` labels; SecurityCard migration error uses format string. PWA parity gap: [datawatch#32](https://github.com/dmz006/datawatch/issues/32). |
 | BL16 | Biometric-bound DB passphrase | Done (v0.50.0) — `KeystoreManager` gains `ensureBiometricKeyExists()` (AES-256-GCM Keystore key with `setUserAuthenticationRequired(true)` + 30 s window, API-level-split for API 29 vs 30+). `migratePassphraseToBiometricKey()` / `migratePassphraseFromBiometricKey()` run within the biometric auth window. `AndroidDatabaseFactory.driver()` prefers the biometric key when `hasBiometricPassphrase()` is true, with silent fallback to EncryptedSharedPreferences copy. `SecurityCard` in Settings triggers the biometric confirmation prompt on toggle instead of toggling directly — migration runs on success. |
-| BL19 | Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | User vision. Needs its own ADR for the orchestration model. |
+| BL19 | ❄️ FROZEN — Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | Frozen 2026-05-04 per user direction. No ADR, no schedule. Revisit only when user explicitly unfreezes. |
 | BL21 | Signal device-linking (`/api/link/*` + QR SSE) | Needs QR rendering from SSE frames + paired-state persistence. Server issue: [datawatch#31](https://github.com/dmz006/datawatch/issues/31). |
 
 ### Parking lot (waiting on upstream / user gesture)
 
 | ID | Title | Waiting on |
 |----|-------|-----------|
-| B6 | Push via FCM | User/operator decision. FCM removed v0.33.17; ntfy-only ships today. If FCM is desired, wire `google-services.json` + re-add the plugin. Otherwise close as WONTFIX. |
+| B6 | ❄️ FROZEN — Push via FCM | Frozen 2026-05-04 per user direction. ntfy-only is the policy. Revisit only when user explicitly unfreezes. |
+| B31 | **HOLD** — Wear + Auto: Sessions snapshot + quick-command + voice | User still evaluating whether existing Auto scope counts as done. No action until user decides. |
+| BL21 | Signal device-linking (`/api/link/*` + QR SSE) | `datawatch#31` merged + deployed. Scheduled as v0.64.0 (skip to v0.66.0 if still blocked). |
+| Store assets | `docs/media/store/phone/`, `tablet-10/`, `tablet-7/` untracked | Commit in the next convenient version bump. |
 
 ### Reclassified
 
