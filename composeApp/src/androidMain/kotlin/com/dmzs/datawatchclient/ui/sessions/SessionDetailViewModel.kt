@@ -214,10 +214,12 @@ public class SessionDetailViewModel(
     }
 
     private var wsSessionRefreshFired = false
+    private var wsWasDisconnected = false
 
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         wsSessionRefreshFired = false
+        wsWasDisconnected = false
         val transport = ServiceLocator.wsTransportFor(profile)
         streamJob =
             transport.events(sessionId)
@@ -227,7 +229,17 @@ public class SessionDetailViewModel(
                     // it's connected. REST-based isReachable also writes _reachable
                     // on poll success, so a transient WS blip (while server is still
                     // REST-reachable) correctly recovers to green after the next poll.
-                    _reachable.value = ev !is com.dmzs.datawatchclient.domain.SessionEvent.Error
+                    val isError = ev is com.dmzs.datawatchclient.domain.SessionEvent.Error
+                    _reachable.value = !isError
+                    // BL249 — session auto-refresh on reconnect (PWA v6.5.1).
+                    // When we receive the first live event after a disconnect, refetch
+                    // session state so the detail view reflects the current server state
+                    // without requiring the operator to back out and re-enter.
+                    if (!isError && wsWasDisconnected) {
+                        wsWasDisconnected = false
+                        refreshFromServer()
+                    }
+                    if (isError) wsWasDisconnected = true
                     ServiceLocator.sessionEventRepository.insert(ev)
                     // v0.35.8 — mirror PWA v5.26.49 fix:
                     // bulk-session WS pushes can flip a session to
@@ -433,6 +445,10 @@ public class SessionDetailViewModel(
 
     public fun dismissBanner() {
         _banner.value = null
+        // BL250 — refresh session state after dismiss so UI doesn't show
+        // stale cues (session is usually already past waiting_input by the
+        // time the operator dismisses the banner).
+        viewModelScope.launch { refreshFromServer() }
     }
 
     override fun onCleared() {

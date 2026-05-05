@@ -307,6 +307,7 @@ public fun SessionsScreen(
                                 onMoveDown = { vm.moveDown(session.id) },
                                 onQuickReply = { text -> vm.quickReply(session.id, text) },
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
+                                fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
                                 isSelected = session.id in selectedIds,
@@ -598,6 +599,7 @@ private fun SessionRow(
     onDelete: () -> Unit = {},
     onQuickReply: (String) -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
+    fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     reorderMode: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
@@ -986,6 +988,7 @@ private fun SessionRow(
     if (quickCmdsOpen) {
         QuickCommandsSheet(
             fetchSavedCommands = fetchSavedCommands,
+            fetchSystemCommands = fetchSystemCommands,
             onSend = { text ->
                 onQuickReply(text)
                 quickCmdsOpen = false
@@ -1362,14 +1365,36 @@ internal fun QuickCommandsSheet(
     fetchSavedCommands: suspend () -> List<Pair<String, String>>,
     onSend: (String) -> Unit,
     onDismiss: () -> Unit,
+    fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     sessionId: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var systemCmds by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.QuickCommandItem>>(emptyList()) }
     var customText by remember { mutableStateOf("") }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         saved = fetchSavedCommands()
+        systemCmds = fetchSystemCommands()
     }
+    // Hard-coded fallback list used when server doesn't expose quick_commands (pre-datawatch#28 daemons).
+    val fallbackSystemCmds = listOf(
+        com.dmzs.datawatchclient.transport.QuickCommandItem("approve", "yes"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("reject", "no"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("continue", "continue"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("skip", "skip"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("quit", "/exit"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("Enter", "\n"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("ESC", ""),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("Ctrl-b", ""),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("↑", "[A"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("↓", "[B"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("→", "[C"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("←", "[D"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("PgUp", "[5~"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("PgDn", "[6~"),
+        com.dmzs.datawatchclient.transport.QuickCommandItem("Tab", "	"),
+    )
+    val effectiveSystemCmds = systemCmds.ifEmpty { fallbackSystemCmds }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(stringResource(R.string.sessions_quick_commands_sheet), style = MaterialTheme.typography.titleMedium)
@@ -1382,36 +1407,11 @@ internal fun QuickCommandsSheet(
             androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
             ) {
-                // PWA's cardSendCmd dispatches ESC / Ctrl-b as WS
-                // `command` frames with `sendkey` payloads. Mobile
-                // doesn't subscribe to a general-purpose WS command
-                // channel from the list surface; the parent
-                // /api/sessions/reply endpoint accepts raw control
-                // bytes so we send the ASCII literal and the TUI
-                // receives it the same way. ESC = 0x1B, Ctrl-b = 0x02.
-                listOf(
-                    "yes" to "approve",
-                    "no" to "reject",
-                    "continue" to "continue",
-                    "skip" to "skip",
-                    "/exit" to "quit",
-                    "\n" to "Enter",
-                    "\u001B" to "ESC",
-                    "\u0002" to "Ctrl-b",
-                    // Arrow keys + PageUp/Down as ANSI escape sequences.
-                    // Matches PWA f00f534 (v0.13.6 seed esc/up/down keys).
-                    "\u001B[A" to "↑",
-                    "\u001B[B" to "↓",
-                    "\u001B[C" to "→",
-                    "\u001B[D" to "←",
-                    "\u001B[5~" to "PgUp",
-                    "\u001B[6~" to "PgDn",
-                    "\u0009" to "Tab",
-                ).forEach { (value, label) ->
+                effectiveSystemCmds.forEach { cmd ->
                     FilterChip(
                         selected = false,
-                        onClick = { onSend(value) },
-                        label = { Text(label) },
+                        onClick = { onSend(cmd.value) },
+                        label = { Text(cmd.label) },
                     )
                 }
             }

@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.57.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.58.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -20,10 +20,11 @@ Items drawn from two sources:
 | docs/plans/README.md non-GH backlog | BL19, BL21, B6, B31, store assets |
 
 **#42 closed 2026-05-04** — fix shipped in commit `a6c8e49`.
+**#31, #41, #49 shipped in v0.58.0 (2026-05-04).**
 
 ---
 
-## v0.58.0 — Quick wins (issues #31, #41, #49)
+## ✅ v0.58.0 — Quick wins (issues #31, #41, #49) — SHIPPED 2026-05-04
 
 **Goal:** ship three small, independent items in one minor. No new screens; all changes are
 to existing composables or VM logic.
