@@ -706,7 +706,20 @@ public interface TransportClient {
      * a structured form lands per ADR-0019.
      */
     public suspend fun fetchConfig(): Result<ConfigView>
+
+    /**
+     * GET /api/config → quick_commands array.
+     *
+     * datawatch#28 added a `quick_commands` key to /api/config — a list of
+     * {label, value} objects the client renders in the system-commands section
+     * of QuickCommandsSheet. Returns an empty list on 404 or when the key is
+     * absent so older daemons fall back to the client hard-coded defaults.
+     */
+    public suspend fun fetchSystemQuickCommands(): Result<List<QuickCommandItem>>
 }
+
+/** A single system quick-command entry served by /api/config quick_commands. */
+public data class QuickCommandItem(val label: String, val value: String)
 
 /**
  * Combined view returned by [TransportClient.listAlerts] — the list plus the

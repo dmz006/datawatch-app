@@ -6,6 +6,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.transport.QuickCommandItem
 import com.dmzs.datawatchclient.transport.TransportError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -508,6 +509,15 @@ public class SessionsViewModel : ViewModel() {
         val profile = profileForSession(sessionId) ?: return emptyList()
         return ServiceLocator.transportFor(profile).listCommands().fold(
             onSuccess = { list -> list.map { it.name to it.command } },
+            onFailure = { emptyList() },
+        )
+    }
+
+    /** Fetch server-configured system quick-commands (datawatch#28). Empty list = use client fallback. */
+    public suspend fun fetchSystemQuickCommands(sessionId: String): List<QuickCommandItem> {
+        val profile = profileForSession(sessionId) ?: return emptyList()
+        return ServiceLocator.transportFor(profile).fetchSystemQuickCommands().fold(
+            onSuccess = { it },
             onFailure = { emptyList() },
         )
     }

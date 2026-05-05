@@ -97,9 +97,10 @@ class ChatMessageEventTest {
 
     @Test
     fun `short-id subscriber matches full-id frame`() {
-        // Android navigates with short id; server frame carries the
-        // full id. contains() should match either direction — same
-        // contract as pane_capture.
+        // Android navigates with short id; server frame carries the full id.
+        // contains() matches either direction (same contract as pane_capture).
+        // The stored event is normalised to forSessionId ("abcd") so the DB
+        // exact-match query in selectEventsForSession can find it.
         val ev =
             frame(
                 buildJsonObject {
@@ -108,6 +109,6 @@ class ChatMessageEventTest {
                     put("content", JsonPrimitive("x"))
                 },
             ).toDomainEvents("abcd").single() as SessionEvent.ChatMessage
-        assertEquals("ring-abcd", ev.sessionId)
+        assertEquals("abcd", ev.sessionId)
     }
 }

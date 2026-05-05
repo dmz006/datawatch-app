@@ -8,6 +8,38 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.58.0] — 2026-05-04 (quick-commands from API · PRD card colors · reconnect refresh)
+
+### Added
+
+- **Quick-commands populated from server API (#31).** `GET /api/config` is now
+  fetched when the quick-command sheet opens; `quick_commands` array items are
+  rendered as `FilterChip`s. Falls back to 15 built-in tmux/shell commands
+  (including proper ESC and Ctrl-b sequences) when the server returns nothing or
+  is unreachable. `TransportClient.fetchSystemQuickCommands()` and
+  `RestTransport` implementation added; `SessionsViewModel.fetchSystemQuickCommands()`
+  wires it to the UI.
+
+- **PRD card left-border color by status (#41).** `prdStatusColor()` maps all
+  server-sent status strings to the PWA palette: running→green, approved→teal,
+  needs_review/revisions_asked/awaiting_approval→amber, blocked/rejected→red,
+  decomposing→purple, draft/complete/cancelled→grey.
+
+### Fixed
+
+- **Session detail auto-refreshes on WebSocket reconnect (BL249).** After a WS
+  disconnect+reconnect the view model calls `refreshFromServer()` once to pick
+  up any state changes that arrived during the gap.
+
+- **Dismissing the reconnect banner triggers a REST refresh (BL250).** Tapping
+  the banner now immediately re-fetches session state instead of leaving stale
+  output until the next WS event.
+
+- **`ChatMessageEventTest` short-id expectation corrected.** The stored event
+  `sessionId` is normalised to `forSessionId` (matching the pattern used by
+  `buildPaneCaptureEvents` / `buildOutputEvents`) so the DB exact-match query
+  finds it. Test expectation updated from full wire id to short subscriber id.
+
 ## [0.42.12] — 2026-04-29 (toolbar fits Scroll button + header Response gone + About PWA-aligned)
 
 ### Fixed

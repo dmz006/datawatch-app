@@ -65,8 +65,12 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.dmzs.datawatchclient.transport.QuickCommandItem
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Ktor-based REST transport. Constructed with a pre-configured [HttpClient] so
@@ -1302,6 +1306,26 @@ public class RestTransport(
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                 }.body()
             ConfigView(raw = raw)
+        }
+
+    override suspend fun fetchSystemQuickCommands(): Result<List<QuickCommandItem>> =
+        request {
+            val raw: Map<String, JsonElement> =
+                client.get("${profile.baseUrl}/api/config") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            raw["quick_commands"]
+                ?.jsonArray
+                ?.mapNotNull { el ->
+                    runCatching {
+                        val obj = el.jsonObject
+                        QuickCommandItem(
+                            label = obj["label"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                            value = obj["value"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                        )
+                    }.getOrNull()
+                }
+                ?: emptyList()
         }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }

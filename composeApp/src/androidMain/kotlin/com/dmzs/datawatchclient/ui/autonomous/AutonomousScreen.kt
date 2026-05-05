@@ -326,11 +326,13 @@ private fun StatusPill(status: String) {
 
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
-        "running" -> Color(0xFF22C55E)
-        "complete", "approved" -> Color(0xFF3B82F6)
-        "needs_review", "awaiting_approval" -> Color(0xFFF59E0B)
-        "revisions_asked" -> Color(0xFFA855F7)
-        "rejected", "cancelled" -> Color(0xFFEF4444)
-        "decomposing" -> Color(0xFF94A3B8)
+        "running" -> Color(0xFF22C55E)                         // success green
+        "approved" -> Color(0xFF14B8A6)                        // teal / primary accent
+        "needs_review", "revisions_asked",
+        "awaiting_approval" -> Color(0xFFF59E0B)              // warning amber
+        "blocked", "rejected" -> Color(0xFFEF4444)            // error red
+        "decomposing" -> Color(0xFFA855F7)                    // tertiary purple
+        "draft", "complete", "completed",
+        "cancelled" -> Color(0xFF94A3B8)                      // surfaceVariant grey
         else -> Color(0xFF94A3B8)
     }
