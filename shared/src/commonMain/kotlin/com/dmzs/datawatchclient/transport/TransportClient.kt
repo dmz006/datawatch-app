@@ -813,6 +813,20 @@ public interface TransportClient {
      * absent so older daemons fall back to the client hard-coded defaults.
      */
     public suspend fun fetchSystemQuickCommands(): Result<List<QuickCommandItem>>
+
+    // ------ BL21: Signal device-linking (datawatch#31) ------
+
+    /** GET /api/link/qr (SSE) — stream base64 QR frames while pairing is in progress. */
+    public fun startSignalLinking(): Flow<com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto>
+
+    /** GET /api/link/status — current paired-device state. */
+    public suspend fun getSignalLinkStatus(): Result<com.dmzs.datawatchclient.transport.dto.SignalLinkStatusDto>
+
+    /** POST /api/link/cancel — abort an in-progress pairing session. */
+    public suspend fun cancelSignalLink(): Result<Unit>
+
+    /** DELETE /api/link/{deviceId} — unlink a previously paired device. */
+    public suspend fun unlinkSignalDevice(deviceId: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

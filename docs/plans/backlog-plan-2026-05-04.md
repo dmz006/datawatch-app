@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.63.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.64.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -26,6 +26,7 @@ Items drawn from two sources:
 **#44 shipped in v0.61.0 (2026-05-04).**
 **#45 shipped in v0.62.0 (2026-05-04).**
 **#43 shipped in v0.63.0 (2026-05-04).**
+**BL21 shipped in v0.64.0 (2026-05-04).**
 
 ---
 
@@ -366,7 +367,7 @@ includes all three fields; Type registry screen lists + allows adding custom typ
 
 ---
 
-## v0.64.0 — Signal device-linking (BL21)
+## ✅ v0.64.0 — Signal device-linking (BL21) — SHIPPED 2026-05-04
 
 **Condition:** ships when `datawatch#31` (`/api/link/*` + QR SSE endpoint) is merged and
 deployed. If still blocked at this point in the sequence, skip to v0.65.0 and park BL21

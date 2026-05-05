@@ -688,3 +688,26 @@ public data class StartAgentResponseDto(
     @SerialName("session_id") val sessionId: String? = null,
     val id: String? = null,
 )
+
+// ============================================================
+// v0.64.0 — BL21 Signal device-linking (datawatch#31)
+// ============================================================
+
+@Serializable
+public data class SignalLinkStartDto(
+    @SerialName("session_token") val sessionToken: String = "",
+)
+
+@Serializable
+public data class LinkQrFrameDto(
+    @SerialName("image_base64") val imageBase64: String,
+    @SerialName("expires_at") val expiresAt: Long? = null,
+)
+
+@Serializable
+public data class SignalLinkStatusDto(
+    val linked: Boolean = false,
+    @SerialName("device_id") val deviceId: String? = null,
+    @SerialName("device_name") val deviceName: String? = null,
+    val status: String = "unlinked",
+)

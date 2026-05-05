@@ -69,9 +69,16 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.utils.io.core.writeFully
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto
+import com.dmzs.datawatchclient.transport.dto.SignalLinkStatusDto
 import com.dmzs.datawatchclient.transport.QuickCommandItem
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -1475,6 +1482,61 @@ public class RestTransport(
                     }.getOrNull()
                 }
                 ?: emptyList()
+        }
+
+    // ------ BL21: Signal device-linking (datawatch#31) ------
+
+    override fun startSignalLinking(): Flow<LinkQrFrameDto> =
+        callbackFlow {
+            val response =
+                client.get("${profile.baseUrl}/api/link/qr") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    header(HttpHeaders.Accept, "text/event-stream")
+                    header(HttpHeaders.CacheControl, "no-cache")
+                }
+            val channel = response.bodyAsChannel()
+            var data = StringBuilder()
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                when {
+                    line.isBlank() -> {
+                        val payload = data.toString().trim()
+                        if (payload.isNotEmpty()) {
+                            runCatching { DefaultJson.decodeFromString<LinkQrFrameDto>(payload) }
+                                .onSuccess { trySend(it) }
+                        }
+                        data = StringBuilder()
+                    }
+                    line.startsWith("data:") -> {
+                        if (data.isNotEmpty()) data.append('\n')
+                        data.append(line.removePrefix("data:").trimStart())
+                    }
+                }
+            }
+            awaitClose { }
+        }
+
+    override suspend fun getSignalLinkStatus(): Result<SignalLinkStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/link/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun cancelSignalLink(): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/link/cancel") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun unlinkSignalDevice(deviceId: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/link/$deviceId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
         }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }

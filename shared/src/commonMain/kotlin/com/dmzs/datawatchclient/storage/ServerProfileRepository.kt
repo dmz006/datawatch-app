@@ -35,6 +35,14 @@ public class ServerProfileRepository(
             enabled = if (profile.enabled) 1L else 0L,
             created_ts = profile.createdTs,
             last_seen_ts = profile.lastSeenTs,
+            signal_linked = if (profile.signalLinked) 1L else 0L,
+        )
+    }
+
+    public suspend fun setSignalLinked(profileId: String, linked: Boolean) {
+        db.profileQueries.updateSignalLinked(
+            signal_linked = if (linked) 1L else 0L,
+            id = profileId,
         )
     }
 
@@ -63,5 +71,6 @@ public class ServerProfileRepository(
             enabled = enabled != 0L,
             createdTs = created_ts,
             lastSeenTs = last_seen_ts,
+            signalLinked = signal_linked != 0L,
         )
 }

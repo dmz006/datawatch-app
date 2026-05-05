@@ -18,4 +18,5 @@ public data class ServerProfile(
     val enabled: Boolean = true,
     val createdTs: Long,
     val lastSeenTs: Long? = null,
+    val signalLinked: Boolean = false,
 )
