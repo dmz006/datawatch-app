@@ -829,6 +829,29 @@ public class RestTransport(
             }.body<String>()
         }
 
+    override suspend fun memoryRemember(
+        text: String,
+        role: String,
+        tags: List<String>,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/remember") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                        put("role", kotlinx.serialization.json.JsonPrimitive(role))
+                        if (tags.isNotEmpty()) {
+                            put("tags", kotlinx.serialization.json.buildJsonArray {
+                                tags.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                            })
+                        }
+                    }
+                )
+            }.body()
+        }
+
     override suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto> =
         request {
             client.get("${profile.baseUrl}/api/autonomous/prds") {
