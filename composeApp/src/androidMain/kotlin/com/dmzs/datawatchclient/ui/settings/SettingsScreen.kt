@@ -339,8 +339,10 @@ public fun SettingsScreen(
                                 // v0.59.0 — mirrors PWA v6.5.1 Automata tab
                                 // v0.62.0 — scan config card
                                 // v0.63.0 — type registry card
+                                // v0.66.0 — skill registries card
                                 AutomataTypesCard()
                                 ScanConfigCard()
+                                SkillRegistriesCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
                                 )

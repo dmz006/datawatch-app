@@ -8,6 +8,33 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.66.0] — 2026-05-05 (Skill Registries — BL255 — issue #50)
+
+### Added
+
+- **`SkillRegistriesCard` in Settings → Automata (#50).** Per-registry rows with
+  status dot (green=connected, grey=disconnected), name, URL, branch, built-in badge,
+  and [Connect] [Browse] [Edit] [Delete] per-row actions. Empty state shows
+  [+ Add default (PAI)] and [+ Add] buttons. Synced-skills summary renders a cross-registry
+  flat list with name, description, tags, and source-registry badge.
+
+- **`BrowseSkillsDialog`** — loads `GET /api/skills/registries/{name}/available`, renders a
+  scrollable checkbox list with [Select all] / [None] header buttons and a [Sync selected]
+  confirm action that calls `POST /api/skills/registries/{name}/sync`.
+
+- **`AddEditRegistryDialog`** — name / URL / branch fields; name is read-only on edit.
+  Create calls `POST /api/skills/registries`; edit calls `PUT /api/skills/registries/{name}`.
+
+- **10 transport methods** (`listSkillRegistries`, `createSkillRegistry`, `updateSkillRegistry`,
+  `deleteSkillRegistry`, `addDefaultSkillRegistry`, `connectSkillRegistry`, `listAvailableSkills`,
+  `syncSkills`, `unsyncSkills`, `listSyncedSkills`) added to `TransportClient` and implemented
+  in `RestTransport`.
+
+- **6 DTOs** (`SkillRegistryDto`, `SkillRegistryRequestDto`, `SkillRegistryUpdateDto`,
+  `SkillDto`, `AvailableSkillDto`, `SyncSkillsRequestDto`) added to `Dtos.kt`.
+
+- **45 `skills_*` locale keys** added across EN/DE/ES/FR/JA string bundles. Closes [#50](https://github.com/dmz006/datawatch-app/issues/50).
+
 ## [0.65.0] — 2026-05-04 (i18n full sync BL252 — issue #46)
 
 ### Added

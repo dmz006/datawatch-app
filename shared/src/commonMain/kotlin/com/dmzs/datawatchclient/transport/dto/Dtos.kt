@@ -711,3 +711,56 @@ public data class SignalLinkStatusDto(
     @SerialName("device_name") val deviceName: String? = null,
     val status: String = "unlinked",
 )
+
+// ============================================================
+// v0.66.0 — BL255: Skill Registries (datawatch v6.7.0)
+// ============================================================
+
+@Serializable
+public data class SkillRegistryDto(
+    val name: String = "",
+    val url: String = "",
+    val branch: String = "main",
+    val status: String = "disconnected",
+    @SerialName("last_synced") val lastSynced: String? = null,
+    val builtin: Boolean = false,
+    val enabled: Boolean = true,
+    @SerialName("synced_count") val syncedCount: Int = 0,
+)
+
+@Serializable
+public data class SkillRegistryRequestDto(
+    val name: String,
+    val url: String,
+    val branch: String = "main",
+    val enabled: Boolean = true,
+)
+
+@Serializable
+public data class SkillRegistryUpdateDto(
+    val url: String? = null,
+    val branch: String? = null,
+    val enabled: Boolean? = null,
+)
+
+@Serializable
+public data class SkillDto(
+    val name: String = "",
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    val registry: String = "",
+    val version: String? = null,
+)
+
+@Serializable
+public data class AvailableSkillDto(
+    val name: String = "",
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    val synced: Boolean = false,
+)
+
+@Serializable
+public data class SyncSkillsRequestDto(
+    val skills: List<String>,
+)

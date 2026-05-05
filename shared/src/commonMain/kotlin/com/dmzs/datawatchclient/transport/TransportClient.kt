@@ -827,6 +827,49 @@ public interface TransportClient {
 
     /** DELETE /api/link/{deviceId} — unlink a previously paired device. */
     public suspend fun unlinkSignalDevice(deviceId: String): Result<Unit>
+
+    // ---- v0.66.0 BL255: Skill Registries (datawatch v6.7.0) ----
+
+    /** GET /api/skills/registries — list all skill registries. */
+    public suspend fun listSkillRegistries(): Result<List<com.dmzs.datawatchclient.transport.dto.SkillRegistryDto>>
+
+    /** POST /api/skills/registries — add a new registry. */
+    public suspend fun createSkillRegistry(
+        req: com.dmzs.datawatchclient.transport.dto.SkillRegistryRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.SkillRegistryDto>
+
+    /** PUT /api/skills/registries/{name} — update a registry. */
+    public suspend fun updateSkillRegistry(
+        name: String,
+        req: com.dmzs.datawatchclient.transport.dto.SkillRegistryUpdateDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.SkillRegistryDto>
+
+    /** DELETE /api/skills/registries/{name} — delete a registry. */
+    public suspend fun deleteSkillRegistry(name: String): Result<Unit>
+
+    /** POST /api/skills/registries/add-default — add the built-in PAI registry. */
+    public suspend fun addDefaultSkillRegistry(): Result<com.dmzs.datawatchclient.transport.dto.SkillRegistryDto>
+
+    /** POST /api/skills/registries/{name}/connect — fetch remote manifest. */
+    public suspend fun connectSkillRegistry(name: String): Result<com.dmzs.datawatchclient.transport.dto.SkillRegistryDto>
+
+    /** GET /api/skills/registries/{name}/available — list skills available before sync. */
+    public suspend fun listAvailableSkills(name: String): Result<List<com.dmzs.datawatchclient.transport.dto.AvailableSkillDto>>
+
+    /** POST /api/skills/registries/{name}/sync — sync selected skills. */
+    public suspend fun syncSkills(
+        name: String,
+        req: com.dmzs.datawatchclient.transport.dto.SyncSkillsRequestDto,
+    ): Result<Unit>
+
+    /** POST /api/skills/registries/{name}/unsync — remove synced skills. */
+    public suspend fun unsyncSkills(
+        name: String,
+        req: com.dmzs.datawatchclient.transport.dto.SyncSkillsRequestDto,
+    ): Result<Unit>
+
+    /** GET /api/skills — list all synced skills across registries. */
+    public suspend fun listSyncedSkills(): Result<List<com.dmzs.datawatchclient.transport.dto.SkillDto>>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
