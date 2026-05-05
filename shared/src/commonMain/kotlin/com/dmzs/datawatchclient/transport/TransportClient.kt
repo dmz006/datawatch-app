@@ -264,6 +264,18 @@ public interface TransportClient {
     public suspend fun writeConfig(raw: kotlinx.serialization.json.JsonObject): Result<Unit>
 
     /**
+     * Convenience: PUT /api/config `{"whisper.language": code}`.
+     * Only called when the user selects a concrete locale in Settings → About;
+     * selecting "auto" must NOT call this (preserves existing server config).
+     */
+    public suspend fun setWhisperLanguage(code: String): Result<Unit> =
+        writeConfig(
+            kotlinx.serialization.json.buildJsonObject {
+                put("whisper.language", kotlinx.serialization.json.JsonPrimitive(code))
+            },
+        )
+
+    /**
      * GET /api/logs?lines=<n>&offset=<m> — paged daemon log tail.
      * PWA-observed response: `{ lines: [...], total: N }`. [level]
      * optionally restricts to `info` / `warn` / `error`.

@@ -8,6 +8,25 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.60.0] — 2026-05-04 (language picker + whisper sync — issue #40)
+
+### Added
+
+- **`LanguagePickerCard` in Settings → About (#40).** Select dropdown with Auto +
+  11 locales (en/de/es/fr/it/ja/ko/pt/ru/zh). Selecting a concrete locale PUTs
+  `{"whisper.language": code}` to the server via new `TransportClient.setWhisperLanguage()`.
+  Selecting "Auto" leaves server config unchanged. Current server value pre-loaded
+  via `GET /api/config`.
+
+- **`TransportClient.setWhisperLanguage(code: String)`** — convenience default method
+  that builds the flat-patch JSON and calls `writeConfig()`.
+
+### Changed
+
+- **`whisper.language` removed from Whisper ConfigSection.** The text-field entry in
+  Settings → General → Whisper config panel is removed; use the picker in About instead.
+  `whisper.enabled`, `whisper.model`, and `whisper.venv_path` remain.
+
 ## [0.59.0] — 2026-05-04 (Settings Automata+Plugins tabs · workspace label · detekt/ktlint fixes)
 
 ### Changed

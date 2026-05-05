@@ -190,7 +190,7 @@ public object ConfigFieldSchemas {
                         label = "Whisper model",
                         options = listOf("tiny", "base", "small", "medium", "large"),
                     ),
-                    TextField("whisper.language", "Language (ISO 639-1 code or 'auto')", "en"),
+                    // whisper.language moved to Settings → About (LanguagePickerCard)
                     TextField("whisper.venv_path", "Python venv path", ".venv"),
                 ),
         )

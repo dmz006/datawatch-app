@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.59.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.60.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -22,6 +22,7 @@ Items drawn from two sources:
 **#42 closed 2026-05-04** — fix shipped in commit `a6c8e49`.
 **#31, #41, #49 shipped in v0.58.0 (2026-05-04).**
 **#47, #48 shipped in v0.59.0 (2026-05-04).**
+**#40 shipped in v0.60.0 (2026-05-04).**
 
 ---
 
@@ -152,7 +153,7 @@ offscreen; workspace label correct; no "coming soon" on Skills.
 
 ---
 
-## v0.60.0 — Language picker + whisper sync (issue #40, parent v5.28.3)
+## ✅ v0.60.0 — Language picker + whisper sync (issue #40, parent v5.28.3) — SHIPPED 2026-05-04
 
 **Goal:** language picker moves to the top of Settings → About and selecting a concrete
 locale pushes `whisper.language` to the server.
