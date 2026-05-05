@@ -203,6 +203,26 @@
     <string name="tmpl_spec_label">Spec (required)</string>
     <string name="tmpl_type_label">Type</string>
 
+    <!-- Security scan (v0.62.0 BL221 Phase 3) -->
+    <string name="scan_verdict_pass">PASS</string>
+    <string name="scan_verdict_warn">WARN</string>
+    <string name="scan_verdict_fail">FAIL</string>
+    <string name="scan_run">Run scan</string>
+    <string name="scan_findings_count">%1$d finding(s)</string>
+    <string name="scan_fix_prd">Fix PRD</string>
+    <string name="scan_propose_rules">Propose rules</string>
+    <string name="scan_config_title">Scan configuration</string>
+    <string name="scan_config_enabled">Enable security scan</string>
+    <string name="scan_config_sast">SAST</string>
+    <string name="scan_config_secrets">Secrets</string>
+    <string name="scan_config_deps">Dependencies</string>
+    <string name="scan_fail_on">Fail on severity</string>
+    <string name="scan_grader">Grader</string>
+    <string name="scan_fix_loop">Fix loop</string>
+    <string name="scan_max_retries">Max retries</string>
+    <string name="scan_proposed_rules_title">Proposed rules</string>
+    <string name="scan_no_result">No scan result yet.</string>
+
     <!-- New PRD dialog -->
     <string name="new_prd_title">New PRD</string>
     <string name="new_prd_name_label">Name (required)</string>

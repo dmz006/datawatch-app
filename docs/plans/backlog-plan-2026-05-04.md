@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.61.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.62.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -24,6 +24,7 @@ Items drawn from two sources:
 **#47, #48 shipped in v0.59.0 (2026-05-04).**
 **#40 shipped in v0.60.0 (2026-05-04).**
 **#44 shipped in v0.61.0 (2026-05-04).**
+**#45 shipped in v0.62.0 (2026-05-04).**
 
 ---
 
@@ -238,7 +239,7 @@ on device against a v6.2.0+ daemon.
 
 ---
 
-## v0.62.0 — BL221 Phase 3: Security scan (issue #45, parent v6.2.0)
+## ✅ v0.62.0 — BL221 Phase 3: Security scan (issue #45, parent v6.2.0) — SHIPPED 2026-05-04
 
 **Goal:** security scan results surface inside `PrdDetailDialog` and a Scan Config card
 in Settings → Automata.

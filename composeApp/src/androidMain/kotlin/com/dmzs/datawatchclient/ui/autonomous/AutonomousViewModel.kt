@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
+import com.dmzs.datawatchclient.transport.dto.ScanResultDto
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +29,11 @@ public class AutonomousViewModel(
         val backends: List<String> = emptyList(),
         /** Permission modes from /api/llm/claude/permission_modes (v5.27.5+; empty on older daemons). */
         val permissionModes: List<String> = emptyList(),
+        /** Latest scan result for the open PRD (v0.62.0). */
+        val scanResult: ScanResultDto? = null,
+        val scanLoading: Boolean = false,
+        /** Proposed rules from proposeRules (v0.62.0). */
+        val proposedRules: RuleProposalDto? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -180,5 +187,57 @@ public class AutonomousViewModel(
                 },
             )
         }
+    }
+
+    public fun loadScanResult(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            _state.value = _state.value.copy(scanLoading = true, scanResult = null)
+            transport.getScanResult(prdId).fold(
+                onSuccess = { _state.value = _state.value.copy(scanLoading = false, scanResult = it) },
+                onFailure = { _state.value = _state.value.copy(scanLoading = false) },
+            )
+        }
+    }
+
+    public fun triggerScan(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            _state.value = _state.value.copy(scanLoading = true)
+            transport.triggerScan(prdId).fold(
+                onSuccess = { _state.value = _state.value.copy(scanLoading = false, scanResult = it) },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(scanLoading = false, banner = "Scan failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun createFixPrd(prdId: String, onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.createFixPrd(prdId).fold(
+                onSuccess = { prd -> refresh(); onSuccess(prd.id) },
+                onFailure = { err -> _state.value = _state.value.copy(banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}") },
+            )
+        }
+    }
+
+    public fun proposeRules(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.proposeRules(prdId).fold(
+                onSuccess = { _state.value = _state.value.copy(proposedRules = it) },
+                onFailure = { err -> _state.value = _state.value.copy(banner = "Propose rules failed — ${err.message ?: err::class.simpleName}") },
+            )
+        }
+    }
+
+    public fun clearProposedRules() {
+        _state.value = _state.value.copy(proposedRules = null)
+    }
+
+    public fun clearScan() {
+        _state.value = _state.value.copy(scanResult = null, scanLoading = false, proposedRules = null)
     }
 }

@@ -8,6 +8,35 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.62.0] — 2026-05-04 (Security scan — BL221 Phase 3 — issue #45)
+
+### Added
+
+- **`ScanResultCard` in `PrdDetailDialog` (#45).** Verdict badge (PASS/WARN/FAIL
+  with semantic colors) + finding count + expandable `FindingRow` list (severity,
+  file:line, message). "Run scan", "Fix PRD", and "Propose rules" text buttons
+  appear inline. Proposed rules displayed in a monospace AlertDialog.
+
+- **`ScanConfigCard` in Settings → Automata tab.** Toggles for enabled, SAST,
+  secrets, deps, grader, fix-loop; `failOnSeverity` dropdown picker (info /
+  warning / error); max-retries stepper (+/−). Loads current config via
+  `GET /api/autonomous/scan_config`; saves incrementally via `PUT`.
+
+- **Scan state in `AutonomousViewModel`.** `loadScanResult(prdId)`,
+  `triggerScan(prdId)`, `createFixPrd(prdId, onSuccess)`, `proposeRules(prdId)`,
+  `clearProposedRules()`, `clearScan()`. State: `scanResult`, `scanLoading`,
+  `proposedRules` in `UiState`.
+
+- **6 transport methods** (`triggerScan`, `getScanResult`, `createFixPrd`,
+  `proposeRules`, `getScanConfig`, `updateScanConfig`) in `TransportClient` and
+  `RestTransport`.
+
+- **4 DTOs** (`ScanFindingDto`, `ScanResultDto`, `ScanConfigDto`,
+  `RuleProposalDto`) in `Dtos.kt`.
+
+- **Scan auto-loads** when `PrdDetailDialog` opens via `LaunchedEffect(prdId)`.
+  State cleared on dismiss.
+
 ## [0.61.0] — 2026-05-04 (Template Store UI — BL221 Phase 2 — issue #44)
 
 ### Added
