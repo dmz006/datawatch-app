@@ -448,6 +448,27 @@ On a multi-release arc (e.g. v0.58.0 → v0.65.0), follow this sequence at the e
 
 At parity milestone (all planned phases done): do a full GitHub release with ~100% test coverage on newly shipped logic, refactored backlog docs (done items in a clearly labelled closed section at the bottom, remaining items on top with dates). Create the GH release via `gh release create` with tag matching `Version.kt`, title `vX.Y.Z — <milestone name>`, and a body linking the CHANGELOG section.
 
+### CI Runner Health (every release — patch, minor, major)
+
+After every push that constitutes a release, check GitHub Actions runner state and leave it clean:
+
+1. **Check run status:**
+   ```bash
+   rtk gh run list --repo dmz006/datawatch-app --limit 20
+   ```
+2. **For every failed run:** identify the root cause, fix the underlying code or config, and push the fix.
+3. **Delete failed runs** once the root cause is fixed (so the history shows only clean runs):
+   ```bash
+   gh run delete <run-id> --repo dmz006/datawatch-app
+   ```
+4. **Re-trigger if needed:** if the failure was transient (infra flake, rate limit), re-run rather than delete-and-ignore:
+   ```bash
+   gh run rerun <run-id> --repo dmz006/datawatch-app
+   ```
+5. **Do not advance to the next phase** until the runner list shows no failed runs for the current release commit.
+
+This applies to all workflow runs — build, test, lint, check-version, release upload. A clean runner list is part of the definition of done for every release.
+
 ### Wear & Auto Visual Style
 
 Wear OS and Auto screens must match the datawatch PWA dark palette — dark surfaces, teal/green accents, monospace where appropriate. No stock Material light defaults. Reuse `LocalDatawatchColors` tokens; within Auto `CarColor` constraints, use GREEN for success and YELLOW for warning.
