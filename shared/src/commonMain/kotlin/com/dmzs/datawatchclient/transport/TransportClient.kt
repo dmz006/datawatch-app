@@ -462,6 +462,37 @@ public interface TransportClient {
         hard: Boolean = false,
     ): Result<Unit>
 
+    // ---- v0.63.0 BL221 Phase 4: Type registry + Guided Mode + Skills ----
+
+    /** GET /api/autonomous/types — list registered automata types. */
+    public suspend fun listAutomataTypes(): Result<List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto>>
+
+    /** POST /api/autonomous/types — register a new automata type. */
+    public suspend fun registerAutomataType(
+        req: com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto>
+
+    /** DELETE /api/autonomous/types/{id} — delete a registered type. */
+    public suspend fun deleteAutomataType(id: String): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/set_type. */
+    public suspend fun setPrdType(prdId: String, type: String): Result<Unit> =
+        prdAction(prdId, "set_type", kotlinx.serialization.json.buildJsonObject { put("type", kotlinx.serialization.json.JsonPrimitive(type)) })
+
+    /** POST /api/autonomous/prds/{id}/set_guided_mode. */
+    public suspend fun setPrdGuidedMode(prdId: String, guidedMode: Boolean): Result<Unit> =
+        prdAction(prdId, "set_guided_mode", kotlinx.serialization.json.buildJsonObject { put("guided_mode", kotlinx.serialization.json.JsonPrimitive(guidedMode)) })
+
+    /** POST /api/autonomous/prds/{id}/set_skills. */
+    public suspend fun setPrdSkills(prdId: String, skills: List<String>): Result<Unit> =
+        prdAction(
+            prdId,
+            "set_skills",
+            kotlinx.serialization.json.buildJsonObject {
+                put("skills", kotlinx.serialization.json.buildJsonArray { skills.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } })
+            },
+        )
+
     // ---- v0.62.0 BL221 Phase 3: Security scan (datawatch v6.2.0) ----
 
     /** POST /api/autonomous/prds/{id}/scan — trigger a security scan. */

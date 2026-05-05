@@ -8,6 +8,39 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.63.0] — 2026-05-04 (Type registry + Guided Mode + Skills — BL221 Phase 4 — issue #43)
+
+### Added
+
+- **Type badge on `PrdRow` (#43).** Color-coded chip (software→blue,
+  research→purple, operational→orange, personal→teal, custom→surfaceVariant)
+  next to status pill. Renders only when `prd.type` is non-null.
+
+- **Type / Guided Mode / Skills in `PrdDetailDialog`.** Type picker dropdown
+  (editable when server returns the types list); Guided Mode toggle switch;
+  Skills FlowRow with edit button opening a comma-separated input dialog.
+
+- **Type / Guided Mode / Skills in `NewPrdDialog`.** Type picker (4 built-in
+  types + blank=none), Guided Mode toggle switch, Skills comma-separated
+  text field. All three sent on `POST /api/autonomous/prds`.
+
+- **`AutomataTypesCard` in Settings → Automata.** Inline type registry card:
+  lists `/api/autonomous/types`, "+" icon to create (id + label + color),
+  delete per row. Loads on first render via `ServiceLocator` pattern.
+
+- **`AutonomousViewModel`** gains `setPrdType`, `setPrdGuidedMode`,
+  `setPrdSkills` (via `prdAction`), `loadAutomataTypes`,
+  `createAutomataType`, `deleteAutomataType`; `automataTypes` in `UiState`.
+
+- **3 transport methods** (`listAutomataTypes`, `registerAutomataType`,
+  `deleteAutomataType`) + default methods `setPrdType`, `setPrdGuidedMode`,
+  `setPrdSkills` in `TransportClient`.
+
+- **2 DTOs** (`AutomataTypeDto`, `AutomataTypeRequestDto`) in `Dtos.kt`.
+
+- **`PrdDto`** gains `type`, `guidedMode`, `skills`; **`NewPrdRequestDto`**
+  gains same three fields.
+
 ## [0.62.0] — 2026-05-04 (Security scan — BL221 Phase 3 — issue #45)
 
 ### Added

@@ -203,6 +203,19 @@
     <string name="tmpl_spec_label">Spec (required)</string>
     <string name="tmpl_type_label">Type</string>
 
+    <!-- Type registry / Guided Mode / Skills (v0.63.0 BL221 Phase 4) -->
+    <string name="automata_detail_type">Type</string>
+    <string name="automata_detail_guided_mode">Guided Mode</string>
+    <string name="automata_detail_skills">Skills</string>
+    <string name="automata_type_registry_title">Type registry</string>
+    <string name="automata_type_create">New type</string>
+    <string name="automata_type_id_label">ID (e.g. software, research)</string>
+    <string name="automata_type_label_label">Label</string>
+    <string name="automata_type_color_label">Color (hex, optional)</string>
+    <string name="new_prd_type_label">Type (optional)</string>
+    <string name="new_prd_guided_mode_label">Guided Mode</string>
+    <string name="new_prd_skills_label">Skills (comma-separated)</string>
+
     <!-- Security scan (v0.62.0 BL221 Phase 3) -->
     <string name="scan_verdict_pass">PASS</string>
     <string name="scan_verdict_warn">WARN</string>

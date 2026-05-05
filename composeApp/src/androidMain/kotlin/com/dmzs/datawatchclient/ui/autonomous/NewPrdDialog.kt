@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.autonomous
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -72,6 +73,11 @@ internal fun NewPrdDialog(
 
     var permissionMode by remember { mutableStateOf("") }
     var permissionModeMenuOpen by remember { mutableStateOf(false) }
+
+    var prdType by remember { mutableStateOf("") }
+    var prdTypeMenuOpen by remember { mutableStateOf(false) }
+    var guidedMode by remember { mutableStateOf(false) }
+    var skills by remember { mutableStateOf("") }
 
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -357,11 +363,40 @@ internal fun NewPrdDialog(
                         }
                     }
                 }
+                // ── Type picker ────────────────────────────────────────────
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    OutlinedTextField(
+                        value = prdType.ifEmpty { "— none —" }, onValueChange = {},
+                        label = { Text(stringResource(R.string.new_prd_type_label)) },
+                        readOnly = true, modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = { TextButton(onClick = { prdTypeMenuOpen = !prdTypeMenuOpen }) { Text("▾") } },
+                    )
+                    DropdownMenu(expanded = prdTypeMenuOpen, onDismissRequest = { prdTypeMenuOpen = false }) {
+                        DropdownMenuItem(text = { Text("— none —") }, onClick = { prdType = ""; prdTypeMenuOpen = false })
+                        listOf("software", "research", "operational", "personal").forEach { t ->
+                            DropdownMenuItem(text = { Text(t) }, onClick = { prdType = t; prdTypeMenuOpen = false })
+                        }
+                    }
+                }
+
+                // ── Guided Mode toggle ─────────────────────────────────────
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(stringResource(R.string.new_prd_guided_mode_label), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.material3.Switch(checked = guidedMode, onCheckedChange = { guidedMode = it })
+                }
+
+                // ── Skills ─────────────────────────────────────────────────
+                OutlinedTextField(
+                    value = skills, onValueChange = { skills = it },
+                    label = { Text(stringResource(R.string.new_prd_skills_label)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
+                    val parsedSkills = skills.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     val req =
                         if (!usingProfile) {
                             NewPrdRequestDto(
@@ -373,6 +408,9 @@ internal fun NewPrdDialog(
                                 model = model.ifBlank { null },
                                 decompositionProfile = decomp.ifBlank { null },
                                 permissionMode = permissionMode.ifBlank { null },
+                                type = prdType.ifBlank { null },
+                                guidedMode = if (guidedMode) true else null,
+                                skills = parsedSkills.ifEmpty { null },
                             )
                         } else {
                             NewPrdRequestDto(
@@ -382,6 +420,9 @@ internal fun NewPrdDialog(
                                 clusterProfile = cluster.ifBlank { null },
                                 decompositionProfile = decomp.ifBlank { null },
                                 permissionMode = permissionMode.ifBlank { null },
+                                type = prdType.ifBlank { null },
+                                guidedMode = if (guidedMode) true else null,
+                                skills = parsedSkills.ifEmpty { null },
                             )
                         }
                     if (req.name.isNotBlank()) onCreate(req)

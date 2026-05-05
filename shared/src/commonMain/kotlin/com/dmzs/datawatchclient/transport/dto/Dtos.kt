@@ -465,6 +465,10 @@ public data class PrdDto(
     val spec: String? = null,
     @SerialName("permission_mode") val permissionMode: String? = null,
     val stories: List<PrdStoryDto> = emptyList(),
+    /** PRD type (v0.63.0 BL221 Phase 4): software|research|operational|personal|custom. */
+    val type: String? = null,
+    @SerialName("guided_mode") val guidedMode: Boolean = false,
+    val skills: List<String> = emptyList(),
 )
 
 @Serializable
@@ -498,11 +502,35 @@ public data class NewPrdRequestDto(
     @SerialName("decomposition_profile") val decompositionProfile: String? = null,
     /** claude-code per-PRD permission mode (v5.27.5+). Most-specific-wins: task > PRD > session default. */
     @SerialName("permission_mode") val permissionMode: String? = null,
+    /** v0.63.0: PRD type, guided mode, skills. */
+    val type: String? = null,
+    @SerialName("guided_mode") val guidedMode: Boolean? = null,
+    val skills: List<String>? = null,
 )
 
 @Serializable
 public data class NewPrdResponseDto(
     val id: String = "",
+)
+
+// ============================================================
+// v0.63.0 — BL221 Phase 4: Type registry (datawatch v6.2.0)
+// ============================================================
+
+@Serializable
+public data class AutomataTypeDto(
+    val id: String = "",
+    val label: String = "",
+    val description: String? = null,
+    val color: String? = null,
+)
+
+@Serializable
+public data class AutomataTypeRequestDto(
+    val id: String,
+    val label: String,
+    val description: String? = null,
+    val color: String? = null,
 )
 
 // ============================================================
