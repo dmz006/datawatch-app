@@ -10,7 +10,8 @@ CREATE TABLE server_profile (
     reachability_profile_id TEXT NOT NULL,
     enabled                INTEGER NOT NULL DEFAULT 1,
     created_ts             INTEGER NOT NULL,
-    last_seen_ts           INTEGER
+    last_seen_ts           INTEGER,
+    signal_linked          INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE reachability_profile (
@@ -51,8 +52,11 @@ SELECT * FROM server_profile
 ORDER BY (last_seen_ts IS NULL) ASC, last_seen_ts DESC, display_name ASC;
 
 insertProfile:
-INSERT OR REPLACE INTO server_profile(id, display_name, base_url, bearer_token_ref, trust_anchor_sha256, reachability_profile_id, enabled, created_ts, last_seen_ts)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO server_profile(id, display_name, base_url, bearer_token_ref, trust_anchor_sha256, reachability_profile_id, enabled, created_ts, last_seen_ts, signal_linked)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateSignalLinked:
+UPDATE server_profile SET signal_linked = ? WHERE id = ?;
 
 deleteProfile:
 DELETE FROM server_profile WHERE id = ?;

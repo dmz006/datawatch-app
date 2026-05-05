@@ -55,6 +55,8 @@ public fun ChannelsCard() {
     var banner by remember { mutableStateOf<String?>(null) }
     var testChannel by remember { mutableStateOf<String?>(null) }
     var addOpen by remember { mutableStateOf(false) }
+    var signalLinkOpen by remember { mutableStateOf(false) }
+    var signalLinked by remember { mutableStateOf(false) }
     // Per-row Configure dialog — captures channel id + type so the
     // schema dispatch lines up with the instance's backend.
     var configuringChannel by remember {
@@ -71,6 +73,7 @@ public fun ChannelsCard() {
                 banner = "No enabled server."
                 return
             }
+        signalLinked = profile.signalLinked
         ServiceLocator.transportFor(profile).listChannels().fold(
             onSuccess = {
                 channels = it
@@ -194,6 +197,33 @@ public fun ChannelsCard() {
             }
             HorizontalDivider()
         }
+        val hasSignalChannel = channels.any { it.stringField("type") == "signal" }
+        if (hasSignalChannel) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (signalLinked) "Signal: Linked" else "Signal: Not linked",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (signalLinked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = { signalLinkOpen = true },
+                ) { Text(if (signalLinked) "Re-link" else "Link Signal", style = MaterialTheme.typography.labelSmall) }
+            }
+        }
+    }
+
+    if (signalLinkOpen) {
+        SignalLinkingDialog(
+            onDismiss = { signalLinkOpen = false },
+            onLinked = {
+                signalLinkOpen = false
+                signalLinked = true
+            },
+        )
     }
 
     if (addOpen) {

@@ -8,6 +8,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.64.0] — 2026-05-04 (Signal device-linking — BL21 — datawatch#31)
+
+### Added
+
+- **`SignalLinkingDialog` in Settings → Comms.** Opens from a "Link Signal"
+  button that appears in `ChannelsCard` when a Signal channel is configured.
+  Streams QR frames from `GET /api/link/qr` (SSE) and renders each frame as
+  a bitmap decoded from the server's base64 PNG. On successful pairing the
+  dialog shows "Linked successfully." and the card reflects the linked state.
+
+- **Signal linked state persisted per server profile.** Migration 6 adds
+  `signal_linked INTEGER DEFAULT 0` to `server_profile`. `setSignalLinked()`
+  in `ServerProfileRepository` writes the flag after pairing completes;
+  `ServerProfile.signalLinked` exposes it to the UI.
+
+- **Transport: Signal linking endpoints (datawatch#31).** `TransportClient`
+  declares `startSignalLinking(): Flow<LinkQrFrameDto>`,
+  `getSignalLinkStatus()`, `cancelSignalLink()`, `unlinkSignalDevice(deviceId)`.
+  `RestTransport` implements all four using the SSE + REST patterns.
+
+- **DTOs:** `LinkQrFrameDto`, `SignalLinkStatusDto`, `SignalLinkStartDto`.
+
 ## [0.63.0] — 2026-05-04 (Type registry + Guided Mode + Skills — BL221 Phase 4 — issue #43)
 
 ### Added

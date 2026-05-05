@@ -337,4 +337,15 @@
     <string name="security_biometric_desc">Require fingerprint or face on every app open. Database key is biometric-bound when enabled.</string>
     <string name="security_biometric_unavailable">Unavailable — no Class-3 biometric enrolled on this device.</string>
     <string name="security_migration_failed">Key migration failed: %1$s</string>
+
+    <!-- ── Signal device-linking (BL21 / v0.64.0) ── -->
+    <string name="signal_link_title">Link Signal device</string>
+    <string name="signal_link_waiting">Waiting for QR…</string>
+    <string name="signal_link_scan_prompt">Scan with Signal on another device</string>
+    <string name="signal_link_success">Signal device linked!</string>
+    <string name="signal_link_qr_unavailable">QR unavailable</string>
+    <string name="signal_linked_status">Signal: Linked</string>
+    <string name="signal_unlinked_status">Signal: Not linked</string>
+    <string name="signal_link_button">Link Signal</string>
+    <string name="signal_relink_button">Re-link</string>
 </resources>
