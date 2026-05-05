@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
+import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
+import com.dmzs.datawatchclient.transport.dto.ScanResultDto
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
 
@@ -73,6 +75,13 @@ internal fun PrdDetailDialog(
     onDelete: () -> Unit,
     onEditStory: (storyId: String, newTitle: String?, newDescription: String?) -> Unit,
     onEditFiles: (storyId: String, files: List<String>) -> Unit,
+    scanResult: ScanResultDto? = null,
+    scanLoading: Boolean = false,
+    onTriggerScan: (() -> Unit)? = null,
+    onCreateFixPrd: (() -> Unit)? = null,
+    onProposeRules: (() -> Unit)? = null,
+    proposedRules: RuleProposalDto? = null,
+    onDismissProposedRules: (() -> Unit)? = null,
 ) {
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
@@ -206,6 +215,17 @@ internal fun PrdDetailDialog(
                         Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                     }
                 }
+
+                // Scan section (v0.62.0)
+                ScanResultCard(
+                    scanResult = scanResult,
+                    scanLoading = scanLoading,
+                    onTriggerScan = onTriggerScan,
+                    onCreateFixPrd = onCreateFixPrd,
+                    onProposeRules = onProposeRules,
+                    proposedRules = proposedRules,
+                    onDismissProposedRules = onDismissProposedRules,
+                )
 
                 HorizontalDivider()
 

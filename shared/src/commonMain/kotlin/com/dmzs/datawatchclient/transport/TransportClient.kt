@@ -462,6 +462,26 @@ public interface TransportClient {
         hard: Boolean = false,
     ): Result<Unit>
 
+    // ---- v0.62.0 BL221 Phase 3: Security scan (datawatch v6.2.0) ----
+
+    /** POST /api/autonomous/prds/{id}/scan — trigger a security scan. */
+    public suspend fun triggerScan(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.ScanResultDto>
+
+    /** GET /api/autonomous/prds/{id}/scan — fetch the latest scan result. */
+    public suspend fun getScanResult(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.ScanResultDto>
+
+    /** POST /api/autonomous/prds/{id}/fix_prd — create a child PRD to fix scan findings. */
+    public suspend fun createFixPrd(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
+    /** POST /api/autonomous/prds/{id}/propose_rules — propose lint/security rules from findings. */
+    public suspend fun proposeRules(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.RuleProposalDto>
+
+    /** GET /api/autonomous/scan_config — fetch global scan configuration. */
+    public suspend fun getScanConfig(): Result<com.dmzs.datawatchclient.transport.dto.ScanConfigDto>
+
+    /** PUT /api/autonomous/scan_config — update global scan configuration. */
+    public suspend fun updateScanConfig(config: com.dmzs.datawatchclient.transport.dto.ScanConfigDto): Result<Unit>
+
     // ---- v0.61.0 BL221 Phase 2: Template Store (datawatch v6.2.0) ----
 
     /** GET /api/autonomous/templates — list all templates. */

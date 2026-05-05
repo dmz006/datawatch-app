@@ -506,6 +506,49 @@ public data class NewPrdResponseDto(
 )
 
 // ============================================================
+// v0.62.0 — BL221 Phase 3: Security scan (datawatch v6.2.0)
+// ============================================================
+
+@Serializable
+public data class ScanFindingDto(
+    val scanner: String = "",
+    val file: String = "",
+    val line: Int? = null,
+    val severity: String = "info",
+    @SerialName("rule_id") val ruleId: String? = null,
+    val message: String = "",
+    val fixable: Boolean = false,
+)
+
+@Serializable
+public data class ScanResultDto(
+    val at: String = "",
+    @SerialName("prd_id") val prdId: String = "",
+    val pass: Boolean = false,
+    val verdict: String = "pass",
+    val notes: String? = null,
+    val findings: List<ScanFindingDto> = emptyList(),
+)
+
+@Serializable
+public data class ScanConfigDto(
+    val enabled: Boolean = false,
+    val sast: Boolean = false,
+    val secrets: Boolean = false,
+    val deps: Boolean = false,
+    @SerialName("fail_on_severity") val failOnSeverity: String = "error",
+    val grader: Boolean = false,
+    @SerialName("fix_loop") val fixLoop: Boolean = false,
+    @SerialName("max_retries") val maxRetries: Int = 3,
+)
+
+@Serializable
+public data class RuleProposalDto(
+    val text: String = "",
+    val diff: String? = null,
+)
+
+// ============================================================
 // v0.61.0 — BL221 Phase 2: Template Store (datawatch v6.2.0)
 // ============================================================
 

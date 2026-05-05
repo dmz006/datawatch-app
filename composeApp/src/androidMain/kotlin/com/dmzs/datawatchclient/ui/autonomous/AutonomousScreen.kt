@@ -113,13 +113,14 @@ public fun AutonomousScreen(
         NewPrdDialog(onDismiss = { newOpen = false }, onCreate = { req -> vm.create(req); newOpen = false })
     }
     openPrdId?.let { id ->
+        LaunchedEffect(id) { vm.loadScanResult(id) }
         val prd = state.prds.firstOrNull { it.id == id }
         if (prd != null) {
             PrdDetailDialog(
                 prd = prd,
                 backends = state.backends,
                 permissionModes = state.permissionModes,
-                onDismiss = { openPrdId = null },
+                onDismiss = { openPrdId = null; vm.clearScan() },
                 onApprove = { vm.approve(id); openPrdId = null },
                 onReject = { reason -> vm.reject(id, reason); openPrdId = null },
                 onDecompose = { vm.decompose(id) },
@@ -131,6 +132,13 @@ public fun AutonomousScreen(
                 onDelete = { vm.hardDeletePrd(id) },
                 onEditStory = { storyId, newTitle, newDescription -> vm.editStory(id, storyId, newTitle, newDescription) },
                 onEditFiles = { storyId, files -> vm.editFiles(id, storyId, files) },
+                scanResult = state.scanResult,
+                scanLoading = state.scanLoading,
+                onTriggerScan = { vm.triggerScan(id) },
+                onCreateFixPrd = { vm.createFixPrd(id) { newId -> openPrdId = newId } },
+                onProposeRules = { vm.proposeRules(id) },
+                proposedRules = state.proposedRules,
+                onDismissProposedRules = { vm.clearProposedRules() },
             )
         }
     }

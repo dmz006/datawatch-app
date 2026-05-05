@@ -338,6 +338,8 @@ public fun SettingsScreen(
                             SettingsTab.Automata -> {
                                 // v0.59.0 — mirrors PWA v6.5.1 Automata tab:
                                 // Pipelines → Autonomous → Orchestrator → Agents
+                                // v0.62.0 — scan config card added
+                                ScanConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
                                 )
