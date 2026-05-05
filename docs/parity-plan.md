@@ -81,7 +81,8 @@ Legend: ✅ shipped · 🚧 in progress · ⏳ planned · ❌ not started
 ## 4. Autonomous (`data-view="autonomous"`)
 
 PRD lifecycle tab added to the phone app in v0.38.0; full CRUD parity
-with PWA closed in v0.42.13.
+with PWA closed in v0.42.13. BL221 phases 2–4 and BL255 closed in
+v0.61.0–v0.66.0.
 
 | PWA capability | Mobile | Notes |
 |---|---|---|
@@ -99,6 +100,10 @@ with PWA closed in v0.42.13.
 | Hard delete | ✅ | v0.42.13 — delete button with confirm dialog |
 | Edit story (title, description) | ✅ | v0.38.1 — per-story edit sheet |
 | Associate files with a story | ✅ | v0.38.1 — EditFilesSheet |
+| Template Store — list, create, edit, instantiate, clone-from-PRD | ✅ | v0.61.0 — Templates tab in Autonomous; `CreateEditTemplateSheet`, `InstantiateTemplateDialog` (BL221 Phase 2) |
+| Security scan in PRD detail — verdict, findings, run/fix/rules | ✅ | v0.62.0 — `ScanResultCard` + `ScanConfigCard`; 6 transport methods (BL221 Phase 3) |
+| PRD type badge + Guided Mode + Skills chips | ✅ | v0.63.0 — type badge on `PrdRow`, toggles in create/detail, `AutomataTypesCard` in Settings → Automata (BL221 Phase 4) |
+| Skill Registries — CRUD, connect, browse, sync | ✅ | v0.66.0 — `SkillRegistriesCard` in Settings → Automata; Add Default (PAI), BrowseSkillsDialog, synced-skills summary (BL255) |
 
 ## 5. Alerts (`data-view="alerts"`)
 
@@ -204,42 +209,13 @@ Mobile currently covers Servers + Security + About + Comms placeholder.
 
 ---
 
-## 6. Consolidated roadmap
+## 6. Parity status
 
-### v0.11.0 — Session power-user parity
-Scope: bring session detail and Settings to 80 % PWA parity without
-touching memory/schedules/config-edit (which need more design).
+**All rows ✅ as of v0.66.0 (2026-05-05). v1.0.0 is ready to tag.**
 
-Targets:
-- Session rename / restart / delete (single + bulk)
-- Connection status indicator in TopAppBar
-- Daemon version in About card (`/api/health`)
-- CA cert download (`/api/cert`) + import helper
-- Terminal search + copy actions (`xterm-addon-search`)
-- Explicit alerts dismiss
-- Start-session form (re-uses `transport.startSession`)
-- Active backend picker (`POST /api/backends/active` — pending parent confirmation)
-
-### v0.12.0 — Channels + schedules + file picker
-- Channels list / add / remove / test round-trip (`/api/channels` — needs parent)
-- Schedule CRUD per session (`/api/schedules`)
-- File picker for New Session working dir (`/api/files`)
-- Session preferences panel (retention, max concurrent, scrollback)
-- Session timeline viewer (`/api/sessions/timeline`)
-- Per-session LLM backend + model pickers (`/api/ollama/models`, `/api/openwebui/models`)
-- Daemon log viewer (`/api/logs`) + interfaces (`/api/interfaces`)
-- Restart daemon action
-
-### v0.13.0 — Memory / KG + daemon config
-- Memory panel (list, search, delete, stats, export)
-- Config read-write editor (structured fields, blocked raw YAML per ADR-0019)
-- eBPF per-process network (view-only)
-- Update daemon action
-
-### v0.14.0 — Federation polish
-- Federated servers view (PWA's Multi-Machine summary)
-- Cross-server memory diff / KG contradiction surfacing
-- Peer broker status from mobile
+The sprint-by-sprint delivery history that closed this plan lives in
+[sprint-plan.md](sprint-plan.md) § "v0.11–v0.33 feature sprints" and
+the per-version entries in [CHANGELOG.md](../CHANGELOG.md).
 
 ---
 

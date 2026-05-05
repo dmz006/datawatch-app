@@ -222,29 +222,49 @@ summarised here for sprint-plan continuity.
 | v0.38.1 | Autonomous tab features | Filter pill row behind 🔍 toggle (FAB hides while detail is open); `PrdDetailDialog` with story description rendering + ✎ edit modal, Approve / Reject buttons (Reject prompts for reason), file pills (📝 blue=planned + green=touched) + ✎ files edit modal. New `editStory / editFiles` transport. Closes [#12](https://github.com/dmz006/datawatch-app/issues/12), [#13](https://github.com/dmz006/datawatch-app/issues/13), [#18](https://github.com/dmz006/datawatch-app/issues/18), [#19](https://github.com/dmz006/datawatch-app/issues/19). |
 | v0.39.0 | Orchestrator PRD-DAG graph + observer_summary | New `OrchestratorGraphDialog` reachable from `PrdDetailDialog` via 📊 Graph button. Renders nodes as a list with per-node observer_summary badge (CPU%, RSS MB, envelope count); outgoing edges render as `→ targetId (kind)` lines. New `orchestratorGraph(id)` transport. Closes [#7](https://github.com/dmz006/datawatch-app/issues/7). |
 | v0.39.1 | New Session unified Profile + cluster routing | Cluster sub-dropdown on `NewSessionScreen` when a project profile is selected (first option = local-service-instance sentinel). Start button branches: project profile → `POST /api/agents` via new `startAgent` transport; no profile → historic `POST /api/sessions/start`. Closes [#20](https://github.com/dmz006/datawatch-app/issues/20). |
-| v0.35.10 | Session detail force-refresh on open | VM init triggers `refreshFromServer()` immediately after starting the WS stream so detail screen never displays the 5-second-stale list cache. |
-| v0.36.0 | Federated monitoring suite | Four new cards on Settings → Monitor: Federated peers (with All/Standalone/Cluster/Agents filter pills), Cluster nodes (Shape C with pressure flags + CPU/Mem bars), eBPF status (3-flag block + message), Plugins (subprocess + native rows with kind badges). Closes [#2](https://github.com/dmz006/datawatch-app/issues/2)–[#6](https://github.com/dmz006/datawatch-app/issues/6); [#7](https://github.com/dmz006/datawatch-app/issues/7) deferred to v0.36.2. New `/api/observer/{stats,peers}` and `/api/plugins` endpoints on `TransportClient`. |
-| v0.36.1 | Picker mkdir + response-noise filter | File picker gains "+ New folder" affordance via new `TransportClient.mkdir()` (closes [#14](https://github.com/dmz006/datawatch-app/issues/14), PWA v5.26.46). New shared `ResponseNoiseFilter` strips TUI noise (box-drawing borders, labeled borders, status timers, spinner counters, pure digit lines, broadened noise patterns) before `LastResponseSheet` renders the captured response — closes [#15](https://github.com/dmz006/datawatch-app/issues/15) (PWA v5.26.31). Filter unit-tested in `:shared:testDebugUnitTest`. |
+| v0.40.0–v0.40.2 | Wear + Auto PRD actions + test coverage | Wear PRDs page (approve/reject glance via DataLayer), Auto `WaitingPrdsScreen` + `PrdActionScreen`, 11 DTO round-trip tests |
+| v0.41.0–v0.41.1 | ProfileResolver shim + VM unit tests | `ProfileResolver` interface; 20 unit tests for `AutonomousViewModel` + 6 monitoring VMs; PRDs nav icon → SmartToy |
+| v0.42.0–v0.42.12 | Compact terminal UI + hardening + P0 fix | Compact tmux/channel tabs, inline terminal toolbar, Wear session popup last-response, Container Workers ⬡ pill, P0 session-id contract fix, toolbar Scroll + About PWA-aligned |
+| v0.50.0 | Per-core CPU strip in Monitor | BL5 — per-core `CpuCoreStrip` in StatsScreen |
+| v0.52.0–v0.53.0 | Terminal stability + Wear monitor redesign + i18n | BL15 Wear OS locale, BL22 Wear active-server indicator, BL23 i18n wave-2 strings, BL24 MCP channel bridge card; Wear Monitor redesign; PRD UI polish |
+| v0.55.0–v0.55.3 | Input banner gate + patches | Gate input banner on `needsInput` field; 3 incremental patches |
+| v0.56.0 | Wear feature arc | W-2 W-4 W-7 W-8 W-9 W-10 BL27 — watchface complications, notification improvements |
+| v0.57.0 | eBPF network card + session stats panel | `EBpfNetworkCard` in Settings → Monitor (B11/B63 ✅), `SessionStatsPanel` in session detail; filed [datawatch#34](https://github.com/dmz006/datawatch/issues/34) |
+| v0.58.0 | Quick-commands from API + PRD card colors + reconnect refresh | BL249/BL250 reconnect refresh, #31 quick-commands API, #41 PRD status border colors |
+| v0.59.0 | Settings Automata + Plugins tabs | PWA v6.5.1 tab structure alignment (#48), workspace label (#47), detekt/ktlint clean |
+| v0.60.0 | Language picker + Whisper sync | #40 `LanguagePickerCard` in About; `whisper.language` config binding |
+| v0.61.0 | Template Store UI — BL221 Phase 2 | Templates tab in Autonomous, `CreateEditTemplateSheet`, `InstantiateTemplateDialog`, 7 transport methods, 6 DTOs. Closes [#44](https://github.com/dmz006/datawatch-app/issues/44). |
+| v0.62.0 | Security scan — BL221 Phase 3 | `ScanResultCard` + `ScanConfigCard` in Settings → Automata, 6 transport methods, 4 DTOs. Closes [#45](https://github.com/dmz006/datawatch-app/issues/45). |
+| v0.63.0 | Type registry + Guided Mode + Skills — BL221 Phase 4 | `AutomataTypesCard`, type badge on `PrdRow`, Guided Mode toggle, Skills chips in create/detail; 3 transport methods. Closes [#43](https://github.com/dmz006/datawatch-app/issues/43). |
+| v0.64.0 | Signal device-linking — BL21 | `SignalLinkingDialog` with SSE QR frame stream, DB migration 6, `startSignalLinking` SSE transport. Closes [datawatch#31](https://github.com/dmz006/datawatch/issues/31). |
+| v0.65.0 | i18n full sync — BL252 | 375 missing keys across EN/DE/ES/FR/JA + 22 Wear keys; Signal strings wired. Closes [#46](https://github.com/dmz006/datawatch-app/issues/46). |
+| v0.66.0 | Skill Registries — BL255 | `SkillRegistriesCard` in Settings → Automata; connect/browse/sync flow, Add Default (PAI), synced-skills summary; 10 transport methods, 6 DTOs, 45 locale keys. Closes [#50](https://github.com/dmz006/datawatch-app/issues/50). |
 
 ## v1.0.0 parity roadmap
 
-Open rows in [parity-plan.md](parity-plan.md) blocking v1.0.0:
+**All rows ✅ as of v0.66.0 — v1.0.0 is ready to tag.**
 
-- **🚧** `POST /api/channels` add/remove (blocked upstream:
-  [dmz006/datawatch#18](https://github.com/dmz006/datawatch/issues/18))
-- **⏳** Per-process eBPF network read-only viewer (deferred per
-  ADR-0019; server exposes data, mobile UI not built)
+Previously blocking items (both shipped):
+- `POST /api/channels` add/remove — shipped v0.33.11 (upstream [datawatch#18](https://github.com/dmz006/datawatch/issues/18) closed)
+- Per-process eBPF network viewer — shipped v0.57.0 (`EBpfNetworkCard`)
+- Skill Registries (BL255) — shipped v0.66.0 (`SkillRegistriesCard`)
 
-Everything else in `parity-plan.md` is ✅ as of v0.33.0.
+All parity rows in [parity-plan.md](parity-plan.md) are ✅.
 
-## Post-ADR-0042-scope backlog (v0.11+)
+## Post-ADR-0042-scope backlog
 
-- Tablet layout with two-pane session list + detail (BL3)
-- iOS app content — beyond skeleton (BL5)
-- Foldable support — Pixel Fold / Galaxy Z Fold (BL7)
-- Full schedule editor CRUD (BL11)
-- KG Add / Timeline / Research deeper views (BL12)
-- Adjustable terminal dimensions (BL13)
-- Raw YAML config editor, gated behind biometric + confirm (BL14)
-- Localization — DE, ES, FR, JA (BL15)
-- Split `decisions/README.md` into per-ADR MADR files (BL1)
+| ID | Item | Status |
+|----|------|--------|
+| BL1 | Split `decisions/README.md` into per-ADR MADR files | open |
+| BL3 | Tablet two-pane session list + detail | open |
+| BL5 | iOS app content — beyond skeleton | **frozen** (2026-05-05) |
+| BL7 | Foldable support — Pixel Fold / Galaxy Z Fold | open |
+| BL11 | Full schedule editor CRUD | open |
+| BL12 | KG Add / Timeline / Research deeper views | open |
+| BL13 | Adjustable terminal dimensions | open |
+| BL14 | Raw YAML config editor, gated behind biometric + confirm | open |
+| BL15 | Localization — DE, ES, FR, JA | **shipped** v0.52.0 + v0.65.0 |
+| BL21 | Signal device-linking | **shipped** v0.64.0 |
+| BL221 | Automata BL221 phases 2–4 (Templates, Scan, Type/Skills) | **shipped** v0.61.0–v0.63.0 |
+| BL252 | i18n full sync | **shipped** v0.65.0 |
+| BL255 | Skill Registries | **shipped** v0.66.0 |
