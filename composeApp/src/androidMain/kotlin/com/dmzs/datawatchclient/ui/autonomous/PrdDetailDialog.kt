@@ -82,6 +82,10 @@ internal fun PrdDetailDialog(
     onProposeRules: (() -> Unit)? = null,
     proposedRules: RuleProposalDto? = null,
     onDismissProposedRules: (() -> Unit)? = null,
+    automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
+    onSetType: ((String) -> Unit)? = null,
+    onSetGuidedMode: ((Boolean) -> Unit)? = null,
+    onSetSkills: ((List<String>) -> Unit)? = null,
 ) {
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
@@ -128,6 +132,11 @@ internal fun PrdDetailDialog(
                         Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
                     }
                 }
+
+                // Type + Guided Mode + Skills (v0.63.0)
+                PrdTypeRow(prd, automataTypes, onSetType)
+                PrdGuidedModeRow(prd, onSetGuidedMode)
+                PrdSkillsRow(prd, onSetSkills)
 
                 // Spec preview
                 prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
@@ -663,6 +672,80 @@ private fun EditStoryDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
+}
+
+@Composable
+private fun PrdTypeRow(
+    prd: PrdDto,
+    types: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto>,
+    onSetType: ((String) -> Unit)?,
+) {
+    if (prd.type == null && types.isEmpty()) return
+    var menuOpen by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.automata_detail_type), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        prd.type?.takeIf { it.isNotBlank() }?.let { t ->
+            Text(t, style = MaterialTheme.typography.labelSmall)
+        }
+        if (onSetType != null && types.isNotEmpty()) {
+            TextButton(onClick = { menuOpen = true }) { Text("▾", style = MaterialTheme.typography.labelSmall) }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                types.forEach { dt ->
+                    DropdownMenuItem(text = { Text(dt.label) }, onClick = { onSetType(dt.id); menuOpen = false })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrdGuidedModeRow(prd: PrdDto, onSetGuidedMode: ((Boolean) -> Unit)?) {
+    if (!prd.guidedMode && onSetGuidedMode == null) return
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.automata_detail_guided_mode), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (onSetGuidedMode != null) {
+            androidx.compose.material3.Switch(checked = prd.guidedMode, onCheckedChange = onSetGuidedMode)
+        } else {
+            Text(if (prd.guidedMode) "on" else "off", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PrdSkillsRow(prd: PrdDto, onSetSkills: ((List<String>) -> Unit)?) {
+    var editOpen by remember { mutableStateOf(false) }
+    var skillsText by remember(prd.skills) { mutableStateOf(prd.skills.joinToString(", ")) }
+    if (prd.skills.isEmpty() && onSetSkills == null) return
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.automata_detail_skills), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            prd.skills.forEach { skill ->
+                Box(androidx.compose.ui.Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
+                    Text(skill, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                }
+            }
+        }
+        if (onSetSkills != null) {
+            IconButton(onClick = { editOpen = true }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
+        }
+    }
+    if (editOpen && onSetSkills != null) {
+        AlertDialog(
+            onDismissRequest = { editOpen = false },
+            title = { Text(stringResource(R.string.automata_detail_skills)) },
+            text = {
+                OutlinedTextField(value = skillsText, onValueChange = { skillsText = it }, label = { Text(stringResource(R.string.new_prd_skills_label)) }, singleLine = true, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSetSkills(skillsText.split(",").map { it.trim() }.filter { it.isNotEmpty() })
+                    editOpen = false
+                }) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = { TextButton(onClick = { editOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

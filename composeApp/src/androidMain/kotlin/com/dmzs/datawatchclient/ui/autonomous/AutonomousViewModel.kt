@@ -2,6 +2,8 @@ package com.dmzs.datawatchclient.ui.autonomous
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
+import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
@@ -11,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -34,6 +38,8 @@ public class AutonomousViewModel(
         val scanLoading: Boolean = false,
         /** Proposed rules from proposeRules (v0.62.0). */
         val proposedRules: RuleProposalDto? = null,
+        /** Type registry (v0.63.0). */
+        val automataTypes: List<AutomataTypeDto> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -239,5 +245,49 @@ public class AutonomousViewModel(
 
     public fun clearScan() {
         _state.value = _state.value.copy(scanResult = null, scanLoading = false, proposedRules = null)
+    }
+
+    public fun setPrdType(prdId: String, type: String) {
+        val body = buildJsonObject { put("type", JsonPrimitive(type)) }
+        prdOp("Set type") { it.prdAction(prdId, "set_type", body) }
+    }
+
+    public fun setPrdGuidedMode(prdId: String, guidedMode: Boolean) {
+        val body = buildJsonObject { put("guided_mode", JsonPrimitive(guidedMode)) }
+        prdOp("Set guided mode") { it.prdAction(prdId, "set_guided_mode", body) }
+    }
+
+    public fun setPrdSkills(prdId: String, skills: List<String>) {
+        val body = buildJsonObject { put("skills", buildJsonArray { skills.forEach { add(JsonPrimitive(it)) } }) }
+        prdOp("Set skills") { it.prdAction(prdId, "set_skills", body) }
+    }
+
+    public fun loadAutomataTypes() {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.listAutomataTypes().onSuccess { types ->
+                _state.value = _state.value.copy(automataTypes = types)
+            }
+        }
+    }
+
+    public fun createAutomataType(req: AutomataTypeRequestDto) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.registerAutomataType(req).fold(
+                onSuccess = { loadAutomataTypes() },
+                onFailure = { err -> _state.value = _state.value.copy(banner = "Create type failed — ${err.message ?: err::class.simpleName}") },
+            )
+        }
+    }
+
+    public fun deleteAutomataType(id: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.deleteAutomataType(id).fold(
+                onSuccess = { loadAutomataTypes() },
+                onFailure = { err -> _state.value = _state.value.copy(banner = "Delete type failed — ${err.message ?: err::class.simpleName}") },
+            )
+        }
     }
 }

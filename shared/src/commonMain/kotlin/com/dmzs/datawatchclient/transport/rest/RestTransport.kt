@@ -967,6 +967,31 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    // ---- v0.63.0 Type registry ----
+
+    override suspend fun listAutomataTypes(): Result<List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/types") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun registerAutomataType(req: com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto): Result<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/types") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun deleteAutomataType(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/autonomous/types/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<Unit>()
+        }
+
     // ---- v0.62.0 Security scan ----
 
     override suspend fun triggerScan(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.ScanResultDto> =

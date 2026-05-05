@@ -68,7 +68,7 @@ public fun AutonomousScreen(
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { vm.refresh() }
+    LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
 
     Scaffold(
         topBar = {
@@ -139,6 +139,10 @@ public fun AutonomousScreen(
                 onProposeRules = { vm.proposeRules(id) },
                 proposedRules = state.proposedRules,
                 onDismissProposedRules = { vm.clearProposedRules() },
+                automataTypes = state.automataTypes,
+                onSetType = { type -> vm.setPrdType(id, type) },
+                onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },
+                onSetSkills = { skills -> vm.setPrdSkills(id, skills) },
             )
         }
     }
@@ -212,6 +216,7 @@ private fun PrdRow(
             Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
             Row(modifier = Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 StatusPill(prd.status)
+                prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
                 if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                 if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
@@ -233,6 +238,20 @@ private fun StatusPill(status: String) {
         modifier = Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
     ) {
         Text(status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+@Composable
+private fun TypeBadge(type: String) {
+    val color = when (type.lowercase()) {
+        "software" -> Color(0xFF3B82F6)
+        "research" -> Color(0xFFA855F7)
+        "operational" -> Color(0xFFF97316)
+        "personal" -> Color(0xFF14B8A6)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
+        Text(type, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
 
