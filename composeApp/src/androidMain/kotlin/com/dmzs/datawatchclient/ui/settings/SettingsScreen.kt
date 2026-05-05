@@ -89,17 +89,18 @@ import java.io.FileOutputStream
  */
 
 /**
- * Sub-tabs — order matches PWA `app.js:3089`:
- * **Monitor, General, Comms, LLM, About**. Keeping this ordering is
- * load-bearing for user muscle memory; the PWA stashes the default
- * active tab in `localStorage.cs_settings_tab = 'monitor'` so users
- * land on Monitor first.
+ * Sub-tabs — order matches PWA v6.5.1 `app.js:3089`:
+ * **Monitor, General, Comms, LLM, Automata, Plugins, About**.
+ * PWA stashes the default active tab in `localStorage.cs_settings_tab = 'monitor'`
+ * so users land on Monitor first. About is mobile-only (no PWA equivalent).
  */
 private enum class SettingsTab(@StringRes val labelRes: Int) {
     Monitor(R.string.settings_tab_monitor),
     General(R.string.settings_tab_general),
     Comms(R.string.settings_tab_comms),
     Llm(R.string.settings_tab_llm),
+    Automata(R.string.settings_tab_automata),
+    Plugins(R.string.settings_tab_plugins),
     About(R.string.settings_tab_about),
 }
 
@@ -251,16 +252,11 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                             }
                             SettingsTab.General -> {
-                                // v0.42.6 — General tab now mirrors PWA's
-                                // GENERAL_CONFIG_FIELDS array order verbatim
-                                // (Datawatch → Auto-Update → Session → Pipelines
-                                // → Autonomous → Orchestrator → Plugins →
-                                // Whisper), then the explicit cards: Project
-                                // Profiles → Cluster Profiles → Container
-                                // Workers → Notifications. RTK lives in the
-                                // LLM tab now (PWA's LLM_CONFIG_FIELDS) — the
-                                // duplicate gc_rtk panel was a mobile-only
-                                // artifact and is gone.
+                                // v0.59.0 — General mirrors PWA v6.5.1 GENERAL tab:
+                                // Datawatch → Auto-Update → Session → Whisper →
+                                // Project Profiles → Cluster Profiles → Notifications.
+                                // Pipelines / Autonomous / Orchestrator / Agents →
+                                // Automata tab. Plugins → Plugins tab.
                                 SecurityCard()
                                 RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
@@ -273,18 +269,6 @@ public fun SettingsScreen(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
                                 )
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                                 )
                                 com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
@@ -295,9 +279,6 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                                     kind = "cluster",
                                     title = "Cluster profiles",
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
                                 )
                                 com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
                             }
@@ -353,6 +334,28 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
                                 com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                                 com.dmzs.datawatchclient.ui.filters.FiltersCard()
+                            }
+                            SettingsTab.Automata -> {
+                                // v0.59.0 — mirrors PWA v6.5.1 Automata tab:
+                                // Pipelines → Autonomous → Orchestrator → Agents
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
+                                )
+                            }
+                            SettingsTab.Plugins -> {
+                                // v0.59.0 — mirrors PWA v6.5.1 Plugins tab
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
+                                )
                             }
                             SettingsTab.About -> {
                                 // Daemon admin cluster — About carries the

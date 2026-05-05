@@ -8,6 +8,35 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.59.0] — 2026-05-04 (Settings Automata+Plugins tabs · workspace label · detekt/ktlint fixes)
+
+### Changed
+
+- **Settings tab structure aligned to PWA v6.5.1 (#48).** Two new tabs added:
+  - **Automata** — Pipelines, Autonomous, Orchestrator, Agents config panels (moved from General).
+  - **Plugins** — Plugin Framework config panel (moved from General).
+  - General tab retains: Datawatch, Auto-Update, Session, Whisper, Project/Cluster profiles, Notifications.
+  - Tab order: Monitor → General → Comms → LLM → Automata → Plugins → About.
+
+- **New PRD workspace label (#47).** "Project directory" field renamed to
+  "Workspace (profile or folder)" to match PWA wording.
+
+### Fixed
+
+- **Pre-existing detekt violations cleared (auto + wear modules).** `auto`: extract
+  `PCT_MULTIPLIER` constant; `wear`: split long `MonitorPage`, `SessionPopupCentre`
+  into helper composables; delete unused private `ServersPage`.
+
+- **Gitleaks false positive suppressed.** `.gitleaks.toml` added to exclude vendored
+  `xterm.min.js` from the `generic-api-key` scan.
+
+- **Missing Wear watchface dependency committed.** `WaitingComplicationService.kt`
+  (added in v0.56.0) referenced `watchface-complications-data-source` which was never
+  committed to `wear/build.gradle.kts` or `gradle/libs.versions.toml`.
+
+- **Three unused imports removed** (`McpChannelCard`, `PrdDetailDialog`,
+  `SessionLoadingOverlay`) flagged by ktlint.
+
 ## [0.58.0] — 2026-05-04 (quick-commands from API · PRD card colors · reconnect refresh)
 
 ### Added

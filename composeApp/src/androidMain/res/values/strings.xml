@@ -48,6 +48,8 @@
     <string name="settings_tab_general">General</string>
     <string name="settings_tab_comms">Comms</string>
     <string name="settings_tab_llm">LLM</string>
+    <string name="settings_tab_automata">Automata</string>
+    <string name="settings_tab_plugins">Plugins</string>
     <string name="settings_tab_about">About</string>
     <string name="settings_switch_server">Switch server</string>
 
@@ -190,7 +192,7 @@
     <string name="new_prd_display_title_label">Title (optional)</string>
     <string name="new_prd_profile_label">Profile</string>
     <string name="new_prd_decomp_profile_label">Decomposition profile</string>
-    <string name="new_prd_project_dir_label">Project directory</string>
+    <string name="new_prd_project_dir_label">Workspace (profile or folder)</string>
     <string name="new_prd_backend_label">Backend</string>
     <string name="new_prd_effort_label">Effort</string>
     <string name="new_prd_model_label">Model</string>
