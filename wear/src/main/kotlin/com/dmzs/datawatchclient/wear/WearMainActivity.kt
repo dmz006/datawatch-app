@@ -489,13 +489,8 @@ private fun MonitorPage(
     state: WearSessionCountsViewModel.UiState,
     onSelectServer: (String) -> Unit = {},
 ) {
-    if (state.loading) {
-        WearSplash()
-        return
-    }
+    if (state.loading) { WearSplash(); return }
     var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
-
-    // Explicit Box so ServerDetailOverlay renders on top of PageScaffold.
     Box(Modifier.fillMaxSize()) {
         PageScaffold(stringResource(R.string.wear_page_monitor)) {
             if (state.pairedServer.isEmpty()) {
@@ -507,91 +502,11 @@ private fun MonitorPage(
                 return@PageScaffold
             }
             if (state.allServerStats.size > 1) {
-                // Multi-server: row per server.
-                // Tap the server name → switch active server.
-                // Tap the gauge rings → open full detail overlay.
-                state.allServerStats.forEach { s ->
-                    val isActive = s.name == state.serverName
-                    val profileId = state.profiles.firstOrNull { it.second == s.name }?.first
-                    // Active server: teal ✓ + bold; inactive: ●/○ in muted colour
-                    val prefix = if (isActive) "✓" else if (s.online) "●" else "○"
-                    val nameColor = when {
-                        isActive -> MaterialTheme.colors.primary
-                        s.online -> MaterialTheme.colors.onSurface
-                        else -> MaterialTheme.colors.error
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                            .background(
-                                color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                            )
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Server name — tap to select as active server
-                        Text(
-                            "$prefix ${s.name}",
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(enabled = profileId != null && !isActive) {
-                                    onSelectServer(profileId!!)
-                                },
-                            style = MaterialTheme.typography.caption2,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                            color = nameColor,
-                        )
-                        // Gauge rings — tap to open detail popup
-                        if (s.online) {
-                            Row(
-                                modifier = Modifier.clickable { detailServer = s },
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                GaugeRing("CPU", s.cpuPct, "${s.cpuPct.toInt()}%", sizeDp = 38)
-                                GaugeRing("MEM", s.memPct, "${s.memPct.toInt()}%", sizeDp = 38)
-                            }
-                        }
-                    }
-                }
+                MonitorMultiServerSection(state, onSelectServer) { detailServer = it }
             } else {
-                // Single server: server name + tappable gauge grid.
-                val activeStat = WearSessionCountsViewModel.AllServerStat(
-                    name = state.serverName,
-                    cpuPct = state.cpuPctFor(),
-                    memPct = state.memPct(),
-                    sessionsTotal = state.total,
-                    online = state.pairedServer.isNotEmpty(),
-                )
-                Text(
-                    "● ${state.serverName}",
-                    modifier = Modifier.padding(top = 2.dp),
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.primary,
-                )
-                Box(modifier = Modifier.clickable { detailServer = activeStat }) {
-                    MonitorGaugeGrid(state)
-                }
-                if (state.uptimeSeconds > 0) {
-                    Text(
-                        "up ${state.uptimeText()}",
-                        modifier = Modifier.padding(top = 4.dp),
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurfaceVariant,
-                    )
-                }
-                if (state.hasGpu() && state.gpuMemTotalMb > 0) {
-                    Text(
-                        "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
-                        style = MaterialTheme.typography.caption3,
-                        color = MaterialTheme.colors.onSurfaceVariant,
-                    )
-                }
+                MonitorSingleServerSection(state) { detailServer = it }
             }
         }
-
-        // Full-screen detail popup — rendered in the Box so it overlays PageScaffold.
         detailServer?.let { s ->
             ServerDetailOverlay(
                 stat = s,
@@ -600,6 +515,92 @@ private fun MonitorPage(
                 onDismiss = { detailServer = null },
             )
         }
+    }
+}
+
+@Composable
+private fun MonitorMultiServerSection(
+    state: WearSessionCountsViewModel.UiState,
+    onSelectServer: (String) -> Unit,
+    onShowDetail: (WearSessionCountsViewModel.AllServerStat) -> Unit,
+) {
+    state.allServerStats.forEach { s ->
+        val isActive = s.name == state.serverName
+        val profileId = state.profiles.firstOrNull { it.second == s.name }?.first
+        val prefix = if (isActive) "✓" else if (s.online) "●" else "○"
+        val nameColor = when {
+            isActive -> MaterialTheme.colors.primary
+            s.online -> MaterialTheme.colors.onSurface
+            else -> MaterialTheme.colors.error
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp)
+                .background(
+                    color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "$prefix ${s.name}",
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(enabled = profileId != null && !isActive) { onSelectServer(profileId!!) },
+                style = MaterialTheme.typography.caption2,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                color = nameColor,
+            )
+            if (s.online) {
+                Row(
+                    modifier = Modifier.clickable { onShowDetail(s) },
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    GaugeRing("CPU", s.cpuPct, "${s.cpuPct.toInt()}%", sizeDp = 38)
+                    GaugeRing("MEM", s.memPct, "${s.memPct.toInt()}%", sizeDp = 38)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonitorSingleServerSection(
+    state: WearSessionCountsViewModel.UiState,
+    onShowDetail: (WearSessionCountsViewModel.AllServerStat) -> Unit,
+) {
+    val activeStat = WearSessionCountsViewModel.AllServerStat(
+        name = state.serverName,
+        cpuPct = state.cpuPctFor(),
+        memPct = state.memPct(),
+        sessionsTotal = state.total,
+        online = state.pairedServer.isNotEmpty(),
+    )
+    Text(
+        "● ${state.serverName}",
+        modifier = Modifier.padding(top = 2.dp),
+        style = MaterialTheme.typography.caption1,
+        color = MaterialTheme.colors.primary,
+    )
+    Box(modifier = Modifier.clickable { onShowDetail(activeStat) }) {
+        MonitorGaugeGrid(state)
+    }
+    if (state.uptimeSeconds > 0) {
+        Text(
+            "up ${state.uptimeText()}",
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.caption2,
+            color = MaterialTheme.colors.onSurfaceVariant,
+        )
+    }
+    if (state.hasGpu() && state.gpuMemTotalMb > 0) {
+        Text(
+            "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
+            style = MaterialTheme.typography.caption3,
+            color = MaterialTheme.colors.onSurfaceVariant,
+        )
     }
 }
 
@@ -1119,9 +1120,6 @@ private fun SessionPopupCentre(
     onQuickReply: (String) -> Unit = {},
     onStop: () -> Unit = {},
 ) {
-    val transcript = voice.transcript
-    val recording = voice.recording
-    val transcribing = voice.transcribing
     Column(
         modifier =
             Modifier
@@ -1130,10 +1128,7 @@ private fun SessionPopupCentre(
                 .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Text(
                 "✕",
                 style = MaterialTheme.typography.caption1,
@@ -1148,87 +1143,70 @@ private fun SessionPopupCentre(
             fontWeight = FontWeight.SemiBold,
             maxLines = 2,
         )
-        Text(
-            session.stateName.lowercase(),
-            style = MaterialTheme.typography.caption2,
-            color = sessionBadgeColor(session.stateName),
-        )
-        // B34: always show "Loading…" until the fresh /datawatch/sessionDetail
-        // reply arrives. Do NOT fall back to session.lastLine (stale DataLayer
-        // preview) — that causes the popup to render outdated content on first
-        // open while the reply is still in-flight.
+        Text(session.stateName.lowercase(), style = MaterialTheme.typography.caption2,
+            color = sessionBadgeColor(session.stateName))
+        // B34: always show "Loading…" until fresh /datawatch/sessionDetail arrives;
+        // never fall back to stale DataLayer preview.
         if (fullBody == null) {
-            Text(
-                stringResource(R.string.wear_session_loading),
+            Text(stringResource(R.string.wear_session_loading),
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
+                color = MaterialTheme.colors.onSurfaceVariant)
         } else if (fullBody.isNotBlank()) {
-            Text(
-                fullBody,
+            Text(fullBody, modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.onSurface)
+        }
+        SessionVoiceStatusRow(voice)
+        if (session.stateName.equals("waiting", ignoreCase = true) &&
+            !voice.recording && !voice.transcribing
+        ) {
+            SessionWaitingButtons(onQuickReply, onStop)
+        }
+    }
+}
+
+@Composable
+private fun SessionVoiceStatusRow(voice: VoiceUiState) {
+    when {
+        voice.recording ->
+            Text(stringResource(R.string.wear_session_listening),
                 modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.onSurface,
-            )
-        }
-        when {
-            recording ->
-                Text(
-                    stringResource(R.string.wear_session_listening),
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.caption1,
-                    color = Color(0xFFEF4444),
-                )
-            transcribing ->
-                Text(
-                    stringResource(R.string.wear_session_processing),
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.primary,
-                )
-            transcript.isNotBlank() ->
-                Text(
-                    stringResource(R.string.wear_session_tap_send),
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.primary,
-                    maxLines = 3,
-                )
-        }
-        if (session.stateName.equals("waiting", ignoreCase = true) && !recording && !transcribing) {
-            Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    stringResource(R.string.wear_action_continue),
-                    style = MaterialTheme.typography.button,
-                    color = MaterialTheme.colors.primary,
-                    modifier =
-                        Modifier
-                            .background(
-                                MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                            )
-                            .clickable { onQuickReply("y") }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-                Text(
-                    stringResource(R.string.wear_action_stop),
-                    style = MaterialTheme.typography.button,
-                    color = MaterialTheme.colors.error,
-                    modifier =
-                        Modifier
-                            .background(
-                                MaterialTheme.colors.error.copy(alpha = 0.2f),
-                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                            )
-                            .clickable { onStop() }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-            }
-        }
+                style = MaterialTheme.typography.caption1, color = Color(0xFFEF4444))
+        voice.transcribing ->
+            Text(stringResource(R.string.wear_session_processing),
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.primary)
+        voice.transcript.isNotBlank() ->
+            Text(stringResource(R.string.wear_session_tap_send),
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.primary,
+                maxLines = 3)
+    }
+}
+
+@Composable
+private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> Unit) {
+    Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            stringResource(R.string.wear_action_continue),
+            style = MaterialTheme.typography.button,
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+                .background(MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                .clickable { onQuickReply("y") }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+        Text(
+            stringResource(R.string.wear_action_stop),
+            style = MaterialTheme.typography.button,
+            color = MaterialTheme.colors.error,
+            modifier = Modifier
+                .background(MaterialTheme.colors.error.copy(alpha = 0.2f),
+                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                .clickable { onStop() }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -1319,89 +1297,6 @@ private fun prdStatusColor(status: String): Color =
         "revisions_asked" -> Color(0xFFA855F7)
         else -> Color(0xFF94A3B8)
     }
-
-@Composable
-private fun ServersPage(
-    state: WearSessionCountsViewModel.UiState,
-    onPick: (String) -> Unit,
-) {
-    var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
-
-    PageScaffold(stringResource(R.string.wear_page_server)) {
-        if (state.profiles.isEmpty()) {
-            Text(
-                stringResource(R.string.wear_servers_empty),
-                modifier = Modifier.padding(top = 10.dp),
-                style = MaterialTheme.typography.body2,
-            )
-            return@PageScaffold
-        }
-        state.profiles.forEach { (id, name) ->
-            val isActive = id == state.pairedServer
-            val serverStat = state.allServerStats.firstOrNull { it.name == name }
-            val dotColor = when {
-                isActive -> MaterialTheme.colors.primary
-                serverStat?.online == false -> MaterialTheme.colors.error
-                else -> MaterialTheme.colors.onSurfaceVariant
-            }
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 3.dp)
-                        .background(
-                            color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                        )
-                        .clickable {
-                            if (serverStat != null) detailServer = serverStat
-                            onPick(id)
-                        }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            if (serverStat?.online == false) "○" else "●",
-                            style = MaterialTheme.typography.caption2,
-                            color = dotColor,
-                        )
-                        Text(
-                            name,
-                            modifier = Modifier.padding(start = 6.dp),
-                            style = MaterialTheme.typography.caption2,
-                            color = if (isActive) MaterialTheme.colors.onSurface else MaterialTheme.colors.onSurfaceVariant,
-                        )
-                    }
-                    serverStat?.let { s ->
-                        if (s.online) {
-                            Text(
-                                "${"%.0f".format(s.cpuPct)}% CPU · ${"%.0f".format(s.memPct)}% Mem",
-                                style = MaterialTheme.typography.caption3,
-                                color = MaterialTheme.colors.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-                if (serverStat?.online == true) {
-                    GaugeRing("CPU", serverStat.cpuPct, "${serverStat.cpuPct.toInt()}%", sizeDp = 34)
-                    Spacer(Modifier.size(2.dp))
-                    GaugeRing("MEM", serverStat.memPct, "${serverStat.memPct.toInt()}%", sizeDp = 34)
-                }
-            }
-        }
-    }
-
-    detailServer?.let { s ->
-        ServerDetailOverlay(
-            stat = s,
-            isActive = s.name == state.serverName,
-            activeState = state,
-            onDismiss = { detailServer = null },
-        )
-    }
-}
 
 /**
  * v0.42.11 — About page rewritten to mirror the phone's About card

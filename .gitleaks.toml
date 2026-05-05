@@ -1,0 +1,11 @@
+title = "datawatch-app gitleaks config"
+
+[extend]
+# Extend the default gitleaks rules.
+useDefault = true
+
+[[allowlists]]
+description = "Vendored minified JS assets — xterm.min.js contains strings that match generic-api-key heuristic"
+paths = [
+    "composeApp/src/androidMain/assets/xterm/.*\\.js",
+]

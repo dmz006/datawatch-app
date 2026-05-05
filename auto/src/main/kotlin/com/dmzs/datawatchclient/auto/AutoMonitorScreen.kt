@@ -245,7 +245,7 @@ private fun buildServerSummary(s: StatsDto): String {
     val cores = s.cpuCores
     val cpuPct =
         when {
-            load1 != null && cores != null && cores > 0 -> (load1 / cores * 100).toInt()
+            load1 != null && cores != null && cores > 0 -> (load1 / cores * PCT_MULTIPLIER).toInt()
             s.cpuPct != null -> s.cpuPct!!.toInt()
             else -> null
         }
@@ -264,6 +264,7 @@ private fun buildServerSummary(s: StatsDto): String {
 // Named constants satisfy detekt's MagicNumber rule while keeping
 // the byte / time maths readable. Decimal (SI) units rather than
 // binary (IEC) — matches `fmt`'s "GB / MB / KB" strings.
+private const val PCT_MULTIPLIER: Int = 100
 private const val BYTES_PER_KB: Long = 1_000L
 private const val BYTES_PER_MB: Long = 1_000_000L
 private const val BYTES_PER_GB: Long = 1_000_000_000L
