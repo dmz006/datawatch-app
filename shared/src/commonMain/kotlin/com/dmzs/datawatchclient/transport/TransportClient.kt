@@ -399,6 +399,17 @@ public interface TransportClient {
         parentName: String? = null,
     ): Result<String>
 
+    /**
+     * POST /api/memory/remember `{text, role?, tags?}` — manually store a
+     * memory entry. Returns the stored memory object. Role defaults to
+     * "manual" when omitted.
+     */
+    public suspend fun memoryRemember(
+        text: String,
+        role: String = "manual",
+        tags: List<String> = emptyList(),
+    ): Result<kotlinx.serialization.json.JsonObject>
+
     // ---- v0.38.0 autonomous PRD lifecycle (datawatch BL191) ----
 
     /** GET /api/autonomous/prds — list PRDs (issue #11–13). */

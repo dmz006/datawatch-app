@@ -8,6 +8,25 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.69.0] — 2026-05-05 (Memory Add + Timeline + Research — BL12)
+
+### Added
+
+- **Add memory button in MemoryCard (BL12).** [+] icon in the section header opens
+  `AddMemoryDialog` with a text field + optional comma-separated tags. Saves via
+  `POST /api/memory/remember`. List refreshes on success.
+
+- **Memory Timeline tab.** Chronological view of memories from `GET /api/memory/list`,
+  grouped by date with a left-side time marker showing role and content.
+
+- **Memory Research tab.** Dedicated search field with results rendered as expandable
+  cards showing content, similarity score, role chip, and pin/delete actions. Uses
+  `GET /api/memory/search` — same endpoint as List search but displayed with
+  similarity scores visible.
+
+- **`memoryRemember(text, role, tags)` transport method** added to `TransportClient`
+  and `RestTransport` → `POST /api/memory/remember`.
+
 ## [0.67.0] — 2026-05-05 (Adjustable terminal dimensions — BL13)
 
 ### Added
