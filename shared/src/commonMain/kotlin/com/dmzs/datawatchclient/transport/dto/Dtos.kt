@@ -506,6 +506,57 @@ public data class NewPrdResponseDto(
 )
 
 // ============================================================
+// v0.61.0 — BL221 Phase 2: Template Store (datawatch v6.2.0)
+// ============================================================
+
+@Serializable
+public data class TemplateDto(
+    val id: String = "",
+    val title: String = "",
+    val spec: String = "",
+    val type: String? = null,
+    val tags: List<String> = emptyList(),
+    val description: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+public data class TemplateListDto(
+    val templates: List<TemplateDto> = emptyList(),
+)
+
+@Serializable
+public data class CreateTemplateRequestDto(
+    val title: String,
+    val spec: String,
+    val type: String? = null,
+    val tags: List<String> = emptyList(),
+    val description: String? = null,
+)
+
+@Serializable
+public data class UpdateTemplateRequestDto(
+    val title: String? = null,
+    val spec: String? = null,
+    val type: String? = null,
+    val tags: List<String>? = null,
+    val description: String? = null,
+)
+
+@Serializable
+public data class InstantiateTemplateRequestDto(
+    @SerialName("project_dir") val projectDir: String? = null,
+    @SerialName("project_profile") val projectProfile: String? = null,
+    val vars: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+public data class ClonePrdToTemplateRequestDto(
+    val description: String? = null,
+    val actor: String? = null,
+)
+
+// ============================================================
 // v0.39.0 — orchestrator PRD-DAG graph (datawatch v4.7.0 / S13)
 // ============================================================
 

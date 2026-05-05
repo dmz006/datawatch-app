@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.60.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.61.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -23,6 +23,7 @@ Items drawn from two sources:
 **#31, #41, #49 shipped in v0.58.0 (2026-05-04).**
 **#47, #48 shipped in v0.59.0 (2026-05-04).**
 **#40 shipped in v0.60.0 (2026-05-04).**
+**#44 shipped in v0.61.0 (2026-05-04).**
 
 ---
 
@@ -176,7 +177,7 @@ Auto pick leaves whisper alone; LLM Whisper field read-only.
 
 ---
 
-## v0.61.0 — BL221 Phase 2: Template Store (issue #44, parent v6.2.0)
+## ✅ v0.61.0 — BL221 Phase 2: Template Store (issue #44, parent v6.2.0) — SHIPPED 2026-05-04
 
 **Goal:** full Templates CRUD surface inside the Automata tab.
 
