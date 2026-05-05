@@ -52,4 +52,28 @@
     <string name="action_no">No</string>
     <string name="common_loading">Cargando…</string>
     <string name="common_no_alerts">No hay alertas.</string>
+
+    <!-- ── BL252 i18n sync (v0.65.0) ── -->
+    <string name="signal_btn_retry_linking">Reintentar vinculación</string>
+    <string name="signal_btn_start_linking">Iniciar vinculación</string>
+    <string name="signal_linked">Vinculado</string>
+    <string name="signal_not_linked">No vinculado</string>
+    <string name="state_config_unavailable">Configuración no disponible</string>
+    <string name="state_failed_to_load">Error al cargar</string>
+    <string name="state_loading">Cargando…</string>
+    <string name="state_log_unavailable">Log no disponible</string>
+    <string name="state_querying">Consultando…</string>
+    <string name="state_running">Ejecutando…</string>
+    <string name="state_saved">Guardado.</string>
+    <string name="state_unavailable">No disponible</string>
+    <string name="state_unknown">Desconocido</string>
+    <string name="status_connected">Conectado</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_updated_to">Actualizado a %1$s</string>
+    <string name="toast_connected_local">Conectado al servidor local</string>
+    <string name="toast_connected_to">Conectado a: %1$s</string>
+    <string name="voice_click_stop">Clic para detener</string>
+    <string name="voice_click_stop_recording">Clic para detener la grabación</string>
+    <string name="voice_recording_status">grabando — clic de nuevo para detener</string>
+    <string name="voice_transcribing">Transcribiendo…</string>
 </resources>

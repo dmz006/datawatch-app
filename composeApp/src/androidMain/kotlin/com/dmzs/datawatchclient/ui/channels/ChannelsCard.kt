@@ -32,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -204,14 +206,14 @@ public fun ChannelsCard() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    if (signalLinked) "Signal: Linked" else "Signal: Not linked",
+                    if (signalLinked) stringResource(R.string.signal_linked_status) else stringResource(R.string.signal_unlinked_status),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (signalLinked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 OutlinedButton(
                     onClick = { signalLinkOpen = true },
-                ) { Text(if (signalLinked) "Re-link" else "Link Signal", style = MaterialTheme.typography.labelSmall) }
+                ) { Text(if (signalLinked) stringResource(R.string.signal_relink_button) else stringResource(R.string.signal_link_button), style = MaterialTheme.typography.labelSmall) }
             }
         }
     }

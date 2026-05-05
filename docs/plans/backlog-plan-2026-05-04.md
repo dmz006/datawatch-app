@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.64.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.65.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -27,6 +27,7 @@ Items drawn from two sources:
 **#45 shipped in v0.62.0 (2026-05-04).**
 **#43 shipped in v0.63.0 (2026-05-04).**
 **BL21 shipped in v0.64.0 (2026-05-04).**
+**#46 shipped in v0.65.0 (2026-05-04).**
 
 ---
 
@@ -391,7 +392,7 @@ persists and shows in Channels card.
 
 ---
 
-## v0.65.0 — i18n: full sync BL252 (~190 keys) (issue #46, parent v6.5.5–v6.6.0)
+## ✅ v0.65.0 — i18n: full sync BL252 (~190 keys) (issue #46, parent v6.5.5–v6.6.0) — SHIPPED 2026-05-04
 
 **Goal:** one dedicated pass to sync all 5 locale bundles (en/de/es/fr/ja) with the
 190 new keys from PWA BL252 phases 1–7, plus any keys added by v0.58.0–v0.64.0 work above

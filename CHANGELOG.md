@@ -8,6 +8,26 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.65.0] — 2026-05-04 (i18n full sync BL252 — issue #46)
+
+### Added
+
+- **375 missing string keys added across all 5 locale bundles (EN/DE/ES/FR/JA).**
+  Sources: PWA BL252 phases 1–7 (`dmz006/datawatch@v6.6.0`
+  `internal/server/web/locales/`) plus stub keys from v0.58–v0.64.
+  Topics: session filter, schedule inputs, new-session form, PRD modal lifecycle,
+  stats section headings, alerts empty state, Settings identity cards, nav labels,
+  session action buttons, terminal strings, voice status, LLM/memory/KG strings,
+  Template Store, scan, type registry, Guided Mode, Skills, Signal linking.
+
+- **22 signal/state/voice/toast keys added to `wear/` locale bundles.**
+  Covers `signal_*`, `state_*`, `status_*`, `toast_*`, `voice_*` keys visible
+  on Wear surfaces.
+
+- **String resources wired in `SignalLinkingDialog` and `ChannelsCard`.** All
+  user-visible text now goes through `stringResource()` so non-EN locales
+  render correctly.
+
 ## [0.64.0] — 2026-05-04 (Signal device-linking — BL21 — datawatch#31)
 
 ### Added
