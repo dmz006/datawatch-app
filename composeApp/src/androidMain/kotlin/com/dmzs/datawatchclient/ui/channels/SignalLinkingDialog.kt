@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,8 +51,12 @@ public fun SignalLinkingDialog(
     onLinked: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val strWaiting = stringResource(R.string.signal_link_waiting)
+    val strScanPrompt = stringResource(R.string.signal_link_scan_prompt)
+    val strSuccess = stringResource(R.string.signal_link_success)
+    val strNoServer = stringResource(R.string.servers_none_available)
     var qrFrame by remember { mutableStateOf<LinkQrFrameDto?>(null) }
-    var status by remember { mutableStateOf("Waiting for QR…") }
+    var status by remember { mutableStateOf(strWaiting) }
     var linked by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var sseJob by remember { mutableStateOf<Job?>(null) }
@@ -71,7 +77,7 @@ public fun SignalLinkingDialog(
 
     LaunchedEffect(Unit) {
         val transport = activeTransport() ?: run {
-            error = "No active server."
+            error = strNoServer
             return@LaunchedEffect
         }
         sseJob = scope.launch {
@@ -79,7 +85,7 @@ public fun SignalLinkingDialog(
                 .catch { e -> error = e.message ?: "Stream error" }
                 .collect { frame ->
                     qrFrame = frame
-                    status = "Scan with Signal on another device"
+                    status = strScanPrompt
                     // Check if pairing completed after each frame
                     val profiles = ServiceLocator.profileRepository.observeAll().first()
                     val activeId = ServiceLocator.activeServerStore.get()
@@ -89,7 +95,7 @@ public fun SignalLinkingDialog(
                     if (checkLinked(profile)) {
                         ServiceLocator.profileRepository.setSignalLinked(profile.id, true)
                         linked = true
-                        status = "Signal device linked!"
+                        status = strSuccess
                         onLinked()
                     }
                 }
@@ -108,7 +114,7 @@ public fun SignalLinkingDialog(
             }
             onDismiss()
         },
-        title = { Text("Link Signal device") },
+        title = { Text(stringResource(R.string.signal_link_title)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -116,7 +122,7 @@ public fun SignalLinkingDialog(
             ) {
                 if (linked) {
                     Text(
-                        "Linked successfully.",
+                        stringResource(R.string.signal_link_success),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -145,7 +151,7 @@ public fun SignalLinkingDialog(
         },
         confirmButton = {
             if (linked) {
-                TextButton(onClick = onDismiss) { Text("Done") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
             }
         },
         dismissButton = {
@@ -154,7 +160,7 @@ public fun SignalLinkingDialog(
                     sseJob?.cancel()
                     scope.launch { activeTransport()?.cancelSignalLink() }
                     onDismiss()
-                }) { Text("Cancel") }
+                }) { Text(stringResource(R.string.action_cancel)) }
             }
         },
     )
@@ -177,13 +183,13 @@ private fun QrImageView(imageBase64: String) {
         ) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Signal linking QR code",
+                contentDescription = stringResource(R.string.signal_link_title),
                 modifier = Modifier.size(184.dp),
             )
         }
     } else {
         Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-            Text("QR unavailable", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.signal_link_qr_unavailable), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

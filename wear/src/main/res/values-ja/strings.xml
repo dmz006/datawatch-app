@@ -52,4 +52,28 @@
     <string name="action_no">いいえ</string>
     <string name="common_loading">読み込み中…</string>
     <string name="common_no_alerts">アラートはありません。</string>
+
+    <!-- ── BL252 i18n sync (v0.65.0) ── -->
+    <string name="signal_btn_retry_linking">リンク再試行</string>
+    <string name="signal_btn_start_linking">リンク開始</string>
+    <string name="signal_linked">リンク済み</string>
+    <string name="signal_not_linked">未リンク</string>
+    <string name="state_config_unavailable">設定利用不可</string>
+    <string name="state_failed_to_load">読み込みに失敗</string>
+    <string name="state_loading">読み込み中…</string>
+    <string name="state_log_unavailable">ログ利用不可</string>
+    <string name="state_querying">クエリ中…</string>
+    <string name="state_running">実行中…</string>
+    <string name="state_saved">保存しました。</string>
+    <string name="state_unavailable">利用不可</string>
+    <string name="state_unknown">不明</string>
+    <string name="status_connected">接続済み</string>
+    <string name="status_disconnected">切断</string>
+    <string name="status_updated_to">%1$s に更新</string>
+    <string name="toast_connected_local">ローカルサーバーに接続</string>
+    <string name="toast_connected_to">接続先: %1$s</string>
+    <string name="voice_click_stop">クリックして停止</string>
+    <string name="voice_click_stop_recording">クリックして録音を停止</string>
+    <string name="voice_recording_status">録音中 — もう一度クリックして停止</string>
+    <string name="voice_transcribing">文字起こし中…</string>
 </resources>
