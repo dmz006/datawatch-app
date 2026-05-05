@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.67.0] — 2026-05-05 (Adjustable terminal dimensions — BL13)
+
+### Added
+
+- **`TerminalDimensionsCard` in Settings → General (BL13).** Two steppers (Columns 0–250 step
+  10; Rows 0–80 step 5) persisted to SharedPreferences. Value 0 = use backend default
+  (80×24, or 120×40 for claude-code backends). Applied per-session in `SessionDetailScreen`
+  via `terminalController.setMinSize()`.
+
+- **`TerminalPrefs` constants** (`KEY_COLS`, `KEY_ROWS`, `DEFAULT_COLS`, `DEFAULT_ROWS`) in
+  `prefs/TerminalPrefs.kt`.
+
 ## [0.66.0] — 2026-05-05 (Skill Registries — BL255 — issue #50)
 
 ### Added

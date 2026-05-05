@@ -268,6 +268,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
                                 )
+                                // BL13 — adjustable terminal dimensions (v0.67.0)
+                                TerminalDimensionsCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                                 )

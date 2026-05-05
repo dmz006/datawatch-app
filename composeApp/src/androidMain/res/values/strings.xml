@@ -770,4 +770,24 @@
     <string name="skills_none_selected">None selected</string>
     <string name="skills_loading">Loading…</string>
     <string name="skills_registry_branch_label">Branch: %1$s</string>
+
+    <!-- ── BL13 Terminal dimensions (v0.67.0) ── -->
+    <string name="terminal_dims_title">Terminal dimensions</string>
+    <string name="terminal_dims_hint">0 = use backend default (80×24, or 120×40 for claude-code)</string>
+    <string name="terminal_dims_cols">Columns</string>
+    <string name="terminal_dims_rows">Rows</string>
+    <string name="terminal_dims_auto">auto</string>
+
+    <!-- ── BL12 Memory Add + Timeline + Research (v0.69.0) ── -->
+    <string name="memory_add_title">Add memory</string>
+    <string name="memory_add_text_label">Text to remember</string>
+    <string name="memory_add_tags_label">Tags (comma-separated, optional)</string>
+    <string name="memory_add_tags_hint">e.g. project, decision, design</string>
+    <string name="memory_tab_list">List</string>
+    <string name="memory_tab_timeline">Timeline</string>
+    <string name="memory_tab_research">Research</string>
+    <string name="memory_timeline_empty">No memories found.</string>
+    <string name="memory_research_empty">No results. Try a different query.</string>
+    <string name="memory_research_query_hint">Search query…</string>
+    <string name="memory_similarity_label">similarity</string>
 </resources>

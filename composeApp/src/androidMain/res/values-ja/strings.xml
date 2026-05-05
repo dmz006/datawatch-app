@@ -691,4 +691,24 @@
     <string name="skills_none_selected">選択なし</string>
     <string name="skills_loading">読み込み中…</string>
     <string name="skills_registry_branch_label">ブランチ: %1$s</string>
+
+    <!-- ── BL13 Terminal dimensions (v0.67.0) ── -->
+    <string name="terminal_dims_title">ターミナルの寸法</string>
+    <string name="terminal_dims_hint">0 = バックエンドのデフォルトを使用 (80×24、またはclaude-codeは120×40)</string>
+    <string name="terminal_dims_cols">列</string>
+    <string name="terminal_dims_rows">行</string>
+    <string name="terminal_dims_auto">自動</string>
+
+    <!-- ── BL12 Memory Add + Timeline + Research (v0.69.0) ── -->
+    <string name="memory_add_title">メモリを追加</string>
+    <string name="memory_add_text_label">覚えるテキスト</string>
+    <string name="memory_add_tags_label">タグ（カンマ区切り、任意）</string>
+    <string name="memory_add_tags_hint">例: プロジェクト、決定</string>
+    <string name="memory_tab_list">リスト</string>
+    <string name="memory_tab_timeline">タイムライン</string>
+    <string name="memory_tab_research">リサーチ</string>
+    <string name="memory_timeline_empty">メモリが見つかりません。</string>
+    <string name="memory_research_empty">結果がありません。</string>
+    <string name="memory_research_query_hint">検索クエリ…</string>
+    <string name="memory_similarity_label">類似度</string>
 </resources>
