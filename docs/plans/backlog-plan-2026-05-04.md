@@ -4,7 +4,7 @@
 for items not yet assigned to a version. This document is the single authoritative sequencing
 of open work until v1.0.0.*
 
-**Current version:** v0.58.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
+**Current version:** v0.59.0 · **Rules:** each phase → new minor · i18n in one pass at end ·
 Settings strict-mirrors PWA (Automata + Plugins tabs added; mobile-specific items like biometric stay) ·
 Issues closed when code ships.
 
@@ -21,6 +21,7 @@ Items drawn from two sources:
 
 **#42 closed 2026-05-04** — fix shipped in commit `a6c8e49`.
 **#31, #41, #49 shipped in v0.58.0 (2026-05-04).**
+**#47, #48 shipped in v0.59.0 (2026-05-04).**
 
 ---
 
@@ -87,7 +88,7 @@ dismiss, state is immediately fresh.
 
 ---
 
-## v0.59.0 — Settings reorganization + Automata UX (issues #48, #47)
+## ✅ v0.59.0 — Settings reorganization + Automata UX (issues #48, #47) — SHIPPED 2026-05-04
 
 **Goal:** bring Settings tab structure and Automata tab UX into strict alignment with PWA
 v6.5.1 (BL247 + BL246).
