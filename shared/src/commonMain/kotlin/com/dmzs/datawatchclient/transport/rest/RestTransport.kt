@@ -42,6 +42,12 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.TemplateDto
 import com.dmzs.datawatchclient.transport.dto.TemplateListDto
 import com.dmzs.datawatchclient.transport.dto.UpdateTemplateRequestDto
+import com.dmzs.datawatchclient.transport.dto.SkillRegistryDto
+import com.dmzs.datawatchclient.transport.dto.SkillRegistryRequestDto
+import com.dmzs.datawatchclient.transport.dto.SkillRegistryUpdateDto
+import com.dmzs.datawatchclient.transport.dto.SkillDto
+import com.dmzs.datawatchclient.transport.dto.AvailableSkillDto
+import com.dmzs.datawatchclient.transport.dto.SyncSkillsRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -1537,6 +1543,89 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }
             Unit
+        }
+
+    // ------ BL255: Skill Registries (datawatch v6.7.0) ------
+
+    override suspend fun listSkillRegistries(): Result<List<SkillRegistryDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/skills/registries") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createSkillRegistry(req: SkillRegistryRequestDto): Result<SkillRegistryDto> =
+        request {
+            client.post("${profile.baseUrl}/api/skills/registries") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun updateSkillRegistry(name: String, req: SkillRegistryUpdateDto): Result<SkillRegistryDto> =
+        request {
+            client.put("${profile.baseUrl}/api/skills/registries/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun deleteSkillRegistry(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/skills/registries/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun addDefaultSkillRegistry(): Result<SkillRegistryDto> =
+        request {
+            client.post("${profile.baseUrl}/api/skills/registries/add-default") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun connectSkillRegistry(name: String): Result<SkillRegistryDto> =
+        request {
+            client.post("${profile.baseUrl}/api/skills/registries/$name/connect") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun listAvailableSkills(name: String): Result<List<AvailableSkillDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/skills/registries/$name/available") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun syncSkills(name: String, req: SyncSkillsRequestDto): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/skills/registries/$name/sync") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }
+            Unit
+        }
+
+    override suspend fun unsyncSkills(name: String, req: SyncSkillsRequestDto): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/skills/registries/$name/unsync") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }
+            Unit
+        }
+
+    override suspend fun listSyncedSkills(): Result<List<SkillDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/skills") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
         }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
