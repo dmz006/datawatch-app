@@ -35,6 +35,13 @@ import com.dmzs.datawatchclient.transport.dto.SetActiveBackendDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionDto
 import com.dmzs.datawatchclient.transport.dto.StartSessionResponseDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
+import com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto
+import com.dmzs.datawatchclient.transport.dto.CreateTemplateRequestDto
+import com.dmzs.datawatchclient.transport.dto.InstantiateTemplateRequestDto
+import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.transport.dto.TemplateDto
+import com.dmzs.datawatchclient.transport.dto.TemplateListDto
+import com.dmzs.datawatchclient.transport.dto.UpdateTemplateRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -958,6 +965,71 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 if (hard) parameter("hard", "true")
             }.body<Unit>()
+        }
+
+    // ---- v0.61.0 Template Store ----
+
+    override suspend fun listTemplates(): Result<TemplateListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/templates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createTemplate(req: CreateTemplateRequestDto): Result<TemplateDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/templates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun getTemplate(id: String): Result<TemplateDto> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/templates/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun updateTemplate(id: String, req: UpdateTemplateRequestDto): Result<TemplateDto> =
+        request {
+            client.put("${profile.baseUrl}/api/autonomous/templates/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun deleteTemplate(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/autonomous/templates/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<Unit>()
+        }
+
+    override suspend fun instantiateTemplate(
+        id: String,
+        req: InstantiateTemplateRequestDto,
+    ): Result<PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/templates/$id/instantiate") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+
+    override suspend fun clonePrdToTemplate(
+        prdId: String,
+        req: ClonePrdToTemplateRequestDto,
+    ): Result<TemplateDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/clone_to_template") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
         }
 
     override suspend fun listChannels(): Result<List<kotlinx.serialization.json.JsonObject>> =

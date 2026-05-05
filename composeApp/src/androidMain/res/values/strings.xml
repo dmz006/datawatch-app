@@ -185,6 +185,23 @@
     <string name="autonomous_depth">depth %1$d</string>
     <string name="autonomous_template_label">template</string>
     <string name="autonomous_story_count">%1$d stories</string>
+    <string name="autonomous_tab_prds">PRDs</string>
+    <string name="autonomous_tab_templates">Templates</string>
+
+    <!-- Template Store (v0.61.0 BL221 Phase 2) -->
+    <string name="tmpl_empty">No templates. Tap + to create one.</string>
+    <string name="tmpl_use">Use</string>
+    <string name="tmpl_create">New template</string>
+    <string name="tmpl_edit">Edit template</string>
+    <string name="tmpl_delete_confirm">Delete this template?</string>
+    <string name="tmpl_instantiate">Instantiate</string>
+    <string name="tmpl_clone_from_prd">Save as template</string>
+    <string name="tmpl_vars_title">Template variables</string>
+    <string name="tmpl_tags_label">Tags (comma-separated)</string>
+    <string name="tmpl_description_label">Description (optional)</string>
+    <string name="tmpl_title_label">Title (required)</string>
+    <string name="tmpl_spec_label">Spec (required)</string>
+    <string name="tmpl_type_label">Type</string>
 
     <!-- New PRD dialog -->
     <string name="new_prd_title">New PRD</string>

@@ -8,6 +8,41 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.61.0] — 2026-05-04 (Template Store UI — BL221 Phase 2 — issue #44)
+
+### Added
+
+- **Template Store tab in Autonomous screen (#44).** Autonomous screen gains a
+  PRDs / Templates `TabRow`. The Templates tab shows a `LazyColumn` of template
+  cards (title, type badge, up to 3 tag labels, description preview) with
+  Use / Edit / Delete actions per row.
+
+- **`TemplatesTab` composable** — list view with empty state, banner, and
+  inline `AlertDialog` for delete confirmation.
+
+- **`CreateEditTemplateSheet`** — `AlertDialog` for creating or editing a
+  template with title, spec (multiline), type, tags (comma-separated), and
+  description fields. Reused for both create and edit flows.
+
+- **`InstantiateTemplateDialog`** — detects `{{var}}` placeholders in the
+  template spec, renders one `OutlinedTextField` per unique variable, and
+  includes a project-dir field. Builds `InstantiateTemplateRequestDto` on
+  confirm.
+
+- **`TemplatesViewModel`** — MVVM VM with `refresh`, `createTemplate`,
+  `updateTemplate`, `deleteTemplate`, `instantiateTemplate`, and
+  `clonePrdToTemplate` operations, all following the `ProfileResolver.Default`
+  pattern.
+
+- **7 transport methods** (`listTemplates`, `createTemplate`, `getTemplate`,
+  `updateTemplate`, `deleteTemplate`, `instantiateTemplate`,
+  `clonePrdToTemplate`) added to `TransportClient` and implemented in
+  `RestTransport`.
+
+- **6 DTOs** (`TemplateDto`, `TemplateListDto`, `CreateTemplateRequestDto`,
+  `UpdateTemplateRequestDto`, `InstantiateTemplateRequestDto`,
+  `ClonePrdToTemplateRequestDto`) added to `Dtos.kt`.
+
 ## [0.60.0] — 2026-05-04 (language picker + whisper sync — issue #40)
 
 ### Added

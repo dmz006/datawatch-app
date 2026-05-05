@@ -462,6 +462,40 @@ public interface TransportClient {
         hard: Boolean = false,
     ): Result<Unit>
 
+    // ---- v0.61.0 BL221 Phase 2: Template Store (datawatch v6.2.0) ----
+
+    /** GET /api/autonomous/templates — list all templates. */
+    public suspend fun listTemplates(): Result<com.dmzs.datawatchclient.transport.dto.TemplateListDto>
+
+    /** POST /api/autonomous/templates — create a new template. */
+    public suspend fun createTemplate(
+        req: com.dmzs.datawatchclient.transport.dto.CreateTemplateRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.TemplateDto>
+
+    /** GET /api/autonomous/templates/{id} — fetch a single template. */
+    public suspend fun getTemplate(id: String): Result<com.dmzs.datawatchclient.transport.dto.TemplateDto>
+
+    /** PUT /api/autonomous/templates/{id} — update a template. */
+    public suspend fun updateTemplate(
+        id: String,
+        req: com.dmzs.datawatchclient.transport.dto.UpdateTemplateRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.TemplateDto>
+
+    /** DELETE /api/autonomous/templates/{id} — delete a template. */
+    public suspend fun deleteTemplate(id: String): Result<Unit>
+
+    /** POST /api/autonomous/templates/{id}/instantiate — create a PRD from a template. */
+    public suspend fun instantiateTemplate(
+        id: String,
+        req: com.dmzs.datawatchclient.transport.dto.InstantiateTemplateRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
+    /** POST /api/autonomous/prds/{id}/clone_to_template — save a PRD's spec as a template. */
+    public suspend fun clonePrdToTemplate(
+        prdId: String,
+        req: com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.TemplateDto>
+
     /**
      * GET /api/orchestrator/graphs/{id} — PRD-DAG graph with
      * per-node observer_summary (datawatch v4.7.0 / S13). Issue #7.
