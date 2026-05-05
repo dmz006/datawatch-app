@@ -255,15 +255,14 @@ All parity rows in [parity-plan.md](parity-plan.md) are ✅.
 
 | ID | Item | Status |
 |----|------|--------|
-| BL1 | Split `decisions/README.md` into per-ADR MADR files | open |
-| BL3 | Tablet two-pane session list + detail | open |
+| BL1 | Split `decisions/README.md` into per-ADR MADR files | **shipped** (all 43 ADRs in individual MADR files since ≤v0.35.0) |
+| BL3 | Tablet two-pane session list + detail | **shipped** AppRoot.kt ≥600 dp two-pane (v0.33.x) |
 | BL5 | iOS app content — beyond skeleton | **frozen** (2026-05-05) |
-| BL7 | Foldable support — Pixel Fold / Galaxy Z Fold | open |
-| BL11 | Full schedule editor CRUD | open |
-| BL12 | KG Add / Timeline / Research deeper views | open |
-| BL13 | Adjustable terminal dimensions | open |
+| BL7 | Foldable support — Pixel Fold / Galaxy Z Fold | **shipped** same 600 dp two-pane as BL3 (v0.33.x) |
+| BL11 | Full schedule editor CRUD | **shipped** v0.68.0 — edit dialog + PATCH transport |
+| BL12 | KG Add / Timeline / Research deeper views | **shipped** v0.69.0 — Add button, Timeline tab, Research tab |
+| BL13 | Adjustable terminal dimensions | **shipped** v0.67.0 — TerminalDimensionsCard + SharedPreferences |
 | BL14 | Raw YAML config editor, gated behind biometric + confirm | **frozen** (2026-05-05) |
-| BL14 | Raw YAML config editor, gated behind biometric + confirm | open |
 | BL15 | Localization — DE, ES, FR, JA | **shipped** v0.52.0 + v0.65.0 |
 | BL21 | Signal device-linking | **shipped** v0.64.0 |
 | BL221 | Automata BL221 phases 2–4 (Templates, Scan, Type/Skills) | **shipped** v0.61.0–v0.63.0 |
