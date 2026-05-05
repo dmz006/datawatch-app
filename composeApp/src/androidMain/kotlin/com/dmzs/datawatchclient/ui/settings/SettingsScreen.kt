@@ -358,12 +358,9 @@ public fun SettingsScreen(
                                 )
                             }
                             SettingsTab.About -> {
-                                // Daemon admin cluster — About carries the
-                                // actions that target daemon meta / process
-                                // lifecycle. v0.35.7 strips the raw
-                                // `ConfigViewerCard` to align with PWA About
-                                // (which has none); Settings → General config
-                                // panels already surface every actionable key.
+                                // v0.60.0 — language picker now at top of About
+                                // (PWA v5.28.3 parity). Daemon admin cluster below.
+                                LanguagePickerCard()
                                 AboutCard(activeProfile = activeProfile)
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
