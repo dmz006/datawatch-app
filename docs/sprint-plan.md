@@ -262,6 +262,7 @@ All parity rows in [parity-plan.md](parity-plan.md) are ✅.
 | BL11 | Full schedule editor CRUD | open |
 | BL12 | KG Add / Timeline / Research deeper views | open |
 | BL13 | Adjustable terminal dimensions | open |
+| BL14 | Raw YAML config editor, gated behind biometric + confirm | **frozen** (2026-05-05) |
 | BL14 | Raw YAML config editor, gated behind biometric + confirm | open |
 | BL15 | Localization — DE, ES, FR, JA | **shipped** v0.52.0 + v0.65.0 |
 | BL21 | Signal device-linking | **shipped** v0.64.0 |
