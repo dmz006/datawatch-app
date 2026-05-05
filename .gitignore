@@ -82,3 +82,14 @@ CLAUDE.md
 # Phone and watch screenshots (docs/media/phone/, docs/media/watch/)
 # are curated docs assets and ARE committed — only pwa/ is excluded.
 docs/media/pwa/
+
+# datawatch-managed (BL219)
+.aider.conf.yml
+.aider.chat.history.md
+.aider.tags.cache.v*/
+
+# datawatch-managed (BL219)
+.goose/
+
+# datawatch-managed (BL219)
+.gemini/
