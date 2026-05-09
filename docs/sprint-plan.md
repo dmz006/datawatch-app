@@ -268,3 +268,110 @@ All parity rows in [parity-plan.md](parity-plan.md) are ✅.
 | BL221 | Automata BL221 phases 2–4 (Templates, Scan, Type/Skills) | **shipped** v0.61.0–v0.63.0 |
 | BL252 | i18n full sync | **shipped** v0.65.0 |
 | BL255 | Skill Registries | **shipped** v0.66.0 |
+
+## v0.70+ sprint plan (post-parity upgrade arc)
+
+*Last updated 2026-05-09. Derived from triage of all 42 open issues on `dmz006/datawatch-app`
+and alignment with the parent datawatch server's v6.11+ feature surface. Sprint 0 is a
+placeholder for the "one more batch" the user mentioned before implementation begins.*
+
+*Version targets below are indicative — each sprint is a minor bump with as many patch
+releases as needed.*
+
+### Sprint overview
+
+| Sprint | Version target | Issues | Theme |
+|--------|---------------|--------|-------|
+| Sprint 0 | v0.70.0 | (TBD — incoming batch) | Pre-arc batch placeholder |
+| Sprint 1 | v0.70.x | #51, #52, #57, #59, #72, #73, #80 | Quick wins + UX alignment |
+| Sprint 2 | v0.71.x | #53, #56, #58, #74, #75 | Identity + Council Mode |
+| Sprint 3 | v0.72.x | #54, #55, #77, #82 | Algorithm + Evals + Vault |
+| Sprint 4 | v0.73.x | #83, #84–#90 | Docs-as-MCP (BL274) |
+| Sprint 5 | v0.74.x | #91, #92 | Sprint A close + Council wizard |
+| PWA-only | — | #60, #61, #62–#70, #76, #78, #79, #81 | No mobile action required |
+
+---
+
+### Sprint 0 — Incoming batch (v0.70.0)
+
+*Placeholder — user indicated one more batch of changes before the arc begins.*
+
+- TBD: capture any urgent parity fixes, locale gaps, or pre-arc tech-debt items here.
+- Exit criteria: main is clean; all known pre-arc P0/P1 issues addressed.
+
+---
+
+### Sprint 1 — Quick wins + UX alignment (~v0.70.x)
+
+Goal: rename `PRD → Automaton` everywhere, spread bottom nav, add Agents tab, and clear
+accumulated UX debt.
+
+| Issue | Description | Mobile work |
+|-------|-------------|-------------|
+| #59 | Rename "PRD" → "Automaton" throughout the UI | `AutonomousScreen`, all tab labels, strings, `PrdRow → AutomatonRow`, DTOs |
+| #51 | Bottom-nav spread — 5-item nav bar evenly spaced | `AppRoot.kt` bottom nav spacing |
+| #52 | Add Settings → Agents tab (separate from Automata) | New `AgentsTab` composable + nav entry; BL257–BL260 card stubs |
+| #57 | Card padding consistency (`pwaCard` inner padding) | Audit all `pwaCard()` call sites for consistent 16 dp inner padding |
+| #72 | Done-state sessions render at 60 % opacity in list | `SessionRow` alpha based on status |
+| #73 | Multi-select action bar for session list bulk ops | Selection state + `ActionBar` composable above the list |
+| #80 | Move theme picker from Settings → General to About | `ThemePickerCard` relocated to `AboutScreen` |
+
+---
+
+### Sprint 2 — Identity + Council Mode (~v0.71.x)
+
+Goal: implement BL257 Identity and BL260 Council Mode surface; align Automata/Agents tab split.
+
+| Issue | Description | Mobile work |
+|-------|-------------|-------------|
+| #53 | BL257 — Identity feature | `IdentityCard` in Settings → Agents; name/avatar/role fields; `identityGet/Set` transport |
+| #56 | BL260 — Council Mode toggle | `CouncilModeCard`; toggle + member-list; `councilModeGet/Set/listMembers` transport |
+| #75 | Stories redesign — Skills field, Council affordance | `NewPrdDialog` / `PrdDetailDialog`: Skills multi-select, Council indicator chip |
+| #74 | Peer stale-date badge + docs viewer in Federation card | `PeerRow` shows last-seen age; `DocsViewerSheet` bottom sheet |
+| #58 | Move BL257–BL260 cards from Agents → Automata tab | Reverse the stub placement from Sprint 1 per v6.11.1 move |
+
+---
+
+### Sprint 3 — Algorithm + Evals + Vault (~v0.72.x)
+
+Goal: implement BL258 Algorithm Mode, BL259 Evals, BL267 Vault; add theme toggle.
+
+| Issue | Description | Mobile work |
+|-------|-------------|-------------|
+| #54 | BL258 — Algorithm Mode | `AlgorithmModeCard`; mode picker + config; `algorithmModeGet/Set` transport |
+| #55 | BL259 — Evals | `EvalsCard` with run/review/export; `evalsList/Run/Results` transport |
+| #82 | BL267 — Vault | `VaultCard` in Settings → Security; secret CRUD + lock/unlock; `vaultList/Get/Set/Delete` transport |
+| #77 | Theme toggle (light/dark/system) | Move from About (Sprint 1) to a persistent toggle; `ThemePreference` in SharedPreferences |
+
+---
+
+### Sprint 4 — Docs-as-MCP / BL274 (~v0.73.x)
+
+Goal: expose the datawatch server's embedded docs through the mobile client (BL274).
+
+| Issues | Description |
+|--------|-------------|
+| #83 | Reconnect resilience — exponential backoff + state machine visibility |
+| #84–#90 | BL274 Docs-as-MCP in 6 sub-sprints: (84) browse docs tree, (85) full-text search, (86) offline cache, (87) markdown renderer in sheet, (88) cross-links, (89) version badge, (90) MCP tool passthrough |
+
+---
+
+### Sprint 5 — Sprint A close + wizard (~v0.74.x)
+
+Goal: close the Sprint A feature arc (mic auto-attach, terminal hints, Council persona wizard).
+
+| Issue | Description | Mobile work |
+|-------|-------------|-------------|
+| #91 | Mic auto-attach on input-required + terminal hints overlay | `SessionDetailScreen` auto-launches mic on `needs_input`; terminal overlay hint strip |
+| #92 | BL297 — Council persona wizard | Multi-step `CouncilPersonaWizard` sheet; guided identity + member + skills setup |
+
+---
+
+### PWA-only — no mobile action
+
+These issues track server-side or PWA-only changes. No mobile code required; monitor for
+any server contract changes that require transport updates.
+
+| Issues |
+|--------|
+| #60, #61, #62–#70, #76, #78, #79, #81 |
