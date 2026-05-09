@@ -482,6 +482,69 @@ Wear OS and Auto screens must match the datawatch PWA dark palette — dark surf
 
 Install SDKs and toolchains under `/home/dmz/workspace/<tool>/` not `$HOME`. Android SDK → `/home/dmz/workspace/Android/Sdk`.
 
+### README Current Release Line (synced from parent 2026-05-09)
+
+Every release commit must update the `**Current release: vX.Y.Z (DATE).**` line at the top
+of `README.md` and refresh "Highlights since vN.0.0" bullets if anything notable shipped.
+Staleness in the README marquee is the worst first impression for new visitors.
+
+### Pre-release Dependency Audit (synced from parent 2026-05-09)
+
+Before every release (patch that introduces a new dependency, or any minor/major):
+
+```bash
+# List outdated Gradle dependencies
+./gradlew dependencyUpdates          # or check libs.versions.toml manually
+
+# Rule: only upgrade a dependency that has been available for >= 72 hours
+# Exception: user explicitly requests it, or it fixes a known CVE
+# After upgrade: run ./gradlew test connectedCheck to verify nothing breaks
+# Document upgrades in the commit message body
+```
+
+**Do NOT upgrade a dependency released < 72 hours ago** (avoids being an early adopter of
+broken releases). Revert and note the incompatibility if an upgrade breaks tests.
+
+### Asset Retention (synced from parent 2026-05-09)
+
+To keep the GitHub releases page navigable, apply this keep-set to GH release assets (AABs,
+APKs, mapping files):
+
+1. Every **major** release (`X.0.0`) — keep indefinitely.
+2. The **latest minor** (`X.Y.0` with highest Y) — keep until superseded.
+3. The **latest patch on the latest minor** — keep until superseded.
+
+Everything else: delete binary assets from the GH release page (release *notes* stay forever).
+Run a cleanup pass as part of the post-`gh release create` step.
+
+### Background Shell Cleanup (synced from parent 2026-05-09)
+
+After every build+test cycle (all background tasks resolved and results read), kill lingering
+Claude Code poll-watcher bash processes before finishing:
+
+```bash
+pgrep -a -u "$USER" bash | grep 'shell-snapshots/snapshot-bash-'
+# then: kill <pid> for each watcher found
+```
+
+Keep only interactive login shells (`-bash` or `bash` without a snapshot source path).
+This prevents accumulation of dozens of stale poll processes across a long session.
+
+### Localization Mirror Cadence (synced from parent 2026-05-09)
+
+When the parent datawatch server adds new i18n keys and files a `dmz006/datawatch-app`
+issue requesting locale additions:
+
+1. Treat the issue as a **Sprint-1-priority i18n** task — do not let it age past the next
+   minor release.
+2. Add the keys to all 5 locale files (`EN/DE/ES/FR/JA`) in one commit.
+3. Wire through `stringResource(R.string.<key>)` at all call sites (no hardcoded English).
+4. Close the issue in the commit message (`closes #N`).
+
+The parent is the source of truth for *which keys exist*; the mobile app is the source of
+truth for *translation quality* (DE/ES/FR/JA come from Compose Multiplatform UX feedback).
+Mirror direction: parent → mobile for key requests; mobile → parent for translation values.
+
 ---
 
 # Memory & Knowledge (datawatch)
