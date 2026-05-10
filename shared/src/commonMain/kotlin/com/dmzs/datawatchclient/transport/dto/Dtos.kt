@@ -49,10 +49,12 @@ public data class SessionDto(
      */
     @SerialName("last_response") val lastResponse: String? = null,
     /**
-     * Active backend name for this session. Populates the per-row
-     * backend badge; was previously fetched from `/api/info` which only
-     * returns the server's current backend, not the session's.
+     * Active backend family name for this session. Populates the per-row
+     * backend badge. v7.0.0-alpha.27 renamed the wire field from
+     * `llm_backend` → `backend_family`; both keys accepted for migration.
      */
+    @SerialName("backend_family") val backendFamily: String? = null,
+    /** Legacy key pre-alpha.27 — server no longer emits this; kept for deserialization compat. */
     @SerialName("llm_backend") val llmBackend: String? = null,
     /**
      * Federation-only: source server name when the row came from a
