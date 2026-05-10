@@ -35,6 +35,7 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.push.NotificationChannels
 import com.dmzs.datawatchclient.push.NtfyFallbackService
 import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
+import com.dmzs.datawatchclient.ui.alerts.AlertDockOverlay
 import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.gesture.threeFingerSwipeUp
@@ -288,6 +289,9 @@ private fun HomeShell(
     val tabNav = rememberNavController()
     val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
+    // alpha.29 #271 — alert dock state (session-scoped: reset on recompose root)
+    var dockDismissed by remember { mutableStateOf(false) }
+    var dockMuted by remember { mutableStateOf(false) }
     // S6-2 (#74): observe federated peer stale state for Settings nav badge.
     val federatedPeersVm: FederatedPeersViewModel = viewModel()
     val federatedPeersState by federatedPeersVm.state.collectAsState()
@@ -359,14 +363,11 @@ private fun HomeShell(
                 )
             },
         ) { inner ->
-            Box(
-                modifier = Modifier.fillMaxSize().padding(inner),
-                contentAlignment = Alignment.TopCenter,
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(inner)) {
                 NavHost(
                     navController = tabNav,
                     startDestination = Destinations.Tabs.Sessions,
-                    modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight(),
+                    modifier = Modifier.widthIn(max = 840.dp).fillMaxHeight().align(Alignment.TopCenter),
                 ) {
                     composable(Destinations.Tabs.Sessions) {
                         SessionsScreen(
@@ -391,6 +392,19 @@ private fun HomeShell(
                             onEditServer = onEditServer,
                         )
                     }
+                }
+                // alpha.29 #271 — alert dock: appears when 2+ active alerts exist
+                val dockAlerts = alertsState.active.flatMap { it.alerts }
+                if (dockAlerts.size >= 2 && !dockDismissed && !dockMuted) {
+                    AlertDockOverlay(
+                        alerts = dockAlerts,
+                        onDismiss = { dockDismissed = true },
+                        onMute = { dockMuted = true },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
+                } else if (dockAlerts.size < 2) {
+                    // Reset dismiss when alert count drops below threshold
+                    if (dockDismissed) dockDismissed = false
                 }
             }
         }

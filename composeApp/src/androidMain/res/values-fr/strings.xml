@@ -989,6 +989,12 @@
     <string name="peer_group_by_node">Grouper par ComputeNode</string>
     <string name="peer_group_by_node_tip">Grouper les pairs par ComputeNode lié (alpha.24)</string>
     <string name="peer_group_unbound">Pairs non liés (aucun ComputeNode)</string>
+    <!-- Sprint 21 #114 — alpha.29 alert dock -->
+    <string name="alert_dock_dismiss">Fermer</string>
+    <string name="alert_dock_mute">Désactiver les alertes</string>
+    <string name="alert_pill_tip">Ouvrir le panneau d\'alertes</string>
+    <string name="alert_dock_one">1 alerte</string>
+    <string name="alert_dock_many">%d alertes</string>
 
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Notifications conseil</string>

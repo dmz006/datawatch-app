@@ -989,6 +989,12 @@
     <string name="peer_group_by_node">Nach ComputeNode gruppieren</string>
     <string name="peer_group_by_node_tip">Peers nach gebundenem ComputeNode gruppieren (alpha.24)</string>
     <string name="peer_group_unbound">Ungebundene Peers (kein ComputeNode)</string>
+    <!-- Sprint 21 #114 — alpha.29 alert dock -->
+    <string name="alert_dock_dismiss">Schließen</string>
+    <string name="alert_dock_mute">Benachrichtigungen stummschalten</string>
+    <string name="alert_pill_tip">Benachrichtigungsdock öffnen</string>
+    <string name="alert_dock_one">1 Benachrichtigung</string>
+    <string name="alert_dock_many">%d Benachrichtigungen</string>
 
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Council-Benachrichtigungen</string>
