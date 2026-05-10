@@ -903,4 +903,35 @@
     <string name="orchestrator_title_required">Título requerido</string>
     <string name="orchestrator_graph_run">Ejecutar</string>
     <string name="orchestrator_graph_delete">Eliminar</string>
+    <!-- v0.82.0 Sprint 13: General tab gaps -->
+    <string name="session_templates_title">Plantillas de sesión</string>
+    <string name="session_template_name_hint">Nombre de plantilla</string>
+    <string name="session_template_backend_hint">Backend (opcional)</string>
+    <string name="session_template_dir_hint">Directorio del proyecto (opcional)</string>
+    <string name="session_template_effort_hint">Esfuerzo (opcional)</string>
+    <string name="session_template_desc_hint">Descripción (opcional)</string>
+    <string name="session_template_add">Añadir plantilla</string>
+    <string name="session_template_none">Sin plantillas</string>
+    <string name="session_template_delete">Eliminar</string>
+    <string name="device_aliases_title">Alias de dispositivos</string>
+    <string name="device_alias_name">Alias (nombre corto)</string>
+    <string name="device_alias_value">Nombre del servidor</string>
+    <string name="device_alias_add">Añadir alias</string>
+    <string name="device_alias_none">Sin alias</string>
+    <string name="tooling_title">Ciclo de vida de artefactos de backend</string>
+    <string name="tooling_install">Instalar</string>
+    <string name="tooling_update">Actualizar</string>
+    <string name="tooling_remove">Eliminar</string>
+    <string name="tooling_none">No hay backends configurados</string>
+    <string name="tooling_gitignore">gitignore</string>
+    <string name="tooling_cleanup">Limpiar</string>
+    <string name="tooling_refresh">Actualizar</string>
+    <string name="secrets_name_hint">Nombre del secreto</string>
+    <string name="secrets_value_hint">Valor del secreto</string>
+    <string name="secrets_desc_hint">Descripción (opcional)</string>
+    <string name="secrets_tags_hint">Etiquetas (separadas por comas)</string>
+    <string name="secrets_scopes_hint">Ámbitos (separados por comas)</string>
+    <string name="secrets_add_btn">Añadir secreto</string>
+    <string name="observer_quicklink_title">Observador federado</string>
+    <string name="observer_quicklink_btn">Abrir observador →</string>
 </resources>

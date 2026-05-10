@@ -903,4 +903,35 @@
     <string name="orchestrator_title_required">Titre requis</string>
     <string name="orchestrator_graph_run">Exécuter</string>
     <string name="orchestrator_graph_delete">Supprimer</string>
+    <!-- v0.82.0 Sprint 13: General tab gaps -->
+    <string name="session_templates_title">Modèles de session</string>
+    <string name="session_template_name_hint">Nom du modèle</string>
+    <string name="session_template_backend_hint">Backend (facultatif)</string>
+    <string name="session_template_dir_hint">Répertoire du projet (facultatif)</string>
+    <string name="session_template_effort_hint">Effort (facultatif)</string>
+    <string name="session_template_desc_hint">Description (facultatif)</string>
+    <string name="session_template_add">Ajouter un modèle</string>
+    <string name="session_template_none">Aucun modèle</string>
+    <string name="session_template_delete">Supprimer</string>
+    <string name="device_aliases_title">Alias d\'appareils</string>
+    <string name="device_alias_name">Alias (nom court)</string>
+    <string name="device_alias_value">Nom du serveur</string>
+    <string name="device_alias_add">Ajouter un alias</string>
+    <string name="device_alias_none">Aucun alias</string>
+    <string name="tooling_title">Cycle de vie des artefacts backend</string>
+    <string name="tooling_install">Installer</string>
+    <string name="tooling_update">Mettre à jour</string>
+    <string name="tooling_remove">Supprimer</string>
+    <string name="tooling_none">Aucun backend configuré</string>
+    <string name="tooling_gitignore">gitignore</string>
+    <string name="tooling_cleanup">Nettoyer</string>
+    <string name="tooling_refresh">Actualiser</string>
+    <string name="secrets_name_hint">Nom du secret</string>
+    <string name="secrets_value_hint">Valeur du secret</string>
+    <string name="secrets_desc_hint">Description (facultatif)</string>
+    <string name="secrets_tags_hint">Tags (séparés par des virgules)</string>
+    <string name="secrets_scopes_hint">Portées (séparées par des virgules)</string>
+    <string name="secrets_add_btn">Ajouter un secret</string>
+    <string name="observer_quicklink_title">Observateur fédéré</string>
+    <string name="observer_quicklink_btn">Ouvrir l\'observateur →</string>
 </resources>
