@@ -43,6 +43,14 @@
     <string name="settings_tab_comms">通信</string>
     <string name="settings_tab_llm">LLM</string>
     <string name="settings_tab_about">情報</string>
+    <string name="settings_tab_compute">コンピュート</string>
+    <string name="settings_compute_nodes_title">コンピュートノード</string>
+    <string name="settings_llm_registry_title">LLMs</string>
+    <string name="settings_project_profiles_title">プロジェクトプロファイル</string>
+    <string name="settings_cluster_profiles_title">クラスタープロファイル</string>
+    <string name="settings_automata_group_settings">設定</string>
+    <string name="settings_automata_group_templates">テンプレート</string>
+    <string name="settings_automata_group_lifecycle">ライフサイクル</string>
     <string name="settings_switch_server">サーバー切替</string>
 
     <!-- ── Sessions screen ── -->

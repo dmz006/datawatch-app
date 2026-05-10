@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.71.0] — 2026-05-09
+### Changed
+- Settings tab order: Monitor · General · Plugins · Comms · Compute · Automata · About (#52, #93, #96)
+- LLM tab renamed to Compute; Agents tab (intermediate v6.7.6 state) skipped in favor of final v7 structure
+- Compute tab: ComputeNodes and LLMs registry stubs added (full CRUD in v0.74.0)
+- Compute tab card order: ComputeNodes → LLMs → Memory → Detection Filters → RTK → Saved Commands → Output Filters → Cluster Profiles (#96)
+- Automata tab restructured into 3 groups: Settings / Templates / Lifecycle (#96)
+- Project Profiles moved from General → Automata (Templates group)
+- Cluster Profiles moved from General → Compute tab
+- Stale tab preference keys ("llm", "agents") auto-migrate to "compute" on first launch
+
 ## [0.70.0] — 2026-05-09
 ### Changed
 - Bottom nav items spread evenly across full width (#51)

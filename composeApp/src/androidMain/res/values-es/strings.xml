@@ -43,6 +43,14 @@
     <string name="settings_tab_comms">Comms</string>
     <string name="settings_tab_llm">LLM</string>
     <string name="settings_tab_about">Acerca de</string>
+    <string name="settings_tab_compute">Computación</string>
+    <string name="settings_compute_nodes_title">Nodos de cómputo</string>
+    <string name="settings_llm_registry_title">LLMs</string>
+    <string name="settings_project_profiles_title">Perfiles de proyecto</string>
+    <string name="settings_cluster_profiles_title">Perfiles de clúster</string>
+    <string name="settings_automata_group_settings">Configuración</string>
+    <string name="settings_automata_group_templates">Plantillas</string>
+    <string name="settings_automata_group_lifecycle">Ciclo de vida</string>
     <string name="settings_switch_server">Cambiar servidor</string>
 
     <!-- ── Sessions screen ── -->

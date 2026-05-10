@@ -72,6 +72,8 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
+import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -89,18 +91,18 @@ import java.io.FileOutputStream
  */
 
 /**
- * Sub-tabs — order matches PWA v6.5.1 `app.js:3089`:
- * **Monitor, General, Comms, LLM, Automata, Plugins, About**.
+ * Sub-tabs — order matches PWA v7.0.0-alpha.12:
+ * **Monitor · General · Plugins · Comms · Compute · Automata · About**.
  * PWA stashes the default active tab in `localStorage.cs_settings_tab = 'monitor'`
  * so users land on Monitor first. About is mobile-only (no PWA equivalent).
  */
 private enum class SettingsTab(@StringRes val labelRes: Int) {
     Monitor(R.string.settings_tab_monitor),
     General(R.string.settings_tab_general),
-    Comms(R.string.settings_tab_comms),
-    Llm(R.string.settings_tab_llm),
-    Automata(R.string.settings_tab_automata),
     Plugins(R.string.settings_tab_plugins),
+    Comms(R.string.settings_tab_comms),
+    Compute(R.string.settings_tab_compute),
+    Automata(R.string.settings_tab_automata),
     About(R.string.settings_tab_about),
 }
 
@@ -124,7 +126,18 @@ public fun SettingsScreen(
             }
         }
 
-    var activeTab by remember { mutableStateOf(SettingsTab.Monitor) }
+    val prefs = LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    val storedTab = prefs.getString("settings_active_tab", null)
+    val migratedTab = when (storedTab) {
+        "llm", "agents" -> SettingsTab.Compute
+        "plugins" -> SettingsTab.Plugins
+        "comms" -> SettingsTab.Comms
+        "automata" -> SettingsTab.Automata
+        "general" -> SettingsTab.General
+        "about" -> SettingsTab.About
+        else -> SettingsTab.Monitor
+    }
+    var activeTab by remember { mutableStateOf(migratedTab) }
     var serverPickerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -185,7 +198,10 @@ public fun SettingsScreen(
                 SettingsTab.entries.forEach { tab ->
                     Tab(
                         selected = activeTab == tab,
-                        onClick = { activeTab = tab },
+                        onClick = {
+                            activeTab = tab
+                            prefs.edit().putString("settings_active_tab", tab.name.lowercase()).apply()
+                        },
                         selectedContentColor = dw.accent2,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         text = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelMedium) },
@@ -274,14 +290,6 @@ public fun SettingsScreen(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                                 )
                                 com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
-                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
-                                    kind = "project",
-                                    title = "Project profiles",
-                                )
-                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
-                                    kind = "cluster",
-                                    title = "Cluster profiles",
-                                )
                                 com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
                             }
                             SettingsTab.Comms -> {
@@ -317,16 +325,11 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
-                            SettingsTab.Llm -> {
-                                // Matches PWA `data-group="llm"`: LLM
-                                // Configuration → lc_* (Memory, LlmRtk) →
-                                // Detection Filters → Saved Commands →
-                                // Output Filters.
-                                //
-                                // v0.33.13 (B22): LlmConfigCard at the top
-                                // shows each registered backend + "(default)"
-                                // badge, matching PWA's first card.
-                                com.dmzs.datawatchclient.ui.channels.LlmConfigCard()
+                            SettingsTab.Compute -> {
+                                // v0.71.0 — Compute tab: ComputeNode registry (foundation-first per alpha.12)
+                                // Full CRUD implemented in v0.74.0; stubs here for correct ordering.
+                                ComputeNodesCard()
+                                LlmRegistryCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                                 )
@@ -336,12 +339,16 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
                                 com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                                 com.dmzs.datawatchclient.ui.filters.FiltersCard()
+                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                                    kind = "cluster",
+                                    title = stringResource(R.string.settings_cluster_profiles_title),
+                                )
                             }
                             SettingsTab.Automata -> {
-                                // v0.59.0 — mirrors PWA v6.5.1 Automata tab
-                                // v0.62.0 — scan config card
-                                // v0.63.0 — type registry card
-                                // v0.66.0 — skill registries card
+                                // v0.71.0 — 3-group structure per alpha.12: Settings / Templates / Lifecycle
+                                // === SETTINGS GROUP ===
+                                PwaSectionTitle(stringResource(R.string.settings_automata_group_settings))
+                                // Identity/Algorithm/Evals/Council cards added in v0.73.0
                                 AutomataTypesCard()
                                 ScanConfigCard()
                                 SkillRegistriesCard()
@@ -357,6 +364,15 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
                                 )
+                                // === TEMPLATES GROUP ===
+                                PwaSectionTitle(stringResource(R.string.settings_automata_group_templates))
+                                com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
+                                    kind = "project",
+                                    title = stringResource(R.string.settings_project_profiles_title),
+                                )
+                                // === LIFECYCLE GROUP ===
+                                PwaSectionTitle(stringResource(R.string.settings_automata_group_lifecycle))
+                                // Active Pipelines / Council runs / Orchestrator graphs added in v0.72.0+
                             }
                             SettingsTab.Plugins -> {
                                 // v0.59.0 — mirrors PWA v6.5.1 Plugins tab
