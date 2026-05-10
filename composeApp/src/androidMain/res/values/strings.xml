@@ -982,4 +982,35 @@
     <string name="orchestrator_title_required">Title required</string>
     <string name="orchestrator_graph_run">Run</string>
     <string name="orchestrator_graph_delete">Delete</string>
+    <!-- v0.82.0 Sprint 13: General tab gaps -->
+    <string name="session_templates_title">Session Templates</string>
+    <string name="session_template_name_hint">Template name</string>
+    <string name="session_template_backend_hint">Backend (optional)</string>
+    <string name="session_template_dir_hint">Project directory (optional)</string>
+    <string name="session_template_effort_hint">Effort (optional)</string>
+    <string name="session_template_desc_hint">Description (optional)</string>
+    <string name="session_template_add">Add Template</string>
+    <string name="session_template_none">No templates</string>
+    <string name="session_template_delete">Delete</string>
+    <string name="device_aliases_title">Device Aliases</string>
+    <string name="device_alias_name">Alias (short name)</string>
+    <string name="device_alias_value">Server name</string>
+    <string name="device_alias_add">Add Alias</string>
+    <string name="device_alias_none">No aliases</string>
+    <string name="tooling_title">Backend Artifact Lifecycle</string>
+    <string name="tooling_install">Install</string>
+    <string name="tooling_update">Update</string>
+    <string name="tooling_remove">Remove</string>
+    <string name="tooling_none">No backends configured</string>
+    <string name="tooling_gitignore">gitignore</string>
+    <string name="tooling_cleanup">cleanup</string>
+    <string name="tooling_refresh">Refresh</string>
+    <string name="secrets_name_hint">Secret name</string>
+    <string name="secrets_value_hint">Secret value</string>
+    <string name="secrets_desc_hint">Description (optional)</string>
+    <string name="secrets_tags_hint">Tags (comma-separated)</string>
+    <string name="secrets_scopes_hint">Scopes (comma-separated)</string>
+    <string name="secrets_add_btn">Add Secret</string>
+    <string name="observer_quicklink_title">Federated Observer</string>
+    <string name="observer_quicklink_btn">Open Observer →</string>
 </resources>
