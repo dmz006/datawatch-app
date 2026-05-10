@@ -949,4 +949,37 @@
     <string name="session_filter_done">完了</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">コンピュートノード</string>
+    <!-- Sprint 15 #106 — Compute CRUD overhaul -->
+    <string name="compute_migration_banner">%d 個のコンピュートノードでKindの移行が必要です — タップして修正</string>
+    <string name="compute_migration_title">コンピュートノードの移行</string>
+    <string name="compute_migration_save">保存</string>
+    <string name="compute_migration_done">移行完了</string>
+    <string name="compute_migration_kind_label">新しいKind</string>
+    <string name="compute_node_enabled_label">有効</string>
+    <string name="compute_node_auto_disabled_reason">自動無効化: %s</string>
+    <string name="compute_node_deprecated_kind">非推奨のKind: %s — ollama または openai-compat に移行してください</string>
+    <string name="compute_hardware_section">ハードウェア</string>
+    <string name="compute_hardware_os">OS</string>
+    <string name="compute_hardware_arch">アーキテクチャ</string>
+    <string name="compute_hardware_gpu_vendor">GPUベンダー</string>
+    <string name="compute_hardware_gpu_model">GPUモデル</string>
+    <string name="compute_hardware_gpu_count">GPU数</string>
+    <string name="compute_hardware_vram_gb">VRAM（GB、GPU当たり）</string>
+    <string name="compute_hardware_ram_gb">RAM（GB）</string>
+    <string name="compute_hardware_cpu_cores">CPUコア数</string>
+    <string name="compute_hardware_computed_max">計算上の最大: ~%d</string>
+    <string name="compute_hardware_use_computed">使用 →</string>
+    <string name="compute_hardware_hidden_saas">SaaSエンドポイントではハードウェアを非表示</string>
+    <string name="compute_node_test">接続をテスト</string>
+    <string name="compute_kind_ollama">ollama</string>
+    <string name="compute_kind_openai_compat">openai-compat</string>
+    <string name="compute_llm_enabled_label">有効</string>
+    <string name="compute_llm_auto_disabled">自動無効化</string>
+    <!-- Sprint 15 #110 — Free-observer mapping -->
+    <string name="compute_field_observer_peer">オブザーバーピア（datawatch-stats）</string>
+    <string name="compute_observer_none">（なし）</string>
+    <string name="compute_observer_hint">リソース監視のためにノードをオブザーバーに紐付ける</string>
+    <string name="compute_observer_currently_attached">（現在接続中）</string>
+    <string name="observer_attached_to">%s に接続</string>
+    <string name="observer_free">未割り当て</string>
 </resources>

@@ -1770,6 +1770,60 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.84.0 Sprint 15 — migration + observer binding ----
+
+    override suspend fun getMigrationComputeKinds(): Result<com.dmzs.datawatchclient.transport.dto.MigrationComputeKindsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/migration/compute-kinds") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun migrateComputeNodeKind(name: String, kind: String): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/migration/compute-kinds/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.MigrateKindRequestDto(kind = kind))
+            }
+            Unit
+        }
+
+    override suspend fun toggleComputeNodeEnabled(name: String, enabled: Boolean): Result<Unit> =
+        request {
+            client.patch("${profile.baseUrl}/api/compute/nodes/${name.replace(" ", "%20")}/enabled") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("enabled" to enabled))
+            }
+            Unit
+        }
+
+    override suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/peers/free") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun attachObserverPeer(nodeName: String, peer: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/compute/nodes/${nodeName.replace(" ", "%20")}/observer-peer") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.AttachObserverRequestDto(peer = peer))
+            }
+            Unit
+        }
+
+    override suspend fun detachObserverPeer(nodeName: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/compute/nodes/${nodeName.replace(" ", "%20")}/observer-peer") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     // ---- v0.75.0 Vault/Secrets + Docs Search (S6-3, S6-4 BL274) ----
 
     override suspend fun getSecretsStatus(): Result<com.dmzs.datawatchclient.transport.dto.SecretsStatusDto> =
