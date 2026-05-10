@@ -29,6 +29,8 @@ internal fun BottomNavBar(
     navController: NavController,
     alertsBadge: Int = 0,
     prdsSupported: Boolean = true,
+    /** S6-2 (#74): show red dot on Settings icon when any federated peer is >6h stale. */
+    anyPeerStale: Boolean = false,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.hierarchy?.firstOrNull()?.route
@@ -88,12 +90,18 @@ internal fun BottomNavBar(
                     }
                 },
                 icon = {
-                    if (item.route == Destinations.Tabs.Alerts && alertsBadge > 0) {
-                        BadgedBox(badge = { Badge { Text(alertsBadge.toString()) } }) {
+                    when {
+                        item.route == Destinations.Tabs.Alerts && alertsBadge > 0 ->
+                            BadgedBox(badge = { Badge { Text(alertsBadge.toString()) } }) {
+                                NavGlyph(item)
+                            }
+                        // S6-2 (#74): red dot on Settings when any peer is >6h stale.
+                        item.route == Destinations.Tabs.Settings && anyPeerStale ->
+                            BadgedBox(badge = { Badge() }) {
+                                NavGlyph(item)
+                            }
+                        else ->
                             NavGlyph(item)
-                        }
-                    } else {
-                        NavGlyph(item)
                     }
                 },
                 label = { Text(item.label) },

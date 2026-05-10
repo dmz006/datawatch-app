@@ -31,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Canvas
 
 /**
  * Settings → Monitor → Federated peers card. Mirrors PWA
@@ -136,6 +137,9 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
 
 @Composable
 private fun PeerRow(peer: ObserverPeerDto) {
+    // S6-2 (#74): staleness dot colour based on hours since last push.
+    val staleDotColor = staleDotColor(peer.lastPushAt)
+
     Row(
         modifier =
             Modifier
@@ -154,6 +158,11 @@ private fun PeerRow(peer: ObserverPeerDto) {
                         shape = CircleShape,
                     ),
         )
+        Spacer(Modifier.size(4.dp))
+        // S6-2 (#74): stale dot — hours-based (green <1h, amber 1–6h, red ≥6h).
+        Canvas(modifier = Modifier.size(8.dp)) {
+            drawCircle(color = staleDotColor)
+        }
         Spacer(Modifier.size(8.dp))
         Column(modifier = Modifier.padding(end = 8.dp)) {
             Text(
@@ -207,6 +216,25 @@ private fun ShapeBadge(shape: String) {
     }
 }
 
+/**
+ * S6-2 (#74): hours-based stale dot colour.
+ * green = fresh (<1h), amber = getting stale (1–6h), red = stale (≥6h), grey = null/error.
+ */
+private fun staleDotColor(lastPushAt: String?): Color {
+    if (lastPushAt.isNullOrBlank()) return Color(0xFF94A3B8) // grey — never pushed
+    val ageHours = runCatching {
+        val parsed = kotlinx.datetime.Instant.parse(lastPushAt)
+        val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
+        (ageMs / 3_600_000).toInt()
+    }.getOrDefault(-1)
+    return when {
+        ageHours < 0  -> Color(0xFF94A3B8)   // grey — parse error
+        ageHours < 1  -> Color(0xFF00E676)   // green — fresh
+        ageHours < 6  -> Color(0xFFFFB300)   // amber — getting stale
+        else          -> Color(0xFFEF4444)   // red — stale (≥6h)
+    }
+}
+
 private fun healthDotColor(lastPushAt: String?): Color {
     if (lastPushAt.isNullOrBlank()) return Color(0xFF94A3B8)
     val parsed =
@@ -233,6 +261,8 @@ public class FederatedPeersViewModel(
         val peers: List<ObserverPeerDto> = emptyList(),
         val filter: Filter = Filter.All,
         val error: String? = null,
+        /** S6-2 (#74): true when any peer has lastPushAt age >= 6 hours. Drives Settings nav badge. */
+        val anyPeerStale: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -243,11 +273,19 @@ public class FederatedPeersViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.observerPeers().fold(
                 onSuccess = { dto ->
+                    val stale = dto.peers.any { peer ->
+                        runCatching {
+                            val parsed = kotlinx.datetime.Instant.parse(peer.lastPushAt ?: return@any false)
+                            val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
+                            ageMs >= 6 * 3_600_000L
+                        }.getOrDefault(false)
+                    }
                     _state.value =
                         _state.value.copy(
                             loading = false,
                             peers = dto.peers,
                             error = null,
+                            anyPeerStale = stale,
                         )
                 },
                 onFailure = { err ->

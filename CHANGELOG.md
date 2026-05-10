@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.75.0] — 2026-05-09
+### Added
+- DocsSearchCard: full-text doc search with index_kind badge (vector=teal/bm25=grey), pending trust queue with bulk accept/dismiss, trusted sources list with remove (#84, #85)
+- Vault/Secrets status card: reachability dot, address, mount, last_success, last_error — shown when active_backend=vault (#82)
+- ObserverCard stub added to Monitor tab (#88)
+- Mic recording toast notification on voice start (#88)
+### Changed
+- Federated peer rows: stale indicator dot (green <1h, amber 1–6h, red ≥6h) alongside existing health dot (#74)
+- Settings nav icon: red badge dot when any federated peer is >6h stale (#74)
+- About card: single "System documentation & diagrams" link replaces multi-row links (#71)
+- About card: inner padding normalized to 12dp horizontal / 8dp vertical (#87)
+- Settings section headers: BL reference parentheticals removed from all visible strings (#86)
+- DocsSearchCard added to General tab; bulk trust locale complete (#89)
+- Transport audit: all BL274 docs methods verified (interface + RestTransport + DTO, 6 interface + 6 impl + 5 DTOs) (#90)
+
 ## [0.74.0] — 2026-05-09
 ### Added
 - ComputeNodesCard: full CRUD for compute nodes (10 kinds: ollama/opencode/aider/goose/gemini/shell/remote/etc.), hardware spec collapsible display, kind-aware model discovery (#98)

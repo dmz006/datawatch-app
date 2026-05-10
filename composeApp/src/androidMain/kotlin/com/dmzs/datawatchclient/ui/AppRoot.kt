@@ -46,6 +46,7 @@ import com.dmzs.datawatchclient.ui.sessions.NewSessionScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
+import com.dmzs.datawatchclient.ui.monitoring.FederatedPeersViewModel
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
@@ -287,6 +288,9 @@ private fun HomeShell(
     val tabNav = rememberNavController()
     val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
+    // S6-2 (#74): observe federated peer stale state for Settings nav badge.
+    val federatedPeersVm: FederatedPeersViewModel = viewModel()
+    val federatedPeersState by federatedPeersVm.state.collectAsState()
 
     // BL7 — foldable / large-screen two-pane. On MEDIUM+ width (≥600 dp,
     // covers unfolded foldables and tablets), sessions list and session detail
@@ -351,6 +355,7 @@ private fun HomeShell(
                     tabNav,
                     alertsBadge = alertsState.count,
                     prdsSupported = prdsSupported,
+                    anyPeerStale = federatedPeersState.anyPeerStale,
                 )
             },
         ) { inner ->

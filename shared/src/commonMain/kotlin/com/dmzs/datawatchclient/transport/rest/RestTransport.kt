@@ -1766,6 +1766,69 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.75.0 Vault/Secrets + Docs Search (S6-3, S6-4 BL274) ----
+
+    override suspend fun getSecretsStatus(): Result<com.dmzs.datawatchclient.transport.dto.SecretsStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/secrets/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun docsSearch(
+        q: String,
+        limit: Int,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/docs/search") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("q", q)
+                parameter("limit", limit)
+            }.body()
+        }
+
+    override suspend fun docsPendingList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/docs/trust/pending") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun docsTrustAccept(paths: List<String>): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/docs/trust/accept") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest(paths))
+            }
+            Unit
+        }
+
+    override suspend fun docsTrustDismiss(paths: List<String>): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/docs/trust/dismiss") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest(paths))
+            }
+            Unit
+        }
+
+    override suspend fun docsTrustedList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/docs/trust") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun docsTrustRemove(path: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/docs/trust/${path.replace("/", "%2F")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

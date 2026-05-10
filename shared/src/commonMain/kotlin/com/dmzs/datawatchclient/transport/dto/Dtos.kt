@@ -825,3 +825,41 @@ public data class MigrationStatusDto(
     val names: List<String> = emptyList(),
     @SerialName("when") val `when`: String? = null,
 )
+
+// ── v0.75.0 BL274 Docs Search + Vault/Secrets DTOs ──────────────────────────
+
+/** GET /api/secrets/status — active secrets backend + reachability (v0.75.0 S6-3). */
+@Serializable
+public data class SecretsStatusDto(
+    @SerialName("active_backend") val activeBackend: String = "local",
+    val reachable: Boolean = true,
+    val address: String? = null,
+    val mount: String? = null,
+    @SerialName("last_success") val lastSuccess: String? = null,
+    @SerialName("last_error") val lastError: String? = null,
+)
+
+/** GET /api/docs/search — a single search result with BM25/vector index kind badge (v0.75.0 S6-4, #84, #85). */
+@Serializable
+public data class DocsSearchResultDto(
+    val path: String,
+    val title: String,
+    val excerpt: String,
+    @SerialName("index_kind") val indexKind: String = "bm25",
+    val score: Float = 0f,
+)
+
+/** GET /api/docs/trust/pending — a source pending user trust approval (v0.75.0 S6-4). */
+@Serializable
+public data class DocsPendingSourceDto(
+    val path: String,
+    val reason: String? = null,
+)
+
+/** GET /api/docs/trust — a trusted source entry (v0.75.0 S6-4). */
+@Serializable
+public data class DocsTrustedSourceDto(val path: String)
+
+/** POST /api/docs/trust/accept or /dismiss body (v0.75.0 S6-4). */
+@Serializable
+public data class DocsTrustBulkRequest(val paths: List<String>)

@@ -502,7 +502,7 @@
     <string name="prd_tab_stories">Stories</string>
     <string name="prd_task_llm_hint">Override de LLM por tarea — vacío hereda del PRD y luego global.</string>
     <string name="prd_view_spec">Ver spec</string>
-    <string name="profile_agent_settings_section">Configuración del agente (BL251)</string>
+    <string name="profile_agent_settings_section">Configuración del agente</string>
     <string name="profile_claude_key_secret_label">Secreto de clave de auth Claude</string>
     <string name="profile_claude_key_secret_ph">nombre del secreto → ANTHROPIC_API_KEY</string>
     <string name="profile_ollama_model_label">Modelo de OpenCode</string>
@@ -766,4 +766,33 @@
     <string name="council_session_filter">Consejo</string>
     <string name="council_session_proposal_label">Propuesta</string>
     <string name="council_session_in_progress">Sesión del consejo en progreso…</string>
+
+    <!-- v0.75.0 — About docs link (S6-1, #71) -->
+    <string name="about_docs_link">Documentación del sistema y diagramas</string>
+
+    <!-- v0.75.0 — Federated peer stale indicator (S6-2, #74) -->
+    <string name="peer_stale_fresh">Visto por última vez: ahora mismo</string>
+    <string name="peer_stale_warning">Visto por última vez: hace %d horas</string>
+    <string name="peer_stale_critical">Obsoleto — visto por última vez hace más de 6 horas</string>
+
+    <!-- v0.75.0 — Vault/Secrets status (S6-3, #82) -->
+    <string name="vault_status_title">Vault / Secretos</string>
+    <string name="vault_last_success">Último éxito: %s</string>
+    <string name="vault_unreachable">Vault no accesible</string>
+    <string name="vault_backend_local">Secretos locales (sin vault)</string>
+
+    <!-- v0.75.0 — Docs Search + trust queue (S6-4, S6-8, #84, #85, #89) -->
+    <string name="docs_search_title">Búsqueda de documentación</string>
+    <string name="docs_search_placeholder">Buscar en la documentación…</string>
+    <string name="docs_trust_pending_title">Fuentes pendientes</string>
+    <string name="docs_trust_select_all">Seleccionar todo</string>
+    <string name="docs_trust_accept">Confiar en seleccionadas</string>
+    <string name="docs_trust_dismiss">Descartar seleccionadas</string>
+    <string name="docs_trusted_sources">Fuentes de confianza (%d)</string>
+    <string name="docs_trust_remove">Eliminar confianza</string>
+
+    <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
+    <string name="mic_toast_recording">Grabando…</string>
+    <string name="observer_title">Observador</string>
+    <string name="observer_no_active">No hay sesiones de observador activas</string>
 </resources>

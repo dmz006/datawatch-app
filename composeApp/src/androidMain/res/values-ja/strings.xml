@@ -502,7 +502,7 @@
     <string name="prd_tab_stories">ストーリー</string>
     <string name="prd_task_llm_hint">タスク別LLMオーバーライド — 空の場合はPRDからグローバルを継承。</string>
     <string name="prd_view_spec">仕様を表示</string>
-    <string name="profile_agent_settings_section">エージェント設定（BL251）</string>
+    <string name="profile_agent_settings_section">エージェント設定</string>
     <string name="profile_claude_key_secret_label">Claude認証キーシークレット</string>
     <string name="profile_claude_key_secret_ph">シークレット名 → ANTHROPIC_API_KEY</string>
     <string name="profile_ollama_model_label">OpenCodeモデル</string>
@@ -766,4 +766,33 @@
     <string name="council_session_filter">評議会</string>
     <string name="council_session_proposal_label">提案</string>
     <string name="council_session_in_progress">評議会セッション実行中…</string>
+
+    <!-- v0.75.0 — About docs link (S6-1, #71) -->
+    <string name="about_docs_link">システムドキュメントと図</string>
+
+    <!-- v0.75.0 — Federated peer stale indicator (S6-2, #74) -->
+    <string name="peer_stale_fresh">最終確認：たった今</string>
+    <string name="peer_stale_warning">最終確認：%d 時間前</string>
+    <string name="peer_stale_critical">古いデータ — 最終確認から6時間以上経過</string>
+
+    <!-- v0.75.0 — Vault/Secrets status (S6-3, #82) -->
+    <string name="vault_status_title">Vault / シークレット</string>
+    <string name="vault_last_success">最終成功: %s</string>
+    <string name="vault_unreachable">Vault に到達できません</string>
+    <string name="vault_backend_local">ローカルシークレット（Vault なし）</string>
+
+    <!-- v0.75.0 — Docs Search + trust queue (S6-4, S6-8, #84, #85, #89) -->
+    <string name="docs_search_title">ドキュメント検索</string>
+    <string name="docs_search_placeholder">ドキュメントを検索…</string>
+    <string name="docs_trust_pending_title">承認待ちのソース</string>
+    <string name="docs_trust_select_all">すべて選択</string>
+    <string name="docs_trust_accept">選択を信頼</string>
+    <string name="docs_trust_dismiss">選択を却下</string>
+    <string name="docs_trusted_sources">信頼済みソース（%d 件）</string>
+    <string name="docs_trust_remove">信頼を削除</string>
+
+    <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
+    <string name="mic_toast_recording">録音中…</string>
+    <string name="observer_title">オブザーバー</string>
+    <string name="observer_no_active">アクティブなオブザーバーセッションはありません</string>
 </resources>
