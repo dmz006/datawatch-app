@@ -874,4 +874,29 @@
     <string name="mic_toast_recording">Recording…</string>
     <string name="observer_title">Observer</string>
     <string name="observer_no_active">No active observer sessions</string>
+
+    <!-- v0.74.0 — Council Mode card (S4-4, #56) — missing strings backfilled in v0.77.0 -->
+    <string name="council_title">Council Mode</string>
+    <string name="council_personas_label">Personas</string>
+    <string name="council_firehose_label">Comm firehose</string>
+    <string name="council_run_proposal">Proposal</string>
+    <string name="council_mode_debate">Debate</string>
+    <string name="council_mode_quick">Quick</string>
+    <string name="council_run_btn">Run Council</string>
+    <string name="council_results_title">Results</string>
+    <string name="council_round_label">Round</string>
+    <string name="council_consensus">Consensus</string>
+
+    <!-- v0.77.0 — Council persona wizard (S8-1/2/3, #92) -->
+    <string name="council_wizard_title">Persona Wizard</string>
+    <string name="council_wizard_step_focus">What is this persona\'s primary area of focus?</string>
+    <string name="council_wizard_step_stance">How does this persona approach problems?</string>
+    <string name="council_wizard_step_tone">How would you describe this persona\'s communication style?</string>
+    <string name="council_wizard_step_antipatterns">What does this persona push back against?</string>
+    <string name="council_wizard_step_examples">Provide 2-3 example responses this persona might give.</string>
+    <string name="council_wizard_refine">Refine with AI…</string>
+    <string name="council_wizard_tune">Review and tune the assembled persona prompt</string>
+    <string name="council_wizard_save">Save Persona</string>
+    <string name="council_wizard_backend_label">AI assist backend</string>
+    <string name="council_wizard_draft_label">Persona prompt</string>
 </resources>

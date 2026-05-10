@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.77.0] — 2026-05-10
+### Added
+- CouncilPersonaWizardSheet: 6-page HorizontalPager interview wizard (5 steps: focus/stance/tone/pushback/examples + final tune page), AI-refine row, backend picker (ollama/openwebui), edit-mode pre-fill (#92)
+- CouncilCard: Manage Personas button opens persona list sheet with per-row Edit icon; Add button opens wizard in create mode; wizard wired to POST/PUT transport (#92)
+- Transport: `councilListPersonas`, `councilListRuns`, `councilGetConfig`, `councilUpdateConfig`, `councilStartRun`, `councilStopRun`, `createCouncilPersona`, `updateCouncilPersona` + all backing Council DTOs (#92)
+- Locale: 11 `council_wizard_*` keys in EN/DE/ES/FR/JA (#92)
+- MicAttachableTextField: shared composable wrapper for Whisper-attachable text input (S7-4 stub, Sprint 8 integration)
+
 ## [0.75.0] — 2026-05-09
 ### Added
 - DocsSearchCard: full-text doc search with index_kind badge (vector=teal/bm25=grey), pending trust queue with bulk accept/dismiss, trusted sources list with remove (#84, #85)
