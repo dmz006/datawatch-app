@@ -168,13 +168,13 @@ public object ConfigFieldSchemas {
     public val Orchestrator: ConfigSection =
         ConfigSection(
             id = "gc_orchestrator",
-            title = "PRD-DAG orchestrator",
+            title = "Automata Orchestrator",
             fields =
                 listOf(
-                    Toggle("orchestrator.enabled", "Enable PRD-DAG orchestrator"),
+                    Toggle("orchestrator.enabled", "Enable Automata Orchestrator"),
                     TextField("orchestrator.guardrail_backend", "Guardrail LLM backend (empty = inherit)"),
                     NumberField("orchestrator.guardrail_timeout_ms", "Guardrail timeout (ms)", "120000"),
-                    NumberField("orchestrator.max_parallel_prds", "Max parallel PRDs", "2"),
+                    NumberField("orchestrator.max_parallel_prds", "Max parallel automata", "2"),
                 ),
         )
 

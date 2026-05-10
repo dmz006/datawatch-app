@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
@@ -75,6 +76,7 @@ internal fun BottomNavBar(
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         items.forEach { item ->
             NavigationBarItem(
+                modifier = Modifier.weight(1f),
                 selected = currentRoute == item.route,
                 onClick = {
                     if (currentRoute != item.route) {

@@ -622,12 +622,16 @@ private fun SessionRow(
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     val colors = LocalDatawatchColors.current
     val timeLabel = relativeTimeLabel(session.lastActivityAt.toEpochMilliseconds())
+    val isDoneState = session.state == SessionState.Completed ||
+        session.state == SessionState.Killed ||
+        session.state == SessionState.Error
 
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
+                .alpha(if (isDoneState) 0.6f else 1.0f)
                 .graphicsLayer {
                     // While being dragged, the row floats vertically
                     // and sits above its neighbours — neighbours stay
@@ -793,7 +797,7 @@ private fun SessionRow(
             if (!session.lastResponse.isNullOrBlank()) {
                 IconButton(
                     onClick = { responseOpen = true },
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(24.dp).alpha(1.0f),
                 ) {
                     Icon(
                         Icons.Filled.Description,
@@ -928,6 +932,7 @@ private fun SessionRow(
                     -> {
                         OutlinedButton(
                             onClick = { restartConfirmOpen = true },
+                            modifier = Modifier.alpha(1.0f),
                             contentPadding =
                                 androidx.compose.foundation.layout.PaddingValues(
                                     horizontal = 10.dp,
@@ -946,6 +951,7 @@ private fun SessionRow(
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(
                                 onClick = { deleteConfirmOpen = true },
+                                modifier = Modifier.alpha(1.0f),
                                 contentPadding =
                                     androidx.compose.foundation.layout.PaddingValues(
                                         horizontal = 10.dp,

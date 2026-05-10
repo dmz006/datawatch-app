@@ -175,7 +175,7 @@
     <string name="autonomous_template_label">modèle</string>
     <string name="autonomous_story_count">%1$d stories</string>
 
-    <string name="new_prd_title">Nouveau PRD</string>
+    <string name="new_prd_title">Nouvel Automate</string>
     <string name="new_prd_name_label">Nom (obligatoire)</string>
     <string name="new_prd_display_title_label">Titre (optionnel)</string>
     <string name="new_prd_profile_label">Profil</string>
@@ -195,12 +195,12 @@
     <string name="prd_detail_graph">📊 Graphe</string>
     <string name="prd_detail_llm">LLM</string>
     <string name="prd_detail_no_stories">Pas encore de stories (en cours de décomposition ?).</string>
-    <string name="prd_detail_reject_title">Rejeter le PRD ?</string>
+    <string name="prd_detail_reject_title">Rejeter l&apos;Automate ?</string>
     <string name="prd_detail_reject_reason_label">Raison (obligatoire)</string>
     <string name="prd_detail_revise_title">Demander des révisions</string>
     <string name="prd_detail_revise_label">Qu\'est-ce qui doit être révisé ?</string>
     <string name="prd_detail_set_llm_title">Définir le remplacement LLM</string>
-    <string name="prd_detail_edit_prd_title">Modifier le PRD</string>
+    <string name="prd_detail_edit_prd_title">Modifier l\'Automate</string>
     <string name="prd_detail_spec_label">Spécification</string>
     <string name="prd_detail_edit_story_title">Modifier la story</string>
     <string name="prd_detail_title_label">Titre</string>
@@ -711,4 +711,15 @@
     <string name="memory_research_empty">Aucun résultat.</string>
     <string name="memory_research_query_hint">Requête de recherche…</string>
     <string name="memory_similarity_label">similarité</string>
+
+    <!-- ── v0.70.0 Automata/Theme strings ── -->
+    <string name="toggle_automata_filters">Basculer les filtres Automata</string>
+    <string name="automata_orchestrator">Orchestrateur Automata</string>
+    <string name="prd_terminal_state_hint">Cet automate est dans un état terminal. Modifiez ses spécifications ou créez-en un nouveau.</string>
+    <string name="identity_wizard_open">Ouvrir l\'Identity Wizard</string>
+    <string name="identity_wizard_title_hint">Identity Wizard</string>
+    <string name="settings_theme_title">Apparence</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_system">Système (suivre l\'OS)</string>
 </resources>

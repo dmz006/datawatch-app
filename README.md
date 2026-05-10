@@ -4,7 +4,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Status:** `v0.57.0` — [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
+**Current release: v0.70.0 (2026-05-09).** **Status:** [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
 
 ## At a glance
 

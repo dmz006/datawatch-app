@@ -175,7 +175,7 @@
     <string name="autonomous_template_label">テンプレート</string>
     <string name="autonomous_story_count">%1$d ストーリー</string>
 
-    <string name="new_prd_title">新しい PRD</string>
+    <string name="new_prd_title">新しいオートマトン</string>
     <string name="new_prd_name_label">名前（必須）</string>
     <string name="new_prd_display_title_label">タイトル（任意）</string>
     <string name="new_prd_profile_label">プロファイル</string>
@@ -195,12 +195,12 @@
     <string name="prd_detail_graph">📊 グラフ</string>
     <string name="prd_detail_llm">LLM</string>
     <string name="prd_detail_no_stories">まだストーリーがありません（分解中？）。</string>
-    <string name="prd_detail_reject_title">PRD を却下しますか？</string>
+    <string name="prd_detail_reject_title">オートマトンを却下しますか？</string>
     <string name="prd_detail_reject_reason_label">理由（必須）</string>
     <string name="prd_detail_revise_title">修正を依頼</string>
     <string name="prd_detail_revise_label">何を修正すべきですか？</string>
     <string name="prd_detail_set_llm_title">LLM オーバーライドを設定</string>
-    <string name="prd_detail_edit_prd_title">PRD を編集</string>
+    <string name="prd_detail_edit_prd_title">オートマトンを編集</string>
     <string name="prd_detail_spec_label">仕様</string>
     <string name="prd_detail_edit_story_title">ストーリーを編集</string>
     <string name="prd_detail_title_label">タイトル</string>
@@ -711,4 +711,15 @@
     <string name="memory_research_empty">結果がありません。</string>
     <string name="memory_research_query_hint">検索クエリ…</string>
     <string name="memory_similarity_label">類似度</string>
+
+    <!-- ── v0.70.0 Automata/Theme strings ── -->
+    <string name="toggle_automata_filters">オートマタフィルターを切り替え</string>
+    <string name="automata_orchestrator">オートマタオーケストレーター</string>
+    <string name="prd_terminal_state_hint">このオートマトンは終端状態です。仕様を編集するか、新しいものを作成してください。</string>
+    <string name="identity_wizard_open">Identity Wizardを開く</string>
+    <string name="identity_wizard_title_hint">Identity Wizard</string>
+    <string name="settings_theme_title">外観</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_system">システム（OSに従う）</string>
 </resources>

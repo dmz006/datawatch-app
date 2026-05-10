@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -67,6 +68,7 @@ public fun AutonomousScreen(
     var openPrdId by remember { mutableStateOf<String?>(null) }
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
+    var identityWizardOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
 
@@ -75,6 +77,10 @@ public fun AutonomousScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.autonomous_title)) },
                 actions = {
+                    // Robot icon FIRST (left of search) — visible only on this screen
+                    IconButton(onClick = { identityWizardOpen = true }) {
+                        Icon(Icons.Filled.SmartToy, contentDescription = stringResource(R.string.identity_wizard_open))
+                    }
                     if (currentTab == 0) {
                         IconButton(onClick = { filterOpen = !filterOpen }) {
                             Icon(
