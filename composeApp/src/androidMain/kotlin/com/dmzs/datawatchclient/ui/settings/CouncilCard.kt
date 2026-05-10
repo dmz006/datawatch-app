@@ -40,6 +40,7 @@ import com.dmzs.datawatchclient.transport.dto.CouncilConfigDto
 import com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto
 import com.dmzs.datawatchclient.transport.dto.CouncilRunDto
 import com.dmzs.datawatchclient.transport.dto.StartCouncilRunRequest
+import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -139,12 +140,14 @@ internal fun CouncilCard() {
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         // ── START RUN form ────────────────────────────────────────────────
-        OutlinedTextField(
+        MicAttachableTextField(
             value = proposal,
             onValueChange = { proposal = it },
             label = { Text(stringResource(R.string.council_run_proposal)) },
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             minLines = 2,
+            whisperConfigured = false,
+            onMicClick = null,
         )
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),

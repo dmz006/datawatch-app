@@ -723,13 +723,13 @@
     <!-- ── v0.70.0 Automata/Theme strings ── -->
     <string name="toggle_automata_filters">Automata-Filter umschalten</string>
     <string name="automata_orchestrator">Automata-Orchestrator</string>
-    <string name="prd_terminal_state_hint">Dieser Automat befindet sich in einem Endzustand. Bearbeiten Sie die Spezifikation oder erstellen Sie einen neuen.</string>
+    <string name="prd_terminal_state_hint">Dieser Automat hat einen Endzustand erreicht. Erstellen Sie einen neuen Lauf, um fortzufahren.</string>
     <string name="identity_wizard_open">Identity Wizard öffnen</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
-    <string name="settings_theme_title">Erscheinungsbild</string>
+    <string name="settings_theme_title">Design</string>
     <string name="settings_theme_dark">Dunkel</string>
     <string name="settings_theme_light">Hell</string>
-    <string name="settings_theme_system">System (OS folgen)</string>
+    <string name="settings_theme_system">Systemstandard</string>
     <!-- v0.72.0 — Toast UX + live polling -->
     <string name="toast_dismiss">Schließen</string>
     <string name="toast_reconnect">Erneut verbinden</string>
@@ -795,4 +795,8 @@
     <string name="mic_toast_recording">Aufnahme läuft…</string>
     <string name="observer_title">Beobachter</string>
     <string name="observer_no_active">Keine aktiven Beobachter-Sitzungen</string>
+
+    <!-- v0.76.0 — Sprint 7: multi-select bar, theme toggle, mic scaffold, spacing (#73 #76 #77 #91) -->
+    <string name="action_run_scan">Scan ausführen</string>
+    <string name="action_run_rules">Regeln ausführen</string>
 </resources>
