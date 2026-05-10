@@ -730,4 +730,8 @@
     <string name="settings_theme_dark">Sombre</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_system">Système (suivre l\'OS)</string>
+    <!-- v0.72.0 — Toast UX + live polling -->
+    <string name="toast_dismiss">Fermer</string>
+    <string name="toast_reconnect">Reconnecter</string>
+    <string name="live_indicator">En direct</string>
 </resources>

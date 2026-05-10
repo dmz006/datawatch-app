@@ -216,6 +216,14 @@ public class SessionDetailViewModel(
     private var wsSessionRefreshFired = false
     private var wsWasDisconnected = false
 
+    /**
+     * Sprint 3 S3-2 (#62, #64, #65, #66, #67) — terminal dimensions for
+     * resize_term first-frame send on reconnect. Updated by the SessionDetailScreen
+     * whenever `TerminalPrefs` changes or the backend min-size is applied.
+     */
+    public var terminalCols: Int = 80
+    public var terminalRows: Int = 24
+
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         wsSessionRefreshFired = false
@@ -231,13 +239,37 @@ public class SessionDetailViewModel(
                     // REST-reachable) correctly recovers to green after the next poll.
                     val isError = ev is com.dmzs.datawatchclient.domain.SessionEvent.Error
                     _reachable.value = !isError
-                    // BL249 — session auto-refresh on reconnect (PWA v6.5.1).
-                    // When we receive the first live event after a disconnect, refetch
-                    // session state so the detail view reflects the current server state
-                    // without requiring the operator to back out and re-enter.
+                    // Sprint 3 S3-2 (#62, #64, #65, #66, #67) — full re-render on reconnect.
+                    // When we receive the first live event after a disconnect:
+                    //  1. Clear pane-capture dedup so the next frame is treated as a first
+                    //     frame (fresh terminal paint — not skipped as a "seen" duplicate).
+                    //  2. REST GET refresh BEFORE re-subscribing further (already in flight
+                    //     via the collect loop; refreshFromServer fires here).
+                    //  3. Send resize_term as the first outbound WS frame so the daemon
+                    //     knows the current terminal size and sends a correctly-sized
+                    //     pane_capture (#65 — post-restart screen size).
+                    //  4. Re-enable input: _replying is reset to false so the composer
+                    //     is interactive again (#64 — tmux input bar restored).
+                    // BL249 basis — session auto-refresh on reconnect (PWA v6.5.1).
                     if (!isError && wsWasDisconnected) {
                         wsWasDisconnected = false
-                        refreshFromServer()
+                        // 1. Clear pane-capture dedup for this session.
+                        com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
+                        // 2. Fresh REST GET before WS events are acted on.
+                        doRefreshFromServer(profile)
+                        // 3. Send resize_term as the first outbound WS frame (#65).
+                        com.dmzs.datawatchclient.transport.ws.WsOutbound.sendResizeTerm(
+                            sessionId, terminalCols, terminalRows,
+                        )
+                        // 4. Re-enable input (#64 — input bar must not stay locked after reconnect).
+                        if (_replying.value) _replying.value = false
+                        // Stale-state gate (#66): if the session has a terminal state but
+                        // updatedAt is older than 10 seconds, the daemon is authoritative —
+                        // do not freeze the terminal from client-side; trust the incoming frames.
+                        // TerminalController.setFrozen(false) is driven by session state in the
+                        // screen composable via LaunchedEffect(state.session?.state) — the REST
+                        // refresh above will update session.state so the composable re-evaluates.
+                        // No additional action needed here; the full re-render path handles #66.
                     }
                     if (isError) wsWasDisconnected = true
                     ServiceLocator.sessionEventRepository.insert(ev)

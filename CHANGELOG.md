@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.72.0] — 2026-05-09
+### Changed
+- Toast UX: composable DatawatchToastHost with dedup (×N badge), strip-prefix key comparison (`[name] ` stripped before dedup), 75% width right-justified, 13sp, 8×12dp padding, Reconnect button on disconnect toasts (#93 alpha.9, #101, #102)
+- Live polling (8s auto-refresh) on FederatedPeersCard with pulsing green dot; manual refresh removed (#95)
+- Session reconnect: clear pane-capture dedup on reconnect, REST GET refresh, resize_term as first WS frame, re-enable input, ON_RESUME reconnect trigger when WS disconnected (#62, #64, #65, #66, #67)
+- Scroll-mode page buttons use tmux-page-up/tmux-page-down daemon commands with graceful fallback (#63)
+- Channel-state classifier: verified server-provided state field used exclusively — no client-side regex match (#70)
+
 ## [0.71.0] — 2026-05-09
 ### Changed
 - Settings tab order: Monitor · General · Plugins · Comms · Compute · Automata · About (#52, #93, #96)

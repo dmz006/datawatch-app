@@ -26,7 +26,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
-import com.dmzs.datawatchclient.ui.settings.Section
+import com.dmzs.datawatchclient.ui.common.LiveDot
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -48,12 +49,44 @@ import kotlinx.coroutines.launch
 @Composable
 public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     val state by vm.state.collectAsState()
-    LaunchedEffect(Unit) { vm.refresh() }
+    // Sprint 3 S3-5 (#95): initial load + 8-second auto-poll.
+    // Manual refresh button removed; LiveDot in the section header signals live data.
+    LaunchedEffect(Unit) {
+        vm.refresh()
+        while (true) {
+            delay(8_000)
+            vm.refresh()
+        }
+    }
 
     if (state.peers.isEmpty() && !state.loading) return // single-node — hide entirely
 
-    Section(title = "Federated peers") {
-        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+    // Sprint 3 S3-5 (#95): use a custom card header so the pulsing LiveDot
+    // can sit in the title row without modifying Section's signature.
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(8.dp),
+            ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Federated peers",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                // Pulsing dot indicates 8s auto-poll (#95).
+                LiveDot()
+            }
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
             // Filter pills (issue #6 — S13 agents filter).
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -96,9 +129,10 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
             } else {
                 visible.forEach { peer -> PeerRow(peer = peer) }
             }
-        }
-    }
-}
+        }  // end inner Column (content)
+    }  // end outer Column
+    }  // end Box
+}  // end FederatedPeersCard
 
 @Composable
 private fun PeerRow(peer: ObserverPeerDto) {
