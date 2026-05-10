@@ -92,6 +92,12 @@ public class AlertsViewModel : ViewModel() {
         val searchQuery: String = "",
         /** Populated when sortMode == Chronological: flat list newest-first. */
         val flatChronoAlerts: List<Alert> = emptyList(),
+        /**
+         * When any sessions are watched, this is the badge count from watched
+         * sessions only. When no sessions are watched (empty set), equals [count]
+         * (backward-compat: all alerts contribute to the badge).
+         */
+        val watchedAlertCount: Int = 0,
     ) {
         /** Bottom-nav badge — **active-only** count matches the PWA label `Active (N)`. */
         public val count: Int
@@ -128,6 +134,17 @@ public class AlertsViewModel : ViewModel() {
             ServiceLocator.activeServerStore.observe().map { id ->
                 profiles.firstOrNull { it.id == id && it.enabled }
                     ?: profiles.firstOrNull { it.enabled }
+            }
+        }
+
+    // Sprint 23 (#116) — watched-session filter. Re-emits whenever the
+    // operator watches/unwatches a session on the active profile.
+    private val _watchedIds =
+        activeProfileFlow.flatMapLatest { profile ->
+            if (profile == null) {
+                flowOf(emptySet())
+            } else {
+                ServiceLocator.watchedSessionsStore.watchedFlow(profile.id)
             }
         }
 
@@ -216,14 +233,17 @@ public class AlertsViewModel : ViewModel() {
             )
         }
 
-    public val state: StateFlow<UiState> =
+    /**
+     * Combined state: chip/sort/search filters + watched-session filter.
+     * Two-level combine to stay within the 5-argument `combine` limit.
+     */
+    private val filteredState =
         combine(
             innerState,
             _chipFilter,
             _sortMode,
             _search,
         ) { inner, chip, sort, search ->
-            // Apply chip filter + search to every alert in every group.
             fun matchesChip(alert: Alert): Boolean =
                 when (chip) {
                     ChipFilter.All -> true
@@ -253,8 +273,6 @@ public class AlertsViewModel : ViewModel() {
             val filteredActive = inner.active.mapNotNull { filterGroup(it) }
             val filteredInactive = inner.inactive.mapNotNull { filterGroup(it) }
 
-            // Chronological flat list: all matched alerts across active+inactive,
-            // sorted newest-first, exposed under synthetic __chrono__ group.
             val flatChrono: List<Alert> =
                 if (sort == SortMode.Chronological) {
                     (filteredActive + filteredInactive)
@@ -272,6 +290,23 @@ public class AlertsViewModel : ViewModel() {
                 searchQuery = search,
                 flatChronoAlerts = flatChrono,
             )
+        }
+
+    public val state: StateFlow<UiState> =
+        combine(filteredState, _watchedIds) { filtered, watchedIds ->
+            // Sprint 23 (#116): when any sessions are watched, badge shows only
+            // those sessions' active-alert count. When nothing is watched
+            // (operator hasn't opted in), badge falls back to total count so
+            // existing behavior is preserved.
+            val watchedActiveCount =
+                if (watchedIds.isEmpty()) {
+                    filtered.count
+                } else {
+                    filtered.active
+                        .filter { group -> group.sessionId in watchedIds }
+                        .sumOf { it.alerts.size }
+                }
+            filtered.copy(watchedAlertCount = watchedActiveCount)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     public fun selectTab(tab: Tab) {

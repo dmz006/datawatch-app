@@ -79,3 +79,10 @@ unit tests alone.
 | Phone | `AlertsViewModel.dismissAll()` → markAlertRead(all=true) | No | No | 22 | `AlertsViewModelTest` | |
 | Phone | `BottomNavBar` always-on badge (dimmed at 0, 🔕 muted) | No | No | 22 | `BottomNavBarTest` (Compose UI) | |
 | Phone | `AlertsScreen` custom top bar + PROMPT/ERROR tinting | No | No | 22 | Manual — live server with mixed-severity alerts | |
+| Shared | `WatchedSessionsStore` set/get/flow + profile isolation | Yes | — | 23 | `WatchedSessionsStoreTest` (5 tests: default empty, setWatched true/false, profile isolation, flow init, flow emits on change) | |
+| Phone | `SessionsViewModel.toggleWatch` + `watchedIds` StateFlow | No | No | 23 | `SessionsViewModelTest` | deferred (test debt) |
+| Phone | `AutonomousViewModel.toggleWatchAutomata` + `watchedAutomataIds` | No | No | 23 | `AutonomousViewModelTest` | deferred (test debt) |
+| Phone | `AlertsViewModel` watched-filter (empty=all, nonempty=filter) | No | No | 23 | `AlertsViewModelTest` | deferred (test debt) |
+| Phone | `BottomNavBar` watchedAlertCount badge | No | No | 23 | `BottomNavBarTest` | deferred (test debt) |
+| Phone | Watch toggle menu item — sessions list + detail | No | No | 23 | Manual — tap More menu on session row | |
+| Phone | Watch toggle — automata list + detail | No | No | 23 | Manual — PRD row More menu | |

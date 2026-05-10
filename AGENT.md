@@ -530,6 +530,36 @@ pgrep -a -u "$USER" bash | grep 'shell-snapshots/snapshot-bash-'
 Keep only interactive login shells (`-bash` or `bash` without a snapshot source path).
 This prevents accumulation of dozens of stale poll processes across a long session.
 
+### Per-Sprint Rules Audit (synced from parent 2026-05-09)
+
+At the END of every sprint (before commit/tag), run this checklist — if any line is empty, the sprint isn't done:
+
+- [ ] AGENT.md rules re-read; applicable rules noted in the sprint commit message
+- [ ] `docs/testing-tracker.md` updated for any new surface or transport row
+- [ ] Mobile-Parity: datawatch-app issue or comment filed for any server-side PWA change that mobile needs to track
+- [ ] Locale gate: all 5 bundles (`EN/DE/ES/FR/JA`) updated for every new user-facing string (composeApp + wear separately)
+- [ ] Version bump: `gradle.properties` + `Version.kt` + `composeApp/build.gradle.kts` + `wear/build.gradle.kts` in sync
+- [ ] `./gradlew build` passes clean (zero new lint/detekt/ktlint warnings)
+- [ ] `./gradlew test` passes (unit tests green)
+- [ ] `CHANGELOG.md` updated under `[Unreleased]` or current version header
+- [ ] `README.md` current-release line updated
+- [ ] `docs/plans/README.md` backlog refactored (shipped items → closed section, remaining on top)
+
+### Reuse-and-Expand Principle (synced from parent 2026-05-09)
+
+When adding a new feature, **audit for existing primitives to reuse before building new patterns.**
+
+Surfaces to check:
+- **SharedPreferences stores** (`ThemePreference`, `PushTokenStore`) — anything device-local that survives server sync belongs here
+- **SQLDelight repositories** (`SessionRepository`, `ServerProfileRepository`) — any server-backed entity with reactive Flow
+- **ViewModels** (extend existing; don't duplicate state management)
+- **Composable patterns** (`AlertsTopBar`, `FilterChip` rows, `BadgedBox` nav badges, `ExpandableCard`)
+- **Wear patterns** (`MonitorTileService`, `AutomataComplicationService` — replicate, don't diverge)
+
+Build a NEW pattern only when the existing one is structurally wrong for the use case. Configs gain new fields in existing cards rather than new cards. If a feature replaces an existing one, **surface the deprecation to the user BEFORE removing it.**
+
+Audit table row in every sprint CHANGELOG entry: "Reuse audit — what existing primitive does this extend?"
+
 ### Localization Mirror Cadence (synced from parent 2026-05-09)
 
 When the parent datawatch server adds new i18n keys and files a `dmz006/datawatch-app`

@@ -116,6 +116,7 @@ public fun SessionsScreen(
     vm: SessionsViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
+    val watchedIds by vm.watchedIds.collectAsState()
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val selectionMode = selectedIds.isNotEmpty()
@@ -357,6 +358,8 @@ public fun SessionsScreen(
                                 onRestart = { vm.restart(session.id) },
                                 onKill = { vm.kill(session.id) },
                                 onDelete = { vm.delete(session.id) },
+                                isWatched = session.id in watchedIds,
+                                onWatchToggle = { vm.toggleWatch(session.id) },
                             )
                         }
                     } // LazyColumn close
@@ -673,6 +676,8 @@ private fun SessionRow(
     onKill: () -> Unit = {},
     onDelete: () -> Unit = {},
     onQuickReply: (String) -> Unit = {},
+    isWatched: Boolean = false,
+    onWatchToggle: () -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     reorderMode: Boolean = false,
@@ -820,6 +825,21 @@ private fun SessionRow(
                             onClick = {
                                 menuOpen = false
                                 renameOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                val dwColors = LocalDatawatchColors.current
+                                Text(
+                                    stringResource(
+                                        if (isWatched) R.string.session_watch_on else R.string.session_watch_off,
+                                    ),
+                                    color = if (isWatched) dwColors.success else MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            onClick = {
+                                menuOpen = false
+                                onWatchToggle()
                             },
                         )
                         DropdownMenuItem(
