@@ -890,4 +890,17 @@
     <string name="routing_no_match">一致なし — デフォルトのバックエンドを使用</string>
     <string name="tailscale_mesh_title">メッシュステータス</string>
     <string name="container_workers_title">コンテナワーカー</string>
+    <string name="pipeline_manager_title">パイプラインマネージャー</string>
+    <string name="pipeline_status_active">実行中</string>
+    <string name="pipeline_status_done">完了</string>
+    <string name="pipeline_no_pipelines">実行中のパイプラインはありません</string>
+    <string name="pipeline_cancel">キャンセル</string>
+    <string name="orchestrator_graphs_title">オートマタオーケストレーター</string>
+    <string name="orchestrator_create_graph">グラフを作成</string>
+    <string name="orchestrator_graph_title_hint">タイトル（必須）</string>
+    <string name="orchestrator_graph_dir_hint">プロジェクトディレクトリ（任意）</string>
+    <string name="orchestrator_no_graphs">グラフなし — 上で作成してください</string>
+    <string name="orchestrator_title_required">タイトルが必要です</string>
+    <string name="orchestrator_graph_run">実行</string>
+    <string name="orchestrator_graph_delete">削除</string>
 </resources>

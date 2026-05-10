@@ -2029,6 +2029,55 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- v0.81.0 Sprint 12: Pipelines + OrchestratorGraphs list ----
+
+    override suspend fun getPipelines(): Result<List<com.dmzs.datawatchclient.transport.dto.PipelineListItemDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/pipelines") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/orchestrator/graphs") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createOrchestratorGraph(
+        title: String,
+        directory: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto> =
+        request {
+            client.post("${profile.baseUrl}/api/orchestrator/graphs") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    com.dmzs.datawatchclient.transport.dto.CreateOrchestratorGraphRequestDto(
+                        title = title,
+                        directory = directory,
+                    ),
+                )
+            }.body()
+        }
+
+    override suspend fun runOrchestratorGraph(id: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/orchestrator/graphs/$id/run") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun deleteOrchestratorGraph(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/orchestrator/graphs/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
