@@ -969,4 +969,17 @@
     <string name="routing_no_match">No match — uses default backend</string>
     <string name="tailscale_mesh_title">Mesh Status</string>
     <string name="container_workers_title">Container Workers</string>
+    <string name="pipeline_manager_title">Pipeline Manager</string>
+    <string name="pipeline_status_active">Active</string>
+    <string name="pipeline_status_done">Done</string>
+    <string name="pipeline_no_pipelines">No pipelines running</string>
+    <string name="pipeline_cancel">Cancel</string>
+    <string name="orchestrator_graphs_title">Automata Orchestrator</string>
+    <string name="orchestrator_create_graph">Create Graph</string>
+    <string name="orchestrator_graph_title_hint">Title (required)</string>
+    <string name="orchestrator_graph_dir_hint">Project directory (optional)</string>
+    <string name="orchestrator_no_graphs">No graphs — create one above</string>
+    <string name="orchestrator_title_required">Title required</string>
+    <string name="orchestrator_graph_run">Run</string>
+    <string name="orchestrator_graph_delete">Delete</string>
 </resources>
