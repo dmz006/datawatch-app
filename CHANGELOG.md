@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.70.0] — 2026-05-09
+### Changed
+- Bottom nav items spread evenly across full width (#51)
+- Automata tab: Pipeline/Orchestrator/Skills card inner padding normalized (#57)
+- "PRD"/"PRDs" renamed to "Automaton"/"Automata" across all visible UI strings (#59)
+- Identity Wizard 🤖 icon: visible only on Automata screen, placed left of search (#60, #61)
+- Done-state session cards: action buttons (last-response, restart, delete) stay full opacity (#72)
+- Theme picker card added to Settings → About, below Language picker (#80)
+
 ## [0.69.0] — 2026-05-05 (Memory Add + Timeline + Research — BL12)
 
 ### Added

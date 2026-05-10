@@ -367,7 +367,9 @@ public fun SettingsScreen(
                             SettingsTab.About -> {
                                 // v0.60.0 — language picker now at top of About
                                 // (PWA v5.28.3 parity). Daemon admin cluster below.
+                                // v0.70.0 — theme picker added below language picker.
                                 LanguagePickerCard()
+                                ThemePickerCard()
                                 AboutCard(activeProfile = activeProfile)
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
