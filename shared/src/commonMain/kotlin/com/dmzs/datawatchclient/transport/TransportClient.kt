@@ -1023,6 +1023,30 @@ public interface TransportClient {
         name: String,
         dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
     ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>
+
+    // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
+
+    /** GET /api/cost/rates — per-backend token cost rates. */
+    public suspend fun getCostRates(): Result<com.dmzs.datawatchclient.transport.dto.CostRatesDto>
+
+    /** POST /api/cost/rates — save per-backend token cost rates. */
+    public suspend fun saveCostRates(
+        rates: Map<String, com.dmzs.datawatchclient.transport.dto.CostRateDto>,
+    ): Result<Unit>
+
+    /** GET /api/routing-rules — list LLM routing rules. */
+    public suspend fun getRoutingRules(): Result<com.dmzs.datawatchclient.transport.dto.RoutingRulesDto>
+
+    /** POST /api/routing-rules — replace full routing-rules list. */
+    public suspend fun setRoutingRules(
+        rules: List<com.dmzs.datawatchclient.transport.dto.RoutingRuleDto>,
+    ): Result<com.dmzs.datawatchclient.transport.dto.RoutingRulesDto>
+
+    /** POST /api/routing-rules/test — test which backend a task would route to. */
+    public suspend fun testRouting(task: String): Result<com.dmzs.datawatchclient.transport.dto.RoutingTestResultDto>
+
+    /** GET /api/tailscale/status — Tailscale mesh status. */
+    public suspend fun getTailscaleStatus(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleStatusDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

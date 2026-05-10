@@ -867,4 +867,27 @@
     <string name="alert_tier_unified_push">datawatch プッシュ経由のアラート（最適）</string>
     <string name="alert_tier_comm_channel">Signal 経由のアラート（良好）</string>
     <string name="alert_tier_background">バックグラウンドサービス経由のアラート（基本）</string>
+
+    <!-- v0.80.0 Sprint 11 — Cost Rates, Routing Rules, Tailscale Mesh, Container Workers -->
+    <string name="cost_rates_title">コスト率 (USD / 1Kトークン)</string>
+    <string name="cost_rates_backend">バックエンド</string>
+    <string name="cost_rates_in_per_k">入力 / 1K</string>
+    <string name="cost_rates_out_per_k">出力 / 1K</string>
+    <string name="cost_rates_save">レートを保存</string>
+    <string name="cost_rates_reset">デフォルトにリセット</string>
+    <string name="cost_rates_none">レートデータなし — デーモンが利用できません。</string>
+    <string name="cost_rates_placeholder">デフォルト</string>
+    <string name="routing_rules_title">ルーティングルール</string>
+    <string name="routing_pattern_hint">パターン（正規表現）</string>
+    <string name="routing_backend_hint">バックエンド名</string>
+    <string name="routing_desc_hint">説明（任意）</string>
+    <string name="routing_add_rule">ルールを追加</string>
+    <string name="routing_test_section">ルーティングをテスト</string>
+    <string name="routing_test_task_hint">タスクテキスト…</string>
+    <string name="routing_test_btn">テスト</string>
+    <string name="routing_no_rules">ルールなし — タスクはデフォルトのバックエンドにルーティングされます</string>
+    <string name="routing_matched">ルーティング先：</string>
+    <string name="routing_no_match">一致なし — デフォルトのバックエンドを使用</string>
+    <string name="tailscale_mesh_title">メッシュステータス</string>
+    <string name="container_workers_title">コンテナワーカー</string>
 </resources>

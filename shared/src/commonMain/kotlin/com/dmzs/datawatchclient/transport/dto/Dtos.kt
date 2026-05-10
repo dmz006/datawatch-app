@@ -972,3 +972,52 @@ public data class CouncilPersonaCreateDto(
     val description: String = "",
     @SerialName("assist_backend") val assistBackend: String? = null,
 )
+
+// ============================================================
+// v0.80.0 — Cost Rates, Routing Rules, Tailscale Mesh (Sprint 11)
+// ============================================================
+
+/** GET/POST /api/cost/rates — per-backend token cost rates. */
+@Serializable
+public data class CostRatesDto(val rates: Map<String, CostRateDto> = emptyMap())
+
+@Serializable
+public data class CostRateDto(
+    @SerialName("in_per_k") val inPerK: Double? = null,
+    @SerialName("out_per_k") val outPerK: Double? = null,
+)
+
+/** GET/POST /api/routing-rules — LLM routing rules. */
+@Serializable
+public data class RoutingRulesDto(val rules: List<RoutingRuleDto> = emptyList())
+
+@Serializable
+public data class RoutingRuleDto(
+    val pattern: String,
+    val backend: String,
+    val description: String = "",
+)
+
+@Serializable
+public data class RoutingTestRequestDto(val task: String)
+
+@Serializable
+public data class RoutingTestResultDto(val matched: Boolean, val backend: String = "")
+
+/** GET /api/tailscale/status — Tailscale mesh status. */
+@Serializable
+public data class TailscaleStatusDto(
+    val enabled: Boolean = false,
+    val backend: String = "",
+    @SerialName("coordinator_url") val coordinatorUrl: String = "",
+    val nodes: List<TailscaleNodeDto> = emptyList(),
+    val error: String = "",
+)
+
+@Serializable
+public data class TailscaleNodeDto(
+    val name: String,
+    val ip: String = "",
+    val online: Boolean = false,
+    val tags: List<String> = emptyList(),
+)

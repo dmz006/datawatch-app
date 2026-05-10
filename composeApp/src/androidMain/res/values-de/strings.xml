@@ -867,4 +867,27 @@
     <string name="alert_tier_unified_push">Benachrichtigungen via datawatch Push (optimal)</string>
     <string name="alert_tier_comm_channel">Benachrichtigungen via Signal (gut)</string>
     <string name="alert_tier_background">Benachrichtigungen via Hintergrunddienst (einfach)</string>
+
+    <!-- v0.80.0 Sprint 11 — Cost Rates, Routing Rules, Tailscale Mesh, Container Workers -->
+    <string name="cost_rates_title">Kostenraten (USD / 1.000 Token)</string>
+    <string name="cost_rates_backend">Backend</string>
+    <string name="cost_rates_in_per_k">Ein / 1K</string>
+    <string name="cost_rates_out_per_k">Aus / 1K</string>
+    <string name="cost_rates_save">Raten speichern</string>
+    <string name="cost_rates_reset">Auf Standardwerte zurücksetzen</string>
+    <string name="cost_rates_none">Keine Tarifdaten — Daemon nicht verfügbar.</string>
+    <string name="cost_rates_placeholder">Standard</string>
+    <string name="routing_rules_title">Routing-Regeln</string>
+    <string name="routing_pattern_hint">Muster (Regex)</string>
+    <string name="routing_backend_hint">Backend-Name</string>
+    <string name="routing_desc_hint">Beschreibung (optional)</string>
+    <string name="routing_add_rule">Regel hinzufügen</string>
+    <string name="routing_test_section">Routing testen</string>
+    <string name="routing_test_task_hint">Aufgabentext…</string>
+    <string name="routing_test_btn">Testen</string>
+    <string name="routing_no_rules">Keine Regeln — Aufgaben werden an das Standard-Backend weitergeleitet</string>
+    <string name="routing_matched">Weiterleitung an</string>
+    <string name="routing_no_match">Keine Übereinstimmung — Standard-Backend wird verwendet</string>
+    <string name="tailscale_mesh_title">Mesh-Status</string>
+    <string name="container_workers_title">Container-Worker</string>
 </resources>
