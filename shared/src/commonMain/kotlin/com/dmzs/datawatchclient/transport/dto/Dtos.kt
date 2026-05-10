@@ -792,6 +792,14 @@ public data class ComputeNodeDto(
     val tags: List<String> = emptyList(),
     @SerialName("auto_created") val autoCreated: Boolean = false,
     @SerialName("hardware_spec") val hardwareSpec: ComputeHardwareSpec? = null,
+    /** v7: operator-enabled flag; false = explicitly disabled by operator. */
+    val enabled: Boolean = true,
+    /** v7: daemon-applied tags (migration markers, shape labels). Hidden from UI; use `tags` only. */
+    @SerialName("auto_tags") val autoTags: List<String> = emptyList(),
+    /** v7: name of the bound observer peer (explicit or name-match). */
+    @SerialName("observer_peer") val observerPeer: String? = null,
+    /** v7: reason string when daemon auto-disables the node. */
+    @SerialName("disabled_reason") val disabledReason: String? = null,
 )
 
 @Serializable
@@ -803,6 +811,37 @@ public data class ComputeHardwareSpec(
     @SerialName("gpu_count") val gpuCount: Int = 0,
     @SerialName("memory_gb") val memoryGb: Int = 0,
     @SerialName("cpu_cores") val cpuCores: Int = 0,
+)
+
+// v0.84.0 — Sprint 15: migration + free-observer
+@Serializable
+public data class MigrationNodeItemDto(
+    val name: String = "",
+    @SerialName("current_kind") val currentKind: String = "",
+    val address: String = "",
+)
+
+@Serializable
+public data class MigrationComputeKindsDto(
+    val nodes: List<MigrationNodeItemDto> = emptyList(),
+    @SerialName("supported_kinds") val supportedKinds: List<String> = listOf("ollama", "openai-compat"),
+    val count: Int = 0,
+)
+
+@Serializable
+public data class MigrateKindRequestDto(
+    val kind: String,
+)
+
+@Serializable
+public data class AttachObserverRequestDto(
+    val peer: String,
+)
+
+@Serializable
+public data class FreeObserverPeerDto(
+    val name: String = "",
+    val shape: String = "",
 )
 
 /**
