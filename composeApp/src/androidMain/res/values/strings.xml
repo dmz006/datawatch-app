@@ -904,6 +904,44 @@
     <string name="council_wizard_backend_label">AI assist backend</string>
     <string name="council_wizard_draft_label">Persona prompt</string>
 
+    <!-- v0.73.0 — Sprint 4: Identity, Algorithm Mode, Evals (backfilled S4-1/2/3) -->
+    <string name="identity_title">Identity</string>
+    <string name="identity_role_label">Role</string>
+    <string name="identity_focus_label">Current Focus</string>
+    <string name="identity_notes_label">Context Notes</string>
+    <string name="identity_save">Save</string>
+    <string name="identity_reset">Reset</string>
+    <string name="identity_wizard_page_role">Role</string>
+    <string name="identity_wizard_page_goals">North-Star Goals</string>
+    <string name="identity_wizard_page_projects">Current Projects</string>
+    <string name="identity_wizard_page_values">Values</string>
+    <string name="identity_wizard_page_focus">Current Focus</string>
+    <string name="identity_wizard_page_notes">Context Notes</string>
+    <string name="identity_wizard_one_per_line">One per line</string>
+    <string name="identity_wizard_back">Back</string>
+    <string name="identity_wizard_next">Next</string>
+    <string name="identity_wizard_finish">Finish</string>
+    <string name="algorithm_mode_title">Algorithm Mode</string>
+    <string name="algorithm_phase_observe">Observe</string>
+    <string name="algorithm_phase_orient">Orient</string>
+    <string name="algorithm_phase_decide">Decide</string>
+    <string name="algorithm_phase_act">Act</string>
+    <string name="algorithm_phase_measure">Measure</string>
+    <string name="algorithm_phase_learn">Learn</string>
+    <string name="algorithm_phase_improve">Improve</string>
+    <string name="algorithm_advance">Advance</string>
+    <string name="algorithm_abort">Abort</string>
+    <string name="algorithm_current_phase">Current phase</string>
+    <string name="algorithm_phase_output">Phase output</string>
+    <string name="algorithm_no_active">No active algorithm-mode sessions</string>
+    <string name="evals_title">Evals</string>
+    <string name="evals_run">Run</string>
+    <string name="evals_score">Score</string>
+    <string name="evals_passed">Passed</string>
+    <string name="evals_failed">Failed</string>
+    <string name="evals_no_suites">No eval suites found</string>
+    <string name="evals_running">Running&#8230;</string>
+
     <!-- v0.78.0 — S10-4 alert tier display on About card -->
     <string name="alert_tier_unified_push">Alerts via datawatch push (optimal)</string>
     <string name="alert_tier_comm_channel">Alerts via Signal (good)</string>

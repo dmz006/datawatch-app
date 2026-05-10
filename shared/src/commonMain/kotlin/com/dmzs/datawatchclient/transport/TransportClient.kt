@@ -970,6 +970,29 @@ public interface TransportClient {
     /** DELETE /api/docs/trust/{path} — remove trust from a source. */
     public suspend fun docsTrustRemove(path: String): Result<Unit>
 
+    // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
+
+    /** GET /api/identity — fetch the server's identity profile. */
+    public suspend fun getIdentity(): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto>
+
+    /** PUT /api/identity — update the server's identity profile. */
+    public suspend fun setIdentity(dto: com.dmzs.datawatchclient.transport.dto.IdentityDto): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto>
+
+    /** GET /api/algorithm — list active algorithm-mode sessions. */
+    public suspend fun algorithmList(): Result<List<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>>
+
+    /** PATCH /api/algorithm/{sessionId} with action=advance. */
+    public suspend fun algorithmAdvance(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** PATCH /api/algorithm/{sessionId} with action=abort. */
+    public suspend fun algorithmAbort(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** GET /api/evals — list eval suites. */
+    public suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>>
+
+    /** POST /api/evals/{suiteId}/run — trigger an eval run. */
+    public suspend fun evalsRun(suiteId: String): Result<com.dmzs.datawatchclient.transport.dto.EvalRunResultDto>
+
     // ---- v0.77.0 Council persona wizard (S8-1/2/3, #92) ----
 
     /** GET /api/council/personas — list all council personas. */

@@ -1829,6 +1829,63 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
+
+    override suspend fun getIdentity(): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto> =
+        request {
+            client.get("${profile.baseUrl}/api/identity") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun setIdentity(dto: com.dmzs.datawatchclient.transport.dto.IdentityDto): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto> =
+        request {
+            client.put("${profile.baseUrl}/api/identity") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun algorithmList(): Result<List<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/algorithm") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun algorithmAdvance(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody("""{"action":"advance"}""")
+            }.body()
+        }
+
+    override suspend fun algorithmAbort(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody("""{"action":"abort"}""")
+            }.body()
+        }
+
+    override suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/evals") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun evalsRun(suiteId: String): Result<com.dmzs.datawatchclient.transport.dto.EvalRunResultDto> =
+        request {
+            client.post("${profile.baseUrl}/api/evals/$suiteId/run") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- v0.77.0 Council persona wizard (S8-1/2/3, #92) ----
 
     override suspend fun councilListPersonas(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>> =
