@@ -890,4 +890,17 @@
     <string name="routing_no_match">Aucune correspondance — utilise le backend par défaut</string>
     <string name="tailscale_mesh_title">État du maillage</string>
     <string name="container_workers_title">Workers de conteneur</string>
+    <string name="pipeline_manager_title">Gestionnaire de pipelines</string>
+    <string name="pipeline_status_active">Actif</string>
+    <string name="pipeline_status_done">Terminé</string>
+    <string name="pipeline_no_pipelines">Aucun pipeline en cours</string>
+    <string name="pipeline_cancel">Annuler</string>
+    <string name="orchestrator_graphs_title">Orchestrateur d\'automates</string>
+    <string name="orchestrator_create_graph">Créer un graphe</string>
+    <string name="orchestrator_graph_title_hint">Titre (requis)</string>
+    <string name="orchestrator_graph_dir_hint">Répertoire du projet (facultatif)</string>
+    <string name="orchestrator_no_graphs">Aucun graphe — créez-en un ci-dessus</string>
+    <string name="orchestrator_title_required">Titre requis</string>
+    <string name="orchestrator_graph_run">Exécuter</string>
+    <string name="orchestrator_graph_delete">Supprimer</string>
 </resources>

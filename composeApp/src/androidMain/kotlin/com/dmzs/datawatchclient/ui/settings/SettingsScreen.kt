@@ -376,34 +376,30 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
                             }
                             SettingsTab.Automata -> {
-                                // v0.71.0 — 3-group structure per alpha.12: Settings / Templates / Lifecycle
-                                // === SETTINGS GROUP ===
-                                PwaSectionTitle(stringResource(R.string.settings_automata_group_settings))
-                                // Identity/Algorithm/Evals/Council cards added in v0.73.0
-                                AutomataTypesCard()
-                                ScanConfigCard()
-                                SkillRegistriesCard()
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
-                                )
-                                // === TEMPLATES GROUP ===
-                                PwaSectionTitle(stringResource(R.string.settings_automata_group_templates))
+                                // v0.81.0 — flat PWA v7.0.0-alpha.23c order; no section headers
+                                com.dmzs.datawatchclient.ui.settings.IdentityCard()
+                                com.dmzs.datawatchclient.ui.settings.AlgorithmModeCard()
+                                com.dmzs.datawatchclient.ui.settings.EvalsCard()
+                                com.dmzs.datawatchclient.ui.settings.CouncilCard()
                                 com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                                     kind = "project",
                                     title = stringResource(R.string.settings_project_profiles_title),
                                 )
-                                // === LIFECYCLE GROUP ===
-                                PwaSectionTitle(stringResource(R.string.settings_automata_group_lifecycle))
-                                // Active Pipelines / Council runs / Orchestrator graphs added in v0.72.0+
+                                com.dmzs.datawatchclient.ui.automata.PipelineManagerCard()
+                                com.dmzs.datawatchclient.ui.automata.OrchestratorGraphsCard()
+                                ScanConfigCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
+                                )
+                                SkillRegistriesCard()
+                                AutomataTypesCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
+                                )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
+                                )
+                                // NOTE: ConfigFieldSchemas.Agents removed here — moved to Compute tab in v0.80.0
                             }
                             SettingsTab.Plugins -> {
                                 // v0.59.0 — mirrors PWA v6.5.1 Plugins tab
