@@ -2244,6 +2244,22 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.88.0 Sprint 19: Observer by-node + federation meta-peers ----
+
+    override suspend fun getObserverPeersByNode(): Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersByNodeDto> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/peers/by-node") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun getFederationMetaPeers(): Result<com.dmzs.datawatchclient.transport.dto.MetaPeersDto> =
+        request {
+            client.get("${profile.baseUrl}/api/federation/meta-peers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
