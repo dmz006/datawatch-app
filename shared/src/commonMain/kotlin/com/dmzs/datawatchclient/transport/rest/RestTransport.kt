@@ -2078,6 +2078,114 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.82.0 Sprint 13: General tab gaps ----
+
+    override suspend fun getSessionTemplates(): Result<List<com.dmzs.datawatchclient.transport.dto.SessionTemplateDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/templates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createSessionTemplate(
+        template: com.dmzs.datawatchclient.transport.dto.SessionTemplateDto,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/templates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(template)
+            }
+            Unit
+        }
+
+    override suspend fun deleteSessionTemplate(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/templates/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun getDeviceAliases(): Result<List<com.dmzs.datawatchclient.transport.dto.DeviceAliasDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/device-aliases") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createDeviceAlias(alias: String, server: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/device-aliases") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.DeviceAliasDto(alias = alias, server = server))
+            }
+            Unit
+        }
+
+    override suspend fun deleteDeviceAlias(alias: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/device-aliases/${alias.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun getToolingStatus(): Result<com.dmzs.datawatchclient.transport.dto.ToolingStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/tooling/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun toolingGitignore(backend: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/tooling/gitignore") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("backend" to backend))
+            }
+            Unit
+        }
+
+    override suspend fun toolingCleanup(backend: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/tooling/cleanup") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("backend" to backend))
+            }
+            Unit
+        }
+
+    override suspend fun getSecrets(): Result<com.dmzs.datawatchclient.transport.dto.SecretsListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/secrets") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun addSecret(
+        secret: com.dmzs.datawatchclient.transport.dto.AddSecretDto,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/secrets") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(secret)
+            }
+            Unit
+        }
+
+    override suspend fun deleteSecret(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/secrets/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

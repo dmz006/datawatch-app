@@ -1055,3 +1055,53 @@ public data class CreateOrchestratorGraphRequestDto(
     val title: String,
     val directory: String = "",
 )
+
+// v0.82.0 — Sprint 13: General tab — Templates / Device Aliases / Tooling / Secrets
+@Serializable
+public data class SessionTemplateDto(
+    val name: String = "",
+    val backend: String = "",
+    @SerialName("project_dir") val projectDir: String = "",
+    val effort: String = "",
+    val description: String = "",
+)
+
+@Serializable
+public data class DeviceAliasDto(
+    val alias: String = "",
+    val server: String = "",
+)
+
+@Serializable
+public data class ToolingBackendDto(
+    val backend: String = "",
+    val present: List<String> = emptyList(),
+    val ignored: Boolean = false,
+)
+
+@Serializable
+public data class ToolingStatusDto(
+    val backends: List<ToolingBackendDto> = emptyList(),
+)
+
+@Serializable
+public data class SecretDto(
+    val name: String = "",
+    val description: String = "",
+    val tags: List<String> = emptyList(),
+    val scopes: List<String> = emptyList(),
+)
+
+@Serializable
+public data class SecretsListDto(
+    val secrets: List<SecretDto> = emptyList(),
+)
+
+@Serializable
+public data class AddSecretDto(
+    val name: String,
+    val value: String,
+    val description: String = "",
+    val tags: List<String> = emptyList(),
+    val scopes: List<String> = emptyList(),
+)
