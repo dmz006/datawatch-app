@@ -515,7 +515,23 @@ APKs, mapping files):
 3. The **latest patch on the latest minor** — keep until superseded.
 
 Everything else: delete binary assets from the GH release page (release *notes* stay forever).
-Run a cleanup pass as part of the post-`gh release create` step.
+Run `scripts/delete-past-minor-assets.sh` as part of the post-`gh release create` step.
+
+### Plan and Release-Note Archival (synced from parent 2026-05-10)
+
+**Historical folders** — `docs/plans/` contains only *active* and *recent* plans:
+
+- `docs/plans/historical-plans/` — plan files whose scope is fully shipped. Move a `.md` plan here as part of the release commit that closes its last item.
+- `docs/plans/historical-releasenotes/` — standalone `RELEASE-NOTES-vX.Y.Z.md` files once they are superseded by a newer major release. (For minor/patch, release notes live in `CHANGELOG.md` only; extract to a standalone file only at major boundaries.)
+
+**Backlog refactor each release.** Every release commit touches `docs/plans/README.md`:
+- Clear `## Unclassified` into BL### entries.
+- Mark just-shipped items `✅ Closed in vX.Y.Z` and move them under the `## Closed` section.
+- Confirm the open tables contain only actually-open work.
+
+**README.md current-release line.** Every release commit updates the `**Current release: vX.Y.Z (DATE).**` line at the top of `README.md` and refreshes "what's new" highlights if anything notable shipped.
+
+**No internal tracker IDs in user-facing docs.** Internal IDs (B#, BL#, F#) live exclusively in `docs/plans/README.md` and `docs/plans/*.md`. They must never appear in `CHANGELOG.md`, `README.md`, or any doc under `docs/` that is user-facing.
 
 ### Background Shell Cleanup (synced from parent 2026-05-09)
 
