@@ -9,14 +9,13 @@ architecture).
 
 ## Active roadmap plan
 
-**[2026-05-09-v0.70-upgrade-arc.md](2026-05-09-v0.70-upgrade-arc.md)** —
-v0.70–v0.77 upgrade arc covering all 43 open GH issues (#51–#93).
-v7.0.0-alpha alignment. Written 2026-05-09. **Current authoritative plan.**
-Includes per-sprint task lists, DTOs, transport contracts, locale keys,
-rule validation checklists, and GitHub issue close commands.
+**No active arc plan** — all parity arc sprints complete as of v0.93.0.
 
-**[backlog-plan-2026-05-04.md](backlog-plan-2026-05-04.md)** — SUPERSEDED.
-Was v0.58.0–v0.65.0 plan for issues #31–#49. All items shipped (v0.65.0–v0.69.0).
+Shipped arc history (moved to `historical-plans/`):
+- `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
+- `2026-05-10-v0.80-parity-arc.md` — v0.80–v0.86 (Sprints 11–17; PWA parity + #96 #104–#110)
+
+Current state: **v0.93.0/171**. No scheduled major arc. Next work from open backlog below.
 
 ---
 ## Open - Not Assessed
@@ -254,15 +253,26 @@ or retracted rather than scheduled.
 | F10 | v0.23–v0.32 — terminal parity + ConfigFieldsPanel + filters CRUD + profile CRUD + proxy resilience + Auto data | v0.23–v0.32 |
 | F11 | v0.33 — on-device triage + unified monitoring spec + PWA header parity | v0.33 series |
 | #92 | ✅ Council persona wizard (5-step interview, AI-assist refine, edit/re-interview parity) | v0.77.0 |
+| #96 | ✅ Sprint 11 — Compute reorder + CostRatesCard + TailscaleCard + RoutingRulesCard | v0.80.0 |
+| (parity-12) | ✅ Sprint 12 — Automata tab flat order + PipelineManagerCard + OrchestratorGraphsCard | v0.81.0 |
+| (parity-13) | ✅ Sprint 13 — SessionTemplates + DeviceAliases + Tooling + Secrets + ObserverQuicklink | v0.82.0 |
+| #104 #105 | ✅ Sprint 14 — Session LLM picker + LLMRef/ComputeNodeRef badges + state filter chips | v0.83.0 |
+| #106 #110 | ✅ Sprint 15 — Compute CRUD overhaul (kind restriction, migration banner, enabled switch) + free-observer mapping | v0.84.0 |
+| #107 #108 | ✅ Sprint 16 — Wear notifications (council+error) + health tile + automata complication | v0.85.0 |
+| #109 | ✅ Sprint 17 — Android Auto voice command scaffold (status/report/cancel/refresh) | v0.86.0 |
+| (alpha.27) | ✅ backend_family ↔ llm_backend compat fix | v0.87.0 |
+| #111 | ✅ Observer by-node grouping + alpha.25 settings move | v0.88.0 |
+| #113 | ✅ OpenCode multi-select models + agent-settings editor | v0.89.0 |
+| #114 | ✅ Alert dock overlay (alpha.29) | v0.90.0 |
+| W-#114 | ✅ Wear alerts tile + complication | v0.91.0 |
+| #115 | ✅ Alerts redesign — chip filter + sort + search + dismiss-all (alpha.30) | v0.92.0 |
+| #116 | ✅ Watch toggle opt-in (Sprint 23) — per-session/automata badge filtering | v0.93.0 |
 
 ---
 
 ## v1.0.0 target
 
-v1.0.0 tags the release that closes full PWA parity — every row in
-[`parity-plan.md`](../parity-plan.md) ✅. Current open items in the
-Sprint FF / GG / HH batches above are all scheduled pre-1.0 per user
-direction 2026-04-22.
+PWA parity (datawatch v7.0.0-alpha.23c) was closed at v0.86.0. Current focus:
+alpha.31+ follow-on features as they land in the daemon. No blocked issues.
 
-See `docs/parity-status.md` (now redirected to `parity-plan.md`) for
-the single authoritative matrix.
+See `docs/parity-status.md` for the parity matrix.

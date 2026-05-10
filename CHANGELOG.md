@@ -11,6 +11,146 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 ## [0.93.0] — 2026-05-10 (Watch toggle opt-in — Sprint 23)
 ### Added
 - `WatchedSessionsStore`: SharedPreferences-backed per-profile set of watched session ids; reactive `watchedFlow()` via `callbackFlow`
+
+## [0.92.0] — 2026-05-10 (Alerts redesign — alpha.30)
+### Added
+- `AlertsViewModel`: `ChipFilter` + `SortMode` enums; nested combine for filter/sort/search; `dismissAll()`; `flatChronoAlerts` in `UiState`
+- `AlertsScreen`: custom top bar (title + mute + sort toggle + dismiss-all); horizontal chip filter row; always-visible search field; flat chronological view when `SortMode.Chronological`; prompt-type amber + error red tinting on `AlertCard`
+- `BottomNavBar`: `alertsMuted` param; always-on badge (dims at zero, shows muted icon when muted)
+- 11 new locale keys in EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.91.0/169 → 0.92.0/170
+
+## [0.91.0] — 2026-05-10 (Alerts tile + complication — Wear)
+### Added
+- `AlertsTileService`: 30 s tile showing total/needs-input/error counts from DataLayer; health dot (amber/red/green); tap → WearMainActivity
+- `AlertsComplicationService`: `SHORT_TEXT` badge reading same DataItem
+- `WearSyncService`: publishes total/needsInput/errors counts to `/datawatch/alerts` DataItem
+- Locale strings `tile_alerts_label` / `complication_alerts_label` in Wear EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.90.0/168 → 0.91.0/169
+
+## [0.90.0] — 2026-05-10 (Alert dock overlay — alpha.29)
+### Added
+- `AlertDockOverlay`: floats top-right when ≥2 active alerts exist; collapsed pill shows count + category badges (needs-input, error) + expand chevron + dismiss + mute; expanded shows scrollable last-100-alerts list with health dot + title + message
+- `AppRoot`: shows overlay when `activeAlerts ≥ 2`
+- 5 locale strings in EN/DE/ES/FR/JA (`alert_dock_dismiss/mute/pill_tip/one/many`)
+### Changed
+- Version bump: 0.89.0/167 → 0.90.0/168
+
+## [0.89.0] — 2026-05-10 (OpenCode multi-select models + agent-settings editor — alpha.28)
+### Added
+- `AgentSettingsDto`: `claude_auth_key_secret`, `opencode_ollama_url`, `opencode_model`, `opencode_models`; PATCH `/api/profiles/projects/{n}/agent-settings` wired in `TransportClient` + `RestTransport`
+- `ProfileEditDialog` Agent Settings section for `kind == project`: Claude auth key secret, OpenCode Ollama URL, default model, opencode_models (comma-separated pool)
+- 2 locale strings in all 5 bundles: `profile_ollama_models_label` / `profile_ollama_models_ph`
+### Changed
+- Version bump: 0.88.0/166 → 0.89.0/167
+
+## [0.88.0] — 2026-05-10 (Observer by-node grouping + settings move — alpha.24/alpha.25)
+### Added
+- `ObserverPeerDto` gains `compute_node` field (alpha.24)
+- `ObserverPeersByNodeDto` + `MetaPeersDto` for `/api/observer/peers/by-node` and `/api/federation/meta-peers`; `TransportClient` + `RestTransport` stubs wired
+- `FederatedPeersCard`: "Group by Compute Node" toggle (ON → by-node bucketed view, OFF → flat filter pills); uses `peer.computeNode` for binding badge
+- `SettingsScreen`: `SecretsCard` + `ObserverQuicklinkCard` moved General → Compute tab (mirrors PWA alpha.25 settings relocation)
+- 3 locale strings in all 5 bundles: `peer_group_by_node` / tip / unbound
+### Changed
+- Version bump: 0.87.0/165 → 0.88.0/166
+
+## [0.87.0] — 2026-05-10 (backend_family ↔ llm_backend compat — alpha.27)
+### Fixed
+- `SessionDto` gains `backendFamily` for new wire key while keeping `llmBackend` as compat alias; `Mappers` picks `backendFamily ?: llmBackend` so both pre- and post-alpha.27 daemons show the backend badge correctly
+### Changed
+- Version bump: 0.86.0/164 → 0.87.0/165
+
+## [0.86.0] — 2026-05-10 (Android Auto voice command scaffold — Sprint 17)
+### Added
+- `VoiceCommandProcessor`: parses spoken input to STATUS/REPORT/CANCEL/REFRESH verbs
+- `VoiceStatusScreen` (Car App Library `MessageTemplate`): displays status summary for TTS readout
+- `AutoMonitorScreen`: "Status" `ActionStrip` button navigates to `VoiceStatusScreen`
+- `DatawatchMessagingService.onNewIntent`: handles voice intent `EXTRA_RESULTS` from Google Assistant
+- 13 voice audio strings in all 5 locales (EN/DE/ES/FR/JA)
+### Changed
+- Version bump: 0.85.0/163 → 0.86.0/164
+
+## [0.85.0] — 2026-05-10 (Wear notifications + health tile + automata complication — Sprint 16)
+### Added
+- `WearAlertListenerService`: council consensus + error alert channels with `NotificationCompat` + `WearableExtender`; `needs_input` / `waiting_input` → high-priority notification; `council_consensus` → default-priority per-run notification
+- `WearSyncService`: publishes council count to DataLayer for complication
+- `AutomataComplicationService`: `SHORT_TEXT` complication showing active automata count
+- `MonitorTileService`: health dot (green/yellow/red based on alert presence) + "last sync Xm ago" text
+- Wear notification channels `dw_waiting` (HIGH) + `dw_council` (DEFAULT) registered in `Application.onCreate`
+- 4 notification channel locale strings in Wear EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.84.0/162 → 0.85.0/163
+
+## [0.84.0] — 2026-05-10 (Compute CRUD overhaul + free-observer mapping — Sprint 15)
+### Added
+- `ComputeNodesCard`: kind dropdown limited to `ollama` / `openai-compat`; amber deprecation banner for nodes using other kinds; per-row enabled `Switch`; `ComputeMigrationBannerCard` at top of Compute tab when deprecated nodes exist
+- `LlmRegistryCard`: per-row enabled switch
+- `FederatedPeersCard`: per-peer `⇄ <node>` attached badge or "free" pill
+- `ComputeNodesCard` add/edit form: Observer Peer dropdown from `GET /api/observer/peers/free`
+- `getFreePeers()` in `TransportClient` + `RestTransport`; `ObserverPeerDto.attachedNode` added
+- 9 new locale keys in EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.83.0/161 → 0.84.0/162
+
+## [0.83.0] — 2026-05-10 (Session LLM picker + badges + filter chips — Sprint 14)
+### Added
+- `NewSessionScreen`: v7 LLM dropdown (`GET /api/llms`, filter `disabled=false`) with kind label; cascading Compute Node picker from selected LLM's `compute_nodes`; hides legacy backend picker when v7 LLM selected
+- `SessionDetailScreen`: `⚡ <llmRef>` green badge + `⚙ <computeNodeRef>` purple badge via `SessionInfoBar`
+- `SessionsScreen`: 4-chip state filter row (All / Active / Waiting / Done with counts) persisted to `SharedPreferences` key `cs_session_state_filter`; text filter now matches `llmRef` + `computeNodeRef`
+- `SessionDto` gains `llm_ref` + `compute_node_ref`; `Session` domain model + `Mappers` updated
+- `StartSessionDto` gains `llm` + `compute_node_override` for v7 session start path
+- `LlmRegistryEntryDto` gains `compute_nodes` list for picker cascade
+- `listLlms()` in `TransportClient` + `RestTransport` (`GET /api/llms`)
+- 14 locale keys in EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.82.0/160 → 0.83.0/161
+
+## [0.82.0] — 2026-05-10 (General tab: Session Templates + Device Aliases + Tooling + Secrets + Observer quicklink — Sprint 13)
+### Added
+- `SessionTemplatesCard`: list/create/delete session templates (`GET/POST/DELETE /api/sessions/templates`)
+- `DeviceAliasesCard`: list/alias/delete devices (`GET /api/devices`, `PATCH /api/devices/{name}`, `DELETE /api/devices/{name}`)
+- `ToolingCard`: list artifacts + Install/Update/Remove per backend (`GET /api/tooling`, `POST /api/tooling/{backend}/install|update|remove`)
+- `SecretsCard`: full CRUD for secrets store (`GET/POST /api/secrets`, `DELETE /api/secrets/{name}`)
+- `ObserverQuicklinkCard`: single-row card with "Open Observer →" button navigating to Monitor tab
+- New DTOs: `SessionTemplateDto/sDto`, `DeviceDto/sDto`, `ToolingArtifactDto/Dto`, `SecretDto/sDto`, `CreateSecretDto`
+- 13 `TransportClient` methods + `RestTransport` implementations
+- 19 locale keys in EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.81.0/159 → 0.82.0/160
+
+## [0.81.0] — 2026-05-10 (Automata tab wiring + Pipeline Manager + Orchestrator Graphs — Sprint 12)
+### Added
+- Automata tab reordered to flat PWA v7.0.0-alpha.23c order: `IdentityCard` → `AlgorithmModeCard` → `EvalsCard` → `CouncilCard` → `KindProfilesCard(project)` → `PipelineManagerCard` → `OrchestratorGraphsCard` → `ScanConfigCard` → `ConfigFieldsPanel(Autonomous)` → `SkillRegistriesCard` → `AutomataTypesCard` → `ConfigFieldsPanel(Pipelines)` → `ConfigFieldsPanel(Orchestrator)`
+- `PipelineManagerCard`: live pipeline list + cancel (`GET /api/pipelines`)
+- `OrchestratorGraphsCard`: create/run/delete graphs (`GET/POST /api/orchestrator/graphs`, `POST ./{id}/run`, `DELETE ./{id}`)
+- New DTOs: `PipelineTaskDto`, `PipelineListItemDto`, `OrchestratorGraphListItemDto`, `OrchestratorGraphsListDto`, `CreateOrchestratorGraphRequestDto`
+- 5 `TransportClient` methods + `RestTransport` implementations
+- Filed server issues #40–#43 (identity/algorithm/evals/council endpoints)
+- 13 locale keys in EN/DE/ES/FR/JA
+### Changed
+- `ConfigFieldsPanel(Agents)` removed from Automata tab (moved to Compute in v0.80.0)
+- Version bump: 0.80.0/158 → 0.81.0/159
+
+## [0.80.0] — 2026-05-10 (Compute reorder + Cost Rates + Tailscale + Routing Rules — Sprint 11)
+### Added
+- `CostRatesCard`: GET/POST `/api/cost/rates`; table of backend → in/1K + out/1K with Save + Reset
+- `TailscaleSettingsCard`: reads `cfg.tailscale`; enabled toggle, coordinator URL, image, auth key, API key (masked)
+- `TailscaleMeshCard`: GET `/api/tailscale/status`; enabled/disabled badge, coordinator URL, node list with online/offline indicator
+- `RoutingRulesCard`: GET/POST `/api/routing-rules` + POST `/api/routing-rules/test`; add/delete rules + inline test
+- New DTOs: `CostRatesDto`, `CostRateDto`, `RoutingRulesDto`, `RoutingRuleDto`, `RoutingTestRequestDto`, `RoutingTestResultDto`, `TailscaleStatusDto`, `TailscaleNodeDto`
+- 6 new `TransportClient` methods + `RestTransport` implementations
+- Compute tab reordered to PWA v7.0.0-alpha.23c order: Memory → RTK → CostRates → ClusterProfiles → ComputeNodes → LLMs → ContainerWorkers → Detection → SavedCmds → Filters → TailscaleSettings → TailscaleMesh
+- `RoutingRulesCard` added to Comms tab after Proxy section
+- `ConfigFieldsPanel(Agents)` wired as Container Workers in Compute tab
+- 23 locale keys in EN/DE/ES/FR/JA
+### Changed
+- Version bump: 0.79.0/157 → 0.80.0/158
+
+## [0.79.0] — 2026-05-10 (Sprint 10 arc complete — battery + background optimization)
+### Changed
+- Version bump: 0.78.0/156 → 0.79.0/157; Sprint 10 upgrade arc finalized
 - `WatchedAutomataStore`: same pattern for automata / PRD watch state
 - `ServiceLocator`: exposes `watchedSessionsStore` and `watchedAutomataStore`
 - `SessionsViewModel`: `watchedIds: StateFlow<Set<String>>` + `toggleWatch(sessionId)` — persists watch state to `WatchedSessionsStore`
