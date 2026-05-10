@@ -14,11 +14,16 @@ import androidx.wear.protolayout.TypeBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.dmzs.datawatchclient.wear.sync.WearSyncManager
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Wear Tile — Monitor at a glance. Reads the `/datawatch/stats`
@@ -28,8 +33,14 @@ import com.google.common.util.concurrent.ListenableFuture
  * glance whether the daemon restarted.
  */
 public class MonitorTileService : TileService() {
-    override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> =
-        Futures.immediateFuture(buildTile())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
+        // S10-6: trigger a background dashboard refresh after returning the
+        // cached tile so the next tile update shows fresh data.
+        scope.launch { WearSyncManager.requestDashboard(applicationContext) }
+        return Futures.immediateFuture(buildTile())
+    }
 
     override fun onTileResourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest,

@@ -141,6 +141,26 @@ public class WearSyncService(
                         scope.launch { forwardWatchStopSession(sid) }
                     }
                 }
+                SYNC_PATH -> {
+                    // S10-2 — watch-initiated demand sync. Payload is
+                    // "DASHBOARD" or "SESSION_DETAIL:<id>".
+                    val payload =
+                        runCatching { String(ev.data, Charsets.UTF_8) }
+                            .getOrNull().orEmpty()
+                    when {
+                        payload == "DASHBOARD" -> {
+                            Log.d(TAG, "MSG SYNC_PATH DASHBOARD from=${ev.sourceNodeId}")
+                            scope.launch { fetchAndPublishDashboard() }
+                        }
+                        payload.startsWith("SESSION_DETAIL:") -> {
+                            val sid = payload.removePrefix("SESSION_DETAIL:")
+                            Log.d(TAG, "MSG SYNC_PATH SESSION_DETAIL sid=$sid from=${ev.sourceNodeId}")
+                            if (sid.isNotEmpty()) {
+                                scope.launch { forwardWatchRefreshSession(sid, ev.sourceNodeId) }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -245,133 +265,110 @@ public class WearSyncService(
                 )
             }.collectLatest { snap -> publishProfiles(snap) }
         }
-        // Light stats snapshot — polled every 15 s on the phone, cached
-        // in the DataLayer so the watch reads the last-known values
-        // without opening its own HTTP client.
-        scope.launch {
-            while (isActive) {
-                runCatching {
-                    val activeId = ServiceLocator.activeServerStore.get()
-                    if (!activeId.isNullOrEmpty() && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS) {
-                        val profile =
-                            ServiceLocator.profileRepository.observeAll().first()
-                                .firstOrNull { it.id == activeId && it.enabled }
-                        if (profile != null) {
-                            // v0.42.8 — refresh the session list from
-                            // /api/sessions on every poll tick. Without
-                            // this, the watch's published snapshot only
-                            // updated when the phone user opened the
-                            // Sessions tab — new sessions never appeared
-                            // and lastResponse went stale on existing
-                            // ones. The reactive
-                            // ServiceLocator.sessionRepository publisher
-                            // (above) picks up the upserted rows
-                            // automatically and re-emits to
-                            // /datawatch/sessions.
-                            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
-                                Log.d(TAG, "poll listSessions OK count=${list.size}")
-                                ServiceLocator.sessionRepository.replaceAll(profile.id, list)
-                            }.onFailure { err ->
-                                Log.w(TAG, "poll listSessions FAILED ${err.message}")
-                            }
-                            ServiceLocator.transportFor(profile).stats().onSuccess { s ->
-                                publishStats(
-                                    StatsSnapshot(
-                                        cpuLoad1 = s.cpuLoad1 ?: s.cpuPct ?: 0.0,
-                                        cpuCores = s.cpuCores ?: 0,
-                                        memUsed = s.memUsed ?: 0L,
-                                        memTotal = s.memTotal ?: 0L,
-                                        diskUsed = s.diskUsed ?: 0L,
-                                        diskTotal = s.diskTotal ?: 0L,
-                                        uptimeSeconds = s.uptimeSeconds,
-                                        sessionsTotal = s.sessionsTotal,
-                                        sessionsRunning = s.sessionsRunning,
-                                        sessionsWaiting = s.sessionsWaiting,
-                                        gpuUtilPct = s.gpuUtilPct ?: s.gpuPct ?: 0.0,
-                                        gpuTempC = s.gpuTemp ?: 0.0,
-                                        gpuMemUsedMb = s.gpuMemUsedMb ?: 0L,
-                                        gpuMemTotalMb = s.gpuMemTotalMb ?: 0L,
-                                        gpuName = s.gpuName.orEmpty(),
-                                    ),
-                                )
-                            }
-                            // v0.40.0 — also publish PRDs while
-                            // we already have the active profile +
-                            // transport. needs_review and running
-                            // PRDs only, capped at 8 (DataItem
-                            // budget; matches the sessions cap).
-                            ServiceLocator.transportFor(profile).listPrds().onSuccess { dto ->
-                                val items =
-                                    dto.prds
-                                        .filter {
-                                            val s = it.status.lowercase()
-                                            s == "needs_review" || s == "running" ||
-                                                s == "revisions_asked"
-                                        }
-                                        .take(8)
-                                        .map { p ->
-                                            PrdSnapshotItem(
-                                                id = p.id,
-                                                title =
-                                                    (p.title ?: p.name)
-                                                        .take(40),
-                                                status = p.status,
-                                            )
-                                        }
-                                publishPrds(items)
-                            }.onFailure {
-                                // Server has no autonomous surface or
-                                // older daemon — clear the list so
-                                // the watch hides the page gracefully.
-                                publishPrds(emptyList())
-                            }
-                        }
-                    }
-                }
-                delay(STATS_POLL_MS)
+        // S10-2: 15 s polling loops removed — demand-only sync via
+        // MessageClient (/datawatch/sync) + 15-min WearHeartbeatWorker.
+        // fetchAndPublishDashboard() is still available for on-demand
+        // calls from the heartbeat worker or the sync request receiver.
+    }
+
+    /**
+     * S10-2 — fetch stats + sessions + PRDs for the active profile and
+     * push them to the watch via the DataLayer. Called by
+     * [WearHeartbeatWorker] (15-min cadence) and by the
+     * `/datawatch/sync` MessageClient listener (demand).
+     */
+    public suspend fun fetchAndPublishDashboard() {
+        runCatching {
+            val activeId = ServiceLocator.activeServerStore.get()
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return
+            ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
+                Log.d(TAG, "fetchDashboard listSessions OK count=${list.size}")
+                ServiceLocator.sessionRepository.replaceAll(profile.id, list)
+            }.onFailure { err ->
+                Log.w(TAG, "fetchDashboard listSessions FAILED ${err.message}")
             }
+            ServiceLocator.transportFor(profile).stats().onSuccess { s ->
+                publishStats(
+                    StatsSnapshot(
+                        cpuLoad1 = s.cpuLoad1 ?: s.cpuPct ?: 0.0,
+                        cpuCores = s.cpuCores ?: 0,
+                        memUsed = s.memUsed ?: 0L,
+                        memTotal = s.memTotal ?: 0L,
+                        diskUsed = s.diskUsed ?: 0L,
+                        diskTotal = s.diskTotal ?: 0L,
+                        uptimeSeconds = s.uptimeSeconds,
+                        sessionsTotal = s.sessionsTotal,
+                        sessionsRunning = s.sessionsRunning,
+                        sessionsWaiting = s.sessionsWaiting,
+                        gpuUtilPct = s.gpuUtilPct ?: s.gpuPct ?: 0.0,
+                        gpuTempC = s.gpuTemp ?: 0.0,
+                        gpuMemUsedMb = s.gpuMemUsedMb ?: 0L,
+                        gpuMemTotalMb = s.gpuMemTotalMb ?: 0L,
+                        gpuName = s.gpuName.orEmpty(),
+                    ),
+                )
+            }
+            ServiceLocator.transportFor(profile).listPrds().onSuccess { dto ->
+                val items =
+                    dto.prds
+                        .filter {
+                            val s = it.status.lowercase()
+                            s == "needs_review" || s == "running" ||
+                                s == "revisions_asked"
+                        }
+                        .take(8)
+                        .map { p ->
+                            PrdSnapshotItem(
+                                id = p.id,
+                                title = (p.title ?: p.name).take(40),
+                                status = p.status,
+                            )
+                        }
+                publishPrds(items)
+            }.onFailure {
+                publishPrds(emptyList())
+            }
+        }.onFailure { err ->
+            Log.w(TAG, "fetchDashboard FAILED ${err.message}")
         }
-        // B28: all-servers compact summary — published to /datawatch/allStats
-        // so the watch Monitor page can show one row per enabled server when
-        // more than one server is configured. Shares the 15 s poll cadence
-        // with the single-server stats fetch above.
-        scope.launch {
-            while (isActive) {
-                runCatching {
-                    val all = ServiceLocator.profileRepository.observeAll().first()
-                        .filter { it.enabled }
-                    if (all.size > 1) {
-                        val rows = coroutineScope {
-                            all.map { p ->
-                                async {
-                                    ServiceLocator.transportFor(p).stats().fold(
-                                        onSuccess = { s ->
-                                            val cpuPct = when {
-                                                s.cpuLoad1 != null && (s.cpuCores ?: 0) > 0 ->
-                                                    (s.cpuLoad1!! / s.cpuCores!! * 100.0)
-                                                        .toFloat().coerceIn(0f, 100f)
-                                                s.cpuPct != null -> s.cpuPct!!.toFloat().coerceIn(0f, 100f)
-                                                else -> 0f
-                                            }
-                                            val memPct = when {
-                                                (s.memTotal ?: 0L) > 0 ->
-                                                    ((s.memUsed ?: 0L).toDouble() / s.memTotal!!.toDouble() * 100.0)
-                                                        .toFloat().coerceIn(0f, 100f)
-                                                s.memPct != null -> s.memPct!!.toFloat().coerceIn(0f, 100f)
-                                                else -> 0f
-                                            }
-                                            AllStatsRow(p.displayName, cpuPct, memPct, s.sessionsTotal, true)
-                                        },
-                                        onFailure = { AllStatsRow(p.displayName, 0f, 0f, 0, false) },
-                                    )
-                                }
-                            }.awaitAll()
+        // B28: all-servers compact summary — published on demand.
+        runCatching {
+            val all = ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
+            if (all.size > 1) {
+                val rows = coroutineScope {
+                    all.map { p ->
+                        async {
+                            ServiceLocator.transportFor(p).stats().fold(
+                                onSuccess = { s ->
+                                    val cpuPct = when {
+                                        s.cpuLoad1 != null && (s.cpuCores ?: 0) > 0 ->
+                                            (s.cpuLoad1!! / s.cpuCores!! * 100.0)
+                                                .toFloat().coerceIn(0f, 100f)
+                                        s.cpuPct != null -> s.cpuPct!!.toFloat().coerceIn(0f, 100f)
+                                        else -> 0f
+                                    }
+                                    val memPct = when {
+                                        (s.memTotal ?: 0L) > 0 ->
+                                            ((s.memUsed ?: 0L).toDouble() / s.memTotal!!.toDouble() * 100.0)
+                                                .toFloat().coerceIn(0f, 100f)
+                                        s.memPct != null -> s.memPct!!.toFloat().coerceIn(0f, 100f)
+                                        else -> 0f
+                                    }
+                                    AllStatsRow(p.displayName, cpuPct, memPct, s.sessionsTotal, true)
+                                },
+                                onFailure = { AllStatsRow(p.displayName, 0f, 0f, 0, false) },
+                            )
                         }
-                        publishAllStats(rows)
-                    }
+                    }.awaitAll()
                 }
-                delay(STATS_POLL_MS)
+                publishAllStats(rows)
             }
+        }.onFailure { err ->
+            Log.w(TAG, "fetchDashboard allStats FAILED ${err.message}")
         }
     }
 
@@ -816,6 +813,8 @@ public class WearSyncService(
         public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
         public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
         public const val ALERT_PATH: String = "/datawatch/alert"
+        // S10-2 — watch-initiated demand sync request path.
+        public const val SYNC_PATH: String = "/datawatch/sync"
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable

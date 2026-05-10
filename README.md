@@ -5,10 +5,14 @@
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Current release: v0.76.0 (2026-05-10).** **Status:** [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
 =======
 **Current release: v0.77.0 (2026-05-10).** **Status:** [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
 >>>>>>> worktree-agent-a30d0add550b00344
+=======
+**Current release: v0.78.0 (2026-05-10).** **Status:** [latest release](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v5.27.0+`. **Full PWA-parity arc closed 2026-04-28** ([audit](docs/plans/audit-2026-04-23/README.md)) — every operator-facing surface from the v5.1.0 → v5.27.0 catch-up has shipped.
+>>>>>>> worktree-agent-a88aba9adedb78416
 
 ## At a glance
 
