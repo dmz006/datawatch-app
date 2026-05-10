@@ -1196,3 +1196,18 @@ public data class AddSecretDto(
     val tags: List<String> = emptyList(),
     val scopes: List<String> = emptyList(),
 )
+
+/**
+ * PATCH /api/profiles/projects/{name}/agent-settings — backend-specific
+ * settings injected into agent containers at spawn (BL251).
+ * alpha.28 (#243) adds [opencodeModels] multi-select pool alongside
+ * the existing [opencodeModel] single-model default.
+ */
+@Serializable
+public data class AgentSettingsDto(
+    @SerialName("claude_auth_key_secret") val claudeAuthKeySecret: String = "",
+    @SerialName("opencode_ollama_url") val opencodeOllamaUrl: String = "",
+    @SerialName("opencode_model") val opencodeModel: String = "",
+    /** alpha.28 #243 — multi-model pool; first entry is default when opencodeModel is empty. */
+    @SerialName("opencode_models") val opencodeModels: List<String> = emptyList(),
+)

@@ -2260,6 +2260,18 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun patchProjectAgentSettings(
+        name: String,
+        settings: com.dmzs.datawatchclient.transport.dto.AgentSettingsDto,
+    ): Result<Unit> =
+        request {
+            client.patch("${profile.baseUrl}/api/profiles/projects/${name.replace(" ", "%20")}/agent-settings") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(settings)
+            }
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

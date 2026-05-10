@@ -507,6 +507,9 @@
     <string name="profile_claude_key_secret_ph">nombre del secreto → ANTHROPIC_API_KEY</string>
     <string name="profile_ollama_model_label">Modelo de OpenCode</string>
     <string name="profile_ollama_model_ph">qwen3:8b → OPENCODE_MODEL</string>
+    <!-- Sprint 20 #113 — alpha.28 opencode multi-select models -->
+    <string name="profile_ollama_models_label">Pool de modelos OpenCode</string>
+    <string name="profile_ollama_models_ph">qwen3:8b, qwen3:4b → OPENCODE_MODELS</string>
     <string name="profile_ollama_url_label">URL de Ollama para OpenCode</string>
     <string name="profile_ollama_url_ph">http://ollama.local:11434 → OPENCODE_PROVIDER_URL</string>
     <string name="scan_config_fail_on">Fallar por gravedad</string>
