@@ -982,4 +982,14 @@
     <string name="compute_observer_currently_attached">(aktuell verbunden)</string>
     <string name="observer_attached_to">Verbunden mit %s</string>
     <string name="observer_free">frei</string>
+
+    <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
+    <string name="wear_notification_council_channel">Council-Benachrichtigungen</string>
+    <string name="wear_notification_council_title">Council-Konsens erreicht</string>
+    <string name="wear_notification_error_channel">Fehlerbenachrichtigungen</string>
+    <string name="wear_notification_error_title">Sitzungsfehler</string>
+    <string name="complication_automata_label">Automata</string>
+    <string name="wear_health_good">System funktioniert</string>
+    <string name="wear_health_waiting">Eingabe erforderlich</string>
+    <string name="wear_health_error">Sitzungsfehler</string>
 </resources>

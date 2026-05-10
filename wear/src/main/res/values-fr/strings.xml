@@ -47,6 +47,14 @@
 
     <string name="wear_notification_channel_name">Alertes datawatch</string>
     <string name="wear_notification_waiting_title">Session en attente d\'entrée</string>
+    <string name="wear_notification_council_channel">Notifications conseil</string>
+    <string name="wear_notification_council_title">Consensus du conseil atteint</string>
+    <string name="wear_notification_error_channel">Notifications d\'erreur</string>
+    <string name="wear_notification_error_title">Erreur de session</string>
+    <string name="complication_automata_label">Automata</string>
+    <string name="wear_health_good">Système en bonne santé</string>
+    <string name="wear_health_waiting">Saisie requise</string>
+    <string name="wear_health_error">Erreur de session</string>
 
     <string name="action_yes">Oui</string>
     <string name="action_no">Non</string>

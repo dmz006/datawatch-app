@@ -78,7 +78,9 @@ public class MonitorTileService : TileService() {
                             sessionsTotal = m.getInt("sessionsTotal", 0),
                             sessionsRunning = m.getInt("sessionsRunning", 0),
                             sessionsWaiting = m.getInt("sessionsWaiting", 0),
+                            sessionsError = m.getInt("sessionsError", 0),
                             uptimeSeconds = m.getLong("uptimeSeconds", 0),
+                            syncTs = m.getLong("ts", 0),
                             hasData = true,
                         )
                     }
@@ -98,6 +100,8 @@ public class MonitorTileService : TileService() {
                 // non-interactive beyond a single click target.
                 .setModifiers(openAppModifiers())
                 .addContent(titleText("Monitor"))
+                .addContent(spacerV(2f))
+                .addContent(healthDot(snap))
                 .addContent(spacerV(4f))
         if (!snap.hasData) {
             col.addContent(subText("open phone app"))
@@ -129,6 +133,11 @@ public class MonitorTileService : TileService() {
         if (snap.uptimeSeconds > 0) {
             col.addContent(spacerV(3f))
             col.addContent(subText("up ${formatUptime(snap.uptimeSeconds)}"))
+        }
+        if (snap.syncTs > 0) {
+            val minutesAgo = (System.currentTimeMillis() - snap.syncTs) / 60_000
+            col.addContent(spacerV(2f))
+            col.addContent(subText("sync ${minutesAgo}m ago"))
         }
         return col.build()
     }
@@ -235,6 +244,32 @@ public class MonitorTileService : TileService() {
             )
             .build()
 
+    private fun healthDot(snap: StatsSnapshot): LayoutElementBuilders.Box {
+        val color = when {
+            snap.sessionsError > 0 -> COLOR_HEALTH_ERROR
+            snap.sessionsWaiting > 0 -> COLOR_HEALTH_WAITING
+            else -> COLOR_HEALTH_GOOD
+        }
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(dp(10f))
+            .setHeight(dp(10f))
+            .setModifiers(
+                ModifiersBuilders.Modifiers.Builder()
+                    .setBackground(
+                        ModifiersBuilders.Background.Builder()
+                            .setColor(argb(color))
+                            .setCorner(
+                                ModifiersBuilders.Corner.Builder()
+                                    .setRadius(dp(5f))
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build()
+    }
+
     private fun formatUptime(seconds: Long): String {
         val d = seconds / 86_400
         val h = (seconds % 86_400) / 3600
@@ -254,7 +289,9 @@ public class MonitorTileService : TileService() {
         val sessionsTotal: Int = 0,
         val sessionsRunning: Int = 0,
         val sessionsWaiting: Int = 0,
+        val sessionsError: Int = 0,
         val uptimeSeconds: Long = 0,
+        val syncTs: Long = 0,
         val hasData: Boolean = false,
     )
 
@@ -268,5 +305,10 @@ public class MonitorTileService : TileService() {
         private const val COLOR_WARNING: Int = 0xFFFFB020.toInt()
         private const val COLOR_ERROR: Int = 0xFFFF5555.toInt()
         private const val COLOR_MUTED: Int = 0xFF9AA7B3.toInt()
+
+        // W-#108 health dot colours
+        private const val COLOR_HEALTH_GOOD: Int = 0xFF10B981.toInt()
+        private const val COLOR_HEALTH_WAITING: Int = 0xFFF59E0B.toInt()
+        private const val COLOR_HEALTH_ERROR: Int = 0xFFEF4444.toInt()
     }
 }

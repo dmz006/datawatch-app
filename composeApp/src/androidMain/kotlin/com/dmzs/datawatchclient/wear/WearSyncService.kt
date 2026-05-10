@@ -56,6 +56,8 @@ public class WearSyncService(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     private var prevWaitingIds: Set<String> = emptySet()
+    private var prevErrorIds: Set<String> = emptySet()
+    private var prevCouncilCompletedIds: Set<String> = emptySet()
     private val messageListener =
         MessageClient.OnMessageReceivedListener { ev: MessageEvent ->
             when (ev.path) {
@@ -194,6 +196,8 @@ public class WearSyncService(
                                 running = sessions.count { it.state == SessionState.Running },
                                 waiting = sessions.count { it.state == SessionState.Waiting },
                                 total = sessions.size,
+                                error = sessions.count { it.state == SessionState.Error || it.state == SessionState.Killed },
+                                council = sessions.count { it.fullId.startsWith("council-") && it.state == SessionState.Running },
                             )
                         val list =
                             SessionsListSnapshot(
@@ -250,6 +254,30 @@ public class WearSyncService(
                         alertWatchNodes(title)
                     }
                     prevWaitingIds = currentWaitingIds
+
+                    // Council consensus: council- sessions that just became Completed
+                    val currentCouncilCompletedIds = list.items
+                        .filter { it.stateName.equals("completed", ignoreCase = true) && it.id.startsWith("council-") }
+                        .map { it.id }.toSet()
+                    val newCouncilCompleted = currentCouncilCompletedIds - prevCouncilCompletedIds
+                    if (newCouncilCompleted.isNotEmpty() && prevCouncilCompletedIds.isNotEmpty()) {
+                        val title = list.items
+                            .firstOrNull { it.id in newCouncilCompleted }?.title.orEmpty()
+                        councilAlertWatchNodes(title.ifBlank { "council run" })
+                    }
+                    prevCouncilCompletedIds = currentCouncilCompletedIds
+
+                    // Error/killed sessions that just entered error state
+                    val currentErrorIds = list.items
+                        .filter { it.stateName.equals("error", ignoreCase = true) || it.stateName.equals("killed", ignoreCase = true) }
+                        .map { it.id }.toSet()
+                    val newErrors = currentErrorIds - prevErrorIds
+                    if (newErrors.isNotEmpty() && prevErrorIds.isNotEmpty()) {
+                        val title = list.items
+                            .firstOrNull { it.id in newErrors }?.title.orEmpty()
+                        errorAlertWatchNodes(title)
+                    }
+                    prevErrorIds = currentErrorIds
                 }
         }
         // Enabled profile list — watch's server-picker page reads this.
@@ -587,6 +615,44 @@ public class WearSyncService(
     }
 
     /**
+     * W-#107 — send a council consensus notification to all connected watch nodes.
+     */
+    private fun councilAlertWatchNodes(topic: String) {
+        scope.launch {
+            runCatching {
+                val nodes =
+                    com.google.android.gms.tasks.Tasks.await(
+                        Wearable.getNodeClient(context).connectedNodes,
+                    )
+                val payload = topic.toByteArray(Charsets.UTF_8)
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, COUNCIL_ALERT_PATH, payload)
+                }
+            }
+        }
+    }
+
+    /**
+     * W-#107 — send an error/fatal session notification to all connected watch nodes.
+     */
+    private fun errorAlertWatchNodes(sessionTitle: String) {
+        scope.launch {
+            runCatching {
+                val nodes =
+                    com.google.android.gms.tasks.Tasks.await(
+                        Wearable.getNodeClient(context).connectedNodes,
+                    )
+                val payload = sessionTitle.toByteArray(Charsets.UTF_8)
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, ERROR_ALERT_PATH, payload)
+                }
+            }
+        }
+    }
+
+    /**
      * Open a transient WS subscription to [sessionId], emit a `send_input`
      * frame with [text], wait briefly for the server to ack, then cancel.
      *
@@ -632,6 +698,8 @@ public class WearSyncService(
         val running: Int,
         val waiting: Int,
         val total: Int,
+        val error: Int = 0,
+        val council: Int = 0,
     )
 
     private data class ProfilesSnapshot(
@@ -677,6 +745,9 @@ public class WearSyncService(
         val gpuMemUsedMb: Long,
         val gpuMemTotalMb: Long,
         val gpuName: String,
+        // W-#107 — error + council counts for tile health dot.
+        val sessionsError: Int = 0,
+        val sessionsCouncil: Int = 0,
     )
 
     private fun publishCounts(snap: Snapshot) {
@@ -688,6 +759,8 @@ public class WearSyncService(
                     dataMap.putInt("running", snap.running)
                     dataMap.putInt("waiting", snap.waiting)
                     dataMap.putInt("total", snap.total)
+                    dataMap.putInt("error", snap.error)
+                    dataMap.putInt("council", snap.council)
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
@@ -785,6 +858,8 @@ public class WearSyncService(
                     dataMap.putInt("sessionsTotal", snap.sessionsTotal)
                     dataMap.putInt("sessionsRunning", snap.sessionsRunning)
                     dataMap.putInt("sessionsWaiting", snap.sessionsWaiting)
+                    dataMap.putInt("sessionsError", snap.sessionsError)
+                    dataMap.putInt("sessionsCouncil", snap.sessionsCouncil)
                     dataMap.putDouble("gpuUtilPct", snap.gpuUtilPct)
                     dataMap.putDouble("gpuTempC", snap.gpuTempC)
                     dataMap.putLong("gpuMemUsedMb", snap.gpuMemUsedMb)
@@ -813,6 +888,8 @@ public class WearSyncService(
         public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
         public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
         public const val ALERT_PATH: String = "/datawatch/alert"
+        public const val COUNCIL_ALERT_PATH: String = "/datawatch/council"
+        public const val ERROR_ALERT_PATH: String = "/datawatch/error-alert"
         // S10-2 — watch-initiated demand sync request path.
         public const val SYNC_PATH: String = "/datawatch/sync"
 

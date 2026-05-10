@@ -165,12 +165,30 @@
                 android:value="300"/>
         </service>
 
+        <!-- W-#108 — Automata count / council count complication. -->
+        <service
+            android:name=".complication.AutomataComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/complication_automata_label"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
         <!-- BroadcastReceiver for server-switch complication tap (W-10). -->
         <receiver
             android:name=".complication.ServerSwitchReceiver"
             android:exported="false"/>
 
-        <!-- WearableListenerService for session waiting_input alerts (BL27). -->
+        <!-- WearableListenerService for session alerts (BL27, W-#107). -->
         <service
             android:name=".WearAlertListenerService"
             android:exported="true"
@@ -178,6 +196,8 @@
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/alert"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/council"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/error-alert"/>
             </intent-filter>
         </service>
     </application>
