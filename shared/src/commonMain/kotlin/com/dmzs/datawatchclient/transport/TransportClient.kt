@@ -943,6 +943,32 @@ public interface TransportClient {
 
     /** DELETE /api/migration/status — dismiss the migration notice. */
     public suspend fun dismissMigration(): Result<Unit>
+
+    // ---- v0.75.0 Vault/Secrets + Docs Search (S6-3, S6-4 BL274) ----
+
+    /** GET /api/secrets/status — active secrets/vault backend + reachability. */
+    public suspend fun getSecretsStatus(): Result<com.dmzs.datawatchclient.transport.dto.SecretsStatusDto>
+
+    /** GET /api/docs/search?q=…&limit=N — full-text documentation search. */
+    public suspend fun docsSearch(
+        q: String,
+        limit: Int = 10,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto>>
+
+    /** GET /api/docs/trust/pending — list sources awaiting trust approval. */
+    public suspend fun docsPendingList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto>>
+
+    /** POST /api/docs/trust/accept — bulk-accept pending sources. */
+    public suspend fun docsTrustAccept(paths: List<String>): Result<Unit>
+
+    /** POST /api/docs/trust/dismiss — bulk-dismiss pending sources. */
+    public suspend fun docsTrustDismiss(paths: List<String>): Result<Unit>
+
+    /** GET /api/docs/trust — list currently trusted sources. */
+    public suspend fun docsTrustedList(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto>>
+
+    /** DELETE /api/docs/trust/{path} — remove trust from a source. */
+    public suspend fun docsTrustRemove(path: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

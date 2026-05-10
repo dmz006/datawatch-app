@@ -581,7 +581,7 @@
     <string name="prd_tab_stories">Stories</string>
     <string name="prd_task_llm_hint">Per-task LLM override — empty inherits PRD then global.</string>
     <string name="prd_view_spec">View spec</string>
-    <string name="profile_agent_settings_section">Agent Settings (BL251)</string>
+    <string name="profile_agent_settings_section">Agent Settings</string>
     <string name="profile_claude_key_secret_label">Claude auth key secret</string>
     <string name="profile_claude_key_secret_ph">secret name → ANTHROPIC_API_KEY</string>
     <string name="profile_ollama_model_label">OpenCode model</string>
@@ -845,4 +845,33 @@
     <string name="council_session_filter">Council</string>
     <string name="council_session_proposal_label">Proposal</string>
     <string name="council_session_in_progress">Council run in progress…</string>
+
+    <!-- v0.75.0 — About docs link (S6-1, #71) -->
+    <string name="about_docs_link">System documentation &amp; diagrams</string>
+
+    <!-- v0.75.0 — Federated peer stale indicator (S6-2, #74) -->
+    <string name="peer_stale_fresh">Last seen: just now</string>
+    <string name="peer_stale_warning">Last seen: %d hours ago</string>
+    <string name="peer_stale_critical">Stale — last seen over 6 hours ago</string>
+
+    <!-- v0.75.0 — Vault/Secrets status (S6-3, #82) -->
+    <string name="vault_status_title">Vault / Secrets</string>
+    <string name="vault_last_success">Last success: %s</string>
+    <string name="vault_unreachable">Vault unreachable</string>
+    <string name="vault_backend_local">Local secrets (no vault)</string>
+
+    <!-- v0.75.0 — Docs Search + trust queue (S6-4, S6-8, #84, #85, #89) -->
+    <string name="docs_search_title">Docs Search</string>
+    <string name="docs_search_placeholder">Search documentation…</string>
+    <string name="docs_trust_pending_title">Pending sources</string>
+    <string name="docs_trust_select_all">Select all</string>
+    <string name="docs_trust_accept">Trust selected</string>
+    <string name="docs_trust_dismiss">Dismiss selected</string>
+    <string name="docs_trusted_sources">Trusted sources (%d)</string>
+    <string name="docs_trust_remove">Remove trust</string>
+
+    <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
+    <string name="mic_toast_recording">Recording…</string>
+    <string name="observer_title">Observer</string>
+    <string name="observer_no_active">No active observer sessions</string>
 </resources>

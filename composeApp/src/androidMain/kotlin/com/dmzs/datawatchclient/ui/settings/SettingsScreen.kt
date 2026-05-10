@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.settings
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -266,6 +268,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
                                 com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
+                                // v0.75.0 S6-7 (#88): Observer stub card.
+                                ObserverCard()
                             }
                             SettingsTab.General -> {
                                 // v0.59.0 — General mirrors PWA v6.5.1 GENERAL tab:
@@ -274,6 +278,8 @@ public fun SettingsScreen(
                                 // Pipelines / Autonomous / Orchestrator / Agents →
                                 // Automata tab. Plugins → Plugins tab.
                                 SecurityCard()
+                                // v0.75.0 S6-3 (#82): Vault/Secrets status.
+                                SecretsStatusCard()
                                 RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
@@ -291,6 +297,8 @@ public fun SettingsScreen(
                                 )
                                 com.dmzs.datawatchclient.ui.voice.TestWhisperCard()
                                 com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
+                                // v0.75.0 S6-4 (#84, #85): Docs Search card.
+                                DocsSearchCard()
                             }
                             SettingsTab.Comms -> {
                                 // Matches PWA `data-group="comms"` order:
@@ -763,7 +771,8 @@ private fun AboutCard(activeProfile: ServerProfile?) {
     }
 
     Section(title = "About") {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        // S6-6 (#87): normalized to 12dp horizontal / 8dp vertical per pwaCard standard.
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             // Live animated logo (matrix rain + eye + arcs + tablet frame).
             Card(
                 modifier =
@@ -831,6 +840,17 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // S6-1 (#71): single docs link replacing any multi-row doc links.
+            val docsContext = LocalContext.current
+            TextButton(
+                onClick = {
+                    val url = "${activeProfile?.baseUrl}/diagrams.html"
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    docsContext.startActivity(intent)
+                },
+            ) {
+                Text(stringResource(R.string.about_docs_link))
+            }
             // v0.33.13 (B25) sessions-details footer. Sourced from
             // `/api/stats` alongside the daemon-info fetch so the
             // About card communicates server activity at a glance.
