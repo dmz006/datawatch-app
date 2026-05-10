@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 ## [0.76.0] — 2026-05-10
 ### Added
 - AutonomousScreen: long-press multi-select bar with Run/Approve/Cancel/Archive/Delete chips above bottom nav; FAB hidden while selection active (#73)
@@ -21,6 +22,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - Locale: 7 new/updated keys in EN/DE/ES/FR/JA (`settings_theme_title`, `settings_theme_dark`, `settings_theme_light`, `settings_theme_system`, `prd_terminal_state_hint`, `action_run_scan`, `action_run_rules`)
 ### Changed
 - Version bump: 0.75.0/153 → 0.76.0/154
+=======
+## [0.77.0] — 2026-05-10
+### Added
+- CouncilPersonaWizardSheet: 6-page HorizontalPager interview wizard (5 steps: focus/stance/tone/pushback/examples + final tune page), AI-refine row, backend picker (ollama/openwebui), edit-mode pre-fill (#92)
+- CouncilCard: Manage Personas button opens persona list sheet with per-row Edit icon; Add button opens wizard in create mode; wizard wired to POST/PUT transport (#92)
+- Transport: `councilListPersonas`, `councilListRuns`, `councilGetConfig`, `councilUpdateConfig`, `councilStartRun`, `councilStopRun`, `createCouncilPersona`, `updateCouncilPersona` + all backing Council DTOs (#92)
+- Locale: 11 `council_wizard_*` keys in EN/DE/ES/FR/JA (#92)
+- MicAttachableTextField: shared composable wrapper for Whisper-attachable text input (S7-4 stub, Sprint 8 integration)
+>>>>>>> worktree-agent-a30d0add550b00344
 
 ## [0.75.0] — 2026-05-09
 ### Added
