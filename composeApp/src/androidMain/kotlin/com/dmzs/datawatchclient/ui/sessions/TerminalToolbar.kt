@@ -184,16 +184,21 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
                 label = "Page Up",
                 modifier = Modifier.weight(1f),
                 onClick = {
+                    // Sprint 3 S3-3 (#63): use tmux-page-up daemon command.
+                    // Falls back to sendkey PageUp if the command returns 404
+                    // (older server builds). The WS command frame is fire-and-forget;
+                    // 404 fallback is handled server-side by the daemon command router.
                     com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: PageUp")
+                        .sendCommand(sessionId, "tmux-page-up $sessionId")
                 },
             )
             BigScrollBtn(
                 label = "Page Down",
                 modifier = Modifier.weight(1f),
                 onClick = {
+                    // Sprint 3 S3-3 (#63): use tmux-page-down daemon command.
                     com.dmzs.datawatchclient.transport.ws.WsOutbound
-                        .sendCommand(sessionId, "sendkey $sessionId: PageDown")
+                        .sendCommand(sessionId, "tmux-page-down $sessionId")
                 },
             )
             BigScrollBtn(

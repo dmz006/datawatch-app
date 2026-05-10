@@ -730,4 +730,8 @@
     <string name="settings_theme_dark">ダーク</string>
     <string name="settings_theme_light">ライト</string>
     <string name="settings_theme_system">システム（OSに従う）</string>
+    <!-- v0.72.0 — Toast UX + live polling -->
+    <string name="toast_dismiss">閉じる</string>
+    <string name="toast_reconnect">再接続</string>
+    <string name="live_indicator">ライブ</string>
 </resources>

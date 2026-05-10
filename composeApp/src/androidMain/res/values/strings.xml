@@ -809,4 +809,8 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_system">System (follow OS)</string>
+    <!-- v0.72.0 — Toast UX + live polling -->
+    <string name="toast_dismiss">Dismiss</string>
+    <string name="toast_reconnect">Reconnect</string>
+    <string name="live_indicator">Live</string>
 </resources>

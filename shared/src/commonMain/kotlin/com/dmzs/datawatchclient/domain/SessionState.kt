@@ -4,6 +4,15 @@ package com.dmzs.datawatchclient.domain
  * Lifecycle state of a single datawatch session. Mirrors the parent daemon's state
  * enumeration; mapping is enforced via [fromWire] so upstream string changes cannot
  * silently mis-render on mobile.
+ *
+ * Sprint 3 S3-4 — channel-state classifier audit (#70):
+ * Mobile derives session state EXCLUSIVELY from the server-provided `state` field
+ * in WS events (`session_state`, `session_update`) and REST responses
+ * (`GET /api/sessions`). There is NO client-side regex match or substring scan of
+ * `lastResponse` / `rawOutput` to infer state. The `fromWire` mapping below is the
+ * single translation point; all callers receive a typed [SessionState] enum — not
+ * a raw string — so there is no opportunity for ad-hoc pattern matching elsewhere.
+ * Issue #70 is closed: the mobile classifier is already server-authoritative.
  */
 public enum class SessionState {
     New,

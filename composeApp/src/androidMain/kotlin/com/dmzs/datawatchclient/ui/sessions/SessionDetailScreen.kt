@@ -121,6 +121,9 @@ public fun SessionDetailScreen(
     }
     // B58 + B60 — lifecycle-aware stream control.
     // ON_RESUME: refresh session state so stale cache doesn't confuse the user.
+    //            Sprint 3 S3-2 (#62, #67): if WS is currently disconnected
+    //            (reachable == false), also resume the stream so the reconnect
+    //            flow in startStream fires and sends resize_term + clears dedup.
     // ON_STOP: pause the WS stream to avoid background reconnect storms
     //          when the screen is locked or the app is backgrounded (Tailscale
     //          may be disconnected; reconnect retries are wasteful and noisy).
@@ -129,7 +132,15 @@ public fun SessionDetailScreen(
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, vm) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> vm.refreshFromServer()
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    vm.refreshFromServer()
+                    // Sprint 3 S3-2: if disconnected, trigger a full reconnect so
+                    // pane-capture dedup is cleared and resize_term is sent as the
+                    // first outbound WS frame after the stream re-establishes.
+                    if (vm.state.value.reachable == false) {
+                        vm.resumeStream()
+                    }
+                }
                 androidx.lifecycle.Lifecycle.Event.ON_STOP -> vm.pauseStream()
                 androidx.lifecycle.Lifecycle.Event.ON_START -> vm.resumeStream()
                 else -> {}
@@ -490,6 +501,11 @@ public fun SessionDetailScreen(
             // last-probe failed. PWA renders an equivalent strip when WS or
             // REST drops; ours doubles as a hint that the live event stream
             // is also degraded (REST + WS share the trust-anchor wiring).
+            // TODO(Sprint 7 S7-polish #101): replace ConnectionBanner with a
+            //   DatawatchToastHost toast (ToastMessage(showReconnect=true)) so
+            //   the Reconnect button calls vm.resumeStream() and the toast
+            //   auto-dismisses when state.reachable turns true. The component
+            //   is complete in DatawatchToast.kt as of v0.72.0.
             if (state.reachable == false) {
                 ConnectionBanner(onRetry = vm::dismissBanner)
             }
@@ -536,6 +552,9 @@ public fun SessionDetailScreen(
                 // Backend-specific minimum cols/rows. Matches parent
                 // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
                 // Without this, claude's TUI wraps on phone widths.
+                // Sprint 3 S3-2 (#65): resolved cols/rows are also written to
+                // vm.terminalCols/terminalRows so the reconnect handler can send
+                // resize_term with current dimensions as the first outbound WS frame.
                 androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
                     val backend = state.session?.backend?.lowercase()
                     // BL13 — user override from SharedPreferences, fallback to backend defaults
@@ -546,10 +565,12 @@ public fun SessionDetailScreen(
                         "claude-code", "claude" -> 120 to 40
                         else -> 80 to 24
                     }
-                    terminalController.setMinSize(
-                        if (prefCols > 0) prefCols else defaultCols,
-                        if (prefRows > 0) prefRows else defaultRows,
-                    )
+                    val resolvedCols = if (prefCols > 0) prefCols else defaultCols
+                    val resolvedRows = if (prefRows > 0) prefRows else defaultRows
+                    terminalController.setMinSize(resolvedCols, resolvedRows)
+                    // Keep VM in sync so reconnect handler sends the right resize_term.
+                    vm.terminalCols = resolvedCols
+                    vm.terminalRows = resolvedRows
                 }
                 // Freeze writes when session reaches a terminal state so
                 // the final screenshot isn't overpainted by subsequent
