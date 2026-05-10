@@ -946,4 +946,27 @@
     <string name="alert_tier_unified_push">Alerts via datawatch push (optimal)</string>
     <string name="alert_tier_comm_channel">Alerts via Signal (good)</string>
     <string name="alert_tier_background">Alerts via background service (basic)</string>
+
+    <!-- v0.80.0 Sprint 11 — Cost Rates, Routing Rules, Tailscale Mesh, Container Workers -->
+    <string name="cost_rates_title">Cost Rates (USD / 1K tokens)</string>
+    <string name="cost_rates_backend">Backend</string>
+    <string name="cost_rates_in_per_k">In / 1K</string>
+    <string name="cost_rates_out_per_k">Out / 1K</string>
+    <string name="cost_rates_save">Save rates</string>
+    <string name="cost_rates_reset">Reset to defaults</string>
+    <string name="cost_rates_none">No rate data — daemon unavailable.</string>
+    <string name="cost_rates_placeholder">default</string>
+    <string name="routing_rules_title">Routing Rules</string>
+    <string name="routing_pattern_hint">Pattern (regex)</string>
+    <string name="routing_backend_hint">Backend name</string>
+    <string name="routing_desc_hint">Description (optional)</string>
+    <string name="routing_add_rule">Add Rule</string>
+    <string name="routing_test_section">Test Routing</string>
+    <string name="routing_test_task_hint">Task text…</string>
+    <string name="routing_test_btn">Test</string>
+    <string name="routing_no_rules">No rules — tasks route to the default backend</string>
+    <string name="routing_matched">Routes to</string>
+    <string name="routing_no_match">No match — uses default backend</string>
+    <string name="tailscale_mesh_title">Mesh Status</string>
+    <string name="container_workers_title">Container Workers</string>
 </resources>

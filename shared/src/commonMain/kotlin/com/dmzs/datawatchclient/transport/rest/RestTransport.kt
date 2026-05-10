@@ -1964,6 +1964,71 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
+
+    override suspend fun getCostRates(): Result<com.dmzs.datawatchclient.transport.dto.CostRatesDto> =
+        request {
+            client.get("${profile.baseUrl}/api/cost/rates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun saveCostRates(
+        rates: Map<String, com.dmzs.datawatchclient.transport.dto.CostRateDto>,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/cost/rates") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put(
+                            "rates",
+                            kotlinx.serialization.json.Json.encodeToJsonElement(
+                                kotlinx.serialization.serializer<Map<String, com.dmzs.datawatchclient.transport.dto.CostRateDto>>(),
+                                rates,
+                            ),
+                        )
+                    },
+                )
+            }
+            Unit
+        }
+
+    override suspend fun getRoutingRules(): Result<com.dmzs.datawatchclient.transport.dto.RoutingRulesDto> =
+        request {
+            client.get("${profile.baseUrl}/api/routing-rules") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun setRoutingRules(
+        rules: List<com.dmzs.datawatchclient.transport.dto.RoutingRuleDto>,
+    ): Result<com.dmzs.datawatchclient.transport.dto.RoutingRulesDto> =
+        request {
+            client.post("${profile.baseUrl}/api/routing-rules") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.RoutingRulesDto(rules))
+            }.body()
+        }
+
+    override suspend fun testRouting(task: String): Result<com.dmzs.datawatchclient.transport.dto.RoutingTestResultDto> =
+        request {
+            client.post("${profile.baseUrl}/api/routing-rules/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.RoutingTestRequestDto(task))
+            }.body()
+        }
+
+    override suspend fun getTailscaleStatus(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/tailscale/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

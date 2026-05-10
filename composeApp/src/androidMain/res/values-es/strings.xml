@@ -867,4 +867,27 @@
     <string name="alert_tier_unified_push">Alertas vía datawatch push (óptimo)</string>
     <string name="alert_tier_comm_channel">Alertas vía Signal (bueno)</string>
     <string name="alert_tier_background">Alertas vía servicio en segundo plano (básico)</string>
+
+    <!-- v0.80.0 Sprint 11 — Cost Rates, Routing Rules, Tailscale Mesh, Container Workers -->
+    <string name="cost_rates_title">Tasas de costo (USD / 1K tokens)</string>
+    <string name="cost_rates_backend">Backend</string>
+    <string name="cost_rates_in_per_k">Entrada / 1K</string>
+    <string name="cost_rates_out_per_k">Salida / 1K</string>
+    <string name="cost_rates_save">Guardar tasas</string>
+    <string name="cost_rates_reset">Restablecer valores predeterminados</string>
+    <string name="cost_rates_none">Sin datos de tarifa — daemon no disponible.</string>
+    <string name="cost_rates_placeholder">predeterminado</string>
+    <string name="routing_rules_title">Reglas de enrutamiento</string>
+    <string name="routing_pattern_hint">Patrón (regex)</string>
+    <string name="routing_backend_hint">Nombre del backend</string>
+    <string name="routing_desc_hint">Descripción (opcional)</string>
+    <string name="routing_add_rule">Agregar regla</string>
+    <string name="routing_test_section">Probar enrutamiento</string>
+    <string name="routing_test_task_hint">Texto de tarea…</string>
+    <string name="routing_test_btn">Probar</string>
+    <string name="routing_no_rules">Sin reglas — las tareas se enrutan al backend predeterminado</string>
+    <string name="routing_matched">Enruta a</string>
+    <string name="routing_no_match">Sin coincidencia — usa el backend predeterminado</string>
+    <string name="tailscale_mesh_title">Estado de malla</string>
+    <string name="container_workers_title">Trabajadores de contenedor</string>
 </resources>

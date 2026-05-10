@@ -338,31 +338,42 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Proxy,
                                 )
+                                // v0.80.0 Sprint 11 — RoutingRulesCard after Proxy (PWA parity)
+                                com.dmzs.datawatchclient.ui.routing.RoutingRulesCard()
                                 com.dmzs.datawatchclient.ui.channels.ChannelsCard()
                                 com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
                             SettingsTab.Compute -> {
-                                // v0.74.0 — full CRUD for both cards (S5-1, S5-2, S5-3, S5-4, S5-5)
-                                // LlmRegistryCard replaces LlmConfigCard entirely (S5-8)
-                                var computeNodesRefreshTick by remember { mutableStateOf(0) }
-                                ComputeNodesCard(
-                                    onNodeDeleted = { computeNodesRefreshTick++ },
-                                )
-                                LlmRegistryCard()
+                                // v0.80.0 Sprint 11 — reordered to match PWA v7.0.0-alpha.23c:
+                                // Memory → RTK → CostRates → ClusterProfiles → ComputeNodes →
+                                // LLMs → ContainerWorkers → Detection → SavedCmds → Filters →
+                                // TailscaleSettings → TailscaleMesh
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                                 )
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
                                 )
-                                com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
-                                com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
-                                com.dmzs.datawatchclient.ui.filters.FiltersCard()
+                                com.dmzs.datawatchclient.ui.compute.CostRatesCard()
                                 com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                                     kind = "cluster",
                                     title = stringResource(R.string.settings_cluster_profiles_title),
                                 )
+                                var computeNodesRefreshTick by remember { mutableStateOf(0) }
+                                ComputeNodesCard(
+                                    onNodeDeleted = { computeNodesRefreshTick++ },
+                                )
+                                LlmRegistryCard()
+                                // Container Workers (cfg.agents)
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
+                                )
+                                com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
+                                com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
+                                com.dmzs.datawatchclient.ui.filters.FiltersCard()
+                                com.dmzs.datawatchclient.ui.tailscale.TailscaleSettingsCard()
+                                com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
                             }
                             SettingsTab.Automata -> {
                                 // v0.71.0 — 3-group structure per alpha.12: Settings / Templates / Lifecycle

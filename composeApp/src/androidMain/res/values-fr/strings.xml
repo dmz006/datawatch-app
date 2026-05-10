@@ -867,4 +867,27 @@
     <string name="alert_tier_unified_push">Alertes via datawatch push (optimal)</string>
     <string name="alert_tier_comm_channel">Alertes via Signal (bien)</string>
     <string name="alert_tier_background">Alertes via service d\'arrière-plan (basique)</string>
+
+    <!-- v0.80.0 Sprint 11 — Cost Rates, Routing Rules, Tailscale Mesh, Container Workers -->
+    <string name="cost_rates_title">Tarifs (USD / 1 000 tokens)</string>
+    <string name="cost_rates_backend">Backend</string>
+    <string name="cost_rates_in_per_k">Entrée / 1K</string>
+    <string name="cost_rates_out_per_k">Sortie / 1K</string>
+    <string name="cost_rates_save">Enregistrer les tarifs</string>
+    <string name="cost_rates_reset">Réinitialiser aux valeurs par défaut</string>
+    <string name="cost_rates_none">Pas de données de tarif — daemon indisponible.</string>
+    <string name="cost_rates_placeholder">par défaut</string>
+    <string name="routing_rules_title">Règles de routage</string>
+    <string name="routing_pattern_hint">Modèle (regex)</string>
+    <string name="routing_backend_hint">Nom du backend</string>
+    <string name="routing_desc_hint">Description (optionnelle)</string>
+    <string name="routing_add_rule">Ajouter une règle</string>
+    <string name="routing_test_section">Tester le routage</string>
+    <string name="routing_test_task_hint">Texte de la tâche…</string>
+    <string name="routing_test_btn">Tester</string>
+    <string name="routing_no_rules">Aucune règle — les tâches sont acheminées vers le backend par défaut</string>
+    <string name="routing_matched">Achemine vers</string>
+    <string name="routing_no_match">Aucune correspondance — utilise le backend par défaut</string>
+    <string name="tailscale_mesh_title">État du maillage</string>
+    <string name="container_workers_title">Workers de conteneur</string>
 </resources>
