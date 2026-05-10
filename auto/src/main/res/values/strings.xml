@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto-module voice command strings — v0.86.0 #109 -->
+<resources>
+    <!-- Android Auto voice command scaffold (Sprint 17) -->
+    <string name="auto_voice_title">DataWatch Status</string>
+    <string name="auto_voice_loading">Loading status…</string>
+    <string name="auto_voice_error">Unable to reach DataWatch server</string>
+    <string name="auto_voice_no_server">No DataWatch server configured</string>
+    <string name="auto_voice_no_report">No observer report available</string>
+    <string name="auto_voice_refresh_done">DataWatch refreshed</string>
+    <string name="auto_voice_cancel_hint">Say the session name to cancel</string>
+    <string name="auto_voice_action_status">Status</string>
+    <string name="auto_voice_status_server">Connected to %s</string>
+    <string name="auto_voice_status_sessions">%1$d running, %2$d waiting</string>
+    <string name="auto_voice_status_errors">%d errors</string>
+    <string name="auto_voice_status_cpu">CPU %d%%</string>
+    <string name="auto_voice_status_mem">Memory %d%%</string>
+</resources>

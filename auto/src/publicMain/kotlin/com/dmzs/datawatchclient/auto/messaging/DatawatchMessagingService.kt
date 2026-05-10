@@ -1,6 +1,8 @@
 package com.dmzs.datawatchclient.auto.messaging
 
 import androidx.car.app.CarAppService
+import androidx.car.app.Screen
+import androidx.car.app.ScreenManager
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
 import com.dmzs.datawatchclient.auto.AutoMonitorScreen
@@ -44,5 +46,16 @@ public class DatawatchMessagingService : CarAppService() {
     override fun onCreateSession(): Session =
         object : Session() {
             override fun onCreateScreen(intent: android.content.Intent) = AutoMonitorScreen(carContext)
+
+            override fun onNewIntent(intent: android.content.Intent) {
+                // Handle voice actions — Google Assistant sends the spoken text via
+                // android.speech.RecognizerIntent.EXTRA_RESULTS
+                val voiceResults = intent.getStringArrayListExtra("android.speech.extra.RESULTS")
+                val spokenText = voiceResults?.firstOrNull() ?: return
+                val cmd = com.dmzs.datawatchclient.auto.voice.parseVoiceCommand(spokenText)
+                carContext.getCarService(ScreenManager::class.java).push(
+                    com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext, cmd),
+                )
+            }
         }
 }

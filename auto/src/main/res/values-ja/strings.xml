@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto-module voice command strings — v0.86.0 #109 — 日本語 -->
+<resources>
+    <string name="auto_voice_title">DataWatchステータス</string>
+    <string name="auto_voice_loading">ステータスを読み込み中…</string>
+    <string name="auto_voice_error">DataWatchサーバーに接続できません</string>
+    <string name="auto_voice_no_server">DataWatchサーバーが設定されていません</string>
+    <string name="auto_voice_no_report">オブザーバーレポートがありません</string>
+    <string name="auto_voice_refresh_done">DataWatchを更新しました</string>
+    <string name="auto_voice_cancel_hint">キャンセルするにはセッション名を言ってください</string>
+    <string name="auto_voice_action_status">ステータス</string>
+    <string name="auto_voice_status_server">%sに接続中</string>
+    <string name="auto_voice_status_sessions">%1$d実行中、%2$d待機中</string>
+    <string name="auto_voice_status_errors">%dエラー</string>
+    <string name="auto_voice_status_cpu">CPU %d%%</string>
+    <string name="auto_voice_status_mem">メモリ %d%%</string>
+</resources>
