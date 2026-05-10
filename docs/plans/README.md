@@ -163,7 +163,6 @@ to land pre-1.0.
 |----|-------|-----------|
 | B6 | ❄️ FROZEN — Push via FCM | Frozen 2026-05-04 per user direction. ntfy-only is the policy. Revisit only when user explicitly unfreezes. |
 | B31 | **HOLD** — Wear + Auto: Sessions snapshot + quick-command + voice | User still evaluating whether existing Auto scope counts as done. No action until user decides. |
-| BL21 | Signal device-linking (`/api/link/*` + QR SSE) | `datawatch#31` merged + deployed. Scheduled as v0.64.0 (skip to v0.66.0 if still blocked). |
 | Store assets | `docs/media/store/phone/`, `tablet-10/`, `tablet-7/` untracked | Commit in the next convenient version bump. |
 
 ### Reclassified
@@ -267,6 +266,7 @@ or retracted rather than scheduled.
 | W-#114 | ✅ Wear alerts tile + complication | v0.91.0 |
 | #115 | ✅ Alerts redesign — chip filter + sort + search + dismiss-all (alpha.30) | v0.92.0 |
 | #116 | ✅ Watch toggle opt-in (Sprint 23) — per-session/automata badge filtering | v0.93.0 |
+| BL21 | ✅ Signal device-linking (`/api/link/*` + QR SSE flow) | v0.64.0 |
 
 ---
 
