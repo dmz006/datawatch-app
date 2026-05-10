@@ -40,6 +40,8 @@ public class AutonomousViewModel(
         val proposedRules: RuleProposalDto? = null,
         /** Type registry (v0.63.0). */
         val automataTypes: List<AutomataTypeDto> = emptyList(),
+        /** Multi-select set for bulk actions (v0.76.0). */
+        val selectedIds: Set<String> = emptySet(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -269,6 +271,19 @@ public class AutonomousViewModel(
                 _state.value = _state.value.copy(automataTypes = types)
             }
         }
+    }
+
+    /** Toggle selection state for an automaton row (v0.76.0). */
+    public fun toggleSelection(id: String) {
+        val current = _state.value.selectedIds
+        _state.value = _state.value.copy(
+            selectedIds = if (id in current) current - id else current + id,
+        )
+    }
+
+    /** Clear all multi-select selections (v0.76.0). */
+    public fun clearSelection() {
+        _state.value = _state.value.copy(selectedIds = emptySet())
     }
 
     public fun createAutomataType(req: AutomataTypeRequestDto) {

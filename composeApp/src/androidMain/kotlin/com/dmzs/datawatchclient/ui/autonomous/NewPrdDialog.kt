@@ -3,7 +3,9 @@ package com.dmzs.datawatchclient.ui.autonomous
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -217,7 +219,7 @@ internal fun NewPrdDialog(
                         onValueChange = { projectDir = it },
                         label = { Text(stringResource(R.string.new_prd_project_dir_label)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 1.dp),
                     )
 
                     // ── Backend dropdown (enabled only, shell excluded) ────
@@ -384,12 +386,13 @@ internal fun NewPrdDialog(
                     Text(stringResource(R.string.new_prd_guided_mode_label), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                     androidx.compose.material3.Switch(checked = guidedMode, onCheckedChange = { guidedMode = it })
                 }
+                Spacer(Modifier.height(2.dp))
 
                 // ── Skills ─────────────────────────────────────────────────
                 OutlinedTextField(
                     value = skills, onValueChange = { skills = it },
                     label = { Text(stringResource(R.string.new_prd_skills_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 22.dp),
                 )
             }
         },

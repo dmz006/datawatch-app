@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.IdentityDto
+import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -72,19 +73,23 @@ internal fun IdentityCard() {
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             singleLine = true,
         )
-        OutlinedTextField(
+        MicAttachableTextField(
             value = identity.currentFocus,
             onValueChange = { identity = identity.copy(currentFocus = it) },
             label = { Text(stringResource(R.string.identity_focus_label)) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             minLines = 2,
+            whisperConfigured = false,
+            onMicClick = null,
         )
-        OutlinedTextField(
+        MicAttachableTextField(
             value = identity.contextNotes,
             onValueChange = { identity = identity.copy(contextNotes = it) },
             label = { Text(stringResource(R.string.identity_notes_label)) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             minLines = 3,
+            whisperConfigured = false,
+            onMicClick = null,
         )
         Row(modifier = Modifier.padding(top = 8.dp)) {
             Button(

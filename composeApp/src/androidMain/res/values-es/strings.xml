@@ -723,13 +723,13 @@
     <!-- ── v0.70.0 Automata/Theme strings ── -->
     <string name="toggle_automata_filters">Alternar filtros de Automata</string>
     <string name="automata_orchestrator">Orquestador de Automata</string>
-    <string name="prd_terminal_state_hint">Este autómata está en un estado terminal. Edita su especificación o crea uno nuevo.</string>
+    <string name="prd_terminal_state_hint">Este autómata ha alcanzado un estado terminal. Crea una nueva ejecución para continuar.</string>
     <string name="identity_wizard_open">Abrir Identity Wizard</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
-    <string name="settings_theme_title">Apariencia</string>
+    <string name="settings_theme_title">Tema</string>
     <string name="settings_theme_dark">Oscuro</string>
     <string name="settings_theme_light">Claro</string>
-    <string name="settings_theme_system">Sistema (seguir SO)</string>
+    <string name="settings_theme_system">Predeterminado del sistema</string>
     <!-- v0.72.0 — Toast UX + live polling -->
     <string name="toast_dismiss">Cerrar</string>
     <string name="toast_reconnect">Reconectar</string>
@@ -795,4 +795,8 @@
     <string name="mic_toast_recording">Grabando…</string>
     <string name="observer_title">Observador</string>
     <string name="observer_no_active">No hay sesiones de observador activas</string>
+
+    <!-- v0.76.0 — Sprint 7: multi-select bar, theme toggle, mic scaffold, spacing (#73 #76 #77 #91) -->
+    <string name="action_run_scan">Ejecutar escaneo</string>
+    <string name="action_run_rules">Ejecutar reglas</string>
 </resources>

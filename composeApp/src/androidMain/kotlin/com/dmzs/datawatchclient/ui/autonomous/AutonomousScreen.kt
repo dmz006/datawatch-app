@@ -1,8 +1,10 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,13 +15,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -27,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -93,7 +100,7 @@ public fun AutonomousScreen(
             )
         },
         floatingActionButton = {
-            if (openPrdId == null) {
+            AnimatedVisibility(visible = openPrdId == null && state.selectedIds.isEmpty()) {
                 FloatingActionButton(
                     onClick = { if (currentTab == 1) tmplCreateOpen = true else newOpen = true },
                     modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
@@ -103,14 +110,62 @@ public fun AutonomousScreen(
             }
         },
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = currentTab) {
-                Tab(selected = currentTab == 0, onClick = { currentTab = 0 }, text = { Text(stringResource(R.string.autonomous_tab_prds)) })
-                Tab(selected = currentTab == 1, onClick = { currentTab = 1 }, text = { Text(stringResource(R.string.autonomous_tab_templates)) })
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                TabRow(selectedTabIndex = currentTab) {
+                    Tab(selected = currentTab == 0, onClick = { currentTab = 0 }, text = { Text(stringResource(R.string.autonomous_tab_prds)) })
+                    Tab(selected = currentTab == 1, onClick = { currentTab = 1 }, text = { Text(stringResource(R.string.autonomous_tab_templates)) })
+                }
+                when (currentTab) {
+                    0 -> PrdsBody(state, filterOpen, includeTemplates, statusFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onToggleSelect = { vm.toggleSelection(it) })
+                    else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
+                }
             }
-            when (currentTab) {
-                0 -> PrdsBody(state, filterOpen, includeTemplates, statusFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it })
-                else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
+            // Multi-select bar (v0.76.0)
+            AnimatedVisibility(
+                visible = state.selectedIds.isNotEmpty(),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
+            ) {
+                Surface(tonalElevation = 8.dp, shape = RoundedCornerShape(28.dp)) {
+                    LazyRow(
+                        Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item {
+                            AssistChip(onClick = {
+                                state.selectedIds.forEach { vm.runPrd(it) }
+                                vm.clearSelection()
+                            }, label = { Text("Run") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                state.selectedIds.forEach { vm.approve(it) }
+                                vm.clearSelection()
+                            }, label = { Text("Approve") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                state.selectedIds.forEach { vm.cancelPrd(it) }
+                                vm.clearSelection()
+                            }, label = { Text("Cancel") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                state.selectedIds.forEach { vm.setPrdType(it, "archived") }
+                                vm.clearSelection()
+                            }, label = { Text("Archive") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                state.selectedIds.forEach { vm.hardDeletePrd(it) }
+                                vm.clearSelection()
+                            }, label = { Text("Delete") })
+                        }
+                        item {
+                            AssistChip(onClick = { vm.clearSelection() }, label = { Text("✕ Clear") })
+                        }
+                    }
+                }
             }
         }
     }
@@ -154,6 +209,7 @@ public fun AutonomousScreen(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun PrdsBody(
     state: AutonomousViewModel.UiState,
@@ -163,6 +219,7 @@ private fun PrdsBody(
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
+    onToggleSelect: (String) -> Unit = {},
 ) {
     if (filterOpen) {
         Row(
@@ -194,16 +251,26 @@ private fun PrdsBody(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(visible, key = { it.id }) { prd -> PrdRow(prd, onClick = { onOpenPrd(prd.id) }) }
+                items(visible, key = { it.id }) { prd ->
+                    PrdRow(
+                        prd = prd,
+                        selected = prd.id in state.selectedIds,
+                        onClick = { onOpenPrd(prd.id) },
+                        onLongClick = { onToggleSelect(prd.id) },
+                    )
+                }
             }
         }
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun PrdRow(
     prd: PrdDto,
+    selected: Boolean = false,
     onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
 ) {
     val statusColor = prdStatusColor(prd.status)
     val storyLabel = if (prd.stories.isNotEmpty()) stringResource(R.string.autonomous_story_count, prd.stories.size) else null
@@ -213,12 +280,15 @@ private fun PrdRow(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .pwaCard()
+            .let { mod ->
+                if (selected) mod.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)) else mod
+            }
             .drawBehind { drawRect(color = statusColor, topLeft = Offset.Zero, size = Size(4.dp.toPx(), size.height)) }
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
             Row(modifier = Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 StatusPill(prd.status)
@@ -234,6 +304,11 @@ private fun PrdRow(
                 Text(firstLine.take(80), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), maxLines = 1, modifier = Modifier.padding(top = 1.dp))
             }
         }
+        Icon(
+            imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+            contentDescription = if (selected) "Selected" else "Not selected",
+            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+        )
     }
 }
 
