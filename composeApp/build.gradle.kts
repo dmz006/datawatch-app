@@ -49,6 +49,8 @@ kotlin {
                 // FCM removed in v0.33.17 (B6). Self-hosted ntfy is the push path;
                 // see `push/PushRegistrationCoordinator.kt` kdoc for rationale.
                 implementation(libs.androidx.biometric)
+                // S10-2: WorkManager for 15-min Wear heartbeat sync.
+                implementation(libs.androidx.work.runtime.ktx)
                 implementation(libs.kotlinx.coroutines.android)
                 // Wearable Data Layer — phone publishes session-count
                 // DataItems that the paired Wear companion subscribes to

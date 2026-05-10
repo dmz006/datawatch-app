@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.78.0] — 2026-05-10
+### Added
+- VpnMonitor: ConnectivityManager VPN NetworkCallback detects Tailscale drops; non-always-on path notifies immediately (S10-1)
+- WearHeartbeatWorker: 15-minute WorkManager periodic job replaces 15 s polling loop (S10-2)
+- WearSyncService: demand-only sync via MessageClient `/datawatch/sync`; `fetchAndPublishDashboard()` callable from heartbeat worker (S10-2)
+- WearSyncManager (wear module): watch-side sync requester sends `/datawatch/sync` to phone on app open, refresh tap, and tile render (S10-5/S10-6)
+- AlertTierDetector: resolves Tier1=UnifiedPush / Tier2=CommChannel(Signal) / Tier3=Background; About card displays active tier with icon + colour coding (S10-4)
+- Locale: 3 `alert_tier_*` keys in EN/DE/ES/FR/JA (S10-4)
+### Changed
+- NtfyFallbackService: `ACTION_DEVICE_IDLE_MODE_CHANGED` receiver; SSE stream pauses on Doze entry, resumes on exit (S10-3)
+- MonitorTileService / SessionsTileService: trigger background dashboard sync on each tile render (S10-6)
+- WearMainActivity: triggers `WearSyncManager.requestDashboard()` on every `onResume()` (S10-5)
+### Removed
+- `android.permission.WAKE_LOCK` from AndroidManifest — nothing in the codebase acquires a WakeLock (S10-7)
+- 15 s polling loops from WearSyncService (5,760 BLE activations/day on Samsung Galaxy Watch) (S10-2)
+### Infrastructure
+- Filed dmz006/datawatch#39: first-party UnifiedPush provider + ntfy-compatible SSE endpoints (S10-8)
+
 ## [0.75.0] — 2026-05-09
 ### Added
 - DocsSearchCard: full-text doc search with index_kind badge (vector=teal/bm25=grey), pending trust queue with bulk accept/dismiss, trusted sources list with remove (#84, #85)
