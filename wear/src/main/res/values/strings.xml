@@ -57,9 +57,17 @@
     <string name="wear_action_continue">↩ Continue</string>
     <string name="wear_action_stop">✕ Stop</string>
 
-    <!-- Alert notifications (BL27) -->
+    <!-- Alert notifications (BL27, W-#107) -->
     <string name="wear_notification_channel_name">datawatch Alerts</string>
     <string name="wear_notification_waiting_title">Session waiting for input</string>
+    <string name="wear_notification_council_channel">Council Notifications</string>
+    <string name="wear_notification_council_title">Council consensus reached</string>
+    <string name="wear_notification_error_channel">Error Notifications</string>
+    <string name="wear_notification_error_title">Session error</string>
+    <string name="complication_automata_label">Automata</string>
+    <string name="wear_health_good">System healthy</string>
+    <string name="wear_health_waiting">Input needed</string>
+    <string name="wear_health_error">Session error</string>
 
     <!-- Common actions / states -->
     <string name="action_yes">Yes</string>
