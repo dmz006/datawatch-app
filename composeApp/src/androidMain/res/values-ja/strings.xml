@@ -982,4 +982,14 @@
     <string name="compute_observer_currently_attached">（現在接続中）</string>
     <string name="observer_attached_to">%s に接続</string>
     <string name="observer_free">未割り当て</string>
+
+    <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
+    <string name="wear_notification_council_channel">Council通知</string>
+    <string name="wear_notification_council_title">Councilコンセンサス達成</string>
+    <string name="wear_notification_error_channel">エラー通知</string>
+    <string name="wear_notification_error_title">セッションエラー</string>
+    <string name="complication_automata_label">オートマタ</string>
+    <string name="wear_health_good">システム正常</string>
+    <string name="wear_health_waiting">入力が必要です</string>
+    <string name="wear_health_error">セッションエラー</string>
 </resources>

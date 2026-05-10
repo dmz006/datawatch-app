@@ -47,6 +47,14 @@
 
     <string name="wear_notification_channel_name">datawatch-Alarme</string>
     <string name="wear_notification_waiting_title">Sitzung wartet auf Eingabe</string>
+    <string name="wear_notification_council_channel">Council-Benachrichtigungen</string>
+    <string name="wear_notification_council_title">Council-Konsens erreicht</string>
+    <string name="wear_notification_error_channel">Fehlerbenachrichtigungen</string>
+    <string name="wear_notification_error_title">Sitzungsfehler</string>
+    <string name="complication_automata_label">Automata</string>
+    <string name="wear_health_good">System funktioniert</string>
+    <string name="wear_health_waiting">Eingabe erforderlich</string>
+    <string name="wear_health_error">Sitzungsfehler</string>
 
     <string name="action_yes">Ja</string>
     <string name="action_no">Nein</string>
