@@ -151,6 +151,8 @@ public class RestTransport(
         permissionMode: String?,
         model: String?,
         claudeEffort: String?,
+        llm: String?,
+        computeNode: String?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
@@ -171,6 +173,8 @@ public class RestTransport(
                             permissionMode = permissionMode,
                             model = model,
                             claudeEffort = claudeEffort,
+                            llm = llm,
+                            computeNodeOverride = computeNode,
                         ),
                     )
                 }.body()

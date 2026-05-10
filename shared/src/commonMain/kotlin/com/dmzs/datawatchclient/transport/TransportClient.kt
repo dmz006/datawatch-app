@@ -49,6 +49,10 @@ public interface TransportClient {
         permissionMode: String? = null,
         model: String? = null,
         claudeEffort: String? = null,
+        /** v7 LLM registry name override. */
+        llm: String? = null,
+        /** v7 Compute Node override. */
+        computeNode: String? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */

@@ -159,6 +159,29 @@ public fun NewSessionScreen(
     // Claude-code advanced options — permission mode + model + effort.
     // Fetched from /api/llm/claude/{models,efforts,permission_modes} (v5.27.5+).
     // 404 = older daemon → hide the block entirely.
+    // v7 LLM registry picker — populated from /api/llms (filtered to enabled=true).
+    // Selecting an LLM cascades to its compute_nodes list for the compute node picker.
+    var llmEntries by remember {
+        mutableStateOf<List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>>(emptyList())
+    }
+    var pickedLlm by remember {
+        mutableStateOf<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto?>(null)
+    }
+    var pickedComputeNode by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedProfileId) {
+        llmEntries = emptyList()
+        pickedLlm = null
+        pickedComputeNode = null
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        ServiceLocator.transportFor(profile).listLlms().onSuccess { list ->
+            llmEntries = list.filter { it.enabled }
+        }
+    }
+    // When LLM selection changes, reset compute node picker to first option
+    LaunchedEffect(pickedLlm) {
+        pickedComputeNode = null
+    }
+
     var claudeModels by remember { mutableStateOf<List<String>>(emptyList()) }
     var claudeEfforts by remember { mutableStateOf<List<String>>(emptyList()) }
     var claudePermissionModes by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -340,21 +363,85 @@ public fun NewSessionScreen(
                 },
             )
 
+            // v0.83.0 — v7 LLM picker. Only shown when the server exposes
+            // at least one enabled LLM in /api/llms. When an LLM is
+            // selected, the legacy backend picker is hidden (v7 path).
+            if (llmEntries.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.session_llm_picker_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                )
+                Text(
+                    stringResource(R.string.session_llm_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+                LlmPickerDropdown(
+                    llms = llmEntries,
+                    selected = pickedLlm,
+                    noneLabel = stringResource(R.string.session_llm_none_option),
+                    onSelect = { picked -> pickedLlm = picked },
+                )
+                // Compute Node sub-picker — only when an LLM is selected and it has nodes
+                if (pickedLlm != null) {
+                    val allNodes = buildList {
+                        add(pickedLlm!!.computeNode)
+                        addAll(pickedLlm!!.computeNodes.filter { it != pickedLlm!!.computeNode })
+                    }.distinct()
+                    if (allNodes.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.session_compute_node_label),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                        )
+                        val anyNodeLabel = stringResource(R.string.session_llm_any_node)
+                        val primaryLabel = stringResource(R.string.session_compute_node_primary)
+                        val failoverFmt = stringResource(R.string.session_compute_node_failover)
+                        ComputeNodePickerDropdown(
+                            nodes = allNodes,
+                            selected = pickedComputeNode,
+                            anyNodeLabel = anyNodeLabel,
+                            primaryLabel = primaryLabel,
+                            failoverFmt = failoverFmt,
+                            onSelect = { pickedComputeNode = it },
+                        )
+                    }
+                }
+            }
+
             // Backend picker — populated from /api/backends. Only renders
-            // when the server actually exposes the endpoint (avoids a
-            // confusing "no backends" state on older parents).
-            if (!backendsBlocked && backends.isNotEmpty()) {
+            // when the server actually exposes the endpoint AND the user
+            // hasn't selected a v7 LLM (which supersedes the legacy path).
+            if (!backendsBlocked && backends.isNotEmpty() && pickedLlm == null) {
+                Text(
+                    stringResource(R.string.session_llm_legacy_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 2.dp),
+                )
                 Text(
                     stringResource(R.string.new_session_backend_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(bottom = 4.dp),
                 )
                 BackendPickerDropdown(
                     backends = backends,
                     selected = pickedBackend,
                     active = activeBackend,
                     onSelect = { pickedBackend = it },
+                )
+            } else if (!backendsBlocked && backends.isNotEmpty() && pickedLlm != null) {
+                // v7 selected — show legacy section as grayed-out notice only
+                Text(
+                    stringResource(R.string.session_llm_legacy_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
 
@@ -680,13 +767,16 @@ public fun NewSessionScreen(
                                             workingDir = workingDir.trim().ifBlank { null },
                                             profileName = null,
                                             name = sessionName.trim().ifBlank { null },
-                                            backend = pickedBackend,
+                                            // v7 LLM path takes precedence over legacy backend
+                                            backend = if (pickedLlm == null) pickedBackend else null,
                                             resumeId = resumeId,
                                             autoGitInit = autoGitInit,
                                             autoGitCommit = autoGitCommit,
                                             permissionMode = pickedPermissionMode.ifBlank { null },
                                             model = pickedClaudeModel.ifBlank { null },
                                             claudeEffort = pickedClaudeEffort.ifBlank { null },
+                                            llm = pickedLlm?.name,
+                                            computeNode = pickedComputeNode,
                                         )
                                     }
                                 outcome.fold(
@@ -1084,6 +1174,110 @@ private fun ServerPickerDropdown(
                         onSelect(p.id)
                         expanded = false
                     },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * v0.83.0 — v7 LLM registry picker. Lists enabled LLMs from /api/llms.
+ * Label format: "<name> (<kind>)".
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LlmPickerDropdown(
+    llms: List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>,
+    selected: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto?,
+    noneLabel: String,
+    onSelect: (com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayValue = selected?.let { "${it.name} (${it.kind})" } ?: noneLabel
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = displayValue,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(noneLabel) },
+                onClick = { onSelect(null); expanded = false },
+            )
+            llms.forEach { llm ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text("${llm.name} (${llm.kind})", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                llm.computeNode,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    onClick = { onSelect(llm); expanded = false },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * v0.83.0 — Compute Node picker. Cascades from the selected LLM's node list.
+ * First node = primary, subsequent = failover N.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ComputeNodePickerDropdown(
+    nodes: List<String>,
+    selected: String?,
+    anyNodeLabel: String,
+    primaryLabel: String,
+    failoverFmt: String,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    fun nodeLabel(index: Int, name: String): String = when (index) {
+        0 -> "$name $primaryLabel"
+        else -> "$name ${String.format(failoverFmt, index)}"
+    }
+    val displayValue = selected?.let { sel ->
+        val idx = nodes.indexOf(sel)
+        if (idx >= 0) nodeLabel(idx, sel) else sel
+    } ?: anyNodeLabel
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = displayValue,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(anyNodeLabel) },
+                onClick = { onSelect(null); expanded = false },
+            )
+            nodes.forEachIndexed { idx, name ->
+                DropdownMenuItem(
+                    text = { Text(nodeLabel(idx, name)) },
+                    onClick = { onSelect(name); expanded = false },
                 )
             }
         }

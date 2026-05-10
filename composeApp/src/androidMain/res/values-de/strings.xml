@@ -934,4 +934,19 @@
     <string name="secrets_add_btn">Geheimnis hinzufügen</string>
     <string name="observer_quicklink_title">Föderierter Beobachter</string>
     <string name="observer_quicklink_btn">Beobachter öffnen →</string>
+    <!-- v0.83.0: LLM picker + state filter chips (#104 + #105) -->
+    <string name="session_llm_picker_label">LLM (v7)</string>
+    <string name="session_llm_none_option">— LLM auswählen —</string>
+    <string name="session_compute_node_label">Rechenknoten</string>
+    <string name="session_compute_node_primary">(primär)</string>
+    <string name="session_compute_node_failover">(Fallback %d)</string>
+    <string name="session_llm_hint">Auswahlreihenfolge = Failover-Reihenfolge</string>
+    <string name="session_llm_any_node">Jeder Knoten OK</string>
+    <string name="session_llm_legacy_notice">Legacy-Backend (v6-Kompatibilität)</string>
+    <string name="session_filter_all">Alle</string>
+    <string name="session_filter_active">Aktiv</string>
+    <string name="session_filter_waiting">Wartend</string>
+    <string name="session_filter_done">Fertig</string>
+    <string name="session_llm_ref_badge">LLM</string>
+    <string name="session_compute_node_badge">Rechenknoten</string>
 </resources>

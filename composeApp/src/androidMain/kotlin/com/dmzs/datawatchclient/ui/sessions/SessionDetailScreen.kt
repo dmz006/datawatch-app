@@ -418,6 +418,8 @@ public fun SessionDetailScreen(
             val hasResponse = !state.session?.lastResponse.isNullOrBlank()
             SessionInfoBar(
                 backend = state.session?.backend,
+                llmRef = state.session?.llmRef,
+                computeNodeRef = state.session?.computeNodeRef,
                 sessionMode = state.messagingBackend ?: "tmux",
                 state = state.session?.state,
                 reachable = state.reachable,
@@ -793,6 +795,8 @@ public fun SessionDetailScreen(
 @Composable
 private fun SessionInfoBar(
     backend: String?,
+    llmRef: String? = null,
+    computeNodeRef: String? = null,
     sessionMode: String,
     state: SessionState?,
     reachable: Boolean?,
@@ -846,6 +850,13 @@ private fun SessionInfoBar(
             // now starts straight with the backend chip like PWA.
             if (!backend.isNullOrBlank()) {
                 InfoBadge(text = backend.lowercase(), color = MaterialTheme.colorScheme.primary)
+            }
+            // v0.83.0: LLMRef (green ⚡) and ComputeNodeRef (purple ⚙) badges
+            if (!llmRef.isNullOrBlank()) {
+                InfoBadge(text = "⚡ $llmRef", color = Color(0xFF10B981))
+            }
+            if (!computeNodeRef.isNullOrBlank()) {
+                InfoBadge(text = "⚙ $computeNodeRef", color = Color(0xFF8B5CF6))
             }
             // User 2026-04-24: the "tmux" mode badge is redundant with
             // the tmux/channel TabRow above. Only surface the mode

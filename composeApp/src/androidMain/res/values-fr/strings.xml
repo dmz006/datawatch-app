@@ -934,4 +934,19 @@
     <string name="secrets_add_btn">Ajouter un secret</string>
     <string name="observer_quicklink_title">Observateur fédéré</string>
     <string name="observer_quicklink_btn">Ouvrir l\'observateur →</string>
+    <!-- v0.83.0: LLM picker + state filter chips (#104 + #105) -->
+    <string name="session_llm_picker_label">LLM (v7)</string>
+    <string name="session_llm_none_option">— Choisir un LLM —</string>
+    <string name="session_compute_node_label">Nœud de calcul</string>
+    <string name="session_compute_node_primary">(principal)</string>
+    <string name="session_compute_node_failover">(failover %d)</string>
+    <string name="session_llm_hint">Ordre de sélection = ordre de failover</string>
+    <string name="session_llm_any_node">N\'importe quel nœud</string>
+    <string name="session_llm_legacy_notice">Backend hérité (compat v6)</string>
+    <string name="session_filter_all">Tous</string>
+    <string name="session_filter_active">Actif</string>
+    <string name="session_filter_waiting">En attente</string>
+    <string name="session_filter_done">Terminé</string>
+    <string name="session_llm_ref_badge">LLM</string>
+    <string name="session_compute_node_badge">Nœud de calcul</string>
 </resources>
