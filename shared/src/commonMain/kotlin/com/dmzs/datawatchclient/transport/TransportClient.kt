@@ -948,6 +948,26 @@ public interface TransportClient {
     /** DELETE /api/migration/status — dismiss the migration notice. */
     public suspend fun dismissMigration(): Result<Unit>
 
+    // ---- v0.84.0 Sprint 15 — migration + observer binding ----
+
+    /** GET /api/migration/compute-kinds — list nodes needing kind migration. */
+    public suspend fun getMigrationComputeKinds(): Result<com.dmzs.datawatchclient.transport.dto.MigrationComputeKindsDto>
+
+    /** PUT /api/migration/compute-kinds/{name} — migrate a compute node to a new kind. */
+    public suspend fun migrateComputeNodeKind(name: String, kind: String): Result<Unit>
+
+    /** PATCH /api/compute/nodes/{name}/enabled — enable or disable a compute node. */
+    public suspend fun toggleComputeNodeEnabled(name: String, enabled: Boolean): Result<Unit>
+
+    /** GET /api/observer/peers/free — list observer peers not yet bound to any compute node. */
+    public suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>>
+
+    /** POST /api/compute/nodes/{name}/observer-peer — bind an observer peer to a compute node. */
+    public suspend fun attachObserverPeer(nodeName: String, peer: String): Result<Unit>
+
+    /** DELETE /api/compute/nodes/{name}/observer-peer — remove the observer peer binding from a compute node. */
+    public suspend fun detachObserverPeer(nodeName: String): Result<Unit>
+
     // ---- v0.75.0 Vault/Secrets + Docs Search (S6-3, S6-4 BL274) ----
 
     /** GET /api/secrets/status — active secrets/vault backend + reachability. */

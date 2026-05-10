@@ -1028,4 +1028,37 @@
     <string name="session_filter_done">Done</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Compute Node</string>
+    <!-- Sprint 15 #106 — Compute CRUD overhaul -->
+    <string name="compute_migration_banner">%d compute node(s) need kind migration — tap to fix</string>
+    <string name="compute_migration_title">Compute Node Migration</string>
+    <string name="compute_migration_save">Save</string>
+    <string name="compute_migration_done">Migration complete</string>
+    <string name="compute_migration_kind_label">New kind</string>
+    <string name="compute_node_enabled_label">Enabled</string>
+    <string name="compute_node_auto_disabled_reason">Auto-disabled: %s</string>
+    <string name="compute_node_deprecated_kind">Deprecated kind: %s — migrate to ollama or openai-compat</string>
+    <string name="compute_hardware_section">Hardware</string>
+    <string name="compute_hardware_os">OS</string>
+    <string name="compute_hardware_arch">Arch</string>
+    <string name="compute_hardware_gpu_vendor">GPU vendor</string>
+    <string name="compute_hardware_gpu_model">GPU model</string>
+    <string name="compute_hardware_gpu_count">GPU count</string>
+    <string name="compute_hardware_vram_gb">VRAM (GB, per GPU)</string>
+    <string name="compute_hardware_ram_gb">RAM (GB)</string>
+    <string name="compute_hardware_cpu_cores">CPU cores</string>
+    <string name="compute_hardware_computed_max">Computed max: ~%d</string>
+    <string name="compute_hardware_use_computed">Use →</string>
+    <string name="compute_hardware_hidden_saas">Hardware hidden for SaaS endpoints</string>
+    <string name="compute_node_test">Test connection</string>
+    <string name="compute_kind_ollama">ollama</string>
+    <string name="compute_kind_openai_compat">openai-compat</string>
+    <string name="compute_llm_enabled_label">Enabled</string>
+    <string name="compute_llm_auto_disabled">Auto-disabled</string>
+    <!-- Sprint 15 #110 — Free-observer mapping -->
+    <string name="compute_field_observer_peer">Observer peer (datawatch-stats)</string>
+    <string name="compute_observer_none">(none)</string>
+    <string name="compute_observer_hint">Bind this node to an observer for resource monitoring</string>
+    <string name="compute_observer_currently_attached">(currently attached)</string>
+    <string name="observer_attached_to">Attached to %s</string>
+    <string name="observer_free">free</string>
 </resources>
