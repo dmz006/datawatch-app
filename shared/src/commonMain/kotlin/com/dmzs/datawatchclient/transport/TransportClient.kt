@@ -1138,6 +1138,17 @@ public interface TransportClient {
 
     /** GET /api/federation/meta-peers — cross-instance peers aggregated by ComputeNode (alpha.24 #231). */
     public suspend fun getFederationMetaPeers(): Result<com.dmzs.datawatchclient.transport.dto.MetaPeersDto>
+
+    // ---- v0.89.0 Sprint 20: opencode multi-select models (alpha.28 #243) ----
+
+    /**
+     * PATCH /api/profiles/projects/{name}/agent-settings — update the AgentSettings
+     * block for a project profile (BL251 / alpha.28 #243).
+     */
+    public suspend fun patchProjectAgentSettings(
+        name: String,
+        settings: com.dmzs.datawatchclient.transport.dto.AgentSettingsDto,
+    ): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
