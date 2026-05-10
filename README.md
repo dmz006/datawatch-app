@@ -171,7 +171,7 @@ Gradle wrapper is committed — no bootstrap step on clone.
 
 ```
 composeApp/   phone app — Compose UI, WebView terminal, push, gestures
-wear/         Wear OS app + Tile (BL4)
+wear/         Wear OS app + Tile + complications
 auto/         Android Auto (publicMessaging + devPassenger flavors)
 shared/       KMP: transport (REST + WS + MCP-SSE), DTOs, storage, domain
 iosApp/       iOS skeleton
