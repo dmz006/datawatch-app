@@ -1021,3 +1021,37 @@ public data class TailscaleNodeDto(
     val online: Boolean = false,
     val tags: List<String> = emptyList(),
 )
+
+// v0.81.0 — Sprint 12: Pipelines + OrchestratorGraphs list
+@Serializable
+public data class PipelineTaskDto(
+    val id: String = "",
+    val state: String = "",
+)
+
+@Serializable
+public data class PipelineListItemDto(
+    val id: String = "",
+    val name: String = "",
+    val state: String = "",
+    val tasks: List<PipelineTaskDto> = emptyList(),
+)
+
+@Serializable
+public data class OrchestratorGraphListItemDto(
+    val id: String = "",
+    val title: String = "",
+    val status: String = "pending",
+    @SerialName("prd_ids") val prdIds: List<String> = emptyList(),
+)
+
+@Serializable
+public data class OrchestratorGraphsListDto(
+    val graphs: List<OrchestratorGraphListItemDto> = emptyList(),
+)
+
+@Serializable
+public data class CreateOrchestratorGraphRequestDto(
+    val title: String,
+    val directory: String = "",
+)

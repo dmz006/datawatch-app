@@ -890,4 +890,17 @@
     <string name="routing_no_match">Keine Übereinstimmung — Standard-Backend wird verwendet</string>
     <string name="tailscale_mesh_title">Mesh-Status</string>
     <string name="container_workers_title">Container-Worker</string>
+    <string name="pipeline_manager_title">Pipeline-Manager</string>
+    <string name="pipeline_status_active">Aktiv</string>
+    <string name="pipeline_status_done">Fertig</string>
+    <string name="pipeline_no_pipelines">Keine Pipelines aktiv</string>
+    <string name="pipeline_cancel">Abbrechen</string>
+    <string name="orchestrator_graphs_title">Automata-Orchestrator</string>
+    <string name="orchestrator_create_graph">Graph erstellen</string>
+    <string name="orchestrator_graph_title_hint">Titel (erforderlich)</string>
+    <string name="orchestrator_graph_dir_hint">Projektverzeichnis (optional)</string>
+    <string name="orchestrator_no_graphs">Keine Graphen – oben einen erstellen</string>
+    <string name="orchestrator_title_required">Titel erforderlich</string>
+    <string name="orchestrator_graph_run">Ausführen</string>
+    <string name="orchestrator_graph_delete">Löschen</string>
 </resources>

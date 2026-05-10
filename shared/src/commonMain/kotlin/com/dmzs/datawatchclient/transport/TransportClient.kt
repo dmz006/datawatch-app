@@ -1047,6 +1047,23 @@ public interface TransportClient {
 
     /** GET /api/tailscale/status — Tailscale mesh status. */
     public suspend fun getTailscaleStatus(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleStatusDto>
+
+    // ---- v0.81.0 Sprint 12: Pipelines + OrchestratorGraphs list ----
+
+    /** GET /api/pipelines — list active pipelines. */
+    public suspend fun getPipelines(): Result<List<com.dmzs.datawatchclient.transport.dto.PipelineListItemDto>>
+
+    /** GET /api/orchestrator/graphs — list orchestrator graphs. */
+    public suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto>
+
+    /** POST /api/orchestrator/graphs — create a new orchestrator graph. */
+    public suspend fun createOrchestratorGraph(title: String, directory: String = ""): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto>
+
+    /** POST /api/orchestrator/graphs/{id}/run — run an orchestrator graph. */
+    public suspend fun runOrchestratorGraph(id: String): Result<Unit>
+
+    /** DELETE /api/orchestrator/graphs/{id} — delete an orchestrator graph. */
+    public suspend fun deleteOrchestratorGraph(id: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
