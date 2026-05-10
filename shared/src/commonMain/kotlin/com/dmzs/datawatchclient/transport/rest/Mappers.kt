@@ -41,6 +41,8 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         outputMode = outputMode,
         inputMode = inputMode,
         agentId = agentId,
+        llmRef = llmRef,
+        computeNodeRef = computeNodeRef,
     )
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert {

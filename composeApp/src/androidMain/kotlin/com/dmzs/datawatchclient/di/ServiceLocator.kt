@@ -38,6 +38,9 @@ public object ServiceLocator {
         appContext = app.applicationContext
     }
 
+    /** Exposes the application context for use by ViewModels that need SharedPreferences etc. */
+    public fun context(): Context = appContext
+
     private val keystoreManager: KeystoreManager by lazy { KeystoreManager(appContext) }
 
     private val databaseFactory: DatabaseFactory by lazy {

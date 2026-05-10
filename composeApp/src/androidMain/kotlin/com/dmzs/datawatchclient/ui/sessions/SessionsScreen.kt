@@ -248,6 +248,11 @@ public fun SessionsScreen(
                     onSortOrderChange = vm::setSortOrder,
                     expanded = toolbarExpanded,
                     onCollapse = { toolbarExpanded = false },
+                    stateFilter = state.stateFilter,
+                    activeCount = state.activeCount,
+                    waitingCount = state.waitingCount,
+                    doneCount = state.doneCount,
+                    onStateFilterChange = vm::setStateFilter,
                 )
             }
 
@@ -454,6 +459,12 @@ private fun SessionsToolbar(
     onSortOrderChange: (SessionsViewModel.SortOrder) -> Unit,
     expanded: Boolean,
     onCollapse: () -> Unit,
+    // v0.83.0: state filter chips
+    stateFilter: SessionsViewModel.SessionStateFilter = SessionsViewModel.SessionStateFilter.ALL,
+    activeCount: Int = 0,
+    waitingCount: Int = 0,
+    doneCount: Int = 0,
+    onStateFilterChange: (SessionsViewModel.SessionStateFilter) -> Unit = {},
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     // Toolbar is rendered only when expanded (user toggled search) OR
@@ -492,6 +503,38 @@ private fun SessionsToolbar(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
+            // v0.83.0: state filter chips (All / Active / Waiting / Done)
+            // stringResource calls must be outside the LazyListScope lambda
+            val stateFilterAllLabel = stringResource(R.string.session_filter_all)
+            val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
+            val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
+            val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
+            val stateChips = listOf(
+                Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
+                Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
+                Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
+                Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                items(stateChips) { (filter, label, count) ->
+                    FilterChip(
+                        selected = stateFilter == filter,
+                        onClick = { onStateFilterChange(filter) },
+                        label = {
+                            Text(
+                                if (count >= 0) "$label ($count)" else label,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
+                }
+            }
             if (backendCounts.size > 1) {
                 LazyRow(
                     modifier = Modifier.padding(top = 6.dp),

@@ -1013,4 +1013,19 @@
     <string name="secrets_add_btn">Add Secret</string>
     <string name="observer_quicklink_title">Federated Observer</string>
     <string name="observer_quicklink_btn">Open Observer →</string>
+    <!-- v0.83.0: LLM picker + state filter chips (#104 + #105) -->
+    <string name="session_llm_picker_label">LLM (v7)</string>
+    <string name="session_llm_none_option">— Select LLM —</string>
+    <string name="session_compute_node_label">Compute Node</string>
+    <string name="session_compute_node_primary">(primary)</string>
+    <string name="session_compute_node_failover">(failover %d)</string>
+    <string name="session_llm_hint">Selection order = failover order</string>
+    <string name="session_llm_any_node">Any node OK</string>
+    <string name="session_llm_legacy_notice">Legacy backend (v6 compat)</string>
+    <string name="session_filter_all">All</string>
+    <string name="session_filter_active">Active</string>
+    <string name="session_filter_waiting">Waiting</string>
+    <string name="session_filter_done">Done</string>
+    <string name="session_llm_ref_badge">LLM</string>
+    <string name="session_compute_node_badge">Compute Node</string>
 </resources>

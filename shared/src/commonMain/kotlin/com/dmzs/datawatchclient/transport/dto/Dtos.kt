@@ -70,6 +70,10 @@ public data class SessionDto(
      * provenance is visible at a glance. PWA v5.26.58.
      */
     @SerialName("agent_id") val agentId: String? = null,
+    /** v7 LLM registry name for this session. Null on sessions started before v7 or via legacy backend. */
+    @SerialName("llm_ref") val llmRef: String? = null,
+    /** v7 Compute Node this session was dispatched to. Null on legacy sessions. */
+    @SerialName("compute_node_ref") val computeNodeRef: String? = null,
     @SerialName("output_mode") val outputMode: String? = null,
     /**
      * Input mode. `"tmux"` (default), `"chat"`, or `"none"` for
@@ -109,6 +113,10 @@ public data class StartSessionDto(
     val model: String? = null,
     /** claude-code per-session effort level (v5.27.5+). */
     @SerialName("claude_effort") val claudeEffort: String? = null,
+    /** v7 LLM registry name. When set, daemon uses LLM's kind/node instead of legacy `backend`. */
+    val llm: String? = null,
+    /** v7 Compute Node override. Must be in LLM's compute_nodes list when provided. */
+    @SerialName("compute_node") val computeNodeOverride: String? = null,
 )
 
 @Serializable
@@ -806,6 +814,8 @@ public data class LlmRegistryEntryDto(
     val name: String,
     val kind: String,
     @SerialName("compute_node") val computeNode: String,
+    /** v7 multi-node list for the picker cascade. The `compute_node` field above is the primary; this list may contain alternates. */
+    @SerialName("compute_nodes") val computeNodes: List<String> = emptyList(),
     val model: String,
     val enabled: Boolean = true,
     @SerialName("pretest_enabled") val pretestEnabled: Boolean = false,

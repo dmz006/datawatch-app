@@ -934,4 +934,19 @@
     <string name="secrets_add_btn">シークレットを追加</string>
     <string name="observer_quicklink_title">フェデレーテッドオブザーバー</string>
     <string name="observer_quicklink_btn">オブザーバーを開く →</string>
+    <!-- v0.83.0: LLM picker + state filter chips (#104 + #105) -->
+    <string name="session_llm_picker_label">LLM（v7）</string>
+    <string name="session_llm_none_option">— LLMを選択 —</string>
+    <string name="session_compute_node_label">コンピュートノード</string>
+    <string name="session_compute_node_primary">（プライマリ）</string>
+    <string name="session_compute_node_failover">（フェイルオーバー %d）</string>
+    <string name="session_llm_hint">選択順序 = フェイルオーバー順序</string>
+    <string name="session_llm_any_node">どのノードでも可</string>
+    <string name="session_llm_legacy_notice">レガシーバックエンド（v6互換）</string>
+    <string name="session_filter_all">すべて</string>
+    <string name="session_filter_active">アクティブ</string>
+    <string name="session_filter_waiting">待機中</string>
+    <string name="session_filter_done">完了</string>
+    <string name="session_llm_ref_badge">LLM</string>
+    <string name="session_compute_node_badge">コンピュートノード</string>
 </resources>

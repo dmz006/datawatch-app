@@ -66,6 +66,15 @@ public data class Session(
      * surface a purple ⬡ chip on the row for provenance.
      */
     val agentId: String? = null,
+    /**
+     * v7 LLM registry name this session was started with. Null for sessions
+     * started via legacy `backend` field or servers that predate v7.
+     */
+    val llmRef: String? = null,
+    /**
+     * v7 Compute Node this session was dispatched to. Null for legacy sessions.
+     */
+    val computeNodeRef: String? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

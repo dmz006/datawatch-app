@@ -15,6 +15,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -43,6 +44,9 @@ public class SessionsViewModel : ViewModel() {
         Name("Name"),
         Custom("Custom"),
     }
+
+    // v0.83.0: state filter (All / Active / Waiting / Done)
+    public enum class SessionStateFilter { ALL, ACTIVE, WAITING, DONE }
 
     public data class UiState(
         val activeProfile: ServerProfile? = null,
@@ -107,6 +111,11 @@ public class SessionsViewModel : ViewModel() {
          * The UI greys the Delete menu item when false.
          */
         val deleteSupported: Boolean = true,
+        // v0.83.0: state filter chip selection + counts for labels
+        val stateFilter: SessionStateFilter = SessionStateFilter.ALL,
+        val activeCount: Int = 0,
+        val waitingCount: Int = 0,
+        val doneCount: Int = 0,
     ) {
         /**
          * Unique backend names across the current session pool, with
@@ -157,13 +166,28 @@ public class SessionsViewModel : ViewModel() {
                                 (s.name?.lowercase()?.contains(q) == true) ||
                                 (s.taskSummary?.lowercase()?.contains(q) == true) ||
                                 s.id.lowercase().contains(q) ||
-                                (s.backend?.lowercase()?.contains(q) == true)
+                                (s.backend?.lowercase()?.contains(q) == true) ||
+                                (s.llmRef?.lowercase()?.contains(q) == true) ||
+                                (s.computeNodeRef?.lowercase()?.contains(q) == true)
                         }
                         .filter { s ->
                             backendFilter == null ||
                                 s.backend == backendFilter ||
                                 // v0.74.0 S5-7 — council-virtual filter also matches by fullId prefix
                                 (backendFilter == "council-virtual" && s.fullId.startsWith("council-"))
+                        }
+                        // v0.83.0: state bucket filter chip
+                        .filter { s ->
+                            when (stateFilter) {
+                                SessionStateFilter.ALL -> true
+                                SessionStateFilter.ACTIVE ->
+                                    s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
+                                        s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
+                                SessionStateFilter.WAITING ->
+                                    s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
+                                SessionStateFilter.DONE ->
+                                    s.state in doneStates
+                            }
                         }
                         .toList()
                 // State-bucket sort always wins (waiting → running → …)
@@ -248,6 +272,17 @@ public class SessionsViewModel : ViewModel() {
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
     private val _sortOrder = MutableStateFlow(SortOrder.RecentActivity)
+    // v0.83.0: state filter; persisted via SharedPreferences
+    private val _stateFilter = MutableStateFlow(
+        run {
+            val prefs = android.preference.PreferenceManager.getDefaultSharedPreferences(
+                ServiceLocator.context(),
+            )
+            val saved = prefs.getString("cs_session_state_filter", SessionStateFilter.ALL.name)
+            runCatching { SessionStateFilter.valueOf(saved ?: "") }.getOrDefault(SessionStateFilter.ALL)
+        },
+    )
+    val stateFilter: StateFlow<SessionStateFilter> = _stateFilter.asStateFlow()
 
     /**
      * Per-profile custom ordering: list of session ids in the order
@@ -302,7 +337,10 @@ public class SessionsViewModel : ViewModel() {
             ) { all, single, federated ->
                 if (all) federated else single
             }
-        return combine(
+        // Build the base state from the 16-flow combine (max allowed), then
+        // layer in _stateFilter with a second combine so we don't exceed the
+        // vararg limit.
+        val baseFlow = combine(
             activeProfile,
             allProfiles,
             sessionsFlow,
@@ -338,6 +376,25 @@ public class SessionsViewModel : ViewModel() {
                 backendByProfileId = args[13] as Map<String, String>,
                 customOrder = args[14] as List<String>,
                 reorderMode = args[15] as Boolean,
+            )
+        }
+        // v0.83.0: layer in state filter + counts
+        return combine(baseFlow, _stateFilter) { base, sf ->
+            val doneStates = setOf(
+                com.dmzs.datawatchclient.domain.SessionState.Completed,
+                com.dmzs.datawatchclient.domain.SessionState.Killed,
+                com.dmzs.datawatchclient.domain.SessionState.Error,
+            )
+            base.copy(
+                stateFilter = sf,
+                activeCount = base.sessions.count { s ->
+                    s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
+                        s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
+                },
+                waitingCount = base.sessions.count { s ->
+                    s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
+                },
+                doneCount = base.sessions.count { s -> s.state in doneStates },
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -382,6 +439,15 @@ public class SessionsViewModel : ViewModel() {
      */
     public fun toggleBackendFilter(backend: String) {
         _backendFilter.value = if (_backendFilter.value == backend) null else backend
+    }
+
+    /** v0.83.0: set the state bucket filter and persist to SharedPreferences. */
+    public fun setStateFilter(filter: SessionStateFilter) {
+        _stateFilter.value = filter
+        android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
+            .edit()
+            .putString("cs_session_state_filter", filter.name)
+            .apply()
     }
 
     public fun toggleShowHistory() {
