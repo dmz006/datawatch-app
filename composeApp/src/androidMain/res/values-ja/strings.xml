@@ -726,6 +726,22 @@
     <string name="prd_terminal_state_hint">このオートマトンは終端状態に達しました。続行するには新しい実行を作成してください。</string>
     <string name="identity_wizard_open">Identity Wizardを開く</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
+    <string name="identity_title">アイデンティティ</string>
+    <string name="identity_role_label">役割</string>
+    <string name="identity_focus_label">現在のフォーカス</string>
+    <string name="identity_notes_label">コンテキストノート</string>
+    <string name="identity_save">保存</string>
+    <string name="identity_reset">リセット</string>
+    <string name="identity_wizard_page_role">役割</string>
+    <string name="identity_wizard_page_goals">北極星の目標</string>
+    <string name="identity_wizard_page_projects">現在のプロジェクト</string>
+    <string name="identity_wizard_page_values">価値観</string>
+    <string name="identity_wizard_page_focus">現在のフォーカス</string>
+    <string name="identity_wizard_page_notes">コンテキストノート</string>
+    <string name="identity_wizard_one_per_line">1行に1つ</string>
+    <string name="identity_wizard_back">戻る</string>
+    <string name="identity_wizard_next">次へ</string>
+    <string name="identity_wizard_finish">完了</string>
     <string name="settings_theme_title">テーマ</string>
     <string name="settings_theme_dark">ダーク</string>
     <string name="settings_theme_light">ライト</string>
@@ -824,6 +840,28 @@
     <string name="council_wizard_save">ペルソナを保存</string>
     <string name="council_wizard_backend_label">AIアシストバックエンド</string>
     <string name="council_wizard_draft_label">ペルソナプロンプト</string>
+
+    <!-- v0.73.0 — Sprint 4: Identity, Algorithm Mode, Evals (backfilled) -->
+    <string name="algorithm_mode_title">アルゴリズムモード</string>
+    <string name="algorithm_phase_observe">観察</string>
+    <string name="algorithm_phase_orient">方向付け</string>
+    <string name="algorithm_phase_decide">決定</string>
+    <string name="algorithm_phase_act">行動</string>
+    <string name="algorithm_phase_measure">測定</string>
+    <string name="algorithm_phase_learn">学習</string>
+    <string name="algorithm_phase_improve">改善</string>
+    <string name="algorithm_advance">進める</string>
+    <string name="algorithm_abort">中止</string>
+    <string name="algorithm_current_phase">現在のフェーズ</string>
+    <string name="algorithm_phase_output">フェーズ出力</string>
+    <string name="algorithm_no_active">アクティブなアルゴリズムモードセッションなし</string>
+    <string name="evals_title">評価</string>
+    <string name="evals_run">実行</string>
+    <string name="evals_score">スコア</string>
+    <string name="evals_passed">合格</string>
+    <string name="evals_failed">不合格</string>
+    <string name="evals_no_suites">評価スイートが見つかりません</string>
+    <string name="evals_running">実行中&#8230;</string>
 
     <!-- v0.78.0 — S10-4 alert tier display on About card -->
     <string name="alert_tier_unified_push">datawatch プッシュ経由のアラート（最適）</string>

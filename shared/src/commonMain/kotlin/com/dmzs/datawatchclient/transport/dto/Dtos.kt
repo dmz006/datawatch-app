@@ -864,6 +864,63 @@ public data class DocsTrustedSourceDto(val path: String)
 @Serializable
 public data class DocsTrustBulkRequest(val paths: List<String>)
 
+// ── v0.73.0 Identity + Algorithm + Evals (S4-1/2/3, #53/#54/#55) ────────────
+
+@Serializable
+public data class IdentityDto(
+    val role: String = "",
+    @SerialName("north_star_goals") val northStarGoals: List<String> = emptyList(),
+    @SerialName("current_projects") val currentProjects: List<String> = emptyList(),
+    val values: List<String> = emptyList(),
+    @SerialName("current_focus") val currentFocus: String = "",
+    @SerialName("context_notes") val contextNotes: String = "",
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+@Serializable
+public data class AlgorithmStateDto(
+    @SerialName("session_id") val sessionId: String,
+    val current: String,
+    val history: List<AlgorithmPhaseDto> = emptyList(),
+    @SerialName("started_at") val startedAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    val aborted: Boolean = false,
+)
+
+@Serializable
+public data class AlgorithmPhaseDto(
+    val phase: String,
+    val output: String,
+    val timestamp: String,
+)
+
+@Serializable
+public data class EvalSuiteDto(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val cases: Int = 0,
+    @SerialName("last_run") val lastRun: String? = null,
+    @SerialName("last_score") val lastScore: Double? = null,
+)
+
+@Serializable
+public data class EvalRunResultDto(
+    @SerialName("suite_id") val suiteId: String,
+    val score: Double,
+    val passed: Int,
+    val failed: Int,
+    val details: List<EvalCaseResult> = emptyList(),
+    @SerialName("run_at") val runAt: String,
+)
+
+@Serializable
+public data class EvalCaseResult(
+    val name: String,
+    val passed: Boolean,
+    val output: String = "",
+)
+
 // ── v0.77.0 Council persona wizard (S8-1/2/3, #92) ──────────────────────────
 
 /** GET /api/council/personas — a single council persona entry. */

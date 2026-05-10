@@ -726,6 +726,22 @@
     <string name="prd_terminal_state_hint">Este autómata ha alcanzado un estado terminal. Crea una nueva ejecución para continuar.</string>
     <string name="identity_wizard_open">Abrir Identity Wizard</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
+    <string name="identity_title">Identidad</string>
+    <string name="identity_role_label">Rol</string>
+    <string name="identity_focus_label">Enfoque actual</string>
+    <string name="identity_notes_label">Notas de contexto</string>
+    <string name="identity_save">Guardar</string>
+    <string name="identity_reset">Restablecer</string>
+    <string name="identity_wizard_page_role">Rol</string>
+    <string name="identity_wizard_page_goals">Objetivos estrella del norte</string>
+    <string name="identity_wizard_page_projects">Proyectos actuales</string>
+    <string name="identity_wizard_page_values">Valores</string>
+    <string name="identity_wizard_page_focus">Enfoque actual</string>
+    <string name="identity_wizard_page_notes">Notas de contexto</string>
+    <string name="identity_wizard_one_per_line">Uno por línea</string>
+    <string name="identity_wizard_back">Atrás</string>
+    <string name="identity_wizard_next">Siguiente</string>
+    <string name="identity_wizard_finish">Finalizar</string>
     <string name="settings_theme_title">Tema</string>
     <string name="settings_theme_dark">Oscuro</string>
     <string name="settings_theme_light">Claro</string>
@@ -824,6 +840,28 @@
     <string name="council_wizard_save">Guardar Persona</string>
     <string name="council_wizard_backend_label">Backend de IA</string>
     <string name="council_wizard_draft_label">Prompt de persona</string>
+
+    <!-- v0.73.0 — Sprint 4: Identity, Algorithm Mode, Evals (backfilled) -->
+    <string name="algorithm_mode_title">Modo algoritmo</string>
+    <string name="algorithm_phase_observe">Observar</string>
+    <string name="algorithm_phase_orient">Orientar</string>
+    <string name="algorithm_phase_decide">Decidir</string>
+    <string name="algorithm_phase_act">Actuar</string>
+    <string name="algorithm_phase_measure">Medir</string>
+    <string name="algorithm_phase_learn">Aprender</string>
+    <string name="algorithm_phase_improve">Mejorar</string>
+    <string name="algorithm_advance">Avanzar</string>
+    <string name="algorithm_abort">Cancelar</string>
+    <string name="algorithm_current_phase">Fase actual</string>
+    <string name="algorithm_phase_output">Salida de fase</string>
+    <string name="algorithm_no_active">No hay sesiones de modo algoritmo activas</string>
+    <string name="evals_title">Evaluaciones</string>
+    <string name="evals_run">Ejecutar</string>
+    <string name="evals_score">Puntuación</string>
+    <string name="evals_passed">Aprobados</string>
+    <string name="evals_failed">Fallidos</string>
+    <string name="evals_no_suites">No se encontraron suites de evaluación</string>
+    <string name="evals_running">Ejecutando&#8230;</string>
 
     <!-- v0.78.0 — S10-4 alert tier display on About card -->
     <string name="alert_tier_unified_push">Alertas vía datawatch push (óptimo)</string>

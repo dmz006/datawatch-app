@@ -726,6 +726,22 @@
     <string name="prd_terminal_state_hint">Dieser Automat hat einen Endzustand erreicht. Erstellen Sie einen neuen Lauf, um fortzufahren.</string>
     <string name="identity_wizard_open">Identity Wizard öffnen</string>
     <string name="identity_wizard_title_hint">Identity Wizard</string>
+    <string name="identity_title">Identität</string>
+    <string name="identity_role_label">Rolle</string>
+    <string name="identity_focus_label">Aktueller Fokus</string>
+    <string name="identity_notes_label">Kontextnotizen</string>
+    <string name="identity_save">Speichern</string>
+    <string name="identity_reset">Zurücksetzen</string>
+    <string name="identity_wizard_page_role">Rolle</string>
+    <string name="identity_wizard_page_goals">Leitsternziele</string>
+    <string name="identity_wizard_page_projects">Aktuelle Projekte</string>
+    <string name="identity_wizard_page_values">Werte</string>
+    <string name="identity_wizard_page_focus">Aktueller Fokus</string>
+    <string name="identity_wizard_page_notes">Kontextnotizen</string>
+    <string name="identity_wizard_one_per_line">Einer pro Zeile</string>
+    <string name="identity_wizard_back">Zurück</string>
+    <string name="identity_wizard_next">Weiter</string>
+    <string name="identity_wizard_finish">Fertig</string>
     <string name="settings_theme_title">Design</string>
     <string name="settings_theme_dark">Dunkel</string>
     <string name="settings_theme_light">Hell</string>
@@ -824,6 +840,28 @@
     <string name="council_wizard_save">Persona speichern</string>
     <string name="council_wizard_backend_label">KI-Backend</string>
     <string name="council_wizard_draft_label">Persona-Prompt</string>
+
+    <!-- v0.73.0 — Sprint 4: Identity, Algorithm Mode, Evals (backfilled) -->
+    <string name="algorithm_mode_title">Algorithmusmodus</string>
+    <string name="algorithm_phase_observe">Beobachten</string>
+    <string name="algorithm_phase_orient">Orientieren</string>
+    <string name="algorithm_phase_decide">Entscheiden</string>
+    <string name="algorithm_phase_act">Handeln</string>
+    <string name="algorithm_phase_measure">Messen</string>
+    <string name="algorithm_phase_learn">Lernen</string>
+    <string name="algorithm_phase_improve">Verbessern</string>
+    <string name="algorithm_advance">Vorwärts</string>
+    <string name="algorithm_abort">Abbrechen</string>
+    <string name="algorithm_current_phase">Aktuelle Phase</string>
+    <string name="algorithm_phase_output">Phasenausgabe</string>
+    <string name="algorithm_no_active">Keine aktiven Algorithmusmodus-Sitzungen</string>
+    <string name="evals_title">Evaluierungen</string>
+    <string name="evals_run">Ausführen</string>
+    <string name="evals_score">Ergebnis</string>
+    <string name="evals_passed">Bestanden</string>
+    <string name="evals_failed">Fehlgeschlagen</string>
+    <string name="evals_no_suites">Keine Evaluierungssuiten gefunden</string>
+    <string name="evals_running">Wird ausgeführt&#8230;</string>
 
     <!-- v0.78.0 — S10-4 alert tier display on About card -->
     <string name="alert_tier_unified_push">Benachrichtigungen via datawatch Push (optimal)</string>
