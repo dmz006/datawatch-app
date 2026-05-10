@@ -799,4 +799,29 @@
     <!-- v0.76.0 — Sprint 7: multi-select bar, theme toggle, mic scaffold, spacing (#73 #76 #77 #91) -->
     <string name="action_run_scan">スキャン実行</string>
     <string name="action_run_rules">ルール実行</string>
+
+    <!-- v0.74.0 — Council Mode card (S4-4, #56) — missing strings backfilled in v0.77.0 -->
+    <string name="council_title">Councilモード</string>
+    <string name="council_personas_label">ペルソナ</string>
+    <string name="council_firehose_label">通信ファイアホース</string>
+    <string name="council_run_proposal">提案</string>
+    <string name="council_mode_debate">討論</string>
+    <string name="council_mode_quick">クイック</string>
+    <string name="council_run_btn">Councilを実行</string>
+    <string name="council_results_title">結果</string>
+    <string name="council_round_label">ラウンド</string>
+    <string name="council_consensus">コンセンサス</string>
+
+    <!-- v0.77.0 — Council persona wizard (S8-1/2/3, #92) -->
+    <string name="council_wizard_title">ペルソナウィザード</string>
+    <string name="council_wizard_step_focus">このペルソナの主要な焦点は何ですか？</string>
+    <string name="council_wizard_step_stance">このペルソナはどのように問題に取り組みますか？</string>
+    <string name="council_wizard_step_tone">このペルソナのコミュニケーションスタイルをどう表現しますか？</string>
+    <string name="council_wizard_step_antipatterns">このペルソナは何に反発しますか？</string>
+    <string name="council_wizard_step_examples">このペルソナが示す回答例を2〜3つ挙げてください。</string>
+    <string name="council_wizard_refine">AIで改善…</string>
+    <string name="council_wizard_tune">組み立てたペルソナプロンプトを確認・調整する</string>
+    <string name="council_wizard_save">ペルソナを保存</string>
+    <string name="council_wizard_backend_label">AIアシストバックエンド</string>
+    <string name="council_wizard_draft_label">ペルソナプロンプト</string>
 </resources>

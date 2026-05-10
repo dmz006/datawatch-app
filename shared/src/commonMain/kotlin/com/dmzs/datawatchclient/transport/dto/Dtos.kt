@@ -863,3 +863,55 @@ public data class DocsTrustedSourceDto(val path: String)
 /** POST /api/docs/trust/accept or /dismiss body (v0.75.0 S6-4). */
 @Serializable
 public data class DocsTrustBulkRequest(val paths: List<String>)
+
+// ── v0.77.0 Council persona wizard (S8-1/2/3, #92) ──────────────────────────
+
+/** GET /api/council/personas — a single council persona entry. */
+@Serializable
+public data class CouncilPersonaDto(
+    val name: String = "",
+    val description: String = "",
+    val prompt: String = "",
+    val enabled: Boolean = true,
+    @SerialName("assist_backend") val assistBackend: String? = null,
+)
+
+/** GET /api/council/runs — a single council run entry. */
+@Serializable
+public data class CouncilRunDto(
+    val id: String,
+    val proposal: String,
+    val personas: List<String> = emptyList(),
+    val mode: String = "debate",
+    val status: String = "pending",
+    val round: Int = 0,
+    val consensus: String? = null,
+    val dissent: String? = null,
+    @SerialName("started_at") val startedAt: String? = null,
+    @SerialName("finished_at") val finishedAt: String? = null,
+)
+
+/** GET/PUT /api/council/config — council configuration. */
+@Serializable
+public data class CouncilConfigDto(
+    @SerialName("comm_firehose") val commFirehose: Boolean = false,
+    @SerialName("spawn_real_sessions") val spawnRealSessions: Boolean = false,
+)
+
+/** POST /api/council/run — start a council run. */
+@Serializable
+public data class StartCouncilRunRequest(
+    val proposal: String,
+    val mode: String,
+    val personas: List<String> = emptyList(),
+    @SerialName("spawn_real_sessions") val spawnRealSessions: Boolean = false,
+)
+
+/** POST/PUT /api/council/personas — create or update a council persona. */
+@Serializable
+public data class CouncilPersonaCreateDto(
+    val name: String,
+    val prompt: String,
+    val description: String = "",
+    @SerialName("assist_backend") val assistBackend: String? = null,
+)

@@ -969,6 +969,37 @@ public interface TransportClient {
 
     /** DELETE /api/docs/trust/{path} — remove trust from a source. */
     public suspend fun docsTrustRemove(path: String): Result<Unit>
+
+    // ---- v0.77.0 Council persona wizard (S8-1/2/3, #92) ----
+
+    /** GET /api/council/personas — list all council personas. */
+    public suspend fun councilListPersonas(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>>
+
+    /** GET /api/council/runs — list council runs. */
+    public suspend fun councilListRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilRunDto>>
+
+    /** GET /api/council/config — fetch council configuration. */
+    public suspend fun councilGetConfig(): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto>
+
+    /** PUT /api/council/config — update council configuration. */
+    public suspend fun councilUpdateConfig(config: com.dmzs.datawatchclient.transport.dto.CouncilConfigDto): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto>
+
+    /** POST /api/council/run — start a council run. */
+    public suspend fun councilStartRun(request: com.dmzs.datawatchclient.transport.dto.StartCouncilRunRequest): Result<com.dmzs.datawatchclient.transport.dto.CouncilRunDto>
+
+    /** DELETE /api/council/runs/{id} — stop/cancel a council run. */
+    public suspend fun councilStopRun(id: String): Result<Unit>
+
+    /** POST /api/council/personas — create a new council persona. */
+    public suspend fun createCouncilPersona(
+        dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>
+
+    /** PUT /api/council/personas/{name} — update an existing council persona. */
+    public suspend fun updateCouncilPersona(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

@@ -10,14 +10,24 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -37,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.CouncilConfigDto
+import com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto
 import com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto
 import com.dmzs.datawatchclient.transport.dto.CouncilRunDto
 import com.dmzs.datawatchclient.transport.dto.StartCouncilRunRequest
@@ -46,7 +57,7 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun CouncilCard() {
     var personas by remember { mutableStateOf<List<CouncilPersonaDto>>(emptyList()) }
@@ -56,6 +67,9 @@ internal fun CouncilCard() {
     var mode by remember { mutableStateOf("debate") }
     var selectedPersonas by remember { mutableStateOf<Set<String>>(emptySet()) }
     var expandedRunId by remember { mutableStateOf<String?>(null) }
+    var showPersonasSheet by remember { mutableStateOf(false) }
+    var showAddWizard by remember { mutableStateOf(false) }
+    var editingPersona by remember { mutableStateOf<CouncilPersonaForEdit?>(null) }
     val scope = rememberCoroutineScope()
 
     suspend fun loadAll() {
@@ -66,6 +80,42 @@ internal fun CouncilCard() {
         t.councilListPersonas().onSuccess { personas = it }
         t.councilListRuns().onSuccess { runs = it }
         t.councilGetConfig().onSuccess { config = it }
+    }
+
+    fun createPersona(name: String, prompt: String, description: String, assistBackend: String?) {
+        scope.launch {
+            runCatching {
+                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                val sp = ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val dto = CouncilPersonaCreateDto(
+                    name = name,
+                    prompt = prompt,
+                    description = description,
+                    assistBackend = assistBackend,
+                )
+                ServiceLocator.transportFor(sp).createCouncilPersona(dto)
+                    .onSuccess { loadAll() }
+            }
+        }
+    }
+
+    fun updatePersona(name: String, prompt: String, description: String, assistBackend: String?) {
+        scope.launch {
+            runCatching {
+                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                val sp = ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val dto = CouncilPersonaCreateDto(
+                    name = name,
+                    prompt = prompt,
+                    description = description,
+                    assistBackend = assistBackend,
+                )
+                ServiceLocator.transportFor(sp).updateCouncilPersona(name, dto)
+                    .onSuccess { loadAll() }
+            }
+        }
     }
 
     LaunchedEffect(Unit) { runCatching { loadAll() } }
@@ -80,15 +130,32 @@ internal fun CouncilCard() {
         PwaSectionTitle(stringResource(R.string.council_title))
 
         // ── PERSONAS section ──────────────────────────────────────────────
-        if (personas.isNotEmpty()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
                 stringResource(R.string.council_personas_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (personas.isNotEmpty()) {
+                    OutlinedButton(
+                        onClick = { showPersonasSheet = true },
+                        modifier = Modifier.padding(0.dp),
+                    ) { Text("Manage", style = MaterialTheme.typography.labelSmall) }
+                }
+                Button(
+                    onClick = { showAddWizard = true },
+                    modifier = Modifier.padding(0.dp),
+                ) { Text("Add", style = MaterialTheme.typography.labelSmall) }
+            }
+        }
+        if (personas.isNotEmpty()) {
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 personas.forEach { persona ->
@@ -106,7 +173,91 @@ internal fun CouncilCard() {
                     )
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // ── PERSONA MANAGEMENT SHEET ──────────────────────────────────────
+        if (showPersonasSheet) {
+            ModalBottomSheet(onDismissRequest = { showPersonasSheet = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.council_personas_label),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    LazyColumn {
+                        items(personas) { persona ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        persona.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                    if (persona.description.isNotBlank()) {
+                                        Text(
+                                            persona.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = {
+                                    editingPersona = CouncilPersonaForEdit(
+                                        name = persona.name,
+                                        prompt = persona.prompt,
+                                        description = persona.description,
+                                    )
+                                    showPersonasSheet = false
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "Edit persona",
+                                    )
+                                }
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            showAddWizard = true
+                            showPersonasSheet = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Add New Persona") }
+                }
+            }
+        }
+
+        // ── PERSONA WIZARD SHEET ──────────────────────────────────────────
+        if (showAddWizard || editingPersona != null) {
+            CouncilPersonaWizardSheet(
+                onDismiss = {
+                    showAddWizard = false
+                    editingPersona = null
+                },
+                onSave = { name, prompt, desc, backend ->
+                    if (editingPersona != null) {
+                        updatePersona(name, prompt, desc, backend)
+                    } else {
+                        createPersona(name, prompt, desc, backend)
+                    }
+                    showAddWizard = false
+                    editingPersona = null
+                },
+                existingPersona = editingPersona,
+            )
         }
 
         // ── FIREHOSE TOGGLE (#97) ─────────────────────────────────────────
