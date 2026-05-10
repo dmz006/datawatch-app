@@ -989,6 +989,12 @@
     <string name="peer_group_by_node">ComputeNodeでグループ化</string>
     <string name="peer_group_by_node_tip">バインドされたComputeNodeでピアをグループ化（alpha.24）</string>
     <string name="peer_group_unbound">未バインドのピア（ComputeNodeなし）</string>
+    <!-- Sprint 21 #114 — alpha.29 alert dock -->
+    <string name="alert_dock_dismiss">閉じる</string>
+    <string name="alert_dock_mute">アラートをミュート</string>
+    <string name="alert_pill_tip">アラートドックを開く</string>
+    <string name="alert_dock_one">1件のアラート</string>
+    <string name="alert_dock_many">%d件のアラート</string>
 
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Council通知</string>
