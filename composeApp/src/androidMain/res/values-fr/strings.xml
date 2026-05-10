@@ -43,6 +43,14 @@
     <string name="settings_tab_comms">Comms</string>
     <string name="settings_tab_llm">LLM</string>
     <string name="settings_tab_about">À propos</string>
+    <string name="settings_tab_compute">Calcul</string>
+    <string name="settings_compute_nodes_title">Nœuds de calcul</string>
+    <string name="settings_llm_registry_title">LLMs</string>
+    <string name="settings_project_profiles_title">Profils de projet</string>
+    <string name="settings_cluster_profiles_title">Profils de cluster</string>
+    <string name="settings_automata_group_settings">Paramètres</string>
+    <string name="settings_automata_group_templates">Modèles</string>
+    <string name="settings_automata_group_lifecycle">Cycle de vie</string>
     <string name="settings_switch_server">Changer de serveur</string>
 
     <!-- ── Sessions screen ── -->
@@ -195,7 +203,7 @@
     <string name="prd_detail_graph">📊 Graphe</string>
     <string name="prd_detail_llm">LLM</string>
     <string name="prd_detail_no_stories">Pas encore de stories (en cours de décomposition ?).</string>
-    <string name="prd_detail_reject_title">Rejeter l&apos;Automate ?</string>
+    <string name="prd_detail_reject_title">"Rejeter l\'Automate ?"</string>
     <string name="prd_detail_reject_reason_label">Raison (obligatoire)</string>
     <string name="prd_detail_revise_title">Demander des révisions</string>
     <string name="prd_detail_revise_label">Qu\'est-ce qui doit être révisé ?</string>
