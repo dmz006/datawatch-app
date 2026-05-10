@@ -52,3 +52,30 @@ gets two levels of validation:
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.
+
+## v7.0.0-alpha parity arc (Sprints 17–22+)
+
+| Surface | Feature | Tested | Validated | Sprint | Test Conditions | Notes |
+|---------|---------|--------|-----------|--------|-----------------|-------|
+| Shared | `SessionDto.backendFamily` fallback to `llmBackend` | No | No | 17 | `DtoRoundTripTest` — both fields present; only backendFamily; only llmBackend | Priority: high — alpha.27 contract |
+| Shared | `Mappers.toSession()` backendFamily → Session.backend | No | No | 17 | `SessionMapperTest` | |
+| Shared | `ObserverPeersByNodeDto` JSON round-trip | No | No | 18 | `DtoRoundTripTest` — by_node map + unbound list | alpha.24 |
+| Shared | `MetaPeersDto` / `MetaNodeBucketDto` / `MetaObserverEntryDto` round-trip | No | No | 18 | `DtoRoundTripTest` | nested bucket deserialization |
+| Shared | `TransportClient.getObserverPeersByNode()` REST | No | No | 18 | `RestTransportTest` + MockWebServer | GET `/api/observer/peers/by-node` |
+| Shared | `TransportClient.getFederationMetaPeers()` REST | No | No | 18 | `RestTransportTest` + MockWebServer | GET `/api/federation/meta-peers` |
+| Phone | `FederatedPeersCard` group-by-node toggle | No | No | 18 | `FederatedPeersViewModelTest` | groupByNode state transitions + loadByNode |
+| Shared | `AgentSettingsDto` round-trip (opencodeModels list) | No | No | 19 | `DtoRoundTripTest` | alpha.28 |
+| Shared | `TransportClient.patchProjectAgentSettings()` REST | No | No | 19 | `RestTransportTest` + MockWebServer | PATCH body + 200 |
+| Phone | `KindProfilesCard` agent-settings editor (project kind) | No | No | 19 | Manual — live server with project profile | 4 fields; comma-sep → JsonArray |
+| Phone | `AlertDockOverlay` dismiss / mute callbacks | No | No | 20 | `AlertDockTest` (Compose UI) | alpha.29 |
+| Phone | `AppRoot` dock visibility threshold (≥2 active alerts) | No | No | 20 | `AppRootTest` | dock reappears when count resets |
+| Phone | Alert dock category chips (needs-input ×N, err ×N) | No | No | 20 | Manual — live server with active alerts | |
+| Wear | `AlertsComplicationService` DataItem parse + fallback | No | No | 21 | `AlertsComplicationTest` | No DataItem → (0,0,0) |
+| Wear | `AlertsTileService` layout branches | No | No | 21 | `AlertsTileTest` | hasData=false; errors>0 health dot |
+| Wear | `WearSyncService.publishAlerts()` DataMap keys | No | No | 21 | `WearSyncServiceTest` | total/needsInput/errors/ts correct |
+| Phone | `AlertsViewModel` chip filter (All/Prompt/Error/Warn/Info) | No | No | 22 | `AlertsViewModelTest` | alpha.30 |
+| Phone | `AlertsViewModel` sort toggle (BySession/Chronological) | No | No | 22 | `AlertsViewModelTest` | flat list newest-first |
+| Phone | `AlertsViewModel` search (title+body, case-insensitive) | No | No | 22 | `AlertsViewModelTest` | |
+| Phone | `AlertsViewModel.dismissAll()` → markAlertRead(all=true) | No | No | 22 | `AlertsViewModelTest` | |
+| Phone | `BottomNavBar` always-on badge (dimmed at 0, 🔕 muted) | No | No | 22 | `BottomNavBarTest` (Compose UI) | |
+| Phone | `AlertsScreen` custom top bar + PROMPT/ERROR tinting | No | No | 22 | Manual — live server with mixed-severity alerts | |

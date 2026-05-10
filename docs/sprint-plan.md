@@ -375,3 +375,263 @@ any server contract changes that require transport updates.
 | Issues |
 |--------|
 | #60, #61, #62–#70, #76, #78, #79, #81 |
+
+---
+
+## v0.87+ parity arc — datawatch v7.0.0-alpha sprint track
+
+*Last updated 2026-05-10. Tracks the server's alpha.24–alpha.32+ feature surface closing.*
+*All issues in `dmz006/datawatch-app` repo. Parent datawatch repo is at `/home/dmz/workspace/datawatch`.*
+
+### Sprint rules (every sprint in this arc)
+
+**Version sync** (CI `check-version` rejects mismatch):
+```
+gradle.properties: DATAWATCH_APP_VERSION=X.Y.Z + DATAWATCH_APP_VERSION_CODE=N
+shared/.../Version.kt: VERSION = "X.Y.Z" + VERSION_CODE = N
+```
+
+**Required per sprint**:
+1. All new public logic has a corresponding Kotlin unit test (`commonTest` or `androidUnitTest`)
+2. `rtk ./gradlew :composeApp:assembleDevDebug :wear:assembleDebug` → BUILD SUCCESSFUL
+3. Locale strings added to all 5 bundles: `values/`, `values-de/`, `values-es/`, `values-fr/`, `values-ja/`
+4. `CHANGELOG.md` `[Unreleased]` block updated (or new version header if releasing)
+5. `docs/testing-tracker.md` updated with new rows
+6. `docs/sprint-plan.md` status updated (this file)
+7. Commit + push per sprint — no local hoarding
+
+**Test validation checklist** (per sprint):
+- [ ] `rtk ./gradlew :shared:testDebugUnitTest` — shared logic tests pass
+- [ ] `rtk ./gradlew :composeApp:testDevDebugUnitTest` — composeApp VM tests pass
+- [ ] `rtk ./gradlew :composeApp:assembleDevDebug :wear:assembleDebug` — builds clean
+- [ ] New DTOs: add `RestTransportTest` or `DtoRoundTripTest` round-trip cases
+- [ ] New ViewModel state: add `ViewModelTest` state-machine coverage
+- [ ] Locale: verify no missing keys (`rtk ./gradlew :composeApp:lintDevDebug | grep "MissingTranslation"`)
+- [ ] Version parity: `grep -E 'DATAWATCH_APP_VERSION=|VERSION\s*=\s*"' gradle.properties shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt`
+
+---
+
+### Sprint 17 — alpha.27 BackendFamily rename (v0.87.0/165) ✅ DONE
+
+**Issue**: #112 | **Merged**: 2026-05-10 | **Server ref**: alpha.27
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `Dtos.kt`: add `backendFamily` field, keep `llmBackend` for deserialization compat | ✅ | `@SerialName("backend_family")` |
+| `Mappers.kt`: `backend = backendFamily ?: llmBackend` | ✅ | Null-safe fallback |
+| Version bump 0.87.0/165 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `DtoRoundTripTest`: `backendFamily` takes precedence over `llmBackend`; `llmBackend` fallback when `backendFamily` absent → **not yet written**
+- [ ] `MapperTest`: verify `toSession()` uses backendFamily field → **not yet written**
+
+---
+
+### Sprint 18 — alpha.24 Observer by-node + FederationMeta (v0.88.0/166) ✅ DONE
+
+**Issue**: #111 | **Merged**: 2026-05-10 | **Server ref**: alpha.24
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `Dtos.kt`: `ObserverPeersByNodeDto`, `MetaPeersDto`, `MetaNodeBucketDto`, `MetaObserverEntryDto` | ✅ | |
+| `Dtos.kt`: `ObserverPeerDto.computeNode` field | ✅ | Drops need for second compute-node fetch |
+| `TransportClient` + `RestTransport`: `getObserverPeersByNode()`, `getFederationMetaPeers()` | ✅ | |
+| `FederatedPeersCard`: "Group by ComputeNode" toggle, by-node bucket view, `peer.computeNode` binding badge | ✅ | Compile fix: `padding(horizontal,bottom)` → `padding(start,end,bottom)` |
+| `SettingsScreen`: move `SecretsCard` + `ObserverQuicklinkCard` to Compute tab | ✅ | |
+| Locale: `peer_group_by_node`, `peer_group_by_node_tip`, `peer_group_unbound` (5 bundles) | ✅ | |
+| Version bump 0.88.0/166 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `ObserverPeersByNodeDto` JSON round-trip (by_node map + unbound list) → **not yet written**
+- [ ] `MetaPeersDto` JSON round-trip (nested buckets) → **not yet written**
+- [ ] `FederatedPeersCardViewModel`: groupByNode toggle state → **not yet written**
+
+---
+
+### Sprint 19 — alpha.28 Agent-settings multi-model (v0.89.0/167) ✅ DONE
+
+**Issue**: #113 | **Merged**: 2026-05-10 | **Server ref**: alpha.28
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `Dtos.kt`: `AgentSettingsDto` with `opencodeModels: List<String>` | ✅ | Keeps `opencodeModel` singular for compat |
+| `TransportClient` + `RestTransport`: `patchProjectAgentSettings()` | ✅ | PATCH `/api/profiles/projects/{name}/agent-settings` |
+| `KindProfilesCard`: agent-settings section in `ProfileEditDialog` for project kind | ✅ | 4 OutlinedTextFields; comma-separated input → JsonArray |
+| Locale: `profile_ollama_models_label`, `profile_ollama_models_ph` (5 bundles) | ✅ | |
+| Version bump 0.89.0/167 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `AgentSettingsDto` JSON round-trip (opencodeModels list) → **not yet written**
+- [ ] `RestTransport.patchProjectAgentSettings` MockWebServer test → **not yet written**
+
+---
+
+### Sprint 20 — alpha.29 Alert dock overlay (v0.90.0/168) ✅ DONE
+
+**Issue**: #114 (alert dock phone side) | **Merged**: 2026-05-10 | **Server ref**: alpha.29
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `AlertDockOverlay.kt`: collapsed pill + category chips + expand/collapse | ✅ | 260dp max-width; anchored TopEnd |
+| `AppRoot.kt`: dock visible when ≥2 active alerts, dismiss/mute state | ✅ | dismiss resets when count drops below threshold |
+| Locale: `alert_dock_dismiss`, `alert_dock_mute`, `alert_pill_tip`, `alert_dock_one`, `alert_dock_many` (5 bundles) | ✅ | |
+| Version bump 0.90.0/168 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `AlertDockOverlay`: dismiss callback fires on ✕ tap → **not yet written**
+- [ ] `AlertDockOverlay`: mute callback fires on 🔕 tap → **not yet written**
+- [ ] `AppRoot` dock visibility logic: appears at 2 alerts, hides when dismissed, re-appears when count resets → **not yet written**
+
+---
+
+### Sprint 21 — Wear OS alerts tile + complication (v0.91.0/169) ✅ DONE
+
+**Issue**: #114 (Wear OS side) | **Merged**: 2026-05-10
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `AlertsComplicationService.kt`: SHORT_TEXT `!N` / `alrt` title, reads `/datawatch/alerts` | ✅ | Follow `AutomataComplicationService` pattern |
+| `AlertsTileService.kt`: 30s tile, total/input/err rows, health dot, tap→WearMainActivity | ✅ | Follow `MonitorTileService` pattern |
+| `WearSyncService.fetchAndPublishDashboard()`: call `listAlerts()` → publish `/datawatch/alerts` DataItem | ✅ | `total`, `needsInput`, `errors`, `ts` keys |
+| `WearSyncService`: `ALERTS_PATH` constant + `AlertsCountSnapshot` data class + `publishAlerts()` | ✅ | |
+| `wear/AndroidManifest.xml`: register both new services | ✅ | |
+| Wear locale: `tile_alerts_label`, `complication_alerts_label` (5 Wear bundles) | ✅ | |
+| Version bump 0.91.0/169 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `AlertsComplicationService.readAlerts()`: returns (0,0,0) when no DataItem → **not yet written**
+- [ ] `AlertsTileService.readAlerts()`: parses DataItem keys correctly → **not yet written**
+- [ ] `WearSyncService.publishAlerts()`: puts correct keys in DataMap → **not yet written**
+
+---
+
+### Sprint 22 — alpha.30 Alerts screen redesign + header badge (v0.92.0/170) ✅ DONE
+
+**Issue**: #115 | **Merged**: 2026-05-10 | **Server ref**: alpha.30
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `AlertsViewModel`: `ChipFilter` + `SortMode` enums; `_chipFilter`/`_sortMode`/`_search` flows | ✅ | Nested combine pattern |
+| `AlertsViewModel`: `setChipFilter()`, `setSortMode()`, `setSearch()`, `dismissAll()` | ✅ | `dismissAll` calls `markAlertRead(all=true)` |
+| `AlertsViewModel.UiState`: `chipFilter`, `sortMode`, `searchQuery`, `flatChronoAlerts` | ✅ | |
+| `AlertsScreen`: custom `AlertsTopBar` (chips + sort toggle + dismiss-all + search) | ✅ | Replaces `TopAppBar` |
+| `AlertsScreen`: flat chronological `LazyColumn` when `sortMode == Chronological` | ✅ | No group headers |
+| `AlertsScreen`/`AlertCard`: PROMPT type amber tint bg, ERROR red tint bg | ✅ | `isPromptType = type.contains("input")` |
+| `BottomNavBar`: always-on badge (dimmed at 0, muted=🔕), `alertsMuted` param | ✅ | |
+| `AppRoot.kt` (`HomeShell`): pass `alertsMuted = dockMuted` | ✅ | |
+| Locale (11 keys): `alert_chip_*`, `alert_search_ph`, `alert_sort_*`, `alert_session_system`, `alert_dismiss_all_tip` (5 bundles) | ✅ | |
+| Version bump 0.92.0/170 | ✅ | |
+
+**Tests needed / status**:
+- [ ] `AlertsViewModelTest`: chip filter reduces active list to matching severity/type → **not yet written**
+- [ ] `AlertsViewModelTest`: sort=Chronological produces flat list newest-first → **not yet written**
+- [ ] `AlertsViewModelTest`: search filters title+body case-insensitive → **not yet written**
+- [ ] `AlertsViewModelTest`: dismissAll calls markAlertRead(all=true) → **not yet written**
+- [ ] `BottomNavBarTest`: badge renders even when count=0 (dimmed) → **not yet written**
+
+---
+
+### Sprint 23 — Watch toggle opt-out (issue #116) ⏳ PLANNED
+
+**Issue**: #116 | **Target version**: v0.93.0/171
+
+Per-session and per-automaton "Watch" toggle. Default = OFF (opt-out). App-side filter only — no daemon change. Persists per-server-profile in local DB (new `watched_sessions` + `watched_automata` tables or flags).
+
+| Task | Status | Notes |
+|------|--------|-------|
+| DB migration: `watched_sessions` set per profile (or boolean flag on `sessions` table) | ⏳ | New SQLDelight migration file |
+| `SessionRepository`: `setWatched(id, watched)` + `isWatched(id)` | ⏳ | |
+| Sessions list: per-row Watch toggle icon (🔔/🔕); default = unwatched | ⏳ | |
+| Session detail: header-bar Watch toggle | ⏳ | |
+| Automata list: per-row Watch toggle | ⏳ | |
+| Automata detail: Watch toggle | ⏳ | |
+| Alert dock / `AlertsViewModel`: filter out alerts from unwatched sessions | ⏳ | Core filtering logic |
+| `BottomNavBar` badge: count only watched-session alerts | ⏳ | |
+| Locale: `session_watch_toggle`, `session_watch_on`, `session_watch_off` (5 bundles) | ⏳ | |
+| Version bump 0.93.0/171 | ⏳ | |
+
+**Tests required**:
+- [ ] `SessionRepositoryTest`: `setWatched` + `isWatched` round-trip
+- [ ] `AlertsViewModelTest`: unwatched session alerts excluded from active/count
+- [ ] `SessionsViewModelTest`: Watch toggle state persists across VM recreation
+
+---
+
+### Sprint 24 — alpha.31 Automata browse redesign + alert dock shrink (issue #117) ⏳ PLANNED
+
+**Issue**: #117 | **Target version**: v0.94.0/172 | **Server ref**: alpha.31
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Automata list: pin button per row (📌/📍); persist `pinned_automata: Set<id>` per profile | ⏳ | SharedPreferences or new DB table |
+| Automata list: sort order — pinned → state-rank (waiting/needs_review → blocked → running → planning → done) → last-activity desc | ⏳ | |
+| Automata list: inline `Open` / `Cancel` / `Approve` buttons per card | ⏳ | `Approve` highlighted amber when `needs_review`/`revisions_asked`/`waiting_input` |
+| Automata list: bigger cards (more padding, larger title, last-activity timestamp top-right) | ⏳ | |
+| `AlertDockOverlay`: shrink `width(260.dp)` → `widthIn(max = 260.dp)` on narrow screens | ⏳ | Use `min(260dp, screenWidth - 16dp)` |
+| Locale (12 keys): `automata_action_*` (open/pause/resume/cancel/approve/pin + _tip variants) (5 bundles) | ⏳ | From server `locales/*.json` |
+| Version bump 0.94.0/172 | ⏳ | |
+
+**Tests required**:
+- [ ] `AutomataViewModelTest`: pinned automata sort before unpinned
+- [ ] `AutomataViewModelTest`: approve action only enabled when status allows
+- [ ] `AlertDockOverlayTest`: max-width respects screen width
+
+---
+
+### Sprint 25 — alpha.32 Per-session Stats redesign (issue #118) ⏳ PLANNED
+
+**Issue**: #118 | **Target version**: v0.95.0/173 | **Server ref**: alpha.32
+
+Per-session Stats sub-tab: single card → sectioned cards (Host, Container, ComputeNode, LLM).
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `SessionStatsPanel` or `SessionDetailScreen` Stats tab: sectioned cards layout | ⏳ | Host always; Container/ComputeNode/LLM conditional |
+| Host card: CPU + RSS rows, threads, FDs, net (already have data; just re-layout) | ⏳ | Sparklines: show numbers without trend line (no chart lib) |
+| Container card: render only when `env.container_id` present | ⏳ | `containerInfo` DTO field |
+| ComputeNode card: render when `sess.compute_node_ref` present; GPU stats; click→Compute panel | ⏳ | Already have `computeNode` from alpha.24 |
+| LLM card: render when `sess.llm_ref` present; backend family; click→LLM panel | ⏳ | `backendFamily` from alpha.27 |
+| Locale: `stats_card_*`, `stats_field_*`, `stats_open_*`, `stats_llm_more_soon` (5 bundles) | ⏳ | Pull from server `locales/*.json` |
+| Version bump 0.95.0/173 | ⏳ | |
+
+**Tests required**:
+- [ ] `SessionStatsPanelTest`: Container card hidden when `container_id` null
+- [ ] `SessionStatsPanelTest`: ComputeNode card hidden when `compute_node_ref` null
+- [ ] `SessionStatsPanelTest`: LLM card hidden when `llm_ref` null
+
+---
+
+### Test debt backlog (all sprints 17–22)
+
+The following tests were deferred during rapid parity sprints. Required before v1.0.0 or full GH release.
+
+| Sprint | Component | Test class | Coverage target |
+|--------|-----------|------------|-----------------|
+| 17 | `Dtos.kt` backendFamily fallback | `DtoRoundTripTest` | `backendFamily ?: llmBackend` path |
+| 17 | `Mappers.kt` session mapping | `SessionMapperTest` | backendFamily → Session.backend |
+| 18 | `ObserverPeersByNodeDto` | `DtoRoundTripTest` | by_node map + unbound deserialization |
+| 18 | `MetaPeersDto` | `DtoRoundTripTest` | nested bucket deserialization |
+| 18 | `FederatedPeersCard` VM | `FederatedPeersViewModelTest` | groupByNode toggle transitions |
+| 19 | `AgentSettingsDto` | `DtoRoundTripTest` | opencodeModels list round-trip |
+| 19 | `RestTransport.patchProjectAgentSettings` | `RestTransportTest` | PATCH body + 200 success |
+| 20 | `AlertDockOverlay` | `AlertDockTest` (Compose UI) | dismiss/mute callbacks |
+| 20 | `AppRoot` dock logic | `AppRootTest` | dock visibility threshold |
+| 21 | `AlertsComplicationService` | `AlertsComplicationTest` | DataItem parse + fallback |
+| 21 | `AlertsTileService` | `AlertsTileTest` | layout branches (hasData=false, errors>0) |
+| 21 | `WearSyncService.publishAlerts` | `WearSyncServiceTest` | DataMap key/value correctness |
+| 22 | `AlertsViewModel` filter | `AlertsViewModelTest` | chip filter per severity type |
+| 22 | `AlertsViewModel` sort | `AlertsViewModelTest` | chronological flat list order |
+| 22 | `AlertsViewModel` search | `AlertsViewModelTest` | title+body case-insensitive match |
+| 22 | `AlertsViewModel` dismissAll | `AlertsViewModelTest` | markAlertRead(all=true) called |
+| 22 | `BottomNavBar` badge | `BottomNavBarTest` | renders at count=0 (dimmed) |
+
+**To run existing tests**:
+```bash
+rtk ./gradlew :shared:testDebugUnitTest
+rtk ./gradlew :composeApp:testDevDebugUnitTest
+```
+
+**To add new tests**: place Kotlin test files in:
+- `shared/src/commonTest/kotlin/` (KMP JVM tests)
+- `composeApp/src/test/kotlin/` (Android unit tests — use `@Test` + MockWebServer)
+- `composeApp/src/androidTest/kotlin/` (instrumented Compose UI tests)
