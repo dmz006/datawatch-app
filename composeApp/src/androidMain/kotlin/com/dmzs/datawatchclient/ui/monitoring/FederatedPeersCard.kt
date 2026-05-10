@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,10 +23,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.transport.dto.ComputeNodeDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
 import kotlinx.coroutines.delay
@@ -128,7 +133,14 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                visible.forEach { peer -> PeerRow(peer = peer) }
+                visible.forEach { peer ->
+                    PeerRow(
+                        peer = peer,
+                        attachedNode = state.computeNodes.firstOrNull {
+                            it.observerPeer == peer.name || it.name == peer.name
+                        },
+                    )
+                }
             }
         }  // end inner Column (content)
     }  // end outer Column
@@ -136,7 +148,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
 }  // end FederatedPeersCard
 
 @Composable
-private fun PeerRow(peer: ObserverPeerDto) {
+private fun PeerRow(peer: ObserverPeerDto, attachedNode: ComputeNodeDto? = null) {
     // S6-2 (#74): staleness dot colour based on hours since last push.
     val staleDotColor = staleDotColor(peer.lastPushAt)
 
@@ -185,6 +197,28 @@ private fun PeerRow(peer: ObserverPeerDto) {
             )
         }
         Spacer(Modifier.weight(1f))
+        // Sprint 15 #110 — observer binding badge
+        if (attachedNode != null) {
+            SuggestionChip(
+                onClick = {},
+                label = { Text("⇄ ${attachedNode.name}", style = MaterialTheme.typography.labelSmall) },
+                colors = SuggestionChipDefaults.suggestionChipColors(
+                    containerColor = Color(0xFF00897B).copy(alpha = 0.18f),
+                    labelColor = Color(0xFF4DB6AC),
+                ),
+            )
+            Spacer(Modifier.size(4.dp))
+        } else {
+            SuggestionChip(
+                onClick = {},
+                label = { Text(stringResource(R.string.observer_free), style = MaterialTheme.typography.labelSmall) },
+                colors = SuggestionChipDefaults.suggestionChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
+            Spacer(Modifier.size(4.dp))
+        }
         ShapeBadge(peer.hostInfo?.shape ?: peer.shape)
     }
 }
@@ -263,6 +297,8 @@ public class FederatedPeersViewModel(
         val error: String? = null,
         /** S6-2 (#74): true when any peer has lastPushAt age >= 6 hours. Drives Settings nav badge. */
         val anyPeerStale: Boolean = false,
+        /** Sprint 15 #110: compute nodes for observer binding badge. */
+        val computeNodes: List<ComputeNodeDto> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -297,6 +333,10 @@ public class FederatedPeersViewModel(
                         )
                 },
             )
+            // Sprint 15 #110 — load compute nodes for observer binding badge (best-effort)
+            transport.listComputeNodes().onSuccess { nodes ->
+                _state.value = _state.value.copy(computeNodes = nodes)
+            }
         }
     }
 

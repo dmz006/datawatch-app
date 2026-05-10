@@ -949,4 +949,37 @@
     <string name="session_filter_done">Fertig</string>
     <string name="session_llm_ref_badge">LLM</string>
     <string name="session_compute_node_badge">Rechenknoten</string>
+    <!-- Sprint 15 #106 — Compute CRUD overhaul -->
+    <string name="compute_migration_banner">%d Compute-Node(s) benötigen Kind-Migration — tippen zum Beheben</string>
+    <string name="compute_migration_title">Compute-Node-Migration</string>
+    <string name="compute_migration_save">Speichern</string>
+    <string name="compute_migration_done">Migration abgeschlossen</string>
+    <string name="compute_migration_kind_label">Neuer Typ</string>
+    <string name="compute_node_enabled_label">Aktiviert</string>
+    <string name="compute_node_auto_disabled_reason">Auto-deaktiviert: %s</string>
+    <string name="compute_node_deprecated_kind">Veralteter Typ: %s — zu ollama oder openai-compat migrieren</string>
+    <string name="compute_hardware_section">Hardware</string>
+    <string name="compute_hardware_os">Betriebssystem</string>
+    <string name="compute_hardware_arch">Architektur</string>
+    <string name="compute_hardware_gpu_vendor">GPU-Anbieter</string>
+    <string name="compute_hardware_gpu_model">GPU-Modell</string>
+    <string name="compute_hardware_gpu_count">GPU-Anzahl</string>
+    <string name="compute_hardware_vram_gb">VRAM (GB, pro GPU)</string>
+    <string name="compute_hardware_ram_gb">RAM (GB)</string>
+    <string name="compute_hardware_cpu_cores">CPU-Kerne</string>
+    <string name="compute_hardware_computed_max">Berechnetes Maximum: ~%d</string>
+    <string name="compute_hardware_use_computed">Verwenden →</string>
+    <string name="compute_hardware_hidden_saas">Hardware für SaaS-Endpunkte ausgeblendet</string>
+    <string name="compute_node_test">Verbindung testen</string>
+    <string name="compute_kind_ollama">ollama</string>
+    <string name="compute_kind_openai_compat">openai-compat</string>
+    <string name="compute_llm_enabled_label">Aktiviert</string>
+    <string name="compute_llm_auto_disabled">Auto-deaktiviert</string>
+    <!-- Sprint 15 #110 — Free-observer mapping -->
+    <string name="compute_field_observer_peer">Observer-Peer (datawatch-stats)</string>
+    <string name="compute_observer_none">(keine)</string>
+    <string name="compute_observer_hint">Knoten mit Observer für Ressourcenüberwachung verbinden</string>
+    <string name="compute_observer_currently_attached">(aktuell verbunden)</string>
+    <string name="observer_attached_to">Verbunden mit %s</string>
+    <string name="observer_free">frei</string>
 </resources>

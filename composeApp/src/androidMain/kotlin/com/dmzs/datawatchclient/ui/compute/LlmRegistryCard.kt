@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -296,6 +297,12 @@ private fun LlmRegistryRow(
                             labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         ),
                 )
+                // Auto-disabled badge: shown when LLM is disabled
+                if (!llm.enabled) {
+                    Badge(containerColor = MaterialTheme.colorScheme.error) {
+                        Text("!", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
             Text(
                 "${llm.computeNode} / ${llm.model}",
