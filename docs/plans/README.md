@@ -9,10 +9,14 @@ architecture).
 
 ## Active roadmap plan
 
-**[backlog-plan-2026-05-04.md](backlog-plan-2026-05-04.md)** — sequenced
-v0.58.0–v0.65.0 implementation plan for all open GH issues (#31, #40, #41,
-#43–#49) plus non-GH backlog items (BL21, BL19, B31, store assets). Written
-2026-05-04. This is the single authoritative sequencing until v1.0.0.
+**[2026-05-09-v0.70-upgrade-arc.md](2026-05-09-v0.70-upgrade-arc.md)** —
+v0.70–v0.77 upgrade arc covering all 43 open GH issues (#51–#93).
+v7.0.0-alpha alignment. Written 2026-05-09. **Current authoritative plan.**
+Includes per-sprint task lists, DTOs, transport contracts, locale keys,
+rule validation checklists, and GitHub issue close commands.
+
+**[backlog-plan-2026-05-04.md](backlog-plan-2026-05-04.md)** — SUPERSEDED.
+Was v0.58.0–v0.65.0 plan for issues #31–#49. All items shipped (v0.65.0–v0.69.0).
 
 ---
 ## Open - Not Assessed
