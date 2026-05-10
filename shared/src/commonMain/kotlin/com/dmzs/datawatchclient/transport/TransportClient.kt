@@ -881,6 +881,68 @@ public interface TransportClient {
 
     /** GET /api/skills — list all synced skills across registries. */
     public suspend fun listSyncedSkills(): Result<List<com.dmzs.datawatchclient.transport.dto.SkillDto>>
+
+    // ---- v0.74.0 Compute Nodes (S5-1) ----
+
+    /** GET /api/compute/nodes — list all registered compute nodes. */
+    public suspend fun listComputeNodes(): Result<List<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto>>
+
+    /** POST /api/compute/nodes — create a new compute node. */
+    public suspend fun createComputeNode(
+        dto: com.dmzs.datawatchclient.transport.dto.ComputeNodeDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto>
+
+    /** PUT /api/compute/nodes/{name} — update an existing compute node. */
+    public suspend fun updateComputeNode(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.ComputeNodeDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto>
+
+    /** DELETE /api/compute/nodes/{name} — remove a compute node. */
+    public suspend fun deleteComputeNode(name: String): Result<Unit>
+
+    /**
+     * GET /api/compute/nodes/{name}/models?kind={kind} — list models
+     * available on the given compute node for the specified LLM kind.
+     */
+    public suspend fun getComputeNodeModels(name: String, kind: String): Result<List<String>>
+
+    // ---- v0.74.0 LLM Registry (S5-2) ----
+
+    /** GET /api/llms — list all registered LLM entries. */
+    public suspend fun listLlms(): Result<List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>>
+
+    /** POST /api/llms — create a new LLM registry entry. */
+    public suspend fun createLlm(
+        dto: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>
+
+    /** PUT /api/llms/{name} — update an existing LLM registry entry. */
+    public suspend fun updateLlm(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>
+
+    /** DELETE /api/llms/{name} — remove an LLM registry entry. */
+    public suspend fun deleteLlm(name: String): Result<Unit>
+
+    /**
+     * PATCH /api/llms/{name}/enabled — enable or disable an LLM and
+     * optionally toggle pretest mode.
+     */
+    public suspend fun enableLlm(
+        name: String,
+        enabled: Boolean,
+        pretest: Boolean = false,
+    ): Result<Unit>
+
+    // ---- v0.74.0 Migration (S5-3) ----
+
+    /** GET /api/migration/status — check if v7 auto-migration ran. */
+    public suspend fun getMigrationStatus(): Result<com.dmzs.datawatchclient.transport.dto.MigrationStatusDto>
+
+    /** DELETE /api/migration/status — dismiss the migration notice. */
+    public suspend fun dismissMigration(): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

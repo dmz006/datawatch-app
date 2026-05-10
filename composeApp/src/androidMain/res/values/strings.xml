@@ -813,4 +813,36 @@
     <string name="toast_dismiss">Dismiss</string>
     <string name="toast_reconnect">Reconnect</string>
     <string name="live_indicator">Live</string>
+
+    <!-- v0.74.0 — Compute Nodes (S5-1) -->
+    <string name="compute_nodes_empty">No compute nodes configured</string>
+    <string name="compute_node_add">Add compute node</string>
+    <string name="compute_node_edit">Edit compute node</string>
+    <string name="compute_node_delete_confirm">Delete compute node \"%s\"?</string>
+    <string name="compute_node_name_label">Name</string>
+    <string name="compute_node_kind_label">Kind</string>
+    <string name="compute_node_address_label">Address</string>
+    <string name="compute_node_capacity_label">Declared capacity</string>
+    <string name="compute_node_tags_label">Tags</string>
+    <string name="compute_node_hardware_spec">Hardware spec</string>
+
+    <!-- v0.74.0 — LLM Registry (S5-2, S5-3, S5-5) -->
+    <string name="llm_registry_empty">No LLMs configured</string>
+    <string name="llm_registry_add">Add LLM</string>
+    <string name="llm_registry_edit">Edit LLM</string>
+    <string name="llm_registry_delete_confirm">Delete LLM \"%s\"?</string>
+    <string name="llm_registry_kind_label">Kind</string>
+    <string name="llm_registry_compute_node_label">Compute node</string>
+    <string name="llm_registry_model_label">Model</string>
+    <string name="llm_registry_pretest_label">Enable pretest</string>
+    <string name="llm_migration_banner">%d legacy LLM config(s) auto-migrated. Review entries below.</string>
+    <string name="llm_migration_dismiss">Dismiss</string>
+
+    <!-- v0.74.0 — Whisper backend display (S5-6) -->
+    <string name="whisper_backend_label">Active backend</string>
+
+    <!-- v0.74.0 — Council virtual sessions (S5-7) -->
+    <string name="council_session_filter">Council</string>
+    <string name="council_session_proposal_label">Proposal</string>
+    <string name="council_session_in_progress">Council run in progress…</string>
 </resources>

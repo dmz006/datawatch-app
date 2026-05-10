@@ -1651,6 +1651,121 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- v0.74.0 Compute Nodes (S5-1) ----
+
+    override suspend fun listComputeNodes(): Result<List<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createComputeNode(
+        dto: com.dmzs.datawatchclient.transport.dto.ComputeNodeDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto> =
+        request {
+            client.post("${profile.baseUrl}/api/compute/nodes") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun updateComputeNode(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.ComputeNodeDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDto> =
+        request {
+            client.put("${profile.baseUrl}/api/compute/nodes/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun deleteComputeNode(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/compute/nodes/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun getComputeNodeModels(name: String, kind: String): Result<List<String>> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes/$name/models") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("kind", kind)
+            }.body()
+        }
+
+    // ---- v0.74.0 LLM Registry (S5-2) ----
+
+    override suspend fun listLlms(): Result<List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/llms") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createLlm(
+        dto: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto> =
+        request {
+            client.post("${profile.baseUrl}/api/llms") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun updateLlm(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto> =
+        request {
+            client.put("${profile.baseUrl}/api/llms/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun deleteLlm(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/llms/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun enableLlm(name: String, enabled: Boolean, pretest: Boolean): Result<Unit> =
+        request {
+            client.patch("${profile.baseUrl}/api/llms/$name/enabled") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.LlmToggleRequest(enabled = enabled, pretest = pretest))
+            }
+            Unit
+        }
+
+    // ---- v0.74.0 Migration (S5-3) ----
+
+    override suspend fun getMigrationStatus(): Result<com.dmzs.datawatchclient.transport.dto.MigrationStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/migration/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun dismissMigration(): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/migration/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

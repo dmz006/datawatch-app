@@ -159,7 +159,12 @@ public class SessionsViewModel : ViewModel() {
                                 s.id.lowercase().contains(q) ||
                                 (s.backend?.lowercase()?.contains(q) == true)
                         }
-                        .filter { s -> backendFilter == null || s.backend == backendFilter }
+                        .filter { s ->
+                            backendFilter == null ||
+                                s.backend == backendFilter ||
+                                // v0.74.0 S5-7 — council-virtual filter also matches by fullId prefix
+                                (backendFilter == "council-virtual" && s.fullId.startsWith("council-"))
+                        }
                         .toList()
                 // State-bucket sort always wins (waiting → running → …)
                 // then within-bucket applies the user-selected sort order.

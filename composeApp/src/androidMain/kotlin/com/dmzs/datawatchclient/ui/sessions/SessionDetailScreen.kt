@@ -446,32 +446,37 @@ public fun SessionDetailScreen(
             // wasted a vertical strip of phone real estate and split
             // the controls onto a separate row from the mode tabs —
             // the PWA carries them on the same line.
+            // v0.74.0 S5-7 — Council virtual sessions hide terminal/channel tabs
+            val isCouncilVirtual = state.session?.backend == "council-virtual" ||
+                state.session?.fullId?.startsWith("council-") == true
             val terminalController = rememberTerminalController()
             val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
             val tabRowBorderColor = LocalDatawatchColors.current.border
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .drawBehind {
-                            drawLine(
-                                color = tabRowBorderColor,
-                                start = Offset(0f, size.height),
-                                end = Offset(size.width, size.height),
-                                strokeWidth = 1.dp.toPx(),
-                            )
-                        },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode, onClick = { chatMode = false; statsMode = false })
-                SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode, onClick = { chatMode = true; statsMode = false })
-                SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode, onClick = { statsMode = true })
-                Spacer(Modifier.weight(1f))
-                val showToolbar = !chatMode && !statsMode && state.session?.isChatMode != true
-                if (showToolbar) {
-                    TerminalToolbarControls(toolbarState)
+            if (!isCouncilVirtual) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .drawBehind {
+                                drawLine(
+                                    color = tabRowBorderColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode, onClick = { chatMode = false; statsMode = false })
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode, onClick = { chatMode = true; statsMode = false })
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode, onClick = { statsMode = true })
+                    Spacer(Modifier.weight(1f))
+                    val showToolbar = !chatMode && !statsMode && state.session?.isChatMode != true
+                    if (showToolbar) {
+                        TerminalToolbarControls(toolbarState)
+                    }
                 }
             }
             if (responseOpen) {
@@ -516,7 +521,36 @@ public fun SessionDetailScreen(
             // transcript panel is the only sensible output surface; user's
             // Terminal/Chat view toggle doesn't apply.
             val serverChatMode = state.session?.isChatMode == true
-            if (statsMode) {
+            // v0.74.0 S5-7 — Council virtual sessions show proposal + response transcript only
+            if (isCouncilVirtual) {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+                ) {
+                    item {
+                        Text(
+                            stringResource(R.string.council_session_proposal_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            state.session?.lastPrompt ?: "",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        Text(
+                            state.session?.lastResponse
+                                ?: stringResource(R.string.council_session_in_progress),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (state.session?.lastResponse.isNullOrBlank()) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        )
+                    }
+                }
+            } else if (statsMode) {
                 SessionStatsPanel(
                     sessionId = sessionId,
                     modifier = Modifier.weight(1f).fillMaxWidth(),

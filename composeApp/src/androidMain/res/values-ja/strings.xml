@@ -734,4 +734,36 @@
     <string name="toast_dismiss">閉じる</string>
     <string name="toast_reconnect">再接続</string>
     <string name="live_indicator">ライブ</string>
+
+    <!-- v0.74.0 — Compute Nodes (S5-1) -->
+    <string name="compute_nodes_empty">コンピュートノードが設定されていません</string>
+    <string name="compute_node_add">コンピュートノードを追加</string>
+    <string name="compute_node_edit">コンピュートノードを編集</string>
+    <string name="compute_node_delete_confirm">コンピュートノード「%s」を削除しますか？</string>
+    <string name="compute_node_name_label">名前</string>
+    <string name="compute_node_kind_label">種類</string>
+    <string name="compute_node_address_label">アドレス</string>
+    <string name="compute_node_capacity_label">宣言された容量</string>
+    <string name="compute_node_tags_label">タグ</string>
+    <string name="compute_node_hardware_spec">ハードウェア仕様</string>
+
+    <!-- v0.74.0 — LLM Registry (S5-2, S5-3, S5-5) -->
+    <string name="llm_registry_empty">LLMが設定されていません</string>
+    <string name="llm_registry_add">LLMを追加</string>
+    <string name="llm_registry_edit">LLMを編集</string>
+    <string name="llm_registry_delete_confirm">LLM「%s」を削除しますか？</string>
+    <string name="llm_registry_kind_label">種類</string>
+    <string name="llm_registry_compute_node_label">コンピュートノード</string>
+    <string name="llm_registry_model_label">モデル</string>
+    <string name="llm_registry_pretest_label">事前テストを有効にする</string>
+    <string name="llm_migration_banner">%d 件のレガシーLLM設定が自動移行されました。以下のエントリを確認してください。</string>
+    <string name="llm_migration_dismiss">閉じる</string>
+
+    <!-- v0.74.0 — Whisper backend display (S5-6) -->
+    <string name="whisper_backend_label">アクティブバックエンド</string>
+
+    <!-- v0.74.0 — Council virtual sessions (S5-7) -->
+    <string name="council_session_filter">評議会</string>
+    <string name="council_session_proposal_label">提案</string>
+    <string name="council_session_in_progress">評議会セッション実行中…</string>
 </resources>

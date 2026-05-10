@@ -27,7 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import androidx.core.content.ContextCompat
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.ui.settings.Section
@@ -61,7 +63,23 @@ public fun TestWhisperCard() {
     var transcribing by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("idle") }
+    // v0.74.0 S5-6 — whisper.backend display (#102)
+    var whisperBackend by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val activeId = ServiceLocator.activeServerStore.get()
+        val profile =
+            ServiceLocator.profileRepository.observeAll().first()
+                .firstOrNull { it.id == activeId && it.enabled }
+        if (profile != null) {
+            ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
+                whisperBackend = (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
+                    ?.content
+                    ?.takeIf { it.isNotBlank() && it != "null" }
+            }
+        }
+    }
 
     fun beginTranscribe() {
         val captured = recorder.stop()
@@ -129,6 +147,24 @@ public fun TestWhisperCard() {
 
     Section(title = "Test Whisper") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+            // v0.74.0 S5-6 — show active backend (whisper.backend from /api/config)
+            whisperBackend?.let { backend ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.whisper_backend_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        backend,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
             Text(
                 "Tap 🎤 to start, ■ to stop. The transcript verifies the configured Whisper " +
                     "backend end-to-end (mic → /api/voice/transcribe → text).",
