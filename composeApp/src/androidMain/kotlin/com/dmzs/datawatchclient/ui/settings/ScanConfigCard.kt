@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +74,35 @@ internal fun ScanConfigCard() {
         ScanToggleRow(stringResource(R.string.scan_fix_loop), cfg.fixLoop) { save(cfg.copy(fixLoop = it)) }
         ScanSeverityRow(cfg.failOnSeverity) { save(cfg.copy(failOnSeverity = it)) }
         ScanRetryRow(cfg.maxRetries) { save(cfg.copy(maxRetries = it)) }
+        // Run Scan + Run Rules buttons (v0.76.0)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        runCatching {
+                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                            val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            // Stub: trigger scan on first PRD available via scan config context
+                            ServiceLocator.transportFor(sp).updateScanConfig(cfg)
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.action_run_scan)) }
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        runCatching {
+                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                            val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            // Stub: trigger rules via scan config update (will hook up to dedicated endpoint in later sprint)
+                            ServiceLocator.transportFor(sp).updateScanConfig(cfg)
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.action_run_rules)) }
+        }
     }
 }
 

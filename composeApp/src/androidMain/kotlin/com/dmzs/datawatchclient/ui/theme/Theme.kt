@@ -7,7 +7,9 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * datawatch mobile client theme. Matches the parent PWA's CSS variable
@@ -97,16 +99,30 @@ private val DatawatchDarkScheme =
         onErrorContainer = DwError,
     )
 
-private val DatawatchLightScheme =
+internal val LightColorScheme =
     lightColorScheme(
-        primary = DwAccent,
-        secondary = DwAccent2,
-        error = DwError,
+        primary = Color(0xFF007A7A),
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFF00B0B0),
+        onPrimaryContainer = Color(0xFF001F1F),
+        secondary = Color(0xFF4A6363),
+        onSecondary = Color.White,
+        background = Color(0xFFFAFAFA),
+        onBackground = Color(0xFF1A1A1A),
+        surface = Color(0xFFFFFFFF),
+        onSurface = Color(0xFF1A1A1A),
+        onSurfaceVariant = Color(0xFF555555),
+        error = Color(0xFFCC3300),
+        onError = Color.White,
+        surfaceVariant = Color(0xFFE8F4F4),
+        outline = Color(0xFF707070),
     )
+
+// Keep the old minimal scheme as a private alias for compatibility
+private val DatawatchLightScheme = LightColorScheme
 
 @Composable
 public fun DatawatchTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     /**
      * Material You wallpaper-derived palette. **Off by default** — turning
      * it on overrides datawatch-purple with the user's wallpaper colours
@@ -119,10 +135,17 @@ public fun DatawatchTheme(
 ) {
     @Suppress("UNUSED_VARIABLE")
     val dyn = dynamicColor
+    val context = LocalContext.current
+    val storedMode = remember { ThemePrefs.load(context) }
+    val darkTheme = when (storedMode) {
+        ThemeMode.Dark -> true
+        ThemeMode.Light -> false
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
     val colorScheme =
         when {
             darkTheme -> DatawatchDarkScheme
-            else -> DatawatchLightScheme
+            else -> LightColorScheme
         }
     CompositionLocalProvider(LocalDatawatchColors provides DefaultDatawatchColors) {
         MaterialTheme(colorScheme = colorScheme, content = content)
