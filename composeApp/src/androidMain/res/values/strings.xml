@@ -1075,6 +1075,19 @@
     <string name="alert_dock_one">1 alert</string>
     <string name="alert_dock_many">%d alerts</string>
 
+    <!-- Sprint 22 #115 — alpha.30 alerts redesign -->
+    <string name="alert_chip_all">all</string>
+    <string name="alert_chip_prompt">prompts</string>
+    <string name="alert_chip_error">errors</string>
+    <string name="alert_chip_warn">warn</string>
+    <string name="alert_chip_info">info</string>
+    <string name="alert_search_ph">Search alerts…</string>
+    <string name="alert_sort_tip">Toggle: by session ↔ chronological</string>
+    <string name="alert_sort_session">by session</string>
+    <string name="alert_sort_chrono">chronological</string>
+    <string name="alert_session_system">System</string>
+    <string name="alert_dismiss_all_tip">Dismiss all</string>
+
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Council Notifications</string>
     <string name="wear_notification_council_title">Council consensus reached</string>

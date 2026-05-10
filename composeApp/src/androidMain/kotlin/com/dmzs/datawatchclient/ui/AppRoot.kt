@@ -360,6 +360,7 @@ private fun HomeShell(
                     alertsBadge = alertsState.count,
                     prdsSupported = prdsSupported,
                     anyPeerStale = federatedPeersState.anyPeerStale,
+                    alertsMuted = dockMuted,
                 )
             },
         ) { inner ->
