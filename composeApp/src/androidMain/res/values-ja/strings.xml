@@ -996,6 +996,19 @@
     <string name="alert_dock_one">1件のアラート</string>
     <string name="alert_dock_many">%d件のアラート</string>
 
+    <!-- Sprint 22 #115 — alpha.30 alerts redesign -->
+    <string name="alert_chip_all">全て</string>
+    <string name="alert_chip_prompt">プロンプト</string>
+    <string name="alert_chip_error">エラー</string>
+    <string name="alert_chip_warn">警告</string>
+    <string name="alert_chip_info">情報</string>
+    <string name="alert_search_ph">アラート検索…</string>
+    <string name="alert_sort_tip">切替: セッション別 ↔ 時系列</string>
+    <string name="alert_sort_session">セッション別</string>
+    <string name="alert_sort_chrono">時系列</string>
+    <string name="alert_session_system">システム</string>
+    <string name="alert_dismiss_all_tip">全て閉じる</string>
+
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Council通知</string>
     <string name="wear_notification_council_title">Councilコンセンサス達成</string>

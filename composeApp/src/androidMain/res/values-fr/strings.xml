@@ -996,6 +996,19 @@
     <string name="alert_dock_one">1 alerte</string>
     <string name="alert_dock_many">%d alertes</string>
 
+    <!-- Sprint 22 #115 — alpha.30 alerts redesign -->
+    <string name="alert_chip_all">tous</string>
+    <string name="alert_chip_prompt">invites</string>
+    <string name="alert_chip_error">erreurs</string>
+    <string name="alert_chip_warn">avert</string>
+    <string name="alert_chip_info">info</string>
+    <string name="alert_search_ph">Rechercher alertes…</string>
+    <string name="alert_sort_tip">Bascule: par session ↔ chronologique</string>
+    <string name="alert_sort_session">par session</string>
+    <string name="alert_sort_chrono">chronologique</string>
+    <string name="alert_session_system">Système</string>
+    <string name="alert_dismiss_all_tip">Tout fermer</string>
+
     <!-- W-#107 W-#108 — Wear notification channels + health dot (v0.85.0) -->
     <string name="wear_notification_council_channel">Notifications conseil</string>
     <string name="wear_notification_council_title">Consensus du conseil atteint</string>

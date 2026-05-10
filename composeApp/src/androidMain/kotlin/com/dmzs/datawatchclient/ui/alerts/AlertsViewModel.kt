@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.Alert
+import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,6 +39,9 @@ import kotlinx.coroutines.launch
 public class AlertsViewModel : ViewModel() {
     public enum class Tab { Active, Inactive }
 
+    public enum class ChipFilter { All, Prompt, Error, Warn, Info }
+    public enum class SortMode { BySession, Chronological }
+
     public data class AlertGroup(
         val sessionId: String,
         val session: Session?,
@@ -71,6 +75,8 @@ public class AlertsViewModel : ViewModel() {
 
         public companion object {
             public const val SYSTEM_BUCKET: String = "__system__"
+            /** Synthetic session id for the flat chronological view. */
+            public const val CHRONO_BUCKET: String = "__chrono__"
         }
     }
 
@@ -81,6 +87,11 @@ public class AlertsViewModel : ViewModel() {
         val expandedSessionIds: Set<String> = emptySet(),
         val refreshing: Boolean = false,
         val banner: String? = null,
+        val chipFilter: ChipFilter = ChipFilter.All,
+        val sortMode: SortMode = SortMode.BySession,
+        val searchQuery: String = "",
+        /** Populated when sortMode == Chronological: flat list newest-first. */
+        val flatChronoAlerts: List<Alert> = emptyList(),
     ) {
         /** Bottom-nav badge — **active-only** count matches the PWA label `Active (N)`. */
         public val count: Int
@@ -104,6 +115,11 @@ public class AlertsViewModel : ViewModel() {
     // cadence; PWA rerenders on every WS update, which is finer-
     // grained but overkill on mobile).
     private val _alerts = MutableStateFlow<List<Alert>>(emptyList())
+
+    // Sprint 22 (#115) filter / sort / search flows.
+    private val _chipFilter = MutableStateFlow(ChipFilter.All)
+    private val _sortMode = MutableStateFlow(SortMode.BySession)
+    private val _search = MutableStateFlow("")
 
     // Active profile — alerts are per-server, so we re-fetch whenever
     // the user flips the active server.
@@ -155,7 +171,11 @@ public class AlertsViewModel : ViewModel() {
             }
         }
 
-    public val state: StateFlow<UiState> =
+    /**
+     * Inner combine (5 flows) produces the base grouped state.
+     * Outer combine folds in the 3 new Sprint-22 filter flows.
+     */
+    private val innerState =
         combine(
             _alerts,
             sessionsFlow,
@@ -174,17 +194,18 @@ public class AlertsViewModel : ViewModel() {
                 alerts.groupBy { it.sessionId ?: AlertGroup.SYSTEM_BUCKET }
 
             val groups =
-                grouped.map { (sid, alerts) ->
+                grouped.map { (sid, groupAlerts) ->
                     val session =
                         sessionByFullId[sid] ?: sessionByShortId[sid]
                     AlertGroup(
                         sessionId = sid,
                         session = session,
-                        alerts = alerts.sortedByDescending { it.createdAt },
+                        alerts = groupAlerts.sortedByDescending { it.createdAt },
                     )
                 }
 
             val (active, inactive) = groups.partition { it.isActive }
+            // Return a partial UiState; chip/sort/search applied in outer combine.
             UiState(
                 active = active.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
                 inactive = inactive.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
@@ -193,11 +214,73 @@ public class AlertsViewModel : ViewModel() {
                 refreshing = refreshing,
                 banner = _banner.value,
             )
+        }
+
+    public val state: StateFlow<UiState> =
+        combine(
+            innerState,
+            _chipFilter,
+            _sortMode,
+            _search,
+        ) { inner, chip, sort, search ->
+            // Apply chip filter + search to every alert in every group.
+            fun matchesChip(alert: Alert): Boolean =
+                when (chip) {
+                    ChipFilter.All -> true
+                    ChipFilter.Prompt ->
+                        alert.type.contains("input", ignoreCase = true) ||
+                            alert.type == "needs_input" ||
+                            alert.type == "input_needed"
+                    ChipFilter.Error ->
+                        alert.severity == AlertSeverity.Error ||
+                            alert.type.contains("error", ignoreCase = true)
+                    ChipFilter.Warn ->
+                        alert.severity == AlertSeverity.Warning
+                    ChipFilter.Info ->
+                        alert.severity == AlertSeverity.Info
+                }
+
+            fun matchesSearch(alert: Alert): Boolean =
+                search.isBlank() ||
+                    alert.title.contains(search, ignoreCase = true) ||
+                    alert.message.contains(search, ignoreCase = true)
+
+            fun filterGroup(group: AlertGroup): AlertGroup? {
+                val filtered = group.alerts.filter { matchesChip(it) && matchesSearch(it) }
+                return if (filtered.isEmpty()) null else group.copy(alerts = filtered)
+            }
+
+            val filteredActive = inner.active.mapNotNull { filterGroup(it) }
+            val filteredInactive = inner.inactive.mapNotNull { filterGroup(it) }
+
+            // Chronological flat list: all matched alerts across active+inactive,
+            // sorted newest-first, exposed under synthetic __chrono__ group.
+            val flatChrono: List<Alert> =
+                if (sort == SortMode.Chronological) {
+                    (filteredActive + filteredInactive)
+                        .flatMap { it.alerts }
+                        .sortedByDescending { it.createdAt }
+                } else {
+                    emptyList()
+                }
+
+            inner.copy(
+                active = filteredActive,
+                inactive = filteredInactive,
+                chipFilter = chip,
+                sortMode = sort,
+                searchQuery = search,
+                flatChronoAlerts = flatChrono,
+            )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     public fun selectTab(tab: Tab) {
         _selectedTab.value = tab
     }
+
+    public fun setChipFilter(f: ChipFilter) { _chipFilter.value = f }
+    public fun setSortMode(m: SortMode) { _sortMode.value = m }
+    public fun setSearch(q: String) { _search.value = q }
 
     /** Toggle a per-session group's expanded state. */
     public fun toggleExpanded(sessionId: String) {
@@ -235,6 +318,19 @@ public class AlertsViewModel : ViewModel() {
                 _alerts.value.map {
                     if (it.id == alertId) it.copy(read = true) else it
                 }
+        }
+    }
+
+    /**
+     * Dismiss all alerts server-side. Mirrors PWA alpha.30 "dismiss all" action.
+     */
+    public fun dismissAll() {
+        viewModelScope.launch {
+            val profile =
+                ServiceLocator.profileRepository.observeAll().firstOrNull()
+                    ?.firstOrNull { it.enabled } ?: return@launch
+            ServiceLocator.transportFor(profile).markAlertRead(alertId = null, all = true)
+            _alerts.value = emptyList()
         }
     }
 

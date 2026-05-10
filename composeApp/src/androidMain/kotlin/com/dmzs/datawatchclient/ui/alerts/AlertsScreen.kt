@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.alerts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,21 +11,29 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,8 +46,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
@@ -56,6 +67,9 @@ import com.dmzs.datawatchclient.domain.SessionState
  *    `waiting_input` session (PWA app.js:5573-5580)
  *  - Swipe-left on a group header mutes the session (legacy mobile
  *    convention, retained since it's a useful gesture the PWA lacks)
+ *
+ * Sprint 22 (alpha.30 #115): redesigned top bar with chip filters,
+ * sort toggle, search bar, and dismiss-all action.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,37 +82,26 @@ public fun AlertsScreen(
         androidx.lifecycle.viewmodel.compose.viewModel()
     var scheduleFor by remember { mutableStateOf<Session?>(null) }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.alerts_title)) }) }) { padding ->
+    Scaffold(
+        topBar = {
+            AlertsTopBar(
+                state = state,
+                onSetChip = vm::setChipFilter,
+                onToggleSort = {
+                    vm.setSortMode(
+                        if (state.sortMode == AlertsViewModel.SortMode.BySession) {
+                            AlertsViewModel.SortMode.Chronological
+                        } else {
+                            AlertsViewModel.SortMode.BySession
+                        },
+                    )
+                },
+                onDismissAll = vm::dismissAll,
+                onSearchChange = vm::setSearch,
+            )
+        },
+    ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // Tab row — PWA puts Active first and defaults to it when
-            // there's any active group, else Inactive (app.js:5627).
-            TabRow(
-                selectedTabIndex =
-                    if (state.selectedTab == AlertsViewModel.Tab.Active) 0 else 1,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Tab(
-                    selected = state.selectedTab == AlertsViewModel.Tab.Active,
-                    onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
-                    text = {
-                        Text(
-                            stringResource(R.string.alerts_active_tab, state.active.sumOf { it.alerts.size }),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    },
-                )
-                Tab(
-                    selected = state.selectedTab == AlertsViewModel.Tab.Inactive,
-                    onClick = { vm.selectTab(AlertsViewModel.Tab.Inactive) },
-                    text = {
-                        Text(
-                            stringResource(R.string.alerts_inactive_tab, state.inactive.sumOf { it.alerts.size }),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    },
-                )
-            }
-
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -116,40 +119,97 @@ public fun AlertsScreen(
                 }
             }
 
-            val groups = state.visibleGroups
-            if (groups.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        text =
-                            when (state.selectedTab) {
-                                AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
-                                AlertsViewModel.Tab.Inactive -> stringResource(R.string.alerts_empty_inactive)
-                            },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
+                // Flat chronological view — no group headers, newest-first.
+                if (state.flatChronoAlerts.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            stringResource(R.string.alerts_empty_active),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(state.flatChronoAlerts, key = { it.id }) { alert ->
+                            AlertCard(
+                                alert = alert,
+                                showQuickReply = false,
+                                onQuickReply = { alert.sessionId?.let { onOpenSession(it) } },
+                                onSchedule = { /* no session in flat view */ },
+                                onOpenSession = { alert.sessionId?.let { onOpenSession(it) } },
+                                onMarkRead = { vm.markAlertRead(alert.id) },
+                            )
+                            HorizontalDivider()
+                        }
+                    }
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(groups, key = { it.sessionId }) { group ->
-                        val expanded =
-                            group.sessionId in state.expandedSessionIds ||
-                                // Active groups default-expand; inactive default-collapse.
-                                (
-                                    state.selectedTab == AlertsViewModel.Tab.Active &&
-                                        group.sessionId !in state.expandedSessionIds
-                                )
-                        AlertGroupCard(
-                            group = group,
-                            expanded = expanded,
-                            onToggleExpand = { vm.toggleExpanded(group.sessionId) },
-                            onOpenSession = {
-                                group.session?.let { onOpenSession(it.id) }
-                            },
-                            onDismiss = { vm.dismissSession(group.sessionId) },
-                            onSchedule = { scheduleFor = group.session },
-                            onMarkRead = vm::markAlertRead,
+                // Grouped by-session view (original behavior).
+                // Tab row — PWA puts Active first and defaults to it when
+                // there's any active group, else Inactive (app.js:5627).
+                TabRow(
+                    selectedTabIndex =
+                        if (state.selectedTab == AlertsViewModel.Tab.Active) 0 else 1,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Tab(
+                        selected = state.selectedTab == AlertsViewModel.Tab.Active,
+                        onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
+                        text = {
+                            Text(
+                                stringResource(R.string.alerts_active_tab, state.active.sumOf { it.alerts.size }),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        },
+                    )
+                    Tab(
+                        selected = state.selectedTab == AlertsViewModel.Tab.Inactive,
+                        onClick = { vm.selectTab(AlertsViewModel.Tab.Inactive) },
+                        text = {
+                            Text(
+                                stringResource(R.string.alerts_inactive_tab, state.inactive.sumOf { it.alerts.size }),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        },
+                    )
+                }
+
+                val groups = state.visibleGroups
+                if (groups.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text =
+                                when (state.selectedTab) {
+                                    AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
+                                    AlertsViewModel.Tab.Inactive -> stringResource(R.string.alerts_empty_inactive)
+                                },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(groups, key = { it.sessionId }) { group ->
+                            val expanded =
+                                group.sessionId in state.expandedSessionIds ||
+                                    // Active groups default-expand; inactive default-collapse.
+                                    (
+                                        state.selectedTab == AlertsViewModel.Tab.Active &&
+                                            group.sessionId !in state.expandedSessionIds
+                                    )
+                            AlertGroupCard(
+                                group = group,
+                                expanded = expanded,
+                                onToggleExpand = { vm.toggleExpanded(group.sessionId) },
+                                onOpenSession = {
+                                    group.session?.let { onOpenSession(it.id) }
+                                },
+                                onDismiss = { vm.dismissSession(group.sessionId) },
+                                onSchedule = { scheduleFor = group.session },
+                                onMarkRead = vm::markAlertRead,
+                            )
+                        }
                     }
                 }
             }
@@ -167,6 +227,107 @@ public fun AlertsScreen(
             },
             onDismiss = { scheduleFor = null },
         )
+    }
+}
+
+/**
+ * Custom top bar for the Alerts screen (Sprint 22 alpha.30 redesign).
+ *
+ * Row 1: "Alerts" title + sort toggle + dismiss-all button
+ * Row 2: Horizontal chip filter row (All / Prompts / Errors / Warn / Info)
+ * Row 3: Search text field (always visible, matches PWA)
+ */
+@Composable
+private fun AlertsTopBar(
+    state: AlertsViewModel.UiState,
+    onSetChip: (AlertsViewModel.ChipFilter) -> Unit,
+    onToggleSort: () -> Unit,
+    onDismissAll: () -> Unit,
+    onSearchChange: (String) -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Row 1: title + sort toggle + dismiss-all
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.alerts_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                // Mute button (noop for now — future: toggle dock mute)
+                IconButton(onClick = { /* noop: mute dock */ }) {
+                    Text("🔕", style = TextStyle(fontSize = 20.sp))
+                }
+                // Sort toggle: BySession ↔ Chronological
+                IconButton(
+                    onClick = onToggleSort,
+                ) {
+                    Icon(
+                        Icons.Filled.SortByAlpha,
+                        contentDescription = stringResource(R.string.alert_sort_tip),
+                        tint = if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+                // Dismiss-all button
+                IconButton(onClick = onDismissAll) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.alert_dismiss_all_tip),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Row 2: chip filter row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                AlertsViewModel.ChipFilter.entries.forEach { chip ->
+                    val label = when (chip) {
+                        AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
+                        AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
+                        AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
+                        AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
+                        AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
+                    }
+                    FilterChip(
+                        selected = state.chipFilter == chip,
+                        onClick = { onSetChip(chip) },
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    )
+                }
+            }
+
+            // Row 3: search bar (always visible)
+            OutlinedTextField(
+                value = state.searchQuery,
+                onValueChange = onSearchChange,
+                placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                textStyle = MaterialTheme.typography.bodySmall,
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+        }
     }
 }
 
@@ -275,6 +436,9 @@ private fun AlertGroupCard(
 /**
  * Per-alert card. Left border is level-colored; title sits bold above
  * the body. PWA mirror: app.js:5583-5591.
+ *
+ * Sprint 22: background tint based on alert type (prompt = amber,
+ * error = red, others = surface).
  */
 @Composable
 private fun AlertCard(
@@ -285,7 +449,16 @@ private fun AlertCard(
     onOpenSession: () -> Unit,
     onMarkRead: () -> Unit,
 ) {
-    val levelColor = severityColor(alert.severity)
+    val isPromptType = alert.type.contains("input", ignoreCase = true)
+    val levelColor = when {
+        isPromptType -> Color(0xFFF59E0B)
+        else -> severityColor(alert.severity)
+    }
+    val bgColor = when {
+        isPromptType -> Color(0xFFF59E0B).copy(alpha = 0.08f)
+        alert.severity == AlertSeverity.Error -> Color(0xFFEF4444).copy(alpha = 0.08f)
+        else -> MaterialTheme.colorScheme.surface
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -303,7 +476,7 @@ private fun AlertCard(
             modifier =
                 Modifier
                     .weight(1f)
-                    .background(MaterialTheme.colorScheme.surface)
+                    .background(bgColor)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
