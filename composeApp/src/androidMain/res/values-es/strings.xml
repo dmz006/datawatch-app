@@ -734,4 +734,36 @@
     <string name="toast_dismiss">Cerrar</string>
     <string name="toast_reconnect">Reconectar</string>
     <string name="live_indicator">En vivo</string>
+
+    <!-- v0.74.0 — Compute Nodes (S5-1) -->
+    <string name="compute_nodes_empty">No hay nodos de cómputo configurados</string>
+    <string name="compute_node_add">Agregar nodo de cómputo</string>
+    <string name="compute_node_edit">Editar nodo de cómputo</string>
+    <string name="compute_node_delete_confirm">¿Eliminar nodo de cómputo \"%s\"?</string>
+    <string name="compute_node_name_label">Nombre</string>
+    <string name="compute_node_kind_label">Tipo</string>
+    <string name="compute_node_address_label">Dirección</string>
+    <string name="compute_node_capacity_label">Capacidad declarada</string>
+    <string name="compute_node_tags_label">Etiquetas</string>
+    <string name="compute_node_hardware_spec">Especificación de hardware</string>
+
+    <!-- v0.74.0 — LLM Registry (S5-2, S5-3, S5-5) -->
+    <string name="llm_registry_empty">No hay LLMs configurados</string>
+    <string name="llm_registry_add">Agregar LLM</string>
+    <string name="llm_registry_edit">Editar LLM</string>
+    <string name="llm_registry_delete_confirm">¿Eliminar LLM \"%s\"?</string>
+    <string name="llm_registry_kind_label">Tipo</string>
+    <string name="llm_registry_compute_node_label">Nodo de cómputo</string>
+    <string name="llm_registry_model_label">Modelo</string>
+    <string name="llm_registry_pretest_label">Activar preprueba</string>
+    <string name="llm_migration_banner">%d configuración(es) LLM heredada(s) migrada(s) automáticamente. Revisar entradas.</string>
+    <string name="llm_migration_dismiss">Cerrar</string>
+
+    <!-- v0.74.0 — Whisper backend display (S5-6) -->
+    <string name="whisper_backend_label">Backend activo</string>
+
+    <!-- v0.74.0 — Council virtual sessions (S5-7) -->
+    <string name="council_session_filter">Consejo</string>
+    <string name="council_session_proposal_label">Propuesta</string>
+    <string name="council_session_in_progress">Sesión del consejo en progreso…</string>
 </resources>

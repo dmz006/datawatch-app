@@ -326,9 +326,12 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
                             SettingsTab.Compute -> {
-                                // v0.71.0 — Compute tab: ComputeNode registry (foundation-first per alpha.12)
-                                // Full CRUD implemented in v0.74.0; stubs here for correct ordering.
-                                ComputeNodesCard()
+                                // v0.74.0 — full CRUD for both cards (S5-1, S5-2, S5-3, S5-4, S5-5)
+                                // LlmRegistryCard replaces LlmConfigCard entirely (S5-8)
+                                var computeNodesRefreshTick by remember { mutableStateOf(0) }
+                                ComputeNodesCard(
+                                    onNodeDeleted = { computeNodesRefreshTick++ },
+                                )
                                 LlmRegistryCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,

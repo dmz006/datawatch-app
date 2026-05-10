@@ -734,4 +734,36 @@
     <string name="toast_dismiss">Fermer</string>
     <string name="toast_reconnect">Reconnecter</string>
     <string name="live_indicator">En direct</string>
+
+    <!-- v0.74.0 — Compute Nodes (S5-1) -->
+    <string name="compute_nodes_empty">Aucun nœud de calcul configuré</string>
+    <string name="compute_node_add">Ajouter un nœud de calcul</string>
+    <string name="compute_node_edit">Modifier le nœud de calcul</string>
+    <string name="compute_node_delete_confirm">Supprimer le nœud de calcul \"%s\" ?</string>
+    <string name="compute_node_name_label">Nom</string>
+    <string name="compute_node_kind_label">Type</string>
+    <string name="compute_node_address_label">Adresse</string>
+    <string name="compute_node_capacity_label">Capacité déclarée</string>
+    <string name="compute_node_tags_label">Étiquettes</string>
+    <string name="compute_node_hardware_spec">Spécification matérielle</string>
+
+    <!-- v0.74.0 — LLM Registry (S5-2, S5-3, S5-5) -->
+    <string name="llm_registry_empty">Aucun LLM configuré</string>
+    <string name="llm_registry_add">Ajouter un LLM</string>
+    <string name="llm_registry_edit">Modifier le LLM</string>
+    <string name="llm_registry_delete_confirm">Supprimer le LLM \"%s\" ?</string>
+    <string name="llm_registry_kind_label">Type</string>
+    <string name="llm_registry_compute_node_label">Nœud de calcul</string>
+    <string name="llm_registry_model_label">Modèle</string>
+    <string name="llm_registry_pretest_label">Activer le prétest</string>
+    <string name="llm_migration_banner">%d configuration(s) LLM héritée(s) migrée(s) automatiquement. Vérifier les entrées.</string>
+    <string name="llm_migration_dismiss">Fermer</string>
+
+    <!-- v0.74.0 — Whisper backend display (S5-6) -->
+    <string name="whisper_backend_label">Backend actif</string>
+
+    <!-- v0.74.0 — Council virtual sessions (S5-7) -->
+    <string name="council_session_filter">Conseil</string>
+    <string name="council_session_proposal_label">Proposition</string>
+    <string name="council_session_in_progress">Session du conseil en cours…</string>
 </resources>

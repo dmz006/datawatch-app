@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.74.0] — 2026-05-09
+### Added
+- ComputeNodesCard: full CRUD for compute nodes (10 kinds: ollama/opencode/aider/goose/gemini/shell/remote/etc.), hardware spec collapsible display, kind-aware model discovery (#98)
+- LlmRegistryCard: full CRUD for LLM registry (10 kinds including openwebui), enabled/disabled toggle, multi-select compute node, kind-aware model dropdown (#98, #100, #101)
+- Migration banner: amber dismissible notice when legacy LLM configs were auto-migrated on v7 daemon first start (#99)
+- LLM on/off toggle: Switch per LLM row, PATCH /api/llms/{name}/enabled {enabled, pretest} (#100, #102)
+- Council virtual sessions: 🎭 badge in session list, transcript-only view hiding terminal/channel tabs, Council filter chip in sessions toolbar (#93)
+- whisper.backend: active backend displayed at top of Voice/Whisper test section (#102)
+### Changed
+- OpenWebUI reclassified: kind=openwebui is an LLM entry (not a ComputeNode); removed from ComputeNode kind list (#100)
+- LlmConfigCard retired from Compute tab; replaced by LlmRegistryCard (#93)
+- Council filter also matches sessions by fullId prefix "council-" in addition to backend=="council-virtual" (#93)
+
 ## [0.72.0] — 2026-05-09
 ### Changed
 - Toast UX: composable DatawatchToastHost with dedup (×N badge), strip-prefix key comparison (`[name] ` stripped before dedup), 75% width right-justified, 13sp, 8×12dp padding, Reconnect button on disconnect toasts (#93 alpha.9, #101, #102)

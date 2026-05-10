@@ -505,6 +505,38 @@ private fun SessionsToolbar(
                             colors = FilterChipDefaults.filterChipColors(),
                         )
                     }
+                    // v0.74.0 S5-7 — Council virtual session filter chip
+                    item {
+                        FilterChip(
+                            selected = activeBackendFilter == "council-virtual",
+                            onClick = { onToggleBackend("council-virtual") },
+                            label = {
+                                Text(
+                                    stringResource(R.string.council_session_filter),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(),
+                        )
+                    }
+                }
+            } else {
+                // v0.74.0 S5-7 — show Council chip even when only one backend
+                Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                ) {
+                    FilterChip(
+                        selected = activeBackendFilter == "council-virtual",
+                        onClick = { onToggleBackend("council-virtual") },
+                        label = {
+                            Text(
+                                stringResource(R.string.council_session_filter),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
                 }
             }
             Row(
@@ -702,6 +734,12 @@ private fun SessionRow(
             if (!session.agentId.isNullOrBlank()) {
                 Spacer(modifier = Modifier.width(6.dp))
                 WorkerPill(agentId = session.agentId!!)
+            }
+            // v0.74.0 S5-7 — Council virtual session badge
+            val isCouncil = backend == "council-virtual" || session.fullId.startsWith("council-")
+            if (isCouncil) {
+                Spacer(modifier = Modifier.width(6.dp))
+                PwaMetaBadge(text = "🎭")
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(

@@ -734,4 +734,36 @@
     <string name="toast_dismiss">Schließen</string>
     <string name="toast_reconnect">Erneut verbinden</string>
     <string name="live_indicator">Live</string>
+
+    <!-- v0.74.0 — Compute Nodes (S5-1) -->
+    <string name="compute_nodes_empty">Keine Rechenknoten konfiguriert</string>
+    <string name="compute_node_add">Rechenknoten hinzufügen</string>
+    <string name="compute_node_edit">Rechenknoten bearbeiten</string>
+    <string name="compute_node_delete_confirm">Rechenknoten \"%s\" löschen?</string>
+    <string name="compute_node_name_label">Name</string>
+    <string name="compute_node_kind_label">Typ</string>
+    <string name="compute_node_address_label">Adresse</string>
+    <string name="compute_node_capacity_label">Deklarierte Kapazität</string>
+    <string name="compute_node_tags_label">Tags</string>
+    <string name="compute_node_hardware_spec">Hardware-Spezifikation</string>
+
+    <!-- v0.74.0 — LLM Registry (S5-2, S5-3, S5-5) -->
+    <string name="llm_registry_empty">Keine LLMs konfiguriert</string>
+    <string name="llm_registry_add">LLM hinzufügen</string>
+    <string name="llm_registry_edit">LLM bearbeiten</string>
+    <string name="llm_registry_delete_confirm">LLM \"%s\" löschen?</string>
+    <string name="llm_registry_kind_label">Typ</string>
+    <string name="llm_registry_compute_node_label">Rechenknoten</string>
+    <string name="llm_registry_model_label">Modell</string>
+    <string name="llm_registry_pretest_label">Vortest aktivieren</string>
+    <string name="llm_migration_banner">%d Legacy-LLM-Konfiguration(en) automatisch migriert. Einträge unten prüfen.</string>
+    <string name="llm_migration_dismiss">Schließen</string>
+
+    <!-- v0.74.0 — Whisper backend display (S5-6) -->
+    <string name="whisper_backend_label">Aktives Backend</string>
+
+    <!-- v0.74.0 — Council virtual sessions (S5-7) -->
+    <string name="council_session_filter">Rat</string>
+    <string name="council_session_proposal_label">Vorschlag</string>
+    <string name="council_session_in_progress">Ratssitzung läuft…</string>
 </resources>

@@ -764,3 +764,64 @@ public data class AvailableSkillDto(
 public data class SyncSkillsRequestDto(
     val skills: List<String>,
 )
+
+// ============================================================
+// v0.74.0 — Compute Nodes + LLM Registry + Migration (S5)
+// ============================================================
+
+/**
+ * GET/POST/PUT /api/compute/nodes — a registered compute worker
+ * (e.g. ollama instance, opencode server, shell runner, etc.).
+ * openwebui is NOT a ComputeNode kind — it is an LLM kind that
+ * references an ollama ComputeNode.
+ */
+@Serializable
+public data class ComputeNodeDto(
+    val name: String,
+    val kind: String,
+    val address: String,
+    @SerialName("declared_capacity") val declaredCapacity: Int = 1,
+    val tags: List<String> = emptyList(),
+    @SerialName("auto_created") val autoCreated: Boolean = false,
+    @SerialName("hardware_spec") val hardwareSpec: ComputeHardwareSpec? = null,
+)
+
+@Serializable
+public data class ComputeHardwareSpec(
+    val os: String? = null,
+    val arch: String? = null,
+    @SerialName("gpu_vendor") val gpuVendor: String? = null,
+    @SerialName("gpu_model") val gpuModel: String? = null,
+    @SerialName("gpu_count") val gpuCount: Int = 0,
+    @SerialName("memory_gb") val memoryGb: Int = 0,
+    @SerialName("cpu_cores") val cpuCores: Int = 0,
+)
+
+/**
+ * GET/POST/PUT /api/llms — a registered LLM entry. kind=openwebui
+ * is valid here (references an ollama ComputeNode under the hood).
+ */
+@Serializable
+public data class LlmRegistryEntryDto(
+    val name: String,
+    val kind: String,
+    @SerialName("compute_node") val computeNode: String,
+    val model: String,
+    val enabled: Boolean = true,
+    @SerialName("pretest_enabled") val pretestEnabled: Boolean = false,
+)
+
+/** PATCH /api/llms/{name}/enabled body. */
+@Serializable
+public data class LlmToggleRequest(
+    val enabled: Boolean,
+    val pretest: Boolean = false,
+)
+
+/** GET /api/migration/status — v7 first-launch auto-migration report. */
+@Serializable
+public data class MigrationStatusDto(
+    val count: Int,
+    val names: List<String> = emptyList(),
+    @SerialName("when") val `when`: String? = null,
+)
