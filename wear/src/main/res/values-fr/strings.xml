@@ -52,6 +52,8 @@
     <string name="wear_notification_error_channel">Notifications d\'erreur</string>
     <string name="wear_notification_error_title">Erreur de session</string>
     <string name="complication_automata_label">Automata</string>
+    <string name="tile_alerts_label">datawatch Alertes</string>
+    <string name="complication_alerts_label">Alertes</string>
     <string name="wear_health_good">Système en bonne santé</string>
     <string name="wear_health_waiting">Saisie requise</string>
     <string name="wear_health_error">Erreur de session</string>

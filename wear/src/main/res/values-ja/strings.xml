@@ -52,6 +52,8 @@
     <string name="wear_notification_error_channel">エラー通知</string>
     <string name="wear_notification_error_title">セッションエラー</string>
     <string name="complication_automata_label">オートマタ</string>
+    <string name="tile_alerts_label">datawatchアラート</string>
+    <string name="complication_alerts_label">アラート</string>
     <string name="wear_health_good">システム正常</string>
     <string name="wear_health_waiting">入力が必要です</string>
     <string name="wear_health_error">セッションエラー</string>

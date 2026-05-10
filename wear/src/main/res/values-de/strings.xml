@@ -52,6 +52,8 @@
     <string name="wear_notification_error_channel">Fehlerbenachrichtigungen</string>
     <string name="wear_notification_error_title">Sitzungsfehler</string>
     <string name="complication_automata_label">Automata</string>
+    <string name="tile_alerts_label">datawatch Alarme</string>
+    <string name="complication_alerts_label">Alarme</string>
     <string name="wear_health_good">System funktioniert</string>
     <string name="wear_health_waiting">Eingabe erforderlich</string>
     <string name="wear_health_error">Sitzungsfehler</string>

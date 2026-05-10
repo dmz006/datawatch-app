@@ -359,6 +359,21 @@ public class WearSyncService(
             }.onFailure {
                 publishPrds(emptyList())
             }
+            // W-#114 — publish active alert counts for the alerts tile + complication.
+            ServiceLocator.transportFor(profile).listAlerts().onSuccess { view ->
+                val alerts = view.alerts
+                val needsInput = alerts.count {
+                    val t = it.type.lowercase()
+                    t.contains("input") || t == "needs_input" || t == "input_needed"
+                }
+                val errors = alerts.count {
+                    it.severity == com.dmzs.datawatchclient.domain.AlertSeverity.Error ||
+                        it.type.lowercase().contains("error")
+                }
+                publishAlerts(AlertsCountSnapshot(total = alerts.size, needsInput = needsInput, errors = errors))
+            }.onFailure {
+                // best-effort; silence so missing alerts endpoint doesn't break dashboard
+            }
         }.onFailure { err ->
             Log.w(TAG, "fetchDashboard FAILED ${err.message}")
         }
@@ -728,6 +743,12 @@ public class WearSyncService(
         val items: List<SessionItem>,
     )
 
+    private data class AlertsCountSnapshot(
+        val total: Int,
+        val needsInput: Int,
+        val errors: Int,
+    )
+
     private data class StatsSnapshot(
         val cpuLoad1: Double,
         val cpuCores: Int,
@@ -749,6 +770,19 @@ public class WearSyncService(
         val sessionsError: Int = 0,
         val sessionsCouncil: Int = 0,
     )
+
+    private fun publishAlerts(snap: AlertsCountSnapshot) {
+        runCatching {
+            val req =
+                PutDataMapRequest.create(ALERTS_PATH).apply {
+                    dataMap.putInt("total", snap.total)
+                    dataMap.putInt("needsInput", snap.needsInput)
+                    dataMap.putInt("errors", snap.errors)
+                    dataMap.putLong("ts", System.currentTimeMillis())
+                }.asPutDataRequest().setUrgent()
+            Wearable.getDataClient(context).putDataItem(req)
+        }
+    }
 
     private fun publishCounts(snap: Snapshot) {
         runCatching {
@@ -892,6 +926,7 @@ public class WearSyncService(
         public const val ERROR_ALERT_PATH: String = "/datawatch/error-alert"
         // S10-2 — watch-initiated demand sync request path.
         public const val SYNC_PATH: String = "/datawatch/sync"
+        public const val ALERTS_PATH: String = "/datawatch/alerts"
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable
