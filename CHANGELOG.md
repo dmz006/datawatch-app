@@ -8,6 +8,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.76.0] — 2026-05-10
+### Added
+- AutonomousScreen: long-press multi-select bar with Run/Approve/Cancel/Archive/Delete chips above bottom nav; FAB hidden while selection active (#73)
+- ThemePreference.kt: `ThemeMode` enum + `ThemePrefs` SharedPreferences persistence for Dark/Light/System; `LightColorScheme` added to Theme.kt (#77)
+- ThemePickerCard: full RadioButton implementation using `ThemeMode.entries`, reads/writes via `ThemePrefs` (#77)
+- MicAttachableTextField: composable wrapper for voice-capable text fields; mic icon shown when `whisperConfigured=true` and `minLines >= 2` (#91)
+- PrdDetailDialog: terminal-state hint Surface shown for done/aborted/failed/archived status (#91)
+- ScanConfigCard: Run Scan + Run Rules OutlinedButtons at card bottom (#91)
+- NewPrdDialog: reduced spacing between profile-select and dir chip (1.dp); Spacer(2.dp) between guided mode toggle and skills; skills start padding aligned (#76)
+- Migrated `OutlinedTextField` with `minLines >= 2` to `MicAttachableTextField` in CouncilCard, IdentityCard (#91)
+- Locale: 7 new/updated keys in EN/DE/ES/FR/JA (`settings_theme_title`, `settings_theme_dark`, `settings_theme_light`, `settings_theme_system`, `prd_terminal_state_hint`, `action_run_scan`, `action_run_rules`)
+### Changed
+- Version bump: 0.75.0/153 → 0.76.0/154
+
 ## [0.75.0] — 2026-05-09
 ### Added
 - DocsSearchCard: full-text doc search with index_kind badge (vector=teal/bm25=grey), pending trust queue with bulk accept/dismiss, trusted sources list with remove (#84, #85)
