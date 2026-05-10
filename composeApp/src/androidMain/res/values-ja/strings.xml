@@ -903,4 +903,35 @@
     <string name="orchestrator_title_required">タイトルが必要です</string>
     <string name="orchestrator_graph_run">実行</string>
     <string name="orchestrator_graph_delete">削除</string>
+    <!-- v0.82.0 Sprint 13: General tab gaps -->
+    <string name="session_templates_title">セッションテンプレート</string>
+    <string name="session_template_name_hint">テンプレート名</string>
+    <string name="session_template_backend_hint">バックエンド（任意）</string>
+    <string name="session_template_dir_hint">プロジェクトディレクトリ（任意）</string>
+    <string name="session_template_effort_hint">作業量（任意）</string>
+    <string name="session_template_desc_hint">説明（任意）</string>
+    <string name="session_template_add">テンプレートを追加</string>
+    <string name="session_template_none">テンプレートなし</string>
+    <string name="session_template_delete">削除</string>
+    <string name="device_aliases_title">デバイスエイリアス</string>
+    <string name="device_alias_name">エイリアス（短縮名）</string>
+    <string name="device_alias_value">サーバー名</string>
+    <string name="device_alias_add">エイリアスを追加</string>
+    <string name="device_alias_none">エイリアスなし</string>
+    <string name="tooling_title">バックエンドアーティファクトライフサイクル</string>
+    <string name="tooling_install">インストール</string>
+    <string name="tooling_update">更新</string>
+    <string name="tooling_remove">削除</string>
+    <string name="tooling_none">バックエンドが設定されていません</string>
+    <string name="tooling_gitignore">gitignore</string>
+    <string name="tooling_cleanup">クリーンアップ</string>
+    <string name="tooling_refresh">更新</string>
+    <string name="secrets_name_hint">シークレット名</string>
+    <string name="secrets_value_hint">シークレット値</string>
+    <string name="secrets_desc_hint">説明（任意）</string>
+    <string name="secrets_tags_hint">タグ（カンマ区切り）</string>
+    <string name="secrets_scopes_hint">スコープ（カンマ区切り）</string>
+    <string name="secrets_add_btn">シークレットを追加</string>
+    <string name="observer_quicklink_title">フェデレーテッドオブザーバー</string>
+    <string name="observer_quicklink_btn">オブザーバーを開く →</string>
 </resources>

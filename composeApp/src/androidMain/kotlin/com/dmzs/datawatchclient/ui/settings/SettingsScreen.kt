@@ -308,6 +308,14 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.notifications.NotificationsCard()
                                 // v0.75.0 S6-4 (#84, #85): Docs Search card.
                                 DocsSearchCard()
+                                // v0.82.0 Sprint 13 — General tab gaps
+                                com.dmzs.datawatchclient.ui.general.SessionTemplatesCard()
+                                com.dmzs.datawatchclient.ui.general.DeviceAliasesCard()
+                                com.dmzs.datawatchclient.ui.general.ToolingCard()
+                                SecretsCard()
+                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(
+                                    onNavigateToMonitor = { activeTab = SettingsTab.Monitor },
+                                )
                             }
                             SettingsTab.Comms -> {
                                 // Matches PWA `data-group="comms"` order:

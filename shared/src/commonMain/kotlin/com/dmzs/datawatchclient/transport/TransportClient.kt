@@ -1064,6 +1064,48 @@ public interface TransportClient {
 
     /** DELETE /api/orchestrator/graphs/{id} — delete an orchestrator graph. */
     public suspend fun deleteOrchestratorGraph(id: String): Result<Unit>
+
+    // ---- v0.82.0 Sprint 13: General tab gaps ----
+
+    /** GET /api/templates — list session templates. */
+    public suspend fun getSessionTemplates(): Result<List<com.dmzs.datawatchclient.transport.dto.SessionTemplateDto>>
+
+    /** POST /api/templates — create a new session template. */
+    public suspend fun createSessionTemplate(
+        template: com.dmzs.datawatchclient.transport.dto.SessionTemplateDto,
+    ): Result<Unit>
+
+    /** DELETE /api/templates/{name} — delete a session template. */
+    public suspend fun deleteSessionTemplate(name: String): Result<Unit>
+
+    /** GET /api/device-aliases — list device aliases. */
+    public suspend fun getDeviceAliases(): Result<List<com.dmzs.datawatchclient.transport.dto.DeviceAliasDto>>
+
+    /** POST /api/device-aliases — create a device alias. */
+    public suspend fun createDeviceAlias(alias: String, server: String): Result<Unit>
+
+    /** DELETE /api/device-aliases/{alias} — delete a device alias. */
+    public suspend fun deleteDeviceAlias(alias: String): Result<Unit>
+
+    /** GET /api/tooling/status — backend artifact lifecycle status. */
+    public suspend fun getToolingStatus(): Result<com.dmzs.datawatchclient.transport.dto.ToolingStatusDto>
+
+    /** POST /api/tooling/gitignore — add artifact dirs to .gitignore. */
+    public suspend fun toolingGitignore(backend: String): Result<Unit>
+
+    /** POST /api/tooling/cleanup — remove artifact dirs. */
+    public suspend fun toolingCleanup(backend: String): Result<Unit>
+
+    /** GET /api/secrets — list secrets (name/metadata, no values). */
+    public suspend fun getSecrets(): Result<com.dmzs.datawatchclient.transport.dto.SecretsListDto>
+
+    /** POST /api/secrets — add a secret. */
+    public suspend fun addSecret(
+        secret: com.dmzs.datawatchclient.transport.dto.AddSecretDto,
+    ): Result<Unit>
+
+    /** DELETE /api/secrets/{name} — delete a secret. */
+    public suspend fun deleteSecret(name: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
