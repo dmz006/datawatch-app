@@ -824,4 +824,9 @@
     <string name="council_wizard_save">Enregistrer le Persona</string>
     <string name="council_wizard_backend_label">Backend IA</string>
     <string name="council_wizard_draft_label">Prompt du persona</string>
+
+    <!-- v0.78.0 — S10-4 alert tier display on About card -->
+    <string name="alert_tier_unified_push">Alertes via datawatch push (optimal)</string>
+    <string name="alert_tier_comm_channel">Alertes via Signal (bien)</string>
+    <string name="alert_tier_background">Alertes via service d\'arrière-plan (basique)</string>
 </resources>

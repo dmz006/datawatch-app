@@ -7,6 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import com.dmzs.datawatchclient.wear.sync.WearSyncManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,10 +85,22 @@ import kotlinx.coroutines.launch
  * phone's ActiveServerStore is the single source of truth.
  */
 public class WearMainActivity : ComponentActivity() {
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colors = datawatchWearColors()) { WearRoot() }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // S10-5: request a fresh dashboard push from the phone whenever
+        // the user opens the Wear app. This replaces the 15 s polling
+        // loop that was removed from WearSyncService.
+        activityScope.launch {
+            WearSyncManager.requestDashboard(this@WearMainActivity)
         }
     }
 }

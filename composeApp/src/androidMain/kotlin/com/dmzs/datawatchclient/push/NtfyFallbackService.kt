@@ -2,9 +2,12 @@ package com.dmzs.datawatchclient.push
 
 import android.app.Notification
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
@@ -38,6 +41,20 @@ public class NtfyFallbackService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = mutableMapOf<String, Job>()
 
+    // S10-3: pause/resume the ntfy stream when Doze mode engages/exits.
+    private val dozeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED) {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (pm.isDeviceIdleMode) {
+                    pauseStream()
+                } else {
+                    resumeStream()
+                }
+            }
+        }
+    }
+
     // Reuse the shared module's pre-configured HttpClient (OkHttp engine on
     // Android) — keeps engine selection in one place. The shared client already
     // disables `expectSuccess`, which is what we want here.
@@ -56,13 +73,33 @@ public class NtfyFallbackService : Service() {
         startId: Int,
     ): Int {
         scope.launch { reconcile() }
+        // S10-3: register Doze receiver so the stream pauses on idle
+        // and resumes on screen-on / charger / exit-idle.
+        registerReceiver(
+            dozeReceiver,
+            IntentFilter(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED),
+        )
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        try { unregisterReceiver(dozeReceiver) } catch (_: Exception) {}
         scope.cancel()
         client.close()
+    }
+
+    /** S10-3: Cancel all active ntfy subscription jobs (Doze entered). */
+    private fun pauseStream() {
+        android.util.Log.d("NtfyFallback", "Doze entered — pausing ntfy streams")
+        jobs.values.forEach { it.cancel() }
+        jobs.clear()
+    }
+
+    /** S10-3: Restart ntfy subscriptions (Doze exited). */
+    private fun resumeStream() {
+        android.util.Log.d("NtfyFallback", "Doze exited — resuming ntfy streams")
+        scope.launch { reconcile() }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

@@ -824,4 +824,9 @@
     <string name="council_wizard_save">ペルソナを保存</string>
     <string name="council_wizard_backend_label">AIアシストバックエンド</string>
     <string name="council_wizard_draft_label">ペルソナプロンプト</string>
+
+    <!-- v0.78.0 — S10-4 alert tier display on About card -->
+    <string name="alert_tier_unified_push">datawatch プッシュ経由のアラート（最適）</string>
+    <string name="alert_tier_comm_channel">Signal 経由のアラート（良好）</string>
+    <string name="alert_tier_background">バックグラウンドサービス経由のアラート（基本）</string>
 </resources>
