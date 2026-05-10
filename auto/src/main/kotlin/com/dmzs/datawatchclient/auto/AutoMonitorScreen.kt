@@ -168,6 +168,16 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .addAction(
                     Action.Builder()
+                        .setTitle("Status")
+                        .setOnClickListener {
+                            screenManager.push(
+                                com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext),
+                            )
+                        }
+                        .build(),
+                )
+                .addAction(
+                    Action.Builder()
                         .setTitle("About")
                         .setOnClickListener {
                             screenManager.push(AutoAboutScreen(carContext))

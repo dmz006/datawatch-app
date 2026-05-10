@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto-module voice command strings — v0.86.0 #109 — Français -->
+<resources>
+    <string name="auto_voice_title">Statut DataWatch</string>
+    <string name="auto_voice_loading">Chargement du statut…</string>
+    <string name="auto_voice_error">Impossible de joindre le serveur DataWatch</string>
+    <string name="auto_voice_no_server">Aucun serveur DataWatch configuré</string>
+    <string name="auto_voice_no_report">Aucun rapport d\'observateur disponible</string>
+    <string name="auto_voice_refresh_done">DataWatch actualisé</string>
+    <string name="auto_voice_cancel_hint">Dites le nom de la session pour annuler</string>
+    <string name="auto_voice_action_status">Statut</string>
+    <string name="auto_voice_status_server">Connecté à %s</string>
+    <string name="auto_voice_status_sessions">%1$d actives, %2$d en attente</string>
+    <string name="auto_voice_status_errors">%d erreurs</string>
+    <string name="auto_voice_status_cpu">CPU %d%%</string>
+    <string name="auto_voice_status_mem">Mémoire %d%%</string>
+</resources>
