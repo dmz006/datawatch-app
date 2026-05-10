@@ -20,7 +20,7 @@
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"
         tools:targetApi="34"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- S10-7: WAKE_LOCK removed — nothing in the codebase acquires a WakeLock. -->
 
     <!-- Phone app only declares features it actually uses. Auto / Wear surfaces
          declare their own features in :auto and :wear manifests. -->

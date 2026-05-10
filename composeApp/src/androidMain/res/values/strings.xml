@@ -874,4 +874,9 @@
     <string name="mic_toast_recording">Recording…</string>
     <string name="observer_title">Observer</string>
     <string name="observer_no_active">No active observer sessions</string>
+
+    <!-- v0.78.0 — S10-4 alert tier display on About card -->
+    <string name="alert_tier_unified_push">Alerts via datawatch push (optimal)</string>
+    <string name="alert_tier_comm_channel">Alerts via Signal (good)</string>
+    <string name="alert_tier_background">Alerts via background service (basic)</string>
 </resources>

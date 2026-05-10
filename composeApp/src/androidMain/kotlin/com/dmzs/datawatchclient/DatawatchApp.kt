@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient
 
 import android.app.Application
+import com.dmzs.datawatchclient.network.VpnMonitor
 import com.dmzs.datawatchclient.storage.DatabaseFactory
 
 /**
@@ -14,6 +15,10 @@ import com.dmzs.datawatchclient.storage.DatabaseFactory
  *    cold start stays fast and nothing touches Keystore before the UI needs it.
  */
 public class DatawatchApp : Application() {
+    /** Exposed so the transport layer can observe VPN state before retrying. */
+    public lateinit var vpnMonitor: VpnMonitor
+        private set
+
     override fun onCreate() {
         super.onCreate()
         DatabaseFactory.loadNativeLib()
@@ -24,5 +29,16 @@ public class DatawatchApp : Application() {
         // closes the "Pair phone in Settings" placeholder that was
         // unfinished from v0.5.0 Phase 1.
         com.dmzs.datawatchclient.wear.WearSyncService(this).start()
+        // S10-1: Monitor Tailscale VPN connectivity so transport can
+        // avoid retries while the tunnel is known to be down.
+        vpnMonitor = VpnMonitor(this)
+        vpnMonitor.start()
+        // S10-2: Schedule 15-min WorkManager heartbeat for Wear sync.
+        com.dmzs.datawatchclient.wear.WearHeartbeatWorker.schedule(this)
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        if (::vpnMonitor.isInitialized) vpnMonitor.stop()
     }
 }

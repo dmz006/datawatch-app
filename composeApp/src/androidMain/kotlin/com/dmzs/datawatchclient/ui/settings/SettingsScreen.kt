@@ -76,6 +76,15 @@ import androidx.compose.ui.res.stringResource
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
+import com.dmzs.datawatchclient.push.AlertTier
+import com.dmzs.datawatchclient.push.AlertTierDetector
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -801,6 +810,35 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            }
+            // S10-4 — alert tier indicator
+            val alertContext = LocalContext.current
+            val tier = remember { AlertTierDetector.resolve(alertContext) }
+            val tierText = when (tier) {
+                AlertTier.UnifiedPush -> stringResource(R.string.alert_tier_unified_push)
+                AlertTier.CommChannel -> stringResource(R.string.alert_tier_comm_channel)
+                AlertTier.Background -> stringResource(R.string.alert_tier_background)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = when (tier) {
+                        AlertTier.UnifiedPush -> Icons.Filled.NotificationsActive
+                        AlertTier.CommChannel -> Icons.Filled.SignalCellularAlt
+                        AlertTier.Background -> Icons.Filled.NotificationsNone
+                    },
+                    contentDescription = null,
+                    tint = when (tier) {
+                        AlertTier.UnifiedPush -> Color(0xFF00C853)
+                        AlertTier.CommChannel -> Color(0xFF00BCD4)
+                        AlertTier.Background -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(tierText, style = MaterialTheme.typography.bodySmall)
             }
             DaemonInfoRow(
                 activeProfile = activeProfile,
