@@ -1130,6 +1130,14 @@ public interface TransportClient {
 
     /** DELETE /api/secrets/{name} — delete a secret. */
     public suspend fun deleteSecret(name: String): Result<Unit>
+
+    // ---- v0.88.0 Sprint 19: Observer by-node grouping + federation meta-peers ----
+
+    /** GET /api/observer/peers/by-node — local peers grouped by bound ComputeNode (alpha.24 #231). */
+    public suspend fun getObserverPeersByNode(): Result<com.dmzs.datawatchclient.transport.dto.ObserverPeersByNodeDto>
+
+    /** GET /api/federation/meta-peers — cross-instance peers aggregated by ComputeNode (alpha.24 #231). */
+    public suspend fun getFederationMetaPeers(): Result<com.dmzs.datawatchclient.transport.dto.MetaPeersDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

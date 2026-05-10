@@ -312,10 +312,6 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.general.SessionTemplatesCard()
                                 com.dmzs.datawatchclient.ui.general.DeviceAliasesCard()
                                 com.dmzs.datawatchclient.ui.general.ToolingCard()
-                                SecretsCard()
-                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(
-                                    onNavigateToMonitor = { activeTab = SettingsTab.Monitor },
-                                )
                             }
                             SettingsTab.Comms -> {
                                 // Matches PWA `data-group="comms"` order:
@@ -382,6 +378,11 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.filters.FiltersCard()
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleSettingsCard()
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
+                                // v0.88.0 Sprint 19 (#111) — alpha.25 settings move
+                                SecretsCard()
+                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(
+                                    onNavigateToMonitor = { activeTab = SettingsTab.Monitor },
+                                )
                             }
                             SettingsTab.Automata -> {
                                 // v0.81.0 — flat PWA v7.0.0-alpha.23c order; no section headers

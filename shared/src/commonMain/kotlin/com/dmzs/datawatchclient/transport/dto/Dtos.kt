@@ -312,6 +312,8 @@ public data class ObserverPeerDto(
     val version: String? = null,
     @SerialName("registered_at") val registeredAt: String? = null,
     @SerialName("last_push_at") val lastPushAt: String? = null,
+    /** alpha.24 #231 — bound ComputeNode name; null if peer is free. */
+    @SerialName("compute_node") val computeNode: String? = null,
 )
 
 @Serializable
@@ -321,6 +323,44 @@ public data class ObserverPeerHostDto(
     val shape: String? = null,
     val os: String? = null,
     val arch: String? = null,
+)
+
+/**
+ * GET /api/observer/peers/by-node — local peers grouped by bound ComputeNode.
+ * alpha.24 #231 — used by the "Group by ComputeNode" toggle on the peers card.
+ */
+@Serializable
+public data class ObserverPeersByNodeDto(
+    @SerialName("by_node") val byNode: Map<String, List<ObserverPeerDto>> = emptyMap(),
+    val unbound: List<ObserverPeerDto> = emptyList(),
+)
+
+/**
+ * GET /api/federation/meta-peers — cross-instance peers aggregated by CN.
+ * alpha.24 #231 — server merges local + reachable federation primaries.
+ */
+@Serializable
+public data class MetaObserverEntryDto(
+    val primary: String = "",
+    val peer: String = "",
+    val shape: String = "",
+    @SerialName("last_push_at") val lastPushAt: String? = null,
+    val version: String? = null,
+)
+
+@Serializable
+public data class MetaNodeBucketDto(
+    val observers: List<MetaObserverEntryDto> = emptyList(),
+    @SerialName("observer_count") val observerCount: Int = 0,
+    @SerialName("primary_count") val primaryCount: Int = 0,
+)
+
+@Serializable
+public data class MetaPeersDto(
+    val self: String = "",
+    @SerialName("by_node") val byNode: Map<String, MetaNodeBucketDto> = emptyMap(),
+    val unbound: List<MetaObserverEntryDto> = emptyList(),
+    @SerialName("primaries_walked") val primariesWalked: List<String> = emptyList(),
 )
 
 /**
