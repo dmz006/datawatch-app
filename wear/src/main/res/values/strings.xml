@@ -65,6 +65,8 @@
     <string name="wear_notification_error_channel">Error Notifications</string>
     <string name="wear_notification_error_title">Session error</string>
     <string name="complication_automata_label">Automata</string>
+    <string name="tile_alerts_label">datawatch Alerts</string>
+    <string name="complication_alerts_label">Alerts</string>
     <string name="wear_health_good">System healthy</string>
     <string name="wear_health_waiting">Input needed</string>
     <string name="wear_health_error">Session error</string>
