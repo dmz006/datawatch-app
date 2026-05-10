@@ -1829,6 +1829,84 @@ public class RestTransport(
             Unit
         }
 
+    // ---- v0.77.0 Council persona wizard (S8-1/2/3, #92) ----
+
+    override suspend fun councilListPersonas(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/council/personas") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun councilListRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilRunDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/council/runs") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun councilGetConfig(): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto> =
+        request {
+            client.get("${profile.baseUrl}/api/council/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun councilUpdateConfig(
+        config: com.dmzs.datawatchclient.transport.dto.CouncilConfigDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto> =
+        request {
+            client.put("${profile.baseUrl}/api/council/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(config)
+            }.body()
+        }
+
+    override suspend fun councilStartRun(
+        request: com.dmzs.datawatchclient.transport.dto.StartCouncilRunRequest,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilRunDto> {
+        val req = request
+        return this.request {
+            client.post("${profile.baseUrl}/api/council/run") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }.body()
+        }
+    }
+
+    override suspend fun councilStopRun(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/council/runs/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun createCouncilPersona(
+        dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto> =
+        request {
+            client.post("${profile.baseUrl}/api/council/personas") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun updateCouncilPersona(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto> =
+        request {
+            client.put("${profile.baseUrl}/api/council/personas/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

@@ -253,6 +253,7 @@ or retracted rather than scheduled.
 | F9 | v0.13–v0.22 — memory, channels, federation, behaviour prefs, update daemon | v0.13–v0.22 |
 | F10 | v0.23–v0.32 — terminal parity + ConfigFieldsPanel + filters CRUD + profile CRUD + proxy resilience + Auto data | v0.23–v0.32 |
 | F11 | v0.33 — on-device triage + unified monitoring spec + PWA header parity | v0.33 series |
+| #92 | ✅ Council persona wizard (5-step interview, AI-assist refine, edit/re-interview parity) | v0.77.0 |
 
 ---
 
