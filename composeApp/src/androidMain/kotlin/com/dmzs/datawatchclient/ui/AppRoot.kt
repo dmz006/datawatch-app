@@ -357,7 +357,7 @@ private fun HomeShell(
             bottomBar = {
                 BottomNavBar(
                     tabNav,
-                    alertsBadge = alertsState.count,
+                    alertsBadge = alertsState.watchedAlertCount,
                     prdsSupported = prdsSupported,
                     anyPeerStale = federatedPeersState.anyPeerStale,
                     alertsMuted = dockMuted,

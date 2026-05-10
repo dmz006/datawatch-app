@@ -8,31 +8,25 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-## [0.76.0] — 2026-05-10
+## [0.93.0] — 2026-05-10 (Watch toggle opt-in — Sprint 23)
 ### Added
-- AutonomousScreen: long-press multi-select bar with Run/Approve/Cancel/Archive/Delete chips above bottom nav; FAB hidden while selection active (#73)
-- ThemePreference.kt: `ThemeMode` enum + `ThemePrefs` SharedPreferences persistence for Dark/Light/System; `LightColorScheme` added to Theme.kt (#77)
-- ThemePickerCard: full RadioButton implementation using `ThemeMode.entries`, reads/writes via `ThemePrefs` (#77)
-- MicAttachableTextField: composable wrapper for voice-capable text fields; mic icon shown when `whisperConfigured=true` and `minLines >= 2` (#91)
-- PrdDetailDialog: terminal-state hint Surface shown for done/aborted/failed/archived status (#91)
-- ScanConfigCard: Run Scan + Run Rules OutlinedButtons at card bottom (#91)
-- NewPrdDialog: reduced spacing between profile-select and dir chip (1.dp); Spacer(2.dp) between guided mode toggle and skills; skills start padding aligned (#76)
-- Migrated `OutlinedTextField` with `minLines >= 2` to `MicAttachableTextField` in CouncilCard, IdentityCard (#91)
-- Locale: 7 new/updated keys in EN/DE/ES/FR/JA (`settings_theme_title`, `settings_theme_dark`, `settings_theme_light`, `settings_theme_system`, `prd_terminal_state_hint`, `action_run_scan`, `action_run_rules`)
+- `WatchedSessionsStore`: SharedPreferences-backed per-profile set of watched session ids; reactive `watchedFlow()` via `callbackFlow`
+- `WatchedAutomataStore`: same pattern for automata / PRD watch state
+- `ServiceLocator`: exposes `watchedSessionsStore` and `watchedAutomataStore`
+- `SessionsViewModel`: `watchedIds: StateFlow<Set<String>>` + `toggleWatch(sessionId)` — persists watch state to `WatchedSessionsStore`
+- `AutonomousViewModel`: `watchedAutomataIds: StateFlow<Set<String>>` (lazy) + `toggleWatchAutomata(prdId)`
+- `AlertsViewModel`: `watchedAlertCount` in `UiState`; when any sessions are watched, badge count shows only watched-session active alerts; empty set falls back to all (backward-compat)
+- `AlertsViewModel`: `_watchedIds` flow merges into outer `combine` as 5th stream
+- `SessionRow`: "Watching" / "Not watching" menu item with success-color highlight when watched
+- Sessions list: `watchedIds by vm.watchedIds.collectAsState()` threaded to each `SessionRow`
+- `AppRoot`: `BottomNavBar` now receives `alertsBadge = alertsState.watchedAlertCount`
+- `WatchedSessionsStoreTest`: 5 unit tests (empty default, setWatched true/false, profile isolation, flow initial, flow emits on change)
+- Locale: 7 new keys in composeApp EN/DE/ES/FR/JA (`session_watch_toggle/on/off/tip`, `automata_watch_toggle/on/off`)
+- AGENT.md: Per-Sprint Rules Audit checklist + Reuse-and-Expand Principle (synced from parent `dmz006/datawatch` AGENT.md)
 ### Changed
-- Version bump: 0.75.0/153 → 0.76.0/154
-=======
-## [0.77.0] — 2026-05-10
-### Added
-- CouncilPersonaWizardSheet: 6-page HorizontalPager interview wizard (5 steps: focus/stance/tone/pushback/examples + final tune page), AI-refine row, backend picker (ollama/openwebui), edit-mode pre-fill (#92)
-- CouncilCard: Manage Personas button opens persona list sheet with per-row Edit icon; Add button opens wizard in create mode; wizard wired to POST/PUT transport (#92)
-- Transport: `councilListPersonas`, `councilListRuns`, `councilGetConfig`, `councilUpdateConfig`, `councilStartRun`, `councilStopRun`, `createCouncilPersona`, `updateCouncilPersona` + all backing Council DTOs (#92)
-- Locale: 11 `council_wizard_*` keys in EN/DE/ES/FR/JA (#92)
-- MicAttachableTextField: shared composable wrapper for Whisper-attachable text input (S7-4 stub, Sprint 8 integration)
->>>>>>> worktree-agent-a30d0add550b00344
-=======
+- Version bump: 0.92.0/170 → 0.93.0/171
+- `composeApp/build.gradle.kts`: added `libs.turbine` to `androidUnitTest` dependencies for Flow testing
+
 ## [0.78.0] — 2026-05-10
 ### Added
 - VpnMonitor: ConnectivityManager VPN NetworkCallback detects Tailscale drops; non-always-on path notifies immediately (S10-1)
@@ -50,7 +44,28 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - 15 s polling loops from WearSyncService (5,760 BLE activations/day on Samsung Galaxy Watch) (S10-2)
 ### Infrastructure
 - Filed dmz006/datawatch#39: first-party UnifiedPush provider + ntfy-compatible SSE endpoints (S10-8)
->>>>>>> worktree-agent-a88aba9adedb78416
+
+## [0.77.0] — 2026-05-10
+### Added
+- CouncilPersonaWizardSheet: 6-page HorizontalPager interview wizard (5 steps: focus/stance/tone/pushback/examples + final tune page), AI-refine row, backend picker (ollama/openwebui), edit-mode pre-fill (#92)
+- CouncilCard: Manage Personas button opens persona list sheet with per-row Edit icon; Add button opens wizard in create mode; wizard wired to POST/PUT transport (#92)
+- Transport: `councilListPersonas`, `councilListRuns`, `councilGetConfig`, `councilUpdateConfig`, `councilStartRun`, `councilStopRun`, `createCouncilPersona`, `updateCouncilPersona` + all backing Council DTOs (#92)
+- Locale: 11 `council_wizard_*` keys in EN/DE/ES/FR/JA (#92)
+- MicAttachableTextField: shared composable wrapper for Whisper-attachable text input (S7-4 stub, Sprint 8 integration)
+
+## [0.76.0] — 2026-05-10
+### Added
+- AutonomousScreen: long-press multi-select bar with Run/Approve/Cancel/Archive/Delete chips above bottom nav; FAB hidden while selection active (#73)
+- ThemePreference.kt: `ThemeMode` enum + `ThemePrefs` SharedPreferences persistence for Dark/Light/System; `LightColorScheme` added to Theme.kt (#77)
+- ThemePickerCard: full RadioButton implementation using `ThemeMode.entries`, reads/writes via `ThemePrefs` (#77)
+- MicAttachableTextField: composable wrapper for voice-capable text fields; mic icon shown when `whisperConfigured=true` and `minLines >= 2` (#91)
+- PrdDetailDialog: terminal-state hint Surface shown for done/aborted/failed/archived status (#91)
+- ScanConfigCard: Run Scan + Run Rules OutlinedButtons at card bottom (#91)
+- NewPrdDialog: reduced spacing between profile-select and dir chip (1.dp); Spacer(2.dp) between guided mode toggle and skills; skills start padding aligned (#76)
+- Migrated `OutlinedTextField` with `minLines >= 2` to `MicAttachableTextField` in CouncilCard, IdentityCard (#91)
+- Locale: 7 new/updated keys in EN/DE/ES/FR/JA (`settings_theme_title`, `settings_theme_dark`, `settings_theme_light`, `settings_theme_system`, `prd_terminal_state_hint`, `action_run_scan`, `action_run_rules`)
+### Changed
+- Version bump: 0.75.0/153 → 0.76.0/154
 
 ## [0.75.0] — 2026-05-09
 ### Added

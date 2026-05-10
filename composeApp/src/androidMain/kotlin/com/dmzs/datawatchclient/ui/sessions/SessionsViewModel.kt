@@ -530,6 +530,28 @@ public class SessionsViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Sprint 23 (#116) — watched-session IDs for the active profile,
+     * reactive. Empty set = no sessions watched (badge shows all alerts).
+     */
+    public val watchedIds: StateFlow<Set<String>> =
+        activeProfile
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf(emptySet())
+                } else {
+                    ServiceLocator.watchedSessionsStore.watchedFlow(profile.id)
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Toggle the watched state for a session on the active profile. */
+    public fun toggleWatch(sessionId: String) {
+        val profile = activeProfile.value ?: return
+        val current = ServiceLocator.watchedSessionsStore.isWatched(profile.id, sessionId)
+        ServiceLocator.watchedSessionsStore.setWatched(profile.id, sessionId, !current)
+    }
+
     /** Rename a session on the server; refresh the list on success. */
     public fun rename(
         sessionId: String,

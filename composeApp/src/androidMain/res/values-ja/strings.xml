@@ -1018,4 +1018,13 @@
     <string name="wear_health_good">システム正常</string>
     <string name="wear_health_waiting">入力が必要です</string>
     <string name="wear_health_error">セッションエラー</string>
+
+    <!-- ── Sprint 23 i18n — watch toggle (#116, v0.93.0) ── -->
+    <string name="session_watch_toggle">ウォッチ</string>
+    <string name="session_watch_on">ウォッチ中</string>
+    <string name="session_watch_off">ウォッチなし</string>
+    <string name="session_watch_tip">このセッションをウォッチして、アラートをバッジカウントに含める</string>
+    <string name="automata_watch_toggle">ウォッチ</string>
+    <string name="automata_watch_on">ウォッチ中</string>
+    <string name="automata_watch_off">ウォッチなし</string>
 </resources>

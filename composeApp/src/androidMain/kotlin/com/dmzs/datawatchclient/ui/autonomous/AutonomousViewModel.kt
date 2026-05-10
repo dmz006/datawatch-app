@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.autonomous
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
@@ -9,8 +10,13 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
 import com.dmzs.datawatchclient.transport.dto.ScanResultDto
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -22,6 +28,7 @@ import kotlinx.serialization.json.put
  * Backs [AutonomousScreen]. Reads /api/autonomous/prds against the
  * active server profile.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 public class AutonomousViewModel(
     private val resolver: ProfileResolver = ProfileResolver.Default,
 ) : ViewModel() {
@@ -304,5 +311,37 @@ public class AutonomousViewModel(
                 onFailure = { err -> _state.value = _state.value.copy(banner = "Delete type failed — ${err.message ?: err::class.simpleName}") },
             )
         }
+    }
+
+    // Cached active profile id for synchronous watch-toggle calls. Lazy to avoid
+    // touching ServiceLocator at VM construction time (tests stub the resolver but
+    // don't init ServiceLocator).
+    private val _activeProfileId: StateFlow<String?> by lazy {
+        ServiceLocator.activeProfileFlow()
+            .flatMapLatest { profile -> flowOf(profile?.id) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
+
+    /**
+     * Sprint 23 (#116) — watched-automata IDs for the active profile,
+     * reactive. Empty set = no automata watched.
+     */
+    public val watchedAutomataIds: StateFlow<Set<String>> by lazy {
+        _activeProfileId
+            .flatMapLatest { profileId ->
+                if (profileId == null) {
+                    flowOf(emptySet())
+                } else {
+                    ServiceLocator.watchedAutomataStore.watchedFlow(profileId)
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    }
+
+    /** Toggle the watched state for an automaton on the active profile. */
+    public fun toggleWatchAutomata(prdId: String) {
+        val profileId = _activeProfileId.value ?: return
+        val current = ServiceLocator.watchedAutomataStore.isWatched(profileId, prdId)
+        ServiceLocator.watchedAutomataStore.setWatched(profileId, prdId, !current)
     }
 }

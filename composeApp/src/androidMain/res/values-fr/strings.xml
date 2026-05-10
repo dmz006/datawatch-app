@@ -1018,4 +1018,13 @@
     <string name="wear_health_good">Système en bonne santé</string>
     <string name="wear_health_waiting">Saisie requise</string>
     <string name="wear_health_error">Erreur de session</string>
+
+    <!-- ── Sprint 23 i18n — watch toggle (#116, v0.93.0) ── -->
+    <string name="session_watch_toggle">Observer</string>
+    <string name="session_watch_on">En observation</string>
+    <string name="session_watch_off">Non observé</string>
+    <string name="session_watch_tip">Observez cette session pour inclure ses alertes dans le compteur du badge</string>
+    <string name="automata_watch_toggle">Observer</string>
+    <string name="automata_watch_on">En observation</string>
+    <string name="automata_watch_off">Non observé</string>
 </resources>

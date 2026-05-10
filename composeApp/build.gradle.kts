@@ -30,6 +30,7 @@ kotlin {
                 // doesn't matter for the test under run.
                 implementation("io.mockk:mockk:1.13.13")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+                implementation(libs.turbine)
             }
         }
         val androidMain by getting {
