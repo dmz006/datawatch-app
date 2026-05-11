@@ -1106,4 +1106,14 @@
     <string name="automata_watch_toggle">Watch</string>
     <string name="automata_watch_on">Watching</string>
     <string name="automata_watch_off">Not watching</string>
+
+    <!-- ── Sprint 24+29 i18n — automata button matrix + filter collapsibles (BL293/BL295, v0.94.0) ── -->
+    <string name="automata_pin">Pin</string>
+    <string name="automata_unpin">Unpin</string>
+    <string name="automata_last_activity">Created %1$s</string>
+    <string name="automata_stories_tasks">%1$d stories</string>
+    <string name="automata_confirm_cancel_title">Cancel automaton?</string>
+    <string name="automata_confirm_cancel_body">Cancel \"%1$s\"? The run will stop and the automaton will move to cancelled state.</string>
+    <string name="state_filter_btn_tip">State (%1$d) ▸</string>
+    <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
 </resources>

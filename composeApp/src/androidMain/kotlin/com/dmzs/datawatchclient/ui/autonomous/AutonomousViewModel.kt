@@ -49,6 +49,8 @@ public class AutonomousViewModel(
         val automataTypes: List<AutomataTypeDto> = emptyList(),
         /** Multi-select set for bulk actions (v0.76.0). */
         val selectedIds: Set<String> = emptySet(),
+        /** PRD id pending cancel confirmation; null = no dialog. Sprint 24 (BL293). */
+        val confirmCancelId: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -136,7 +138,19 @@ public class AutonomousViewModel(
         prdOp("Run") { it.prdAction(prdId, "run") }
     }
 
+    /** Show confirm-cancel dialog for the given PRD. Dismiss without action via [dismissCancelConfirm]. */
+    public fun requestCancel(prdId: String) {
+        _state.value = _state.value.copy(confirmCancelId = prdId)
+    }
+
+    /** Dismiss the confirm-cancel dialog without cancelling. */
+    public fun dismissCancelConfirm() {
+        _state.value = _state.value.copy(confirmCancelId = null)
+    }
+
+    /** Execute the soft-cancel after the user confirmed via the dialog. */
     public fun cancelPrd(prdId: String) {
+        _state.value = _state.value.copy(confirmCancelId = null)
         prdOp("Cancel") { it.deletePrd(prdId, hard = false) }
     }
 
@@ -343,5 +357,28 @@ public class AutonomousViewModel(
         val profileId = _activeProfileId.value ?: return
         val current = ServiceLocator.watchedAutomataStore.isWatched(profileId, prdId)
         ServiceLocator.watchedAutomataStore.setWatched(profileId, prdId, !current)
+    }
+
+    /**
+     * Sprint 24 (BL293) — pinned-automata IDs for the active profile.
+     * Pinned rows float to the top of the list regardless of status rank.
+     */
+    public val pinnedAutomataIds: StateFlow<Set<String>> by lazy {
+        _activeProfileId
+            .flatMapLatest { profileId ->
+                if (profileId == null) {
+                    flowOf(emptySet())
+                } else {
+                    ServiceLocator.pinnedAutomataStore.pinnedFlow(profileId)
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    }
+
+    /** Toggle the pinned state for an automaton on the active profile. */
+    public fun togglePin(prdId: String) {
+        val profileId = _activeProfileId.value ?: return
+        val current = ServiceLocator.pinnedAutomataStore.isPinned(profileId, prdId)
+        ServiceLocator.pinnedAutomataStore.setPinned(profileId, prdId, !current)
     }
 }

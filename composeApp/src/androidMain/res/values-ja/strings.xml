@@ -1027,4 +1027,14 @@
     <string name="automata_watch_toggle">ウォッチ</string>
     <string name="automata_watch_on">ウォッチ中</string>
     <string name="automata_watch_off">ウォッチなし</string>
+
+    <!-- ── Sprint 24+29 i18n — automata button matrix + filter collapsibles (BL293/BL295, v0.94.0) ── -->
+    <string name="automata_pin">ピン留め</string>
+    <string name="automata_unpin">ピン解除</string>
+    <string name="automata_last_activity">作成日 %1$s</string>
+    <string name="automata_stories_tasks">%1$d ストーリー</string>
+    <string name="automata_confirm_cancel_title">オートマトンをキャンセル?</string>
+    <string name="automata_confirm_cancel_body">\"%1$s\" をキャンセルしますか？実行が停止され、オートマトンはキャンセル状態に移行します。</string>
+    <string name="state_filter_btn_tip">状態 (%1$d) ▸</string>
+    <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
 </resources>

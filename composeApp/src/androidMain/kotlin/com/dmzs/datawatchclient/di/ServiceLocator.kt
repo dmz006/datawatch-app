@@ -5,6 +5,7 @@ import android.content.Context
 import com.dmzs.datawatchclient.db.DatawatchDb
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.prefs.PinnedAutomataStore
 import com.dmzs.datawatchclient.prefs.WatchedAutomataStore
 import com.dmzs.datawatchclient.prefs.WatchedSessionsStore
 import com.dmzs.datawatchclient.push.PushTokenStore
@@ -60,6 +61,8 @@ public object ServiceLocator {
     public val watchedSessionsStore: WatchedSessionsStore by lazy { WatchedSessionsStore(appContext) }
 
     public val watchedAutomataStore: WatchedAutomataStore by lazy { WatchedAutomataStore(appContext) }
+
+    public val pinnedAutomataStore: PinnedAutomataStore by lazy { PinnedAutomataStore(appContext) }
 
     /**
      * Kick the home-screen widgets so they re-render with the latest
