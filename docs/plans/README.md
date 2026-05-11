@@ -9,13 +9,13 @@ architecture).
 
 ## Active roadmap plan
 
-**No active arc plan** — all parity arc sprints complete as of v0.93.0.
+**Active arc: alpha.31–alpha.36 follow-on (Sprints 24–29)**. 7 open issues (#117–#123) tracking daemon features that landed post-parity-close.
+
+Current state: **v0.93.0/171**. Next versions implement Sprints 24–29 below.
 
 Shipped arc history (moved to `historical-plans/`):
 - `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
 - `2026-05-10-v0.80-parity-arc.md` — v0.80–v0.86 (Sprints 11–17; PWA parity + #96 #104–#110)
-
-Current state: **v0.93.0/171**. No scheduled major arc. Next work from open backlog below.
 
 ---
 ## Open - Not Assessed
@@ -46,6 +46,76 @@ Release batches:
 - **v0.35.0** — Settings polish + Monitor cards: G9 (input sizing), G19–G28 (Monitor cards), G45 (LLM schema cleanup), G57–G64 (visual)
 - **v0.35.1** — Session-detail polish: G11 (inline rename), G12 (state-override dropdown), G13–G17 (terminal toolbar + response)
 - **v0.35.2** — G41 Signal QR device linking (optional)
+
+## Open — alpha.31–alpha.36 follow-on (Sprints 24–29)
+
+Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25) are independent; Status tab (26) builds on Stats; Alerts tabs (27) are parallel; UnifiedPush (28) is independent; Sessions filter (29) is independent.
+
+### Sprint 24 — Automata browse redesign (#117 / alpha.31)
+
+| Surface | Change |
+|---------|--------|
+| Automata list | Pin button per row (📌); persisted per server profile; pinned cards always at top |
+| Sort order | pinned → state-rank (waiting/needs_review → blocked → running → planning → done) → last-activity desc |
+| Card content | Inline `Open` / `Cancel` / `Approve` buttons; `Approve` highlighted in `needs_review`/`revisions_asked`/`waiting_input`; status pill + last-activity timestamp top-right; `Stories & tasks` collapsible |
+| Alert dock | Shrink max-width on phone screens to match alpha.31 change |
+| Locale | `automata_action_*` keys (5 bundles) |
+| Wear | Optional: `needs_approval` automata count complication |
+
+### Sprint 25 — Per-session Stats sub-tab redesign (#118 / alpha.32)
+
+| Surface | Change |
+|---------|--------|
+| Session detail Stats screen | Sectioned cards: Host (always) · Container (if `env.container_id`) · ComputeNode (if `compute_node_ref`) · LLM (if `llm_ref`) |
+| Sparklines | CPU/RSS sparklines with 60-sample history buffer; use Compose Charts or raw Canvas |
+| Click-through | ComputeNode card → Compute panel; LLM card → LLM panel |
+| Locale | `stats_card_*`, `stats_field_*`, `stats_open_*`, `stats_llm_more_soon` (5 bundles) |
+
+### Sprint 26 — Status sub-tab + hook arc (#120 #121 / alpha.34/34d)
+
+| Surface | Change |
+|---------|--------|
+| Session detail | Add "Status" 4th sub-tab (Tmux → Channel → Stats → Status) |
+| Status tab badge | 🟢/🟠/⚪ from `board.state`; 5s poll via `GET /api/sessions/<id>/status` while tab open |
+| Status board cards | Current focus · Sprint · Tests · Git — conditional render |
+| Hook health pill | "● hooks alive/stale/missing" indicator |
+| All backends | Status board lights up for opencode/openwebui/ollama/council via alpha.34d universal emit |
+| Alert content | Verify truncation handles longer body (`· last tool: X · <snippet>` suffix from alpha.34b) |
+| Toast | One-time "hooks installed in `<project>/.claude/`" on claude-code session launch |
+| Locale | `session_detail_tab_status`, `status_card_*`, `status_no_*`, `status_current_focus`, `status_hooks_*` (5 bundles) |
+
+### Sprint 27 — Ollama marketplace + Alerts tabs (#119 / alpha.33)
+
+| Surface | Change |
+|---------|--------|
+| Compute Node edit | Models sub-section for ollama-kind: list installed models + Browse marketplace button |
+| Marketplace screen | Curated catalog from `GET /api/marketplace/ollama/catalog`; search + per-model tag grid (size/Min RAM/Min VRAM/fit ✓⚠/Pull) |
+| Pull progress | Poll `GET /api/marketplace/ollama/tasks/<id>` every 2s; show progress in alert dock or inline |
+| Alerts screen | Restore Active / Historical / System tabs; per-tab chip+sort+search persistence |
+| Alert dock sizing | Match alpha.33 middle-ground (max-width 420, bigger fonts, per-type color rail) |
+| Locale | `alerts_*_tab_label`, `ollama_*`, `compute_models_*`, `compute_field_models` (5 bundles) |
+
+### Sprint 28 — UnifiedPush integration (#122 / alpha.35)
+
+| Surface | Change |
+|---------|--------|
+| App start | POST `/api/push/register` with app's UnifiedPush distributor endpoint + stable `client_id` |
+| Topic subscription | Subscribe to `alerts` (catch-all) and/or `session-<id>` via SSE `EventSource` or registered push endpoint |
+| Notification render | `title` = headline, `message` = body, `priority` 4-5 = high, `tags` = session/backend hints, `click` = deep-link |
+| Tailscale fallback | Treat UnifiedPush and Signal/comm-channel as redundant safety nets (not primary+fallback) |
+| Note | alpha.35a (council/error/algorithm events) pending operator topic-taxonomy confirmation |
+
+### Sprint 29 — Sessions filter UX (#123 / alpha.36)
+
+| Surface | Change |
+|---------|--------|
+| Sessions list filter bar | `LLM (N) ▸` button collapses 8 backend-family badges; tap to expand inline |
+| State filter | `State (N) ▸` button collapses all real states with colored dot rail (Running 🟢 / Waiting 🟠 / Rate-limited 🔴 / Complete ⚪ / Failed 🔴 / Killed ⚪) |
+| Filter input | ~10% wider relative to previous flex weight |
+| Highlight | LLM/State buttons highlight when filter selection is non-default |
+| Locale | `llm_filter_btn_tip`, `state_filter_btn_tip` (5 bundles) |
+
+---
 
 ## Open — organised by sprint (fastest resolution first)
 
@@ -272,7 +342,12 @@ or retracted rather than scheduled.
 
 ## v1.0.0 target
 
-PWA parity (datawatch v7.0.0-alpha.23c) was closed at v0.86.0. Current focus:
-alpha.31+ follow-on features as they land in the daemon. No blocked issues.
+PWA parity through alpha.23c was closed at v0.86.0. Alpha.31–alpha.36 follow-on features are tracked
+in Sprints 24–29 above (7 open issues, no external blockers).
+
+Remaining pre-v1.0 work after Sprints 24–29:
+- Sprint 23 test debt (4 ViewModelTests for toggleWatch/watchedIds/watchedAlertCount/BottomNavBar) — deferred, see B31 hold
+- alpha.35a UnifiedPush topic taxonomy (council/error/algorithm events) — awaiting operator confirmation from parent project
+- B31 HOLD (Wear snapshot + voice) — user evaluating whether existing Auto scope counts as done
 
 See `docs/parity-status.md` for the parity matrix.
