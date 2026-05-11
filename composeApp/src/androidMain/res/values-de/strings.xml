@@ -1027,4 +1027,14 @@
     <string name="automata_watch_toggle">Beobachten</string>
     <string name="automata_watch_on">Wird beobachtet</string>
     <string name="automata_watch_off">Nicht beobachtet</string>
+
+    <!-- ── Sprint 24+29 i18n — automata button matrix + filter collapsibles (BL293/BL295, v0.94.0) ── -->
+    <string name="automata_pin">Anheften</string>
+    <string name="automata_unpin">Loslösen</string>
+    <string name="automata_last_activity">Erstellt %1$s</string>
+    <string name="automata_stories_tasks">%1$d Aufgaben</string>
+    <string name="automata_confirm_cancel_title">Automat abbrechen?</string>
+    <string name="automata_confirm_cancel_body">\"%1$s\" abbrechen? Der Lauf wird gestoppt und der Automat wechselt in den Abgebrochen-Status.</string>
+    <string name="state_filter_btn_tip">Status (%1$d) ▸</string>
+    <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
 </resources>

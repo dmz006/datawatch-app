@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -75,7 +76,7 @@ public fun AlertDockOverlay(
                 shape = RoundedCornerShape(10.dp),
             ),
     ) {
-        Column(modifier = Modifier.width(260.dp)) {
+        Column(modifier = Modifier.widthIn(min = 220.dp, max = 340.dp)) {
             // Header row: pill + categories + chevron + dismiss + mute
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
