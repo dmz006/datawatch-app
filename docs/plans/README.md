@@ -9,9 +9,11 @@ architecture).
 
 ## Active roadmap plan
 
-**Active arc: alpha.31–alpha.36 follow-on (Sprints 24–29)**. 7 open issues (#117–#123) tracking daemon features that landed post-parity-close.
+**Active arc: alpha.31–alpha.40 follow-on (Sprints 24–32)**. 8 open issues (#117–#125) + B31. Daemon baseline: v7.0.0-alpha.40.
 
-Current state: **v0.93.0/171**. Next versions implement Sprints 24–29 below.
+Full arc plan: [`2026-05-11-v0.94-alpha40-arc.md`](2026-05-11-v0.94-alpha40-arc.md)
+
+Current state: **v0.93.0/171**. Arc: v0.94.0 → v1.01.0, then v1.0 GH release tag.
 
 Shipped arc history (moved to `historical-plans/`):
 - `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
