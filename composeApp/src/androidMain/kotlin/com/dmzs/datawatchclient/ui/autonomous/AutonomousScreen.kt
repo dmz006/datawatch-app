@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,8 +24,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -37,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +72,7 @@ public fun AutonomousScreen(
     tmplVm: TemplatesViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
+    val pinnedIds by vm.pinnedAutomataIds.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
     var filterOpen by remember { mutableStateOf(false) }
     var includeTemplates by remember { mutableStateOf(false) }
@@ -117,7 +122,7 @@ public fun AutonomousScreen(
                     Tab(selected = currentTab == 1, onClick = { currentTab = 1 }, text = { Text(stringResource(R.string.autonomous_tab_templates)) })
                 }
                 when (currentTab) {
-                    0 -> PrdsBody(state, filterOpen, includeTemplates, statusFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onToggleSelect = { vm.toggleSelection(it) })
+                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) })
                     else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
                 }
             }
@@ -173,6 +178,26 @@ public fun AutonomousScreen(
     if (newOpen) {
         NewPrdDialog(onDismiss = { newOpen = false }, onCreate = { req -> vm.create(req); newOpen = false })
     }
+
+    // Confirm-cancel dialog (Sprint 24 BL293)
+    state.confirmCancelId?.let { cancelId ->
+        val prd = state.prds.firstOrNull { it.id == cancelId }
+        AlertDialog(
+            onDismissRequest = { vm.dismissCancelConfirm() },
+            title = { Text(stringResource(R.string.automata_confirm_cancel_title)) },
+            text = { Text(stringResource(R.string.automata_confirm_cancel_body, prd?.title?.takeIf { it.isNotBlank() } ?: prd?.name ?: cancelId)) },
+            confirmButton = {
+                TextButton(onClick = { vm.cancelPrd(cancelId) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.dismissCancelConfirm() }) {
+                    Text(stringResource(R.string.action_close))
+                }
+            },
+        )
+    }
     openPrdId?.let { id ->
         LaunchedEffect(id) { vm.loadScanResult(id) }
         val prd = state.prds.firstOrNull { it.id == id }
@@ -213,6 +238,7 @@ public fun AutonomousScreen(
 @Composable
 private fun PrdsBody(
     state: AutonomousViewModel.UiState,
+    pinnedIds: Set<String>,
     filterOpen: Boolean,
     includeTemplates: Boolean,
     statusFilter: String?,
@@ -220,6 +246,9 @@ private fun PrdsBody(
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
     onToggleSelect: (String) -> Unit = {},
+    onTogglePin: (String) -> Unit = {},
+    onRequestCancel: (String) -> Unit = {},
+    onApprove: (String) -> Unit = {},
 ) {
     if (filterOpen) {
         Row(
@@ -236,9 +265,17 @@ private fun PrdsBody(
     state.banner?.let { banner ->
         Text(banner, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
-    val visible = state.prds.filter { prd ->
-        (includeTemplates || !prd.isTemplate) && (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true))
-    }
+    val visible = state.prds
+        .filter { prd ->
+            (includeTemplates || !prd.isTemplate) && (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true))
+        }
+        .sortedWith(
+            compareBy(
+                { if (it.id in pinnedIds) 0 else 1 },
+                { prdStateRank(it.status) },
+                { -(it.createdAt?.hashCode() ?: 0) },
+            ),
+        )
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
@@ -255,8 +292,12 @@ private fun PrdsBody(
                     PrdRow(
                         prd = prd,
                         selected = prd.id in state.selectedIds,
+                        pinned = prd.id in pinnedIds,
                         onClick = { onOpenPrd(prd.id) },
                         onLongClick = { onToggleSelect(prd.id) },
+                        onTogglePin = { onTogglePin(prd.id) },
+                        onCancel = { onRequestCancel(prd.id) },
+                        onApprove = { onApprove(prd.id) },
                     )
                 }
             }
@@ -269,13 +310,19 @@ private fun PrdsBody(
 private fun PrdRow(
     prd: PrdDto,
     selected: Boolean = false,
+    pinned: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
+    onTogglePin: () -> Unit = {},
+    onCancel: () -> Unit = {},
+    onApprove: () -> Unit = {},
 ) {
     val statusColor = prdStatusColor(prd.status)
-    val storyLabel = if (prd.stories.isNotEmpty()) stringResource(R.string.autonomous_story_count, prd.stories.size) else null
+    val storyLabel = if (prd.stories.isNotEmpty()) stringResource(R.string.automata_stories_tasks, prd.stories.size) else null
     val metaText = listOfNotNull(storyLabel, prd.backend?.takeIf { it.isNotBlank() }, prd.effort?.takeIf { it.isNotBlank() }).joinToString(" · ").ifEmpty { null }
-    Row(
+    val showCancel = prd.status.lowercase() in setOf("running", "decomposing", "approved")
+    val showApprove = prd.status.lowercase() in setOf("needs_review", "revisions_asked", "awaiting_approval")
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -284,31 +331,75 @@ private fun PrdRow(
                 if (selected) mod.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)) else mod
             }
             .drawBehind { drawRect(color = statusColor, topLeft = Offset.Zero, size = Size(4.dp.toPx(), size.height)) }
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-            Row(modifier = Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                StatusPill(prd.status)
-                prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
-                if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
-                if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
-                    Text(profile, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                Row(modifier = Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    StatusPill(prd.status)
+                    prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
+                    if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
+                        Text(profile, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                metaText?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp)) }
+                prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                    Text(stringResource(R.string.automata_last_activity, ts.take(10)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.padding(top = 1.dp))
                 }
             }
-            metaText?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp)) }
-            prd.spec?.lines()?.firstOrNull()?.takeIf { it.isNotBlank() }?.let { firstLine ->
-                Text(firstLine.take(80), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), maxLines = 1, modifier = Modifier.padding(top = 1.dp))
+            // Pin toggle
+            IconButton(onClick = onTogglePin, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.PushPin,
+                    contentDescription = if (pinned) stringResource(R.string.automata_unpin) else stringResource(R.string.automata_pin),
+                    tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            // Selection checkbox
+            Icon(
+                imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+                contentDescription = if (selected) "Selected" else "Not selected",
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        // Inline action buttons (BL293 button matrix)
+        if (showCancel || showApprove) {
+            Row(
+                modifier = Modifier.padding(start = 16.dp, end = 4.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (showApprove) {
+                    TextButton(
+                        onClick = { onApprove(); onClick() },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    ) {
+                        Text(stringResource(R.string.action_approve), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                if (showCancel) {
+                    TextButton(
+                        onClick = onCancel,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    ) {
+                        Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                TextButton(
+                    onClick = onClick,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                ) {
+                    Text(stringResource(R.string.action_open), style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
-        Icon(
-            imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
-            contentDescription = if (selected) "Selected" else "Not selected",
-            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-        )
     }
 }
 
@@ -335,6 +426,16 @@ private fun TypeBadge(type: String) {
         Text(type, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
+
+/** Sort rank: action-needed statuses first, then active, then terminal. */
+internal fun prdStateRank(status: String): Int =
+    when (status.lowercase()) {
+        "needs_review", "revisions_asked", "awaiting_approval" -> 0
+        "running" -> 1
+        "decomposing" -> 2
+        "approved" -> 3
+        else -> 10
+    }
 
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {

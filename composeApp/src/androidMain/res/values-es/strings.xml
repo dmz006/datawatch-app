@@ -1027,4 +1027,14 @@
     <string name="automata_watch_toggle">Observar</string>
     <string name="automata_watch_on">Observando</string>
     <string name="automata_watch_off">No observado</string>
+
+    <!-- ── Sprint 24+29 i18n — automata button matrix + filter collapsibles (BL293/BL295, v0.94.0) ── -->
+    <string name="automata_pin">Fijar</string>
+    <string name="automata_unpin">Desfijar</string>
+    <string name="automata_last_activity">Creado %1$s</string>
+    <string name="automata_stories_tasks">%1$d tareas</string>
+    <string name="automata_confirm_cancel_title">¿Cancelar autómata?</string>
+    <string name="automata_confirm_cancel_body">¿Cancelar \"%1$s\"? La ejecución se detendrá y el autómata pasará al estado cancelado.</string>
+    <string name="state_filter_btn_tip">Estado (%1$d) ▸</string>
+    <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
 </resources>
