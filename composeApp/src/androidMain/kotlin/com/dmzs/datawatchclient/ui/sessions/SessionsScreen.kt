@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -29,6 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -506,41 +509,58 @@ private fun SessionsToolbar(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            // v0.83.0: state filter chips (All / Active / Waiting / Done)
-            // stringResource calls must be outside the LazyListScope lambda
-            val stateFilterAllLabel = stringResource(R.string.session_filter_all)
-            val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
-            val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
-            val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
-            val stateChips = listOf(
-                Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
-                Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
-                Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
-                Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
-            )
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp),
+            // Sprint 29 (BL295) — collapsible State and LLM filter buttons
+            var stateExpanded by remember { mutableStateOf(false) }
+            var llmExpanded by remember { mutableStateOf(false) }
+            Row(
+                modifier = Modifier.padding(top = 6.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             ) {
-                items(stateChips) { (filter, label, count) ->
-                    FilterChip(
-                        selected = stateFilter == filter,
-                        onClick = { onStateFilterChange(filter) },
-                        label = {
-                            Text(
-                                if (count >= 0) "$label ($count)" else label,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(),
-                    )
+                OutlinedButton(
+                    onClick = { stateExpanded = !stateExpanded },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Text(stringResource(R.string.state_filter_btn_tip, activeCount + waitingCount + doneCount), style = MaterialTheme.typography.labelSmall)
+                    Icon(if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(14.dp))
+                }
+                OutlinedButton(
+                    onClick = { llmExpanded = !llmExpanded },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Text(stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1), style = MaterialTheme.typography.labelSmall)
+                    Icon(if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(14.dp))
                 }
             }
-            if (backendCounts.size > 1) {
+            AnimatedVisibility(visible = stateExpanded) {
+                // stringResource calls hoisted out of LazyListScope
+                val stateFilterAllLabel = stringResource(R.string.session_filter_all)
+                val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
+                val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
+                val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
+                val stateChips = listOf(
+                    Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
+                    Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
+                    Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
+                    Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
+                )
                 LazyRow(
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                ) {
+                    items(stateChips) { (filter, label, count) ->
+                        FilterChip(
+                            selected = stateFilter == filter,
+                            onClick = { onStateFilterChange(filter) },
+                            label = { Text(if (count >= 0) "$label ($count)" else label, style = MaterialTheme.typography.labelSmall) },
+                            colors = FilterChipDefaults.filterChipColors(),
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(visible = llmExpanded) {
+                val councilLabel = stringResource(R.string.council_session_filter)
+                LazyRow(
+                    modifier = Modifier.padding(top = 4.dp),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
                 ) {
                     items(backendCounts) { (backend, count) ->
@@ -556,33 +576,10 @@ private fun SessionsToolbar(
                         FilterChip(
                             selected = activeBackendFilter == "council-virtual",
                             onClick = { onToggleBackend("council-virtual") },
-                            label = {
-                                Text(
-                                    stringResource(R.string.council_session_filter),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            },
+                            label = { Text(councilLabel, style = MaterialTheme.typography.labelSmall) },
                             colors = FilterChipDefaults.filterChipColors(),
                         )
                     }
-                }
-            } else {
-                // v0.74.0 S5-7 — show Council chip even when only one backend
-                Row(
-                    modifier = Modifier.padding(top = 6.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-                ) {
-                    FilterChip(
-                        selected = activeBackendFilter == "council-virtual",
-                        onClick = { onToggleBackend("council-virtual") },
-                        label = {
-                            Text(
-                                stringResource(R.string.council_session_filter),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(),
-                    )
                 }
             }
             Row(

@@ -282,4 +282,43 @@ class AutonomousViewModelTest {
 
             coVerify { t.editFiles("prd-1", "s1", null, listOf("a.go", "b.go"), null) }
         }
+
+    // ── Sprint 23 test debt (BL293, v0.94.0) ─────────────────────────────
+
+    @Test
+    fun `toggleSelection adds id when not selected`() =
+        runTest(testDispatcher) {
+            val vm = AutonomousViewModel(nullResolver)
+            vm.toggleSelection("p1")
+            assertTrue("p1" in vm.state.value.selectedIds)
+        }
+
+    @Test
+    fun `toggleSelection removes id when already selected`() =
+        runTest(testDispatcher) {
+            val vm = AutonomousViewModel(nullResolver)
+            vm.toggleSelection("p1")
+            vm.toggleSelection("p1")
+            assertTrue("p1" !in vm.state.value.selectedIds)
+        }
+
+    @Test
+    fun `clearSelection empties the set`() =
+        runTest(testDispatcher) {
+            val vm = AutonomousViewModel(nullResolver)
+            vm.toggleSelection("p1")
+            vm.toggleSelection("p2")
+            vm.clearSelection()
+            assertTrue(vm.state.value.selectedIds.isEmpty())
+        }
+
+    @Test
+    fun `requestCancel sets confirmCancelId and dismissCancelConfirm clears it`() =
+        runTest(testDispatcher) {
+            val vm = AutonomousViewModel(nullResolver)
+            vm.requestCancel("prd-x")
+            assertEquals("prd-x", vm.state.value.confirmCancelId)
+            vm.dismissCancelConfirm()
+            assertEquals(null, vm.state.value.confirmCancelId)
+        }
 }

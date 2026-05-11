@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.autonomous
 import androidx.compose.ui.graphics.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class PrdStatusColorTest {
     private val green = Color(0xFF22C55E)
@@ -26,4 +27,13 @@ class PrdStatusColorTest {
     @Test fun `cancelled maps to grey`() = assertEquals(grey, prdStatusColor("cancelled"))
     @Test fun `unknown status maps to grey`() = assertEquals(grey, prdStatusColor("unknown_status"))
     @Test fun `status matching is case-insensitive`() = assertEquals(green, prdStatusColor("RUNNING"))
+}
+
+class PrdStateRankTest {
+    @Test fun `needs_review ranks before running`() = assertTrue(prdStateRank("needs_review") < prdStateRank("running"))
+    @Test fun `running ranks before decomposing`() = assertTrue(prdStateRank("running") < prdStateRank("decomposing"))
+    @Test fun `decomposing ranks before approved`() = assertTrue(prdStateRank("decomposing") < prdStateRank("approved"))
+    @Test fun `approved ranks before complete`() = assertTrue(prdStateRank("approved") < prdStateRank("complete"))
+    @Test fun `revisions_asked same rank as needs_review`() = assertEquals(prdStateRank("needs_review"), prdStateRank("revisions_asked"))
+    @Test fun `case-insensitive rank`() = assertEquals(prdStateRank("needs_review"), prdStateRank("NEEDS_REVIEW"))
 }
