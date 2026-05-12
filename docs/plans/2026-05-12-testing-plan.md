@@ -32,9 +32,16 @@ RAM:       2048 MB
 Storage:   8 GB
 ```
 
-Start command:
+Start command (headless — use `-gpu swiftshader_indirect` to prevent system_server ANR on headless hosts):
 ```bash
-/home/dmz/workspace/Android/Sdk/emulator/emulator -avd dw_test_phone -no-snapshot-save &
+/home/dmz/workspace/Android/Sdk/emulator/emulator \
+  -avd dw_test_phone \
+  -no-snapshot-save \
+  -no-audio \
+  -no-window \
+  -gpu swiftshader_indirect \
+  -no-boot-anim \
+  2>/tmp/emulator.log &
 ```
 
 Wait for boot:
@@ -98,8 +105,8 @@ fi
 
 | T-Sprint | Area | Stories | Status |
 |----------|------|---------|--------|
-| T1 | Onboarding & server add | TS-001–TS-010 | ☐ |
-| T2 | Session list & refresh | TS-011–TS-035 | ☐ |
+| T1 | Onboarding & server add | TS-001–TS-010 | 🟡 2/10 run — 2✅ 1❌ 7⏭ |
+| T2 | Session list & refresh | TS-011–TS-035 | 🟡 Code audit complete — blocked pending server |
 | T3 | Session detail / terminal | TS-036–TS-060 | ☐ |
 | T4 | New session creation | TS-061–TS-075 | ☐ |
 | T5 | Alerts | TS-076–TS-095 | ☐ |
@@ -111,7 +118,7 @@ fi
 | T11 | Security & keystore | TS-196–TS-205 | ☐ |
 | T12 | Multi-server & federation | TS-206–TS-220 | ☐ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | ☐ |
-| T14 | Regression — session refresh | TS-256–TS-285 | ☐ |
+| T14 | Regression — session refresh | TS-256–TS-285 | 🟡 Code audit complete — root cause identified (see BL-T14-1) |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
 
@@ -123,16 +130,16 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-001 | Fresh install → onboarding screen | Launch app with no data | Splash → onboarding "Get Started" | ☐ | |
-| TS-002 | Add server — happy path | Tap Get Started → fill URL + bearer token → Save | Navigates to Sessions list; no error | ☐ | |
-| TS-003 | Add server — bad URL | Enter invalid URL (no scheme) → Save | Inline error shown; does not navigate | ☐ | |
-| TS-004 | Add server — wrong bearer | Enter valid URL + wrong token | Server error shown in reachability dot | ☐ | |
-| TS-005 | Edit server | Settings → Comms → Servers → tap server → change name → Save | Name updated in list | ☐ | |
-| TS-006 | Delete server | Settings → Comms → Servers → ⋮ → Delete | Server removed; if last server, redirects to onboarding | ☐ | |
-| TS-007 | Download CA cert | Settings → Comms → Servers → ⋮ → Download CA cert | PEM saved to Downloads; OS cert install intent fires | ☐ | |
-| TS-008 | Server picker — 3-finger swipe | In sessions list, swipe up with 3 fingers | Server picker bottom sheet appears | ☐ | |
-| TS-009 | Server picker — switch server | Open picker → select different server | Sessions list reloads for new server | ☐ | |
-| TS-010 | Onboarding → Add server → cancel | Fill partial form → tap Cancel | Returns to onboarding without saving | ☐ | |
+| TS-001 | Fresh install → onboarding screen | Launch app with no data | Splash → onboarding "Get Started" | ✅ Pass | Dark splash + "Add your first server" button present; v0.108.0 shown |
+| TS-002 | Add server — happy path | Tap Get Started → fill URL + bearer token → Save | Navigates to Sessions list; no error | ⏭ Blocked | Needs live server; form opens correctly (dark style, 3 fields, self-signed toggle, Add disabled until all fields valid) |
+| TS-003 | Add server — bad URL | Enter invalid URL (no scheme) → Save | Inline error shown; does not navigate | ❌ Fail | Button disabled (no navigation) ✅ but NO inline error text shown — only disabled button as feedback. canSubmit logic: `url.startsWith("http://") or "https://"` |
+| TS-004 | Add server — wrong bearer | Enter valid URL + wrong token | Server error shown in reachability dot | ⏭ Blocked | Needs live server |
+| TS-005 | Edit server | Settings → Comms → Servers → tap server → change name → Save | Name updated in list | ⏭ Blocked | Needs existing server entry |
+| TS-006 | Delete server | Settings → Comms → Servers → ⋮ → Delete | Server removed; if last server, redirects to onboarding | ⏭ Blocked | Needs existing server entry |
+| TS-007 | Download CA cert | Settings → Comms → Servers → ⋮ → Download CA cert | PEM saved to Downloads; OS cert install intent fires | ⏭ Blocked | Needs existing server entry |
+| TS-008 | Server picker — 3-finger swipe | In sessions list, swipe up with 3 fingers | Server picker bottom sheet appears | ⏭ Blocked | Needs existing server entry |
+| TS-009 | Server picker — switch server | Open picker → select different server | Sessions list reloads for new server | ⏭ Blocked | Needs existing server entry |
+| TS-010 | Onboarding → Add server → cancel | Fill partial form → tap Cancel | Returns to onboarding without saving | ✅ Pass | Tapping Cancel returns to onboarding screen; no data persisted |
 
 ---
 
@@ -502,14 +509,21 @@ fi
 
 **Goal:** Exhaustively prove session list refresh works in every scenario. This addresses the known regression where sessions don't appear/update without manual refresh.
 
-### Root-cause hypothesis checklist
+### Root-cause hypothesis checklist — CODE AUDIT COMPLETED 2026-05-12
 
-Before running tests, verify these implementation points:
-1. `SessionsViewModel` polling loop starts in `init {}` — check it isn't cancelled on navigate-away
-2. `DisposableEffect` in `SessionsScreen` calls `vm.startPolling()` on mount — check composable lifecycle
-3. `AppRoot` on-resume observer — verify it fires on every `ON_RESUME` and triggers a poll
-4. `SessionsViewModel` `collectAsState` in `SessionsScreen` — check no stale Flow reference
-5. ViewModelStore scope — ViewModel should survive navigation within HomeShell; check `viewModel()` key
+✅ 1. `SessionsViewModel` polling loop starts in `init {}` and runs correctly — `while (isActive) { delay(5000); if (!refreshing) refresh() }` in `viewModelScope`.
+✅ 2. No `startPolling()` call needed — polling is unconditional from `init`.
+❌ 3. `AppRoot` `ON_RESUME` observer fires but only calls `ping()` on each profile (for reachability dot color) — does NOT call `SessionsViewModel.refresh()`. Comment at AppRoot:106 says "Polling resumes naturally via SessionsViewModel's 5-second loop." **This is the root cause of perceived stale sessions on resume.**
+✅ 4. `collectAsState()` in `SessionsScreen` is correct — observes `vm.state` which is a `stateIn(Eagerly)` flow.
+✅ 5. ViewModel is scoped per NavBackStackEntry via `viewModel()` — survives tab switches because the Sessions destination stays on the back stack.
+
+**Architecture verdict**: Polling is correct. The 5-second poll delay causes sessions to appear stale for up to 5s after:
+- Returning from NewSession screen after creating a session
+- Returning from Detail screen  
+- App resume after backgrounding
+- Screen unlock
+
+**Fix**: Add `vm.refresh()` call in `ON_RESUME` observer in AppRoot (alongside existing ping), OR add a `DisposableEffect` in `SessionsScreen` that calls `vm.refresh()` on every `ON_RESUME`.
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
@@ -552,7 +566,9 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 
 | Bug ID | Story | Description | Status |
 |--------|-------|-------------|--------|
-| — | — | None filed yet | — |
+| BL-T1-1 | TS-003 | Add server form: no inline error text for invalid URL (no scheme) — button disabled but no message explaining why | Open |
+| BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. New/changed sessions appear stale for up to 5s after screen resume or returning from NewSession/Detail. Fix: call `SessionsViewModel.refresh()` from ON_RESUME handler. | Open |
+| BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Open |
 
 ---
 
@@ -578,6 +594,8 @@ Each testing session appends a row here before committing.
 | Date | Tester | T-Sprint | Stories Run | Pass | Fail | Notes |
 |------|--------|----------|-------------|------|------|-------|
 | 2026-05-12 | Claude | Setup | — | — | — | Plan created; emulator dw_test_phone created; system image Android 34 installed |
+| 2026-05-12 | Claude | T1/T2 setup | — | — | — | APK built (v0.108.0, 100MB); emulator ANR loop under default GPU; restarted with -gpu swiftshader_indirect for headless stability; git hooks installed (pre-commit, prepare-commit-msg) |
+| 2026-05-12 | Claude | T1 (partial) + T14 code audit | 12 | 2 | 1 | T1: TS-001✅ TS-010✅ TS-003❌ (no inline URL error) TS-002,004-009⏭ blocked. T14: Code audit complete — BL-T14-1 (ON_RESUME no refresh) BL-T14-2 (llmRef not persisted). Used uiautomator dump for exact tap coords; emulator System UI ANR needs swiftshader_indirect GPU. |
 
 ---
 

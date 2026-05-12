@@ -36,7 +36,9 @@ CREATE TABLE session (
     last_response       TEXT,
     output_mode         TEXT,
     input_mode          TEXT,
-    agent_id            TEXT
+    agent_id            TEXT,
+    llm_ref             TEXT,
+    compute_node_ref    TEXT
 );
 CREATE INDEX session_by_activity ON session(server_profile_id, last_activity_ts DESC);
 

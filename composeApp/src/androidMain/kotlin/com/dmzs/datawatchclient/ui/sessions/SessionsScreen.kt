@@ -89,6 +89,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -133,6 +136,19 @@ public fun SessionsScreen(
     // toggles this. Stays implicitly "expanded" when filter text or
     // history are active so typed queries / visible state aren't hidden.
     var toolbarExpanded by remember { mutableStateOf(false) }
+
+    // BL-T14-1: Refresh on every ON_RESUME so sessions are current immediately
+    // after screen unlock, app foreground, or returning from another screen.
+    // The ViewModel's 5-second poll handles steady-state; this removes the
+    // first-poll lag that made sessions feel stale on resume.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) vm.refresh()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {

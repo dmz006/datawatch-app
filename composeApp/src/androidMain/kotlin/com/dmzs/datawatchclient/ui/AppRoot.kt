@@ -103,9 +103,9 @@ public fun AppRoot() {
         // post-keyguard unlock case), re-probe every enabled
         // profile so the reachability dot reflects current state
         // instead of whatever was true when the screen turned off.
-        // Polling resumes naturally via SessionsViewModel's
-        // 5-second loop; this just removes the "first poll lag"
-        // operators were seeing on unlock.
+        // BL-T14-1 fix: SessionsScreen now has its own ON_RESUME observer
+        // that calls vm.refresh() directly; this observer handles the
+        // reachability dot only.
         val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
         androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
             val observer =
