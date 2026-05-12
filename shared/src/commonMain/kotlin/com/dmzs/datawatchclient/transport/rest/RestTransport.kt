@@ -2368,6 +2368,34 @@ public class RestTransport(
         }
     }
 
+    // Sprint 30 — LLM multi-node + session management
+    override suspend fun getLlmSessions(
+        name: String,
+        page: Int,
+        size: Int,
+    ): Result<com.dmzs.datawatchclient.transport.dto.LlmSessionsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/llms/${name}/sessions") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("page", page)
+                parameter("size", size)
+            }.body()
+        }
+
+    override suspend fun reassignLlmSessions(
+        fromName: String,
+        toName: String,
+        force: Boolean,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/llms/${fromName}/reassign") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.LlmReassignDto(newLlm = toName, force = force))
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
@@ -2414,6 +2442,8 @@ public class RestTransport(
                 TransportError.Unauthorized()
             HttpStatusCode.NotFound ->
                 TransportError.NotFound(e.message ?: "not found")
+            HttpStatusCode.Conflict ->
+                TransportError.Conflict(e.message ?: "conflict")
             HttpStatusCode.TooManyRequests ->
                 TransportError.RateLimited()
             else ->
