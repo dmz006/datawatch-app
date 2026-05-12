@@ -1087,4 +1087,9 @@
     <string name="ollama_tag_tight">Limite</string>
     <string name="compute_models_title">Modèles</string>
     <string name="compute_field_models">Modèles installés</string>
+
+    <!-- ── Sprint 28 i18n — UnifiedPush SSE (v0.98.0) ── -->
+    <string name="push_registered">Notifications push enregistrées</string>
+    <string name="push_failed">Échec de l\'enregistrement push — réessai en cours</string>
+    <string name="push_notification_channel">alertes datawatch</string>
 </resources>

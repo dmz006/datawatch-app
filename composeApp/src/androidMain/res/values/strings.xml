@@ -1166,4 +1166,9 @@
     <string name="ollama_tag_tight">Tight</string>
     <string name="compute_models_title">Models</string>
     <string name="compute_field_models">Installed models</string>
+
+    <!-- ── Sprint 28 i18n — UnifiedPush SSE (v0.98.0) ── -->
+    <string name="push_registered">Push notifications registered</string>
+    <string name="push_failed">Push registration failed — retrying</string>
+    <string name="push_notification_channel">datawatch alerts</string>
 </resources>

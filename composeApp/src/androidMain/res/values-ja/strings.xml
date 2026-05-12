@@ -1087,4 +1087,9 @@
     <string name="ollama_tag_tight">余裕なし</string>
     <string name="compute_models_title">モデル</string>
     <string name="compute_field_models">インストール済みモデル</string>
+
+    <!-- ── Sprint 28 i18n — UnifiedPush SSE (v0.98.0) ── -->
+    <string name="push_registered">プッシュ通知を登録しました</string>
+    <string name="push_failed">プッシュ登録失敗 — 再試行中</string>
+    <string name="push_notification_channel">datawatch アラート</string>
 </resources>

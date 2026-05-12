@@ -362,6 +362,26 @@ public data class OllamaPullTaskDto(
     val status: String = "pending",
 )
 
+// ============================================================
+// v0.98.0 — UnifiedPush SSE DTOs (alpha.35 / Sprint 28)
+// ============================================================
+
+@Serializable
+public data class PushRegistrationDto(
+    val endpoint: String,
+    @SerialName("client_id") val clientId: String,
+    val token: String = "",
+)
+
+@Serializable
+public data class PushEventDto(
+    val title: String = "",
+    val message: String = "",
+    val priority: Int = 3,
+    val tags: List<String> = emptyList(),
+    val click: String = "",
+)
+
 @Serializable
 public data class BackendStatusDto(
     val name: String = "",

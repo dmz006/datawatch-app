@@ -77,6 +77,14 @@
             android:foregroundServiceType="dataSync"
             tools:ignore="Instantiatable"/>
 
+        <!-- UnifiedPush SSE foreground service — parallel rich-notification path
+             with deep-link support via /api/push/alerts (Sprint 28, alpha.35). -->
+        <service
+            android:name=".push.UnifiedPushSseService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:ignore="Instantiatable"/>
+
         <!-- Inline reply receiver for "Input needed" notifications. -->
         <receiver
             android:name=".push.ReplyBroadcastReceiver"
