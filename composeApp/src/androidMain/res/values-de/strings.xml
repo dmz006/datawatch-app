@@ -1092,4 +1092,23 @@
     <string name="push_registered">Push-Benachrichtigungen registriert</string>
     <string name="push_failed">Push-Registrierung fehlgeschlagen — erneuter Versuch</string>
     <string name="push_notification_channel">datawatch Alarme</string>
+
+    <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
+    <string name="llm_models_tab">Modelle</string>
+    <string name="llm_in_use_tab">In Verwendung</string>
+    <string name="llm_models_node_col">Knoten</string>
+    <string name="llm_models_model_col">Modell</string>
+    <string name="llm_models_add_row">Zeile hinzufügen</string>
+    <string name="llm_models_auto_badge">Auto</string>
+    <string name="llm_models_none">Keine Modelle konfiguriert</string>
+    <string name="llm_in_use_none">Keine aktiven Sitzungen</string>
+    <string name="llm_in_use_task_col">Aufgabe</string>
+    <string name="llm_delete_blocked_n">%1$s hat aktive Sitzungen</string>
+    <string name="llm_reassign_to">Sitzungen neu zuweisen an:</string>
+    <string name="llm_reassign_btn">Neu zuweisen &amp; löschen</string>
+    <string name="llm_force_delete">Erzwungenes Löschen (ohne Neuzuweisung)</string>
+    <string name="llm_force_confirm">Dieses LLM erzwungen löschen und aktive Sitzungen aufgeben?</string>
+    <string name="automata_confirm_batch_cancel">%1$d ausgewählte Automaten abbrechen?</string>
+    <string name="automata_confirm_batch_delete_title">Automaten löschen</string>
+    <string name="automata_confirm_batch_delete">%1$d ausgewählte Automaten dauerhaft löschen?</string>
 </resources>

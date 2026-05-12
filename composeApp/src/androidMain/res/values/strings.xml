@@ -1171,4 +1171,23 @@
     <string name="push_registered">Push notifications registered</string>
     <string name="push_failed">Push registration failed — retrying</string>
     <string name="push_notification_channel">datawatch alerts</string>
+
+    <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
+    <string name="llm_models_tab">Models</string>
+    <string name="llm_in_use_tab">In Use</string>
+    <string name="llm_models_node_col">Node</string>
+    <string name="llm_models_model_col">Model</string>
+    <string name="llm_models_add_row">Add row</string>
+    <string name="llm_models_auto_badge">Auto</string>
+    <string name="llm_models_none">No models configured</string>
+    <string name="llm_in_use_none">No active sessions</string>
+    <string name="llm_in_use_task_col">Task</string>
+    <string name="llm_delete_blocked_n">%1$s has active sessions</string>
+    <string name="llm_reassign_to">Reassign sessions to:</string>
+    <string name="llm_reassign_btn">Reassign &amp; delete</string>
+    <string name="llm_force_delete">Force delete (skip reassign)</string>
+    <string name="llm_force_confirm">Force-delete this LLM and abandon its active sessions?</string>
+    <string name="automata_confirm_batch_cancel">Cancel %1$d selected automata?</string>
+    <string name="automata_confirm_batch_delete_title">Delete automata</string>
+    <string name="automata_confirm_batch_delete">Permanently delete %1$d selected automata?</string>
 </resources>

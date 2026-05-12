@@ -1092,4 +1092,23 @@
     <string name="push_registered">Notificaciones push registradas</string>
     <string name="push_failed">Error en registro push — reintentando</string>
     <string name="push_notification_channel">alertas datawatch</string>
+
+    <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
+    <string name="llm_models_tab">Modelos</string>
+    <string name="llm_in_use_tab">En uso</string>
+    <string name="llm_models_node_col">Nodo</string>
+    <string name="llm_models_model_col">Modelo</string>
+    <string name="llm_models_add_row">Añadir fila</string>
+    <string name="llm_models_auto_badge">Auto</string>
+    <string name="llm_models_none">Sin modelos configurados</string>
+    <string name="llm_in_use_none">Sin sesiones activas</string>
+    <string name="llm_in_use_task_col">Tarea</string>
+    <string name="llm_delete_blocked_n">%1$s tiene sesiones activas</string>
+    <string name="llm_reassign_to">Reasignar sesiones a:</string>
+    <string name="llm_reassign_btn">Reasignar &amp; eliminar</string>
+    <string name="llm_force_delete">Eliminar forzosamente (sin reasignar)</string>
+    <string name="llm_force_confirm">¿Eliminar forzosamente este LLM y abandonar sus sesiones activas?</string>
+    <string name="automata_confirm_batch_cancel">¿Cancelar %1$d autómatas seleccionados?</string>
+    <string name="automata_confirm_batch_delete_title">Eliminar autómatas</string>
+    <string name="automata_confirm_batch_delete">¿Eliminar permanentemente %1$d autómatas seleccionados?</string>
 </resources>
