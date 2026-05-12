@@ -589,12 +589,23 @@ public fun SessionDetailScreen(
                 // User's view-mode toggle (Terminal vs Chat-style bubbles
                 // for any non-chat session). Renders the event stream as
                 // bubbles but is different from server-side chat mode.
+                // BL-T3-3: Filter PaneCapture + ChatMessage before passing —
+                // ChatBubbleRow returns early for both, producing zero-height
+                // items that make the list appear blank when all recent events
+                // are pane snapshots (typical for active tmux sessions).
                 ChatEventList(
-                    events = state.events,
+                    events = state.events.filter {
+                        it !is SessionEvent.PaneCapture && it !is SessionEvent.ChatMessage
+                    },
                     onQuickReply = vm::sendQuickReply,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             } else {
+                // BL-T3-4: InputRequiredBanner was implemented but never called.
+                // Show amber banner above terminal when session needs user input.
+                if (state.needsInput) {
+                    InputRequiredBanner(prompt = state.pendingPromptText)
+                }
                 // v0.42.0 — controller + toolbar state are hoisted
                 // above the tabs row so the font / scroll buttons
                 // render inline next to the tmux/channel pills.
