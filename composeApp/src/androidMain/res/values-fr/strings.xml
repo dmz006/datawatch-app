@@ -1054,6 +1054,8 @@
     <string name="stats_container_image">Image</string>
     <string name="stats_container_runtime">Runtime</string>
     <string name="session_detail_tab_status">Statut</string>
+    <string name="session_detail_status_subtab_status">Statut</string>
+    <string name="session_detail_status_subtab_stats">Statistiques</string>
     <string name="status_card_focus">Focus actuel</string>
     <string name="status_card_sprint">Sprint</string>
     <string name="status_card_tests">Tests</string>
@@ -1108,6 +1110,25 @@
     <string name="llm_reassign_btn">Réassigner &amp; supprimer</string>
     <string name="llm_force_delete">Supprimer de force (sans réassignation)</string>
     <string name="llm_force_confirm">Forcer la suppression de ce LLM et abandonner ses sessions actives ?</string>
+    <!-- Champs LLM alpha.41 (Sprint 34) -->
+    <string name="llm_field_api_key_ref">Référence clé API</string>
+    <string name="llm_field_timeout">Délai d\'attente (s)</string>
+    <string name="llm_field_tags">Ajouter une étiquette</string>
+    <string name="llm_section_session_backend">Backend de session</string>
+    <string name="llm_field_binary">Chemin binaire</string>
+    <string name="llm_field_console_cols">Colonnes</string>
+    <string name="llm_field_console_rows">Lignes</string>
+    <string name="llm_field_output_mode">Mode de sortie</string>
+    <string name="llm_field_input_mode">Mode d\'entrée</string>
+    <string name="llm_field_auto_git_init">Auto git init</string>
+    <string name="llm_field_auto_git_commit">Auto git commit</string>
+    <string name="llm_section_claude">Claude Code</string>
+    <string name="llm_field_skip_permissions">Ignorer les permissions</string>
+    <string name="llm_field_channel_enabled">Canal activé</string>
+    <string name="llm_field_auto_accept">Accepter automatiquement la clause</string>
+    <string name="llm_field_permission_mode">Mode de permission</string>
+    <string name="llm_field_default_effort">Effort par défaut</string>
+    <string name="llm_field_fallback_chain">Ajouter LLM de secours</string>
     <string name="automata_confirm_batch_cancel">Annuler %1$d automates sélectionnés ?</string>
     <string name="automata_confirm_batch_delete_title">Supprimer les automates</string>
     <string name="automata_confirm_batch_delete">Supprimer définitivement %1$d automates sélectionnés ?</string>
