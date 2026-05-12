@@ -1037,4 +1037,20 @@
     <string name="automata_confirm_cancel_body">\"%1$s\" abbrechen? Der Lauf wird gestoppt und der Automat wechselt in den Abgebrochen-Status.</string>
     <string name="state_filter_btn_tip">Status (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
+    <string name="stats_card_host">Host</string>
+    <string name="stats_card_container">Container</string>
+    <string name="stats_card_compute_node">Rechenknoten</string>
+    <string name="stats_card_llm">LLM</string>
+    <string name="stats_field_cpu">CPU</string>
+    <string name="stats_field_rss">RSS</string>
+    <string name="stats_field_threads">Threads</string>
+    <string name="stats_field_fds">Dateideskriptoren</string>
+    <string name="stats_field_net">Netzwerk</string>
+    <string name="stats_field_gpu">GPU</string>
+    <string name="stats_open_compute">In Compute öffnen →</string>
+    <string name="stats_open_llm">In LLM öffnen →</string>
+    <string name="stats_llm_more_soon">Token-Rate · Latenz · Modellzustand im nächsten Update</string>
+    <string name="stats_container_id">Container-ID</string>
+    <string name="stats_container_image">Image</string>
+    <string name="stats_container_runtime">Laufzeit</string>
 </resources>

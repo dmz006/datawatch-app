@@ -1037,4 +1037,20 @@
     <string name="automata_confirm_cancel_body">\"%1$s\" をキャンセルしますか？実行が停止され、オートマトンはキャンセル状態に移行します。</string>
     <string name="state_filter_btn_tip">状態 (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
+    <string name="stats_card_host">ホスト</string>
+    <string name="stats_card_container">コンテナ</string>
+    <string name="stats_card_compute_node">計算ノード</string>
+    <string name="stats_card_llm">LLM</string>
+    <string name="stats_field_cpu">CPU</string>
+    <string name="stats_field_rss">RSS</string>
+    <string name="stats_field_threads">スレッド</string>
+    <string name="stats_field_fds">ファイルディスクリプタ</string>
+    <string name="stats_field_net">ネットワーク</string>
+    <string name="stats_field_gpu">GPU</string>
+    <string name="stats_open_compute">Computeで開く →</string>
+    <string name="stats_open_llm">LLMで開く →</string>
+    <string name="stats_llm_more_soon">トークン率・レイテンシ・モデル状態は次回更新で</string>
+    <string name="stats_container_id">コンテナID</string>
+    <string name="stats_container_image">イメージ</string>
+    <string name="stats_container_runtime">ランタイム</string>
 </resources>
