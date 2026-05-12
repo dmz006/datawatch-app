@@ -17,7 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +35,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +74,7 @@ internal fun CouncilCard() {
     var showPersonasSheet by remember { mutableStateOf(false) }
     var showAddWizard by remember { mutableStateOf(false) }
     var editingPersona by remember { mutableStateOf<CouncilPersonaForEdit?>(null) }
+    var personaToDelete by remember { mutableStateOf<CouncilPersonaDto?>(null) }
     val scope = rememberCoroutineScope()
 
     suspend fun loadAll() {
@@ -113,6 +118,18 @@ internal fun CouncilCard() {
                     assistBackend = assistBackend,
                 )
                 ServiceLocator.transportFor(sp).updateCouncilPersona(name, dto)
+                    .onSuccess { loadAll() }
+            }
+        }
+    }
+
+    fun deletePersona(name: String) {
+        scope.launch {
+            runCatching {
+                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                val sp = ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                ServiceLocator.transportFor(sp).deleteCouncilPersona(name)
                     .onSuccess { loadAll() }
             }
         }
@@ -199,10 +216,21 @@ internal fun CouncilCard() {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        persona.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Text(persona.name, style = MaterialTheme.typography.bodyMedium)
+                                        if (persona.isBuiltin) {
+                                            Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
+                                                Text(
+                                                    stringResource(R.string.council_persona_builtin_badge),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                )
+                                            }
+                                        }
+                                    }
                                     if (persona.description.isNotBlank()) {
                                         Text(
                                             persona.description,
@@ -216,13 +244,19 @@ internal fun CouncilCard() {
                                         name = persona.name,
                                         prompt = persona.prompt,
                                         description = persona.description,
+                                        isBuiltin = persona.isBuiltin,
                                     )
                                     showPersonasSheet = false
                                 }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Edit,
-                                        contentDescription = "Edit persona",
-                                    )
+                                    Icon(imageVector = Icons.Filled.Edit, contentDescription = stringResource(R.string.council_persona_edit))
+                                }
+                                if (!persona.isBuiltin) {
+                                    IconButton(onClick = {
+                                        personaToDelete = persona
+                                        showPersonasSheet = false
+                                    }) {
+                                        Icon(imageVector = Icons.Filled.Delete, contentDescription = stringResource(R.string.council_persona_delete), tint = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                             HorizontalDivider()
@@ -257,6 +291,23 @@ internal fun CouncilCard() {
                     editingPersona = null
                 },
                 existingPersona = editingPersona,
+            )
+        }
+
+        // ── PERSONA DELETE CONFIRM ────────────────────────────────────────
+        personaToDelete?.let { persona ->
+            AlertDialog(
+                onDismissRequest = { personaToDelete = null },
+                title = { Text(stringResource(R.string.council_persona_delete_confirm_title, persona.name)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        deletePersona(persona.name)
+                        personaToDelete = null
+                    }) { Text(stringResource(R.string.council_persona_delete)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { personaToDelete = null }) { Text(stringResource(R.string.action_cancel)) }
+                },
             )
         }
 
