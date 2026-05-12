@@ -288,6 +288,42 @@ public data class StatEnvelopeDto(
     val container: ContainerInfoDto? = null,
 )
 
+// ============================================================
+// Sprint 26 — Session status board (alpha.34)
+// ============================================================
+
+@Serializable
+public data class SprintStatusDto(
+    val name: String = "",
+    val progress: String = "",
+)
+
+@Serializable
+public data class TestStatusDto(
+    val passing: Int = 0,
+    val failing: Int = 0,
+    val total: Int = 0,
+)
+
+@Serializable
+public data class GitStatusDto(
+    val branch: String = "",
+    val uncommitted: Int = 0,
+    val ahead: Int = 0,
+)
+
+@Serializable
+public data class SessionStatusBoardDto(
+    val state: String = "idle",
+    @SerialName("last_event") val lastEvent: String? = null,
+    @SerialName("idle_since") val idleSince: String? = null,
+    @SerialName("hook_health") val hookHealth: String = "missing",
+    val sprint: SprintStatusDto? = null,
+    val tests: TestStatusDto? = null,
+    val git: GitStatusDto? = null,
+    @SerialName("current_focus") val currentFocus: String? = null,
+)
+
 @Serializable
 public data class BackendStatusDto(
     val name: String = "",
