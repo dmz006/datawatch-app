@@ -1111,4 +1111,18 @@
     <string name="automata_confirm_batch_cancel">¿Cancelar %1$d autómatas seleccionados?</string>
     <string name="automata_confirm_batch_delete_title">Eliminar autómatas</string>
     <string name="automata_confirm_batch_delete">¿Eliminar permanentemente %1$d autómatas seleccionados?</string>
+
+    <!-- ── Sprint 31 i18n — Council persona CRUD + built-in badge (v1.00.0) ── -->
+    <string name="council_personas_title">Personas del consejo</string>
+    <string name="council_persona_name">Nombre</string>
+    <string name="council_persona_description">Descripción</string>
+    <string name="council_persona_system_prompt">Prompt del sistema</string>
+    <string name="council_persona_builtin_badge">Integrado</string>
+    <string name="council_persona_add">Añadir persona</string>
+    <string name="council_persona_edit">Editar</string>
+    <string name="council_persona_save">Guardar</string>
+    <string name="council_persona_delete">Eliminar</string>
+    <string name="council_persona_none">Sin personas personalizadas</string>
+    <string name="council_persona_name_required">Nombre requerido</string>
+    <string name="council_persona_delete_confirm_title">¿Eliminar %1$s?</string>
 </resources>
