@@ -1087,4 +1087,9 @@
     <string name="ollama_tag_tight">Knapp</string>
     <string name="compute_models_title">Modelle</string>
     <string name="compute_field_models">Installierte Modelle</string>
+
+    <!-- ── Sprint 28 i18n — UnifiedPush SSE (v0.98.0) ── -->
+    <string name="push_registered">Push-Benachrichtigungen registriert</string>
+    <string name="push_failed">Push-Registrierung fehlgeschlagen — erneuter Versuch</string>
+    <string name="push_notification_channel">datawatch Alarme</string>
 </resources>

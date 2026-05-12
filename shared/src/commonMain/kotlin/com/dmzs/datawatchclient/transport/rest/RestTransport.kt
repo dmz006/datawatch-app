@@ -77,12 +77,15 @@ import io.ktor.utils.io.core.writeFully
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto
 import com.dmzs.datawatchclient.transport.dto.SignalLinkStatusDto
 import com.dmzs.datawatchclient.transport.QuickCommandItem
@@ -2317,6 +2320,53 @@ public class RestTransport(
             }
             Unit
         }
+
+    // Sprint 28 — alpha.35 UnifiedPush SSE
+    override suspend fun registerPush(
+        registration: com.dmzs.datawatchclient.transport.dto.PushRegistrationDto,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/push/register") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(registration)
+            }
+            Unit
+        }
+
+    override fun subscribePushAlerts(): Flow<com.dmzs.datawatchclient.transport.dto.PushEventDto> = flow {
+        val url = "${profile.baseUrl}/api/push/alerts"
+        var backoff = 1_000L
+        while (true) {
+            try {
+                val res = client.get(url) {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }
+                val channel = res.bodyAsChannel()
+                var event = ""
+                var data = ""
+                backoff = 1_000L
+                while (true) {
+                    val line = channel.readUTF8Line() ?: break
+                    when {
+                        line.startsWith("event:") -> event = line.removePrefix("event:").trim()
+                        line.startsWith("data:") -> data = line.removePrefix("data:").trim()
+                        line.isBlank() && event == "message" && data.isNotBlank() -> {
+                            runCatching {
+                                Json.decodeFromString<com.dmzs.datawatchclient.transport.dto.PushEventDto>(data)
+                            }.onSuccess { emit(it) }
+                            event = ""; data = ""
+                        }
+                        line.isBlank() -> { event = ""; data = "" }
+                    }
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (_: Throwable) {
+                delay(backoff)
+                backoff = (backoff * 2).coerceAtMost(30_000L)
+            }
+        }
+    }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 

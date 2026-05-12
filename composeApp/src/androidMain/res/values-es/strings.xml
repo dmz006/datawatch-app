@@ -1087,4 +1087,9 @@
     <string name="ollama_tag_tight">Justo</string>
     <string name="compute_models_title">Modelos</string>
     <string name="compute_field_models">Modelos instalados</string>
+
+    <!-- ── Sprint 28 i18n — UnifiedPush SSE (v0.98.0) ── -->
+    <string name="push_registered">Notificaciones push registradas</string>
+    <string name="push_failed">Error en registro push — reintentando</string>
+    <string name="push_notification_channel">alertas datawatch</string>
 </resources>

@@ -1159,6 +1159,10 @@ public interface TransportClient {
     public suspend fun pullOllamaModel(nodeId: String, model: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto>
     public suspend fun getPullTask(taskId: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto>
     public suspend fun deleteOllamaModel(nodeId: String, model: String): Result<Unit>
+
+    // Sprint 28 — alpha.35 UnifiedPush SSE
+    public suspend fun registerPush(registration: com.dmzs.datawatchclient.transport.dto.PushRegistrationDto): Result<Unit>
+    public fun subscribePushAlerts(): Flow<com.dmzs.datawatchclient.transport.dto.PushEventDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
