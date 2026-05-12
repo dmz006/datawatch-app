@@ -988,6 +988,13 @@ public data class FreeObserverPeerDto(
     val shape: String = "",
 )
 
+/** Sprint 30 — per-node model assignment in the LLM registry. */
+@Serializable
+public data class LlmModelPairDto(
+    @SerialName("compute_node") val computeNode: String,
+    val model: String,
+)
+
 /**
  * GET/POST/PUT /api/llms — a registered LLM entry. kind=openwebui
  * is valid here (references an ollama ComputeNode under the hood).
@@ -1000,8 +1007,38 @@ public data class LlmRegistryEntryDto(
     /** v7 multi-node list for the picker cascade. The `compute_node` field above is the primary; this list may contain alternates. */
     @SerialName("compute_nodes") val computeNodes: List<String> = emptyList(),
     val model: String,
+    /** Sprint 30 — per-node model pairs; supersedes computeNode+model when non-empty. */
+    val models: List<LlmModelPairDto> = emptyList(),
     val enabled: Boolean = true,
     @SerialName("pretest_enabled") val pretestEnabled: Boolean = false,
+    /** Sprint 30 — when true, models list is managed by the server and is display-only. */
+    @SerialName("auto_add_models") val autoAddModels: Boolean = false,
+)
+
+/** Sprint 30 — GET /api/llms/{name}/sessions response. */
+@Serializable
+public data class LlmSessionsDto(
+    val sessions: List<LlmSessionRefDto>,
+    val total: Int,
+    val page: Int,
+    val size: Int,
+)
+
+/** Sprint 30 — one session reference in the LLM sessions list. */
+@Serializable
+public data class LlmSessionRefDto(
+    val id: String,
+    val task: String,
+    val state: String,
+    @SerialName("llm_ref") val llmRef: String,
+    @SerialName("created_at") val createdAt: String,
+)
+
+/** Sprint 30 — POST /api/llms/{name}/reassign body. */
+@Serializable
+public data class LlmReassignDto(
+    @SerialName("new_llm") val newLlm: String,
+    val force: Boolean = false,
 )
 
 /** PATCH /api/llms/{name}/enabled body. */

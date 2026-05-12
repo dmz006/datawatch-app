@@ -1163,6 +1163,10 @@ public interface TransportClient {
     // Sprint 28 — alpha.35 UnifiedPush SSE
     public suspend fun registerPush(registration: com.dmzs.datawatchclient.transport.dto.PushRegistrationDto): Result<Unit>
     public fun subscribePushAlerts(): Flow<com.dmzs.datawatchclient.transport.dto.PushEventDto>
+
+    // Sprint 30 — LLM multi-node + session management
+    public suspend fun getLlmSessions(name: String, page: Int = 1, size: Int = 10): Result<com.dmzs.datawatchclient.transport.dto.LlmSessionsDto>
+    public suspend fun reassignLlmSessions(fromName: String, toName: String, force: Boolean = false): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
