@@ -2279,6 +2279,45 @@ public class RestTransport(
             }.body()
         }
 
+    // Sprint 27 — alpha.33 Ollama marketplace
+    override suspend fun getInstalledOllamaModels(nodeId: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaInstalledModelsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes/${nodeId}/models") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun getOllamaCatalog(): Result<com.dmzs.datawatchclient.transport.dto.OllamaCatalogDto> =
+        request {
+            client.get("${profile.baseUrl}/api/marketplace/ollama/catalog") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun pullOllamaModel(nodeId: String, model: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto> =
+        request {
+            client.post("${profile.baseUrl}/api/compute/nodes/${nodeId}/models/pull") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody("""{"model":"$model"}""")
+            }.body()
+        }
+
+    override suspend fun getPullTask(taskId: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto> =
+        request {
+            client.get("${profile.baseUrl}/api/marketplace/ollama/tasks/${taskId}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun deleteOllamaModel(nodeId: String, model: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/compute/nodes/${nodeId}/models/${model}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
