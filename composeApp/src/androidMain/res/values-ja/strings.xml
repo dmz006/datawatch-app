@@ -1053,4 +1053,18 @@
     <string name="stats_container_id">コンテナID</string>
     <string name="stats_container_image">イメージ</string>
     <string name="stats_container_runtime">ランタイム</string>
+    <string name="session_detail_tab_status">ステータス</string>
+    <string name="status_card_focus">現在のフォーカス</string>
+    <string name="status_card_sprint">スプリント</string>
+    <string name="status_card_tests">テスト</string>
+    <string name="status_card_git">Git</string>
+    <string name="status_no_focus">アクティブなフォーカスなし</string>
+    <string name="status_no_sprint">スプリントデータなし</string>
+    <string name="status_no_tests">テストデータなし</string>
+    <string name="status_no_git">Gitデータなし</string>
+    <string name="status_hooks_alive">フック有効</string>
+    <string name="status_hooks_stale">フック古い</string>
+    <string name="status_hooks_missing">フック未設定</string>
+    <string name="status_llm_more_soon">トークン率・レイテンシ・モデル状態は次回更新で</string>
+    <string name="status_hooks_installed_toast">{path}/.claude/ にフックをインストールしました</string>
 </resources>

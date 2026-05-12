@@ -86,6 +86,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
@@ -218,12 +220,39 @@ public fun SessionDetailScreen(
         mutableStateOf(modePrefs.getBoolean("chat_mode", false))
     }
     var statsMode by remember { mutableStateOf(false) }
+    var statusMode by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(chatMode) {
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
     }
 
+    val statusVm: SessionStatusViewModel = viewModel(
+        factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
+        key = "session-status-$sessionId",
+    )
+    val statusState by statusVm.state.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val hookInstallToastStr = stringResource(R.string.status_hooks_installed_toast)
+    val coroutineScope = rememberCoroutineScope()
+    // One-time hook-install toast for claude-code sessions when daemon signals hooks installed
+    LaunchedEffect(state.session?.backend, state.session?.id) {
+        val backend = state.session?.backend?.lowercase() ?: return@LaunchedEffect
+        if (backend == "claude-code" && state.session?.id != null) {
+            val prefs = modePrefs
+            val shown = prefs.getBoolean("hook_toast_$sessionId", false)
+            if (!shown) {
+                prefs.edit().putBoolean("hook_toast_$sessionId", true).apply()
+                val project = state.session?.taskSummary?.take(30) ?: sessionId.take(8)
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(hookInstallToastStr.replace("{path}", project))
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -472,9 +501,14 @@ public fun SessionDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode, onClick = { chatMode = false; statsMode = false })
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode, onClick = { chatMode = true; statsMode = false })
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode, onClick = { statsMode = true })
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode && !statusMode, onClick = { chatMode = false; statsMode = false; statusMode = false })
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode && !statusMode, onClick = { chatMode = true; statsMode = false; statusMode = false })
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode && !statusMode, onClick = { statsMode = true; statusMode = false })
+                    SessionModeTab(
+                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
+                        selected = statusMode,
+                        onClick = { statusMode = true; statsMode = false },
+                    )
                     Spacer(Modifier.weight(1f))
                     val showToolbar = !chatMode && !statsMode && state.session?.isChatMode != true
                     if (showToolbar) {
@@ -560,6 +594,12 @@ public fun SessionDetailScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
                     onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
+                )
+            } else if (statusMode) {
+                SessionStatusPanel(
+                    sessionId = sessionId,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    vm = statusVm,
                 )
             } else if (serverChatMode) {
                 ChatTranscriptPanel(
