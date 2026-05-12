@@ -261,6 +261,13 @@ public data class OllamaRunningModelDto(
  * RSS, optional GPU + network counters.
  */
 @Serializable
+public data class ContainerInfoDto(
+    @SerialName("container_id") val containerId: String = "",
+    val image: String = "",
+    val runtime: String = "",
+)
+
+@Serializable
 public data class StatEnvelopeDto(
     val id: String = "",
     val kind: String = "",
@@ -278,6 +285,7 @@ public data class StatEnvelopeDto(
     @SerialName("container_id") val containerId: String? = null,
     val image: String? = null,
     @SerialName("last_activity_unix_ms") val lastActivityUnixMs: Long = 0,
+    val container: ContainerInfoDto? = null,
 )
 
 @Serializable

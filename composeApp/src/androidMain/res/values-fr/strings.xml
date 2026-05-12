@@ -1037,4 +1037,20 @@
     <string name="automata_confirm_cancel_body">Annuler \"%1$s\" ? L\'exécution s\'arrêtera et l\'automate passera à l\'état annulé.</string>
     <string name="state_filter_btn_tip">État (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
+    <string name="stats_card_host">Hôte</string>
+    <string name="stats_card_container">Conteneur</string>
+    <string name="stats_card_compute_node">Nœud de calcul</string>
+    <string name="stats_card_llm">LLM</string>
+    <string name="stats_field_cpu">CPU</string>
+    <string name="stats_field_rss">RSS</string>
+    <string name="stats_field_threads">Threads</string>
+    <string name="stats_field_fds">Descripteurs de fichiers</string>
+    <string name="stats_field_net">Réseau</string>
+    <string name="stats_field_gpu">GPU</string>
+    <string name="stats_open_compute">Ouvrir dans Compute →</string>
+    <string name="stats_open_llm">Ouvrir dans LLM →</string>
+    <string name="stats_llm_more_soon">Taux de tokens · latence · état du modèle dans la prochaine mise à jour</string>
+    <string name="stats_container_id">ID du conteneur</string>
+    <string name="stats_container_image">Image</string>
+    <string name="stats_container_runtime">Runtime</string>
 </resources>

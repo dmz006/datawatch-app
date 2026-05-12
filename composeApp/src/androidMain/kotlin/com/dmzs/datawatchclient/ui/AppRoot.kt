@@ -50,6 +50,7 @@ import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.monitoring.FederatedPeersViewModel
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
+import com.dmzs.datawatchclient.ui.shell.SettingsNavChannel
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
 import kotlinx.coroutines.delay
@@ -270,10 +271,20 @@ private fun Nav(
         ) { entry ->
             val id = entry.arguments?.getString("sessionId") ?: return@composable
             val isNew = entry.arguments?.getBoolean("isNew") ?: false
+            val context = LocalContext.current
             SessionDetailScreen(
                 sessionId = id,
                 isNew = isNew,
                 onBack = { navController.popBackStack() },
+                onNavigateToSettings = { tab ->
+                    context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+                        .edit().putString("settings_active_tab", tab).apply()
+                    SettingsNavChannel.request(tab)
+                    navController.navigate(Destinations.Home) {
+                        popUpTo(Destinations.Home) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }
@@ -351,6 +362,20 @@ private fun HomeShell(
         }
     }
 
+    val context = LocalContext.current
+    val pendingSettingsTab by SettingsNavChannel.pendingTab.collectAsState()
+    LaunchedEffect(pendingSettingsTab) {
+        val tab = pendingSettingsTab ?: return@LaunchedEffect
+        context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            .edit().putString("settings_active_tab", tab).apply()
+        tabNav.navigate(Destinations.Tabs.Settings) {
+            popUpTo(Destinations.Tabs.Sessions) { saveState = true }
+            launchSingleTop = true
+            restoreState = false
+        }
+        SettingsNavChannel.consume()
+    }
+
     val mainPane: @Composable (Modifier) -> Unit = { mod ->
         Scaffold(
             modifier = mod,
@@ -422,6 +447,15 @@ private fun HomeShell(
                         sessionId = sid,
                         isNew = false,
                         onBack = { selectedSessionId = null },
+                        onNavigateToSettings = { tab ->
+                            context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+                                .edit().putString("settings_active_tab", tab).apply()
+                            tabNav.navigate(Destinations.Tabs.Settings) {
+                                popUpTo(Destinations.Tabs.Sessions) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                        },
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
