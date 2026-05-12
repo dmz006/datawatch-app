@@ -9,15 +9,18 @@ architecture).
 
 ## Active roadmap plan
 
-**Active arc: alpha.31–alpha.40 follow-on (Sprints 24–32)**. 8 open issues (#117–#125) + B31. Daemon baseline: v7.0.0-alpha.40.
+**Active arc: PWA parity alignment (Sprints 33–39)**. 22 gaps across 9 pages. Daemon baseline: v7.0.0-alpha.50.
 
-Full arc plan: [`2026-05-11-v0.94-alpha40-arc.md`](2026-05-11-v0.94-alpha40-arc.md)
+Full arc plan: [`2026-05-12-parity-arc-v0.102.md`](2026-05-12-parity-arc-v0.102.md)  
+PWA full spec: [`2026-05-12-pwa-full-spec.md`](2026-05-12-pwa-full-spec.md)  
+Gap audit: [`2026-05-12-pwa-parity-audit.md`](2026-05-12-pwa-parity-audit.md)
 
-Current state: **v0.101.0/179**. Arc: v0.94.0 → v0.101.0, then v1.0 GH release tag.
+Current state: **v0.101.0/179**. Arc: v0.102.0 → v0.108.0, then v1.0 GH release tag.
 
 Shipped arc history (moved to `historical-plans/`):
 - `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
 - `2026-05-10-v0.80-parity-arc.md` — v0.80–v0.86 (Sprints 11–17; PWA parity + #96 #104–#110)
+- `2026-05-11-v0.94-alpha40-arc.md` — v0.94.0–v0.101.0 (Sprints 24–32; alpha.31–alpha.40 follow-on)
 
 ---
 ## Open - Not Assessed
