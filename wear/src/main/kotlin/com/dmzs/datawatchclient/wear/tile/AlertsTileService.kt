@@ -83,7 +83,7 @@ public class AlertsTileService : TileService() {
         val col =
             LayoutElementBuilders.Column.Builder()
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                .setModifiers(openAppModifiers())
+                .setModifiers(openAppModifiers(packageName))
                 .addContent(titleText("Alerts"))
                 .addContent(spacerV(2f))
                 .addContent(healthDot(snap))
@@ -111,111 +111,6 @@ public class AlertsTileService : TileService() {
         return col.build()
     }
 
-    private fun statRow(
-        label: String,
-        value: String,
-        valueColor: Int,
-    ): LayoutElementBuilders.Row =
-        LayoutElementBuilders.Row.Builder()
-            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-            .addContent(labelText(label))
-            .addContent(hSpacer(6f))
-            .addContent(
-                LayoutElementBuilders.Text.Builder()
-                    .setText(TypeBuilders.StringProp.Builder(value).build())
-                    .setFontStyle(
-                        FontStyle.Builder()
-                            .setSize(sp(14f))
-                            .setColor(argb(valueColor))
-                            .setWeight(
-                                FontWeightProp.Builder()
-                                    .setValue(LayoutElementBuilders.FONT_WEIGHT_MEDIUM)
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            .build()
-
-    private fun titleText(text: String): LayoutElementBuilders.Text =
-        LayoutElementBuilders.Text.Builder()
-            .setText(TypeBuilders.StringProp.Builder(text).build())
-            .setFontStyle(
-                FontStyle.Builder()
-                    .setSize(sp(12f))
-                    .setColor(argb(COLOR_ACCENT))
-                    .setWeight(
-                        FontWeightProp.Builder().setValue(LayoutElementBuilders.FONT_WEIGHT_BOLD).build(),
-                    )
-                    .build(),
-            )
-            .build()
-
-    private fun labelText(text: String): LayoutElementBuilders.Text =
-        LayoutElementBuilders.Text.Builder()
-            .setText(TypeBuilders.StringProp.Builder(text).build())
-            .setFontStyle(FontStyle.Builder().setSize(sp(10f)).setColor(argb(COLOR_MUTED)).build())
-            .build()
-
-    private fun subText(text: String): LayoutElementBuilders.Text =
-        LayoutElementBuilders.Text.Builder()
-            .setText(TypeBuilders.StringProp.Builder(text).build())
-            .setFontStyle(FontStyle.Builder().setSize(sp(9f)).setColor(argb(COLOR_MUTED)).build())
-            .build()
-
-    private fun spacerV(h: Float): LayoutElementBuilders.Spacer =
-        LayoutElementBuilders.Spacer.Builder().setHeight(dp(h)).build()
-
-    private fun hSpacer(w: Float): LayoutElementBuilders.Spacer =
-        LayoutElementBuilders.Spacer.Builder().setWidth(dp(w)).build()
-
-    private fun openAppModifiers(): ModifiersBuilders.Modifiers =
-        ModifiersBuilders.Modifiers.Builder()
-            .setClickable(
-                ModifiersBuilders.Clickable.Builder()
-                    .setId("open_app")
-                    .setOnClick(
-                        ActionBuilders.LaunchAction.Builder()
-                            .setAndroidActivity(
-                                ActionBuilders.AndroidActivity.Builder()
-                                    .setPackageName(packageName)
-                                    .setClassName(
-                                        "com.dmzs.datawatchclient.wear.WearMainActivity",
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            .build()
-
-    private fun healthDot(snap: AlertsSnapshot): LayoutElementBuilders.Box {
-        val color =
-            when {
-                snap.errors > 0 -> COLOR_HEALTH_ERROR
-                snap.needsInput > 0 -> COLOR_HEALTH_WAITING
-                else -> COLOR_HEALTH_GOOD
-            }
-        return LayoutElementBuilders.Box.Builder()
-            .setWidth(dp(10f))
-            .setHeight(dp(10f))
-            .setModifiers(
-                ModifiersBuilders.Modifiers.Builder()
-                    .setBackground(
-                        ModifiersBuilders.Background.Builder()
-                            .setColor(argb(color))
-                            .setCorner(
-                                ModifiersBuilders.Corner.Builder().setRadius(dp(5f)).build(),
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            .build()
-    }
-
     private data class AlertsSnapshot(
         val total: Int = 0,
         val needsInput: Int = 0,
@@ -238,5 +133,110 @@ public class AlertsTileService : TileService() {
         private const val COLOR_HEALTH_GOOD: Int = 0xFF10B981.toInt()
         private const val COLOR_HEALTH_WAITING: Int = 0xFFF59E0B.toInt()
         private const val COLOR_HEALTH_ERROR: Int = 0xFFEF4444.toInt()
+
+        private fun statRow(
+            label: String,
+            value: String,
+            valueColor: Int,
+        ): LayoutElementBuilders.Row =
+            LayoutElementBuilders.Row.Builder()
+                .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                .addContent(labelText(label))
+                .addContent(hSpacer(6f))
+                .addContent(
+                    LayoutElementBuilders.Text.Builder()
+                        .setText(TypeBuilders.StringProp.Builder(value).build())
+                        .setFontStyle(
+                            FontStyle.Builder()
+                                .setSize(sp(14f))
+                                .setColor(argb(valueColor))
+                                .setWeight(
+                                    FontWeightProp.Builder()
+                                        .setValue(LayoutElementBuilders.FONT_WEIGHT_MEDIUM)
+                                        .build(),
+                                )
+                                .build(),
+                        )
+                        .build(),
+                )
+                .build()
+
+        private fun titleText(text: String): LayoutElementBuilders.Text =
+            LayoutElementBuilders.Text.Builder()
+                .setText(TypeBuilders.StringProp.Builder(text).build())
+                .setFontStyle(
+                    FontStyle.Builder()
+                        .setSize(sp(12f))
+                        .setColor(argb(COLOR_ACCENT))
+                        .setWeight(
+                            FontWeightProp.Builder().setValue(LayoutElementBuilders.FONT_WEIGHT_BOLD).build(),
+                        )
+                        .build(),
+                )
+                .build()
+
+        private fun labelText(text: String): LayoutElementBuilders.Text =
+            LayoutElementBuilders.Text.Builder()
+                .setText(TypeBuilders.StringProp.Builder(text).build())
+                .setFontStyle(FontStyle.Builder().setSize(sp(10f)).setColor(argb(COLOR_MUTED)).build())
+                .build()
+
+        private fun subText(text: String): LayoutElementBuilders.Text =
+            LayoutElementBuilders.Text.Builder()
+                .setText(TypeBuilders.StringProp.Builder(text).build())
+                .setFontStyle(FontStyle.Builder().setSize(sp(9f)).setColor(argb(COLOR_MUTED)).build())
+                .build()
+
+        private fun spacerV(h: Float): LayoutElementBuilders.Spacer =
+            LayoutElementBuilders.Spacer.Builder().setHeight(dp(h)).build()
+
+        private fun hSpacer(w: Float): LayoutElementBuilders.Spacer =
+            LayoutElementBuilders.Spacer.Builder().setWidth(dp(w)).build()
+
+        private fun openAppModifiers(pkgName: String): ModifiersBuilders.Modifiers =
+            ModifiersBuilders.Modifiers.Builder()
+                .setClickable(
+                    ModifiersBuilders.Clickable.Builder()
+                        .setId("open_app")
+                        .setOnClick(
+                            ActionBuilders.LaunchAction.Builder()
+                                .setAndroidActivity(
+                                    ActionBuilders.AndroidActivity.Builder()
+                                        .setPackageName(pkgName)
+                                        .setClassName(
+                                            "com.dmzs.datawatchclient.wear.WearMainActivity",
+                                        )
+                                        .build(),
+                                )
+                                .build(),
+                        )
+                        .build(),
+                )
+                .build()
+
+        private fun healthDot(snap: AlertsSnapshot): LayoutElementBuilders.Box {
+            val color =
+                when {
+                    snap.errors > 0 -> COLOR_HEALTH_ERROR
+                    snap.needsInput > 0 -> COLOR_HEALTH_WAITING
+                    else -> COLOR_HEALTH_GOOD
+                }
+            return LayoutElementBuilders.Box.Builder()
+                .setWidth(dp(10f))
+                .setHeight(dp(10f))
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setBackground(
+                            ModifiersBuilders.Background.Builder()
+                                .setColor(argb(color))
+                                .setCorner(
+                                    ModifiersBuilders.Corner.Builder().setRadius(dp(5f)).build(),
+                                )
+                                .build(),
+                        )
+                        .build(),
+                )
+                .build()
+        }
     }
 }

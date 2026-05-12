@@ -26,13 +26,13 @@ public object WearSyncManager {
     }
 
     private suspend fun sendSyncRequest(context: Context, payload: String) {
-        try {
+        runCatching {
             val nodes = Wearable.getNodeClient(context).connectedNodes.await()
             val messageClient = Wearable.getMessageClient(context)
             nodes.forEach { node ->
                 messageClient.sendMessage(node.id, SYNC_PATH, payload.toByteArray()).await()
             }
-        } catch (e: Exception) {
+        }.onFailure { e ->
             android.util.Log.w("WearSyncManager", "Sync request failed: ${e.message}")
         }
     }
