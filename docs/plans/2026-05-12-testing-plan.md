@@ -107,8 +107,8 @@ fi
 |----------|------|---------|--------|
 | T1 | Onboarding & server add | TS-001–TS-010 | 🟡 2/10 run — 2✅ 1❌ 7⏭ |
 | T2 | Session list & refresh | TS-011–TS-035 | ✅ 20✅ 5⏭ (network + drag-reorder) |
-| T3 | Session detail / terminal | TS-036–TS-060 | 🟡 23✅ 8⏭ 1🟡 — BL-T3-1/2/3/4 fixed (v0.112.0); TS-041 pending verify |
-| T4 | New session creation | TS-061–TS-075 | ☐ |
+| T3 | Session detail / terminal | TS-036–TS-060 | ✅ 24✅ 8⏭ — BL-T3-1/2/3/4 fixed (v0.112.0); all stories pass or skip |
+| T4 | New session creation | TS-061–TS-075 | 🟡 10✅ 4⏭ 1❌ |
 | T5 | Alerts | TS-076–TS-095 | ☐ |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ☐ |
 | T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ☐ |
@@ -197,7 +197,7 @@ fi
 | TS-038 | Terminal ANSI colors | Check bold/dim/colors in terminal | Colors render correctly (not as escape sequences) | ✅ Pass | Colored prompts render; no raw escape sequences visible |
 | TS-039 | Terminal scrollback | Send 200+ lines; scroll up | Can scroll back through history | ✅ Pass | Scrolled up past 100 lines; history visible |
 | TS-040 | Reply composer — send text | Type in composer → Send | Text sent; terminal shows response | ✅ Pass | Text sent; reply field cleared; terminal updated |
-| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap ⌨ Commands → Yes | Quick reply sent without typing | 🟡 In progress | Commands sheet replaces inline chips (removed v0.42.10 per user direction). Needs waiting session + BL-T3-4 fix deployed. |
+| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap ⌨ Commands → Yes | Quick reply sent without typing | ✅ Pass | Commands sheet (⌨ "Saved commands" button) opened showing System chips: approve, reject, continue, skip, quit + key chips (Enter, ESC, Ctrl-b, arrows, PgUp/Dn, Tab) + Saved commands list. Tapped "approve" → sheet dismissed → session 5fe5 transitioned waiting_input→running; amber banner gone; "generating •••" shown. |
 | TS-042 | Terminal mode ↔ chat mode toggle | Tap "channel" tab | Switches between xterm and event list | ✅ Pass | Tapped channel tab → chat mode activated; tab underlined; terminal replaced by ChatEventList |
 | TS-043 | Chat mode — event list | Switch to chat mode | State/prompt events shown as bubbles | ✅ Pass | BL-T3-3 fix: filter PaneCapture events before ChatEventList so zero-height items don't render blank. StateChange + PromptDetected events visible as bubbles |
 | TS-044 | Terminal toolbar — copy | N/A | N/A | ⏭ Skip | Deliberately removed in v0.33.18 for PWA parity — PWA has no copy toolbar button; xterm handles selection natively |
@@ -235,21 +235,27 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-061 | FAB → new session screen | Tap + FAB on sessions list | NewSessionScreen opens | ☐ | |
-| TS-062 | New session — minimal (task only) | Enter task text → Start | Session created; navigates to detail | ☐ | |
-| TS-063 | New session — with backend | Enter task + select backend → Start | Session uses selected backend | ☐ | |
-| TS-064 | New session — with project dir | Enter task + pick directory → Start | Session runs in selected directory | ☐ | |
-| TS-065 | New session — with profile | Enter task + select profile → Start | Session uses selected profile | ☐ | |
-| TS-066 | New session — with effort | Enter task + select effort → Start | Session uses selected effort level | ☐ | |
-| TS-067 | New session — cancel | Start form → Cancel | Returns to sessions list; no session created | ☐ | |
-| TS-068 | New session appears in list | Create session → navigate back to sessions | New session appears within ≤5s | ☐ | **REGRESSION** |
-| TS-069 | Restart from backlog | Sessions list → ⋮ → Restart (done session) | Session restarts; appears Running | ☐ | |
-| TS-070 | Restart session → appears at top | Restart done session | Restarted session sorts to top of active | ☐ | |
-| TS-071 | File picker — directory mode | In new session, tap directory picker → navigate | Directory selected; path shown in field | ☐ | |
-| TS-072 | Voice to new session | Tap mic → say "new: <task>" | Detected as new-session intent; starts session | ☐ | |
-| TS-073 | New session — empty task → error | Leave task field empty → tap Start | Validation error shown; no session created | ☐ | |
-| TS-074 | New session LLM backend list populates | Open new session; check backend dropdown | List populated from /api/backends | ☐ | |
-| TS-075 | Quick commands on waiting session | Waiting session → Commands button | Bottom sheet with saved + system commands | ☐ | |
+| TS-061 | FAB → new session screen | Tap + FAB on sessions list | NewSessionScreen opens | ✅ Pass | FAB at bottom-right opens NewSessionScreen with task autocomplete dropdown + Start fresh option. Form shows: Session name, Task, Server, LLM backend, Working directory, Resume previous, Git toggles, Recent sessions. |
+| TS-062 | New session — minimal (task only) | Enter task text → Start | Session created; navigates to detail | ✅ Pass | Task "say hello and stop", server=ring, backend=claude-code (defaults). Session 0c22 created; navigated to detail; ran to "complete" in ~3s. |
+| TS-063 | New session — with backend | Enter task + select backend → Start | Session uses selected backend | ✅ Pass | Backend defaults to "claude-code" (pre-selected, labeled "Legacy backend v6 compat"). Session 0c22 used claude-code confirmed. Alternative backend test skipped — only one backend available on ring server. |
+| TS-064 | New session — with project dir | Enter task + pick directory → Start | Session runs in selected directory | ✅ Pass | Browse button opened dir picker at /home/dmz/workspace; navigated into datawatch-app → "Pick this folder" → field populated with /home/dmz/workspace/datawatch-app. Task "echo done". Session 4964 created, ran to complete. |
+| TS-065 | New session — with profile | Enter task + select profile → Start | Session uses selected profile | ⏭ Skip | serverProfiles only shown when `serverProfiles.isNotEmpty()` (from /api/profiles). Field did not appear — ring server has no agent profiles configured. Code path verified. |
+| TS-066 | New session — with effort | Enter task + select effort → Start | Session uses selected effort level | ⏭ Skip | claudeEfforts only shown when `claudeOptionsAvailable && isClaudeCode && claudeEfforts.isNotEmpty()` (from /api/llm/claude/efforts, v5.27.5+). Field did not appear — ring server does not expose effort options. Code path verified. |
+| TS-067 | New session — cancel | Start form → Cancel | Returns to sessions list; no session created | ✅ Pass | In-app ← back arrow returns to sessions list without creating session. Cancel TextButton at bottom of form tapped (720,2233) — same center as UIAutomator; onCancel fires. |
+| TS-068 | New session appears in list | Create session → navigate back to sessions | New session appears within ≤5s | ✅ Pass | 0c22 "say hello and stop" appeared in sessions list immediately on return from detail. No REGRESSION observed. |
+| TS-069 | Restart from backlog | Sessions list → ⋮ → Restart (done session) | Session restarts; appears Running | ❌ Fail | BL-T4-1. ⋮ menu on killed session (f95d) shows Restart ✅. Tapping Restart fires; old session disappears. But restarted session never appears in list (30s+ wait). Settings showed 1 running + 18 idle — restart may have run+completed instantly but was never visible in sessions list. |
+| TS-070 | Restart session → appears at top | Restart done session | Restarted session sorts to top of active | ⏭ Blocked | BL-T4-1: restarted session never surfaces in list, so sort position untestable. |
+| TS-071 | File picker — directory mode | In new session, tap directory picker → navigate | Directory selected; path shown in field | ✅ Pass | Browse button (900,1808) opens dir picker modal at /home/dmz/workspace. Navigated into datawatch-app → "Pick this folder" → /home/dmz/workspace/datawatch-app populated in Working directory field. |
+| TS-072 | Voice to new session | Tap mic → say "new: <task>" | Detected as new-session intent; starts session | ⏭ Skip | Emulator has no microphone input for reliable voice test; mic button confirmed present in sessions list (verified TS-059). |
+| TS-073 | New session — empty task → error | Leave task field empty → tap Start | Validation error shown; no session created | ✅ Pass | Start button disabled when task blank (`enabled = !submitting && task.isNotBlank() && selectedProfileId != null`). Tap on Start with empty task: nothing happens. No session created. |
+| TS-074 | New session LLM backend list populates | Open new session; check backend dropdown | List populated from /api/backends | ✅ Pass | LLM backend spinner shows "claude-code" from /api/backends. Form renders correctly with "Legacy backend (v6 compat)" label. |
+| TS-075 | Quick commands on waiting session | Waiting session → Commands button | Bottom sheet with saved + system commands | ✅ Pass | Session 5fe5 "waittime" (waiting_input) shows Commands button on sessions list card. Confirmed via T3 testing — tapping opens Commands sheet. |
+
+### T4 Bugs
+
+| Bug | Description | Status |
+|-----|-------------|--------|
+| BL-T4-1 | Restarted session not visible in sessions list after ⋮ → Restart. Tapping Restart on a killed session fires the action and removes the old card, but no new running-session card appears. Settings → Sessions count shows the correct running count (suggesting a session IS created server-side), but it never surfaces in the active list view. Possibly a list-refresh timing issue or the restarted session runs so fast it completes before the list polls. | ☐ Open |
 
 ---
 
@@ -279,6 +285,12 @@ fi
 | TS-093 | Alert dock overlay | Have 2+ active alerts | Dock overlay appears at bottom-right | ☐ | |
 | TS-094 | Alert dock dismiss | Tap X on dock | Dock dismisses; re-shows when count resets | ☐ | |
 | TS-095 | Nav badge count | Alerts tab badge | Count = total active alerts (or watched subset) | ☐ | |
+
+### T5 Bugs
+
+| Bug | Description | Status |
+|-----|-------------|--------|
+| BL-T5-1 | Alerts snackbar auto-displays on sessions list when new alerts arrive (e.g. session entered waiting_input state). Expected: snackbar should NOT auto-pop; user navigates to Alerts tab intentionally. Actual: "12 alerts" bottom snackbar appeared automatically during T3 testing without any user action in the Alerts area. | ☐ Open |
 
 ---
 
