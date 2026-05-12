@@ -2426,6 +2426,17 @@ public class RestTransport(
             Unit
         }
 
+    // Sprint 35 — observer envelopes per-session (G8)
+    override suspend fun getSessionEnvelopes(
+        sessionId: String,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/envelopes") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("session_id", sessionId)
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

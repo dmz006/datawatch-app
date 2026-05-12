@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -22,12 +24,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.transport.dto.LastEventDto
 import com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -75,10 +79,10 @@ public fun SessionStatusPanel(
             return@Column
         }
 
-        HookHealthPill(board.hookHealth)
+        HookHealthPill(hookHealth = board.hookHealth, onClick = vm::refreshStatus)
         Spacer(Modifier.height(4.dp))
 
-        board.currentFocus?.let { FocusCard(it) }
+        board.currentFocus?.let { FocusCard(it, board.lastEvent, board.idleSince) }
         board.sprint?.let { SprintCard(it.name, it.progress) }
         board.tests?.let { TestsCard(it.passing, it.failing, it.total) }
         board.git?.let { GitCard(it.branch, it.uncommitted, it.ahead) }
@@ -96,8 +100,9 @@ public fun SessionStatusPanel(
 }
 
 @Composable
-private fun HookHealthPill(hookHealth: String) {
+private fun HookHealthPill(hookHealth: String, onClick: () -> Unit) {
     val dw = LocalDatawatchColors.current
+    val uriHandler = LocalUriHandler.current
     val (color, label) = when (hookHealth) {
         "alive" -> dw.success to stringResource(R.string.status_hooks_alive)
         "stale" -> dw.warning to stringResource(R.string.status_hooks_stale)
@@ -108,16 +113,58 @@ private fun HookHealthPill(hookHealth: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("●", style = MaterialTheme.typography.labelSmall, color = color)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        Row(
+            modifier = Modifier.clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("●", style = MaterialTheme.typography.labelSmall, color = color)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        }
+        if (hookHealth != "alive") {
+            TextButton(
+                onClick = { uriHandler.openUri("https://docs.anthropic.com/en/docs/claude-code/hooks") },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+            ) {
+                Text(stringResource(R.string.status_hook_docs_link), style = MaterialTheme.typography.labelSmall)
+            }
+        }
     }
 }
 
 @Composable
-private fun FocusCard(focus: String) {
+private fun FocusCard(focus: String, lastEvent: LastEventDto?, idleSince: Long?) {
+    val dw = LocalDatawatchColors.current
     StatusCard(title = stringResource(R.string.status_card_focus)) {
         Text(focus, style = MaterialTheme.typography.bodySmall)
+        if (lastEvent != null) {
+            val parts = listOfNotNull(lastEvent.event, lastEvent.tool).filter { it.isNotBlank() }
+            if (parts.isNotEmpty()) {
+                val nowMs = System.currentTimeMillis()
+                val tsStr = lastEvent.ts?.let { ts -> timeAgo(nowMs - ts) }
+                val subtitle = (parts + listOfNotNull(tsStr)).joinToString(" · ")
+                Spacer(Modifier.height(2.dp))
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (idleSince != null) {
+            val idleMs = System.currentTimeMillis() - idleSince
+            if (idleMs > 5 * 60 * 1_000L) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.status_idle_since, timeAgo(idleMs)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = dw.warning,
+                )
+            }
+        }
     }
+}
+
+private fun timeAgo(elapsedMs: Long): String = when {
+    elapsedMs < 60_000L -> "${elapsedMs / 1_000}s ago"
+    elapsedMs < 3_600_000L -> "${elapsedMs / 60_000}m ago"
+    else -> "${elapsedMs / 3_600_000}h ago"
 }
 
 @Composable

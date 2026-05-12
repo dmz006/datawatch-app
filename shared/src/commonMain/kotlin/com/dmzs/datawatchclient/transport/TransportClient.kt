@@ -1177,6 +1177,9 @@ public interface TransportClient {
     // Sprint 30 — LLM multi-node + session management
     public suspend fun getLlmSessions(name: String, page: Int = 1, size: Int = 10): Result<com.dmzs.datawatchclient.transport.dto.LlmSessionsDto>
     public suspend fun reassignLlmSessions(fromName: String, toName: String, force: Boolean = false): Result<Unit>
+
+    // Sprint 35 — observer envelopes per-session (G8)
+    public suspend fun getSessionEnvelopes(sessionId: String): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
