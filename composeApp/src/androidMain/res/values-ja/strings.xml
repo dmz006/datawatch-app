@@ -1082,6 +1082,7 @@
     <string name="alerts_active_tab_label">アクティブ</string>
     <string name="alerts_historical_tab_label">履歴</string>
     <string name="alerts_system_tab_label">システム</string>
+    <string name="alerts_filter_all">すべて</string>
     <string name="ollama_marketplace_title">Ollamaマーケット</string>
     <string name="ollama_browse_btn">マーケットを閲覧</string>
     <string name="ollama_installed_models">インストール済みモデル</string>
