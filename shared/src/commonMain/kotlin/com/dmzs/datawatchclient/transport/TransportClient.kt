@@ -1149,6 +1149,9 @@ public interface TransportClient {
         name: String,
         settings: com.dmzs.datawatchclient.transport.dto.AgentSettingsDto,
     ): Result<Unit>
+
+    // Sprint 26 — alpha.34 session status board
+    public suspend fun getSessionStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
