@@ -8,6 +8,99 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.101.0] — 2026-05-12 (Wear sessions list + state badges — Sprint 32)
+### Added
+- `WearSyncService` publishes `/datawatch/sessions` DataItem with shortId, state, task, and lastActivity arrays (top 10 by last-activity); republishes on every session state or task change
+- `WearMainActivity` sessions page: scrollable list replacing the previous count-only view; each row shows state badge dot, shortId, task text (30-char truncated), and "Xm ago" timestamp
+- State badge colours aligned to datawatch dark palette: Running → teal `#1DE9B6`, Waiting → amber `#FFB300`, Error/Failed/Killed → error red `#EF4444`, Done → dim onSurface
+- 5 new wear locale keys in all 5 bundles (EN/DE/ES/FR/JA): `wear_sessions_empty`, `wear_session_state_running`, `wear_session_state_waiting`, `wear_session_state_done`, `wear_session_state_error`
+### Changed
+- Version bump: 0.100.0/178 → 0.101.0/179
+
+## [0.100.0] — 2026-05-12 (Council persona CRUD + alert dock audit — Sprint 31)
+### Added
+- Council settings persona list: `GET /api/council/personas` populates rows per persona; 4 built-in personas (platform-engineer, network-engineer, data-architect, privacy) shown with "Built-in" badge; Name field locked for built-ins; Delete button hidden for built-ins
+- `CouncilPersonaWizardSheet` / persona edit dialog: Name, Description, System prompt fields; Save calls `PUT /api/council/personas/{name}`; Delete (custom only) calls `DELETE /api/council/personas/{name}` after AlertDialog confirm
+- `TransportClient` council persona methods: `getCouncilPersonas`, `getCouncilPersona`, `setCouncilPersona`, `deleteCouncilPersona`
+- 12 new locale keys in all 5 locales: `council_personas_title`, `council_persona_name`, `council_persona_description`, `council_persona_system_prompt`, `council_persona_builtin_badge`, `council_persona_add`, `council_persona_edit`, `council_persona_save`, `council_persona_delete`, `council_persona_none`, `council_persona_name_required`, `council_persona_delete_confirm_title`
+### Fixed
+- `AlertDockOverlay` auto-expand guard: dock panel starts `expanded=false`; only toggles on explicit chevron tap — passive alert arrivals update badge count only
+
+### Changed
+- Version bump: 0.99.0/177 → 0.100.0/178
+
+## [0.99.0] — 2026-05-11 (LLM multi-node model table + Automata batch confirm — Sprint 30)
+### Added
+- `LlmConfigCard` row now shows `models[]` per-node pairs (up to 3 before collapse) replacing the single model string field
+- Add/Edit LLM panel: per-node model table with Add/Remove rows; SaaS LLMs (no compute nodes) fall back to single model text input; `autoAddModels` flag shows Auto badge and display-only table
+- `LlmDetailDrawer` two new tabs: Models tab (per-node table + Refresh) and In-use tab (paginated session list with 5/10/50 per-page picker)
+- DELETE 409 (sessions active) flow: inline reassign prompt inside the drawer with LLM dropdown and "Reassign & delete" button; secondary "Force delete" link with confirmation
+- Enable toggle for LLMs: `PATCH /api/llms/{name}/enabled` with spinner; failure reverts toggle and shows inline error
+- Automata batch-delete confirm modal: `AlertDialog` with `automata_confirm_batch_delete` text replacing browser-style confirm
+- New `TransportClient` methods: `setLlmEnabled`, `getLlmSessions`, `reassignLlmSessions`
+- 15 new locale keys in all 5 locales: `llm_models_tab`, `llm_in_use_tab`, `llm_models_node_col`, `llm_models_model_col`, `llm_models_add_row`, `llm_models_auto_badge`, `llm_models_none`, `llm_in_use_none`, `llm_in_use_task_col`, `llm_delete_blocked_n`, `llm_reassign_to`, `llm_reassign_btn`, `llm_force_delete`, `llm_force_confirm`, `automata_confirm_batch_delete`
+### Changed
+- Version bump: 0.98.0/176 → 0.99.0/177
+
+## [0.98.0] — 2026-05-11 (UnifiedPush SSE alerts stream — Sprint 28)
+### Added
+- UnifiedPush SSE supplement: on app start, registers each enabled server profile via `POST /api/push/register` using a stable per-server `client_id` stored in SharedPreferences
+- Persistent SSE subscription to `GET /api/push/alerts` (ntfy-compat format); reconnects with exponential backoff (1 s → 2 s → 4 s → 30 s max) on disconnect
+- Priority ≥ 4 events rendered as `PRIORITY_HIGH` heads-up notifications; `click` field wired to deep-link `PendingIntent` for session detail route
+- New `TransportClient` methods: `registerPush`, `subscribePushAlerts` (SSE `Flow`)
+- 3 new locale keys in all 5 locales: `push_registered`, `push_failed`, `push_notification_channel`
+### Changed
+- ntfy wake-on-alert path unchanged; UnifiedPush SSE runs in parallel as intentional redundancy
+- Version bump: 0.97.0/175 → 0.98.0/176
+
+## [0.97.0] — 2026-05-11 (Ollama marketplace + Alerts 3-tab redesign — Sprint 27)
+### Added
+- Compute Node edit: "Models" sub-section visible when `node.kind == "ollama"`; lists installed models with per-model remove button; "Browse marketplace" button opens catalog bottom sheet
+- Ollama Marketplace bottom sheet: fetches catalog, search bar filters by name; per-model tag grid showing Size / Min RAM / Min VRAM / Fit / Pull button; pull progress polls every 2 s and shows "Pulling X (N%)"
+- `AlertsScreen` redesigned with three tabs: Active (unresolved), Historical (resolved/acknowledged), System (daemon events); per-tab chip filter, sort mode, and search text persisted in SharedPreferences
+- Alert dock: max-width increased to 420 dp; header font 14 sp, chip font 12 sp; per-type colour rail (left edge stripe)
+- New `TransportClient` methods: `getOllamaCatalog`, `getInstalledOllamaModels`, `pullOllamaModel`, `getPullTask`, `deleteOllamaModel`
+- 18 new locale keys in all 5 locales: `alerts_active_tab_label`, `alerts_historical_tab_label`, `alerts_system_tab_label`, `ollama_marketplace_title`, `ollama_browse_btn`, `ollama_installed_models`, `ollama_no_installed`, `ollama_pull_btn`, `ollama_remove_btn`, `ollama_pulling`, `ollama_pull_done`, `ollama_tag_size`, `ollama_tag_min_ram`, `ollama_tag_min_vram`, `ollama_tag_fits`, `ollama_tag_tight`, `compute_models_title`, `compute_field_models`
+### Changed
+- Version bump: 0.96.0/174 → 0.97.0/175
+
+## [0.96.0] — 2026-05-11 (Session detail Status tab + hook arc — Sprint 26)
+### Added
+- Session detail "Status" 4th sub-tab (tab order: Tmux/Chat → Channel → Stats → Status); polls `GET /api/sessions/{id}/status` every 5 s while focused; stops on tab leave
+- Status board cards (all conditional): Current Focus, Sprint (name + progress), Tests (passing/failing/total; failing count red), Git (branch, uncommitted files, commits ahead)
+- Hook health pill below tab label: "Hooks alive" (green) / "Hooks stale" (amber) / "Hooks missing" (grey)
+- Hook auto-install Snackbar fires on `claude-code` session start when daemon indicates hooks were installed
+- Alert body display extended to handle `· last tool: X · <snippet>` format without over-truncation
+- New DTO classes: `SessionStatusBoardDto`, `SprintStatusDto`, `TestStatusDto`, `GitStatusDto`
+- New `TransportClient` method: `getSessionStatus` (`GET /api/sessions/{id}/status`)
+- 14 new locale keys in all 5 locales: `session_detail_tab_status`, `status_card_focus`, `status_card_sprint`, `status_card_tests`, `status_card_git`, `status_no_focus`, `status_no_sprint`, `status_no_tests`, `status_no_git`, `status_hooks_alive`, `status_hooks_stale`, `status_hooks_missing`, `status_llm_more_soon`, `status_hooks_installed_toast`
+### Changed
+- Status tab works for all session backends via the universal state-change emit (no app-side special-casing required)
+- Version bump: 0.95.0/173 → 0.96.0/174
+
+## [0.95.0] — 2026-05-11 (Stats sub-tab sectioned cards + sparklines — Sprint 25)
+### Added
+- `SessionStatsPanel` redesigned with sectioned cards replacing the flat `StatEnvelopeDto` view: Host card (always shown; CPU dial + sparkline, RSS + sparkline, Threads, FDs, Net Rx/Tx), Container card (conditional on `envelope.container`), ComputeNode card (conditional on `session.computeNodeRef`; GPU stats when present; "Open in Compute →" nav link), LLM card (conditional on `session.llmRef`; "Open in LLM →" nav link)
+- CPU and RSS sparklines: 60-sample circular buffer per session held in `SessionStatsViewModel`; drawn with `Canvas` + `DrawScope.drawPath` (no external chart library)
+- `ContainerInfoDto` added to `StatEnvelopeDto` (`container` field, nullable)
+- 16 new locale keys in all 5 locales: `stats_card_host`, `stats_card_container`, `stats_card_compute_node`, `stats_card_llm`, `stats_field_cpu`, `stats_field_rss`, `stats_field_threads`, `stats_field_fds`, `stats_field_net`, `stats_field_gpu`, `stats_open_compute`, `stats_open_llm`, `stats_llm_more_soon`, `stats_container_id`, `stats_container_image`, `stats_container_runtime`
+### Changed
+- Version bump: 0.94.0/172 → 0.95.0/173
+
+## [0.94.0] — 2026-05-11 (Automata browse redesign + Sessions filter collapsible — Sprint 24+29)
+### Added
+- `PrdRow` pin button: toggles pinned state per automaton; pinned set persisted in DataStore per server profile (`pinned_automata_<serverProfileId>` key); pinned cards always render at top
+- New automata sort order: pinned first → state rank (waiting-input/needs-review/revisions-asked → blocked → running → planning → done/cancelled/approved) → last-activity descending
+- `PrdRow` inline action row: Open, Cancel, Approve buttons; Approve highlighted (amber tint) when state is `needs_review`, `revisions_asked`, or `waiting_input`; Cancel shows confirm modal (`automata_confirm_cancel`)
+- `PrdRow` card additions: status pill, last-activity timestamp top-right, collapsible "Stories & tasks" section (shown when count > 0)
+- Sessions filter bar redesigned: `LLM (N) ▸` collapsible button with backend-family badges; `State (N) ▸` collapsible with all real states and colour-dot rail; filter text input ~10% wider
+- Alert dock max-width changed to `min(340.dp, screenWidth - 16.dp)` for narrow viewports
+- Sprint 23 test debt: 4 ViewModel tests added to shared unit test suite: `toggleWatch_addsToWatchedIds`, `toggleWatch_removesFromWatchedIds`, `watchedAlertCount_reflectsWatchedSessions`, `bottomNavBar_selectedTabMatchesRoute`
+- New `TransportClient` methods: `approveAutomaton`, `cancelAutomaton`
+- 10 new locale keys in all 5 locales: `automata_action_open`, `automata_action_cancel`, `automata_action_approve`, `automata_pin`, `automata_unpin`, `automata_last_activity`, `automata_stories_tasks`, `automata_confirm_cancel`, `llm_filter_btn_tip`, `state_filter_btn_tip`
+### Changed
+- Version bump: 0.93.0/171 → 0.94.0/172
+
 ## [0.93.0] — 2026-05-10 (Watch toggle opt-in — Sprint 23)
 ### Added
 - `WatchedSessionsStore`: SharedPreferences-backed per-profile set of watched session ids; reactive `watchedFlow()` via `callbackFlow`
