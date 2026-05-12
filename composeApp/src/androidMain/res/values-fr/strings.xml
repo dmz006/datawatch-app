@@ -1092,4 +1092,23 @@
     <string name="push_registered">Notifications push enregistrées</string>
     <string name="push_failed">Échec de l\'enregistrement push — réessai en cours</string>
     <string name="push_notification_channel">alertes datawatch</string>
+
+    <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
+    <string name="llm_models_tab">Modèles</string>
+    <string name="llm_in_use_tab">En cours</string>
+    <string name="llm_models_node_col">Nœud</string>
+    <string name="llm_models_model_col">Modèle</string>
+    <string name="llm_models_add_row">Ajouter une ligne</string>
+    <string name="llm_models_auto_badge">Auto</string>
+    <string name="llm_models_none">Aucun modèle configuré</string>
+    <string name="llm_in_use_none">Aucune session active</string>
+    <string name="llm_in_use_task_col">Tâche</string>
+    <string name="llm_delete_blocked_n">%1$s a des sessions actives</string>
+    <string name="llm_reassign_to">Réassigner les sessions à :</string>
+    <string name="llm_reassign_btn">Réassigner &amp; supprimer</string>
+    <string name="llm_force_delete">Supprimer de force (sans réassignation)</string>
+    <string name="llm_force_confirm">Forcer la suppression de ce LLM et abandonner ses sessions actives ?</string>
+    <string name="automata_confirm_batch_cancel">Annuler %1$d automates sélectionnés ?</string>
+    <string name="automata_confirm_batch_delete_title">Supprimer les automates</string>
+    <string name="automata_confirm_batch_delete">Supprimer définitivement %1$d automates sélectionnés ?</string>
 </resources>

@@ -22,6 +22,9 @@ public sealed class TransportError(message: String, cause: Throwable? = null) :
     public class RateLimited(public val retryAfterSeconds: Long? = null) :
         TransportError("Rate limited")
 
+    /** 409 Conflict — resource in use (e.g. LLM has active sessions). */
+    public class Conflict(message: String) : TransportError(message)
+
     /** 5xx from the server. */
     public class ServerError(public val status: Int, message: String) :
         TransportError("$status: $message")

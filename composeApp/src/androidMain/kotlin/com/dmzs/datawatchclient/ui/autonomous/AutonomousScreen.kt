@@ -149,10 +149,7 @@ public fun AutonomousScreen(
                             }, label = { Text("Approve") })
                         }
                         item {
-                            AssistChip(onClick = {
-                                state.selectedIds.forEach { vm.cancelPrd(it) }
-                                vm.clearSelection()
-                            }, label = { Text("Cancel") })
+                            AssistChip(onClick = { vm.requestBatchCancelConfirm() }, label = { Text("Cancel") })
                         }
                         item {
                             AssistChip(onClick = {
@@ -161,10 +158,7 @@ public fun AutonomousScreen(
                             }, label = { Text("Archive") })
                         }
                         item {
-                            AssistChip(onClick = {
-                                state.selectedIds.forEach { vm.hardDeletePrd(it) }
-                                vm.clearSelection()
-                            }, label = { Text("Delete") })
+                            AssistChip(onClick = { vm.requestBatchDeleteConfirm() }, label = { Text("Delete") })
                         }
                         item {
                             AssistChip(onClick = { vm.clearSelection() }, label = { Text("✕ Clear") })
@@ -198,6 +192,44 @@ public fun AutonomousScreen(
             },
         )
     }
+    // Sprint 30 — batch cancel confirm dialog
+    if (state.showBatchCancelConfirm) {
+        AlertDialog(
+            onDismissRequest = { vm.dismissBatchConfirm() },
+            title = { Text(stringResource(R.string.automata_confirm_cancel_title)) },
+            text = { Text(stringResource(R.string.automata_confirm_batch_cancel, state.selectedIds.size)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedIds.forEach { vm.cancelPrd(it) }
+                    vm.clearSelection()
+                    vm.dismissBatchConfirm()
+                }) { Text(stringResource(R.string.action_cancel)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.dismissBatchConfirm() }) { Text(stringResource(R.string.action_close)) }
+            },
+        )
+    }
+
+    // Sprint 30 — batch hard-delete confirm dialog
+    if (state.showBatchDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { vm.dismissBatchConfirm() },
+            title = { Text(stringResource(R.string.automata_confirm_batch_delete_title)) },
+            text = { Text(stringResource(R.string.automata_confirm_batch_delete, state.selectedIds.size)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedIds.forEach { vm.hardDeletePrd(it) }
+                    vm.clearSelection()
+                    vm.dismissBatchConfirm()
+                }) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.dismissBatchConfirm() }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+
     openPrdId?.let { id ->
         LaunchedEffect(id) { vm.loadScanResult(id) }
         val prd = state.prds.firstOrNull { it.id == id }

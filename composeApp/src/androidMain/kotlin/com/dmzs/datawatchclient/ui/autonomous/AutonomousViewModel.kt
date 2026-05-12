@@ -51,6 +51,10 @@ public class AutonomousViewModel(
         val selectedIds: Set<String> = emptySet(),
         /** PRD id pending cancel confirmation; null = no dialog. Sprint 24 (BL293). */
         val confirmCancelId: String? = null,
+        /** Sprint 30 — batch cancel confirm dialog pending. */
+        val showBatchCancelConfirm: Boolean = false,
+        /** Sprint 30 — batch hard-delete confirm dialog pending. */
+        val showBatchDeleteConfirm: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -146,6 +150,21 @@ public class AutonomousViewModel(
     /** Dismiss the confirm-cancel dialog without cancelling. */
     public fun dismissCancelConfirm() {
         _state.value = _state.value.copy(confirmCancelId = null)
+    }
+
+    /** Sprint 30 — show batch-cancel confirmation dialog. */
+    public fun requestBatchCancelConfirm() {
+        _state.value = _state.value.copy(showBatchCancelConfirm = true)
+    }
+
+    /** Sprint 30 — show batch hard-delete confirmation dialog. */
+    public fun requestBatchDeleteConfirm() {
+        _state.value = _state.value.copy(showBatchDeleteConfirm = true)
+    }
+
+    /** Sprint 30 — dismiss whichever batch confirm dialog is open without acting. */
+    public fun dismissBatchConfirm() {
+        _state.value = _state.value.copy(showBatchCancelConfirm = false, showBatchDeleteConfirm = false)
     }
 
     /** Execute the soft-cancel after the user confirmed via the dialog. */
