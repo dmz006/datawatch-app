@@ -489,7 +489,7 @@ private fun HomeShell(
                         alerts = dockAlerts,
                         onDismiss = { dockDismissed = true },
                         onMute = { dockMuted = true },
-                        modifier = Modifier.align(Alignment.TopEnd),
+                        modifier = Modifier.align(Alignment.BottomEnd),
                     )
                 } else if (dockAlerts.size < 2) {
                     // Reset dismiss when alert count drops below threshold

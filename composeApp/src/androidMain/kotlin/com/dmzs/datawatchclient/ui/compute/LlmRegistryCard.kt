@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
@@ -53,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -154,6 +156,12 @@ public fun LlmRegistryCard() {
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             PwaSectionTitle(stringResource(R.string.settings_llm_registry_title), modifier = Modifier.weight(1f))
+            val uriHandler = LocalUriHandler.current
+            IconButton(onClick = {
+                uriHandler.openUri("https://docs.anthropic.com/en/docs/claude-code/settings")
+            }) {
+                Icon(Icons.Filled.HelpOutline, contentDescription = stringResource(R.string.sessions_help_link))
+            }
             IconButton(onClick = { selectedLlm = null; showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.llm_registry_add))
             }
