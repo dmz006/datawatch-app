@@ -86,4 +86,11 @@
     <string name="voice_click_stop_recording">Klicken zum Beenden der Aufnahme</string>
     <string name="voice_recording_status">Aufnahme — erneut klicken zum Beenden</string>
     <string name="voice_transcribing">Transkribieren…</string>
+
+    <!-- ── Sprint 32 i18n — Wear sessions list + state badges (v1.01.0) ── -->
+    <string name="wear_sessions_empty">Keine Sitzungen</string>
+    <string name="wear_session_state_running">Läuft</string>
+    <string name="wear_session_state_waiting">Wartet</string>
+    <string name="wear_session_state_done">Fertig</string>
+    <string name="wear_session_state_error">Fehler</string>
 </resources>
