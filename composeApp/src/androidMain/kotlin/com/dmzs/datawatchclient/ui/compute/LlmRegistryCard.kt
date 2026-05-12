@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.ui.compute
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -411,6 +413,11 @@ private fun LlmRegistryRow(
     }
 }
 
+/** alpha.41 — session-backend kinds expose binary/console/git/claude fields. */
+private val SESSION_BACKEND_KINDS = setOf(
+    "claude-code", "aider", "goose", "gemini", "opencode", "opencode-acp", "opencode-prompt", "shell",
+)
+
 /** The 10 valid LLM kinds. openwebui IS valid here (references an ollama ComputeNode). */
 private val LLM_KINDS = listOf(
     "ollama",
@@ -425,6 +432,7 @@ private val LLM_KINDS = listOf(
     "shell",
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LlmRegistryDialog(
     existing: LlmRegistryEntryDto?,
@@ -440,6 +448,33 @@ private fun LlmRegistryDialog(
     var nodeModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     val isNodeBased = kind in NODE_BASED_KINDS
     val isAutoAdd = existing?.autoAddModels ?: false
+    // alpha.41 core fields
+    var apiKeyRef by remember(existing) { mutableStateOf(existing?.apiKeyRef ?: "") }
+    var timeout by remember(existing) { mutableStateOf(existing?.timeout?.toString() ?: "") }
+    val tags = remember(existing) { mutableStateListOf(*(existing?.tags?.toTypedArray() ?: emptyArray())) }
+    var tagInput by remember { mutableStateOf("") }
+    // alpha.41 session-backend fields
+    val isSessionBackend = kind in SESSION_BACKEND_KINDS
+    var binary by remember(existing) { mutableStateOf(existing?.binary ?: "") }
+    var consoleCols by remember(existing) { mutableStateOf(existing?.consoleCols?.toString() ?: "") }
+    var consoleRows by remember(existing) { mutableStateOf(existing?.consoleRows?.toString() ?: "") }
+    var outputModeDropdown by remember { mutableStateOf(false) }
+    var outputMode by remember(existing) { mutableStateOf(existing?.outputMode ?: "terminal") }
+    var inputModeDropdown by remember { mutableStateOf(false) }
+    var inputMode by remember(existing) { mutableStateOf(existing?.inputMode ?: "tmux") }
+    var autoGitInit by remember(existing) { mutableStateOf(existing?.autoGitInit ?: false) }
+    var autoGitCommit by remember(existing) { mutableStateOf(existing?.autoGitCommit ?: false) }
+    // alpha.41 claude-code-specific fields
+    val isClaudeCode = kind == "claude-code"
+    var skipPermissions by remember(existing) { mutableStateOf(existing?.skipPermissions ?: false) }
+    var channelEnabled by remember(existing) { mutableStateOf(existing?.channelEnabled ?: false) }
+    var autoAcceptDisclaimer by remember(existing) { mutableStateOf(existing?.autoAcceptDisclaimer ?: false) }
+    var permissionModeDropdown by remember { mutableStateOf(false) }
+    var permissionMode by remember(existing) { mutableStateOf(existing?.permissionMode ?: "default") }
+    var defaultEffortDropdown by remember { mutableStateOf(false) }
+    var defaultEffort by remember(existing) { mutableStateOf(existing?.defaultEffort ?: "normal") }
+    val fallbackChain = remember(existing) { mutableStateListOf(*(existing?.fallbackChain?.toTypedArray() ?: emptyArray())) }
+    var fallbackInput by remember { mutableStateOf("") }
 
     // Per-node model pairs: initialize from existing.models or from legacy computeNode+model
     val modelPairs = remember(existing) {
@@ -588,11 +623,148 @@ private fun LlmRegistryDialog(
                     )
                 }
 
-                // Pretest enabled
+                // Pretest enabled (G20: Switch replaces Checkbox)
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = pretestEnabled, onCheckedChange = { pretestEnabled = it })
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.llm_registry_pretest_label), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.llm_registry_pretest_label), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    Switch(checked = pretestEnabled, onCheckedChange = { pretestEnabled = it })
+                }
+
+                // alpha.41 core: API key ref, timeout, tags
+                HorizontalDivider()
+                OutlinedTextField(
+                    value = apiKeyRef,
+                    onValueChange = { apiKeyRef = it },
+                    label = { Text(stringResource(R.string.llm_field_api_key_ref)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = timeout,
+                        onValueChange = { if (it.all { c -> c.isDigit() }) timeout = it },
+                        label = { Text(stringResource(R.string.llm_field_timeout)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                // Tags chip input
+                if (tags.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        tags.forEach { tag ->
+                            AssistChip(
+                                onClick = { tags.remove(tag) },
+                                label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
+                                trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(12.dp)) },
+                            )
+                        }
+                    }
+                }
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = tagInput,
+                        onValueChange = { tagInput = it },
+                        label = { Text(stringResource(R.string.llm_field_tags)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { if (tagInput.isNotBlank()) { tags.add(tagInput.trim()); tagInput = "" } }) { Text("+") }
+                }
+
+                // alpha.41 session-backend section
+                if (isSessionBackend) {
+                    HorizontalDivider()
+                    Text(stringResource(R.string.llm_section_session_backend), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    OutlinedTextField(value = binary, onValueChange = { binary = it }, label = { Text(stringResource(R.string.llm_field_binary)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = consoleCols, onValueChange = { if (it.all { c -> c.isDigit() }) consoleCols = it }, label = { Text(stringResource(R.string.llm_field_console_cols)) }, singleLine = true, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = consoleRows, onValueChange = { if (it.all { c -> c.isDigit() }) consoleRows = it }, label = { Text(stringResource(R.string.llm_field_console_rows)) }, singleLine = true, modifier = Modifier.weight(1f))
+                    }
+                    // Output mode
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_output_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { outputModeDropdown = true }) { Text(outputMode) }
+                            DropdownMenu(expanded = outputModeDropdown, onDismissRequest = { outputModeDropdown = false }) {
+                                listOf("terminal", "log", "chat").forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = { outputMode = m; outputModeDropdown = false })
+                                }
+                            }
+                        }
+                    }
+                    // Input mode
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_input_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { inputModeDropdown = true }) { Text(inputMode) }
+                            DropdownMenu(expanded = inputModeDropdown, onDismissRequest = { inputModeDropdown = false }) {
+                                listOf("tmux", "chat", "none").forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = { inputMode = m; inputModeDropdown = false })
+                                }
+                            }
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_auto_git_init), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Switch(checked = autoGitInit, onCheckedChange = { autoGitInit = it })
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_auto_git_commit), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Switch(checked = autoGitCommit, onCheckedChange = { autoGitCommit = it })
+                    }
+                }
+
+                // alpha.41 claude-code-specific section
+                if (isClaudeCode) {
+                    HorizontalDivider()
+                    Text(stringResource(R.string.llm_section_claude), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_skip_permissions), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Switch(checked = skipPermissions, onCheckedChange = { skipPermissions = it })
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_channel_enabled), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Switch(checked = channelEnabled, onCheckedChange = { channelEnabled = it })
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_auto_accept), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Switch(checked = autoAcceptDisclaimer, onCheckedChange = { autoAcceptDisclaimer = it })
+                    }
+                    // Permission mode
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_permission_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { permissionModeDropdown = true }) { Text(permissionMode) }
+                            DropdownMenu(expanded = permissionModeDropdown, onDismissRequest = { permissionModeDropdown = false }) {
+                                listOf("default", "acceptEdits", "bypassPermissions").forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = { permissionMode = m; permissionModeDropdown = false })
+                                }
+                            }
+                        }
+                    }
+                    // Default effort
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_default_effort), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { defaultEffortDropdown = true }) { Text(defaultEffort) }
+                            DropdownMenu(expanded = defaultEffortDropdown, onDismissRequest = { defaultEffortDropdown = false }) {
+                                listOf("low", "normal", "high").forEach { e ->
+                                    DropdownMenuItem(text = { Text(e) }, onClick = { defaultEffort = e; defaultEffortDropdown = false })
+                                }
+                            }
+                        }
+                    }
+                    // Fallback chain
+                    if (fallbackChain.isNotEmpty()) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            fallbackChain.forEach { llm ->
+                                AssistChip(onClick = { fallbackChain.remove(llm) }, label = { Text(llm, style = MaterialTheme.typography.labelSmall) }, trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(12.dp)) })
+                            }
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(value = fallbackInput, onValueChange = { fallbackInput = it }, label = { Text(stringResource(R.string.llm_field_fallback_chain)) }, singleLine = true, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { if (fallbackInput.isNotBlank()) { fallbackChain.add(fallbackInput.trim()); fallbackInput = "" } }) { Text("+") }
+                    }
                 }
             }
         },
@@ -604,26 +776,50 @@ private fun LlmRegistryDialog(
             }
             TextButton(
                 onClick = {
+                    val commonFields = { base: LlmRegistryEntryDto ->
+                        base.copy(
+                            apiKeyRef = apiKeyRef.trim().ifBlank { null },
+                            timeout = timeout.trim().toIntOrNull(),
+                            tags = tags.toList().ifEmpty { null },
+                            binary = if (isSessionBackend) binary.trim().ifBlank { null } else null,
+                            consoleCols = if (isSessionBackend) consoleCols.trim().toIntOrNull() else null,
+                            consoleRows = if (isSessionBackend) consoleRows.trim().toIntOrNull() else null,
+                            outputMode = if (isSessionBackend) outputMode.ifBlank { null } else null,
+                            inputMode = if (isSessionBackend) inputMode.ifBlank { null } else null,
+                            autoGitInit = if (isSessionBackend) autoGitInit else null,
+                            autoGitCommit = if (isSessionBackend) autoGitCommit else null,
+                            skipPermissions = if (isClaudeCode) skipPermissions else null,
+                            channelEnabled = if (isClaudeCode) channelEnabled else null,
+                            autoAcceptDisclaimer = if (isClaudeCode) autoAcceptDisclaimer else null,
+                            permissionMode = if (isClaudeCode) permissionMode.ifBlank { null } else null,
+                            defaultEffort = if (isClaudeCode) defaultEffort.ifBlank { null } else null,
+                            fallbackChain = if (isClaudeCode) fallbackChain.toList().ifEmpty { null } else null,
+                        )
+                    }
                     val dto = if (isNodeBased) {
-                        LlmRegistryEntryDto(
-                            name = name.trim(),
-                            kind = kind,
-                            computeNode = modelPairs.firstOrNull()?.computeNode ?: "",
-                            computeNodes = modelPairs.drop(1).map { it.computeNode },
-                            model = modelPairs.firstOrNull()?.model ?: "",
-                            models = modelPairs.toList(),
-                            enabled = existing?.enabled ?: true,
-                            pretestEnabled = pretestEnabled,
-                            autoAddModels = isAutoAdd,
+                        commonFields(
+                            LlmRegistryEntryDto(
+                                name = name.trim(),
+                                kind = kind,
+                                computeNode = modelPairs.firstOrNull()?.computeNode ?: "",
+                                computeNodes = modelPairs.drop(1).map { it.computeNode },
+                                model = modelPairs.firstOrNull()?.model ?: "",
+                                models = modelPairs.toList(),
+                                enabled = existing?.enabled ?: true,
+                                pretestEnabled = pretestEnabled,
+                                autoAddModels = isAutoAdd,
+                            ),
                         )
                     } else {
-                        LlmRegistryEntryDto(
-                            name = name.trim(),
-                            kind = kind,
-                            computeNode = "",
-                            model = singleModel.trim(),
-                            enabled = existing?.enabled ?: true,
-                            pretestEnabled = pretestEnabled,
+                        commonFields(
+                            LlmRegistryEntryDto(
+                                name = name.trim(),
+                                kind = kind,
+                                computeNode = "",
+                                model = singleModel.trim(),
+                                enabled = existing?.enabled ?: true,
+                                pretestEnabled = pretestEnabled,
+                            ),
                         )
                     }
                     onSave(dto)

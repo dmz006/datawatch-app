@@ -998,6 +998,7 @@ public data class LlmModelPairDto(
 /**
  * GET/POST/PUT /api/llms — a registered LLM entry. kind=openwebui
  * is valid here (references an ollama ComputeNode under the hood).
+ * alpha.41: session-backend and claude-code-specific fields added.
  */
 @Serializable
 public data class LlmRegistryEntryDto(
@@ -1013,6 +1014,25 @@ public data class LlmRegistryEntryDto(
     @SerialName("pretest_enabled") val pretestEnabled: Boolean = false,
     /** Sprint 30 — when true, models list is managed by the server and is display-only. */
     @SerialName("auto_add_models") val autoAddModels: Boolean = false,
+    // alpha.41 core fields
+    @SerialName("api_key_ref") val apiKeyRef: String? = null,
+    val timeout: Int? = null,
+    val tags: List<String>? = null,
+    // alpha.41 session-backend section (visible for session-backend kinds)
+    val binary: String? = null,
+    @SerialName("console_cols") val consoleCols: Int? = null,
+    @SerialName("console_rows") val consoleRows: Int? = null,
+    @SerialName("output_mode") val outputMode: String? = null,
+    @SerialName("input_mode") val inputMode: String? = null,
+    @SerialName("auto_git_init") val autoGitInit: Boolean? = null,
+    @SerialName("auto_git_commit") val autoGitCommit: Boolean? = null,
+    // alpha.41 claude-code-specific section (visible when kind == "claude-code")
+    @SerialName("skip_permissions") val skipPermissions: Boolean? = null,
+    @SerialName("channel_enabled") val channelEnabled: Boolean? = null,
+    @SerialName("auto_accept_disclaimer") val autoAcceptDisclaimer: Boolean? = null,
+    @SerialName("permission_mode") val permissionMode: String? = null,
+    @SerialName("default_effort") val defaultEffort: String? = null,
+    @SerialName("fallback_chain") val fallbackChain: List<String>? = null,
 )
 
 /** Sprint 30 — GET /api/llms/{name}/sessions response. */
