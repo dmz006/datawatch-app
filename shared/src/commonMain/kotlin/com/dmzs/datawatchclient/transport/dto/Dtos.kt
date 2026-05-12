@@ -1161,6 +1161,14 @@ public data class CouncilPersonaDto(
     val prompt: String = "",
     val enabled: Boolean = true,
     @SerialName("assist_backend") val assistBackend: String? = null,
+    /** Sprint 31 — true for the 4 platform built-in personas (cannot be deleted). */
+    @SerialName("is_builtin") val isBuiltin: Boolean = false,
+)
+
+/** Sprint 31 — GET /api/council/personas response wrapper. */
+@Serializable
+public data class CouncilPersonasDto(
+    val personas: List<CouncilPersonaDto> = emptyList(),
 )
 
 /** GET /api/council/runs — a single council run entry. */

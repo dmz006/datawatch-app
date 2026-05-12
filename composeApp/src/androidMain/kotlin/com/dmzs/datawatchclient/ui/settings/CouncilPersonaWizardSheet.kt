@@ -198,6 +198,7 @@ fun CouncilPersonaWizardSheet(
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Name") },
                             singleLine = true,
+                            enabled = existingPersona?.isBuiltin != true,
                         )
                         Spacer(Modifier.height(4.dp))
                         OutlinedTextField(
@@ -254,4 +255,5 @@ data class CouncilPersonaForEdit(
     val name: String,
     val prompt: String,
     val description: String,
+    val isBuiltin: Boolean = false,
 )

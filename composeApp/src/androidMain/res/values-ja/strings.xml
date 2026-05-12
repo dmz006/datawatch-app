@@ -1111,4 +1111,18 @@
     <string name="automata_confirm_batch_cancel">選択した%1$d件のオートマトンをキャンセルしますか?</string>
     <string name="automata_confirm_batch_delete_title">オートマトンを削除</string>
     <string name="automata_confirm_batch_delete">選択した%1$d件のオートマトンを完全に削除しますか?</string>
+
+    <!-- ── Sprint 31 i18n — Council persona CRUD + built-in badge (v1.00.0) ── -->
+    <string name="council_personas_title">カウンシルペルソナ</string>
+    <string name="council_persona_name">名前</string>
+    <string name="council_persona_description">説明</string>
+    <string name="council_persona_system_prompt">システムプロンプト</string>
+    <string name="council_persona_builtin_badge">組み込み</string>
+    <string name="council_persona_add">ペルソナを追加</string>
+    <string name="council_persona_edit">編集</string>
+    <string name="council_persona_save">保存</string>
+    <string name="council_persona_delete">削除</string>
+    <string name="council_persona_none">カスタムペルソナなし</string>
+    <string name="council_persona_name_required">名前が必要です</string>
+    <string name="council_persona_delete_confirm_title">%1$sを削除しますか?</string>
 </resources>
