@@ -812,7 +812,7 @@ private fun SessionsPage(
             }
         if (filtered.isEmpty()) {
             Text(
-                if (state.sessions.isEmpty()) state.serverName else when (filter) {
+                if (state.sessions.isEmpty()) stringResource(R.string.wear_sessions_empty) else when (filter) {
                 SessionFilter.Wait -> stringResource(R.string.wear_sessions_no_wait)
                 SessionFilter.Run -> stringResource(R.string.wear_sessions_no_run)
                 SessionFilter.Total -> stringResource(R.string.wear_sessions_no_total)
@@ -823,17 +823,17 @@ private fun SessionsPage(
             )
             return@PageScaffold
         }
-        // Per-session rows. Bezel-scrollable column above already
-        // exists via PageScaffold, so rows naturally paginate when
-        // the count exceeds visible area on the round face.
+        // Per-session rows — Sprint 32: shortId + state badge + task text + last-activity.
         filtered.forEach { item ->
+            val badgeColor = sessionBadgeColor(item.stateName)
+            val agoText = wearSessionAgo(item.lastActivity)
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp)
                         .background(
-                            color = sessionBadgeColor(item.stateName).copy(alpha = 0.25f),
+                            color = badgeColor.copy(alpha = 0.18f),
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
                         )
                         .clickable { onSessionTap(item) }
@@ -842,16 +842,25 @@ private fun SessionsPage(
             ) {
                 Text(
                     "●",
-                    color = sessionBadgeColor(item.stateName),
+                    color = badgeColor,
                     style = MaterialTheme.typography.caption1,
                 )
-                Text(
-                    item.title,
-                    modifier = Modifier.padding(start = 6.dp),
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.onSurface,
-                    maxLines = 1,
-                )
+                Column(
+                    modifier = Modifier.padding(start = 6.dp).weight(1f),
+                ) {
+                    Text(
+                        item.title.take(30),
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.onSurface,
+                        maxLines = 1,
+                    )
+                    Text(
+                        "${item.shortId}  $agoText",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -899,14 +908,27 @@ private fun SessionsFilterRow(
     }
 }
 
-/** Color accent per session state — running green, waiting amber, others grey. */
+/** Color accent per session state — datawatch dark palette (Sprint 32). */
 private fun sessionBadgeColor(stateName: String): Color =
     when (stateName.lowercase()) {
-        "running" -> Color(0xFF22C55E)
-        "waiting" -> Color(0xFFF59E0B)
+        "running" -> Color(0xFF1DE9B6)
+        "waiting", "waiting_input", "waiting-input" -> Color(0xFFFFB300)
+        "error", "failed", "killed" -> Color(0xFFEF4444)
         "ratelimited", "rate_limited" -> Color(0xFFEF4444)
         else -> Color(0xFF94A3B8)
     }
+
+/** Format lastActivity epoch ms as "Xm ago" / "Xh ago" / "Xd ago"; "" when zero. */
+private fun wearSessionAgo(epochMs: Long): String {
+    if (epochMs <= 0L) return ""
+    val delta = System.currentTimeMillis() - epochMs
+    return when {
+        delta < 60_000L -> "<1m ago"
+        delta < 3_600_000L -> "${delta / 60_000L}m ago"
+        delta < 86_400_000L -> "${delta / 3_600_000L}h ago"
+        else -> "${delta / 86_400_000L}d ago"
+    }
+}
 
 /**
  * Round-bezel tap popup.
@@ -1509,10 +1531,12 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
 
     public data class SessionItem(
         val id: String,
+        val shortId: String = id.takeLast(8),
         val title: String,
         val backend: String,
         val stateName: String,
         val lastLine: String,
+        val lastActivity: Long = 0L,
     )
 
     public data class PrdItem(
@@ -1643,18 +1667,22 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
 
     private fun applySessions(map: DataMap) {
         val ids = map.getStringArray("ids") ?: emptyArray()
+        val shortIds = map.getStringArray("shortIds") ?: emptyArray()
         val titles = map.getStringArray("titles") ?: emptyArray()
         val backends = map.getStringArray("backends") ?: emptyArray()
         val states = map.getStringArray("states") ?: emptyArray()
         val lastLines = map.getStringArray("lastLines") ?: emptyArray()
+        val lastActivities = map.getLongArray("lastActivities") ?: LongArray(0)
         val items =
             ids.indices.map { i ->
                 SessionItem(
                     id = ids[i],
+                    shortId = shortIds.getOrNull(i) ?: ids[i].takeLast(8),
                     title = titles.getOrNull(i).orEmpty(),
                     backend = backends.getOrNull(i).orEmpty(),
                     stateName = states.getOrNull(i).orEmpty(),
                     lastLine = lastLines.getOrNull(i).orEmpty(),
+                    lastActivity = lastActivities.getOrElse(i) { 0L },
                 )
             }
         Log.d("WearMain", "applySessions n=${items.size}")

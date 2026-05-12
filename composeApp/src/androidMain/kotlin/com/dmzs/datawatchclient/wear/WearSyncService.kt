@@ -209,6 +209,7 @@ public class WearSyncService(
                                         .map { s ->
                                             SessionItem(
                                                 id = s.id,
+                                                shortId = s.id.takeLast(8),
                                                 title = (s.name ?: s.taskSummary ?: s.id).take(40),
                                                 backend = s.backend.orEmpty(),
                                                 stateName = s.state.name,
@@ -234,6 +235,7 @@ public class WearSyncService(
                                                     ).replace("\n", " ")
                                                         .trim()
                                                         .take(SESSION_LAST_LINE_MAX),
+                                                lastActivity = s.lastActivityAt.toEpochMilliseconds(),
                                             )
                                         }
                                         .toList(),
@@ -733,10 +735,12 @@ public class WearSyncService(
      */
     private data class SessionItem(
         val id: String,
+        val shortId: String,
         val title: String,
         val backend: String,
         val stateName: String,
         val lastLine: String,
+        val lastActivity: Long,
     )
 
     private data class SessionsListSnapshot(
@@ -855,10 +859,12 @@ public class WearSyncService(
             val req =
                 PutDataMapRequest.create(SESSIONS_PATH).apply {
                     dataMap.putStringArray("ids", snap.items.map { it.id }.toTypedArray())
+                    dataMap.putStringArray("shortIds", snap.items.map { it.shortId }.toTypedArray())
                     dataMap.putStringArray("titles", snap.items.map { it.title }.toTypedArray())
                     dataMap.putStringArray("backends", snap.items.map { it.backend }.toTypedArray())
                     dataMap.putStringArray("states", snap.items.map { it.stateName }.toTypedArray())
                     dataMap.putStringArray("lastLines", snap.items.map { it.lastLine }.toTypedArray())
+                    dataMap.putLongArray("lastActivities", snap.items.map { it.lastActivity }.toLongArray())
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
