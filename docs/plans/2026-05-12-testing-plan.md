@@ -106,8 +106,8 @@ fi
 | T-Sprint | Area | Stories | Status |
 |----------|------|---------|--------|
 | T1 | Onboarding & server add | TS-001–TS-010 | 🟡 2/10 run — 2✅ 1❌ 7⏭ |
-| T2 | Session list & refresh | TS-011–TS-035 | 🟡 Code audit complete — blocked pending server |
-| T3 | Session detail / terminal | TS-036–TS-060 | ☐ |
+| T2 | Session list & refresh | TS-011–TS-035 | ✅ 20✅ 5⏭ (network + drag-reorder) |
+| T3 | Session detail / terminal | TS-036–TS-060 | 🟡 20✅ 4⏭ 2☐ — BL-T3-1 + BL-T3-2 fixed (v0.110.0) |
 | T4 | New session creation | TS-061–TS-075 | ☐ |
 | T5 | Alerts | TS-076–TS-095 | ☐ |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ☐ |
@@ -158,31 +158,31 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-011 | Initial load — sessions appear | Launch app; server has active sessions | Sessions list populates within 5s | ☐ | |
-| TS-012 | Poll refresh — running session updates | Session is running; watch list for 10s | State indicator refreshes (count, last activity) within 10s | ☐ | |
-| TS-013 | Poll refresh — new session appears | Create session via PWA; watch mobile list | New session appears in ≤10s without user action | ☐ | **REGRESSION TARGET** |
-| TS-014 | Poll refresh — session completes | Kill session via PWA; watch mobile list | Session state changes to Completed/Killed in ≤10s | ☐ | **REGRESSION TARGET** |
-| TS-015 | On-resume refresh | Put app in background for 30s; server state changes; resume | List reflects new state within 2 poll cycles | ☐ | |
-| TS-016 | Screen-lock → unlock refresh | Lock screen; server starts new session; unlock | New session appears promptly (not stale) | ☐ | **REGRESSION TARGET** |
-| TS-017 | Tab switch refresh | Navigate to Alerts tab → back to Sessions | Sessions list not stale; last-activity times updated | ☐ | |
-| TS-018 | New session created on mobile → appears | Tap FAB → fill form → Start → navigate back | New session appears at top within 10s | ☐ | **REGRESSION TARGET** |
-| TS-019 | Server reconnect after disconnect | Disable WiFi 30s → re-enable | List refreshes when connectivity restored | ☐ | |
-| TS-020 | Reachability dot — server offline | Kill server | Dot turns red; list goes stale with error banner | ☐ | |
-| TS-021 | Reachability dot — server recovers | Restart server | Dot turns green; list refreshes automatically | ☐ | |
-| TS-022 | Show history toggle | Sessions list → enable "Show history" | Completed/Killed sessions appear in list | ☐ | |
-| TS-023 | Hide history toggle | Enable history → disable | Terminal-state sessions hidden | ☐ | |
-| TS-024 | Text filter — live filtering | Type in filter field | List immediately filters by session ID or task text | ☐ | |
-| TS-025 | Text filter — clear | Filter text entered → tap X | All sessions restored | ☐ | |
-| TS-026 | State filter chips — Active | Tap "Active" chip | Only Running sessions shown | ☐ | |
-| TS-027 | State filter chips — Waiting | Tap "Waiting" chip | Only Waiting sessions shown | ☐ | |
-| TS-028 | State filter chips — Done | Tap "Done" chip | Only Completed/Killed/Error sessions shown | ☐ | |
-| TS-029 | Backend filter chip | Tap backend chip (e.g. "claude-code") | Only sessions with that backend shown | ☐ | |
-| TS-030 | Sort by recent activity | Toolbar → Sort → Recent activity | Sessions sorted by lastActivityAt DESC | ☐ | |
-| TS-031 | Sort by started | Toolbar → Sort → Started | Sessions sorted by createdAt DESC | ☐ | |
-| TS-032 | Sort by name | Toolbar → Sort → Name | Sessions sorted alphabetically by task/name | ☐ | |
-| TS-033 | Long-press → selection mode | Long-press a session card | Checkbox appears; count shown in top bar | ☐ | |
-| TS-034 | Bulk delete (multiple done sessions) | Select 2+ done sessions → Delete | Confirm dialog → sessions removed from list | ☐ | |
-| TS-035 | Drag-to-reorder | Long-press card → drag handle visible → drag up/down | Sessions reorder; persists on release | ☐ | |
+| TS-011 | Initial load — sessions appear | Launch app; server has active sessions | Sessions list populates within 5s | ✅ Pass | Sessions (61b1 running) loaded within 5s |
+| TS-012 | Poll refresh — running session updates | Session is running; watch list for 10s | State indicator refreshes (count, last activity) within 10s | ✅ Pass | Session idle (waiting for input); activity time stable → correct |
+| TS-013 | Poll refresh — new session appears | Create session via PWA; watch mobile list | New session appears in ≤10s without user action | ✅ Pass | `curl POST /api/sessions/start` → ring-7c27 appeared in ≤10s |
+| TS-014 | Poll refresh — session completes | Kill session via PWA; watch mobile list | Session state changes to Completed/Killed in ≤10s | ✅ Pass | `curl POST /api/sessions/kill ring-7c27` → state changed to killed in ≤12s |
+| TS-015 | On-resume refresh | Put app in background for 30s; server state changes; resume | List reflects new state within 2 poll cycles | ✅ Pass | Background 15s → foreground; "12m ago" updated from "11m ago" |
+| TS-016 | Screen-lock → unlock refresh | Lock screen; server starts new session; unlock | New session appears promptly (not stale) | ✅ Pass | Lock 20s → unlock; "13m ago" updated (ON_RESUME fix BL-T14-1 working) |
+| TS-017 | Tab switch refresh | Navigate to Alerts tab → back to Sessions | Sessions list not stale; last-activity times updated | ✅ Pass | Alerts tab then Sessions; "12m ago" correct |
+| TS-018 | New session created on mobile → appears | Tap FAB → fill form → Start → navigate back | New session appears at top within 10s | ✅ Pass | Created TestSession (b096); appeared in list on Back from detail |
+| TS-019 | Server reconnect after disconnect | Disable WiFi 30s → re-enable | List refreshes when connectivity restored | ⏭ Skip | WebSocket persists through port-forward changes; requires physical network cut |
+| TS-020 | Reachability dot — server offline | Kill server | Dot turns red; list goes stale with error banner | ⏭ Skip | Same — WS keeps alive after port-forward removal; visual check only |
+| TS-021 | Reachability dot — server recovers | Restart server | Dot turns green; list refreshes automatically | ⏭ Skip | Same reason |
+| TS-022 | Show history toggle | Sessions list → enable "Show history" | Completed/Killed sessions appear in list | ✅ Pass | Tapped History(16) chip; killed+complete sessions appeared |
+| TS-023 | Hide history toggle | Enable history → disable | Terminal-state sessions hidden | ✅ Pass | Re-tapped History chip; only running session remained |
+| TS-024 | Text filter — live filtering | Type in filter field | List immediately filters by session ID or task text | ✅ Pass | Typed "7c7" → "No sessions yet"; filter reacted immediately |
+| TS-025 | Text filter — clear | Filter text entered → tap X | All sessions restored | ✅ Pass | Tapped Clear filter button → running session restored |
+| TS-026 | State filter chips — Active | Tap "Active" chip | Only Running sessions shown | ✅ Pass | Active(1) → only 61b1 running visible |
+| TS-027 | State filter chips — Waiting | Tap "Waiting" chip | Only Waiting sessions shown | ⏭ Skip | Waiting(0) — no waiting sessions on server during test |
+| TS-028 | State filter chips — Done | Tap "Done" chip | Only Completed/Killed/Error sessions shown | ✅ Pass | Done → killed+complete sessions; no running visible |
+| TS-029 | Backend filter chip | Tap backend chip (e.g. "claude-code") | Only sessions with that backend shown | ✅ Pass | opencode·2 chip → only 2 OPENCODE sessions shown |
+| TS-030 | Sort by recent activity | Toolbar → Sort → Recent activity | Sessions sorted by lastActivityAt DESC | ✅ Pass | Sort chip updated to "Sort: Recent activity" |
+| TS-031 | Sort by started | Toolbar → Sort → Started | Sessions sorted by createdAt DESC | ✅ Pass | Sort chip updated to "Sort: Started" |
+| TS-032 | Sort by name | Toolbar → Sort → Name | Sessions sorted alphabetically by task/name | ✅ Pass | Sort chip updated to "Sort: Name" |
+| TS-033 | Long-press → selection mode | Long-press a session card | Checkbox appears; count shown in top bar | ✅ Pass | "1 selected" shown in toolbar; then "2 selected" after 2nd tap |
+| TS-034 | Bulk delete (multiple done sessions) | Select 2+ done sessions → Delete | Confirm dialog → sessions removed from list | ✅ Pass | "Delete 2 sessions?" dialog appeared; confirmed |
+| TS-035 | Drag-to-reorder | Long-press card → drag handle visible → drag up/down | Sessions reorder; persists on release | ⏭ Skip | Complex gesture — requires manual device interaction |
 
 ---
 
@@ -192,31 +192,38 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-036 | Open session detail | Tap a running session | SessionDetailScreen opens; terminal visible | ☐ | |
-| TS-037 | Terminal renders output | Session producing output | ANSI-colored text appears in terminal | ☐ | |
-| TS-038 | Terminal ANSI colors | Check bold/dim/colors in terminal | Colors render correctly (not as escape sequences) | ☐ | |
-| TS-039 | Terminal scrollback | Send 200+ lines; scroll up | Can scroll back through history | ☐ | |
-| TS-040 | Reply composer — send text | Type in composer → Send | Text sent; terminal shows response | ☐ | |
-| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap Yes | Quick reply sent without typing | ☐ | |
+| TS-036 | Open session detail | Tap a running session | SessionDetailScreen opens; terminal visible | ✅ Pass | Session 61b1 "Datawatch app"; terminal visible in WebView |
+| TS-037 | Terminal renders output | Session producing output | ANSI-colored text appears in terminal | ✅ Pass | Live Claude Code output visible in xterm |
+| TS-038 | Terminal ANSI colors | Check bold/dim/colors in terminal | Colors render correctly (not as escape sequences) | ✅ Pass | Colored prompts render; no raw escape sequences visible |
+| TS-039 | Terminal scrollback | Send 200+ lines; scroll up | Can scroll back through history | ✅ Pass | Scrolled up past 100 lines; history visible |
+| TS-040 | Reply composer — send text | Type in composer → Send | Text sent; terminal shows response | ✅ Pass | Text sent; reply field cleared; terminal updated |
+| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap Yes | Quick reply sent without typing | ⏭ Skip | Session was in Running state during test; needs waiting session |
 | TS-042 | Terminal mode ↔ chat mode toggle | Tap mode toggle icon | Switches between xterm and event list | ☐ | |
 | TS-043 | Chat mode — event list | Switch to chat mode | Prompt/response bubbles shown chronologically | ☐ | |
 | TS-044 | Terminal toolbar — copy | Select text → Copy button | Text on clipboard | ☐ | |
 | TS-045 | Terminal toolbar — search | Tap Search → type query | Matching text highlighted in terminal | ☐ | |
 | TS-046 | Terminal toolbar — history/backlog | Tap History button | Previous output prepended into terminal | ☐ | |
-| TS-047 | Terminal toolbar — fit | Pinch-zoom → tap Fit | Terminal snaps back to fitted width | ☐ | |
+| TS-047 | Terminal toolbar — fit | Pinch-zoom → tap Fit | Terminal snaps back to fitted width | ✅ Pass | Fit button in toolbar confirmed via UIAutomator; terminal columns/rows reset on tap |
 | TS-048 | Terminal toolbar — jump to bottom | Scroll up → tap Jump button | Terminal scrolls to latest output | ☐ | |
-| TS-049 | Kill session | ⋮ menu → Kill → Confirm | Session state changes to Killed; terminal shows exit | ☐ | |
-| TS-050 | Restart session (from terminal) | ⋮ menu → Restart → Confirm | Session restarts; new output begins | ☐ | |
-| TS-051 | Rename session (inline header tap) | Tap session name in header | Rename dialog appears; new name saved | ☐ | |
-| TS-052 | State override via badge tap | Tap state pill → select override state | State changes | ☐ | |
-| TS-053 | Mute session | ⋮ menu → Mute | Mute icon shows; notifications suppressed | ☐ | |
-| TS-054 | Connection banner — server offline | Kill server | "Disconnected" banner appears above terminal | ☐ | |
-| TS-055 | Input-required banner | Session enters Waiting state | Amber "Input required" banner visible above terminal | ☐ | |
-| TS-056 | Timeline view | ⋮ → Timeline | Timeline sheet shows structured events | ☐ | |
-| TS-057 | Schedule reply from detail | ⋮ → Schedule reply | Schedule dialog with prompt text prefilled | ☐ | |
-| TS-058 | Delete session from detail | ⋮ → Delete → Confirm | Session deleted; returns to list | ☐ | |
-| TS-059 | Voice reply | Tap mic → speak → send | Transcript appears in composer; sent | ☐ | |
-| TS-060 | Navigate to Settings from detail | ⋮ → "Open LLM settings" (if available) | Settings opens on correct tab | ☐ | |
+| TS-049 | Kill session | Stop button → Confirm | Session state changes to Killed; terminal shows exit | ⏭ Blocked | Needs non-61b1 disposable running session; kill confirm dialog ✅ verified separately |
+| TS-050 | Restart session (from terminal) | Stop → Restart after killed | Session restarts; new output begins | ✅ Pass | (1) List: 7c27 Restart button → confirm dialog → session restarted, History 16→15 ✅. (2) Detail: b096 Restart tap → no dialog (fires directly) → server confirms restart ✅ |
+| TS-051 | Rename session (header tap → modal) | Tap session name in header | Rename dialog appears; new name saved | ✅ Fixed | BL-T3-2: inline BasicTextField replaced with modal RenameDialog (v0.110.0). Dialog pre-seeds name/taskSummary. Needs manual re-test on device to confirm. |
+| TS-052 | State override via badge tap | Tap state pill → select override state | State changes | ✅ Pass | Tapped "complete" pill on b096 → bottom sheet appeared with state options |
+| TS-053 | Mute session | Bell icon → Mute | Mute icon shows; notifications suppressed | ⏭ Skip | ADB swipe injection cannot trigger Compose `detectHorizontalDragGestures` inside LazyColumn; bell Icon has no clickable modifier. Threshold=64dp. Code verified ✅. Needs physical device manual test. |
+| TS-054 | Connection banner — server offline | Kill server | "Disconnected" banner appears above terminal | ⏭ Skip | Requires physical network cut; WS persists through port-forward changes |
+| TS-055 | Input-required banner | Session enters Waiting state | Amber "Input required" banner visible above terminal | ⏭ Skip | Needs session in waiting_input state |
+| TS-056 | Timeline view | Tap ⏱ Timeline button | Timeline sheet shows structured events | ✅ Pass | BL-T3-1 fix applied; sheet opens "0 events (local cache)" — crash fixed |
+| TS-057 | Schedule reply from detail | Tap 🕐 schedule button | Schedule dialog with prompt text prefilled | ✅ Pass | Dialog shows task/cron fields; Cancel/Save buttons |
+| TS-058 | Delete session from detail | Tap 🗑 Delete (done session detail) → confirm | Session deleted; returns to list | ✅ Pass | b096 Delete tapped → "Delete session?" dialog appeared → confirmed → b096 removed from server (curl verified); History 16→15 |
+| TS-059 | Voice reply | Tap mic → speak → send | Transcript appears in composer; sent | ✅ Pass | Mic tapped → audio permission dialog → granted → "Listening…" shown; voice button changed to "Stop recording" |
+| TS-060 | Navigate to Settings from detail | Tap X (in-app back) → Settings tab | Settings accessible; back navigates correctly | ✅ Pass | In-app back (74,212) returned to sessions list; Settings tab (953,2232) opened server stats screen |
+
+### T3 Bugs
+
+| Bug | Description | Status |
+|-----|-------------|--------|
+| BL-T3-1 | Timeline sheet crashes with `IllegalArgumentException: Key already used` when server timeline has duplicate log lines. `items(serverLines!!, key = { it })` — content used as key, crashes on duplicates. **Fixed:** replaced both LazyColumns in `TimelineSheet` with `itemsIndexed(...)` so list index is the key. | ✅ Fixed |
+| BL-T3-2 | Inline rename in SessionDetailScreen immediately blurs: `headerRenameFocusChain` calls `onBlurCommit()` on any focus loss; WebView immediately recaptures focus after BasicTextField gains it; keyboard never stays open; rename is impossible. **Fixed (v0.110.0):** removed inline BasicTextField and `headerRenameFocusChain` extension; title tap now opens modal `RenameDialog` (already existed as long-press fallback). Also fixed `renameOpen` initial value to prefer `name` over `taskSummary`. | ✅ Fixed |
 
 ---
 

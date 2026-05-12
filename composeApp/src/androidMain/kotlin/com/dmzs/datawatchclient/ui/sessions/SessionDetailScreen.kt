@@ -70,9 +70,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -264,81 +261,24 @@ public fun SessionDetailScreen(
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
-                        // G11 — inline tap-to-edit header. Click the
-                        // title to switch to a TextField in-place; Enter
-                        // or blur commits via vm.rename (PWA
-                        // startHeaderRename mirror). Retains the old
-                        // RenameDialog as a long-press fallback via the
-                        // overflow menu for users who prefer modal edit.
                         val headerTitle =
                             state.session?.name?.takeIf { it.isNotBlank() }
                                 ?: state.session?.taskSummary
                                 ?: sessionId
-                        var editingHeader by remember(sessionId) { mutableStateOf(false) }
-                        var draft by remember(editingHeader, headerTitle) {
-                            mutableStateOf(headerTitle)
-                        }
-                        val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
-                        if (editingHeader) {
-                            androidx.compose.foundation.text.BasicTextField(
-                                value = draft,
-                                onValueChange = { draft = it },
-                                singleLine = true,
-                                textStyle =
-                                    MaterialTheme.typography.titleMedium.copy(
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    ),
-                                cursorBrush =
-                                    androidx.compose.ui.graphics.SolidColor(
-                                        MaterialTheme.colorScheme.primary,
-                                    ),
-                                keyboardOptions =
-                                    androidx.compose.foundation.text.KeyboardOptions(
-                                        imeAction = androidx.compose.ui.text.input.ImeAction.Done,
-                                    ),
-                                keyboardActions =
-                                    androidx.compose.foundation.text.KeyboardActions(
-                                        onDone = {
-                                            val trimmed = draft.trim()
-                                            if (trimmed.isNotBlank() && trimmed != headerTitle) {
-                                                vm.rename(trimmed)
-                                            }
-                                            editingHeader = false
-                                        },
-                                    ),
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .headerRenameFocusChain(
-                                            focusRequester = focusRequester,
-                                            onBlurCommit = {
-                                                val trimmed = draft.trim()
-                                                if (trimmed.isNotBlank() && trimmed != headerTitle) {
-                                                    vm.rename(trimmed)
-                                                }
-                                                editingHeader = false
-                                            },
-                                        ),
-                            )
-                            LaunchedEffect(editingHeader) {
-                                if (editingHeader) focusRequester.requestFocus()
-                            }
-                        } else {
-                            Text(
-                                headerTitle,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            draft = headerTitle
-                                            editingHeader = true
-                                        },
-                            )
-                        }
+                        // BL-T3-2: inline BasicTextField lost focus immediately — WebView
+                        // recaptured it via headerRenameFocusChain/onBlurCommit. Use modal
+                        // RenameDialog instead (renameOpen state wired below).
+                        Text(
+                            headerTitle,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { renameOpen = true },
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -813,7 +753,10 @@ public fun SessionDetailScreen(
     }
 
     if (renameOpen) {
-        val initial = state.session?.taskSummary ?: sessionId
+        val initial =
+            state.session?.name?.takeIf { it.isNotBlank() }
+                ?: state.session?.taskSummary
+                ?: sessionId
         RenameDialog(
             initial = initial,
             onConfirm = { newName ->
@@ -1423,7 +1366,10 @@ private fun TimelineSheet(
             )
             if (usingServer) {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    items(serverLines!!, key = { it }) { line -> TimelineServerRow(line) }
+                    // key = index: server may return duplicate lines (same event
+                    // logged twice), so using content as key would crash with
+                    // "Key already used" IllegalArgumentException.
+                    itemsIndexed(serverLines!!) { idx, line -> TimelineServerRow(line) }
                 }
             } else if (localItems.isEmpty()) {
                 Text(
@@ -1433,7 +1379,8 @@ private fun TimelineSheet(
                 )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    items(localItems, key = { it.ts.toEpochMilliseconds().toString() + it.hashCode() }) { ev ->
+                    // key includes index to guard against duplicate ts+hashCode.
+                    itemsIndexed(localItems) { idx, ev ->
                         TimelineRow(ev)
                         HorizontalDivider()
                     }
@@ -2277,21 +2224,6 @@ private fun StateOverrideDialog(
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
-
-/**
- * Chains `focusRequester` + `onFocusChanged` onto a modifier so the
- * inline-rename TextField can auto-focus on entry and auto-commit
- * on blur. Split out because the fluent chain was too noisy inline.
- */
-private fun Modifier.headerRenameFocusChain(
-    focusRequester: FocusRequester,
-    onBlurCommit: () -> Unit,
-): Modifier =
-    this
-        .focusRequester(focusRequester)
-        .onFocusChanged { focusState ->
-            if (!focusState.isFocused) onBlurCommit()
-        }
 
 /**
  * PWA-style mode tab for the tmux / channel toggle.
