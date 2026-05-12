@@ -65,6 +65,8 @@ public class SessionRepository(
             output_mode = session.outputMode,
             input_mode = session.inputMode,
             agent_id = session.agentId,
+            llm_ref = session.llmRef,
+            compute_node_ref = session.computeNodeRef,
         )
     }
 
@@ -86,5 +88,7 @@ public class SessionRepository(
             outputMode = output_mode,
             inputMode = input_mode,
             agentId = agent_id,
+            llmRef = llm_ref,
+            computeNodeRef = compute_node_ref,
         )
 }

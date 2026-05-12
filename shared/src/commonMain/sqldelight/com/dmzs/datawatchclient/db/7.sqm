@@ -1,0 +1,9 @@
+-- Migration 7 → 8 (BL-T14-2: persist llm_ref + compute_node_ref on session rows).
+--
+-- These v7 LLM-registry fields were populated from the server API but never
+-- written to the DB. After an app restart the fields were null, breaking text
+-- search and the llmRef filter chip. Both are nullable and default to NULL so
+-- existing rows are unaffected on upgrade.
+
+ALTER TABLE session ADD COLUMN llm_ref TEXT;
+ALTER TABLE session ADD COLUMN compute_node_ref TEXT;
