@@ -13,7 +13,7 @@ architecture).
 
 Full arc plan: [`2026-05-11-v0.94-alpha40-arc.md`](2026-05-11-v0.94-alpha40-arc.md)
 
-Current state: **v0.93.0/171**. Arc: v0.94.0 → v1.01.0, then v1.0 GH release tag.
+Current state: **v0.101.0/179**. Arc: v0.94.0 → v0.101.0, then v1.0 GH release tag.
 
 Shipped arc history (moved to `historical-plans/`):
 - `2026-05-09-v0.70-upgrade-arc.md` — v0.70–v0.79 (Sprints 1–10; issues #51–#96 + alpha alignment)
