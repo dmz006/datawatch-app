@@ -100,6 +100,7 @@ public fun SessionDetailScreen(
     sessionId: String,
     onBack: () -> Unit,
     isNew: Boolean = false,
+    onNavigateToSettings: ((tab: String) -> Unit)? = null,
     vm: SessionDetailViewModel =
         viewModel(
             key = sessionId,
@@ -555,7 +556,10 @@ public fun SessionDetailScreen(
             } else if (statsMode) {
                 SessionStatsPanel(
                     sessionId = sessionId,
+                    session = state.session,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
+                    onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
+                    onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
                 )
             } else if (serverChatMode) {
                 ChatTranscriptPanel(
