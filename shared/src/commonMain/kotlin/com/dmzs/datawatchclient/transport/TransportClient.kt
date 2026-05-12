@@ -1048,6 +1048,16 @@ public interface TransportClient {
         dto: com.dmzs.datawatchclient.transport.dto.CouncilPersonaCreateDto,
     ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>
 
+    // Sprint 31 — alpha.39/40 Council persona built-in support + delete
+    /** GET /api/council/personas/{name} — fetch a single persona (built-in or custom). */
+    public suspend fun getCouncilPersona(name: String): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto>
+
+    /** PUT /api/council/personas/{name} — create or overwrite a persona using the full DTO. */
+    public suspend fun setCouncilPersona(persona: com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto): Result<Unit>
+
+    /** DELETE /api/council/personas/{name} — delete a custom (non-builtin) persona. */
+    public suspend fun deleteCouncilPersona(name: String): Result<Unit>
+
     // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
 
     /** GET /api/cost/rates — per-backend token cost rates. */

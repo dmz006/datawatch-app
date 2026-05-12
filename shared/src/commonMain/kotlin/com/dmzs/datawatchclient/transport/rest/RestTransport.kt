@@ -2025,6 +2025,36 @@ public class RestTransport(
             }.body()
         }
 
+    // Sprint 31 — alpha.39/40 Council persona built-in support + delete
+    override suspend fun getCouncilPersona(
+        name: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto> =
+        request {
+            client.get("${profile.baseUrl}/api/council/personas/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun setCouncilPersona(
+        persona: com.dmzs.datawatchclient.transport.dto.CouncilPersonaDto,
+    ): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/council/personas/${persona.name}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(persona)
+            }
+            Unit
+        }
+
+    override suspend fun deleteCouncilPersona(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/council/personas/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
 
     override suspend fun getCostRates(): Result<com.dmzs.datawatchclient.transport.dto.CostRatesDto> =
