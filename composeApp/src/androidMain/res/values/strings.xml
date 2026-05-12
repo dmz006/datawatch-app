@@ -64,6 +64,7 @@
     <!-- ── Sessions screen ── -->
     <string name="sessions_filter_hint">Filter sessions…</string>
     <string name="sessions_filter_expand">Filter / sort sessions</string>
+    <string name="sessions_help_link">Claude Code hooks docs</string>
     <string name="sessions_filter_collapse">Collapse filter</string>
     <string name="sessions_fab_new">New session</string>
     <string name="sessions_clear_filter">Clear filter</string>

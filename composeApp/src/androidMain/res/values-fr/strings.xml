@@ -56,6 +56,7 @@
     <!-- ── Sessions screen ── -->
     <string name="sessions_filter_hint">Filtrer les sessions…</string>
     <string name="sessions_filter_expand">Filtrer / trier les sessions</string>
+    <string name="sessions_help_link">Docs hooks Claude Code</string>
     <string name="sessions_filter_collapse">Réduire le filtre</string>
     <string name="sessions_fab_new">Nouvelle session</string>
     <string name="sessions_clear_filter">Effacer le filtre</string>

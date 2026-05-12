@@ -56,6 +56,7 @@
     <!-- ── Sessions screen ── -->
     <string name="sessions_filter_hint">Sitzungen filtern…</string>
     <string name="sessions_filter_expand">Sitzungen filtern / sortieren</string>
+    <string name="sessions_help_link">Claude Code Hooks-Docs</string>
     <string name="sessions_filter_collapse">Filter ausblenden</string>
     <string name="sessions_fab_new">Neue Sitzung</string>
     <string name="sessions_clear_filter">Filter löschen</string>

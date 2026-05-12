@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
@@ -84,6 +86,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
@@ -120,6 +123,7 @@ public fun SessionsScreen(
 ) {
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
+    val uriHandler = LocalUriHandler.current
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val selectionMode = selectedIds.isNotEmpty()
@@ -175,6 +179,16 @@ public fun SessionsScreen(
                             CircularProgressIndicator(
                                 strokeWidth = 2.dp,
                                 modifier = Modifier.padding(8.dp).size(18.dp),
+                            )
+                        }
+                        // G3 — context help link (Claude Code hooks docs).
+                        IconButton(onClick = {
+                            uriHandler.openUri("https://docs.anthropic.com/en/docs/claude-code/hooks")
+                        }) {
+                            Icon(
+                                Icons.Filled.HelpOutline,
+                                contentDescription = stringResource(R.string.sessions_help_link),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         // User direction 2026-04-24 + dmz006/datawatch#23
@@ -763,6 +777,14 @@ private fun SessionRow(
     ) {
         // Header row: id + state pill + mute/more actions.
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (reorderMode) {
+                Icon(
+                    Icons.Filled.DragHandle,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp).padding(end = 4.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Text(
                 session.id,
                 style = MaterialTheme.typography.titleSmall,
