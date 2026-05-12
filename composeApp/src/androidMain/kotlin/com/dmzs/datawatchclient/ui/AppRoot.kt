@@ -35,6 +35,7 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.push.NotificationChannels
 import com.dmzs.datawatchclient.push.NtfyFallbackService
 import com.dmzs.datawatchclient.push.PushRegistrationCoordinator
+import com.dmzs.datawatchclient.push.UnifiedPushSseService
 import com.dmzs.datawatchclient.ui.alerts.AlertDockOverlay
 import com.dmzs.datawatchclient.ui.alerts.AlertsScreen
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
@@ -86,6 +87,7 @@ public fun AppRoot() {
                 PushRegistrationCoordinator(context).registerAll()
             }
             NtfyFallbackService.start(context)
+            UnifiedPushSseService.start(context)
         }
 
         // v0.36.2 — screen-unlock lifecycle observer. On every
