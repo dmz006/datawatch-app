@@ -219,8 +219,10 @@ public fun SessionDetailScreen(
     var chatMode by remember {
         mutableStateOf(modePrefs.getBoolean("chat_mode", false))
     }
-    var statsMode by remember { mutableStateOf(false) }
+    // statsMode is now a sub-tab inside Status (G6 — PWA alpha.36 gate).
+    // statusMode = top-level Status tab active; statusSubStats = inner Stats sub-tab.
     var statusMode by remember { mutableStateOf(false) }
+    var statusSubStats by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(chatMode) {
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
     }
@@ -501,16 +503,23 @@ public fun SessionDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statsMode && !statusMode, onClick = { chatMode = false; statsMode = false; statusMode = false })
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statsMode && !statusMode, onClick = { chatMode = true; statsMode = false; statusMode = false })
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_stats), selected = statsMode && !statusMode, onClick = { statsMode = true; statusMode = false })
+                    // G7: Channel tab only for claude / claude-code / opencode-acp backends
+                    val sessionBackend = state.session?.backend
+                    val showChannelTab = sessionBackend?.let {
+                        it == "claude" || it == "claude-code" || it == "opencode-acp"
+                    } == true
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
+                    if (showChannelTab) {
+                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
+                    }
+                    // G6: Status is now the single top-level tab; Stats lives as a sub-tab inside it
                     SessionModeTab(
                         label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
                         selected = statusMode,
-                        onClick = { statusMode = true; statsMode = false },
+                        onClick = { statusMode = true; statusSubStats = false },
                     )
                     Spacer(Modifier.weight(1f))
-                    val showToolbar = !chatMode && !statsMode && state.session?.isChatMode != true
+                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
                     if (showToolbar) {
                         TerminalToolbarControls(toolbarState)
                     }
@@ -587,20 +596,50 @@ public fun SessionDetailScreen(
                         )
                     }
                 }
-            } else if (statsMode) {
-                SessionStatsPanel(
-                    sessionId = sessionId,
-                    session = state.session,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
-                    onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
-                )
             } else if (statusMode) {
-                SessionStatusPanel(
-                    sessionId = sessionId,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    vm = statusVm,
-                )
+                // G6: Status top-level tab hosts Status | Stats sub-tab strip (PWA alpha.36)
+                Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .drawBehind {
+                                drawLine(
+                                    color = tabRowBorderColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SessionModeTab(
+                            label = stringResource(R.string.session_detail_status_subtab_status),
+                            selected = !statusSubStats,
+                            onClick = { statusSubStats = false },
+                        )
+                        SessionModeTab(
+                            label = stringResource(R.string.session_detail_status_subtab_stats),
+                            selected = statusSubStats,
+                            onClick = { statusSubStats = true },
+                        )
+                    }
+                    if (statusSubStats) {
+                        SessionStatsPanel(
+                            sessionId = sessionId,
+                            session = state.session,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
+                            onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
+                        )
+                    } else {
+                        SessionStatusPanel(
+                            sessionId = sessionId,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            vm = statusVm,
+                        )
+                    }
+                }
             } else if (serverChatMode) {
                 ChatTranscriptPanel(
                     sessionId = sessionId,
