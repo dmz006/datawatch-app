@@ -57,10 +57,11 @@ public class SessionDetailViewModel(
         val messagingBackend: String? = null,
     ) {
         public val needsInput: Boolean
-            get() =
-                events.asReversed().firstOrNull {
-                    it is SessionEvent.PromptDetected
-                } != null && session?.needsInput == true
+            // BL-T3-4: previously required a live PromptDetected WS event, which
+            // meant the banner never appeared if the prompt fired before the WS
+            // subscription started. Session.needsInput (state == Waiting) is the
+            // authoritative signal; pendingPromptText falls back to lastPrompt.
+            get() = session?.needsInput == true
 
         /**
          * Most-recent prompt text, used by the "input required" banner that

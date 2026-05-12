@@ -107,7 +107,7 @@ fi
 |----------|------|---------|--------|
 | T1 | Onboarding & server add | TS-001–TS-010 | 🟡 2/10 run — 2✅ 1❌ 7⏭ |
 | T2 | Session list & refresh | TS-011–TS-035 | ✅ 20✅ 5⏭ (network + drag-reorder) |
-| T3 | Session detail / terminal | TS-036–TS-060 | 🟡 20✅ 4⏭ 2☐ — BL-T3-1 + BL-T3-2 fixed (v0.110.0) |
+| T3 | Session detail / terminal | TS-036–TS-060 | 🟡 23✅ 8⏭ 1🟡 — BL-T3-1/2/3/4 fixed (v0.112.0); TS-041 pending verify |
 | T4 | New session creation | TS-061–TS-075 | ☐ |
 | T5 | Alerts | TS-076–TS-095 | ☐ |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ☐ |
@@ -197,21 +197,21 @@ fi
 | TS-038 | Terminal ANSI colors | Check bold/dim/colors in terminal | Colors render correctly (not as escape sequences) | ✅ Pass | Colored prompts render; no raw escape sequences visible |
 | TS-039 | Terminal scrollback | Send 200+ lines; scroll up | Can scroll back through history | ✅ Pass | Scrolled up past 100 lines; history visible |
 | TS-040 | Reply composer — send text | Type in composer → Send | Text sent; terminal shows response | ✅ Pass | Text sent; reply field cleared; terminal updated |
-| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap Yes | Quick reply sent without typing | ⏭ Skip | Session was in Running state during test; needs waiting session |
-| TS-042 | Terminal mode ↔ chat mode toggle | Tap mode toggle icon | Switches between xterm and event list | ☐ | |
-| TS-043 | Chat mode — event list | Switch to chat mode | Prompt/response bubbles shown chronologically | ☐ | |
-| TS-044 | Terminal toolbar — copy | Select text → Copy button | Text on clipboard | ☐ | |
-| TS-045 | Terminal toolbar — search | Tap Search → type query | Matching text highlighted in terminal | ☐ | |
-| TS-046 | Terminal toolbar — history/backlog | Tap History button | Previous output prepended into terminal | ☐ | |
+| TS-041 | Reply composer — Yes/No/Stop quick-reply | Session in waiting state → tap ⌨ Commands → Yes | Quick reply sent without typing | 🟡 In progress | Commands sheet replaces inline chips (removed v0.42.10 per user direction). Needs waiting session + BL-T3-4 fix deployed. |
+| TS-042 | Terminal mode ↔ chat mode toggle | Tap "channel" tab | Switches between xterm and event list | ✅ Pass | Tapped channel tab → chat mode activated; tab underlined; terminal replaced by ChatEventList |
+| TS-043 | Chat mode — event list | Switch to chat mode | State/prompt events shown as bubbles | ✅ Pass | BL-T3-3 fix: filter PaneCapture events before ChatEventList so zero-height items don't render blank. StateChange + PromptDetected events visible as bubbles |
+| TS-044 | Terminal toolbar — copy | N/A | N/A | ⏭ Skip | Deliberately removed in v0.33.18 for PWA parity — PWA has no copy toolbar button; xterm handles selection natively |
+| TS-045 | Terminal toolbar — search | N/A | N/A | ⏭ Skip | Deliberately removed in v0.33.18 for PWA parity — PWA has no search toolbar button |
+| TS-046 | Terminal toolbar — history/backlog | N/A | N/A | ⏭ Skip | Deliberately removed in v0.33.18 for PWA parity — PWA has no backlog toolbar button |
 | TS-047 | Terminal toolbar — fit | Pinch-zoom → tap Fit | Terminal snaps back to fitted width | ✅ Pass | Fit button in toolbar confirmed via UIAutomator; terminal columns/rows reset on tap |
-| TS-048 | Terminal toolbar — jump to bottom | Scroll up → tap Jump button | Terminal scrolls to latest output | ☐ | |
-| TS-049 | Kill session | Stop button → Confirm | Session state changes to Killed; terminal shows exit | ⏭ Blocked | Needs non-61b1 disposable running session; kill confirm dialog ✅ verified separately |
+| TS-048 | Terminal toolbar — jump to bottom | N/A | N/A | ⏭ Skip | Deliberately removed in v0.33.18 for PWA parity — use 📜 scroll mode then ESC to return to live tail |
+| TS-049 | Kill session | Stop button → Confirm | Session state changes to Killed; terminal shows exit | ✅ Pass | 7220 "killtest" (BASH, waiting_input): Stop tapped → "Kill session?" dialog → confirmed → state badge changed to "killed", toolbar switched to Restart+Delete |
 | TS-050 | Restart session (from terminal) | Stop → Restart after killed | Session restarts; new output begins | ✅ Pass | (1) List: 7c27 Restart button → confirm dialog → session restarted, History 16→15 ✅. (2) Detail: b096 Restart tap → no dialog (fires directly) → server confirms restart ✅ |
 | TS-051 | Rename session (header tap → modal) | Tap session name in header | Rename dialog appears; new name saved | ✅ Fixed | BL-T3-2: inline BasicTextField replaced with modal RenameDialog (v0.110.0). Dialog pre-seeds name/taskSummary. Needs manual re-test on device to confirm. |
 | TS-052 | State override via badge tap | Tap state pill → select override state | State changes | ✅ Pass | Tapped "complete" pill on b096 → bottom sheet appeared with state options |
 | TS-053 | Mute session | Bell icon → Mute | Mute icon shows; notifications suppressed | ⏭ Skip | ADB swipe injection cannot trigger Compose `detectHorizontalDragGestures` inside LazyColumn; bell Icon has no clickable modifier. Threshold=64dp. Code verified ✅. Needs physical device manual test. |
 | TS-054 | Connection banner — server offline | Kill server | "Disconnected" banner appears above terminal | ⏭ Skip | Requires physical network cut; WS persists through port-forward changes |
-| TS-055 | Input-required banner | Session enters Waiting state | Amber "Input required" banner visible above terminal | ⏭ Skip | Needs session in waiting_input state |
+| TS-055 | Input-required banner | Session enters Waiting state | Amber "Input required" banner visible above terminal | ✅ Pass | BL-T3-4 fix confirmed: amber "Input Required" banner visible above terminal for 5fe5 "waittime" in waiting_input state. Prompt text "Enter to confirm · Esc to cancel" shown in banner body. Reply composer shows "Reply (input required)…" placeholder. |
 | TS-056 | Timeline view | Tap ⏱ Timeline button | Timeline sheet shows structured events | ✅ Pass | BL-T3-1 fix applied; sheet opens "0 events (local cache)" — crash fixed |
 | TS-057 | Schedule reply from detail | Tap 🕐 schedule button | Schedule dialog with prompt text prefilled | ✅ Pass | Dialog shows task/cron fields; Cancel/Save buttons |
 | TS-058 | Delete session from detail | Tap 🗑 Delete (done session detail) → confirm | Session deleted; returns to list | ✅ Pass | b096 Delete tapped → "Delete session?" dialog appeared → confirmed → b096 removed from server (curl verified); History 16→15 |
@@ -224,6 +224,8 @@ fi
 |-----|-------------|--------|
 | BL-T3-1 | Timeline sheet crashes with `IllegalArgumentException: Key already used` when server timeline has duplicate log lines. `items(serverLines!!, key = { it })` — content used as key, crashes on duplicates. **Fixed:** replaced both LazyColumns in `TimelineSheet` with `itemsIndexed(...)` so list index is the key. | ✅ Fixed |
 | BL-T3-2 | Inline rename in SessionDetailScreen immediately blurs: `headerRenameFocusChain` calls `onBlurCommit()` on any focus loss; WebView immediately recaptures focus after BasicTextField gains it; keyboard never stays open; rename is impossible. **Fixed (v0.110.0):** removed inline BasicTextField and `headerRenameFocusChain` extension; title tap now opens modal `RenameDialog` (already existed as long-press fallback). Also fixed `renameOpen` initial value to prefer `name` over `taskSummary`. | ✅ Fixed |
+| BL-T3-4 | Amber "Input required" banner (InputRequiredBanner) is implemented but never called. Also `UiState.needsInput` required a live `PromptDetected` WS event — if the session was already waiting when the user opened the detail, no WS event had arrived yet, so banner never appeared. **Fixed (v0.112.0):** wired `InputRequiredBanner` into terminal branch; simplified `needsInput` to `session?.needsInput == true` (state==Waiting is the authoritative signal). | ✅ Fixed |
+| BL-T3-3 | Chat event list (channel tab) renders blank for tmux-based sessions: `PaneCapture` events call `return` in `ChatBubbleRow` producing zero-height items; LazyColumn scrolls to the last pane-capture and the entire list appears blank. **Fixed (v0.111.0):** filter `PaneCapture` and `ChatMessage` from the events list before passing to `ChatEventList` so `events.isEmpty()` correctly shows "No messages" and auto-scroll targets the last visible event. | ✅ Fixed |
 
 ---
 
