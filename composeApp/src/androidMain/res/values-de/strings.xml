@@ -1053,4 +1053,18 @@
     <string name="stats_container_id">Container-ID</string>
     <string name="stats_container_image">Image</string>
     <string name="stats_container_runtime">Laufzeit</string>
+    <string name="session_detail_tab_status">Status</string>
+    <string name="status_card_focus">Aktueller Fokus</string>
+    <string name="status_card_sprint">Sprint</string>
+    <string name="status_card_tests">Tests</string>
+    <string name="status_card_git">Git</string>
+    <string name="status_no_focus">Kein aktiver Fokus</string>
+    <string name="status_no_sprint">Keine Sprint-Daten</string>
+    <string name="status_no_tests">Keine Testdaten</string>
+    <string name="status_no_git">Keine Git-Daten</string>
+    <string name="status_hooks_alive">Hooks aktiv</string>
+    <string name="status_hooks_stale">Hooks veraltet</string>
+    <string name="status_hooks_missing">Hooks fehlen</string>
+    <string name="status_llm_more_soon">Token-Rate · Latenz · Modellzustand im nächsten Update</string>
+    <string name="status_hooks_installed_toast">Hooks installiert in {path}/.claude/</string>
 </resources>

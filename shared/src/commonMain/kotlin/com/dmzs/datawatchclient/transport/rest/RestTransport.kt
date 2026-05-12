@@ -2272,6 +2272,13 @@ public class RestTransport(
             }
         }
 
+    override suspend fun getSessionStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto> =
+        request {
+            client.get("${profile.baseUrl}/api/sessions/${sessionId}/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

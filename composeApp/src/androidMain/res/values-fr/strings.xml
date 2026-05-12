@@ -1053,4 +1053,18 @@
     <string name="stats_container_id">ID du conteneur</string>
     <string name="stats_container_image">Image</string>
     <string name="stats_container_runtime">Runtime</string>
+    <string name="session_detail_tab_status">Statut</string>
+    <string name="status_card_focus">Focus actuel</string>
+    <string name="status_card_sprint">Sprint</string>
+    <string name="status_card_tests">Tests</string>
+    <string name="status_card_git">Git</string>
+    <string name="status_no_focus">Aucun focus actif</string>
+    <string name="status_no_sprint">Aucune donnée de sprint</string>
+    <string name="status_no_tests">Aucune donnée de test</string>
+    <string name="status_no_git">Aucune donnée git</string>
+    <string name="status_hooks_alive">Hooks actifs</string>
+    <string name="status_hooks_stale">Hooks obsolètes</string>
+    <string name="status_hooks_missing">Hooks manquants</string>
+    <string name="status_llm_more_soon">Taux de tokens · latence · état du modèle dans la prochaine mise à jour</string>
+    <string name="status_hooks_installed_toast">Hooks installés dans {path}/.claude/</string>
 </resources>
