@@ -86,3 +86,40 @@ unit tests alone.
 | Phone | `BottomNavBar` watchedAlertCount badge | No | No | 23 | `BottomNavBarTest` | deferred (test debt) |
 | Phone | Watch toggle menu item — sessions list + detail | No | No | 23 | Manual — tap More menu on session row | |
 | Phone | Watch toggle — automata list + detail | No | No | 23 | Manual — PRD row More menu | |
+| Shared | `toggleWatch_addsToWatchedIds` | Yes | No | 24 | `SessionsViewModelTest` — Sprint 23 test debt resolved in v0.94.0 | |
+| Shared | `toggleWatch_removesFromWatchedIds` | Yes | No | 24 | `SessionsViewModelTest` | |
+| Shared | `watchedAlertCount_reflectsWatchedSessions` | Yes | No | 24 | `AlertsViewModelTest` | |
+| Shared | `bottomNavBar_selectedTabMatchesRoute` | Yes | No | 24 | `BottomNavBarTest` | |
+| Phone | `PrdRow` pin button + DataStore persistence | No | No | 24 | `AutonomousViewModelTest` — pin/unpin state; DataStore write not mocked | |
+| Phone | Automata sort order (pinned → state-rank → last-activity) | No | No | 24 | `AutonomousViewModelTest` | |
+| Phone | `PrdRow` inline Open/Cancel/Approve actions + confirm modal | No | No | 24 | `AutonomousViewModelTest` — cancel confirm: `requestCancelId` set/cleared | |
+| Phone | `TransportClient.approveAutomaton` + `cancelAutomaton` REST | No | No | 24 | `RestTransportAutonomousTest` | POST /api/prds/{id}/approve + /cancel |
+| Phone | `SessionsListFilterBar` LLM collapsible + State collapsible | No | No | 24 | Manual — live session list with mixed backends/states | |
+| Phone | `SessionStatsPanel` Host card (CPU sparkline + RSS sparkline) | No | No | 25 | Manual — Stats tab on a running session | 60-sample Canvas sparkline |
+| Phone | `SessionStatsPanel` Container card (conditional) | No | No | 25 | Manual — session with `envelope.container != null` | |
+| Phone | `SessionStatsPanel` ComputeNode card + nav link | No | No | 25 | Manual — session with `computeNodeRef` set | |
+| Phone | `SessionStatsPanel` LLM card + nav link | No | No | 25 | Manual — session with `llmRef` set | |
+| Phone | Session detail "Status" 4th tab — 5 s poll lifecycle | Yes | No | 26 | `SessionStatusViewModelTest` — 5 tests: fetchStatus success, failure, no-profile, stopPolling, tests-card data | |
+| Phone | Status board Current Focus / Sprint / Tests / Git cards | No | No | 26 | Manual — Status tab on active claude-code session | Conditional on non-null board fields |
+| Phone | Hook health pill (alive/stale/missing) | No | No | 26 | Manual — inspect board.hookHealth value | |
+| Phone | Hook auto-install Snackbar (claude-code session start) | No | No | 26 | Manual — start new claude-code session | |
+| Phone | `ComputeNodeEditScreen` Ollama models sub-section + marketplace | No | No | 27 | Manual — edit an ollama-kind compute node | |
+| Phone | Ollama marketplace pull progress poll (2 s) | No | No | 27 | Manual — pull a model from marketplace | |
+| Phone | `AlertsScreen` Active / Historical / System tabs + per-tab state persistence | No | No | 27 | Manual — switch tabs; verify filter+sort+search restored | |
+| Phone | `TransportClient.getOllamaCatalog` + `pullOllamaModel` REST | No | No | 27 | `RestTransportTest` | GET catalog + POST pull |
+| Phone | UnifiedPush SSE subscription + reconnect backoff | No | No | 28 | Manual — disconnect server; verify 1s→2s→…→30s reconnect | |
+| Phone | Push registration (`POST /api/push/register`) on service start | No | No | 28 | Manual — check logcat for registration on app start | |
+| Phone | Priority ≥ 4 event → `PRIORITY_HIGH` heads-up notification + deep-link | No | No | 28 | Manual — trigger waiting_input event | |
+| Phone | `LlmConfigCard` per-node model pairs display (up to 3 before collapse) | No | No | 30 | Manual — LLM row with models[] configured | |
+| Phone | Add/Edit LLM panel per-node model table (add/remove rows) | No | No | 30 | Manual — add LLM with compute node | |
+| Phone | `LlmDetailDrawer` Models tab + In-use tab (pagination 5/10/50) | No | No | 30 | Manual — open LLM detail drawer | |
+| Phone | LLM DELETE 409 → inline reassign prompt + force delete | No | No | 30 | Manual — delete LLM with active sessions | |
+| Phone | LLM enable toggle with spinner + failure revert | No | No | 30 | Manual — toggle LLM enabled on/off | |
+| Phone | Automata batch-delete confirm `AlertDialog` | No | No | 30 | `AutonomousViewModelTest` — `requestCancel` / batchDelete confirm flow | |
+| Phone | `CouncilCard` persona list (built-ins + custom, Built-in badge) | No | No | 31 | Manual — Council settings section | |
+| Phone | `CouncilPersonaWizardSheet` create / edit / delete persona | No | No | 31 | Manual — Add Persona + edit + delete custom | |
+| Shared | `TransportClient` council persona CRUD methods | No | No | 31 | `RestTransportTest` | GET/PUT/DELETE /api/council/personas/{name} |
+| Phone | `AlertDockOverlay` no-auto-expand guard (badge-only on passive alert) | No | No | 31 | Manual — receive alert passively; verify dock stays closed | Confirmed no code change required |
+| Wear | `WearSyncService` publishes `/datawatch/sessions` DataItem | No | No | 32 | Manual — verify DataItem path on watch side | shortId + state + lastActivity arrays |
+| Wear | `WearMainActivity` sessions list — state badge + shortId + task + timestamp | No | No | 32 | Manual — open Sessions page on watch | |
+| Wear | State badge colours (teal/amber/red/dim) | No | No | 32 | Manual — verify badge colours against palette | Running #1DE9B6 · Waiting #FFB300 · Error #EF4444 |

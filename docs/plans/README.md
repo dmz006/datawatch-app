@@ -338,6 +338,16 @@ or retracted rather than scheduled.
 | W-#114 | ✅ Wear alerts tile + complication | v0.91.0 |
 | #115 | ✅ Alerts redesign — chip filter + sort + search + dismiss-all (alpha.30) | v0.92.0 |
 | #116 | ✅ Watch toggle opt-in (Sprint 23) — per-session/automata badge filtering | v0.93.0 |
+| #117 | ✅ Automata browse redesign + sessions filter collapsible (Sprint 24+29) | v0.94.0 |
+| #118 | ✅ Stats sub-tab sectioned cards + sparklines (Sprint 25) | v0.95.0 |
+| #120 | ✅ Session detail Status 4th tab (Sprint 26) | v0.96.0 |
+| #121 | ✅ Hook arc all-backends (Sprint 26) | v0.96.0 |
+| #119 | ✅ Ollama marketplace + Alerts 3-tab redesign (Sprint 27) | v0.97.0 |
+| #122 | ✅ UnifiedPush SSE alerts stream (Sprint 28) | v0.98.0 |
+| #123 | ✅ Sessions filter UX polish (Sprint 24+29) | v0.94.0 |
+| #124 | ✅ LLM per-node model table + Automata batch confirm guards (Sprint 30) | v0.99.0 |
+| #125 | ✅ Council persona CRUD + alert dock gating audit (Sprint 31) | v0.100.0 |
+| B31  | ✅ Wear sessions list + state badges (Sprint 32) | v0.101.0 |
 | BL21 | ✅ Signal device-linking (`/api/link/*` + QR SSE flow) | v0.64.0 |
 
 ---
