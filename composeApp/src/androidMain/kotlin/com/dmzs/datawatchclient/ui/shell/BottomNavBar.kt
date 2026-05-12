@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.shell
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -61,6 +62,7 @@ internal fun BottomNavBar(
                 add(BottomNavItem(Destinations.Tabs.Autonomous, stringResource(R.string.nav_autonomous), emoji = "🤖"))
             }
             add(BottomNavItem(Destinations.Tabs.Alerts, stringResource(R.string.nav_alerts), icon = Icons.Filled.NotificationsActive))
+            add(BottomNavItem(Destinations.Tabs.Observer, stringResource(R.string.nav_observer), icon = Icons.Filled.Sensors))
             add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), icon = Icons.Filled.Settings))
         }
 
