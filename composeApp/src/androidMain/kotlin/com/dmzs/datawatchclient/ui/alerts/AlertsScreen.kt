@@ -30,11 +30,13 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +83,9 @@ public fun AlertsScreen(
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
     var scheduleFor by remember { mutableStateOf<Session?>(null) }
+    // G16: per-session filter within the Active tab; reset on tab change.
+    var sessionFilter by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.selectedTab) { sessionFilter = null }
 
     Scaffold(
         topBar = {
@@ -186,7 +191,51 @@ public fun AlertsScreen(
                     )
                 }
 
-                val groups = state.visibleGroups
+                // G16: per-session sub-tabs when Active + 2+ groups.
+                if (state.selectedTab == AlertsViewModel.Tab.Active && state.active.size >= 2) {
+                    val activeGroups = state.active
+                    val filterIdx = if (sessionFilter == null) 0 else
+                        activeGroups.indexOfFirst { it.sessionId == sessionFilter }
+                            .let { if (it < 0) 0 else it + 1 }
+                    ScrollableTabRow(
+                        selectedTabIndex = filterIdx,
+                        edgePadding = 8.dp,
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ) {
+                        Tab(
+                            selected = sessionFilter == null,
+                            onClick = { sessionFilter = null },
+                            text = {
+                                Text(
+                                    stringResource(R.string.alerts_filter_all),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            },
+                        )
+                        activeGroups.forEach { group ->
+                            val shortLabel = group.session?.name
+                                ?.takeIf { it.isNotBlank() }
+                                ?.take(10)
+                                ?: group.sessionId.substringAfterLast('-').take(8)
+                            Tab(
+                                selected = sessionFilter == group.sessionId,
+                                onClick = { sessionFilter = group.sessionId },
+                                text = {
+                                    Text(
+                                        shortLabel,
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+
+                val groups = if (sessionFilter != null && state.selectedTab == AlertsViewModel.Tab.Active) {
+                    state.active.filter { it.sessionId == sessionFilter }
+                } else {
+                    state.visibleGroups
+                }
                 if (groups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(

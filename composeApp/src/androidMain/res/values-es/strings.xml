@@ -1082,6 +1082,7 @@
     <string name="alerts_active_tab_label">Activo</string>
     <string name="alerts_historical_tab_label">Historial</string>
     <string name="alerts_system_tab_label">Sistema</string>
+    <string name="alerts_filter_all">Todos</string>
     <string name="ollama_marketplace_title">Mercado Ollama</string>
     <string name="ollama_browse_btn">Ver mercado</string>
     <string name="ollama_installed_models">Modelos instalados</string>
