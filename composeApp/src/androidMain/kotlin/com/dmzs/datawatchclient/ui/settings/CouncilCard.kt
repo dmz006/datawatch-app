@@ -67,6 +67,9 @@ internal fun CouncilCard() {
     var personas by remember { mutableStateOf<List<CouncilPersonaDto>>(emptyList()) }
     var runs by remember { mutableStateOf<List<CouncilRunDto>>(emptyList()) }
     var config by remember { mutableStateOf(CouncilConfigDto()) }
+    var configLlmRef by remember(config) { mutableStateOf(config.llmRef ?: "") }
+    var configMaxParallel by remember(config) { mutableStateOf(config.maxParallel?.toString() ?: "") }
+    var configDraftRetention by remember(config) { mutableStateOf(config.draftRetentionDays?.toString() ?: "") }
     var proposal by remember { mutableStateOf("") }
     var mode by remember { mutableStateOf("debate") }
     var selectedPersonas by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -338,6 +341,53 @@ internal fun CouncilCard() {
                 },
             )
         }
+
+        // ── COUNCIL CONFIG (G14/G22) ──────────────────────────────────────
+        OutlinedTextField(
+            value = configLlmRef,
+            onValueChange = { configLlmRef = it },
+            label = { Text(stringResource(R.string.council_config_llm_ref)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = configMaxParallel,
+                onValueChange = { if (it.all { c -> c.isDigit() }) configMaxParallel = it },
+                label = { Text(stringResource(R.string.council_config_max_parallel)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedTextField(
+                value = configDraftRetention,
+                onValueChange = { if (it.all { c -> c.isDigit() }) configDraftRetention = it },
+                label = { Text(stringResource(R.string.council_config_draft_retention)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        TextButton(
+            onClick = {
+                val updated = config.copy(
+                    llmRef = configLlmRef.trim().ifBlank { null },
+                    maxParallel = configMaxParallel.trim().toIntOrNull(),
+                    draftRetentionDays = configDraftRetention.trim().toIntOrNull(),
+                )
+                scope.launch {
+                    runCatching {
+                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
+                        val sp = ServiceLocator.profileRepository.observeAll().first()
+                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        ServiceLocator.transportFor(sp).councilUpdateConfig(updated)
+                            .onSuccess { config = it }
+                    }
+                }
+            },
+            modifier = Modifier.align(Alignment.End),
+        ) { Text(stringResource(R.string.action_save)) }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 

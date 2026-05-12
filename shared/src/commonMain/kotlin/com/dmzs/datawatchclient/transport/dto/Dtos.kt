@@ -628,6 +628,7 @@ public data class PrdDto(
     val type: String? = null,
     @SerialName("guided_mode") val guidedMode: Boolean = false,
     val skills: List<String> = emptyList(),
+    val decisions: List<String>? = null,
 )
 
 @Serializable
@@ -1218,6 +1219,9 @@ public data class CouncilRunDto(
 public data class CouncilConfigDto(
     @SerialName("comm_firehose") val commFirehose: Boolean = false,
     @SerialName("spawn_real_sessions") val spawnRealSessions: Boolean = false,
+    @SerialName("llm_ref") val llmRef: String? = null,
+    @SerialName("max_parallel") val maxParallel: Int? = null,
+    @SerialName("draft_retention_days") val draftRetentionDays: Int? = null,
 )
 
 /** POST /api/council/run — start a council run. */

@@ -203,6 +203,11 @@
     <string name="prd_detail_graph">📊 Diagramm</string>
     <string name="prd_detail_llm">LLM</string>
     <string name="prd_detail_no_stories">Noch keine Storys (wird noch zerlegt?).</string>
+    <string name="prd_tab_overview">Übersicht</string>
+    <string name="prd_tab_stories">Storys</string>
+    <string name="prd_tab_decisions">Entscheidungen</string>
+    <string name="prd_tab_decisions_empty">Noch keine Entscheidungen protokolliert.</string>
+    <string name="prd_tab_scan">Scan</string>
     <string name="prd_detail_reject_title">Automat ablehnen?</string>
     <string name="prd_detail_reject_reason_label">Grund (erforderlich)</string>
     <string name="prd_detail_revise_title">Überarbeitung anfordern</string>
@@ -496,10 +501,6 @@
     <string name="prd_stories_tasks">Storys &amp; Aufgaben</string>
     <string name="prd_story_desc_label">Beschreibung</string>
     <string name="prd_story_title_label">Titel</string>
-    <string name="prd_tab_decisions">Entscheidungen</string>
-    <string name="prd_tab_overview">Übersicht</string>
-    <string name="prd_tab_scan">Scan</string>
-    <string name="prd_tab_stories">Stories</string>
     <string name="prd_task_llm_hint">Aufgaben-LLM-Override — leer erbt von PRD dann global.</string>
     <string name="prd_view_spec">Spec anzeigen</string>
     <string name="profile_agent_settings_section">Agent-Einstellungen</string>
@@ -823,6 +824,9 @@
     <string name="council_title">Council-Modus</string>
     <string name="council_personas_label">Personas</string>
     <string name="council_firehose_label">Komm-Firehose</string>
+    <string name="council_config_llm_ref">LLM-Referenz</string>
+    <string name="council_config_max_parallel">Max. parallel</string>
+    <string name="council_config_draft_retention">Entwurfsaufbewahrung (Tage)</string>
     <string name="council_run_proposal">Vorschlag</string>
     <string name="council_mode_debate">Debatte</string>
     <string name="council_mode_quick">Schnell</string>

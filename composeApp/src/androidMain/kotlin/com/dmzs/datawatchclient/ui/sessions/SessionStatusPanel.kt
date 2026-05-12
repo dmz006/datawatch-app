@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,11 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -33,6 +37,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.LastEventDto
 import com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto
+import com.dmzs.datawatchclient.transport.dto.SprintStatusDto
+import kotlinx.serialization.json.Json
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -83,7 +89,7 @@ public fun SessionStatusPanel(
         Spacer(Modifier.height(4.dp))
 
         board.currentFocus?.let { FocusCard(it, board.lastEvent, board.idleSince) }
-        board.sprint?.let { SprintCard(it.name, it.progress) }
+        board.sprint?.let { SprintCard(it) }
         board.tests?.let { TestsCard(it.passing, it.failing, it.total) }
         board.git?.let { GitCard(it.branch, it.uncommitted, it.ahead) }
 
@@ -168,12 +174,19 @@ private fun timeAgo(elapsedMs: Long): String = when {
 }
 
 @Composable
-private fun SprintCard(name: String, progress: String) {
+private fun SprintCard(sprint: SprintStatusDto) {
+    val prettyJson = remember(sprint) {
+        Json { prettyPrint = true }.encodeToString(SprintStatusDto.serializer(), sprint)
+    }
     StatusCard(title = stringResource(R.string.status_card_sprint)) {
-        Text(name, style = MaterialTheme.typography.bodySmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-        if (progress.isNotBlank()) {
-            Spacer(Modifier.height(2.dp))
-            Text(progress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SelectionContainer {
+            Text(
+                prettyJson,
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()),
+            )
         }
     }
 }
