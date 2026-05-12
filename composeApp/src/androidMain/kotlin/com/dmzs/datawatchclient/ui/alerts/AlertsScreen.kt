@@ -145,12 +145,13 @@ public fun AlertsScreen(
                     }
                 }
             } else {
-                // Grouped by-session view (original behavior).
-                // Tab row — PWA puts Active first and defaults to it when
-                // there's any active group, else Inactive (app.js:5627).
+                // 3-tab layout: Active / Historical / System (Sprint 27 alpha.33).
                 TabRow(
-                    selectedTabIndex =
-                        if (state.selectedTab == AlertsViewModel.Tab.Active) 0 else 1,
+                    selectedTabIndex = when (state.selectedTab) {
+                        AlertsViewModel.Tab.Active -> 0
+                        AlertsViewModel.Tab.Historical -> 1
+                        AlertsViewModel.Tab.System -> 2
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Tab(
@@ -158,17 +159,27 @@ public fun AlertsScreen(
                         onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
                         text = {
                             Text(
-                                stringResource(R.string.alerts_active_tab, state.active.sumOf { it.alerts.size }),
+                                "${stringResource(R.string.alerts_active_tab_label)} (${state.active.sumOf { it.alerts.size }})",
                                 style = MaterialTheme.typography.labelMedium,
                             )
                         },
                     )
                     Tab(
-                        selected = state.selectedTab == AlertsViewModel.Tab.Inactive,
-                        onClick = { vm.selectTab(AlertsViewModel.Tab.Inactive) },
+                        selected = state.selectedTab == AlertsViewModel.Tab.Historical,
+                        onClick = { vm.selectTab(AlertsViewModel.Tab.Historical) },
                         text = {
                             Text(
-                                stringResource(R.string.alerts_inactive_tab, state.inactive.sumOf { it.alerts.size }),
+                                "${stringResource(R.string.alerts_historical_tab_label)} (${state.historical.sumOf { it.alerts.size }})",
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        },
+                    )
+                    Tab(
+                        selected = state.selectedTab == AlertsViewModel.Tab.System,
+                        onClick = { vm.selectTab(AlertsViewModel.Tab.System) },
+                        text = {
+                            Text(
+                                "${stringResource(R.string.alerts_system_tab_label)} (${state.system.sumOf { it.alerts.size }})",
                                 style = MaterialTheme.typography.labelMedium,
                             )
                         },
@@ -182,7 +193,8 @@ public fun AlertsScreen(
                             text =
                                 when (state.selectedTab) {
                                     AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
-                                    AlertsViewModel.Tab.Inactive -> stringResource(R.string.alerts_empty_inactive)
+                                    AlertsViewModel.Tab.Historical -> stringResource(R.string.alerts_empty_inactive)
+                                    AlertsViewModel.Tab.System -> stringResource(R.string.alerts_empty_inactive)
                                 },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -193,7 +205,7 @@ public fun AlertsScreen(
                         items(groups, key = { it.sessionId }) { group ->
                             val expanded =
                                 group.sessionId in state.expandedSessionIds ||
-                                    // Active groups default-expand; inactive default-collapse.
+                                    // Active groups default-expand; others default-collapse.
                                     (
                                         state.selectedTab == AlertsViewModel.Tab.Active &&
                                             group.sessionId !in state.expandedSessionIds

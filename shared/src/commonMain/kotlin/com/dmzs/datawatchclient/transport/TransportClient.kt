@@ -1152,6 +1152,13 @@ public interface TransportClient {
 
     // Sprint 26 — alpha.34 session status board
     public suspend fun getSessionStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto>
+
+    // Sprint 27 — alpha.33 Ollama marketplace
+    public suspend fun getInstalledOllamaModels(nodeId: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaInstalledModelsDto>
+    public suspend fun getOllamaCatalog(): Result<com.dmzs.datawatchclient.transport.dto.OllamaCatalogDto>
+    public suspend fun pullOllamaModel(nodeId: String, model: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto>
+    public suspend fun getPullTask(taskId: String): Result<com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto>
+    public suspend fun deleteOllamaModel(nodeId: String, model: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
