@@ -14,12 +14,12 @@
 | Sprint | Version | Gaps | Status | Scope |
 |--------|---------|------|--------|-------|
 | 33 | v0.102.0/180 | G6, G7 | ☐ Planned | Session detail tab restructure |
-| 34 | v0.103.0/181 | G17, G18, G19, G20 | ☐ Planned | LLM edit form alpha.41 overhaul |
-| 35 | v0.104.0/182 | G8, G9, G10, G12, G13 | ☐ Planned | Stats endpoint + Status card fixes |
-| 36 | v0.105.0/183 | G11, G14, G21, G22 | ☐ Planned | Medium structural gaps |
-| 37 | v0.106.0/184 | G1, G2 | ☐ Planned | Observer nav tab + global header alert pill |
-| 38 | v0.107.0/185 | G4, G16 | ☐ Planned | Session list inline actions + Alerts sub-tabs |
-| 39 | v0.108.0/186 | G3, G5, G15 | ☐ Planned | Low-priority cosmetic gaps |
+| 34 | v0.103.0/181 | G17, G18, G19, G20 | ✅ Shipped | LLM edit form alpha.41 overhaul |
+| 35 | v0.104.0/182 | G8, G9, G10, G12, G13 | ✅ Shipped | Stats endpoint + Status card fixes |
+| 36 | v0.105.0/183 | G11, G14, G21, G22 | ✅ Shipped | Medium structural gaps |
+| 37 | v0.106.0/184 | G1, G2 | ✅ Shipped | Observer nav tab + global header alert pill |
+| 38 | v0.107.0/185 | G4, G16 | ✅ Shipped | Session list inline actions + Alerts sub-tabs |
+| 39 | v0.108.0/186 | G3, G5, G15 | ✅ Shipped | Low-priority cosmetic gaps |
 
 ---
 
