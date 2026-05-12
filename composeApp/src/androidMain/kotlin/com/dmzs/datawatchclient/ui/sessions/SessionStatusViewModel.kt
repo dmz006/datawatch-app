@@ -43,6 +43,10 @@ public class SessionStatusViewModel(
         pollJob = null
     }
 
+    public fun refreshStatus() {
+        viewModelScope.launch { fetchStatus() }
+    }
+
     private suspend fun fetchStatus() {
         val (_, transport) = resolver.resolve() ?: return
         _state.value = _state.value.copy(loading = _state.value.board == null)

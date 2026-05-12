@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,7 +37,6 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.transport.dto.ContainerInfoDto
 import com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto
-import com.dmzs.datawatchclient.ui.stats.StatsViewModel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -48,22 +48,19 @@ public fun SessionStatsPanel(
     modifier: Modifier = Modifier,
     onNavigateToComputeTab: (() -> Unit)? = null,
     onNavigateToLlmTab: (() -> Unit)? = null,
-    statsVm: StatsViewModel = viewModel(),
     sessionStatsVm: SessionStatsViewModel = viewModel(
         factory = viewModelFactory { initializer { SessionStatsViewModel(sessionId) } },
         key = "session-stats-$sessionId",
     ),
 ) {
-    val statsState by statsVm.state.collectAsState()
     val sparkState by sessionStatsVm.state.collectAsState()
 
-    val envelope: StatEnvelopeDto? = statsState.stats?.envelopes?.firstOrNull { env ->
-        env.kind == "session" && (
-            env.id == sessionId ||
-                sessionId.startsWith(env.id) ||
-                env.id.startsWith(sessionId)
-            )
+    DisposableEffect(sessionId) {
+        sessionStatsVm.startPolling()
+        onDispose { sessionStatsVm.stopPolling() }
     }
+
+    val envelope: StatEnvelopeDto? = sparkState.envelope
 
     Column(
         modifier = modifier
@@ -175,6 +172,12 @@ private fun HostCard(
                     StatRow(stringResource(R.string.stats_field_rss), formatBytes(rssBytes))
                     if ((env?.threads ?: 0) > 0) StatRow(stringResource(R.string.stats_field_threads), env!!.threads.toString())
                     if ((env?.fds ?: 0) > 0) StatRow(stringResource(R.string.stats_field_fds), env!!.fds.toString())
+                    val pid = env?.rootPid ?: 0
+                    if (pid > 0) {
+                        val childCount = (env?.pids?.size ?: 0)
+                        val pidLabel = if (childCount > 0) "PID $pid (+$childCount)" else "PID $pid"
+                        StatRow(stringResource(R.string.stats_field_pid), pidLabel)
+                    }
                 }
             }
 

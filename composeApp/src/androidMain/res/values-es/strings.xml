@@ -1045,6 +1045,7 @@
     <string name="stats_field_rss">RSS</string>
     <string name="stats_field_threads">Hilos</string>
     <string name="stats_field_fds">Descriptores de archivo</string>
+    <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">Red</string>
     <string name="stats_field_gpu">GPU</string>
     <string name="stats_open_compute">Abrir en Compute →</string>
@@ -1067,6 +1068,8 @@
     <string name="status_hooks_alive">Hooks activos</string>
     <string name="status_hooks_stale">Hooks desactualizados</string>
     <string name="status_hooks_missing">Hooks faltantes</string>
+    <string name="status_idle_since">Inactivo desde %1$s</string>
+    <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">Tasa de tokens · latencia · estado del modelo en la próxima actualización</string>
     <string name="status_hooks_installed_toast">Hooks instalados en {path}/.claude/</string>
 

@@ -313,10 +313,17 @@ public data class GitStatusDto(
 )
 
 @Serializable
+public data class LastEventDto(
+    val ts: Long? = null,
+    val event: String? = null,
+    val tool: String? = null,
+)
+
+@Serializable
 public data class SessionStatusBoardDto(
     val state: String = "idle",
-    @SerialName("last_event") val lastEvent: String? = null,
-    @SerialName("idle_since") val idleSince: String? = null,
+    @SerialName("last_event") val lastEvent: LastEventDto? = null,
+    @SerialName("idle_since") val idleSince: Long? = null,
     @SerialName("hook_health") val hookHealth: String = "missing",
     val sprint: SprintStatusDto? = null,
     val tests: TestStatusDto? = null,

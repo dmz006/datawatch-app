@@ -1045,6 +1045,7 @@
     <string name="stats_field_rss">RSS</string>
     <string name="stats_field_threads">スレッド</string>
     <string name="stats_field_fds">ファイルディスクリプタ</string>
+    <string name="stats_field_pid">PID</string>
     <string name="stats_field_net">ネットワーク</string>
     <string name="stats_field_gpu">GPU</string>
     <string name="stats_open_compute">Computeで開く →</string>
@@ -1067,6 +1068,8 @@
     <string name="status_hooks_alive">フック有効</string>
     <string name="status_hooks_stale">フック古い</string>
     <string name="status_hooks_missing">フック未設定</string>
+    <string name="status_idle_since">%1$s前からアイドル</string>
+    <string name="status_hook_docs_link">Docs ↗</string>
     <string name="status_llm_more_soon">トークン率・レイテンシ・モデル状態は次回更新で</string>
     <string name="status_hooks_installed_toast">{path}/.claude/ にフックをインストールしました</string>
 
