@@ -415,6 +415,7 @@
     <string name="nav_home">Datawatch</string>
     <string name="nav_new_session">新しいセッション</string>
     <string name="nav_observer">オブザーバー</string>
+    <string name="header_alerts_pill_cd">%1$d 件のアラート</string>
     <string name="nav_orchestrator">オーケストレーター</string>
     <string name="nav_plugins">プラグイン</string>
     <string name="nav_routing">ルーティング</string>

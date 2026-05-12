@@ -7,9 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,6 +30,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.NotificationsActive
 import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -378,9 +386,59 @@ private fun HomeShell(
         SettingsNavChannel.consume()
     }
 
+    val needsInputCount = alertsState.active.sumOf { g ->
+        g.alerts.count { it.type.contains("input", ignoreCase = true) }
+    }
+    val errorCount = alertsState.active.sumOf { g ->
+        g.alerts.count { it.severity == com.dmzs.datawatchclient.domain.AlertSeverity.Error }
+    }
+    val alertPillCount = alertsState.watchedAlertCount
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+
+    @OptIn(ExperimentalMaterial3Api::class)
     val mainPane: @Composable (Modifier) -> Unit = { mod ->
         Scaffold(
             modifier = mod,
+            topBar = {
+                if (alertPillCount > 0) {
+                    TopAppBar(
+                        title = {},
+                        actions = {
+                            BadgedBox(
+                                badge = {
+                                    Badge(
+                                        containerColor = when {
+                                            needsInputCount > 0 -> dw.warning
+                                            errorCount > 0 -> MaterialTheme.colorScheme.error
+                                            else -> dw.success
+                                        },
+                                    ) {
+                                        Text(
+                                            alertPillCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                },
+                            ) {
+                                IconButton(onClick = { dockDismissed = false }) {
+                                    Icon(
+                                        Icons.Filled.NotificationsActive,
+                                        contentDescription = stringResource(
+                                            R.string.header_alerts_pill_cd,
+                                            alertPillCount,
+                                        ),
+                                        tint = when {
+                                            needsInputCount > 0 -> dw.warning
+                                            errorCount > 0 -> MaterialTheme.colorScheme.error
+                                            else -> dw.success
+                                        },
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+            },
             bottomBar = {
                 BottomNavBar(
                     tabNav,
@@ -413,6 +471,9 @@ private fun HomeShell(
                             onOpenSession = if (isWide) { id -> selectedSessionId = id } else onOpenSession,
                             vm = alertsVm,
                         )
+                    }
+                    composable(Destinations.Tabs.Observer) {
+                        com.dmzs.datawatchclient.ui.observer.ObserverScreen()
                     }
                     composable(Destinations.Tabs.Settings) {
                         SettingsScreen(

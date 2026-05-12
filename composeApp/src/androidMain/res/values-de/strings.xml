@@ -415,6 +415,7 @@
     <string name="nav_home">Datawatch</string>
     <string name="nav_new_session">Neue Sitzung</string>
     <string name="nav_observer">Observer</string>
+    <string name="header_alerts_pill_cd">%1$d Warnungen</string>
     <string name="nav_orchestrator">Orchestrator</string>
     <string name="nav_plugins">Plugins</string>
     <string name="nav_routing">Routing</string>
