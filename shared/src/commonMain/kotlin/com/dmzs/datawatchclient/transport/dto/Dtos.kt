@@ -324,6 +324,44 @@ public data class SessionStatusBoardDto(
     @SerialName("current_focus") val currentFocus: String? = null,
 )
 
+// ============================================================
+// v0.97.0 — Ollama marketplace DTOs (alpha.33 / Sprint 27)
+// ============================================================
+
+@Serializable
+public data class OllamaInstalledModelsDto(
+    val models: List<String> = emptyList(),
+)
+
+@Serializable
+public data class OllamaCatalogDto(
+    val models: List<OllamaCatalogModelDto> = emptyList(),
+)
+
+@Serializable
+public data class OllamaCatalogModelDto(
+    val name: String,
+    val description: String = "",
+    val tags: List<OllamaTagDto> = emptyList(),
+)
+
+@Serializable
+public data class OllamaTagDto(
+    val tag: String,
+    val size: String = "",
+    @SerialName("min_ram_gb") val minRamGb: Float = 0f,
+    @SerialName("min_vram_gb") val minVramGb: Float = 0f,
+    val fits: Boolean = true,
+)
+
+@Serializable
+public data class OllamaPullTaskDto(
+    val id: String,
+    val model: String = "",
+    val progress: Int = 0,
+    val status: String = "pending",
+)
+
 @Serializable
 public data class BackendStatusDto(
     val name: String = "",

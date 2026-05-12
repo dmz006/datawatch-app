@@ -2,6 +2,9 @@ package com.dmzs.datawatchclient.ui.compute
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -24,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -53,8 +58,12 @@ import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.ComputeNodeDto
 import com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto
 import com.dmzs.datawatchclient.transport.dto.MigrationComputeKindsDto
+import com.dmzs.datawatchclient.transport.dto.OllamaCatalogDto
+import com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto
+import com.dmzs.datawatchclient.transport.dto.OllamaTagDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -466,6 +475,23 @@ private fun ComputeNodeDialog(
         resolveTransport()?.getFreePeers()?.onSuccess { freePeers = it }
     }
 
+    // Sprint 27 — Ollama marketplace state
+    val scope = rememberCoroutineScope()
+    var installedModels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var installedModelsLoading by remember { mutableStateOf(false) }
+    var showMarketplace by remember { mutableStateOf(false) }
+    var installedRefreshTick by remember { mutableStateOf(0) }
+    var pullTasks by remember { mutableStateOf<Map<String, OllamaPullTaskDto>>(emptyMap()) }
+    var recentlyInstalled by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(kind, existing?.name, installedRefreshTick) {
+        if (kind != "ollama" || existing == null) return@LaunchedEffect
+        installedModelsLoading = true
+        resolveTransport()?.getInstalledOllamaModels(existing.name)?.onSuccess { installedModels = it.models }
+        installedModelsLoading = false
+    }
+    recentlyInstalled?.let { m -> LaunchedEffect(m) { delay(3000); recentlyInstalled = null } }
+
     // Determine if hardware section should be hidden (SaaS endpoint + openai-compat)
     val hideSaas = kind == "openai-compat" && isSaasAddress(address)
 
@@ -617,6 +643,70 @@ private fun ComputeNodeDialog(
                         }
                     }
                 }
+                // Sprint 27 — models sub-section (ollama nodes only, edit mode)
+                if (kind == "ollama" && existing != null) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.compute_models_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { showMarketplace = true }) {
+                            Text(stringResource(R.string.ollama_browse_btn), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    recentlyInstalled?.let { model ->
+                        Text(
+                            stringResource(R.string.ollama_pull_done, model),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF22C55E),
+                        )
+                    }
+                    if (installedModelsLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    } else if (installedModels.isEmpty()) {
+                        Text(
+                            stringResource(R.string.ollama_no_installed),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Column {
+                            installedModels.forEach { model ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        model,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                resolveTransport()?.deleteOllamaModel(existing.name, model)
+                                                    ?.onSuccess { installedRefreshTick++ }
+                                            }
+                                        },
+                                        modifier = Modifier.size(24.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.ollama_remove_btn),
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -646,6 +736,36 @@ private fun ComputeNodeDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
+
+    // Marketplace dialog — shown when user taps "Browse marketplace"
+    if (showMarketplace && existing != null) {
+        OllamaMarketplaceDialog(
+            nodeName = existing.name,
+            installedModels = installedModels,
+            pullTasks = pullTasks,
+            onPull = { fullModel ->
+                scope.launch {
+                    val transport = resolveTransport() ?: return@launch
+                    transport.pullOllamaModel(existing.name, fullModel).onSuccess { task ->
+                        pullTasks = pullTasks + (fullModel to task)
+                        var cur = task
+                        while (cur.status != "done" && cur.status != "error") {
+                            delay(2_000)
+                            cur = transport.getPullTask(cur.id).getOrNull() ?: break
+                            pullTasks = pullTasks + (fullModel to cur)
+                        }
+                        pullTasks = pullTasks - fullModel
+                        if (cur.status == "done") {
+                            recentlyInstalled = fullModel
+                            installedRefreshTick++
+                        }
+                    }
+                }
+            },
+            resolveTransport = resolveTransport,
+            onDismiss = { showMarketplace = false },
+        )
+    }
 }
 
 @Composable
@@ -660,5 +780,173 @@ private fun HardwareRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(value, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun OllamaMarketplaceDialog(
+    nodeName: String,
+    installedModels: List<String>,
+    pullTasks: Map<String, OllamaPullTaskDto>,
+    onPull: (fullModel: String) -> Unit,
+    resolveTransport: suspend () -> TransportClient?,
+    onDismiss: () -> Unit,
+) {
+    var catalog by remember { mutableStateOf<OllamaCatalogDto?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var search by remember { mutableStateOf("") }
+    var expandedModels by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(Unit) {
+        resolveTransport()?.getOllamaCatalog()?.onSuccess { catalog = it }
+        loading = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ollama_marketplace_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    placeholder = { Text("Filter…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (loading) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) { CircularProgressIndicator() }
+                } else {
+                    val models = (catalog?.models ?: emptyList())
+                        .filter { it.name.contains(search, ignoreCase = true) }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(models) { model ->
+                            val isExpanded = model.name in expandedModels
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            expandedModels = if (isExpanded)
+                                                expandedModels - model.name
+                                            else
+                                                expandedModels + model.name
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            model.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium,
+                                        )
+                                        if (model.description.isNotBlank()) {
+                                            Text(
+                                                model.description,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                            )
+                                        }
+                                    }
+                                    Icon(
+                                        if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                                if (isExpanded) {
+                                    model.tags.forEach { tag ->
+                                        val fullModel = "${model.name}:${tag.tag}"
+                                        OllamaTagRow(
+                                            tag = tag,
+                                            isInstalled = fullModel in installedModels,
+                                            pullTask = pullTasks[fullModel],
+                                            onPull = { onPull(fullModel) },
+                                        )
+                                    }
+                                }
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        dismissButton = null,
+    )
+}
+
+@Composable
+private fun OllamaTagRow(
+    tag: OllamaTagDto,
+    isInstalled: Boolean,
+    pullTask: OllamaPullTaskDto?,
+    onPull: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, top = 2.dp, end = 0.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(tag.tag, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
+        if (tag.size.isNotBlank()) {
+            Text(
+                tag.size,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(40.dp),
+            )
+        }
+        Text(
+            if (tag.minRamGb > 0f) "${tag.minRamGb}G" else "—",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(40.dp),
+        )
+        Text(
+            if (tag.minVramGb > 0f) "${tag.minVramGb}G" else "—",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(40.dp),
+        )
+        Text(
+            if (tag.fits) stringResource(R.string.ollama_tag_fits) else stringResource(R.string.ollama_tag_tight),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (tag.fits) Color(0xFF22C55E) else Color(0xFFF59E0B),
+            modifier = Modifier.width(36.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        when {
+            isInstalled -> Text("✓", style = MaterialTheme.typography.labelSmall, color = Color(0xFF22C55E))
+            pullTask != null -> Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    "${pullTask.progress}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LinearProgressIndicator(
+                    progress = { pullTask.progress / 100f },
+                    modifier = Modifier.width(50.dp),
+                )
+            }
+            else -> TextButton(
+                onClick = onPull,
+                modifier = Modifier.heightIn(min = 24.dp),
+            ) {
+                Text(stringResource(R.string.ollama_pull_btn), style = MaterialTheme.typography.labelSmall)
+            }
+        }
     }
 }

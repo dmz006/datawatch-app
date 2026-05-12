@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class AlertsViewModel : ViewModel() {
-    public enum class Tab { Active, Inactive }
+    public enum class Tab { Active, Historical, System }
 
     public enum class ChipFilter { All, Prompt, Error, Warn, Info }
     public enum class SortMode { BySession, Chronological }
@@ -82,7 +82,8 @@ public class AlertsViewModel : ViewModel() {
 
     public data class UiState(
         val active: List<AlertGroup> = emptyList(),
-        val inactive: List<AlertGroup> = emptyList(),
+        val historical: List<AlertGroup> = emptyList(),
+        val system: List<AlertGroup> = emptyList(),
         val selectedTab: Tab = Tab.Active,
         val expandedSessionIds: Set<String> = emptySet(),
         val refreshing: Boolean = false,
@@ -107,7 +108,8 @@ public class AlertsViewModel : ViewModel() {
             get() =
                 when (selectedTab) {
                     Tab.Active -> active
-                    Tab.Inactive -> inactive
+                    Tab.Historical -> historical
+                    Tab.System -> system
                 }
     }
 
@@ -149,6 +151,8 @@ public class AlertsViewModel : ViewModel() {
         }
 
     init {
+        // Restore persisted tab + per-tab filter state on startup.
+        loadPersistedTabState()
         // Polling loop. Cancelled automatically on VM clear.
         viewModelScope.launch {
             activeProfileFlow.collect { profile ->
@@ -171,6 +175,31 @@ public class AlertsViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    private fun prefs() =
+        android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
+
+    private fun loadPersistedTabState() {
+        val p = prefs()
+        val tabName = p.getString(PREF_ACTIVE_TAB, Tab.Active.name) ?: Tab.Active.name
+        val tab = runCatching { Tab.valueOf(tabName) }.getOrDefault(Tab.Active)
+        _selectedTab.value = tab
+        _chipFilter.value = runCatching {
+            ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
+        }.getOrDefault(ChipFilter.All)
+        _sortMode.value = runCatching {
+            SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
+        }.getOrDefault(SortMode.BySession)
+        _search.value = p.getString("alerts_${tab.name.lowercase()}_search", "") ?: ""
+    }
+
+    private fun saveTabState(tab: Tab) {
+        prefs().edit()
+            .putString("alerts_${tab.name.lowercase()}_chip", _chipFilter.value.name)
+            .putString("alerts_${tab.name.lowercase()}_sort", _sortMode.value.name)
+            .putString("alerts_${tab.name.lowercase()}_search", _search.value)
+            .apply()
     }
 
     /**
@@ -221,11 +250,14 @@ public class AlertsViewModel : ViewModel() {
                     )
                 }
 
-            val (active, inactive) = groups.partition { it.isActive }
+            // Separate system-bucket alerts into their own list for the System tab.
+            val (sysGroups, sessionGroups) = groups.partition { it.sessionId == AlertGroup.SYSTEM_BUCKET }
+            val (active, historical) = sessionGroups.partition { it.isActive }
             // Return a partial UiState; chip/sort/search applied in outer combine.
             UiState(
                 active = active.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
-                inactive = inactive.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
+                historical = historical.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
+                system = sysGroups.sortedByDescending { it.alerts.maxOfOrNull { a -> a.createdAt } },
                 selectedTab = tab,
                 expandedSessionIds = expanded,
                 refreshing = refreshing,
@@ -271,11 +303,12 @@ public class AlertsViewModel : ViewModel() {
             }
 
             val filteredActive = inner.active.mapNotNull { filterGroup(it) }
-            val filteredInactive = inner.inactive.mapNotNull { filterGroup(it) }
+            val filteredHistorical = inner.historical.mapNotNull { filterGroup(it) }
+            val filteredSystem = inner.system.mapNotNull { filterGroup(it) }
 
             val flatChrono: List<Alert> =
                 if (sort == SortMode.Chronological) {
-                    (filteredActive + filteredInactive)
+                    (filteredActive + filteredHistorical + filteredSystem)
                         .flatMap { it.alerts }
                         .sortedByDescending { it.createdAt }
                 } else {
@@ -284,7 +317,8 @@ public class AlertsViewModel : ViewModel() {
 
             inner.copy(
                 active = filteredActive,
-                inactive = filteredInactive,
+                historical = filteredHistorical,
+                system = filteredSystem,
                 chipFilter = chip,
                 sortMode = sort,
                 searchQuery = search,
@@ -310,7 +344,17 @@ public class AlertsViewModel : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     public fun selectTab(tab: Tab) {
+        saveTabState(_selectedTab.value)
         _selectedTab.value = tab
+        prefs().edit().putString(PREF_ACTIVE_TAB, tab.name).apply()
+        val p = prefs()
+        _chipFilter.value = runCatching {
+            ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
+        }.getOrDefault(ChipFilter.All)
+        _sortMode.value = runCatching {
+            SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
+        }.getOrDefault(SortMode.BySession)
+        _search.value = p.getString("alerts_${tab.name.lowercase()}_search", "") ?: ""
     }
 
     public fun setChipFilter(f: ChipFilter) { _chipFilter.value = f }
@@ -375,5 +419,6 @@ public class AlertsViewModel : ViewModel() {
 
     private companion object {
         const val POLL_INTERVAL_MS = 5_000L
+        const val PREF_ACTIVE_TAB = "alerts_active_tab"
     }
 }

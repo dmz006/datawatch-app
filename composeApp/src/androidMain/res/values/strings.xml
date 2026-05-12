@@ -1146,4 +1146,24 @@
     <string name="automata_confirm_cancel_body">Cancel \"%1$s\"? The run will stop and the automaton will move to cancelled state.</string>
     <string name="state_filter_btn_tip">State (%1$d) ▸</string>
     <string name="llm_filter_btn_tip">LLM (%1$d) ▸</string>
+
+    <!-- ── Sprint 27 i18n — Ollama marketplace + alerts 3-tab (v0.97.0) ── -->
+    <string name="alerts_active_tab_label">Active</string>
+    <string name="alerts_historical_tab_label">Historical</string>
+    <string name="alerts_system_tab_label">System</string>
+    <string name="ollama_marketplace_title">Ollama Marketplace</string>
+    <string name="ollama_browse_btn">Browse marketplace</string>
+    <string name="ollama_installed_models">Installed models</string>
+    <string name="ollama_no_installed">No models installed</string>
+    <string name="ollama_pull_btn">Pull</string>
+    <string name="ollama_remove_btn">Remove</string>
+    <string name="ollama_pulling">Pulling %1$s (%2$d%%)</string>
+    <string name="ollama_pull_done">%1$s installed</string>
+    <string name="ollama_tag_size">Size</string>
+    <string name="ollama_tag_min_ram">Min RAM</string>
+    <string name="ollama_tag_min_vram">Min VRAM</string>
+    <string name="ollama_tag_fits">Fits</string>
+    <string name="ollama_tag_tight">Tight</string>
+    <string name="compute_models_title">Models</string>
+    <string name="compute_field_models">Installed models</string>
 </resources>
