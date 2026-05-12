@@ -203,6 +203,11 @@
     <string name="prd_detail_graph">📊 グラフ</string>
     <string name="prd_detail_llm">LLM</string>
     <string name="prd_detail_no_stories">まだストーリーがありません（分解中？）。</string>
+    <string name="prd_tab_overview">概要</string>
+    <string name="prd_tab_stories">ストーリー</string>
+    <string name="prd_tab_decisions">決定事項</string>
+    <string name="prd_tab_decisions_empty">決定事項がまだありません。</string>
+    <string name="prd_tab_scan">スキャン</string>
     <string name="prd_detail_reject_title">オートマトンを却下しますか？</string>
     <string name="prd_detail_reject_reason_label">理由（必須）</string>
     <string name="prd_detail_revise_title">修正を依頼</string>
@@ -496,10 +501,6 @@
     <string name="prd_stories_tasks">ストーリーとタスク</string>
     <string name="prd_story_desc_label">説明</string>
     <string name="prd_story_title_label">タイトル</string>
-    <string name="prd_tab_decisions">決定</string>
-    <string name="prd_tab_overview">概要</string>
-    <string name="prd_tab_scan">スキャン</string>
-    <string name="prd_tab_stories">ストーリー</string>
     <string name="prd_task_llm_hint">タスク別LLMオーバーライド — 空の場合はPRDからグローバルを継承。</string>
     <string name="prd_view_spec">仕様を表示</string>
     <string name="profile_agent_settings_section">エージェント設定</string>
@@ -823,6 +824,9 @@
     <string name="council_title">Councilモード</string>
     <string name="council_personas_label">ペルソナ</string>
     <string name="council_firehose_label">通信ファイアホース</string>
+    <string name="council_config_llm_ref">LLM参照</string>
+    <string name="council_config_max_parallel">最大並列数</string>
+    <string name="council_config_draft_retention">下書き保持期間（日）</string>
     <string name="council_run_proposal">提案</string>
     <string name="council_mode_debate">討論</string>
     <string name="council_mode_quick">クイック</string>

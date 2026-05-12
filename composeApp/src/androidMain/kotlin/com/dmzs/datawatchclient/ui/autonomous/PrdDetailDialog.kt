@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -93,6 +96,7 @@ internal fun PrdDetailDialog(
     val canReview = status == "needs_review" || status == "revisions_asked"
     val canEdit = status != "running"
 
+    var selectedTab by remember { mutableStateOf(0) }
     var rejectOpen by remember { mutableStateOf(false) }
     var rejectReason by remember { mutableStateOf("") }
     var reviseOpen by remember { mutableStateOf(false) }
@@ -110,9 +114,7 @@ internal fun PrdDetailDialog(
         title = { Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name) },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Status + graph row
@@ -152,24 +154,7 @@ internal fun PrdDetailDialog(
                     }
                 }
 
-                // Type + Guided Mode + Skills (v0.63.0)
-                PrdTypeRow(prd, automataTypes, onSetType)
-                PrdGuidedModeRow(prd, onSetGuidedMode)
-                PrdSkillsRow(prd, onSetSkills)
-
-                // Spec preview
-                prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                    Text(
-                        spec.take(240),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 4,
-                    )
-                }
-
-                HorizontalDivider()
-
-                // Primary action — one tonal button for the most important action per status
+                // Primary action — always visible
                 val hasPrimaryAction = canReview || status == "approved" || status == "running" ||
                     status == "draft" || status == "revisions_asked"
                 if (hasPrimaryAction) {
@@ -216,7 +201,7 @@ internal fun PrdDetailDialog(
                     }
                 }
 
-                // Secondary / management actions
+                // Secondary / management actions — always visible
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
@@ -244,56 +229,102 @@ internal fun PrdDetailDialog(
                     }
                 }
 
-                // Scan section (v0.62.0)
-                ScanResultCard(
-                    scanResult = scanResult,
-                    scanLoading = scanLoading,
-                    onTriggerScan = onTriggerScan,
-                    onCreateFixPrd = onCreateFixPrd,
-                    onProposeRules = onProposeRules,
-                    proposedRules = proposedRules,
-                    onDismissProposedRules = onDismissProposedRules,
-                )
-
                 HorizontalDivider()
 
-                // Stories section
-                val conflicts = buildMap<String, List<String>> {
-                    val byPath = mutableMapOf<String, MutableList<String>>()
-                    prd.stories
-                        .filter {
-                            it.status.lowercase() != "complete" &&
-                                it.status.lowercase() != "rejected"
-                        }
-                        .forEach { story ->
-                            story.files.forEach { f ->
-                                byPath.getOrPut(f) { mutableListOf() }.add(story.id)
+                // G21: 4-tab content area (Overview | Stories | Decisions | Scan)
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.prd_tab_overview), style = MaterialTheme.typography.labelSmall) })
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.prd_tab_stories), style = MaterialTheme.typography.labelSmall) })
+                    Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(stringResource(R.string.prd_tab_decisions), style = MaterialTheme.typography.labelSmall) })
+                    Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text(stringResource(R.string.prd_tab_scan), style = MaterialTheme.typography.labelSmall) })
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    when (selectedTab) {
+                        0 -> {
+                            PrdTypeRow(prd, automataTypes, onSetType)
+                            PrdGuidedModeRow(prd, onSetGuidedMode)
+                            PrdSkillsRow(prd, onSetSkills)
+                            prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
+                                Text(
+                                    spec.take(240),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 4,
+                                )
                             }
                         }
-                    byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
-                        put(path, ids)
-                    }
-                }
-                if (prd.stories.isEmpty()) {
-                    Text(
-                        stringResource(R.string.prd_detail_no_stories),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Text(
-                        stringResource(R.string.prd_detail_stories_header, prd.stories.size),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    prd.stories.forEach { story ->
-                        StoryRow(
-                            story = story,
-                            canEdit = canEdit,
-                            onEdit = { editingStory = story },
-                            onEditFiles = { editingFilesFor = story },
-                            conflicts = conflicts,
-                        )
+                        1 -> {
+                            val conflicts = buildMap<String, List<String>> {
+                                val byPath = mutableMapOf<String, MutableList<String>>()
+                                prd.stories
+                                    .filter {
+                                        it.status.lowercase() != "complete" &&
+                                            it.status.lowercase() != "rejected"
+                                    }
+                                    .forEach { story ->
+                                        story.files.forEach { f ->
+                                            byPath.getOrPut(f) { mutableListOf() }.add(story.id)
+                                        }
+                                    }
+                                byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
+                                    put(path, ids)
+                                }
+                            }
+                            if (prd.stories.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.prd_detail_no_stories),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                Text(
+                                    stringResource(R.string.prd_detail_stories_header, prd.stories.size),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                prd.stories.forEach { story ->
+                                    StoryRow(
+                                        story = story,
+                                        canEdit = canEdit,
+                                        onEdit = { editingStory = story },
+                                        onEditFiles = { editingFilesFor = story },
+                                        conflicts = conflicts,
+                                    )
+                                }
+                            }
+                        }
+                        2 -> {
+                            val decisions = prd.decisions
+                            if (decisions.isNullOrEmpty()) {
+                                Text(
+                                    stringResource(R.string.prd_tab_decisions_empty),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                decisions.forEach { decision ->
+                                    Text("• $decision", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                }
+                            }
+                        }
+                        3 -> {
+                            ScanResultCard(
+                                scanResult = scanResult,
+                                scanLoading = scanLoading,
+                                onTriggerScan = onTriggerScan,
+                                onCreateFixPrd = onCreateFixPrd,
+                                onProposeRules = onProposeRules,
+                                proposedRules = proposedRules,
+                                onDismissProposedRules = onDismissProposedRules,
+                            )
+                        }
                     }
                 }
             }
