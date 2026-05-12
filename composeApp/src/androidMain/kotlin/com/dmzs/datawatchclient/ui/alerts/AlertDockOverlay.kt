@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
@@ -76,7 +78,7 @@ public fun AlertDockOverlay(
                 shape = RoundedCornerShape(10.dp),
             ),
     ) {
-        Column(modifier = Modifier.widthIn(min = 220.dp, max = 340.dp)) {
+        Column(modifier = Modifier.widthIn(min = 220.dp, max = 420.dp)) {
             // Header row: pill + categories + chevron + dismiss + mute
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
@@ -91,7 +93,7 @@ public fun AlertDockOverlay(
                     Text(
                         text = if (total == 1) stringResource(R.string.alert_dock_one)
                                else stringResource(R.string.alert_dock_many, total),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp),
                         color = Color(0xFFD97706),
                     )
                 }
@@ -150,24 +152,27 @@ private fun CategoryPill(label: String, color: Color) {
             .background(color.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
             .padding(horizontal = 5.dp, vertical = 1.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = color)
     }
 }
 
 @Composable
 private fun DockAlertRow(alert: Alert) {
+    val railColor = when (alert.severity) {
+        AlertSeverity.Error -> Color(0xFFEF4444)
+        AlertSeverity.Warning -> Color(0xFFF59E0B)
+        else -> Color(0xFF22C55E)
+    }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        val (dotColor) = when (alert.severity) {
-            AlertSeverity.Error -> Pair(Color(0xFFEF4444), Unit)
-            AlertSeverity.Warning -> Pair(Color(0xFFF59E0B), Unit)
-            else -> Pair(Color(0xFF22C55E), Unit)
-        }
+        // Per-type color rail — left edge stripe (Sprint 27 alpha.33)
         Box(
-            modifier = Modifier.size(6.dp).padding(top = 5.dp)
-                .background(dotColor, androidx.compose.foundation.shape.CircleShape),
+            modifier = Modifier
+                .width(3.dp)
+                .fillMaxHeight()
+                .background(railColor, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
         )
         Spacer(Modifier.width(6.dp))
         Column {

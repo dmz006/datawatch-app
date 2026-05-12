@@ -1067,4 +1067,24 @@
     <string name="status_hooks_missing">Hooks manquants</string>
     <string name="status_llm_more_soon">Taux de tokens · latence · état du modèle dans la prochaine mise à jour</string>
     <string name="status_hooks_installed_toast">Hooks installés dans {path}/.claude/</string>
+
+    <!-- ── Sprint 27 i18n — Ollama marketplace + alerts 3-tab (v0.97.0) ── -->
+    <string name="alerts_active_tab_label">Actif</string>
+    <string name="alerts_historical_tab_label">Historique</string>
+    <string name="alerts_system_tab_label">Système</string>
+    <string name="ollama_marketplace_title">Marché Ollama</string>
+    <string name="ollama_browse_btn">Parcourir le marché</string>
+    <string name="ollama_installed_models">Modèles installés</string>
+    <string name="ollama_no_installed">Aucun modèle installé</string>
+    <string name="ollama_pull_btn">Télécharger</string>
+    <string name="ollama_remove_btn">Supprimer</string>
+    <string name="ollama_pulling">Téléchargement de %1$s (%2$d%%)</string>
+    <string name="ollama_pull_done">%1$s installé</string>
+    <string name="ollama_tag_size">Taille</string>
+    <string name="ollama_tag_min_ram">RAM min</string>
+    <string name="ollama_tag_min_vram">VRAM min</string>
+    <string name="ollama_tag_fits">Compatible</string>
+    <string name="ollama_tag_tight">Limite</string>
+    <string name="compute_models_title">Modèles</string>
+    <string name="compute_field_models">Modèles installés</string>
 </resources>
