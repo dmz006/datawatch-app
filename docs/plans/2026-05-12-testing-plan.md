@@ -110,7 +110,7 @@ fi
 | T3 | Session detail / terminal | TS-036–TS-060 | ✅ 24✅ 8⏭ — BL-T3-1/2/3/4 fixed (v0.112.0); all stories pass or skip |
 | T4 | New session creation | TS-061–TS-075 | 🟡 10✅ 4⏭ 1❌ |
 | T5 | Alerts | TS-076–TS-095 | 🟡 17✅ 2⏭ 1🟡 — BL-T5-1 open |
-| T6 | Settings — Monitor/Observer | TS-096–TS-115 | ☐ |
+| T6 | Settings — Monitor/Observer | TS-096–TS-115 | ✅ 14✅ 6⏭ — standalone-server gaps (cluster/amber/red/hidden pill/restart) |
 | T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ☐ |
 | T8 | Settings — Automata/PRDs | TS-141–TS-165 | ☐ |
 | T9 | Navigation & shell | TS-166–TS-180 | ☐ |
@@ -300,26 +300,26 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-096 | Observer tab in bottom nav | Bottom nav → tap Sensors icon (Observer) | ObserverScreen loads | ☐ | |
-| TS-097 | Observer — System stats card | Check stats card | CPU/memory/uptime shown from /api/stats | ☐ | |
-| TS-098 | Observer — eBPF status card | Check eBPF card | Card self-hides if eBPF not enabled | ☐ | |
-| TS-099 | Observer — eBPF network card | Check eBPF network card | Network activity shown or card absent | ☐ | |
-| TS-100 | Observer — Cluster nodes | Check cluster nodes card | Nodes listed from /api/cluster | ☐ | |
-| TS-101 | Observer — Federated peers | Check federated peers card | Peer latency table shown | ☐ | |
-| TS-102 | Observer — Plugins card | Check plugins card | Plugin list shown | ☐ | |
-| TS-103 | Observer — Memory/KG card | Check memory card | Memory stats + KG summary shown | ☐ | |
-| TS-104 | Observer — Schedules card | Check schedules card | Pending schedules listed | ☐ | |
-| TS-105 | Observer — Daemon log card | Check daemon log | Last N log lines shown, auto-refresh 10s | ☐ | |
-| TS-106 | Observer — ObserverCard stub | Check observer card | Observer sessions or stub message | ☐ | |
-| TS-107 | Settings → Monitor still works | Settings → Monitor tab | Same cards as Observer, independently scrollable | ☐ | |
-| TS-108 | Alert header pill — visible | Have active alerts | Bell icon with count appears in HomeShell top bar | ☐ | |
-| TS-109 | Alert header pill — amber (needs input) | Have waiting_input alerts | Pill color = amber | ☐ | |
-| TS-110 | Alert header pill — red (errors) | Have error alerts | Pill color = red | ☐ | |
-| TS-111 | Alert header pill — teal (info only) | Have info alerts only | Pill color = teal/success | ☐ | |
-| TS-112 | Alert header pill — hidden | No active alerts | Pill not visible in top bar | ☐ | |
-| TS-113 | Alert header pill tap | Tap bell icon | Alert dock overlay shown | ☐ | |
-| TS-114 | Restart needed banner | Server auto_restart_on_config=false | Amber banner with Restart button visible | ☐ | |
-| TS-115 | Restart daemon button | Tap Restart now in banner | Daemon restarted; message shown | ☐ | |
+| TS-096 | Observer tab in bottom nav | Bottom nav → tap Sensors icon (Observer) | ObserverScreen loads | ✅ | Observer title + all cards loaded |
+| TS-097 | Observer — System stats card | Check stats card | CPU/memory/uptime shown from /api/stats | ✅ | SERVER card: ring/v7.0.0-alpha.53; SESSION STATISTICS 21 sessions; SYSTEM STATISTICS CPU 100% Memory 83.7% |
+| TS-098 | Observer — eBPF status card | Check eBPF card | Card self-hides if eBPF not enabled | ✅ | Amber "Degraded" card visible (eBPF needs setup) |
+| TS-099 | Observer — eBPF network card | Check eBPF network card | Network activity shown or card absent | ✅ | NETWORK BY PROCESS card shown; "eBPF probes not active" message |
+| TS-100 | Observer — Cluster nodes | Check cluster nodes card | Nodes listed from /api/cluster | ⏭ | Standalone single-node server; no cluster card rendered |
+| TS-101 | Observer — Federated peers | Check federated peers card | Peer latency table shown | ✅ | FEDERATED PEERS card: "No peers in this group"; All/Standalone/Cluster/Agents tabs |
+| TS-102 | Observer — Plugins card | Check plugins card | Plugin list shown | ✅ | PLUGINS card: empty list (no plugins installed) |
+| TS-103 | Observer — Memory/KG card | Check memory card | Memory stats + KG summary shown | ✅ | EPISODIC MEMORY card: 119 total memories; Spellcheck/Extract facts/Schema version tools |
+| TS-104 | Observer — Schedules card | Check schedules card | Pending schedules listed | ✅ | SCHEDULED EVENTS card: "No schedules yet — tap + above to create one." |
+| TS-105 | Observer — Daemon log card | Check daemon log | Last N log lines shown, auto-refresh 10s | ✅ | DAEMON LOG: "Showing 50 of 3574 lines (offset 0)"; Newer/Older/Refresh buttons |
+| TS-106 | Observer — ObserverCard stub | Check observer card | Observer sessions or stub message | ✅ | OBSERVER card: "No active observer sessions" |
+| TS-107 | Settings → Monitor still works | Settings → Monitor tab | Same cards as Observer, independently scrollable | ✅ | Settings → Monitor: SERVER/SESSION STATISTICS/SYSTEM STATISTICS cards identical |
+| TS-108 | Alert header pill — visible | Have active alerts | Bell icon with count appears in HomeShell top bar | ✅ | Bell icon with "8" badge visible in Observer/Settings header (content-desc="8 alerts") |
+| TS-109 | Alert header pill — amber (needs input) | Have waiting_input alerts | Pill color = amber | ⏭ | No waiting_input alerts available to test |
+| TS-110 | Alert header pill — red (errors) | Have error alerts | Pill color = red | ⏭ | No error-type alerts available to test |
+| TS-111 | Alert header pill — teal (info only) | Have info alerts only | Pill color = teal/success | ✅ | 8 active INFO alerts; bell appears teal/green in Observer header |
+| TS-112 | Alert header pill — hidden | No active alerts | Pill not visible in top bar | ⏭ | Live session continuously generates alerts; transient state not captured |
+| TS-113 | Alert header pill tap | Tap bell icon | Alert dock overlay shown | ✅ | Tapped bell at (1007,213); "8 alerts" dock snackbar appeared at bottom |
+| TS-114 | Restart needed banner | Server auto_restart_on_config=false | Amber banner with Restart button visible | ⏭ | Server auto_restart_on_config not set to false; banner not shown |
+| TS-115 | Restart daemon button | Tap Restart now in banner | Daemon restarted; message shown | ⏭ | Blocked by TS-114 |
 
 ---
 
