@@ -31,8 +31,16 @@ public class SessionRepository(
         sessions: List<Session>,
     ) {
         db.transaction {
+            // Capture locally-stored mute preferences before the delete wipes them.
+            val mutedIds = db.sessionQueries.selectSessionsForProfile(profileId)
+                .executeAsList()
+                .filter { it.muted != 0L }
+                .map { it.id }
+                .toSet()
             db.sessionQueries.deleteSessionsForProfile(profileId)
-            sessions.forEach { upsertInternal(it) }
+            sessions.forEach { session ->
+                upsertInternal(session, overrideMuted = mutedIds.contains(session.id))
+            }
         }
     }
 
@@ -47,7 +55,10 @@ public class SessionRepository(
         db.sessionQueries.setSessionMuted(if (muted) 1L else 0L, sessionId)
     }
 
-    private fun upsertInternal(session: Session) {
+    public suspend fun isMuted(sessionId: String): Boolean =
+        db.sessionQueries.selectSessionById(sessionId).executeAsOneOrNull()?.muted != 0L
+
+    private fun upsertInternal(session: Session, overrideMuted: Boolean = false) {
         db.sessionQueries.upsertSession(
             id = session.id,
             server_profile_id = session.serverProfileId,
@@ -56,7 +67,7 @@ public class SessionRepository(
             task_summary = session.taskSummary,
             created_ts = session.createdAt.toEpochMilliseconds(),
             last_activity_ts = session.lastActivityAt.toEpochMilliseconds(),
-            muted = if (session.muted) 1L else 0L,
+            muted = if (overrideMuted || session.muted) 1L else 0L,
             last_prompt = session.lastPrompt,
             name = session.name,
             backend = session.backend,

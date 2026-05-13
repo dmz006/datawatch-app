@@ -79,13 +79,15 @@ public class UnifiedPushSseService : Service() {
             jobs[profile.id] = scope.launch {
                 transport.subscribePushAlerts().collect { event -> postNotification(event) }
             }
+
         }
     }
 
-    private fun postNotification(event: PushEventDto) {
+    private suspend fun postNotification(event: PushEventDto) {
         val sessionId = event.tags.firstOrNull()
             ?: event.click.substringAfterLast('/').takeIf { it.isNotBlank() }
             ?: "system"
+        if (runCatching { ServiceLocator.sessionRepository.isMuted(sessionId) }.getOrDefault(false)) return
         val type = when {
             event.priority >= 4 && event.title.contains("input", ignoreCase = true) ->
                 NotificationPoster.Event.Type.InputNeeded

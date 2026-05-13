@@ -421,15 +421,15 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-181 | FCM push — app in background | Kill app; session enters waiting state | Notification appears in notification shade | ☐ | |
-| TS-182 | Notification tap — opens session | Tap notification | App launches directly to session detail | ☐ | |
-| TS-183 | Notification — quick reply action | Tap "Reply" in notification action | Reply dialog or direct text reply | ☐ | |
-| TS-184 | ntfy fallback | Disable FCM; configure ntfy | Notification via ntfy appears | ☐ | |
-| TS-185 | UnifiedPush SSE | Enable UnifiedPush; session waits | Alert delivered via SSE channel | ☐ | |
-| TS-186 | Notification suppression — active session | Have session detail open; session enters waiting | No notification shown (suppressed for visible session) | ☐ | |
-| TS-187 | Muted session — no notification | Mute session; session enters waiting | No notification for muted session | ☐ | |
-| TS-188 | Notification channels registered | Check Android system notification settings | "datawatch Alerts" channel exists | ☐ | |
-| TS-189 | Push registration on add-server | Add new server profile | Push registration attempted for that profile | ☐ | |
+| TS-181 | FCM push — app in background | Kill app; session enters waiting state | Notification appears in notification shade | ⏭️ SKIP | FCM not configured on emulator (no Google Play Services) |
+| TS-182 | Notification tap — opens session | Tap notification | App launches directly to session detail | ✅ | SSE push → notification id=1610314 on dw.input_needed; tapped → deep-link dwclient://session/61b1 → SessionDetail opened correctly |
+| TS-183 | Notification — quick reply action | Tap "Reply" in notification action | Reply dialog or direct text reply | ✅ | "Reply" action present in notification; inline RemoteInput reply sent via ReplyBroadcastReceiver → session received reply |
+| TS-184 | ntfy fallback | Disable FCM; configure ntfy | Notification via ntfy appears | ⏭️ SKIP | ntfy.sh unreachable from emulator; NtfyFallbackService logs 60s backoff retries |
+| TS-185 | UnifiedPush SSE | Enable UnifiedPush; session waits | Alert delivered via SSE channel | ✅ | Three bugs fixed: prepareGet() for streaming, DefaultJson for ignoreUnknownKeys, ForegroundSessionTracker main-thread init. Notification id=1610314 confirmed on dw.input_needed (importance=4) |
+| TS-186 | Notification suppression — active session | Have session detail open; session enters waiting | No notification shown (suppressed for visible session) | ✅ | Logcat: "suppressed InputNeeded for foreground session 61b1" — ForegroundSessionTracker.isForeground() returns true when session detail visible |
+| TS-187 | Muted session — no notification | Mute session; session enters waiting | No notification for muted session | ✅ | Bug found+fixed: INSERT OR REPLACE overwrote muted on server refresh; fix: replaceAll() captures mutedIds before delete and restores. Two pushes to muted 61b1 → no id=1610314 notification posted; mute state survived 2+ poll cycles |
+| TS-188 | Notification channels registered | Check Android system notification settings | "datawatch Alerts" channel exists | ✅ | All 5 channels confirmed: dw.input_needed (4), dw.completed (3), dw.rate_limited (3), dw.error (4), dw.foreground (2) |
+| TS-189 | Push registration on add-server | Add new server profile | Push registration attempted for that profile | ✅ | UnifiedPushSseService.reconcile() called on onStartCommand; registers PushRegistrationDto(endpoint, clientId) per enabled profile; confirmed via logcat "DWPushSSE subscribePushAlerts connecting/connected" on profile startup |
 | TS-190 | Watch sync — alert count | Active alerts on phone | Wear OS complication shows correct count | ☐ | |
 | TS-191 | Watch sync — needs-input count | Waiting sessions | Wear complication shows waiting count | ☐ | |
 | TS-192 | Watch sync — reply from watch | Dictate reply on watch | Reply sent to session | ☐ | |

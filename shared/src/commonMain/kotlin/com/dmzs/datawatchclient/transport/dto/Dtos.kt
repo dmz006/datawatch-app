@@ -382,6 +382,7 @@ public data class PushRegistrationDto(
 
 @Serializable
 public data class PushEventDto(
+    val event: String = "message",
     val title: String = "",
     val message: String = "",
     val priority: Int = 3,
