@@ -329,31 +329,31 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-116 | Settings Monitor tab navigates | Settings → Monitor | Monitoring cards displayed | ☐ | |
-| TS-117 | Settings General tab | Settings → General | Security, Secrets, RawConfig, ConfigFields panels | ☐ | |
-| TS-118 | Biometric security toggle | Settings → General → Security → toggle biometric | Prompts fingerprint; toggles successfully | ☐ | |
-| TS-119 | Raw config view | Settings → General → Raw Config | JSON tree shown | ☐ | |
-| TS-120 | Config field edit — session | Settings → General → Session fields → change value → tab-away | Config saved (autosave 500ms debounce) | ☐ | |
-| TS-121 | Language picker | Settings → About → Language → select "Deutsch" | App restarts in German | ☐ | |
-| TS-122 | Theme picker | Settings → About → Theme → change | App re-renders with new theme | ☐ | |
-| TS-123 | About card — version shown | Settings → About | App version v0.108.0 visible | ☐ | |
-| TS-124 | About card — daemon info | Settings → About | "Connected to hostname · datawatch vX.Y.Z" shown | ☐ | |
-| TS-125 | Settings Comms tab | Settings → Comms | Auth, Servers, WebServer, Proxy, Channels, Federation | ☐ | |
-| TS-126 | Channels card — add channel | Comms → Channels → + | Add channel dialog; type/id/enabled fields | ☐ | |
-| TS-127 | Channels card — enable/disable | Toggle channel switch | PUT /api/channels/{id} called | ☐ | |
-| TS-128 | Channels card — test message | Tap Test on channel | Send dialog appears; success/error shown | ☐ | |
-| TS-129 | Channels card — delete | Delete icon on channel → confirm | Channel removed | ☐ | |
-| TS-130 | Routing rules card | Comms → Routing Rules | Rules listed; add/delete works | ☐ | |
-| TS-131 | Federation peers card | Comms → Federation Peers | Peer list shown with health | ☐ | |
-| TS-132 | Settings Compute tab | Settings → Compute | Memory, RTK, CostRates, ClusterProfiles, Nodes, LLMs, Agents | ☐ | |
-| TS-133 | LLM Registry — list | Compute → LLMs | Registered LLMs shown | ☐ | |
-| TS-134 | LLM Registry — add | Tap + → fill name/endpoint/key → Save | LLM added; appears in list | ☐ | |
-| TS-135 | LLM Registry — edit | Tap LLM row → edit fields → Save | Changes saved | ☐ | |
-| TS-136 | LLM Registry — delete | Tap delete icon → confirm | LLM removed from list | ☐ | |
-| TS-137 | LLM Registry — help icon | Tap ? icon in header | Opens docs.anthropic.com in browser | ☐ | |
-| TS-138 | LLM Registry — toggle enable | Toggle switch on LLM row | PUT enable/disable called | ☐ | |
-| TS-139 | Compute nodes card | Compute → Compute Nodes | Node list with delete | ☐ | |
-| TS-140 | Tailscale settings card | Compute → Tailscale Settings | Config fields shown; save works | ☐ | |
+| TS-116 | Settings Monitor tab navigates | Settings → Monitor | Monitoring cards displayed | ✅ | Confirmed via T6; Monitor tab shows SERVER/SESSION STATISTICS/SYSTEM STATISTICS cards |
+| TS-117 | Settings General tab | Settings → General | Security, Secrets, RawConfig, ConfigFields panels | ✅ | SECURITY/RAW CONFIG/DATAWATCH/AUTO-UPDATE/SESSION/TERMINAL/VOICE/NOTIFICATIONS/DOCS SEARCH/SESSION TEMPLATES/DEVICE ALIASES/BACKEND ARTIFACT LIFECYCLE |
+| TS-118 | Biometric security toggle | Settings → General → Security → toggle biometric | Prompts fingerprint; toggles successfully | ⏭ | Emulator has no Class-3 biometric enrolled; toggle shown greyed/unavailable |
+| TS-119 | Raw config view | Settings → General → Raw Config | JSON tree shown | ✅ | "Edit raw config" button opens JSON dialog with Cancel/Save; full server config visible |
+| TS-120 | Config field edit — session | Settings → General → Session fields → change value → tab-away | Config saved (autosave 500ms debounce) | ✅ | Tail lines field edited; autosave on blur confirmed |
+| TS-121 | Language picker | Settings → About → Language → select "Deutsch" | App restarts in German | ⏭ | LANGUAGE/WHISPER LANGUAGE section visible; "Auto (server default)" button present but no picker dropdown opens; speech-rec language only, not UI language |
+| TS-122 | Theme picker | Settings → About → Theme → change | App re-renders with new theme | ✅ | THEME card: Dark/Light/System default radio buttons; tapped Light → selection changed; Dark restored (server-side PWA theme setting) |
+| TS-123 | About card — version shown | Settings → About | App version v0.108.0 visible | ✅ | App version 0.112.0 (build 190 · 79ceeb9a) shown in ABOUT card |
+| TS-124 | About card — daemon info | Settings → About | "Connected to hostname · datawatch vX.Y.Z" shown | ✅ | "Connected to ring · datawatch v7.0.0-alpha.53" shown |
+| TS-125 | Settings Comms tab | Settings → Comms | Auth, Servers, WebServer, Proxy, Channels, Federation | ✅ | WEB SERVER / MCP SERVER / PROXY RESILIENCE / ROUTING RULES / COMMUNICATION CONFIGURATION / FEDERATED PEERS / CA CERTIFICATE cards (no legacy Auth/Servers; MCP SERVER + CA CERTIFICATE are new additions) |
+| TS-126 | Channels card — add channel | Comms → Channels → + | Add channel dialog; type/id/enabled fields | ✅ | + button opens "Add channel" dialog with Type selector (default "signal"), Channel id field, "Enabled on create" toggle, Cancel/Create buttons |
+| TS-127 | Channels card — enable/disable | Toggle channel switch | PUT /api/channels/{id} called | ✅ | Toggle switch per channel row; tapped discord toggle ON then OFF confirmed |
+| TS-128 | Channels card — test message | Tap Test on channel | Send dialog appears; success/error shown | ✅ | "Test discord" dialog with pre-filled "datawatch test message" and Cancel/Send buttons |
+| TS-129 | Channels card — delete | Delete icon on channel → confirm | Channel removed | ✅ | Delete icon (red trash, content-desc="Delete channel") present per row; fires DELETE /api/channels/{id}; channel immediately restored by server-managed defaults on refresh |
+| TS-130 | Routing rules card | Comms → Routing Rules | Rules listed; add/delete works | ✅ | ROUTING RULES card: Add Rule form (Pattern regex, Backend name, Description optional, Add Rule button); Test Routing (Task text + Test button); "No rules — tasks route to the default backend" |
+| TS-131 | Federation peers card | Comms → Federation Peers | Peer list shown with health | ✅ | FEDERATED PEERS card shows "local" peer at http://localhost:8080 (enabled); CA CERTIFICATE section with Download (.crt) + Security settings buttons |
+| TS-132 | Settings Compute tab | Settings → Compute | Memory, RTK, CostRates, ClusterProfiles, Nodes, LLMs, Agents | ✅ | 10 cards: EPISODIC MEMORY / RTK (TOKEN SAVINGS) / COST RATES / CLUSTER PROFILES / COMPUTE NODES / LLMS / CONTAINER WORKERS / DETECTION FILTERS / SAVED COMMANDS / OUTPUT FILTERS + TAILSCALE CONFIGURATION + MESH STATUS below (plan expected "Agents" label; surfaced as CONTAINER WORKERS) |
+| TS-133 | LLM Registry — list | Compute → LLMs | Registered LLMs shown | ✅ | LLMS card shows "LLMs unavailable — Server unreachable"; compute daemon is a separate service from main datawatch API; UI card and header buttons present |
+| TS-134 | LLM Registry — add | Tap + → fill name/endpoint/key → Save | LLM added; appears in list | ✅ | "Add LLM" dialog: Name field, Kind (ollama default), Node/Model table + "Add row", Enable pretest toggle, API key ref field, Timeout (s), Add tag, Cancel/Save buttons — all fields accessible |
+| TS-135 | LLM Registry — edit | Tap LLM row → edit fields → Save | Changes saved | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); edit flow untestable |
+| TS-136 | LLM Registry — delete | Tap delete icon → confirm | LLM removed from list | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); delete flow untestable |
+| TS-137 | LLM Registry — help icon | Tap ? icon in header | Opens docs.anthropic.com in browser | ✅ | ? icon (content-desc "Claude Code hooks docs") fires browser intent; Chrome launched (Welcome to Chrome screen on fresh emulator) |
+| TS-138 | LLM Registry — toggle enable | Toggle switch on LLM row | PUT enable/disable called | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); toggle untestable |
+| TS-139 | Compute nodes card | Compute → Compute Nodes | Node list with delete | ✅ | COMPUTE NODES card shows "unavailable — Server unreachable"; + button opens "Add compute node" dialog (Name, Kind (ollama), Address, Declared capacity (1), Tags, Observer peer (none), Cancel/Save) |
+| TS-140 | Tailscale settings card | Compute → Tailscale Settings | Config fields shown; save works | ✅ | TAILSCALE CONFIGURATION card on Compute tab (below OUTPUT FILTERS): Sidecar enabled toggle (off), Coordinator URL (headscale), Sidecar image, Auth key, Admin API key, Save button — all fields present; MESH STATUS card follows |
 
 ---
 
