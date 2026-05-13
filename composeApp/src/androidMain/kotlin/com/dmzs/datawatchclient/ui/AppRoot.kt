@@ -342,24 +342,43 @@ private fun HomeShell(
     // as the user toggles autonomous in Settings.
     suspend fun probeAutonomous() {
         val id = activeId
-        if (id == null) {
-            prdsSupported = false
-            return
-        }
+        android.util.Log.d("DWProbe", "probeAutonomous id=$id")
         if (id == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS) {
             prdsSupported = true
             return
         }
+        // When no explicit active server is stored, mirror SessionsViewModel: fall back
+        // to the first enabled profile so the Autonomous tab appears consistently with
+        // what the Sessions tab is already showing.
         val profile =
-            ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == id && it.enabled } ?: return
-        ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
-            val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
-            val enabled =
-                (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
-                    ?.content?.lowercase() == "true"
-            prdsSupported = enabled
-        }
+            if (id == null) {
+                kotlinx.coroutines.withTimeoutOrNull(10_000) {
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .filter { it.enabled }
+                        .firstOrNull()
+                }
+            } else {
+                kotlinx.coroutines.withTimeoutOrNull(10_000) {
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.id == id && it.enabled } }
+                        .firstOrNull { it.id == id && it.enabled }
+                }
+            }
+        android.util.Log.d("DWProbe", "profile=$profile baseUrl=${profile?.baseUrl}")
+        profile ?: return
+        ServiceLocator.transportFor(profile).fetchConfig()
+            .onSuccess { cfg ->
+                val auto = cfg.raw["autonomous"] as? kotlinx.serialization.json.JsonObject
+                val enabled =
+                    (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.lowercase() == "true"
+                android.util.Log.d("DWProbe", "fetchConfig ok auto=$auto enabled=$enabled")
+                prdsSupported = enabled
+            }
+            .onFailure { e ->
+                android.util.Log.e("DWProbe", "fetchConfig FAILED: ${e::class.simpleName}: ${e.message}")
+            }
     }
 
     LaunchedEffect(activeId) {

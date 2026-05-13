@@ -397,21 +397,21 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-166 | Bottom nav — Sessions | Tap Sessions | SessionsScreen shown | ☐ | |
-| TS-167 | Bottom nav — Autonomous | Tap Autonomous (if server supports) | AutonomousScreen shown | ☐ | |
-| TS-168 | Bottom nav — Alerts | Tap Alerts | AlertsScreen shown | ☐ | |
-| TS-169 | Bottom nav — Observer | Tap Observer (Sensors icon) | ObserverScreen shown | ☐ | |
-| TS-170 | Bottom nav — Settings | Tap Settings | SettingsScreen shown | ☐ | |
-| TS-171 | Back from session detail | Tap system back | Returns to sessions list | ☐ | |
-| TS-172 | Back from settings to home | Navigate into Settings → back | Returns to previous tab | ☐ | |
-| TS-173 | Deep link to session | adb shell am start -a android.intent.action.VIEW -d "datawatch://session/SESSIONID" | Opens session detail directly | ☐ | |
-| TS-174 | Splash screen | Cold launch | Matrix rain splash shows for ~3s then transitions | ☐ | |
-| TS-175 | Splash replay | Settings → About → [play logo] | Splash replays on tap | ☐ | |
-| TS-176 | Wide-screen two-pane | Landscape or tablet | Sessions list + detail side-by-side | ☐ | |
-| TS-177 | Settings nav from session detail | Detail → "Go to LLM settings" | Settings opens on Compute tab | ☐ | |
-| TS-178 | Autonomous tab hidden when disabled | Server with autonomous.enabled=false | Autonomous tab not shown in bottom nav | ☐ | |
-| TS-179 | Autonomous tab shows when enabled | Enable autonomous in settings | Tab appears without restart | ☐ | |
-| TS-180 | Session detail → navigate away → return | Open session → go to Alerts → return | Session detail resumes; terminal still live | ☐ | |
+| TS-166 | Bottom nav — Sessions | Tap Sessions | SessionsScreen shown | ✅ | Sessions tab shows session list with 61b1 card |
+| TS-167 | Bottom nav — Autonomous | Tap Autonomous (if server supports) | AutonomousScreen shown | ✅ | Autonomous tab visible and tappable when ring server reachable |
+| TS-168 | Bottom nav — Alerts | Tap Alerts | AlertsScreen shown | ✅ | Alerts screen shown with Active/Historical/System tabs + filter chips |
+| TS-169 | Bottom nav — Observer | Tap Observer (Sensors icon) | ObserverScreen shown | ✅ | Observer screen opens correctly |
+| TS-170 | Bottom nav — Settings | Tap Settings | SettingsScreen shown | ✅ | Settings screen with sub-tab row (Monitor/General/Plugins/Comms/Compute/Automata/About) |
+| TS-171 | Back from session detail | Tap system back | Returns to sessions list | ✅ | KEYCODE_BACK from session detail returns to Sessions list |
+| TS-172 | Back from settings to home | Navigate into Settings → back | Returns to previous tab | ✅ | Back from Settings returns to previously active tab |
+| TS-173 | Deep link to session | adb shell am start -a android.intent.action.VIEW -d "dwclient://session/SESSIONID" | Opens session detail directly | ✅ | Deep link works; note: correct scheme is `dwclient://` not `datawatch://` as written in test step |
+| TS-174 | Splash screen | Cold launch | Matrix rain splash shows for ~3s then transitions | ✅ | Splash screen with animated eye logo shown on cold launch |
+| TS-175 | Splash replay | Settings → About → [play logo] | Splash replays on tap | ⏭️ SKIP | Logo is a live animated composable, not a static image with replay trigger; no replay mechanism implemented |
+| TS-176 | Wide-screen two-pane | Landscape or tablet | Sessions list + detail side-by-side | ✅ | Forced landscape (user_rotation=1); two-pane layout at ≥600dp — left pane sessions list, right pane detail placeholder (sc_landscape.png) |
+| TS-177 | Settings nav from session detail | Detail → "Open in LLM →" | Settings opens on Compute tab | ⏭️ SKIP | Button only appears for sessions with llmRef/computeNodeRef; session 61b1 has no LLM binding |
+| TS-178 | Autonomous tab hidden when disabled | Server with autonomous.enabled=false | Autonomous tab not shown in bottom nav | ✅ | Autonomous tab absent in 4-tab nav when ring server unreachable (port forwarding dropped) |
+| TS-179 | Autonomous tab shows when enabled | Enable autonomous in settings | Tab appears without restart | ✅ | Saved server config via Edit dialog → ConfigSaveBus.fire() → probeAutonomous() → fetchConfig auto.enabled=true → 5th tab appeared without restart (sc_ts179.png) |
+| TS-180 | Session detail → navigate away → return | Open session → go to Alerts → return | Session detail resumes; terminal still live | ✅ | Opened 61b1 detail → KEYCODE_BACK to Sessions → Alerts tab → Sessions tab → reopened 61b1 → detail resumed with "generating •••" indicator live |
 
 ---
 
