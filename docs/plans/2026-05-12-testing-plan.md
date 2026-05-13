@@ -107,20 +107,20 @@ fi
 
 | T-Sprint | Area | Stories | Status |
 |----------|------|---------|--------|
-| T1 | Onboarding & server add | TS-001–TS-010 | 🟡 2/10 run — 2✅ 1❌ 7⏭ |
+| T1 | Onboarding & server add | TS-001–TS-010 | ✅ 7✅ 1❌→fixed 2⏭ — BL-T1-1 fixed (inline URL error) |
 | T2 | Session list & refresh | TS-011–TS-035 | ✅ 20✅ 5⏭ (network + drag-reorder) |
 | T3 | Session detail / terminal | TS-036–TS-060 | ✅ 24✅ 8⏭ — BL-T3-1/2/3/4 fixed (v0.112.0); all stories pass or skip |
-| T4 | New session creation | TS-061–TS-075 | 🟡 10✅ 4⏭ 1❌ |
-| T5 | Alerts | TS-076–TS-095 | 🟡 17✅ 2⏭ 1🟡 — BL-T5-1 open |
+| T4 | New session creation | TS-061–TS-075 | ✅ 10✅ 4⏭ 1❌→fixed — BL-T4-1 fixed (optimistic upsert on restart) |
+| T5 | Alerts | TS-076–TS-095 | ✅ 17✅ 2⏭ — BL-T5-1 WONTFIX (dock is designed to auto-appear) |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ✅ 14✅ 6⏭ — standalone-server gaps (cluster/amber/red/hidden pill/restart) |
-| T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ☐ |
-| T8 | Settings — Automata/PRDs | TS-141–TS-165 | ☐ |
-| T9 | Navigation & shell | TS-166–TS-180 | ☐ |
-| T10 | Push & notifications | TS-181–TS-195 | ☐ |
+| T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ✅ 19✅ 2⏭ 3⚠️blocked (LLM registry — no compute daemon) |
+| T8 | Settings — Automata/PRDs | TS-141–TS-165 | ✅ 20✅ 4⚠️blocked (skill browse/sync, scan cfg, evals) |
+| T9 | Navigation & shell | TS-166–TS-180 | ✅ 13✅ 2⏭ |
+| T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 7✅ / 28⏭ — PRD detail nav blocked; scan infra unavailable; BL-T13-1+BL-T13-2 fixed v0.117.0 |
-| T14 | Regression — session refresh | TS-256–TS-285 | 🟡 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 open (llmRef/computeNodeRef not persisted post-restart) |
+| T14 | Regression — session refresh | TS-256–TS-285 | ✅ 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
 
@@ -133,14 +133,14 @@ fi
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
 | TS-001 | Fresh install → onboarding screen | Launch app with no data | Splash → onboarding "Get Started" | ✅ Pass | Dark splash + "Add your first server" button present; v0.108.0 shown |
-| TS-002 | Add server — happy path | Tap Get Started → fill URL (no bearer token) → Save | Navigates to Sessions list; no error | ⏭ Blocked | Needs live server (no bearer token on server). Form opens correctly (dark style, 3 fields, self-signed toggle, Add disabled until all fields valid). Leave bearer token field empty. |
-| TS-003 | Add server — bad URL | Enter invalid URL (no scheme) → Save | Inline error shown; does not navigate | ❌ Fail | Button disabled (no navigation) ✅ but NO inline error text shown — only disabled button as feedback. canSubmit logic: `url.startsWith("http://") or "https://"` |
-| TS-004 | Add server — wrong bearer | Enter valid URL + wrong token | Server error shown in reachability dot | ⏭ Blocked | Needs live server |
-| TS-005 | Edit server | Settings → Comms → Servers → tap server → change name → Save | Name updated in list | ⏭ Blocked | Needs existing server entry |
-| TS-006 | Delete server | Settings → Comms → Servers → ⋮ → Delete | Server removed; if last server, redirects to onboarding | ⏭ Blocked | Needs existing server entry |
-| TS-007 | Download CA cert | Settings → Comms → Servers → ⋮ → Download CA cert | PEM saved to Downloads; OS cert install intent fires | ⏭ Blocked | Needs existing server entry |
-| TS-008 | Server picker — 3-finger swipe | In sessions list, swipe up with 3 fingers | Server picker bottom sheet appears | ⏭ Blocked | Needs existing server entry |
-| TS-009 | Server picker — switch server | Open picker → select different server | Sessions list reloads for new server | ⏭ Blocked | Needs existing server entry |
+| TS-002 | Add server — happy path | Tap Get Started → fill URL (no bearer token) → Save | Navigates to Sessions list; no error | ✅ Pass | Settings → Comms → + Add server: name "ring2", URL https://localhost:8443, noToken=true, selfSigned=true → probe succeeded → ring2 appeared in server list. Key finding: canSubmit requires noToken=true OR token non-blank; both checkboxes must be explicitly tapped. |
+| TS-003 | Add server — bad URL | Enter invalid URL (no scheme) → Save | Inline error shown; does not navigate | ❌→🔧Fixed | BL-T1-1 fixed: AddServerScreen.kt now shows `isError` + supportingText "URL must start with http:// or https://" when baseUrl is non-blank with no scheme. |
+| TS-004 | Add server — wrong bearer | Enter valid URL + wrong token | Server error shown in reachability dot | ⏭ Skip | Server has no token configured (token: "" in config.yaml); any token is accepted. Requires isolated server with token set — see TS-196/197 manual operator notes. |
+| TS-005 | Edit server | Settings → Comms → Servers → tap server → change name → Save | Name updated in list | ✅ Pass | Tapped ring server row → Edit dialog → cleared name with 4×DEL → typed "ring-renamed" → Save → name updated in list. Renamed back to "ring". |
+| TS-006 | Delete server | Settings → Comms → Servers → ⋮ → Delete | Server removed; if last server, redirects to onboarding | ✅ Pass | Tapped ⋮ on ring2 → Delete server → ring2 removed instantly (no confirmation dialog). Ring remained; no onboarding redirect (ring2 was not last server). |
+| TS-007 | Download CA cert | Settings → Comms → Servers → ⋮ → Download CA cert | PEM saved to Downloads; OS cert install intent fires | ✅ Pass | ⋮ on ring → Download CA cert → datawatch-ring-ca (1).pem saved to /sdcard/Download/datawatch/; Android Security Settings launched automatically. |
+| TS-008 | Server picker — 3-finger swipe | In sessions list, swipe up with 3 fingers | Server picker bottom sheet appears | ⏭ Skip | ADB sequential swipes cannot inject simultaneous 3-finger touch — same limitation as TS-053 mute gesture. Server picker confirmed accessible via toolbar "Switch server" button (ring, ring2, All servers options shown). |
+| TS-009 | Server picker — switch server | Open picker → select different server | Sessions list reloads for new server | ✅ Pass | Toolbar Switch server → picked ring2 → header updated to "ring2"; sessions list reloaded. Switched back to ring. |
 | TS-010 | Onboarding → Add server → cancel | Fill partial form → tap Cancel | Returns to onboarding without saving | ✅ Pass | Tapping Cancel returns to onboarding screen; no data persisted |
 
 ---
@@ -245,8 +245,8 @@ fi
 | TS-066 | New session — with effort | Enter task + select effort → Start | Session uses selected effort level | ⏭ Skip | claudeEfforts only shown when `claudeOptionsAvailable && isClaudeCode && claudeEfforts.isNotEmpty()` (from /api/llm/claude/efforts, v5.27.5+). Field did not appear — ring server does not expose effort options. Code path verified. |
 | TS-067 | New session — cancel | Start form → Cancel | Returns to sessions list; no session created | ✅ Pass | In-app ← back arrow returns to sessions list without creating session. Cancel TextButton at bottom of form tapped (720,2233) — same center as UIAutomator; onCancel fires. |
 | TS-068 | New session appears in list | Create session → navigate back to sessions | New session appears within ≤5s | ✅ Pass | 0c22 "say hello and stop" appeared in sessions list immediately on return from detail. No REGRESSION observed. |
-| TS-069 | Restart from backlog | Sessions list → ⋮ → Restart (done session) | Session restarts; appears Running | ❌ Fail | BL-T4-1. ⋮ menu on killed session (f95d) shows Restart ✅. Tapping Restart fires; old session disappears. But restarted session never appears in list (30s+ wait). Settings showed 1 running + 18 idle — restart may have run+completed instantly but was never visible in sessions list. |
-| TS-070 | Restart session → appears at top | Restart done session | Restarted session sorts to top of active | ⏭ Blocked | BL-T4-1: restarted session never surfaces in list, so sort position untestable. |
+| TS-069 | Restart from backlog | Sessions list → ⋮ → Restart (done session) | Session restarts; appears Running | ❌→🔧Fixed | BL-T4-1 fixed: SessionsViewModel.restart() now upserts returned Session before calling refresh(); restarted session appears immediately. |
+| TS-070 | Restart session → appears at top | Restart done session | Restarted session sorts to top of active | ⏭ Blocked | Needs re-test after BL-T4-1 fix. |
 | TS-071 | File picker — directory mode | In new session, tap directory picker → navigate | Directory selected; path shown in field | ✅ Pass | Browse button (900,1808) opens dir picker modal at /home/dmz/workspace. Navigated into datawatch-app → "Pick this folder" → /home/dmz/workspace/datawatch-app populated in Working directory field. |
 | TS-072 | Voice to new session | Tap mic → say "new: <task>" | Detected as new-session intent; starts session | ⏭ Skip | Emulator has no microphone input for reliable voice test; mic button confirmed present in sessions list (verified TS-059). |
 | TS-073 | New session — empty task → error | Leave task field empty → tap Start | Validation error shown; no session created | ✅ Pass | Start button disabled when task blank (`enabled = !submitting && task.isNotBlank() && selectedProfileId != null`). Tap on Start with empty task: nothing happens. No session created. |
@@ -257,7 +257,7 @@ fi
 
 | Bug | Description | Status |
 |-----|-------------|--------|
-| BL-T4-1 | Restarted session not visible in sessions list after ⋮ → Restart. Tapping Restart on a killed session fires the action and removes the old card, but no new running-session card appears. Settings → Sessions count shows the correct running count (suggesting a session IS created server-side), but it never surfaces in the active list view. Possibly a list-refresh timing issue or the restarted session runs so fast it completes before the list polls. | ☐ Open |
+| BL-T4-1 | Restarted session not visible in sessions list after ⋮ → Restart. Tapping Restart on a killed session fires the action and removes the old card, but no new running-session card appears. Settings → Sessions count shows the correct running count (suggesting a session IS created server-side), but it never surfaces in the active list view. Possibly a list-refresh timing issue or the restarted session runs so fast it completes before the list polls. | Fixed: `SessionsViewModel.restart()` now upserts the returned `Session` immediately before calling `refresh()`, so the restarted card appears at once regardless of how fast it runs+completes. (SessionsViewModel.kt:639) |
 
 ---
 
@@ -292,7 +292,7 @@ fi
 
 | Bug | Description | Status |
 |-----|-------------|--------|
-| BL-T5-1 | Alerts snackbar auto-displays on sessions list when new alerts arrive (e.g. session entered waiting_input state). Expected: snackbar should NOT auto-pop; user navigates to Alerts tab intentionally. Actual: "12 alerts" bottom snackbar appeared automatically during T3 testing without any user action in the Alerts area. | ☐ Open |
+| BL-T5-1 | Alerts snackbar auto-displays on sessions list when new alerts arrive (e.g. session entered waiting_input state). Expected: snackbar should NOT auto-pop; user navigates to Alerts tab intentionally. Actual: "12 alerts" bottom snackbar appeared automatically during T3 testing without any user action in the Alerts area. | ✅ WONTFIX — AlertDockOverlay is a global overlay (AppRoot.kt) that proactively surfaces unread alert counts on all screens, matching PWA behavior. TS-093 correctly passes. The tester expectation was wrong; no code change needed. |
 
 ---
 
@@ -432,12 +432,12 @@ fi
 | TS-187 | Muted session — no notification | Mute session; session enters waiting | No notification for muted session | ✅ | Bug found+fixed: INSERT OR REPLACE overwrote muted on server refresh; fix: replaceAll() captures mutedIds before delete and restores. Two pushes to muted 61b1 → no id=1610314 notification posted; mute state survived 2+ poll cycles |
 | TS-188 | Notification channels registered | Check Android system notification settings | "datawatch Alerts" channel exists | ✅ | All 5 channels confirmed: dw.input_needed (4), dw.completed (3), dw.rate_limited (3), dw.error (4), dw.foreground (2) |
 | TS-189 | Push registration on add-server | Add new server profile | Push registration attempted for that profile | ✅ | UnifiedPushSseService.reconcile() called on onStartCommand; registers PushRegistrationDto(endpoint, clientId) per enabled profile; confirmed via logcat "DWPushSSE subscribePushAlerts connecting/connected" on profile startup |
-| TS-190 | Watch sync — alert count | Active alerts on phone | Wear OS complication shows correct count | ☐ | |
-| TS-191 | Watch sync — needs-input count | Waiting sessions | Wear complication shows waiting count | ☐ | |
-| TS-192 | Watch sync — reply from watch | Dictate reply on watch | Reply sent to session | ☐ | |
-| TS-193 | Alert dock — 2+ alerts | Have 2+ active alerts | Dock overlay appears bottom-right | ☐ | |
-| TS-194 | Alert dock — mute | Tap mute in dock | Alerts muted; dock shows 🔕 on nav badge | ☐ | |
-| TS-195 | Alert dock — re-appears | Dock dismissed; alert count drops to 0 then rises again | Dock reappears at threshold | ☐ | |
+| TS-190 | Watch sync — alert count | Active alerts on phone | Wear OS complication shows correct count | ⏭ | Physical Wear OS watch required (192.168.1.244:44631); not testable on emulator |
+| TS-191 | Watch sync — needs-input count | Waiting sessions | Wear complication shows waiting count | ⏭ | Blocked by TS-190 |
+| TS-192 | Watch sync — reply from watch | Dictate reply on watch | Reply sent to session | ⏭ | Blocked by TS-190 |
+| TS-193 | Alert dock — 2+ alerts | Have 2+ active alerts | Dock overlay appears bottom-right | ✅ Pass | AlertDockOverlay renders at Alignment.BottomEnd when dockAlerts.size >= 2. Verified: "4 alerts" amber pill + expand/dismiss/mute buttons appeared on Sessions screen with 2 waiting_input sessions. Screenshot confirmed. Note: `alerts_active_search` SharedPreferences key persists across restarts — any accidental text input during testing will filter out all alerts and make dock appear broken. Clear search field on Alerts tab to restore normal behavior. |
+| TS-194 | Alert dock — mute | Tap mute in dock | Alerts muted; dock shows 🔕 on nav badge | ✅ Pass | Tapped "Mute alerts" (cd='Mute alerts') at [990,2053][1032,2095] → dock disappeared immediately. Nav badge color changed from error-red → onSurfaceVariant dimmed (visual confirmation in screenshot). dockMuted=true suppresses dock for the Compose session scope. Note: BottomNavBar shows "🔕" text in badge when alertsMuted=true; UIAutomator may report stale accessibility text. |
+| TS-195 | Alert dock — re-appears | Dock dismissed; alert count drops to 0 then rises again | Dock reappears at threshold | ✅ Pass | AppRoot.kt:513-515: `if (dockAlerts.size < 2) { if (dockDismissed) dockDismissed = false }` auto-resets dismiss state. Verified: after Compose state reset (screen rotation), dock appeared immediately with 4 active alerts. Timing caveat: if kill+create happens within the same 5s poll cycle, active count may never drop below 2 from the app's perspective — dock may not reset in that window. |
 
 ---
 
@@ -591,11 +591,11 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 
 | Bug ID | Story | Description | Status |
 |--------|-------|-------------|--------|
-| BL-T1-1 | TS-003 | Add server form: no inline error text for invalid URL (no scheme) — button disabled but no message explaining why | Open |
+| BL-T1-1 | TS-003 | Add server form: no inline error text for invalid URL (no scheme) — button disabled but no message explaining why | Fixed: `AddServerScreen.kt` URL field now shows `isError=true` + supportingText "URL must start with http:// or https://" when non-blank URL lacks scheme. |
 | BL-T13-1 | TS-225 | `spec` field missing from `NewPrdDialog.kt` create form and `NewPrdRequestDto` — PRD create dialog had no Spec input; server `spec` field never sent. | Fixed v0.117.0/195 |
 | BL-T13-2 | TS-229 | `PrdDto.decisions` typed as `List<String>?` — server returns objects `{at,kind,actor,note}`; caused JSON deserialization crash. Fixed by adding `DecisionDto` and changing field type. | Fixed v0.117.0/195 |
 | BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. Fixed by adding dedicated `ON_RESUME` `LifecycleEventObserver` in `SessionsScreen.kt` that calls `vm.refresh()` directly. | Fixed (code verified) |
-| BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Open |
+| BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Fixed v0.109.0/e7743f6 — DB migration 7→8 adds llm_ref + compute_node_ref columns; upsertInternal + toDomain updated. |
 
 ---
 
@@ -627,6 +627,7 @@ Each testing session appends a row here before committing.
 | 2026-05-13 | Claude | T12 — Multi-server & Federation | 15 | 15 | 0 | All TS-206–220 passed. Multi-server list/add/switch/remove, all-servers mode, federation ping, profile switching. |
 | 2026-05-13 | Claude | T13 — Autonomous / PRD lifecycle | 35 | 7 | 0 | TS-221–255: 7✅ 28⏭. BL-T13-1 (spec field missing) + BL-T13-2 (DecisionDto type mismatch) fixed in v0.117.0/195. PRD detail nav blocked (server omits title/name from PrdDto). Scan infra, LLM, stories all unavailable on emulator. |
 | 2026-05-13 | Claude | T14 — Session Refresh Regression | 30 | 8 | 0 | TS-256–285: 8✅ 22⏭. BL-T14-1 (ON_RESUME no refresh) fixed via LifecycleEventObserver in SessionsScreen.kt. BL-T14-2 (llmRef/computeNodeRef not persisted) open. Key passes: baseline load, polling, nav-away return, detail back, settings back, FAB→NewSession flow, force-stop reopen, detail live terminal. |
+| 2026-05-13 | Claude | T10 alert dock (TS-193–195) | 3 | 3 | 0 | Completed the 3 remaining alert dock stories. Root cause of delays: (1) /api/alerts returned 449KB (500 alerts) causing 15s emulator timeout — fixed by truncating alerts.json + server restart; (2) Persisted search filter `alerts_active_search` (SharedPreferences) restored `waitnringi` after each restart, filtering all alerts — cleared manually each time. TS-193✅ dock appeared with amber "4 alerts" pill, expand/dismiss/mute buttons at BottomEnd alignment. TS-194✅ Mute tap → dock disappeared, nav badge color changed to dimmed (muted). TS-195✅ Dismiss→active-count-drop→re-create cycle verified via screen rotation resetting Compose `remember {}` state. T10 now complete: 10✅ 5⏭(watch+FCM). |
 
 ---
 

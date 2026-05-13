@@ -637,7 +637,12 @@ public class SessionsViewModel : ViewModel() {
         val profile = profileForSession(sessionId) ?: return
         viewModelScope.launch {
             ServiceLocator.transportFor(profile).restartSession(fullIdFor(sessionId)).fold(
-                onSuccess = { refresh() },
+                onSuccess = { session ->
+                    // Upsert immediately so the restarted session is visible before
+                    // the background refresh completes (BL-T4-1).
+                    ServiceLocator.sessionRepository.upsert(session)
+                    refresh()
+                },
                 onFailure = { err ->
                     _banner.value = "Restart failed — ${err.message ?: err::class.simpleName}"
                 },
