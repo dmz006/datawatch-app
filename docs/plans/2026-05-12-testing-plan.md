@@ -109,7 +109,7 @@ fi
 | T2 | Session list & refresh | TS-011–TS-035 | ✅ 20✅ 5⏭ (network + drag-reorder) |
 | T3 | Session detail / terminal | TS-036–TS-060 | ✅ 24✅ 8⏭ — BL-T3-1/2/3/4 fixed (v0.112.0); all stories pass or skip |
 | T4 | New session creation | TS-061–TS-075 | 🟡 10✅ 4⏭ 1❌ |
-| T5 | Alerts | TS-076–TS-095 | ☐ |
+| T5 | Alerts | TS-076–TS-095 | 🟡 17✅ 2⏭ 1🟡 — BL-T5-1 open |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ☐ |
 | T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ☐ |
 | T8 | Settings — Automata/PRDs | TS-141–TS-165 | ☐ |
@@ -265,26 +265,26 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-076 | Alerts tab shows active alerts | Navigate to Alerts tab with active alerts | Alert groups shown, badge count correct | ☐ | |
-| TS-077 | Active tab — session groups | Active tab | Each active session with alerts shown as a group | ☐ | |
-| TS-078 | Historical tab | Switch to Historical | Past/dismissed alerts shown | ☐ | |
-| TS-079 | System tab | Switch to System | System-bucket alerts shown | ☐ | |
-| TS-080 | Per-session sub-tabs (2+ sessions) | Have 2+ sessions with active alerts | ScrollableTabRow appears; filter to single session works | ☐ | |
-| TS-081 | Per-session sub-tab "All" | Tap "All" tab | All active alert groups shown | ☐ | |
-| TS-082 | Alert chip filter — Prompts | Tap Prompts chip | Only input_needed alerts shown | ☐ | |
-| TS-083 | Alert chip filter — Error | Tap Error chip | Only error-severity alerts shown | ☐ | |
-| TS-084 | Alert chip filter — Warn | Tap Warn chip | Only warning alerts shown | ☐ | |
-| TS-085 | Chip filter — clear (All) | Tap All chip | All alerts shown again | ☐ | |
-| TS-086 | Sort toggle — Chronological | Tap sort icon | Flat list newest-first, no group headers | ☐ | |
-| TS-087 | Sort toggle — BySession | From Chrono → tap sort icon | Grouped view restored | ☐ | |
-| TS-088 | Search — filter by title | Type in search field | Alerts filtered by title text | ☐ | |
-| TS-089 | Dismiss all | Tap dismiss all → confirm | All active alerts dismissed | ☐ | |
-| TS-090 | Mark alert read | Swipe or tap mark-read on alert | Alert moves to Historical | ☐ | |
-| TS-091 | Open session from alert | Tap "Open session" on alert group | SessionDetailScreen opens for that session | ☐ | |
-| TS-092 | Schedule reply from alert | Tap "Schedule reply" | Schedule dialog with prompt pre-filled | ☐ | |
-| TS-093 | Alert dock overlay | Have 2+ active alerts | Dock overlay appears at bottom-right | ☐ | |
-| TS-094 | Alert dock dismiss | Tap X on dock | Dock dismisses; re-shows when count resets | ☐ | |
-| TS-095 | Nav badge count | Alerts tab badge | Count = total active alerts (or watched subset) | ☐ | |
+| TS-076 | Alerts tab shows active alerts | Navigate to Alerts tab with active alerts | Alert groups shown, badge count correct | ✅ Pass | 8 active alerts from session 61b1 |
+| TS-077 | Active tab — session groups | Active tab | Each active session with alerts shown as a group | ✅ Pass | "Datawatch app" group shown |
+| TS-078 | Historical tab | Switch to Historical | Past/dismissed alerts shown | ✅ Pass | Historical(492) shown |
+| TS-079 | System tab | Switch to System | System-bucket alerts shown | ✅ Pass | System(0); card displayed |
+| TS-080 | Per-session sub-tabs (2+ sessions) | Have 2+ sessions with active alerts | ScrollableTabRow appears; filter to single session works | ⏭ Skip | Only one active session with alerts |
+| TS-081 | Per-session sub-tab "All" | Tap "All" tab | All active alert groups shown | ⏭ Skip | Blocked by TS-080 |
+| TS-082 | Alert chip filter — Prompts | Tap Prompts chip | Only input_needed alerts shown | ✅ Pass | Chip filters correctly |
+| TS-083 | Alert chip filter — Error | Tap Error chip | Only error-severity alerts shown | ✅ Pass | Filter applied |
+| TS-084 | Alert chip filter — Warn | Tap Warn chip | Only warning alerts shown | ✅ Pass | Filter applied |
+| TS-085 | Chip filter — clear (All) | Tap All chip | All alerts shown again | ✅ Pass | All restored |
+| TS-086 | Sort toggle — Chronological | Tap sort icon | Flat list newest-first, no group headers | ✅ Pass | Flat list shown |
+| TS-087 | Sort toggle — BySession | From Chrono → tap sort icon | Grouped view restored | ✅ Pass | Grouped view restored |
+| TS-088 | Search — filter by title | Type in search field | Alerts filtered by title text | ✅ Pass | Search filters list |
+| TS-089 | Dismiss all | Tap dismiss all → confirm | All active alerts dismissed | ✅ Pass | Active(0) after dismiss; "You're caught up" |
+| TS-090 | Mark alert read | Swipe or tap mark-read on alert | Alert moves to Historical | 🟡 Partial | ✓ button only appears for input_needed/prompts alerts; current active alerts are INFO type (session running not waiting_input); ✓ button was observed in prior test pass but count stayed 8 due to live session regenerating alerts |
+| TS-091 | Open session from alert | Tap "Open session" on alert group | SessionDetailScreen opens for that session | ✅ Pass | SessionDetailScreen opened for 61b1 |
+| TS-092 | Schedule reply from alert | Tap "Schedule reply" | Schedule dialog with prompt pre-filled | ✅ Pass | Schedule dialog opened |
+| TS-093 | Alert dock overlay | Have 2+ active alerts | Dock overlay appears at bottom-right | ✅ Pass | "8 alerts" snackbar visible on Sessions screen |
+| TS-094 | Alert dock dismiss | Tap X on dock | Dock dismisses; re-shows when count resets | ✅ Pass | Dock dismissed; FAB visible again; re-appeared after new alerts |
+| TS-095 | Nav badge count | Alerts tab badge | Count = total active alerts (or watched subset) | ✅ Pass | "8" badge on Alerts nav tab |
 
 ### T5 Bugs
 
