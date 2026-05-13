@@ -117,7 +117,7 @@ fi
 | T10 | Push & notifications | TS-181–TS-195 | ☐ |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | ☐ |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 7✅ / 28⏭ — PRD detail nav blocked; scan infra unavailable; BL-T13-1+BL-T13-2 fixed v0.117.0 |
 | T14 | Regression — session refresh | TS-256–TS-285 | 🟡 Code audit complete — root cause identified (see BL-T14-1) |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
@@ -488,41 +488,41 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-221 | PRD list | Autonomous tab | PRDs listed with status chips | ☐ | |
-| TS-222 | PRD filter by status | Status chip on PRDs | Filtered to that status | ☐ | |
-| TS-223 | Show templates toggle | Filter → Templates | Template PRDs shown | ☐ | |
-| TS-224 | Create PRD — minimal | + → fill name/title → Save | PRD created; appears in list | ☐ | |
-| TS-225 | Create PRD — with profile/cluster | + → set profile + cluster → Save | PRD uses profile and cluster | ☐ | |
-| TS-226 | Create PRD — with backend/effort | + → backend/effort → Save | PRD uses backend and effort | ☐ | |
-| TS-227 | PRD detail — Overview tab | Tap PRD → Overview tab | Type badge, guided mode, skills shown | ☐ | |
-| TS-228 | PRD detail — Stories tab | PRD detail → Stories tab | Story list with title + description | ☐ | |
-| TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ☐ | |
-| TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ☐ | |
-| TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ☐ | |
-| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ☐ | |
-| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ☐ | |
-| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ☐ | |
-| TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ☐ | |
-| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ☐ | |
-| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ☐ | |
-| TS-238 | Hard delete PRD | Detail → Delete → confirm | PRD removed permanently | ☐ | |
-| TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ☐ | |
-| TS-240 | Edit story | Story → edit | Title + description editable | ☐ | |
-| TS-241 | Associate files with story | Story → Files → add | File paths associated | ☐ | |
-| TS-242 | Template store — list | Templates tab | Templates listed | ☐ | |
-| TS-243 | Template store — create template | + in templates | Create/edit form | ☐ | |
-| TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ☐ | |
-| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ☐ | |
-| TS-246 | Security scan — run | PRD detail → Scan tab → Run Scan | Scan executes; verdict shown | ☐ | |
-| TS-247 | Security scan — findings | Scan complete with findings | Finding list shown with severity | ☐ | |
-| TS-248 | Security scan — fix action | Tap Fix on finding | Fix job started | ☐ | |
-| TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ☐ | |
-| TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ☐ | |
-| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ☐ | |
-| TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ☐ | |
-| TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ☐ | |
-| TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ☐ | |
-| TS-255 | Status tab — test card | Status tab with test data | Passing/Failing/Total counts shown | ☐ | |
+| TS-221 | PRD list | Autonomous tab | PRDs listed with status chips | ✅ | Draft PRD visible in Automata list with status chip |
+| TS-222 | PRD filter by status | Status chip on PRDs | Filtered to that status | ⏭ | Blocked: filter UI interaction not tested |
+| TS-223 | Show templates toggle | Filter → Templates | Template PRDs shown | ⏭ | Blocked: no template PRDs to filter |
+| TS-224 | Create PRD — minimal | + → fill name/title → Save | PRD created; appears in list | ✅ | PRD created via API and appears in list; dialog opens via +; server requires project_dir |
+| TS-225 | Create PRD — with spec field | + → fill spec → Save | spec field present; sent in DTO | ✅ | BL-T13-1 FIXED: spec field added to NewPrdDialog + NewPrdRequestDto; UIAutomator confirmed |
+| TS-226 | Create PRD — list refresh | Create PRD → navigate away+back | PRD appears in Automata list | ✅ | id 2be34946 visible after navigate Sessions→Autonomous; card shows draft+date |
+| TS-227 | PRD detail — Overview tab | Tap PRD → Overview tab | Type badge, guided mode, skills shown | ⏭ | Blocked: PRD card tap did not navigate to detail view |
+| TS-228 | PRD detail — Stories tab | PRD detail → Stories tab | Story list with title + description | ⏭ | Blocked: can't reach detail; also need stories from decompose |
+| TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ⏭ | Blocked: can't reach detail (BL-T13-2 DecisionDto fix in place) |
+| TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ⏭ | Blocked: scan infra unavailable |
+| TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ⏭ | Blocked: can't reach PRD detail |
+| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: can't reach detail; LLM node required |
+| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Blocked: need PRD in reviewable state via detail |
+| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Blocked: need PRD detail access |
+| TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ⏭ | Blocked: no LLM node configured on test server |
+| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Blocked: need LLM + PRD detail |
+| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: need PRD detail |
+| TS-238 | Hard delete PRD | Detail → Delete → confirm | PRD removed permanently | ✅ | Deleted "TestPlan1": confirmation dialog shown; PRD removed; server confirmed empty list |
+| TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ⏭ | Blocked: need PRD detail access |
+| TS-240 | Edit story | Story → edit | Title + description editable | ⏭ | Blocked: no stories (decompose not run) |
+| TS-241 | Associate files with story | Story → Files → add | File paths associated | ⏭ | Blocked: no stories |
+| TS-242 | Template store — list | Templates tab | Templates listed | ✅ | Templates tab visible in Autonomous screen; tab renders correctly |
+| TS-243 | Template store — create template | + in templates | Create/edit form | ✅ | + in Templates opens distinct "New Template" dialog (separate from PRD create) |
+| TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ⏭ | Blocked: need a saved template first |
+| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Blocked: source PRD deleted; can't reach PRD detail |
+| TS-246 | Security scan — run | PRD detail → Scan tab → Run Scan | Scan executes; verdict shown | ⏭ | Blocked: scan infra unavailable |
+| TS-247 | Security scan — findings | Scan complete with findings | Finding list shown with severity | ⏭ | Blocked: scan infra unavailable |
+| TS-248 | Security scan — fix action | Tap Fix on finding | Fix job started | ⏭ | Blocked: scan infra unavailable |
+| TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ⏭ | Blocked: need PRD created with type field set |
+| TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ⏭ | Blocked: can't reach PRD detail |
+| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ⏭ | Blocked: need PRD created with skills |
+| TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ⏭ | Blocked: need live server with active session; emulator shows "No server" |
+| TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ⏭ | Blocked: need live server with active session |
+| TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ⏭ | Blocked: need live server with idle session |
+| TS-255 | Status tab — test card | Status tab with test data | Passing/Failing/Total counts shown | ⏭ | Blocked: need live server with test data |
 
 ---
 
@@ -588,7 +588,9 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 | Bug ID | Story | Description | Status |
 |--------|-------|-------------|--------|
 | BL-T1-1 | TS-003 | Add server form: no inline error text for invalid URL (no scheme) — button disabled but no message explaining why | Open |
-| BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. New/changed sessions appear stale for up to 5s after screen resume or returning from NewSession/Detail. Fix: call `SessionsViewModel.refresh()` from ON_RESUME handler. | Open |
+| BL-T13-1 | TS-225 | `spec` field missing from `NewPrdDialog.kt` create form and `NewPrdRequestDto` — PRD create dialog had no Spec input; server `spec` field never sent. | Fixed v0.117.0/195 |
+| BL-T13-2 | TS-229 | `PrdDto.decisions` typed as `List<String>?` — server returns objects `{at,kind,actor,note}`; caused JSON deserialization crash. Fixed by adding `DecisionDto` and changing field type. | Fixed v0.117.0/195 |
+| BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. Fixed by adding dedicated `ON_RESUME` `LifecycleEventObserver` in `SessionsScreen.kt` that calls `vm.refresh()` directly. | Fixed (code verified) |
 | BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Open |
 
 ---

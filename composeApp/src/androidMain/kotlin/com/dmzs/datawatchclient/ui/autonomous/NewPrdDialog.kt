@@ -53,6 +53,7 @@ internal fun NewPrdDialog(
 ) {
     var name by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
+    var spec by remember { mutableStateOf("") }
 
     /** "__dir__" sentinel = project-directory mode; else = profile name. */
     var profile by remember { mutableStateOf("__dir__") }
@@ -157,6 +158,14 @@ internal fun NewPrdDialog(
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.new_prd_display_title_label)) },
                     singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
+                OutlinedTextField(
+                    value = spec,
+                    onValueChange = { spec = it },
+                    label = { Text(stringResource(R.string.new_prd_spec_label)) },
+                    minLines = 3,
+                    maxLines = 6,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
 
@@ -405,6 +414,7 @@ internal fun NewPrdDialog(
                             NewPrdRequestDto(
                                 name = name.trim(),
                                 title = title.trim().ifBlank { null },
+                                spec = spec.trim().ifBlank { null },
                                 projectDir = projectDir.trim().ifBlank { null },
                                 backend = backend.ifBlank { null },
                                 effort = effort.ifBlank { null },
@@ -419,6 +429,7 @@ internal fun NewPrdDialog(
                             NewPrdRequestDto(
                                 name = name.trim(),
                                 title = title.trim().ifBlank { null },
+                                spec = spec.trim().ifBlank { null },
                                 projectProfile = profile,
                                 clusterProfile = cluster.ifBlank { null },
                                 decompositionProfile = decomp.ifBlank { null },
