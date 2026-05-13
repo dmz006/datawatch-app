@@ -58,6 +58,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -2369,29 +2370,36 @@ public class RestTransport(
         var backoff = 1_000L
         while (true) {
             try {
-                val res = client.get(url) {
+                client.prepareGet(url) {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
-                }
-                val channel = res.bodyAsChannel()
-                var event = ""
-                var data = ""
-                backoff = 1_000L
-                while (true) {
-                    val line = channel.readUTF8Line() ?: break
-                    when {
-                        line.startsWith("event:") -> event = line.removePrefix("event:").trim()
-                        line.startsWith("data:") -> data = line.removePrefix("data:").trim()
-                        line.isBlank() && event == "message" && data.isNotBlank() -> {
-                            runCatching {
-                                Json.decodeFromString<com.dmzs.datawatchclient.transport.dto.PushEventDto>(data)
-                            }.onSuccess { emit(it) }
-                            event = ""; data = ""
+                    timeout {
+                        // SSE stream is unbounded — no request timeout; keep global connect/socket timeouts
+                        requestTimeoutMillis = Long.MAX_VALUE
+                        socketTimeoutMillis = 30_000L
+                        connectTimeoutMillis = 5_000L
+                    }
+                }.execute { res ->
+                    val channel = res.bodyAsChannel()
+                    var data = ""
+                    backoff = 1_000L
+                    while (true) {
+                        val line = channel.readUTF8Line() ?: break
+                        when {
+                            line.startsWith("data:") -> data = line.removePrefix("data:").trim()
+                            line.isBlank() && data.isNotBlank() -> {
+                                runCatching {
+                                    DefaultJson.decodeFromString<com.dmzs.datawatchclient.transport.dto.PushEventDto>(data)
+                                }.onSuccess { dto ->
+                                    if (dto.event != "open" && dto.event != "keepalive") emit(dto)
+                                }
+                                data = ""
+                            }
+                            line.isBlank() -> data = ""
                         }
-                        line.isBlank() -> { event = ""; data = "" }
                     }
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Throwable) {
+            catch (e: Throwable) {
                 delay(backoff)
                 backoff = (backoff * 2).coerceAtMost(30_000L)
             }

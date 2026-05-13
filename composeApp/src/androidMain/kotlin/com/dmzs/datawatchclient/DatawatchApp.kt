@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient
 
 import android.app.Application
 import com.dmzs.datawatchclient.network.VpnMonitor
+import com.dmzs.datawatchclient.push.ForegroundSessionTracker
 import com.dmzs.datawatchclient.storage.DatabaseFactory
 
 /**
@@ -22,6 +23,7 @@ public class DatawatchApp : Application() {
     override fun onCreate() {
         super.onCreate()
         DatabaseFactory.loadNativeLib()
+        ForegroundSessionTracker.isForeground("") // register lifecycle observer on main thread
         com.dmzs.datawatchclient.di.ServiceLocator.init(this)
         // Publish session counts to the paired Wear device. Watch's
         // WearSessionCountsViewModel subscribes to /datawatch/counts
