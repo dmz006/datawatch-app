@@ -629,7 +629,15 @@ public data class PrdDto(
     val type: String? = null,
     @SerialName("guided_mode") val guidedMode: Boolean = false,
     val skills: List<String> = emptyList(),
-    val decisions: List<String>? = null,
+    val decisions: List<DecisionDto>? = null,
+)
+
+@Serializable
+public data class DecisionDto(
+    val at: String? = null,
+    val kind: String? = null,
+    val actor: String? = null,
+    val note: String? = null,
 )
 
 @Serializable
@@ -667,6 +675,7 @@ public data class NewPrdRequestDto(
     val type: String? = null,
     @SerialName("guided_mode") val guidedMode: Boolean? = null,
     val skills: List<String>? = null,
+    val spec: String? = null,
 )
 
 @Serializable

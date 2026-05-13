@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.transport.dto.DecisionDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
@@ -310,7 +311,12 @@ internal fun PrdDetailDialog(
                                 )
                             } else {
                                 decisions.forEach { decision ->
-                                    Text("• $decision", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                    val label = buildString {
+                                        decision.kind?.let { append("[$it] ") }
+                                        append(decision.note ?: "")
+                                        decision.actor?.let { append(" ($it)") }
+                                    }
+                                    Text("• $label", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
                                 }
                             }
                         }

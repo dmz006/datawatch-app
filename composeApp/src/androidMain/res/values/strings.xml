@@ -257,6 +257,7 @@
     <string name="automata_type_label_label">Label</string>
     <string name="automata_type_color_label">Color (hex, optional)</string>
     <string name="new_prd_type_label">Type (optional)</string>
+    <string name="new_prd_spec_label">Spec (optional)</string>
     <string name="new_prd_guided_mode_label">Guided Mode</string>
     <string name="new_prd_skills_label">Skills (comma-separated)</string>
 
