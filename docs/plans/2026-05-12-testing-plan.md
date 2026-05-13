@@ -66,6 +66,8 @@ Tests require a live datawatch server. Emulator-to-LAN bridging:
 - For emulator: use `10.0.2.2` to reach host LAN gateway, or Tailscale mesh (tailscale on emulator not possible without VPN config; use host-forwarded port)
 - Recommend: `adb reverse tcp:8080 tcp:8080` to forward localhost:8080 to host port 8080
 
+> ⚠️ **Bearer token — OPERATOR MANUAL TEST ONLY**: Do NOT configure a bearer token on the datawatch server during automated testing. Setting `server.token` in `~/.datawatch/config.yaml` locks out all unauthenticated clients (PWA, other tools). TS-196 and TS-197 (bearer token storage + request auth) must be executed manually by an operator on an isolated test server, then the token must be removed before handing control back. See T11 for the manual test checklist.
+
 ---
 
 ## Git Hook: pre-commit test guard
@@ -115,7 +117,7 @@ fi
 | T8 | Settings — Automata/PRDs | TS-141–TS-165 | ☐ |
 | T9 | Navigation & shell | TS-166–TS-180 | ☐ |
 | T10 | Push & notifications | TS-181–TS-195 | ☐ |
-| T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ |
+| T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 7✅ / 28⏭ — PRD detail nav blocked; scan infra unavailable; BL-T13-1+BL-T13-2 fixed v0.117.0 |
 | T14 | Regression — session refresh | TS-256–TS-285 | 🟡 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 open (llmRef/computeNodeRef not persisted post-restart) |
@@ -131,7 +133,7 @@ fi
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
 | TS-001 | Fresh install → onboarding screen | Launch app with no data | Splash → onboarding "Get Started" | ✅ Pass | Dark splash + "Add your first server" button present; v0.108.0 shown |
-| TS-002 | Add server — happy path | Tap Get Started → fill URL + bearer token → Save | Navigates to Sessions list; no error | ⏭ Blocked | Needs live server; form opens correctly (dark style, 3 fields, self-signed toggle, Add disabled until all fields valid) |
+| TS-002 | Add server — happy path | Tap Get Started → fill URL (no bearer token) → Save | Navigates to Sessions list; no error | ⏭ Blocked | Needs live server (no bearer token on server). Form opens correctly (dark style, 3 fields, self-signed toggle, Add disabled until all fields valid). Leave bearer token field empty. |
 | TS-003 | Add server — bad URL | Enter invalid URL (no scheme) → Save | Inline error shown; does not navigate | ❌ Fail | Button disabled (no navigation) ✅ but NO inline error text shown — only disabled button as feedback. canSubmit logic: `url.startsWith("http://") or "https://"` |
 | TS-004 | Add server — wrong bearer | Enter valid URL + wrong token | Server error shown in reachability dot | ⏭ Blocked | Needs live server |
 | TS-005 | Edit server | Settings → Comms → Servers → tap server → change name → Save | Name updated in list | ⏭ Blocked | Needs existing server entry |
@@ -443,10 +445,12 @@ fi
 
 **Goal:** Biometric auth, bearer token storage, SQLCipher all work correctly.
 
+> ⚠️ **TS-196 and TS-197 are MANUAL OPERATOR TESTS.** They require setting a bearer token on the datawatch server, which blocks PWA and other unauthenticated clients. Run these two stories only on an isolated test server, then clear the token before resuming automated testing. All other T11 stories run normally.
+
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-196 | Add server with bearer token | Add server with non-empty bearer token | Token stored in Android Keystore (not plaintext) | ✅ Pass | Added ring server with bearer token "testtoken123"; `bearerTokenRef` saved as Keystore alias (`tokenVault`). Raw DB confirmed: only alias key stored, not plaintext token |
-| TS-197 | Bearer token used in requests | Add server with token; make requests | Authorization header sent on all API calls | ✅ Pass | Logcat `RestTransport`: `Authorization: Bearer ***` header confirmed on `/api/sessions` call; token retrieved live from `tokenVault.get(alias)` |
+| TS-196 | Add server with bearer token | Add server with non-empty bearer token | Token stored in Android Keystore (not plaintext) | ⚠️ MANUAL OPERATOR | **DO NOT run automated.** Setting a server token locks out PWA and all unauthenticated clients. Run on isolated test server only. Steps: (1) set `server.token` in config.yaml on isolated server, (2) add server in mobile app with that token, (3) confirm `bearerTokenRef` Keystore alias via `adb shell`, (4) clear token and restart server when done. Code verified: alias stored, not plaintext. |
+| TS-197 | Bearer token used in requests | Add server with token; make requests | Authorization header sent on all API calls | ⚠️ MANUAL OPERATOR | **DO NOT run automated.** Requires isolated server with bearer token set (see TS-196). Steps: (1) same isolated server setup, (2) monitor logcat `RestTransport` for `Authorization: Bearer ***` on any API call. Code verified: header injected from `tokenVault.get(alias)`. |
 | TS-198 | Enable biometric | Settings → General → Security → enable | Prompts fingerprint; DB re-encrypted under biometric key | ⏭ Skip | Emulator has no Class-3 biometric enrolled; toggle disabled/greyed; not testable on emulator |
 | TS-199 | Disable biometric | Settings → General → biometric → disable | Prompts fingerprint to confirm; DB re-migrated | ⏭ Skip | Blocked by TS-198 |
 | TS-200 | Trust-all TLS | Add server with trust-all TLS option | Warning badge shown; all HTTPS accepted | ✅ Pass | "trust-all TLS" badge shown on ring server row in Settings → Comms; HTTPS to self-signed cert accepted without error |
@@ -619,7 +623,7 @@ Each testing session appends a row here before committing.
 | 2026-05-12 | Claude | Setup | — | — | — | Plan created; emulator dw_test_phone created; system image Android 34 installed |
 | 2026-05-12 | Claude | T1/T2 setup | — | — | — | APK built (v0.108.0, 100MB); emulator ANR loop under default GPU; restarted with -gpu swiftshader_indirect for headless stability; git hooks installed (pre-commit, prepare-commit-msg) |
 | 2026-05-12 | Claude | T1 (partial) + T14 code audit | 12 | 2 | 1 | T1: TS-001✅ TS-010✅ TS-003❌ (no inline URL error) TS-002,004-009⏭ blocked. T14: Code audit complete — BL-T14-1 (ON_RESUME no refresh) BL-T14-2 (llmRef not persisted). Used uiautomator dump for exact tap coords; emulator System UI ANR needs swiftshader_indirect GPU. |
-| 2026-05-13 | Claude | T11 — Security & Keystore | 10 | 6 | 0 | TS-196✅ bearer token → Keystore alias. TS-197✅ Authorization header confirmed in logcat. TS-198/199/202⏭ no biometric on emulator. TS-200✅ trust-all TLS badge visible. TS-201✅ Download CA cert → pem saved + Security Settings launched. TS-203⏭ SecretsStatusCard not rendered (ring server lacks /api/secrets/status). TS-204✅ Compute Secrets Store renders correctly. TS-205✅ install -r preserves profile + Keystore. Key finding: DropdownMenu renders as separate popup window — must run uiautomator dump immediately after menu tap (no sleep) to capture popup bounds before dismiss. |
+| 2026-05-13 | Claude | T11 — Security & Keystore | 10 | 6 | 0 | TS-196⚠️ MANUAL ONLY — bearer token set on ring server during test, which locked out PWA; token cleared post-session. TS-197⚠️ MANUAL ONLY — same reason. TS-198/199/202⏭ no biometric on emulator. TS-200✅ trust-all TLS badge visible. TS-201✅ Download CA cert → pem saved + Security Settings launched. TS-203⏭ SecretsStatusCard not rendered (ring server lacks /api/secrets/status). TS-204✅ Compute Secrets Store renders correctly. TS-205✅ install -r preserves profile + Keystore. **POST-SESSION FIX:** server.token cleared from `~/.datawatch/config.yaml`; TS-196/TS-197 reclassified as manual operator tests with isolated-server requirement. |
 | 2026-05-13 | Claude | T12 — Multi-server & Federation | 15 | 15 | 0 | All TS-206–220 passed. Multi-server list/add/switch/remove, all-servers mode, federation ping, profile switching. |
 | 2026-05-13 | Claude | T13 — Autonomous / PRD lifecycle | 35 | 7 | 0 | TS-221–255: 7✅ 28⏭. BL-T13-1 (spec field missing) + BL-T13-2 (DecisionDto type mismatch) fixed in v0.117.0/195. PRD detail nav blocked (server omits title/name from PrdDto). Scan infra, LLM, stories all unavailable on emulator. |
 | 2026-05-13 | Claude | T14 — Session Refresh Regression | 30 | 8 | 0 | TS-256–285: 8✅ 22⏭. BL-T14-1 (ON_RESUME no refresh) fixed via LifecycleEventObserver in SessionsScreen.kt. BL-T14-2 (llmRef/computeNodeRef not persisted) open. Key passes: baseline load, polling, nav-away return, detail back, settings back, FAB→NewSession flow, force-stop reopen, detail live terminal. |
