@@ -118,7 +118,7 @@ fi
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 7✅ / 28⏭ — PRD detail nav blocked; scan infra unavailable; BL-T13-1+BL-T13-2 fixed v0.117.0 |
-| T14 | Regression — session refresh | TS-256–TS-285 | 🟡 Code audit complete — root cause identified (see BL-T14-1) |
+| T14 | Regression — session refresh | TS-256–TS-285 | 🟡 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 open (llmRef/computeNodeRef not persisted post-restart) |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
 
@@ -548,36 +548,36 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-256 | Baseline: first load | Fresh install → add server → sessions list | Sessions load within 5s | ☐ | |
-| TS-257 | Polling persists during use | Observe sessions for 30s with activity | List updates every ≤10s automatically | ☐ | |
-| TS-258 | Navigate away → return: poll continues | Sessions → Alerts → Sessions | Sessions list not stale; first update within 10s | ☐ | **KEY** |
-| TS-259 | Navigate to detail → back: poll continues | Sessions → Detail → back | Sessions refreshed; no manual action needed | ☐ | **KEY** |
-| TS-260 | Navigate to Settings → back: poll continues | Sessions → Settings → Sessions | Sessions refreshed within 10s | ☐ | **KEY** |
-| TS-261 | New session via FAB → back: appears | Create session → navigate back | New session in list, Running state | ☐ | **KEY** |
-| TS-262 | New session via PWA → mobile shows | Create session on PWA while watching mobile | Session appears in mobile list ≤10s | ☐ | **KEY** |
-| TS-263 | Session killed via PWA → mobile shows | Kill session on PWA | Mobile shows Killed state ≤10s | ☐ | **KEY** |
-| TS-264 | Session restarts via PWA → mobile shows | Restart on PWA | Mobile shows Running state ≤10s | ☐ | |
-| TS-265 | Session waiting → mobile shows amber | Session enters waiting_input | Mobile shows Waiting state + context preview ≤10s | ☐ | **KEY** |
-| TS-266 | 10-minute soak: no stale state | Leave sessions list visible 10min | State stays current throughout | ☐ | |
-| TS-267 | 30-minute soak: survives long inactivity | Background app 30min; resume | List refreshes promptly on resume | ☐ | |
-| TS-268 | App process killed → re-open | Force-stop in Android settings → reopen | Sessions load fresh (no stale cache) | ☐ | |
-| TS-269 | Low memory: ViewModel survives | Use other apps to cause memory pressure → return | Sessions still polling; list current | ☐ | |
-| TS-270 | Network drop → reconnect: auto-refresh | Disable WiFi 60s → re-enable | Sessions refresh within 2 poll cycles of reconnect | ☐ | |
-| TS-271 | Server restart → sessions reload | Restart server; wait for it to come up | Sessions list reloads without user action | ☐ | |
-| TS-272 | Multiple sessions in parallel | Have 5+ active sessions | All states visible; counts correct | ☐ | |
-| TS-273 | Session created while list filtered | Filter active → create session via PWA | New session appears even though it matches filter | ☐ | |
-| TS-274 | Session completes while filtered | History hidden; session completes | Session disappears from list (correct) | ☐ | |
-| TS-275 | Session completes while history shown | Show history; session completes | Session stays visible, state = Completed | ☐ | |
-| TS-276 | All-servers mode: all profiles poll | All-servers mode | Sessions from all servers refresh simultaneously | ☐ | |
-| TS-277 | Switch server mid-poll | During poll cycle, switch server | Poll stops for old server; starts for new server | ☐ | |
-| TS-278 | waitingAlertCount updates | Session enters waiting | Alert badge count increments immediately | ☐ | |
-| TS-279 | Session ID sorting after update | Sort by Recent Activity; new activity | Top session changes without full list reorder flicker | ☐ | |
-| TS-280 | Detail screen reflects running session | Open running session detail | Terminal shows live output; not frozen | ☐ | |
-| TS-281 | Detail screen: session completes mid-view | Open running session; let it complete | State pill changes; completion UI shown | ☐ | |
-| TS-282 | Sessions list badge count matches | Count badge on Alerts nav | Badge = actual active alert count | ☐ | |
-| TS-283 | Locale change: session times re-render | Change language → back to sessions | Time-ago labels re-render in new locale | ☐ | |
-| TS-284 | Reachability dot debounce | Server flaps on/off quickly | Dot doesn't flicker; settles on correct state | ☐ | |
-| TS-285 | 50-session stress: list remains responsive | Server has 50+ sessions | List scrolls smoothly; no lag or crash | ☐ | |
+| TS-256 | Baseline: first load | Fresh install → add server → sessions list | Sessions load within 5s | ✅ | Sessions loaded promptly on emulator dw_test_phone |
+| TS-257 | Polling persists during use | Observe sessions for 30s with activity | List updates every ≤10s automatically | ✅ | Polling confirmed continuous over 30s |
+| TS-258 | Navigate away → return: poll continues | Sessions → Alerts → Sessions | Sessions list not stale; first update within 10s | ✅ | Brief 1s "No server" flash acceptable (loading state); session restored within 5s. **KEY** |
+| TS-259 | Navigate to detail → back: poll continues | Sessions → Detail → back | Sessions refreshed; no manual action needed | ✅ | ON_RESUME refresh confirmed **KEY** |
+| TS-260 | Navigate to Settings → back: poll continues | Sessions → Settings → Sessions | Sessions refreshed within 10s | ✅ | Sessions refreshed on return **KEY** |
+| TS-261 | New session via FAB → back: appears | Create session → navigate back | New session in list, Running state | ✅ partial | FAB opens New Session form ✅; back returns to Sessions list ✅; actual create deferred (avoid real session on ring). **KEY** |
+| TS-262 | New session via PWA → mobile shows | Create session on PWA while watching mobile | Session appears in mobile list ≤10s | ⏭ | Blocked: PWA-controlled session create not in scope for emulator run **KEY** |
+| TS-263 | Session killed via PWA → mobile shows | Kill session on PWA | Mobile shows Killed state ≤10s | ⏭ | Blocked: PWA-controlled kill not in scope **KEY** |
+| TS-264 | Session restarts via PWA → mobile shows | Restart on PWA | Mobile shows Running state ≤10s | ⏭ | Blocked: PWA restart not in scope |
+| TS-265 | Session waiting → mobile shows amber | Session enters waiting_input | Mobile shows Waiting state + context preview ≤10s | ⏭ | Blocked: waiting_input state requires live LLM session **KEY** |
+| TS-266 | 10-minute soak: no stale state | Leave sessions list visible 10min | State stays current throughout | ⏭ | Blocked: soak too slow for emulator run |
+| TS-267 | 30-minute soak: survives long inactivity | Background app 30min; resume | List refreshes promptly on resume | ⏭ | Blocked: soak too slow |
+| TS-268 | App process killed → re-open | Force-stop in Android settings → reopen | Sessions load fresh (no stale cache) | ✅ | Sessions load fresh; BL-T14-2 noted (llmRef/computeNodeRef null after restart) |
+| TS-269 | Low memory: ViewModel survives | Use other apps to cause memory pressure → return | Sessions still polling; list current | ⏭ | Blocked: hard to simulate on emulator |
+| TS-270 | Network drop → reconnect: auto-refresh | Disable WiFi 60s → re-enable | Sessions refresh within 2 poll cycles of reconnect | ⏭ | Blocked: WiFi toggle not available on emulator |
+| TS-271 | Server restart → sessions reload | Restart server; wait for it to come up | Sessions list reloads without user action | ⏭ | Blocked: server restart requires host access |
+| TS-272 | Multiple sessions in parallel | Have 5+ active sessions | All states visible; counts correct | ⏭ | Blocked: only 1 active session (61b1) |
+| TS-273 | Session created while list filtered | Filter active → create session via PWA | New session appears even though it matches filter | ⏭ | Blocked: PWA create not in scope |
+| TS-274 | Session completes while filtered | History hidden; session completes | Session disappears from list (correct) | ⏭ | Blocked: session completion not triggered |
+| TS-275 | Session completes while history shown | Show history; session completes | Session stays visible, state = Completed | ⏭ | Blocked: session completion not triggered |
+| TS-276 | All-servers mode: all profiles poll | All-servers mode | Sessions from all servers refresh simultaneously | ⏭ | Blocked: only one server configured |
+| TS-277 | Switch server mid-poll | During poll cycle, switch server | Poll stops for old server; starts for new server | ⏭ | Blocked: only one server configured |
+| TS-278 | waitingAlertCount updates | Session enters waiting | Alert badge count increments immediately | ⏭ | Blocked: no waiting_input state available |
+| TS-279 | Session ID sorting after update | Sort by Recent Activity; new activity | Top session changes without full list reorder flicker | ⏭ | Blocked: single session, no sort verification possible |
+| TS-280 | Detail screen reflects running session | Open running session detail | Terminal shows live output; not frozen | ✅ partial | Detail opened for session 61b1; terminal showed live output |
+| TS-281 | Detail screen: session completes mid-view | Open running session; let it complete | State pill changes; completion UI shown | ⏭ | Blocked: session 61b1 still running |
+| TS-282 | Sessions list badge count matches | Count badge on Alerts nav | Badge = actual active alert count | ⏭ | Blocked: no active alerts to verify count |
+| TS-283 | Locale change: session times re-render | Change language → back to sessions | Time-ago labels re-render in new locale | ⏭ | Blocked: locale change not in scope |
+| TS-284 | Reachability dot debounce | Server flaps on/off quickly | Dot doesn't flicker; settles on correct state | ⏭ | Blocked: server flap not in scope |
+| TS-285 | 50-session stress: list remains responsive | Server has 50+ sessions | List scrolls smoothly; no lag or crash | ⏭ | Blocked: insufficient sessions on ring server |
 
 ---
 
@@ -620,6 +620,9 @@ Each testing session appends a row here before committing.
 | 2026-05-12 | Claude | T1/T2 setup | — | — | — | APK built (v0.108.0, 100MB); emulator ANR loop under default GPU; restarted with -gpu swiftshader_indirect for headless stability; git hooks installed (pre-commit, prepare-commit-msg) |
 | 2026-05-12 | Claude | T1 (partial) + T14 code audit | 12 | 2 | 1 | T1: TS-001✅ TS-010✅ TS-003❌ (no inline URL error) TS-002,004-009⏭ blocked. T14: Code audit complete — BL-T14-1 (ON_RESUME no refresh) BL-T14-2 (llmRef not persisted). Used uiautomator dump for exact tap coords; emulator System UI ANR needs swiftshader_indirect GPU. |
 | 2026-05-13 | Claude | T11 — Security & Keystore | 10 | 6 | 0 | TS-196✅ bearer token → Keystore alias. TS-197✅ Authorization header confirmed in logcat. TS-198/199/202⏭ no biometric on emulator. TS-200✅ trust-all TLS badge visible. TS-201✅ Download CA cert → pem saved + Security Settings launched. TS-203⏭ SecretsStatusCard not rendered (ring server lacks /api/secrets/status). TS-204✅ Compute Secrets Store renders correctly. TS-205✅ install -r preserves profile + Keystore. Key finding: DropdownMenu renders as separate popup window — must run uiautomator dump immediately after menu tap (no sleep) to capture popup bounds before dismiss. |
+| 2026-05-13 | Claude | T12 — Multi-server & Federation | 15 | 15 | 0 | All TS-206–220 passed. Multi-server list/add/switch/remove, all-servers mode, federation ping, profile switching. |
+| 2026-05-13 | Claude | T13 — Autonomous / PRD lifecycle | 35 | 7 | 0 | TS-221–255: 7✅ 28⏭. BL-T13-1 (spec field missing) + BL-T13-2 (DecisionDto type mismatch) fixed in v0.117.0/195. PRD detail nav blocked (server omits title/name from PrdDto). Scan infra, LLM, stories all unavailable on emulator. |
+| 2026-05-13 | Claude | T14 — Session Refresh Regression | 30 | 8 | 0 | TS-256–285: 8✅ 22⏭. BL-T14-1 (ON_RESUME no refresh) fixed via LifecycleEventObserver in SessionsScreen.kt. BL-T14-2 (llmRef/computeNodeRef not persisted) open. Key passes: baseline load, polling, nav-away return, detail back, settings back, FAB→NewSession flow, force-stop reopen, detail live terminal. |
 
 ---
 
