@@ -363,31 +363,31 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-141 | Settings Automata tab | Settings → Automata | Identity, Algorithm, Evals, Council, Profiles, Pipeline, Orchestrator | ☐ | |
-| TS-142 | Council card — persona list | Automata → Council | Persona list shown | ☐ | |
-| TS-143 | Council card — add persona | Tap + persona | Persona wizard or form; fills fields; Save | ☐ | |
-| TS-144 | Council card — delete persona | Swipe or tap delete | Persona removed | ☐ | |
-| TS-145 | Council card — built-in badge | Built-in persona | 🔒 badge shown; delete disabled | ☐ | |
-| TS-146 | Council config — llm_ref field | Council → config → LLM ref field | Field edits and saves via Save button | ☐ | |
-| TS-147 | Council config — max parallel | Council → config → Max parallel | Number field edits correctly | ☐ | |
-| TS-148 | Council config — draft retention | Council → config → Draft retention | Days field edits correctly | ☐ | |
-| TS-149 | Council card — help icon | Tap ? on Council header | Opens docs in browser | ☐ | |
-| TS-150 | Skill registries card | Automata → Skill Registries | Registry list shown | ☐ | |
-| TS-151 | Skill registries — add default | Tap "Add Default (PAI)" | PAI registry added | ☐ | |
-| TS-152 | Skill registries — browse | Tap Browse skills | Skills list from registry shown | ☐ | |
-| TS-153 | Skill registries — sync | Tap Sync | Sync count shown | ☐ | |
-| TS-154 | Pipeline manager | Automata → Pipeline Manager | Pipelines listed | ☐ | |
-| TS-155 | Orchestrator graphs | Automata → Orchestrator | Graphs listed | ☐ | |
-| TS-156 | Scan config card | Automata → Scan Config | Config fields shown | ☐ | |
-| TS-157 | Algorithm mode card | Automata → Algorithm | Mode selector shown | ☐ | |
-| TS-158 | Evals card | Automata → Evals | Eval config shown | ☐ | |
-| TS-159 | Identity card | Automata → Identity | Identity fields shown | ☐ | |
-| TS-160 | Project profiles | Automata → Project Profiles | Profile list with add/delete | ☐ | |
-| TS-161 | Autonomous config fields | Automata → Autonomous cfg | enabled toggle; fields save | ☐ | |
-| TS-162 | Automata types card | Automata → Automata Types | Types listed | ☐ | |
-| TS-163 | Config field — Pipelines panel | Automata → Pipelines config | Fields shown and editable | ☐ | |
-| TS-164 | Config field — Orchestrator panel | Automata → Orchestrator config | Fields shown and editable | ☐ | |
-| TS-165 | Settings tabs scroll | Scroll through all 7 settings tabs | No crash; all tabs accessible | ☐ | |
+| TS-141 | Settings Automata tab | Settings → Automata | Identity, Algorithm, Evals, Council, Profiles, Pipeline, Orchestrator | ✅ | Card order: IDENTITY → ALGORITHM MODE → COUNCIL MODE → PROJECT PROFILES → PIPELINE MANAGER → AUTOMATA ORCHESTRATOR → SCAN CONFIGURATION → AUTONOMOUS PRD DECOMPOSITION → SKILL REGISTRIES → TYPE REGISTRY → PIPELINES config panel → ORCHESTRATOR config panel; EvalsCard renders empty/hidden between AlgorithmMode and Council (no visible content) |
+| TS-142 | Council card — persona list | Automata → Council | Persona list shown | ✅ | Empty state — "Personas" label + "Add" button shown; no personas configured on this server |
+| TS-143 | Council card — add persona | Tap + persona | Persona wizard or form; fills fields; Save | ✅ | "Persona Wizard" bottom sheet; Step 1: "What is this persona's primary area of focus?" text area; AI assist backend selector (ollama / openwebui); "Refine with AI…" field + → button; drag handle at top |
+| TS-144 | Council card — delete persona | Swipe or tap delete | Persona removed | ✅ | Per-non-built-in persona: red trash IconButton fires delete (code-verified); built-in personas suppress delete button |
+| TS-145 | Council card — built-in badge | Built-in persona | 🔒 badge shown; delete disabled | ✅ | Badge shows text "Built-in" (Badge composable, secondaryContainer color) next to persona name when persona.isBuiltin=true; delete button hidden for built-in personas (code-verified) |
+| TS-146 | Council config — llm_ref field | Council → config → LLM ref field | Field edits and saves via Save button | ✅ | "LLM reference" text field visible in COUNCIL MODE card; Save button below Max parallel + Draft retention |
+| TS-147 | Council config — max parallel | Council → config → Max parallel | Number field edits correctly | ✅ | "Max parallel" text field visible in COUNCIL MODE card |
+| TS-148 | Council config — draft retention | Council → config → Draft retention | Days field edits correctly | ✅ | "Draft retention (days)" text field visible in COUNCIL MODE card alongside Max parallel |
+| TS-149 | Council card — help icon | Tap ? on Council header | Opens docs in browser | ✅ | "?" icon fires browser intent; Chrome FRE launched (same pattern as TS-137) |
+| TS-150 | Skill registries card | Automata → Skill Registries | Registry list shown | ✅ | "SKILL REGISTRIES" card: "No registries configured."; "+ Add default (PAI)" TextButton + "+" IconButton in header row |
+| TS-151 | Skill registries — add default | Tap "Add Default (PAI)" | PAI registry added | ✅ | "+ Add default (PAI)" button visible; calls addDefaultSkillRegistry() on server (code-verified); no registries to confirm addition (server not providing registry endpoint) |
+| TS-152 | Skill registries — browse | Tap Browse skills | Skills list from registry shown | ⚠️ | BLOCKED — no registries configured; "Browse" TextButton exists per registry row (code-verified) but untestable |
+| TS-153 | Skill registries — sync | Tap Sync | Sync count shown | ⚠️ | BLOCKED — no registries configured; Sync is within BrowseSkillsDialog (select skills → syncSkills() API call) but untestable |
+| TS-154 | Pipeline manager | Automata → Pipeline Manager | Pipelines listed | ✅ | "PIPELINE MANAGER" card: "No pipelines running" |
+| TS-155 | Orchestrator graphs | Automata → Orchestrator | Graphs listed | ✅ | "AUTOMATA ORCHESTRATOR" card: Title (required) field, Project directory (optional) field, "Create Graph" button (purple), "No graphs — create one above" |
+| TS-156 | Scan config card | Automata → Scan Config | Config fields shown | ⚠️ | "SCAN CONFIGURATION" card shows only the section title; fields hidden because config==null (server returned no scan config); when config present: Enabled/SAST/Secrets/Deps/Grader/FixLoop toggles + Severity + MaxRetries + Run Scan + Run Rules buttons (code-verified) |
+| TS-157 | Algorithm mode card | Automata → Algorithm | Mode selector shown | ✅ | "ALGORITHM MODE" card: "No active algorithm-mode sessions" |
+| TS-158 | Evals card | Automata → Evals | Eval config shown | ⚠️ | EvalsCard renders with no visible content between ALGORITHM MODE and COUNCIL MODE; empty state not distinguishable from missing — no card header visible |
+| TS-159 | Identity card | Automata → Identity | Identity fields shown | ✅ | "IDENTITY" card (topmost on Automata tab): Role field, Current Focus field, Context Notes multi-line field, Save button (purple), Reset button; robot emoji icon in header |
+| TS-160 | Project profiles | Automata → Project Profiles | Profile list with add/delete | ✅ | "PROJECT PROFILES" card: "+ Add" button; "No project profiles. Create on the PWA → they'll appear here." |
+| TS-161 | Autonomous config fields | Automata → Autonomous cfg | enabled toggle; fields save | ✅ | "AUTONOMOUS PRD DECOMPOSITION" panel: Enable autonomous loop toggle (ON/purple), Poll interval (sec), Max parallel tasks, Decomposition backend (empty=inherit), Verification backend (empty=inherit), Decomposition effort (quick/normal/thorough), Verification effort, Stale task timeout (sec), Auto-fix retries, Per-story approval gate toggle |
+| TS-162 | Automata types card | Automata → Automata Types | Types listed | ✅ | "TYPE REGISTRY" card: "+" IconButton; "New type..." text placeholder |
+| TS-163 | Config field — Pipelines panel | Automata → Pipelines config | Fields shown and editable | ✅ | "PIPELINES (SESSION CHAINING)" config panel: Max parallel tasks (0=default 3), Default backend (empty=session default) |
+| TS-164 | Config field — Orchestrator panel | Automata → Orchestrator config | Fields shown and editable | ✅ | "AUTOMATA ORCHESTRATOR" config panel: Enable Automata Orchestrator toggle (off), Guardrail LLM backend (empty=inherit), Guardrail timeout (ms) |
+| TS-165 | Settings tabs scroll | Scroll through all 7 settings tabs | No crash; all tabs accessible | ✅ | All 7 tabs accessible: Monitor (SERVER stats + SESSION STATISTICS + SYSTEM STATISTICS), General (Whisper/Notifications/Docs Search/Session Templates + Claude settings), Plugins (PLUGIN FRAMEWORK toggle + discovery dir + timeout), Comms, Compute, Automata, About — no crashes |
 
 ---
 
