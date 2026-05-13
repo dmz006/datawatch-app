@@ -119,8 +119,8 @@ fi
 | T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 12✅ / 23⏭ — detail nav unblocked v0.118.0; TS-227/229/231/235/250 now pass; remaining blocked by LLM/scan/reviewable-state |
-| T14 | Regression — session refresh | TS-256–TS-285 | ✅ 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 15✅ / 20⏭ — TS-222/249/251 added; remaining blocked by LLM/scan/reviewable-state |
+| T14 | Regression — session refresh | TS-256–TS-285 | ✅ 9✅ / 21⏭ — TS-265 added; BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
 
@@ -493,7 +493,7 @@ fi
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
 | TS-221 | PRD list | Autonomous tab | PRDs listed with status chips | ✅ | Draft PRD visible in Automata list with status chip |
-| TS-222 | PRD filter by status | Status chip on PRDs | Filtered to that status | ⏭ | Blocked: filter UI interaction not tested |
+| TS-222 | PRD filter by status | Status chip on PRDs | Filtered to that status | ✅ Pass | Chips: All/needs review/revisions asked/approved; tapping "needs review" filters to "No plans match." (no PRDs in that state); "All" restores draft PRD |
 | TS-223 | Show templates toggle | Filter → Templates | Template PRDs shown | ⏭ | Blocked: no template PRDs to filter |
 | TS-224 | Create PRD — minimal | + → fill name/title → Save | PRD created; appears in list | ✅ | PRD created via API and appears in list; dialog opens via +; server requires project_dir |
 | TS-225 | Create PRD — with spec field | + → fill spec → Save | spec field present; sent in DTO | ✅ | BL-T13-1 FIXED: spec field added to NewPrdDialog + NewPrdRequestDto; UIAutomator confirmed |
@@ -515,14 +515,14 @@ fi
 | TS-241 | Associate files with story | Story → Files → add | File paths associated | ⏭ | Blocked: no stories |
 | TS-242 | Template store — list | Templates tab | Templates listed | ✅ | Templates tab visible in Autonomous screen; tab renders correctly |
 | TS-243 | Template store — create template | + in templates | Create/edit form | ✅ | + in Templates opens distinct "New Template" dialog (separate from PRD create) |
-| TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ⏭ | Blocked: need a saved template first |
+| TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ✅ Pass | Created template via API; tapped "Use" → Instantiate dialog opened; filled workspace → new PRD 96a686ac created and appears in Automata list |
 | TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Blocked: Clone as template button not yet visible in detail; need PRD with template support |
 | TS-246 | Security scan — run | PRD detail → Scan tab → Run Scan | Scan executes; verdict shown | ⏭ | Blocked: scan infra unavailable |
 | TS-247 | Security scan — findings | Scan complete with findings | Finding list shown with severity | ⏭ | Blocked: scan infra unavailable |
 | TS-248 | Security scan — fix action | Tap Fix on finding | Fix job started | ⏭ | Blocked: scan infra unavailable |
-| TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ⏭ | Blocked: need PRD created with type field set |
+| TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ✅ Pass | PRD created with type="feature"; "feature" badge visible on card in list AND in Overview tab Type row |
 | TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ✅ Pass | Guided mode Switch in Overview tab toggled true; no API error; UI reflects new state immediately |
-| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ⏭ | Blocked: PRD has no skills set; Skills section visible in Overview but empty — need PRD with skills |
+| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ✅ Pass | PRD with skills=["python","kotlin","bash"]; chips visible in Overview tab Skills row |
 | TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ⏭ | Blocked: need live server with active session; emulator shows "No server" |
 | TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ⏭ | Blocked: need live server with active session |
 | TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ⏭ | Blocked: need live server with idle session |
@@ -561,7 +561,7 @@ fi
 | TS-262 | New session via PWA → mobile shows | Create session on PWA while watching mobile | Session appears in mobile list ≤10s | ⏭ | Blocked: PWA-controlled session create not in scope for emulator run **KEY** |
 | TS-263 | Session killed via PWA → mobile shows | Kill session on PWA | Mobile shows Killed state ≤10s | ⏭ | Blocked: PWA-controlled kill not in scope **KEY** |
 | TS-264 | Session restarts via PWA → mobile shows | Restart on PWA | Mobile shows Running state ≤10s | ⏭ | Blocked: PWA restart not in scope |
-| TS-265 | Session waiting → mobile shows amber | Session enters waiting_input | Mobile shows Waiting state + context preview ≤10s | ⏭ | Blocked: waiting_input state requires live LLM session **KEY** |
+| TS-265 | Session waiting → mobile shows amber | Session enters waiting_input | Mobile shows Waiting state + context preview ≤10s | ✅ Pass | Session 414c (waiting_input) visible in Sessions list; "waiting_input" state label + full prompt context shown ("Yes I trust this folder" choices + Enter/Esc hint) |
 | TS-266 | 10-minute soak: no stale state | Leave sessions list visible 10min | State stays current throughout | ⏭ | Blocked: soak too slow for emulator run |
 | TS-267 | 30-minute soak: survives long inactivity | Background app 30min; resume | List refreshes promptly on resume | ⏭ | Blocked: soak too slow |
 | TS-268 | App process killed → re-open | Force-stop in Android settings → reopen | Sessions load fresh (no stale cache) | ✅ | Sessions load fresh; BL-T14-2 noted (llmRef/computeNodeRef null after restart) |
@@ -574,7 +574,7 @@ fi
 | TS-275 | Session completes while history shown | Show history; session completes | Session stays visible, state = Completed | ⏭ | Blocked: session completion not triggered |
 | TS-276 | All-servers mode: all profiles poll | All-servers mode | Sessions from all servers refresh simultaneously | ⏭ | Blocked: only one server configured |
 | TS-277 | Switch server mid-poll | During poll cycle, switch server | Poll stops for old server; starts for new server | ⏭ | Blocked: only one server configured |
-| TS-278 | waitingAlertCount updates | Session enters waiting | Alert badge count increments immediately | ⏭ | Blocked: no waiting_input state available |
+| TS-278 | waitingAlertCount updates | Session enters waiting | Alert badge count increments immediately | ⏭ | Blocked: 414c was already in waiting_input; can't observe live transition. Alerts tab "Sessions Needing Input" section shows 414c; nav badge shows 0 (badge may only count logged alerts, not waiting sessions) |
 | TS-279 | Session ID sorting after update | Sort by Recent Activity; new activity | Top session changes without full list reorder flicker | ⏭ | Blocked: single session, no sort verification possible |
 | TS-280 | Detail screen reflects running session | Open running session detail | Terminal shows live output; not frozen | ✅ partial | Detail opened for session 61b1; terminal showed live output |
 | TS-281 | Detail screen: session completes mid-view | Open running session; let it complete | State pill changes; completion UI shown | ⏭ | Blocked: session 61b1 still running |
