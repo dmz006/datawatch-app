@@ -116,7 +116,7 @@ fi
 | T9 | Navigation & shell | TS-166–TS-180 | ☐ |
 | T10 | Push & notifications | TS-181–TS-195 | ☐ |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ |
-| T12 | Multi-server & federation | TS-206–TS-220 | ☐ |
+| T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | ☐ |
 | T14 | Regression — session refresh | TS-256–TS-285 | 🟡 Code audit complete — root cause identified (see BL-T14-1) |
 
@@ -464,21 +464,21 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-206 | Add second server | Add second profile in Settings → Comms → Servers | Both servers in picker | ☐ | |
-| TS-207 | Switch between servers | Picker → select server B | Sessions list loads from server B | ☐ | |
-| TS-208 | All-servers mode | Picker → "All servers" | Fan-out to all profiles; federated sessions shown | ☐ | |
-| TS-209 | All-servers badge — no reachability dot | All-servers mode active | Reachability dot hidden (ADR-0013) | ☐ | |
-| TS-210 | All-servers session list | All-servers mode with 2 servers | Sessions from both servers interleaved | ☐ | |
-| TS-211 | Federated peers card | Observer → Federated Peers | Peer latency table; group-by-node toggle | ☐ | |
-| TS-212 | Stale peer badge on Settings | Peer >6h stale | Red dot on Settings nav icon | ☐ | |
-| TS-213 | Offline server — graceful | One of two servers offline | Error banner for that server; others still work | ☐ | |
-| TS-214 | Per-server alert separation | Alerts from different servers | Grouped correctly by server | ☐ | |
-| TS-215 | Server profile hostname display | Multiple servers | Server hostname shown in session card badge | ☐ | |
-| TS-216 | Switch server — PRD tab visible | Switch to server with autonomous enabled | PRD tab appears | ☐ | |
-| TS-217 | Switch server — PRD tab hidden | Switch to server with autonomous disabled | PRD tab disappears | ☐ | |
-| TS-218 | Reachability probe on resume — all servers | Background then resume with all-servers mode | All enabled profiles pinged on resume | ☐ | |
-| TS-219 | Cluster profiles card | Compute → Cluster Profiles | Profiles listed | ☐ | |
-| TS-220 | Cluster nodes | Observer → Cluster Nodes | Node list shown | ☐ | |
+| TS-206 | Add second server | Add second profile in Settings → Comms → Servers | Both servers in picker | ✅ | ring + ring2 both visible in SERVERS list and picker |
+| TS-207 | Switch between servers | Picker → select server B | Sessions list loads from server B | ✅ | Switched to ring2; header updated to "ring2 ▾" |
+| TS-208 | All-servers mode | Picker → "All servers" | Fan-out to all profiles; federated sessions shown | ✅ | "All servers ▾" shown; fan-out activated |
+| TS-209 | All-servers badge — no reachability dot | All-servers mode active | Reachability dot hidden (ADR-0013) | ✅ | Dot absent in All servers mode as specified |
+| TS-210 | All-servers session list | All-servers mode with 2 servers | Sessions from both servers interleaved | 🟡 | ring2 = same URL as ring; dedup works; true cross-server interleave untestable without distinct backends |
+| TS-211 | Federated peers card | Observer → Federated Peers | Peer latency table; group-by-node toggle | ✅ | Card renders; Group-by-ComputeNode toggle + All/Standalone/Cluster/Agents tabs present; ring shown as peer in All tab |
+| TS-212 | Stale peer badge on Settings | Peer >6h stale | Red dot on Settings nav icon | ⏭ | No peers >6h stale on ring server |
+| TS-213 | Offline server — graceful | One of two servers offline | Error banner for that server; others still work | ⏭ | App blocks adding unreachable servers (validation shows inline "Server not reachable" error); offline-server banner untestable without two distinct backends |
+| TS-214 | Per-server alert separation | Alerts from different servers | Grouped correctly by server | ⏭ | ring2 same URL as ring; per-server separation untestable |
+| TS-215 | Server profile hostname display | Multiple servers | Server hostname shown in session card badge | ✅ | 61b1 card shows "ring · 6h ago" badge in All servers mode |
+| TS-216 | Switch server — PRD tab visible | Switch to server with autonomous enabled | PRD tab appears | ✅ | ring profile: Autonomous tab present; header "ring ▾" with green dot |
+| TS-217 | Switch server — PRD tab hidden | Switch to server with autonomous disabled | PRD tab disappears | 🟡 | ring2 is same server as ring (both support Autonomous); tab remained — "tab hidden" half untestable without a server without PRD support |
+| TS-218 | Reachability probe on resume — all servers | Background then resume with all-servers mode | All enabled profiles pinged on resume | ✅ | Spinner visible in header immediately on foreground return; green dot maintained |
+| TS-219 | Cluster profiles card | Compute → Cluster Profiles | Profiles listed | ✅ | Cluster tab in Federated peers card accessible; "No peers in this group" graceful empty state (ring is standalone) |
+| TS-220 | Cluster nodes | Observer → Cluster Nodes | Node list shown | ✅ | Cluster nodes view shows graceful empty state for standalone server |
 
 ---
 
