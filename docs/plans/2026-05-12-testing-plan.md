@@ -94,9 +94,9 @@ A `prepare-commit-msg` hook injects test-sprint status summary into commit messa
 #!/usr/bin/env bash
 COMMIT_MSG_FILE=$1
 if git diff --cached --name-only | grep -q "testing-plan.md"; then
-  PASS=$(grep -c "✅ Pass" docs/plans/2026-05-12-testing-plan.md 2>/dev/null || echo 0)
-  FAIL=$(grep -c "❌ Fail" docs/plans/2026-05-12-testing-plan.md 2>/dev/null || echo 0)
-  TOTAL=$(grep -c "^| TS-" docs/plans/2026-05-12-testing-plan.md 2>/dev/null || echo 0)
+  PASS=$(grep -c "^| TS-.*✅ Pass" docs/plans/2026-05-12-testing-plan.md 2>/dev/null; true)
+  FAIL=$(grep -c "^| TS-.*❌ Fail" docs/plans/2026-05-12-testing-plan.md 2>/dev/null; true)
+  TOTAL=$(grep -c "^| TS-" docs/plans/2026-05-12-testing-plan.md 2>/dev/null; true)
   sed -i "1s/^/[T-plan: ${PASS}\/${TOTAL} pass, ${FAIL} fail]\n/" "$COMMIT_MSG_FILE"
 fi
 ```
@@ -119,7 +119,7 @@ fi
 | T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 7✅ / 28⏭ — PRD detail nav blocked; scan infra unavailable; BL-T13-1+BL-T13-2 fixed v0.117.0 |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 12✅ / 23⏭ — detail nav unblocked v0.118.0; TS-227/229/231/235/250 now pass; remaining blocked by LLM/scan/reviewable-state |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ 8✅ / 22⏭ — BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
@@ -498,17 +498,17 @@ fi
 | TS-224 | Create PRD — minimal | + → fill name/title → Save | PRD created; appears in list | ✅ | PRD created via API and appears in list; dialog opens via +; server requires project_dir |
 | TS-225 | Create PRD — with spec field | + → fill spec → Save | spec field present; sent in DTO | ✅ | BL-T13-1 FIXED: spec field added to NewPrdDialog + NewPrdRequestDto; UIAutomator confirmed |
 | TS-226 | Create PRD — list refresh | Create PRD → navigate away+back | PRD appears in Automata list | ✅ | id 2be34946 visible after navigate Sessions→Autonomous; card shows draft+date |
-| TS-227 | PRD detail — Overview tab | Tap PRD → Overview tab | Type badge, guided mode, skills shown | ⏭ | Blocked: PRD card tap did not navigate to detail view |
-| TS-228 | PRD detail — Stories tab | PRD detail → Stories tab | Story list with title + description | ⏭ | Blocked: can't reach detail; also need stories from decompose |
-| TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ⏭ | Blocked: can't reach detail (BL-T13-2 DecisionDto fix in place) |
-| TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ⏭ | Blocked: scan infra unavailable |
-| TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ⏭ | Blocked: can't reach PRD detail |
-| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: can't reach detail; LLM node required |
-| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Blocked: need PRD in reviewable state via detail |
-| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Blocked: need PRD detail access |
-| TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ⏭ | Blocked: no LLM node configured on test server |
-| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Blocked: need LLM + PRD detail |
-| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: need PRD detail |
+| TS-227 | PRD detail — Overview tab | Tap PRD → Overview tab | Type badge, guided mode, skills shown | ✅ Pass | PRD card tap opens detail dialog; Overview shows Guided Mode + Skills rows; no type badge (PRD has no type set — expected) |
+| TS-228 | PRD detail — Stories tab | PRD detail → Stories tab | Story list with title + description | ⏭ | Blocked: Stories tab renders "No stories yet (still decomposing?)" — decompose not run; LLM node required |
+| TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ✅ Pass | Decisions tab shows "No decisions logged yet." — no crash; BL-T13-2 DecisionDto fix confirmed |
+| TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ⏭ | Blocked: scan infra unavailable; tab renders correctly with "Run scan" button + "No scan result yet." empty state |
+| TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ✅ Pass | Edit dialog opens with Title + Spec fields pre-filled from existing PRD |
+| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: LLM node required; Decompose button fires 400 from API (correct error handling; no crash) |
+| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Blocked: need PRD in reviewable state; Approve not shown on draft PRD (correct behavior) |
+| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Blocked: need PRD in reviewable state |
+| TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ✅ Pass | LLM button opens "Set LLM override" dialog with Backend + Effort dropdowns + optional Model field |
+| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Blocked: need LLM node + PRD in runnable state |
+| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: Cancel action not exposed on draft PRD; need PRD in cancellable state |
 | TS-238 | Hard delete PRD | Detail → Delete → confirm | PRD removed permanently | ✅ | Deleted "TestPlan1": confirmation dialog shown; PRD removed; server confirmed empty list |
 | TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ⏭ | Blocked: need PRD detail access |
 | TS-240 | Edit story | Story → edit | Title + description editable | ⏭ | Blocked: no stories (decompose not run) |
@@ -516,13 +516,13 @@ fi
 | TS-242 | Template store — list | Templates tab | Templates listed | ✅ | Templates tab visible in Autonomous screen; tab renders correctly |
 | TS-243 | Template store — create template | + in templates | Create/edit form | ✅ | + in Templates opens distinct "New Template" dialog (separate from PRD create) |
 | TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ⏭ | Blocked: need a saved template first |
-| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Blocked: source PRD deleted; can't reach PRD detail |
+| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Blocked: Clone as template button not yet visible in detail; need PRD with template support |
 | TS-246 | Security scan — run | PRD detail → Scan tab → Run Scan | Scan executes; verdict shown | ⏭ | Blocked: scan infra unavailable |
 | TS-247 | Security scan — findings | Scan complete with findings | Finding list shown with severity | ⏭ | Blocked: scan infra unavailable |
 | TS-248 | Security scan — fix action | Tap Fix on finding | Fix job started | ⏭ | Blocked: scan infra unavailable |
 | TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ⏭ | Blocked: need PRD created with type field set |
-| TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ⏭ | Blocked: can't reach PRD detail |
-| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ⏭ | Blocked: need PRD created with skills |
+| TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ✅ Pass | Guided mode Switch in Overview tab toggled true; no API error; UI reflects new state immediately |
+| TS-251 | Skills chips | PRD with skills | Skills shown as chips | ⏭ | Blocked: PRD has no skills set; Skills section visible in Overview but empty — need PRD with skills |
 | TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ⏭ | Blocked: need live server with active session; emulator shows "No server" |
 | TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ⏭ | Blocked: need live server with active session |
 | TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ⏭ | Blocked: need live server with idle session |
