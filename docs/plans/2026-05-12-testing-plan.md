@@ -119,7 +119,7 @@ fi
 | T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 15✅ / 20⏭ — TS-222/249/251 added; remaining blocked by LLM/scan/reviewable-state |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 17✅ / 18⏭ — TS-223/253 added; TS-232/233/234/236/237/239/240/241 blocked by datawatch#48 (decompose timeout) |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ 9✅ / 21⏭ — TS-265 added; BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
@@ -494,7 +494,7 @@ fi
 |-------|-------------|-------|----------|--------|-------|
 | TS-221 | PRD list | Autonomous tab | PRDs listed with status chips | ✅ | Draft PRD visible in Automata list with status chip |
 | TS-222 | PRD filter by status | Status chip on PRDs | Filtered to that status | ✅ Pass | Chips: All/needs review/revisions asked/approved; tapping "needs review" filters to "No plans match." (no PRDs in that state); "All" restores draft PRD |
-| TS-223 | Show templates toggle | Filter → Templates | Template PRDs shown | ⏭ | Blocked: no template PRDs to filter |
+| TS-223 | Show templates toggle | Filter → Templates | Template PRDs shown | ✅ Pass | Templates shown in dedicated "Templates" tab (not a filter chip); "Test Template" visible with Use/Edit/Delete actions. Filter chips (All/needs review/revisions asked/approved) apply to Automata list only; no "Templates" chip exists — templates live in their own tab. |
 | TS-224 | Create PRD — minimal | + → fill name/title → Save | PRD created; appears in list | ✅ | PRD created via API and appears in list; dialog opens via +; server requires project_dir |
 | TS-225 | Create PRD — with spec field | + → fill spec → Save | spec field present; sent in DTO | ✅ | BL-T13-1 FIXED: spec field added to NewPrdDialog + NewPrdRequestDto; UIAutomator confirmed |
 | TS-226 | Create PRD — list refresh | Create PRD → navigate away+back | PRD appears in Automata list | ✅ | id 2be34946 visible after navigate Sessions→Autonomous; card shows draft+date |
@@ -503,12 +503,12 @@ fi
 | TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ✅ Pass | Decisions tab shows "No decisions logged yet." — no crash; BL-T13-2 DecisionDto fix confirmed |
 | TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ⏭ | Blocked: scan infra unavailable; tab renders correctly with "Run scan" button + "No scan result yet." empty state |
 | TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ✅ Pass | Edit dialog opens with Title + Spec fields pre-filled from existing PRD |
-| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: LLM node required; Decompose button fires 400 from API (correct error handling; no crash) |
+| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: datawatch server issue #48 — internal `api/ask` timeout (~300s) is too short for local Ollama inference. Tried qwen3:8b and Gemma3:12b; both hit context deadline. Compute node + autonomous config correctly wired (datawatch-ollama registered, decomposition_backend=ollama, decomposition_model=Gemma3:12b). PRD correctly enters `planning` state then reverts to `draft` on timeout. |
 | TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Blocked: need PRD in reviewable state; Approve not shown on draft PRD (correct behavior) |
 | TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Blocked: need PRD in reviewable state |
 | TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ✅ Pass | LLM button opens "Set LLM override" dialog with Backend + Effort dropdowns + optional Model field |
 | TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Blocked: need LLM node + PRD in runnable state |
-| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: Cancel action not exposed on draft PRD; need PRD in cancellable state |
+| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: Cancel button not shown on draft or planning PRD in app UI (only Decompose/LLM/Edit/Delete visible). API-confirmed: `POST /api/autonomous/prds/{id}/cancel` works on draft → status=cancelled. App only exposes Cancel in higher states (running/approved?). Need running PRD to test via UI (blocked by TS-232 decompose timeout). |
 | TS-238 | Hard delete PRD | Detail → Delete → confirm | PRD removed permanently | ✅ | Deleted "TestPlan1": confirmation dialog shown; PRD removed; server confirmed empty list |
 | TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ⏭ | Blocked: need PRD detail access |
 | TS-240 | Edit story | Story → edit | Title + description editable | ⏭ | Blocked: no stories (decompose not run) |
@@ -523,10 +523,10 @@ fi
 | TS-249 | PRD type badge | Create PRD with type | Type badge shown on row + detail | ✅ Pass | PRD created with type="feature"; "feature" badge visible on card in list AND in Overview tab Type row |
 | TS-250 | Guided mode toggle | PRD detail → guided mode toggle | Mode persists | ✅ Pass | Guided mode Switch in Overview tab toggled true; no API error; UI reflects new state immediately |
 | TS-251 | Skills chips | PRD with skills | Skills shown as chips | ✅ Pass | PRD with skills=["python","kotlin","bash"]; chips visible in Overview tab Skills row |
-| TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ⏭ | Blocked: need live server with active session; emulator shows "No server" |
-| TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ⏭ | Blocked: need live server with active session |
-| TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ⏭ | Blocked: need live server with idle session |
-| TS-255 | Status tab — test card | Status tab with test data | Passing/Failing/Total counts shown | ⏭ | Blocked: need live server with test data |
+| TS-252 | Sprint status JSON in session | Active session → Status tab → Sprint card | Sprint JSON shown scrollable | ⏭ | Blocked: session 718e has no active sprint ("No active focus" shown); Status tab accessible but no Sprint card without sprint data |
+| TS-253 | Status tab — hook health pill | Status tab | Alive/stale/missing shown with color | ✅ Pass | Session 718e → Status tab → "● Hooks missing" pill visible with grey/white dot; "⚪ Status" tab icon also reflects missing hooks. Status sub-tab + Stats sub-tab both accessible |
+| TS-254 | Status tab — idle warning | Session idle >5min | Amber "idle since Xm ago" shown | ⏭ | Blocked: session 718e is actively running (not idle); Status tab accessible but no idle warning shown (correct for running session) |
+| TS-255 | Status tab — test card | Status tab with test data | Passing/Failing/Total counts shown | ⏭ | Blocked: session 718e has no test plan data; Stats sub-tab shows CPU/RSS (0/eBPF inactive) but no test card |
 
 ---
 
@@ -596,6 +596,7 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 | BL-T13-2 | TS-229 | `PrdDto.decisions` typed as `List<String>?` — server returns objects `{at,kind,actor,note}`; caused JSON deserialization crash. Fixed by adding `DecisionDto` and changing field type. | Fixed v0.117.0/195 |
 | BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. Fixed by adding dedicated `ON_RESUME` `LifecycleEventObserver` in `SessionsScreen.kt` that calls `vm.refresh()` directly. | Fixed (code verified) |
 | BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Fixed v0.109.0/e7743f6 — DB migration 7→8 adds llm_ref + compute_node_ref columns; upsertInternal + toDomain updated. |
+| [datawatch#48](https://github.com/dmz006/datawatch/issues/48) | TS-232+ | Decompose pipeline `api/ask` internal timeout (~300s) too short for local Ollama LLMs (Gemma3:12b, qwen3:8b both exceed deadline). Blocks TS-228/232/233/234/236/237/239/240/241. Filed upstream: request configurable timeout or async decompose endpoint. | Open — awaiting datawatch fix |
 
 ---
 
@@ -628,6 +629,7 @@ Each testing session appends a row here before committing.
 | 2026-05-13 | Claude | T13 — Autonomous / PRD lifecycle | 35 | 7 | 0 | TS-221–255: 7✅ 28⏭. BL-T13-1 (spec field missing) + BL-T13-2 (DecisionDto type mismatch) fixed in v0.117.0/195. PRD detail nav blocked (server omits title/name from PrdDto). Scan infra, LLM, stories all unavailable on emulator. |
 | 2026-05-13 | Claude | T14 — Session Refresh Regression | 30 | 8 | 0 | TS-256–285: 8✅ 22⏭. BL-T14-1 (ON_RESUME no refresh) fixed via LifecycleEventObserver in SessionsScreen.kt. BL-T14-2 (llmRef/computeNodeRef not persisted) open. Key passes: baseline load, polling, nav-away return, detail back, settings back, FAB→NewSession flow, force-stop reopen, detail live terminal. |
 | 2026-05-13 | Claude | T10 alert dock (TS-193–195) | 3 | 3 | 0 | Completed the 3 remaining alert dock stories. Root cause of delays: (1) /api/alerts returned 449KB (500 alerts) causing 15s emulator timeout — fixed by truncating alerts.json + server restart; (2) Persisted search filter `alerts_active_search` (SharedPreferences) restored `waitnringi` after each restart, filtering all alerts — cleared manually each time. TS-193✅ dock appeared with amber "4 alerts" pill, expand/dismiss/mute buttons at BottomEnd alignment. TS-194✅ Mute tap → dock disappeared, nav badge color changed to dimmed (muted). TS-195✅ Dismiss→active-count-drop→re-create cycle verified via screen rotation resetting Compose `remember {}` state. T10 now complete: 10✅ 5⏭(watch+FCM). |
+| 2026-05-13 | Claude | T13 unblocking + infra | 5 | 3 | 0 | TS-222✅ filter chips (All/needs review/revisions asked/approved). TS-223✅ Templates tab shows "Test Template" with Use/Edit/Delete. TS-253✅ hook health pill "● Hooks missing" + grey ⚪ tab icon in 718e Status tab. Decompose pipeline investigated — qwen3:8b and Gemma3:12b both hit ~300s internal api/ask timeout; registered datawatch-ollama compute node, set decomposition_backend=ollama, decomposition_model=Gemma3:12b via /api/autonomous/config. Filed datawatch#48 (decompose timeout too short). API-confirmed: cancel+reject work on draft PRDs, but app UI only exposes these in higher states; TS-237/234 remain blocked. |
 
 ---
 
