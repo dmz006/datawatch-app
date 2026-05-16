@@ -42,9 +42,13 @@ internal fun IdentityCard() {
     val scope = rememberCoroutineScope()
 
     suspend fun loadIdentity() {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: return
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                else list.firstOrNull { it.id == activeId && it.enabled }
+            } ?: return
         ServiceLocator.transportFor(sp).getIdentity().onSuccess { identity = it }
     }
 
@@ -97,9 +101,13 @@ internal fun IdentityCard() {
                     saving = true
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp = ServiceLocator.profileRepository.observeAll().first()
-                                .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                } ?: return@runCatching
                             ServiceLocator.transportFor(sp).setIdentity(identity)
                         }
                         saving = false
@@ -123,9 +131,13 @@ internal fun IdentityCard() {
                 wizardOpen = false
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).setIdentity(updated)
                     }
                 }

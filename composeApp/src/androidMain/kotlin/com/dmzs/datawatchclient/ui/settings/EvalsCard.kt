@@ -48,9 +48,13 @@ internal fun EvalsCard() {
 
     LaunchedEffect(Unit) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-            val sp = ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+            val activeId = ServiceLocator.activeServerStore.get()
+            val sp = ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                    else list.firstOrNull { it.id == activeId && it.enabled }
+                } ?: return@runCatching
             val result = ServiceLocator.transportFor(sp).evalsList()
             result.onSuccess { list ->
                 suites = list
@@ -91,9 +95,13 @@ internal fun EvalsCard() {
                         runningId = suite.id
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).evalsRun(suite.id)
                                     .onSuccess { r -> results = results + (suite.id to r) }
                             }
