@@ -1105,6 +1105,43 @@ internal data class LlmsResponseDto(
     val llms: List<LlmRegistryEntryDto> = emptyList(),
 )
 
+/** GET /api/skills response envelope. */
+@Serializable
+internal data class SkillsResponseDto(
+    val skills: List<SkillDto>? = null,
+)
+
+/** GET /api/skills/registries response envelope. */
+@Serializable
+internal data class SkillRegistriesResponseDto(
+    val registries: List<SkillRegistryDto> = emptyList(),
+)
+
+/** GET /api/council/personas response envelope. */
+@Serializable
+internal data class CouncilPersonasResponseDto(
+    val personas: List<CouncilPersonaDto> = emptyList(),
+)
+
+/** GET /api/council/runs response envelope. */
+@Serializable
+internal data class CouncilRunsResponseDto(
+    val runs: List<CouncilRunDto> = emptyList(),
+)
+
+/** GET /api/evals/suites response envelope. */
+@Serializable
+internal data class EvalSuitesResponseDto(
+    val suites: List<EvalSuiteDto> = emptyList(),
+)
+
+/** GET /api/algorithm response envelope. */
+@Serializable
+internal data class AlgorithmListResponseDto(
+    val phases: List<String> = emptyList(),
+    val sessions: List<AlgorithmStateDto> = emptyList(),
+)
+
 /** GET /api/migration/status — v7 first-launch auto-migration report. */
 @Serializable
 public data class MigrationStatusDto(
