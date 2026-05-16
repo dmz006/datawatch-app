@@ -18,26 +18,26 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T1 | Onboarding & server add | 10 | 7 | 1 | 2 | — | ✅ |
 | T2 | Session list & refresh | 25 | 20 | — | 5 | — | ✅ |
 | T3 | Session detail / terminal | 25 | 24 | — | 1 | — | ✅ |
-| T4 | New session creation | 15 | 11 | — | 3 | 1 | ✅ |
+| T4 | New session creation | 15 | 11 | — | 3 | 0 | ✅ restart blocker fixed |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
-| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 |
+| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 6 skipped: standalone-only features (no external peers in test env) |
 | T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
-| T8 | Settings Automata/PRDs | 25 | 20 | — | — | 4 | 🟡 |
+| T8 | Settings Automata/PRDs | 25 | 20 | — | — | 0 | 📋 4 stories re-enabled — #48 fixed; re-run pending |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
-| T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 🟡 Wear AVD ready |
-| T11 | Security & keystore | 10 | 4 | — | 4 | 2 | 🟡 |
+| T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 📋 Wear stories re-enabled; AVD ready; phone push re-enabled |
+| T11 | Security & keystore | 10 | 4 | — | 2 | 0 | 📋 2 manual-only stories re-enabled; 2 skipped (biometric hardware) |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 18 | — | — | 17 | 🟡 Decompose ✅ alpha.69 (registered datawatch-ollama compute node); remaining 17 need re-run |
-| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred |
-| T15 | New server endpoints | 20 | 9 | — | 4 | 7 | 🟡 identity/algo/council/evals verified; algo advance needs session |
-| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 8 | 0 | 🟡 server endpoint verified; direct UP registration needs distributor app |
-| T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-316–325 pass; TS-323 LLM#46 skip (open) |
+| T13 | Autonomous / PRD lifecycle | 35 | 18 | — | — | 0 | 📋 17 re-enabled — #48 fixed alpha.69; compute node registered; re-run pending |
+| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred (see soak note below) |
+| T15 | New server endpoints | 20 | 9 | — | 0 | 0 | 📋 11 re-enabled — #40-43 all fixed; algo advance needs live session pre-created |
+| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 0 | 0 | 📋 8 re-enabled — #39 fixed alpha.68; needs UP distributor installed on emulator |
+| T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
-| T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-344 file written; TS-345-350 skip (server write API not implemented) |
-| T20 | Howto validation (datawatch docs) | 9 | 5 | — | — | 2 | 🟡 TS-370/375/380/385/400 pass; TS-360/365 conditional on T13; TS-390/395 blocked |
+| T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-345–350: server write API gap (not yet implemented) |
+| T20 | Howto validation (datawatch docs) | 9 | 5 | — | 2 | 0 | 📋 TS-360/365 re-enabled (#48 fixed); TS-390/395 remain blocked (external) |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
 | T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **261** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **379** | **261** | **1** | **36** | **0** | **🟡 IN PROGRESS** |
 
 ---
 
