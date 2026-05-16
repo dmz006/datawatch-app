@@ -20,7 +20,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T3 | Session detail / terminal | 25 | 24 | — | 1 | — | ✅ |
 | T4 | New session creation | 15 | 11 | — | 3 | 0 | ✅ restart blocker fixed |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
-| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 6 skipped: standalone-only features (no external peers in test env) |
+| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 📋 6 peer stories re-enabled — johnnyjohnny-test2 (28443) registered as Shape B peer on test instance; re-run pending |
 | T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
 | T8 | Settings Automata/PRDs | 25 | 20 | — | — | 0 | 📋 4 stories re-enabled — #48 fixed; re-run pending |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
@@ -30,14 +30,14 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T13 | Autonomous / PRD lifecycle | 35 | 18 | — | — | 0 | 📋 17 re-enabled — #48 fixed alpha.69; compute node registered; re-run pending |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred (see soak note below) |
 | T15 | New server endpoints | 20 | 9 | — | 0 | 0 | 📋 11 re-enabled — #40-43 all fixed; algo advance needs live session pre-created |
-| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 0 | 0 | 📋 8 re-enabled — #39 fixed alpha.68; needs UP distributor installed on emulator |
+| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 0 | 0 | 📋 UP infra ready — ntfy v1.24.0 installed on emulator; ntfy server on :18280; ADB reverse set; re-run pending |
 | T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
-| T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-345–350: server write API gap (not yet implemented) |
-| T20 | Howto validation (datawatch docs) | 9 | 5 | — | 2 | 0 | 📋 TS-360/365 re-enabled (#48 fixed); TS-390/395 remain blocked (external) |
+| T19 | Dashboard hooks integration | 7 | 1 | — | 0 | 0 | 📋 6 stories re-enabled — #57 fixed alpha.71; POST/PUT /api/dashboard/smoke-progress + smoke-runs live; re-run pending |
+| T20 | Howto validation (datawatch docs) | 9 | 5 | — | 1 | 0 | 📋 TS-360/365/395 re-enabled (#48/#58 fixed alpha.71); TS-390 remains blocked (external comms services) |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
 | T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **261** | **1** | **36** | **0** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **379** | **261** | **1** | **22** | **0** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -101,7 +101,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-380 | secrets-manager.md | ✅ Pass | Secret CRUD: create via API, list+delete via mobile; null-activeId fix applied |
 | TS-385 | federated-observer.md | ✅ Pass | Peer list shows johnnyjohnny-test; group-by-node toggle works; filter chips All/Standalone present |
 | TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
-| TS-395 | dashboard.md | ⏳ Blocked | Dashboard is PWA-only; mobile accesses via API |
+| TS-395 | dashboard.md | 📋 Ready | dashboard API live alpha.71 (#58 fixed); GET/POST /api/dashboard/smoke-* available |
 | TS-400 | session-telemetry.md | ✅ Pass | Status tab shows session status/hooks/focus; Timeline tab shows created event |
 
 ### T21 — End-to-End Journeys (TS-410–TS-420)
@@ -148,6 +148,9 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | datawatch#53 | session send no Enter | T-sprint automation | ✅ alpha.67 | POST /api/sessions/{id}/input now appends Enter |
 | T7 LLM registry blocked | Compute node unreachable | T7 TS-126–128, T20/TS-375 | ✅ Configured | johnnyjohnny compute node registered on test instance via REST |
 | T21/TS-420 multi-server | Single-node test env | T21 TS-420 | ✅ Ready | test2 config at /home/dmz/workspace/.datawatch-test2/ — start before T21 |
+| datawatch#57/#58 | Dashboard API + mobile parity | T19 TS-344–350, T20 TS-395 | ✅ alpha.71 | POST/PUT /api/dashboard/smoke-progress + /api/dashboard/smoke-runs[/{id}] live |
+| T6 peer gap | No external observer peers | T6 6 stories | ✅ Ready | johnnyjohnny-test2 (28443) registered as Shape B peer on test instance |
+| T16 UP distributor | No UP distributor on emulator | T16 TS-306–315 | ✅ Ready | ntfy v1.24.0 installed (io.heckel.ntfy.debug); ntfy server :18280; ADB reverse set |
 
 ---
 
