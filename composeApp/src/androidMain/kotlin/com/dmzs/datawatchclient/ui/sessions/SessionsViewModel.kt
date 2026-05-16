@@ -673,23 +673,27 @@ public class SessionsViewModel : ViewModel() {
         }
     }
 
-    /** Bulk delete (used by multi-select mode). Same NotFound handling. */
+    /** Bulk delete (used by multi-select mode). Calls deleteSession per-ID; server has no bulk endpoint. */
     public fun deleteMany(sessionIds: List<String>) {
         if (sessionIds.isEmpty()) return
-        val profile = activeProfile.value ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).deleteSessions(fullIdsFor(sessionIds)).fold(
-                onSuccess = { refresh() },
-                onFailure = { err ->
-                    if (err is TransportError.NotFound) {
-                        _deleteSupported.value = false
-                        _banner.value =
-                            "This server doesn't support session delete. Contact dmz006/datawatch."
-                    } else {
-                        _banner.value = "Delete failed — ${err.message ?: err::class.simpleName}"
-                    }
-                },
-            )
+            var hadNotFound = false
+            for (sessionId in sessionIds) {
+                val profile = profileForSession(sessionId) ?: activeProfile.value ?: continue
+                ServiceLocator.transportFor(profile).deleteSession(fullIdFor(sessionId)).fold(
+                    onSuccess = {},
+                    onFailure = { err ->
+                        if (err is TransportError.NotFound) hadNotFound = true
+                        else _banner.value = "Delete failed — ${err.message ?: err::class.simpleName}"
+                    },
+                )
+            }
+            if (hadNotFound) {
+                _deleteSupported.value = false
+                _banner.value =
+                    "This server doesn't support session delete. Contact dmz006/datawatch."
+            }
+            refresh()
         }
     }
 
