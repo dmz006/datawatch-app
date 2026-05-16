@@ -1582,7 +1582,7 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/skills/registries") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.SkillRegistriesResponseDto>().registries
         }
 
     override suspend fun createSkillRegistry(req: SkillRegistryRequestDto): Result<SkillRegistryDto> =
@@ -1656,7 +1656,7 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/skills") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.SkillsResponseDto>().skills ?: emptyList()
         }
 
     // ---- v0.74.0 Compute Nodes (S5-1) ----
@@ -1914,7 +1914,7 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/algorithm") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.AlgorithmListResponseDto>().sessions
         }
 
     override suspend fun algorithmAdvance(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
@@ -1937,9 +1937,9 @@ public class RestTransport(
 
     override suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>> =
         request {
-            client.get("${profile.baseUrl}/api/evals") {
+            client.get("${profile.baseUrl}/api/evals/suites") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.EvalSuitesResponseDto>().suites
         }
 
     override suspend fun evalsRun(suiteId: String): Result<com.dmzs.datawatchclient.transport.dto.EvalRunResultDto> =
@@ -1955,14 +1955,14 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/council/personas") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.CouncilPersonasResponseDto>().personas
         }
 
     override suspend fun councilListRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.CouncilRunDto>> =
         request {
             client.get("${profile.baseUrl}/api/council/runs") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.CouncilRunsResponseDto>().runs
         }
 
     override suspend fun councilGetConfig(): Result<com.dmzs.datawatchclient.transport.dto.CouncilConfigDto> =
