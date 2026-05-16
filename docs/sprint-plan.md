@@ -635,3 +635,101 @@ rtk ./gradlew :composeApp:testDevDebugUnitTest
 - `shared/src/commonTest/kotlin/` (KMP JVM tests)
 - `composeApp/src/test/kotlin/` (Android unit tests — use `@Test` + MockWebServer)
 - `composeApp/src/androidTest/kotlin/` (instrumented Compose UI tests)
+
+---
+
+## Issue Backlog — datawatch server updates (2026-05-14)
+
+These server-side issues from `dmz006/datawatch` directly affect mobile client behavior. Mobile sprints 26–30 are **blocked on** corresponding server releases.
+
+| Issue | Title | Mobile Impact | Mobile Sprint | Status |
+|-------|-------|---------------|---------------|--------|
+| datawatch#40 | GET/POST /api/identity | IdentityCard.kt stub until endpoint exists | Sprint 26 | ⏳ Waiting on server |
+| datawatch#41 | GET/POST /api/algorithm | AlgorithmModeCard.kt stub until endpoint exists | Sprint 26 | ⏳ Waiting on server |
+| datawatch#42 | GET /api/evals | EvalsCard.kt stub until endpoint exists | Sprint 27 | ⏳ Waiting on server |
+| datawatch#43 | GET /api/council | CouncilCard.kt stub until endpoint exists | Sprint 27 | ⏳ Waiting on server |
+| datawatch#39 | UnifiedPush server-side provider + ntfy SSE | Tier 1 push registration/delivery path blocked | Sprint 28 | ⏳ Waiting on server |
+| datawatch#48 | Decompose timeout api/ask ~300s | Blocks T13 autonomous testing (TS-232–241) | Sprint 29 testing | ⏳ Open — awaiting fix |
+| datawatch#46 | LLM enable fails for auto-created entries | Mobile shows error modal on enable; should be graceful warning | Sprint 26 | ⏳ Needs UX fix |
+| datawatch#47 | llm_in_use_collapsed locale template vars | Server-side fix applied; mobile not affected | T17 verify | ✅ Server fixed |
+| datawatch#38 | DUPLICATE of #39 — close | — | — | 🔒 **Close as duplicate** |
+| datawatch#32 | PWA i18n (DE/ES/FR/JA) | No mobile action — mobile ships 5 locales | T17 check | 📋 Monitor |
+| datawatch#4 | Meta parity tracker | Ongoing: all new PWA features → mobile equivalents | Per sprint | 🔄 Ongoing |
+
+---
+
+## Sprints 26–30 — v1.0.0 Update Arc
+
+### Sprint 26 — Identity + Algorithm endpoints + LLM UX (~v0.96.0/174)
+
+**Blocker**: datawatch#40 (Identity), datawatch#41 (Algorithm)
+
+- Wire IdentityCard to GET/POST /api/identity
+- Wire AlgorithmModeCard to GET/POST /api/algorithm/advance + abort
+- Add RestTransport methods: getIdentity(), setIdentity(), algorithmList(), algorithmAdvance(), algorithmAbort()
+- Add DTOs: IdentityDto, AlgorithmStateDto, AlgorithmHistoryDto
+- Fix LLM enable UX (#46): graceful warning for kinds with no adapter (not error modal)
+- Locale (5 bundles): identity_*, algorithm_*, llm_enable_no_adapter_warning
+- Tests: Dto round-trips, RestTransport methods, IdentityCardViewModelTest, AlgorithmModeCardViewModelTest
+- Version: 0.96.0/174
+
+### Sprint 27 — Evals + Council endpoints (~v0.97.0/175)
+
+**Blocker**: datawatch#42 (Evals), datawatch#43 (Council)
+
+- Wire EvalsCard to GET /api/evals
+- Wire CouncilCard to GET /api/council
+- Add RestTransport: evalsList(), evalsGetRun(), councilList()
+- Add DTOs: EvalRunDto, CouncilSessionDto
+- Locale (5 bundles): evals_*, council_*
+- Tests: Dto round-trips, RestTransport methods, EvalsCardViewModelTest, CouncilCardViewModelTest
+- Version: 0.97.0/175
+
+### Sprint 28 — UnifiedPush Tier 1 micro-distributor (~v0.98.0/176)
+
+**Blocker**: datawatch#39 (UnifiedPush provider)
+
+- Implement UnifiedPushMicroDistributor: /.well-known/unifiedpush + POST /api/push/register
+- Wire into UnifiedPushSseService: switch from polling to push receipt
+- Doze-aware keepalive for Tier 1 delivery (no high battery drain)
+- Tier 2 fallback: Signal comm relay (already wired)
+- Tier 3 fallback: Doze-aware NtfyFallbackService (new pause logic)
+- UI: Settings > Comms > Push section showing current tier (1/2/3) + endpoint status
+- Locale (5 bundles): push_tier_*, push_status_*, push_endpoint_*, push_register_*
+- Tests: UnifiedPushRegistrationTest, PushTierFallbackTest, NtfyFallbackDozeTest
+- Version: 0.98.0/176
+
+### Sprint 29 — Test plan execution + debt payoff (~v0.99.0/177)
+
+**Goal**: Execute T15–T18 of new test plan; write all 18 deferred unit tests (Sprints 17–22 backlog).
+
+- Execute T15 (new endpoints) — requires Sprints 26–27 complete + server endpoints shipped
+- Execute T16 (UnifiedPush) — requires Sprint 28 complete + datawatch#39 shipped
+- Execute T18 (test debt) — write TS-326–TS-343: 18 unit tests
+- Retry T13 decompose (TS-232–241) when datawatch#48 fixed
+- Execute T17 parity audit including LLM UX (#46), locale (#47), token auth
+- Update cookbook.md with final test results
+- Version: 0.99.0/177
+
+### Sprint 30 — Dashboard hooks + v1.0.0 release (~v1.0.0/178)
+
+**Goal**: Wire mobile test runner to dashboard; ship v1.0.0.
+
+- Implement smoke-progress.json writer in test runner (Bash script)
+- Wire to secondary datawatch /api/smoke/progress endpoint
+- Execute T19 (dashboard hooks integration: TS-344–TS-350)
+- Final regression: run T1–T22 against secondary instance
+- Update cookbook.md with final results
+- Update testing-tracker.md: Validated=Yes for T1–T14
+- Tag v1.0.0; GitHub release with release notes
+- Version: 1.0.0/178
+
+**v1.0.0 release gate**:
+- T1–T14: all non-skip ✅ Pass
+- T15–T16: ✅ Pass (if server ships) OR ⏭ Skip (stubs acceptable)
+- T17: ✅ Pass (parity audit)
+- T18: ✅ Pass (test debt)
+- T19: ✅ Pass (dashboard hooks)
+- No P0/P1 critical bugs
+- Cookbook fully populated
+- Version parity: gradle.properties ↔ Version.kt ↔ Play Console
