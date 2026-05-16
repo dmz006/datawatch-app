@@ -1665,7 +1665,7 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/compute/nodes") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.ComputeNodesResponseDto>().nodes
         }
 
     override suspend fun createComputeNode(
@@ -1711,9 +1711,10 @@ public class RestTransport(
 
     override suspend fun listLlms(): Result<List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>> =
         request {
+            println("RestTransport:DEBUG:listLlms-wrapped-v2")
             client.get("${profile.baseUrl}/api/llms") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.LlmsResponseDto>().llms
         }
 
     override suspend fun createLlm(

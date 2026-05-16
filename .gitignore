@@ -77,6 +77,11 @@ CLAUDE.md
 .claude/
 .mcp.json
 
+# Test instance data — never commit (secrets, TLS certs, sessions)
+.datawatch-test/
+.datawatch-test2/
+datawatch-test-workspace/
+
 # PWA audit frames — thousands of per-frame PNGs from Playwright.
 # Regenerate from /home/dmz/workspace/pwa-audit/out/ (untracked).
 # Phone and watch screenshots (docs/media/phone/, docs/media/watch/)

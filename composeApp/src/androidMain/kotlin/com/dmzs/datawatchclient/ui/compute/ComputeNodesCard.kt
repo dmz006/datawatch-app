@@ -56,6 +56,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.ComputeNodeDto
+import com.dmzs.datawatchclient.transport.dto.DeclaredCapacityDto
 import com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto
 import com.dmzs.datawatchclient.transport.dto.MigrationComputeKindsDto
 import com.dmzs.datawatchclient.transport.dto.OllamaCatalogDto
@@ -318,9 +319,9 @@ private fun ComputeNodeRow(
                             labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         ),
                 )
-                if (node.declaredCapacity > 1) {
+                if ((node.declaredCapacity?.gpus ?: 1) > 1) {
                     Text(
-                        "×${node.declaredCapacity}",
+                        "×${node.declaredCapacity?.gpus ?: 1}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -461,7 +462,7 @@ private fun ComputeNodeDialog(
         )
     }
     var address by remember(existing) { mutableStateOf(existing?.address ?: "") }
-    var capacity by remember(existing) { mutableStateOf(existing?.declaredCapacity?.toString() ?: "1") }
+    var capacity by remember(existing) { mutableStateOf(existing?.declaredCapacity?.gpus?.toString() ?: "1") }
     var tagsText by remember(existing) { mutableStateOf(existing?.tags?.joinToString(", ") ?: "") }
     var kindDropdown by remember { mutableStateOf(false) }
     var hardwareExpanded by remember { mutableStateOf(false) }
@@ -718,7 +719,7 @@ private fun ComputeNodeDialog(
                             name = name.trim(),
                             kind = kind,
                             address = address.trim(),
-                            declaredCapacity = capacity.toIntOrNull() ?: 1,
+                            declaredCapacity = DeclaredCapacityDto(gpus = capacity.toIntOrNull() ?: 1),
                             tags = tags,
                             autoCreated = existing?.autoCreated ?: false,
                             hardwareSpec = existing?.hardwareSpec,
