@@ -1711,7 +1711,6 @@ public class RestTransport(
 
     override suspend fun listLlms(): Result<List<com.dmzs.datawatchclient.transport.dto.LlmRegistryEntryDto>> =
         request {
-            println("RestTransport:DEBUG:listLlms-wrapped-v2")
             client.get("${profile.baseUrl}/api/llms") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body<com.dmzs.datawatchclient.transport.dto.LlmsResponseDto>().llms
