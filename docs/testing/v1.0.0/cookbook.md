@@ -34,9 +34,9 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-316–325 pass; TS-323 LLM#46 skip (open) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
 | T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-344 file written; TS-345-350 skip (server write API not implemented) |
-| T20 | Howto validation (datawatch docs) | 9 | — | — | — | — | 📋 |
-| T21 | End-to-end user journeys | 3 | — | — | — | — | 📋 |
-| **TOTALS** | | **369** | **242** | **1** | **64** | **59** | **🟡 IN PROGRESS** |
+| T20 | Howto validation (datawatch docs) | 9 | 5 | — | — | 2 | 🟡 TS-370/375/380/385/400 pass; TS-360/365 conditional on T13; TS-390/395 blocked |
+| T21 | End-to-end user journeys | 3 | 2 | — | 1 | — | 🟡 TS-410/420 pass; TS-415 conditional on T13 |
+| **TOTALS** | | **369** | **249** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -95,21 +95,21 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 |-------|-------|--------|-------|
 | TS-360 | autonomous-planning.md | 🟡 Conditional | Depends on T13 decompose with Ollama — test T13 first |
 | TS-365 | autonomous-review-approve.md | 🟡 Conditional | Same — conditional on T13 |
-| TS-370 | profiles.md | 📋 | Test project profile CRUD + use in session |
-| TS-375 | llm-registry.md | 📋 Ready | johnnyjohnny compute node registered on test instance |
-| TS-380 | secrets-manager.md | 📋 | Test secret CRUD + reference in config |
-| TS-385 | federated-observer.md | 📋 | Test peer list + latency view + group-by-node |
+| TS-370 | profiles.md | ✅ Pass | Project profile CRUD via API; project alias in session; profile visible on mobile |
+| TS-375 | llm-registry.md | ✅ Pass | johnnyjohnny compute node + qwen3:1.7b LLM visible in mobile Settings > Compute |
+| TS-380 | secrets-manager.md | ✅ Pass | Secret CRUD: create via API, list+delete via mobile; null-activeId fix applied |
+| TS-385 | federated-observer.md | ✅ Pass | Peer list shows johnnyjohnny-test; group-by-node toggle works; filter chips All/Standalone present |
 | TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
 | TS-395 | dashboard.md | ⏳ Blocked | Dashboard is PWA-only; mobile accesses via API |
-| TS-400 | session-telemetry.md | 📋 | Test telemetry display in Status tab |
+| TS-400 | session-telemetry.md | ✅ Pass | Status tab shows session status/hooks/focus; Timeline tab shows created event |
 
 ### T21 — End-to-End Journeys (TS-410–TS-420)
 
 | Story | Journey | Status | Notes |
 |-------|---------|--------|-------|
-| TS-410 | New User Arc (setup → identity → session → alert → reply) | 📋 | Multi-howto workflow from first launch to first reply |
+| TS-410 | New User Arc (setup → identity → session → alert → reply) | ✅ Pass | Identity set; session created; reply sent via API; AI responded; alert visible in Alerts tab |
 | TS-415 | Autonomous Arc (create PRD → council → approve → run) | 🟡 Conditional | Conditional on T13 decompose with Ollama passing |
-| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | 📋 Ready | test2 config ready at /home/dmz/workspace/.datawatch-test2/ — start before test |
+| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ✅ Pass | test2 started; dw-test2 added in Comms; server switch works; Observer shows johnnyjohnny-test2 |
 
 **Summary**: 
 - T3: 24✅ / 1⏭ (terminal scrollback)
@@ -199,4 +199,5 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 **Last test run**: 2026-05-14 to 2026-05-16, johnnyjohnny, claude-sonnet-4-6 + emulator dw_test_phone  
 **Prior results carried forward**: 201✅/1❌/53⏭/65⏳ from initial run  
 **Datawatch issues filed this run**: #48 (decompose timeout), #50 (hook HTTP→HTTPS ✅fixed alpha.67), #51 (MCP x509 ✅fixed alpha.67), #52 (federation feature), #53 (session send no Enter ✅fixed alpha.67)  
-**Next milestone**: T14 completion + T17–T19 + test-instance setup verification
+**Bugs fixed this run**: null-activeId in ProfileResolver + SecretsCard + AlgorithmModeCard + AutomataTypesCard + OrchestratorGraphsCard + ScanConfigCard + NewPrdDialog (7 files, 15 fix sites); bulk delete now uses per-ID calls  
+**Next milestone**: T13 retry (Ollama decompose), T15 algo-advance (needs running session), T21/TS-415 Autonomous Arc (depends on T13)
