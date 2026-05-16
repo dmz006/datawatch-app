@@ -47,27 +47,44 @@ This plan covers **all mobile, Wear, and Auto surfaces** in a comprehensive test
 ```bash
 mkdir -p .datawatch-test
 cat > .datawatch-test/config.yaml <<EOF
+data_dir: /home/dmz/workspace/datawatch-app/.datawatch-test
+hostname: johnnyjohnny-test
 server:
+  enabled: true
+  host: 0.0.0.0
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
-session:
-  skip_permissions: true
+  tls_enabled: true
+  tls_auto_generate: true
 autonomous:
   enabled: true
 memory:
   enabled: true
-llm:
-  default_backend: ollama
-  ollama_url: http://localhost:11434
-  ollama_model: qwen3:1.7b
+mcp:
+  enabled: false
+ollama:
+  enabled: true
+  model: qwen3:1.7b
+  url: http://localhost:11434
   embedder: nomic-embed-text
+session:
+  skip_permissions: true
+  max_sessions: 10
+  llm_backend: ollama
+  default_project_dir: /home/dmz/workspace/datawatch-test-workspace
+  root_path: /home/dmz/workspace
+# NOTE: root_path must be within /home/dmz/workspace — never /home/dmz directly
 EOF
 
-rtk /home/dmz/.local/bin/datawatch serve --data-dir .datawatch-test 2>&1 | tee /tmp/test-server.log &
-sleep 3
+mkdir -p /home/dmz/workspace/datawatch-test-workspace
+/home/dmz/.local/bin/datawatch start --foreground \
+  --config /home/dmz/workspace/datawatch-app/.datawatch-test/config.yaml \
+  > /tmp/test-server.log 2>&1 &
+sleep 5
 curl -sk https://127.0.0.1:18443/api/health
-# MUST return {"status":"ok"} before proceeding — if it doesn't, check /tmp/test-server.log, fix, and restart
+# MUST return {"status":"ok","hostname":"johnnyjohnny-test"} before proceeding
+# If it doesn't: check /tmp/test-server.log and fix before continuing
 ```
 
 **Emulator bridge**:
