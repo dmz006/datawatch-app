@@ -45,9 +45,11 @@ This plan covers **all mobile, Wear, and Auto surfaces** in a comprehensive test
 
 **Start**:
 ```bash
-mkdir -p .datawatch-test
-cat > .datawatch-test/config.yaml <<EOF
-data_dir: /home/dmz/workspace/datawatch-app/.datawatch-test
+mkdir -p /home/dmz/workspace/.datawatch-test
+# Config already exists at /home/dmz/workspace/.datawatch-test/config.yaml
+# If missing, recreate:
+cat > /home/dmz/workspace/.datawatch-test/config.yaml <<EOF
+data_dir: /home/dmz/workspace/.datawatch-test
 hostname: johnnyjohnny-test
 server:
   enabled: true
@@ -61,12 +63,15 @@ autonomous:
   enabled: true
 memory:
   enabled: true
+  backend: sqlite
+  embedder_model: nomic-embed-text
+  embedder_host: http://localhost:11434
 mcp:
   enabled: false
 ollama:
   enabled: true
   model: qwen3:1.7b
-  url: http://localhost:11434
+  host: http://localhost:11434
   embedder: nomic-embed-text
 session:
   skip_permissions: true
@@ -74,12 +79,12 @@ session:
   llm_backend: ollama
   default_project_dir: /home/dmz/workspace/datawatch-test-workspace
   root_path: /home/dmz/workspace
-# NOTE: root_path must be within /home/dmz/workspace — never /home/dmz directly
+# NOTE: root_path must be /home/dmz/workspace — never /home/dmz directly
 EOF
 
 mkdir -p /home/dmz/workspace/datawatch-test-workspace
 /home/dmz/.local/bin/datawatch start --foreground \
-  --config /home/dmz/workspace/datawatch-app/.datawatch-test/config.yaml \
+  --config /home/dmz/workspace/.datawatch-test/config.yaml \
   > /tmp/test-server.log 2>&1 &
 TEST_DAEMON_PID=$!
 echo "$TEST_DAEMON_PID" > /tmp/test-daemon.pid
@@ -106,7 +111,7 @@ if [ -n "$TEST_DAEMON_PID" ] && kill -0 "$TEST_DAEMON_PID" 2>/dev/null; then
   fi
 fi
 rm -f /tmp/test-daemon.pid
-rm -rf .datawatch-test docs/testing/v1.0.0/evidence/
+rm -rf /home/dmz/workspace/.datawatch-test docs/testing/v1.0.0/evidence/
 # NEVER: pkill -f datawatch / kill $(grep datawatch ...) — kills production
 ```
 
@@ -139,6 +144,84 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 - Bearer token: `dw-test-token-12345`
 - Trust-all TLS: `true`
 - Tap Save
+
+### Second Test Instance (johnnyjohnny-test2 — for T21/TS-420 multi-server)
+
+Config at `/home/dmz/workspace/.datawatch-test2/config.yaml` (ports 28080/28443, token `dw-test2-token-67890`).
+
+**Start**:
+```bash
+/home/dmz/.local/bin/datawatch start --foreground \
+  --config /home/dmz/workspace/.datawatch-test2/config.yaml \
+  > /tmp/test2-server.log 2>&1 &
+TEST2_DAEMON_PID=$!
+echo "$TEST2_DAEMON_PID" > /tmp/test2-daemon.pid
+sleep 5
+curl -sk https://127.0.0.1:28443/api/health
+# Must return {"hostname":"johnnyjohnny-test2","status":"ok"}
+```
+
+**Emulator bridge (test2)**:
+```bash
+adb reverse tcp:28443 tcp:28443
+adb reverse tcp:28080 tcp:28080
+```
+
+**In-app**: add second server at `https://10.0.2.2:28443` with token `dw-test2-token-67890`.
+
+**Cleanup**:
+```bash
+TEST2_DAEMON_PID=$(cat /tmp/test2-daemon.pid 2>/dev/null)
+if [ -n "$TEST2_DAEMON_PID" ] && kill -0 "$TEST2_DAEMON_PID" 2>/dev/null; then
+  if ss -tlnp 2>/dev/null | grep -q "28080.*pid=$TEST2_DAEMON_PID"; then
+    kill "$TEST2_DAEMON_PID"
+  fi
+fi
+rm -f /tmp/test2-daemon.pid
+rm -rf /home/dmz/workspace/.datawatch-test2
+```
+
+### Wear OS Emulator (for T10 Wear stories)
+
+**AVD**: `dw_test_watch` — Wear OS Large Round (android-33/android-wear/x86_64)
+
+**Start**:
+```bash
+/home/dmz/workspace/Android/Sdk/emulator/emulator \
+  -avd dw_test_watch \
+  -no-snapshot-save \
+  -no-audio \
+  -gpu swiftshader_indirect \
+  -no-boot-anim \
+  2>/tmp/watch-emulator.log &
+# Wait for boot, then bridge
+adb -s emulator-5556 reverse tcp:18443 tcp:18443
+adb -s emulator-5556 reverse tcp:18080 tcp:18080
+```
+
+**Build Wear APK**:
+```bash
+rtk ./gradlew :wearApp:assembleDebug
+adb -s emulator-5556 install -r wearApp/build/outputs/apk/debug/*.apk
+```
+
+### Android Auto Emulator (for Auto surface stories)
+
+**AVD**: `dw_test_auto` — Automotive 1024p Landscape (android-33/android-automotive/x86_64)
+
+**Start**:
+```bash
+/home/dmz/workspace/Android/Sdk/emulator/emulator \
+  -avd dw_test_auto \
+  -no-snapshot-save \
+  -no-audio \
+  -gpu swiftshader_indirect \
+  -no-boot-anim \
+  2>/tmp/auto-emulator.log &
+# Bridge
+adb -s emulator-5558 reverse tcp:18443 tcp:18443
+adb -s emulator-5558 reverse tcp:18080 tcp:18080
+```
 
 ---
 
@@ -249,19 +332,55 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ## T15 — New Server Endpoints (Identity / Algorithm / Evals / Council)
 
-**Prerequisite**: datawatch server ships #40, #41, #42, #43 endpoints
+**Status as of alpha.67**:
+- `/api/identity` — ✅ 200 (datawatch#40 fixed)
+- `/api/algorithm` — ✅ 200 (datawatch#41 fixed)
+- `/api/council/*` (personas/runs/config) — ✅ 200 (datawatch#43 fixed; base path `/api/council` returns 404 but sub-paths work)
+- `/api/evals` — ❌ 404 (datawatch#42 still open — T15 evals stories remain blocked)
 
 ### TS-286 — Identity endpoint GET
 **Tags**: [surface:phone] [feature:identity]
 **Steps**: 
-1. Settings → Automata → Identity card should be empty (waiting for endpoint)
-2. Once server #40 ships: GET /api/identity returns `{role, current_focus, context_notes}`
-3. Refresh settings
-**Expected**: Identity card populates with server data
+1. Settings → Automata → Identity card
+2. GET /api/identity returns `{role, current_focus, context_notes}`
+3. Verify card populates with server data
+**Expected**: Identity card populates with server data; PATCH updates persist
 **Evidence**: `identity_get.json`, `identity_card.png`
-**Status**: ⏳ Blocked on datawatch#40
+**Status**: 📋 Ready (datawatch#40 fixed in alpha.67)
 
-### TS-287–TS-305: (14 stories similar pattern for Council/Algorithm/Evals CRUD)
+### TS-287 — Identity PATCH (update role/focus)
+**Tags**: [surface:phone] [feature:identity]
+**Status**: 📋 Ready
+
+### TS-288 — Algorithm mode: list phases
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**: 1. Settings → Automata → Algorithm  2. Verify phases list: observe/orient/decide/act/measure/learn/improve
+**Expected**: All 7 OODA phases shown; current phase highlighted
+**Evidence**: `algorithm_phases.json`
+**Status**: 📋 Ready (datawatch#41 fixed in alpha.67)
+
+### TS-289 — Algorithm advance phase
+**Tags**: [surface:phone] [feature:algorithm]
+**Status**: 📋 Ready
+
+### TS-290 — Council personas list
+**Tags**: [surface:phone] [feature:council]
+**Steps**: 1. Settings → Automata → Council  2. GET /api/council/personas
+**Expected**: Persona list shows; each persona has role/system_prompt
+**Evidence**: `council_personas.json`
+**Status**: 📋 Ready (datawatch#43 sub-paths fixed in alpha.67)
+
+### TS-291–TS-293: (3 stories: council config GET/SET, council run start)
+**Status**: 📋 Ready
+
+### TS-294–TS-298: (5 stories: algorithm start/advance/abort/reset/measure)
+**Status**: 📋 Ready
+
+### TS-299–TS-303: (5 stories: evals list, run suite, view results, compare, export)
+**Status**: ⏳ Blocked (datawatch#42 — /api/evals still 404 as of alpha.67)
+
+### TS-304–TS-305: (2 stories: evals history, eval suite CRUD)
+**Status**: ⏳ Blocked (datawatch#42)
 
 ---
 
@@ -409,7 +528,14 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-420 — Power User Multi-Server Arc: setup profiles → switch servers → observer → config replication
 **Tags**: [surface:phone] [feature:multiserver]
-**Status**: ⏳ Blocked (requires two distinct servers)
+**Steps**:
+1. Start johnnyjohnny-test (port 18443) and johnnyjohnny-test2 (port 28443) — see §1 for setup
+2. Add both servers in app Settings → Comms
+3. Use server picker to switch between them; verify session lists are distinct
+4. Settings → Observer → verify no cross-contamination of data
+**Expected**: Both servers operate independently; switcher shows correct server context
+**Evidence**: `multi_server_picker.png`, `multi_server_sessions.json`
+**Status**: 📋 Ready (test2 config at `/home/dmz/workspace/.datawatch-test2/`; start before testing)
 
 ---
 

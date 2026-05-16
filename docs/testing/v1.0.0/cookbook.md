@@ -21,15 +21,15 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T4 | New session creation | 15 | 11 | — | 3 | 1 | ✅ |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
 | T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 |
-| T7 | Settings General/Comms/Compute | 25 | 19 | — | 2 | 3 | 🟡 |
+| T7 | Settings General/Comms/Compute | 25 | 19 | — | 2 | 0 | 🟡 compute unblocked |
 | T8 | Settings Automata/PRDs | 25 | 20 | — | — | 4 | 🟡 |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
-| T10 | Push & notifications | 15 | 10 | — | 2 | 3 | 🟡 |
+| T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 🟡 Wear AVD ready |
 | T11 | Security & keystore | 10 | 4 | — | 4 | 2 | 🟡 |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | ⏳ Blocked: #48 |
-| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 |
-| T15 | New server endpoints | 20 | — | — | — | 20 | ⏳ Blocked: #40-43 |
+| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | 🟡 Ollama configured; verify |
+| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred |
+| T15 | New server endpoints | 20 | — | — | 7 | 13 | 🟡 identity/algo/council ready; evals blocked #42 |
 | T16 | UnifiedPush Tier 1 | 10 | — | — | — | 10 | ⏳ Blocked: #39 |
 | T17 | Parity audit | 10 | — | — | — | — | 📋 |
 | T18 | Test debt payoff | 18 | — | — | — | — | 📋 |
@@ -93,10 +93,10 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | Story | Howto | Status | Notes |
 |-------|-------|--------|-------|
-| TS-360 | autonomous-planning.md | ⏳ Blocked | Blocked by datawatch#48 (decompose timeout) |
-| TS-365 | autonomous-review-approve.md | ⏳ Blocked | Blocked by datawatch#48 |
+| TS-360 | autonomous-planning.md | 🟡 Conditional | Depends on T13 decompose with Ollama — test T13 first |
+| TS-365 | autonomous-review-approve.md | 🟡 Conditional | Same — conditional on T13 |
 | TS-370 | profiles.md | 📋 | Test project profile CRUD + use in session |
-| TS-375 | llm-registry.md | ⏳ Blocked | Compute daemon unreachable on secondary instance |
+| TS-375 | llm-registry.md | 📋 Ready | johnnyjohnny compute node registered on test instance |
 | TS-380 | secrets-manager.md | 📋 | Test secret CRUD + reference in config |
 | TS-385 | federated-observer.md | 📋 | Test peer list + latency view + group-by-node |
 | TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
@@ -108,8 +108,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | Story | Journey | Status | Notes |
 |-------|---------|--------|-------|
 | TS-410 | New User Arc (setup → identity → session → alert → reply) | 📋 | Multi-howto workflow from first launch to first reply |
-| TS-415 | Autonomous Arc (create PRD → council → approve → run) | ⏳ Blocked | Blocked by datawatch#48 decompose timeout |
-| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ⏳ Blocked | Requires two distinct servers; secondary is single-node |
+| TS-415 | Autonomous Arc (create PRD → council → approve → run) | 🟡 Conditional | Conditional on T13 decompose with Ollama passing |
+| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | 📋 Ready | test2 config ready at /home/dmz/workspace/.datawatch-test2/ — start before test |
 
 **Summary**: 
 - T3: 24✅ / 1⏭ (terminal scrollback)
@@ -131,12 +131,22 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | Issue | Title | Blocks | Status | Workaround |
 |-------|-------|--------|--------|-----------|
-| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Wait for server fix; use quick decompose only |
-| datawatch#40 | GET /api/identity endpoint | T15 TS-286–289 | ⏳ Waiting | Stub shown in mobile; no impact on ship |
-| datawatch#41 | GET /api/algorithm endpoint | T15 TS-294–298 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#42 | GET /api/evals endpoint | T15 TS-299–303 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#43 | GET /api/council endpoint | T15 TS-290–293 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ⏳ Waiting | Current: ntfy fallback + Signal; Tier 1 deferred post-ship |
+| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Ollama configured on test instance — timeout much less likely; verify at runtime |
+| datawatch#42 | GET /api/evals endpoint | T15 TS-299–305 | ⏳ Open | Stub shown; evals stories skip until server ships |
+| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ⏳ Waiting | ntfy fallback + Signal; Tier 1 deferred post-ship |
+
+## Fixed/Unblocked (previously blocking)
+
+| Issue | Title | Was Blocking | Fixed In | Notes |
+|-------|-------|-------------|----------|-------|
+| datawatch#40 | GET /api/identity | T15 TS-286–289 | ✅ alpha.67 | Endpoint returns 200 — ready to test |
+| datawatch#41 | GET /api/algorithm | T15 TS-294–298 | ✅ alpha.67 | Returns 7 OODA phases — ready to test |
+| datawatch#43 | GET /api/council | T15 TS-290–293 | ✅ alpha.67 | Sub-paths work (personas/runs/config); base path 404 is benign |
+| datawatch#50 | Hook HTTPS redirect | Memory hooks | ✅ alpha.67 | Both save/precompact hooks now deliver POST body correctly |
+| datawatch#51 | MCP x509 self-signed | Test instance MCP | ✅ alpha.67 | MCP tools work against test instance |
+| datawatch#53 | session send no Enter | T-sprint automation | ✅ alpha.67 | POST /api/sessions/{id}/input now appends Enter |
+| T7 LLM registry blocked | Compute node unreachable | T7 TS-126–128, T20/TS-375 | ✅ Configured | johnnyjohnny compute node registered on test instance via REST |
+| T21/TS-420 multi-server | Single-node test env | T21 TS-420 | ✅ Ready | test2 config at /home/dmz/workspace/.datawatch-test2/ — start before T21 |
 
 ---
 
