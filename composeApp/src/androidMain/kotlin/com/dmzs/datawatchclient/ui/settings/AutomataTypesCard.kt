@@ -41,8 +41,14 @@ internal fun AutomataTypesCard() {
     var createOpen by remember { mutableStateOf(false) }
 
     suspend fun loadTypes() {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return
-        val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.firstOrNull { it.enabled }
+                else list.firstOrNull { it.id == activeId && it.enabled }
+                    ?: list.firstOrNull { it.enabled }
+            } ?: return
         ServiceLocator.transportFor(sp).listAutomataTypes().onSuccess { types = it }
     }
 
@@ -71,8 +77,14 @@ internal fun AutomataTypesCard() {
                     IconButton(onClick = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteAutomataType(dt.id).onSuccess { loadTypes() }
                             }
                         }
@@ -90,8 +102,14 @@ internal fun AutomataTypesCard() {
             onCreate = { req ->
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.firstOrNull { it.enabled }
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                                    ?: list.firstOrNull { it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).registerAutomataType(req).onSuccess { loadTypes() }
                     }
                 }

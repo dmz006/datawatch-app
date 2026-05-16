@@ -55,9 +55,14 @@ internal fun AlgorithmModeCard() {
     val scope = rememberCoroutineScope()
 
     suspend fun loadSessions() {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: return
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.firstOrNull { it.enabled }
+                else list.firstOrNull { it.id == activeId && it.enabled }
+                    ?: list.firstOrNull { it.enabled }
+            } ?: return
         ServiceLocator.transportFor(sp).algorithmList().onSuccess { sessions = it }
     }
 
@@ -89,9 +94,14 @@ internal fun AlgorithmModeCard() {
                     onAdvance = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmAdvance(state.sessionId)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -102,9 +112,14 @@ internal fun AlgorithmModeCard() {
                     onAbort = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmAbort(state.sessionId)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
