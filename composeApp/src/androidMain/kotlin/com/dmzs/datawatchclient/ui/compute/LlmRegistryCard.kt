@@ -127,7 +127,7 @@ public fun LlmRegistryCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        val migCount = migrationStatus?.count ?: 0
+        val migCount = if (migrationStatus?.show == true) migrationStatus?.migrated?.size ?: 0 else 0
         if (migCount > 0) {
             Row(
                 modifier = Modifier
@@ -146,7 +146,7 @@ public fun LlmRegistryCard() {
                 IconButton(onClick = {
                     scope.launch {
                         resolveActiveTransport()?.dismissMigration()
-                        migrationStatus = migrationStatus?.copy(count = 0)
+                        migrationStatus = migrationStatus?.copy(show = false)
                     }
                 }) {
                     Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.llm_migration_dismiss), tint = Color(0xFF5D4037))

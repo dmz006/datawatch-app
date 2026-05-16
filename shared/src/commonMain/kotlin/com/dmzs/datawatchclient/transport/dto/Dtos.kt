@@ -946,11 +946,18 @@ public data class SyncSkillsRequestDto(
  * references an ollama ComputeNode.
  */
 @Serializable
+public data class DeclaredCapacityDto(
+    val gpus: Int = 1,
+    @SerialName("gpu_mem_gb") val gpuMemGb: Int = 0,
+    @SerialName("max_concurrent_models") val maxConcurrentModels: Int = 10,
+)
+
+@Serializable
 public data class ComputeNodeDto(
     val name: String,
     val kind: String,
     val address: String,
-    @SerialName("declared_capacity") val declaredCapacity: Int = 1,
+    @SerialName("declared_capacity") val declaredCapacity: DeclaredCapacityDto? = null,
     val tags: List<String> = emptyList(),
     @SerialName("auto_created") val autoCreated: Boolean = false,
     @SerialName("hardware_spec") val hardwareSpec: ComputeHardwareSpec? = null,
@@ -1009,8 +1016,8 @@ public data class FreeObserverPeerDto(
 /** Sprint 30 — per-node model assignment in the LLM registry. */
 @Serializable
 public data class LlmModelPairDto(
-    @SerialName("compute_node") val computeNode: String,
-    val model: String,
+    @SerialName("compute_node") val computeNode: String = "",
+    val model: String = "",
 )
 
 /**
@@ -1022,10 +1029,10 @@ public data class LlmModelPairDto(
 public data class LlmRegistryEntryDto(
     val name: String,
     val kind: String,
-    @SerialName("compute_node") val computeNode: String,
+    @SerialName("compute_node") val computeNode: String = "",
     /** v7 multi-node list for the picker cascade. The `compute_node` field above is the primary; this list may contain alternates. */
     @SerialName("compute_nodes") val computeNodes: List<String> = emptyList(),
-    val model: String,
+    val model: String = "",
     /** Sprint 30 — per-node model pairs; supersedes computeNode+model when non-empty. */
     val models: List<LlmModelPairDto> = emptyList(),
     val enabled: Boolean = true,
@@ -1086,12 +1093,27 @@ public data class LlmToggleRequest(
     val pretest: Boolean = false,
 )
 
+/** GET /api/compute/nodes response envelope. */
+@Serializable
+internal data class ComputeNodesResponseDto(
+    val nodes: List<ComputeNodeDto> = emptyList(),
+)
+
+/** GET /api/llms response envelope. */
+@Serializable
+internal data class LlmsResponseDto(
+    val llms: List<LlmRegistryEntryDto> = emptyList(),
+)
+
 /** GET /api/migration/status — v7 first-launch auto-migration report. */
 @Serializable
 public data class MigrationStatusDto(
-    val count: Int,
-    val names: List<String> = emptyList(),
-    @SerialName("when") val `when`: String? = null,
+    @SerialName("at_unix") val atUnix: Long = 0L,
+    val howto: String = "",
+    val migrated: List<String> = emptyList(),
+    val notice: String = "",
+    val show: Boolean = false,
+    val version: String = "",
 )
 
 // ── v0.75.0 BL274 Docs Search + Vault/Secrets DTOs ──────────────────────────
