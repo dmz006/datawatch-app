@@ -277,10 +277,10 @@ MCP tools (`get_config`, etc.) may throw x509 errors against the test instance (
 | T10 | Push & notifications | TS-181–TS-195 | ✅ Pass (Wear blocked) |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ Pass |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ Pass |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | ⏳ Blocked: datawatch#48 |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 📋 Ready — datawatch#48 fixed alpha.69; re-run pending |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ Pass |
-| T15 | New server endpoints | TS-286–TS-305 | ⏳ Blocked: datawatch#40-43 |
-| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | ⏳ Blocked: datawatch#39 |
+| T15 | New server endpoints | TS-286–TS-305 | 📋 Ready — datawatch#40-43 all fixed alpha.67+ |
+| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | 📋 Ready — datawatch#39 fixed alpha.68; needs UP distributor on emulator |
 | T17 | Parity audit | TS-316–TS-325 | 📋 Planned |
 | T18 | Test debt payoff | TS-326–TS-343 | 📋 Planned |
 | T19 | Dashboard hooks integration | TS-344–TS-350 | 📋 Planned |
@@ -377,10 +377,10 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Status**: 📋 Ready
 
 ### TS-299–TS-303: (5 stories: evals list, run suite, view results, compare, export)
-**Status**: ⏳ Blocked (datawatch#42 — /api/evals still 404 as of alpha.67)
+**Status**: 📋 Ready — datawatch#42 fixed; sub-paths live
 
 ### TS-304–TS-305: (2 stories: evals history, eval suite CRUD)
-**Status**: ⏳ Blocked (datawatch#42)
+**Status**: 📋 Ready — datawatch#42 fixed
 
 ---
 
@@ -396,7 +396,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Check secondary instance logs: registration accepted
 **Expected**: 200 OK, device endpoint stored on server
 **Evidence**: `push_register.json`, logcat
-**Status**: ⏳ Blocked on datawatch#39
+**Status**: 📋 Ready — datawatch#39 fixed alpha.68
 
 ### TS-307–TS-315: (9 stories for push receipt, notification display, quick-reply, fallback chain)
 
@@ -469,11 +469,11 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Review each story; tap Approve
 **Expected**: Workflow completes as documented (or notes blocker if datawatch#48 prevents decompose)
 **Evidence**: `autonomous_planning_workflow.json`, screenshots of each step
-**Status**: ⏳ Blocked (datawatch#48 decompose timeout)
+**Status**: 📋 Ready — datawatch#48 fixed alpha.69
 
 ### TS-365 — autonomous-review-approve.md: Review & approve PRD
 **Tags**: [surface:phone] [feature:autonomous]
-**Status**: ⏳ Blocked (datawatch#48)
+**Status**: 📋 Ready — datawatch#48 fixed alpha.69
 
 ### TS-370 — profiles.md: Create/switch/use project profiles
 **Tags**: [surface:phone] [feature:sessions]
@@ -481,7 +481,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-375 — llm-registry.md: Register LLM, enable, set default, use in session
 **Tags**: [surface:phone] [feature:settings]
-**Status**: ⏳ Blocked (compute daemon unreachable)
+**Status**: 📋 Ready — compute node "datawatch-ollama" registered
 
 ### TS-380 — secrets-manager.md: Create secret, use in config, rotate
 **Tags**: [surface:phone] [feature:security]
@@ -524,7 +524,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-415 — Autonomous Arc: create PRD → council review → approve → run
 **Tags**: [surface:phone] [feature:autonomous]
-**Status**: ⏳ Blocked (datawatch#48)
+**Status**: 📋 Ready — datawatch#48 fixed alpha.69
 
 ### TS-420 — Power User Multi-Server Arc: setup profiles → switch servers → observer → config replication
 **Tags**: [surface:phone] [feature:multiserver]
