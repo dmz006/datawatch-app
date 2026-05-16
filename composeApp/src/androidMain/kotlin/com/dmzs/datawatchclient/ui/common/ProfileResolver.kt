@@ -39,12 +39,13 @@ public fun interface ProfileResolver {
          */
         public val Default: ProfileResolver =
             ProfileResolver {
-                val activeId = ServiceLocator.activeServerStore.get() ?: return@ProfileResolver null
+                val activeId = ServiceLocator.activeServerStore.get()
+                val profiles = ServiceLocator.profileRepository.observeAll().first()
                 val profile =
-                    ServiceLocator.profileRepository.observeAll().first()
-                        .firstOrNull { it.id == activeId && it.enabled }
-                        ?: return@ProfileResolver null
-                profile to ServiceLocator.transportFor(profile)
+                    if (activeId == null) profiles.firstOrNull { it.enabled }
+                    else profiles.firstOrNull { it.id == activeId && it.enabled }
+                        ?: profiles.firstOrNull { it.enabled }
+                profile?.let { it to ServiceLocator.transportFor(it) }
             }
     }
 }
