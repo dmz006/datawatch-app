@@ -81,10 +81,12 @@ mkdir -p /home/dmz/workspace/datawatch-test-workspace
 /home/dmz/.local/bin/datawatch start --foreground \
   --config /home/dmz/workspace/datawatch-app/.datawatch-test/config.yaml \
   > /tmp/test-server.log 2>&1 &
+TEST_DAEMON_PID=$!
+echo "$TEST_DAEMON_PID" > /tmp/test-daemon.pid
 sleep 5
 curl -sk https://127.0.0.1:18443/api/health
-# MUST return {"status":"ok","hostname":"johnnyjohnny-test"} before proceeding
-# If it doesn't: check /tmp/test-server.log and fix before continuing
+# MUST return {"hostname":"johnnyjohnny-test","status":"ok"} — if not, check /tmp/test-server.log
+# Always kill by PID from /tmp/test-daemon.pid — never grep for the process
 ```
 
 **Emulator bridge**:
@@ -93,10 +95,19 @@ adb reverse tcp:18443 tcp:18443
 adb reverse tcp:18080 tcp:18080
 ```
 
-**Cleanup** (after run):
+**Cleanup** — use saved PID, never grep:
 ```bash
-pkill -f "datawatch serve --data-dir .datawatch-test"
+TEST_DAEMON_PID=$(cat /tmp/test-daemon.pid 2>/dev/null)
+if [ -n "$TEST_DAEMON_PID" ] && kill -0 "$TEST_DAEMON_PID" 2>/dev/null; then
+  if ss -tlnp 2>/dev/null | grep -q "18080.*pid=$TEST_DAEMON_PID"; then
+    kill "$TEST_DAEMON_PID"
+  else
+    echo "PID $TEST_DAEMON_PID not on port 18080 — refusing to kill"
+  fi
+fi
+rm -f /tmp/test-daemon.pid
 rm -rf .datawatch-test docs/testing/v1.0.0/evidence/
+# NEVER: pkill -f datawatch / kill $(grep datawatch ...) — kills production
 ```
 
 ### Mobile App (emulator)
@@ -143,6 +154,14 @@ Hook scripts in `~/.datawatch/hooks/` must use `DATAWATCH_URL=https://localhost:
 
 ### MCP x509 on test instance ✅ Fixed in v7.0.0-alpha.67
 MCP tools against self-signed certs now work (datawatch#51, fixed in alpha.67).
+
+### Never grep to kill the test daemon — always use the saved PID ✅ Lesson from this run
+`kill $(ps aux | grep "datawatch start --foreground" ...)` will match both the test daemon AND the production daemon — production daemon also shows as `start --foreground` internally. This was the exact mistake that killed production during v1.0.0 testing.
+
+**Correct pattern**: Save the PID at startup (`echo $! > /tmp/test-daemon.pid`), validate it's listening on port 18080 before killing, never use grep-to-kill. See `test-isolation-guide.md` for the full `_validate_test_daemon_pid()` pattern from datawatch v7.0.0.
+
+### CLI commands against test instance need `--config`
+Any `datawatch` CLI command without `--config .datawatch-test/config.yaml` will hit the production daemon. Always pass `--config` when testing against the isolated instance.
 
 ### Verify datawatch is running after any update or restart
 After `datawatch update`, config change, or restart: always run `curl -sk https://localhost:8443/api/health`. If not healthy, check logs and fix before continuing. Silent failures waste test time.

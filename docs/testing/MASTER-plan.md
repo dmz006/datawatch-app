@@ -64,31 +64,48 @@ This plan covers all mobile, Wear, and Auto surfaces in a comprehensive test str
 
 **LLM policy**: Use Ollama (`qwen3:1.7b`) for all test-instance LLM calls. Claude (claude-haiku-4-5, quick effort) only for major release final validation. This host (johnnyjohnny) has a 32G GPU — sufficient for small models. datawatch server (ralfthewise) has 128G but is not used for app testing.
 
-**Start**:
+**Start** (save the PID — never grep for it):
 ```bash
+mkdir -p /home/dmz/workspace/datawatch-test-workspace
 mkdir -p .datawatch-test
 cat > .datawatch-test/config.yaml <<EOF
+data_dir: $(pwd)/.datawatch-test
+hostname: johnnyjohnny-test
 server:
+  enabled: true
+  host: 0.0.0.0
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
 session:
   skip_permissions: true
+  max_sessions: 10
+  llm_backend: ollama
+  default_project_dir: /home/dmz/workspace/datawatch-test-workspace
+  root_path: /home/dmz/workspace
 autonomous:
   enabled: true
 memory:
   enabled: true
-llm:
-  default_backend: ollama
-  ollama_url: http://localhost:11434
-  ollama_model: qwen3:1.7b
+ollama:
+  enabled: true
+  model: qwen3:1.7b
+  url: http://localhost:11434
   embedder: nomic-embed-text
+mcp:
+  enabled: false
 EOF
 
-rtk /home/dmz/.local/bin/datawatch serve --data-dir .datawatch-test 2>&1 | tee /tmp/test-server.log &
-sleep 3
+/home/dmz/.local/bin/datawatch start --foreground \
+  --config "$(pwd)/.datawatch-test/config.yaml" \
+  > /tmp/test-server.log 2>&1 &
+TEST_DAEMON_PID=$!
+echo "$TEST_DAEMON_PID" > /tmp/test-daemon.pid
+sleep 5
 curl -sk https://127.0.0.1:18443/api/health
-# Must return {"status":"ok"} before proceeding. If not: check /tmp/test-server.log and fix before continuing.
+# Must return {"hostname":"johnnyjohnny-test","status":"ok"} before proceeding.
 ```
 
 **Emulator bridge**:
@@ -97,10 +114,25 @@ adb reverse tcp:18443 tcp:18443
 adb reverse tcp:18080 tcp:18080
 ```
 
-**Cleanup** (after run):
+**Cleanup** — always use the saved PID, never grep:
 ```bash
-pkill -f "datawatch serve --data-dir .datawatch-test"
+# CORRECT: kill by PID saved at startup
+TEST_DAEMON_PID=$(cat /tmp/test-daemon.pid 2>/dev/null)
+if [ -n "$TEST_DAEMON_PID" ] && kill -0 "$TEST_DAEMON_PID" 2>/dev/null; then
+  # Verify it's actually the test instance (port 18080) before killing
+  if ss -tlnp 2>/dev/null | grep -q "18080.*pid=$TEST_DAEMON_PID"; then
+    kill "$TEST_DAEMON_PID"
+  else
+    echo "PID $TEST_DAEMON_PID is NOT listening on 18080 — refusing to kill"
+  fi
+fi
+rm -f /tmp/test-daemon.pid
 rm -rf .datawatch-test docs/testing/{{VERSION}}/evidence/
+
+# WRONG (never do this — it will kill production if test daemon exited):
+# pkill -f "datawatch"
+# kill $(pgrep -f "datawatch")
+# kill $(ps aux | grep datawatch | ...)
 ```
 
 ### Mobile App (emulator)
