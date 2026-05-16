@@ -539,6 +539,308 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ---
 
+## T22 — LLM Enable Regression (alpha.70 #46)
+
+**Goal**: Verify that enabling LLMs of non-standard kinds (aider, goose, gemini, shell) no longer fails with a pretest error. alpha.70 removed the binary pre-test that caused a 500 on enable for any LLM whose binary wasn't installed on the test host.
+
+### TS-430 — Enable aider LLM (no pretest error)
+**Tags**: [surface:api] [feature:llm] [regression:alpha70-#46]
+**Steps**:
+1. POST /api/llms `{"name":"t22-aider","kind":"aider","model":"gpt-4o"}`
+2. GET /api/llms/t22-aider — verify `enabled` absent or false
+3. POST /api/llms/t22-aider/enable (or PUT with `{"enabled":true}`)
+4. Verify response is 200/201 — **no 500 "pretest failed" error**
+5. GET /api/llms/t22-aider — verify `enabled: true`
+**Expected**: Enable succeeds without pretest error
+**Evidence**: `t22_aider_enable.json`
+**Status**: 📋 Planned
+
+### TS-431 — Enable goose LLM (no pretest error)
+**Tags**: [surface:api] [feature:llm] [regression:alpha70-#46]
+**Steps**: Same as TS-430 but `kind: goose`
+**Expected**: Enable succeeds
+**Status**: 📋 Planned
+
+### TS-432 — Enable gemini LLM (no pretest error)
+**Tags**: [surface:api] [feature:llm] [regression:alpha70-#46]
+**Steps**: Same as TS-430 but `kind: gemini`, `model: gemini-2.0-flash`
+**Expected**: Enable succeeds
+**Status**: 📋 Planned
+
+### TS-433 — Enable shell LLM (no pretest error)
+**Tags**: [surface:api] [feature:llm] [regression:alpha70-#46]
+**Steps**: Same as TS-430 but `kind: shell`
+**Expected**: Enable succeeds
+**Status**: 📋 Planned
+
+### TS-434 — Mobile: LLM enable toggle shows no error modal (aider)
+**Tags**: [surface:phone] [feature:llm] [regression:alpha70-#46]
+**Steps**:
+1. Settings → Compute → LLMs — find t22-aider entry
+2. Tap Enable toggle
+3. Verify **no error modal** appears (was showing "enable failed" modal before alpha.70)
+4. Verify toggle turns on / entry shows enabled state
+**Expected**: Toggle enables cleanly; no error dialog
+**Evidence**: screenshot `t22_mobile_aider_enable.png`
+**Status**: 📋 Planned
+
+### TS-435 — Mobile: LLM disable + re-enable (aider)
+**Tags**: [surface:phone] [feature:llm] [regression:alpha70-#46]
+**Steps**:
+1. With t22-aider enabled (from TS-434), tap Disable
+2. Verify toggle turns off
+3. Tap Enable again — verify no error
+**Expected**: Full enable/disable cycle works
+**Status**: 📋 Planned
+
+### TS-436 — llm_in_use shows aider as available after enable
+**Tags**: [surface:api] [feature:llm]
+**Steps**:
+1. GET /api/llms/in-use or equivalent
+2. Verify t22-aider appears in the available list
+**Expected**: Enabled LLM visible to session scheduler
+**Status**: 📋 Planned
+
+### TS-437 — Enable all four kinds in sequence (aider/goose/gemini/shell)
+**Tags**: [surface:api] [feature:llm] [regression:alpha70-#46]
+**Steps**:
+1. POST + enable all four: t22-aider, t22-goose, t22-gemini, t22-shell
+2. GET /api/llms — verify all four show as enabled
+3. Cleanup: DELETE each
+**Expected**: All four enable without error
+**Status**: 📋 Planned
+
+### TS-438 — LLM test endpoint still works for ollama (regression guard)
+**Tags**: [surface:api] [feature:llm]
+**Steps**:
+1. POST /api/llms/ollama/test
+2. Verify 200 — ollama pre-test still runs (only aider/goose/gemini/shell skip pretest)
+**Expected**: ollama test returns 200
+**Status**: 📋 Planned
+
+### TS-439 — Cleanup: DELETE all t22-* LLMs
+**Tags**: [surface:api] [feature:llm]
+**Steps**: DELETE /api/llms/t22-aider, t22-goose, t22-gemini, t22-shell
+**Expected**: All deleted cleanly; GET /api/llms no longer lists them
+**Status**: 📋 Planned
+
+---
+
+## T23 — i18n / Locale Coverage (alpha.70 #32)
+
+**Goal**: Verify that all 5 shipped locales (EN, DE, ES, FR, JA) render correctly in the mobile app. alpha.70 closes #32 — i18n was already fully shipped in the mobile client via strings.xml; this sprint validates each locale's key UI surfaces.
+
+### TS-440 — Locale switch to German (DE)
+**Tags**: [surface:phone] [feature:i18n] [regression:alpha70-#32]
+**Steps**:
+1. Android Settings → Language → add Deutsch; set as primary
+2. Reopen app; verify: Sessions tab label, Alerts tab label, Settings section headers all in German
+3. Navigate to Settings → General — verify section titles are German
+**Expected**: Key labels rendered in German (e.g. "Einstellungen", "Benachrichtigungen")
+**Evidence**: screenshot `t23_locale_de.png`
+**Status**: 📋 Planned
+
+### TS-441 — Locale switch to Spanish (ES)
+**Tags**: [surface:phone] [feature:i18n]
+**Steps**: Same as TS-440 but Español
+**Expected**: Labels in Spanish (e.g. "Configuración", "Alertas")
+**Status**: 📋 Planned
+
+### TS-442 — Locale switch to French (FR)
+**Tags**: [surface:phone] [feature:i18n]
+**Steps**: Same as TS-440 but Français
+**Expected**: Labels in French (e.g. "Paramètres", "Alertes")
+**Status**: 📋 Planned
+
+### TS-443 — Locale switch to Japanese (JA)
+**Tags**: [surface:phone] [feature:i18n]
+**Steps**: Same as TS-440 but 日本語
+**Expected**: Labels in Japanese; no garbled/missing characters
+**Status**: 📋 Planned
+
+### TS-444 — English (EN) is the fallback locale
+**Tags**: [surface:phone] [feature:i18n]
+**Steps**:
+1. Switch device back to English
+2. Verify all labels return to English correctly
+3. Specifically check: onboarding screen, new-session dialog, secrets store section header
+**Expected**: Full English label set — no residual German/Spanish strings
+**Status**: 📋 Planned
+
+### TS-445 — i18n: Secrets section renders in non-EN locale
+**Tags**: [surface:phone] [feature:i18n] [feature:security]
+**Steps**:
+1. Set device to German
+2. Settings → Compute → scroll to SECRETS STORE section
+3. Verify section title and field hints are translated
+**Expected**: Translated labels for "SECRETS STORE", "Secret name", "Add Secret"
+**Status**: 📋 Planned
+
+### TS-446 — i18n: New session dialog renders in non-EN locale
+**Tags**: [surface:phone] [feature:i18n] [feature:sessions]
+**Steps**:
+1. Set device to French
+2. Sessions → FAB → New session dialog
+3. Verify field labels ("Nom de la session", "Tâche") are in French
+**Expected**: Dialog fully translated
+**Status**: 📋 Planned
+
+### TS-447 — Locale reset to EN after i18n tests
+**Tags**: [surface:phone] [feature:i18n]
+**Steps**: Set device back to English; verify app labels are English
+**Expected**: No residual non-EN strings; cleans up for subsequent tests
+**Status**: 📋 Planned
+
+---
+
+## T24 — Null-activeId Regression Coverage
+
+**Goal**: Verify that all 7 ViewModels fixed for the null-activeId bug (no explicit server selected) load data correctly after app restart. Regression guard for the fix applied in v0.38.x (AlgorithmModeCard, AutomataTypesCard, OrchestratorGraphsCard, ScanConfigCard, NewPrdDialog, SecretsCard, ProfileResolver).
+
+**Setup**: After each test, force-stop app → relaunch without tapping the server picker (activeId remains null). Navigate directly to the tested screen.
+
+### TS-448 — SecretsCard loads after restart (null activeId)
+**Tags**: [surface:phone] [feature:security] [regression:null-activeId]
+**Steps**:
+1. Force-stop app; relaunch
+2. Navigate directly: Settings → Compute → scroll to SECRETS STORE
+3. Verify existing secrets list loads (k8s-context-testing visible)
+**Expected**: Secrets load without "No server" error; no empty list due to null transport
+**Status**: 📋 Planned
+
+### TS-449 — AlgorithmModeCard loads after restart (null activeId)
+**Tags**: [surface:phone] [feature:settings] [regression:null-activeId]
+**Steps**:
+1. Force-stop; relaunch → Settings → Compute → scroll to ALGORITHM section
+2. Verify current algorithm mode loads from server
+**Expected**: Algorithm state visible, no "No enabled server" error
+**Status**: 📋 Planned
+
+### TS-450 — AutomataTypesCard loads after restart (null activeId)
+**Tags**: [surface:phone] [feature:automata] [regression:null-activeId]
+**Steps**: Force-stop; relaunch → Settings → Automata → verify automata type list loads
+**Expected**: Automata types visible
+**Status**: 📋 Planned
+
+### TS-451 — OrchestratorGraphsCard loads after restart (null activeId)
+**Tags**: [surface:phone] [feature:automata] [regression:null-activeId]
+**Steps**: Force-stop; relaunch → Settings → Automata → scroll to ORCHESTRATOR section
+**Expected**: Orchestrator graph list loads (or "none" if empty); no error
+**Status**: 📋 Planned
+
+### TS-452 — ScanConfigCard loads after restart (null activeId)
+**Tags**: [surface:phone] [feature:settings] [regression:null-activeId]
+**Steps**: Force-stop; relaunch → Settings → Compute → scroll to DETECTION/SCAN section
+**Expected**: Scan config loads; toggles reflect server state
+**Status**: 📋 Planned
+
+### TS-453 — NewPrdDialog creates PRD after restart (null activeId)
+**Tags**: [surface:phone] [feature:autonomous] [regression:null-activeId]
+**Steps**:
+1. Force-stop; relaunch → Autonomous tab → tap new PRD
+2. Fill title + spec; tap Create
+3. Verify PRD appears in list (no "null transport" error)
+**Expected**: PRD created successfully
+**Status**: 📋 Planned
+
+### TS-454 — ProfileResolver fallback: Autonomous tab loads after restart
+**Tags**: [surface:phone] [feature:autonomous] [regression:null-activeId]
+**Steps**:
+1. Force-stop; relaunch → Autonomous tab (no server picker tap)
+2. Verify PRD list loads (not "No enabled server.")
+**Expected**: PRD list visible; ProfileResolver used first-enabled-profile fallback
+**Status**: 📋 Planned
+
+### TS-455 — Null-activeId: Sessions tab loads after restart
+**Tags**: [surface:phone] [feature:sessions] [regression:null-activeId]
+**Steps**:
+1. Force-stop; relaunch → Sessions tab (no server tap)
+2. Verify session list loads (or "No sessions" message — not an error state)
+**Expected**: Sessions tab functional with null activeId
+**Status**: 📋 Planned
+
+### TS-456 — Null-activeId: Alerts tab loads after restart
+**Tags**: [surface:phone] [feature:alerts] [regression:null-activeId]
+**Steps**: Force-stop; relaunch → Alerts tab
+**Expected**: Alerts list loads; badge count accurate
+**Status**: 📋 Planned
+
+### TS-457 — Null-activeId: Observer tab loads after restart
+**Tags**: [surface:phone] [feature:observer] [regression:null-activeId]
+**Steps**: Force-stop; relaunch → Observer tab
+**Expected**: Server stats load; peer list visible
+**Status**: 📋 Planned
+
+---
+
+## T25 — PRD Lifecycle + alpha.70 Parity
+
+**Goal**: Run the full PRD lifecycle (decompose → review → approve → run) now that T13 decompose is unblocked, and verify alpha.70 parity for recently fixed endpoints.
+
+### TS-458 — Full PRD lifecycle: create → decompose → needs_review
+**Tags**: [surface:api] [feature:autonomous]
+**Steps**:
+1. POST /api/autonomous/prds with spec + project_dir + llm=ollama
+2. POST /api/autonomous/prds/{id}/decompose
+3. Verify status → `needs_review`; stories array non-empty
+**Expected**: Decompose completes in <120s; stories generated
+**Evidence**: `t25_prd_decompose.json`
+**Status**: 📋 Planned
+
+### TS-459 — PRD approve via API
+**Tags**: [surface:api] [feature:autonomous]
+**Steps**:
+1. POST /api/autonomous/prds/{id}/approve
+2. Verify status → `approved`
+**Expected**: Approve succeeds; status transitions correctly
+**Status**: 📋 Planned
+
+### TS-460 — PRD mobile approve via Autonomous tab
+**Tags**: [surface:phone] [feature:autonomous]
+**Steps**:
+1. Autonomous tab → find PRD in needs_review state
+2. Tap Approve button
+3. Verify PRD transitions to approved on mobile
+**Expected**: Mobile approve works; list refreshes
+**Status**: 📋 Planned
+
+### TS-461 — PRD run (autonomous execution start)
+**Tags**: [surface:api] [feature:autonomous]
+**Steps**:
+1. POST /api/autonomous/prds/{id}/run
+2. GET /api/autonomous/prds/{id} — verify status → `running` or `in_progress`
+**Expected**: PRD run starts; status changes
+**Status**: 📋 Planned
+
+### TS-462 — Algorithm advance with running session (T15 gap)
+**Tags**: [surface:api] [feature:algorithm]
+**Steps**:
+1. Start a session: POST /api/sessions/start
+2. POST /api/algorithm/start `{"session_id":"<id>"}`
+3. POST /api/algorithm/advance `{"session_id":"<id>","phase":"observe"}`
+4. Verify response includes next phase
+**Expected**: Algorithm advance works with a real session
+**Status**: 📋 Planned
+
+### TS-463 — T13 decompose timeout no longer triggers (regression guard)
+**Tags**: [surface:api] [feature:autonomous] [regression:datawatch#48]
+**Steps**:
+1. Create 3 PRDs with increasing spec complexity
+2. Decompose each with Ollama qwen3:1.7b
+3. Verify all complete without timeout (should be <60s each with local Ollama)
+**Expected**: No timeout; datawatch#48 confirmed resolved
+**Status**: 📋 Planned
+
+### TS-464 — alpha.70 health check: version confirmed on both test instances
+**Tags**: [surface:api] [feature:infra]
+**Steps**:
+1. GET https://localhost:18443/api/health → `"version":"7.0.0-alpha.70"`
+2. GET https://localhost:28443/api/health → `"version":"7.0.0-alpha.70"`
+**Expected**: Both instances on alpha.70
+**Status**: 📋 Planned
+
+---
+
 ## Release Gate
 
 **v1.0.0 ship criteria**:
@@ -549,6 +851,10 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T19: ✅ Pass (dashboard hooks)
 - T20: ✅ Pass or ⏳ Blocked with known issue (howto validation)
 - T21: ✅ Pass or ⏳ Blocked with known issue (end-to-end journeys)
+- T22: ✅ Pass (LLM enable regression alpha.70 #46)
+- T23: ✅ Pass or ⏳ Skip (i18n — device locale change required)
+- T24: ✅ Pass (null-activeId regression)
+- T25: ✅ Pass (PRD lifecycle + parity)
 - No P0/P1 critical bugs
 - Cookbook shows final pass counts
 
