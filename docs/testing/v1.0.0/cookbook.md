@@ -4,7 +4,7 @@
 **Test host**: johnnyjohnny (32G GPU, Ollama `qwen3:1.7b`)  
 **Test environment**: Secondary instance (https://10.0.2.2:18443, port 18080/18443) + emulator dw_test_phone  
 **Emulator**: Android 14 / API 34, Pixel 6  
-**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.69 (updated from alpha.67)  
+**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.70 (updated from alpha.69)  
 **IMPORTANT**: ALL tests run against secondary test instance — never the production ring server.
 
 After each test run: update Status column. Keep notes in plan.md (see §1b for lessons learned).
@@ -36,7 +36,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-344 file written; TS-345-350 skip (server write API not implemented) |
 | T20 | Howto validation (datawatch docs) | 9 | 5 | — | — | 2 | 🟡 TS-370/375/380/385/400 pass; TS-360/365 conditional on T13; TS-390/395 blocked |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
-| **TOTALS** | | **369** | **251** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
+| T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
+| **TOTALS** | | **379** | **261** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
 
 ---
 
