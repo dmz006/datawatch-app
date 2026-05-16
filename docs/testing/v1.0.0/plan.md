@@ -280,10 +280,10 @@ MCP tools (`get_config`, etc.) may throw x509 errors against the test instance (
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 📋 Ready — datawatch#48 fixed alpha.69; re-run pending |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ Pass |
 | T15 | New server endpoints | TS-286–TS-305 | 📋 Ready — datawatch#40-43 all fixed alpha.67+ |
-| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | 📋 Ready — datawatch#39 fixed alpha.68; needs UP distributor on emulator |
+| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | 📋 Ready — ntfy v1.24.0 installed on emulator; ntfy server :18280; UP infra complete |
 | T17 | Parity audit | TS-316–TS-325 | 📋 Planned |
 | T18 | Test debt payoff | TS-326–TS-343 | 📋 Planned |
-| T19 | Dashboard hooks integration | TS-344–TS-350 | 📋 Planned |
+| T19 | Dashboard hooks integration | TS-344–TS-350 | 📋 Ready — datawatch#57 fixed alpha.71; all 7 stories unblocked |
 
 ---
 
@@ -447,13 +447,14 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 ### TS-344 — smoke-progress.json writes before first T-sprint
 **Tags**: [surface:api]
 **Steps**:
-1. Test runner writes `~/.datawatch-test/smoke-progress.json` before T1 starts
-2. Verify file contains: `{"active": true, "phase": "T1", "pass": 0, "fail": 0}`
-**Expected**: File exists and has correct JSON shape
+1. POST `https://127.0.0.1:18443/api/dashboard/smoke-progress` with `{"active": true, "phase": "T1", "pass": 0, "fail": 0}`
+2. GET `/api/dashboard/smoke-runs` — verify active run appears
+**Expected**: 200 OK; run listed in smoke-runs response
 **Evidence**: `smoke_progress_init.json`
-**Status**: 📋 Planned
+**Status**: 📋 Ready — datawatch#57 fixed alpha.71
 
 ### TS-345–TS-350: (6 stories for progress updates, Smoke Run card, history, cleanup)
+**Status**: 📋 Ready — datawatch#57 fixed alpha.71; PUT /api/dashboard/smoke-progress, GET /api/dashboard/smoke-runs/{id}, DELETE all live
 
 ---
 
@@ -497,7 +498,12 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-395 — dashboard.md: Navigate to dashboard, configure cards
 **Tags**: [surface:phone] [feature:settings]
-**Status**: ⏳ Blocked (PWA-only; mobile accesses via API)
+**Steps**:
+1. GET `/api/dashboard/smoke-runs` — verify response matches dashboard card data
+2. POST `/api/dashboard/smoke-progress` with test payload — verify listed in GET
+3. DELETE `/api/dashboard/smoke-runs/{id}` — verify removed
+**Expected**: All dashboard API operations succeed; data matches PWA view
+**Status**: 📋 Ready — datawatch#58 fixed alpha.71; /api/dashboard/* endpoints live
 
 ### TS-400 — session-telemetry.md: Capture and view session telemetry data
 **Tags**: [surface:phone] [feature:sessions]
