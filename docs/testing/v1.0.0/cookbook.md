@@ -27,7 +27,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 🟡 Wear AVD ready |
 | T11 | Security & keystore | 10 | 4 | — | 4 | 2 | 🟡 |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | 🟡 Ollama configured; verify |
+| T13 | Autonomous / PRD lifecycle | 35 | 18 | — | — | 17 | 🟡 Decompose ✅ alpha.69 (registered datawatch-ollama compute node); remaining 17 need re-run |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred |
 | T15 | New server endpoints | 20 | 9 | — | 4 | 7 | 🟡 identity/algo/council/evals verified; algo advance needs session |
 | T16 | UnifiedPush Tier 1 | 10 | 2 | — | 8 | 0 | 🟡 server endpoint verified; direct UP registration needs distributor app |
@@ -35,8 +35,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
 | T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-344 file written; TS-345-350 skip (server write API not implemented) |
 | T20 | Howto validation (datawatch docs) | 9 | 5 | — | — | 2 | 🟡 TS-370/375/380/385/400 pass; TS-360/365 conditional on T13; TS-390/395 blocked |
-| T21 | End-to-end user journeys | 3 | 2 | — | 1 | — | 🟡 TS-410/420 pass; TS-415 conditional on T13 |
-| **TOTALS** | | **369** | **249** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
+| T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
+| **TOTALS** | | **369** | **251** | **1** | **65** | **59** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -108,7 +108,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | Story | Journey | Status | Notes |
 |-------|---------|--------|-------|
 | TS-410 | New User Arc (setup → identity → session → alert → reply) | ✅ Pass | Identity set; session created; reply sent via API; AI responded; alert visible in Alerts tab |
-| TS-415 | Autonomous Arc (create PRD → council → approve → run) | 🟡 Conditional | Conditional on T13 decompose with Ollama passing |
+| TS-415 | Autonomous Arc (create PRD → council → approve → run) | ✅ Pass | T13 decompose unblocked; PRD created+decomposed via API; "Write a Hello World Script" visible on mobile as needs_review; approve→run deferred (soak) |
 | TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ✅ Pass | test2 started; dw-test2 added in Comms; server switch works; Observer shows johnnyjohnny-test2 |
 
 **Summary**: 
@@ -122,7 +122,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 - T10: 10✅ / 2⏭ / 3⏭watch (physical watch)
 - T11: 4✅ / 4⏭ / 2⚠️manual (token auth)
 - T12: 12✅ / 3 partial (dedup verification)
-- T13: 17✅ / 18⏭ Blocked by datawatch#48 (decompose timeout)
+- T13: 18✅ / 17⏭ Decompose ✅ with Ollama alpha.69 (registered compute node required); remaining 17 ready to re-run
 - T14: 10✅ / 20⏭ (soak tests deferred)
 
 ---
@@ -131,7 +131,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | Issue | Title | Blocks | Status | Workaround |
 |-------|-------|--------|--------|-----------|
-| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Ollama configured on test instance — timeout much less likely; verify at runtime |
+| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ✅ Unblocked alpha.69 | Compute node "datawatch-ollama" registered; decompose completed in ~31s with qwen3:1.7b |
 | datawatch#42 | GET /api/evals endpoint | T15 TS-299–305 | ✅ Fixed (sub-paths) | Endpoints at /api/evals/suites,runs,run — all return 200. Stories ready. |
 | datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ✅ Fixed alpha.68 | /.well-known/unifiedpush + /api/push/register live. T16 now testable. |
 
