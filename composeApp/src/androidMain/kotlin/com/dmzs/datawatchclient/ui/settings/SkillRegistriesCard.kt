@@ -66,9 +66,13 @@ internal fun SkillRegistriesCard() {
     var connectingName by remember { mutableStateOf<String?>(null) }
 
     suspend fun loadAll() {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: return
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                else list.firstOrNull { it.id == activeId && it.enabled }
+            } ?: return
         val t = ServiceLocator.transportFor(sp)
         t.listSkillRegistries().onSuccess { registries = it }
         t.listSyncedSkills().onSuccess { syncedSkills = it }
@@ -91,9 +95,13 @@ internal fun SkillRegistriesCard() {
             TextButton(onClick = {
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).addDefaultSkillRegistry().onSuccess { loadAll() }
                     }
                 }
@@ -119,9 +127,13 @@ internal fun SkillRegistriesCard() {
                         scope.launch {
                             runCatching {
                                 connectingName = reg.name
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).connectSkillRegistry(reg.name).onSuccess { loadAll() }
                             }
                             connectingName = null
@@ -132,9 +144,13 @@ internal fun SkillRegistriesCard() {
                     onDelete = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteSkillRegistry(reg.name).onSuccess { loadAll() }
                             }
                         }
@@ -164,9 +180,13 @@ internal fun SkillRegistriesCard() {
             onSave = { req ->
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).createSkillRegistry(req).onSuccess { loadAll() }
                     }
                 }
@@ -182,9 +202,13 @@ internal fun SkillRegistriesCard() {
             onSave = { req ->
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).updateSkillRegistry(
                             reg.name,
                             SkillRegistryUpdateDto(url = req.url, branch = req.branch),
@@ -203,9 +227,13 @@ internal fun SkillRegistriesCard() {
             onSync = { selected ->
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).syncSkills(reg.name, SyncSkillsRequestDto(selected)).onSuccess { loadAll() }
                     }
                 }
@@ -372,9 +400,13 @@ private fun BrowseSkillsDialog(
 
     LaunchedEffect(registry.name) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-            val sp = ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+            val activeId = ServiceLocator.activeServerStore.get()
+            val sp = ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                    else list.firstOrNull { it.id == activeId && it.enabled }
+                } ?: return@runCatching
             ServiceLocator.transportFor(sp).listAvailableSkills(registry.name).onSuccess {
                 available = it
                 selected = it.filter { s -> s.synced }.map { s -> s.name }.toSet()

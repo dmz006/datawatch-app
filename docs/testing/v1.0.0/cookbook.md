@@ -30,7 +30,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | 🟡 Ollama configured; verify |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred |
 | T15 | New server endpoints | 20 | — | — | 7 | 13 | 🟡 identity/algo/council ready; evals blocked #42 |
-| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 10 | ⏳ Blocked: #39 |
+| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 0 | 📋 Ready (alpha.68) |
 | T17 | Parity audit | 10 | — | — | — | — | 📋 |
 | T18 | Test debt payoff | 18 | — | — | — | — | 📋 |
 | T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
@@ -132,8 +132,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | Issue | Title | Blocks | Status | Workaround |
 |-------|-------|--------|--------|-----------|
 | datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Ollama configured on test instance — timeout much less likely; verify at runtime |
-| datawatch#42 | GET /api/evals endpoint | T15 TS-299–305 | ⏳ Open | Stub shown; evals stories skip until server ships |
-| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ⏳ Waiting | ntfy fallback + Signal; Tier 1 deferred post-ship |
+| datawatch#42 | GET /api/evals endpoint | T15 TS-299–305 | ✅ Fixed (sub-paths) | Endpoints at /api/evals/suites,runs,run — all return 200. Stories ready. |
+| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ✅ Fixed alpha.68 | /.well-known/unifiedpush + /api/push/register live. T16 now testable. |
 
 ## Fixed/Unblocked (previously blocking)
 

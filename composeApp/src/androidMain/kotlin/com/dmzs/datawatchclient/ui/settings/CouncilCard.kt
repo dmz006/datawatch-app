@@ -83,9 +83,13 @@ internal fun CouncilCard() {
     val scope = rememberCoroutineScope()
 
     suspend fun loadAll() {
-        val activeId = ServiceLocator.activeServerStore.get() ?: return
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: return
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                else list.firstOrNull { it.id == activeId && it.enabled }
+            } ?: return
         val t = ServiceLocator.transportFor(sp)
         t.councilListPersonas().onSuccess { personas = it }
         t.councilListRuns().onSuccess { runs = it }
@@ -95,9 +99,13 @@ internal fun CouncilCard() {
     fun createPersona(name: String, prompt: String, description: String, assistBackend: String?) {
         scope.launch {
             runCatching {
-                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                val sp = ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val activeId = ServiceLocator.activeServerStore.get()
+                val sp = ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                        else list.firstOrNull { it.id == activeId && it.enabled }
+                    } ?: return@runCatching
                 val dto = CouncilPersonaCreateDto(
                     name = name,
                     prompt = prompt,
@@ -113,9 +121,13 @@ internal fun CouncilCard() {
     fun updatePersona(name: String, prompt: String, description: String, assistBackend: String?) {
         scope.launch {
             runCatching {
-                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                val sp = ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val activeId = ServiceLocator.activeServerStore.get()
+                val sp = ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                        else list.firstOrNull { it.id == activeId && it.enabled }
+                    } ?: return@runCatching
                 val dto = CouncilPersonaCreateDto(
                     name = name,
                     prompt = prompt,
@@ -131,9 +143,13 @@ internal fun CouncilCard() {
     fun deletePersona(name: String) {
         scope.launch {
             runCatching {
-                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                val sp = ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val activeId = ServiceLocator.activeServerStore.get()
+                val sp = ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                        else list.firstOrNull { it.id == activeId && it.enabled }
+                    } ?: return@runCatching
                 ServiceLocator.transportFor(sp).deleteCouncilPersona(name)
                     .onSuccess { loadAll() }
             }
@@ -344,9 +360,13 @@ internal fun CouncilCard() {
                     config = updated
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp = ServiceLocator.profileRepository.observeAll().first()
-                                .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                } ?: return@runCatching
                             ServiceLocator.transportFor(sp).councilUpdateConfig(updated)
                                 .onSuccess { config = it }
                         }
@@ -391,9 +411,13 @@ internal fun CouncilCard() {
                 )
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).councilUpdateConfig(updated)
                             .onSuccess { config = it }
                     }
@@ -434,9 +458,13 @@ internal fun CouncilCard() {
                 if (proposal.isNotBlank()) {
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp = ServiceLocator.profileRepository.observeAll().first()
-                                .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                } ?: return@runCatching
                             val req = StartCouncilRunRequest(
                                 proposal = proposal.trim(),
                                 mode = mode,
@@ -473,9 +501,13 @@ internal fun CouncilCard() {
                     onCancel = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).councilStopRun(run.id)
                                     .onSuccess { runs = runs.filter { it.id != run.id } }
                             }
