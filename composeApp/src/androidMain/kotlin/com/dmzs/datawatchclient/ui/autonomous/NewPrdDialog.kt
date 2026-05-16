@@ -98,10 +98,14 @@ internal fun NewPrdDialog(
 
     LaunchedEffect(Unit) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-            val sp =
-                ServiceLocator.profileRepository.observeAll().first()
-                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+            val activeId = ServiceLocator.activeServerStore.get()
+            val sp = ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) list.firstOrNull { it.enabled }
+                    else list.firstOrNull { it.id == activeId && it.enabled }
+                        ?: list.firstOrNull { it.enabled }
+                } ?: return@runCatching
             val transport = ServiceLocator.transportFor(sp)
 
             coroutineScope {

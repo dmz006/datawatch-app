@@ -47,9 +47,14 @@ internal fun OrchestratorGraphsCard() {
 
     suspend fun load() {
         loading = true
-        val activeId = ServiceLocator.activeServerStore.get() ?: run { loading = false; return }
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: run { loading = false; return }
+        val activeId = ServiceLocator.activeServerStore.get()
+        val sp = ServiceLocator.profileRepository.observeAll()
+            .first { list -> list.any { it.enabled } }
+            .let { list ->
+                if (activeId == null) list.firstOrNull { it.enabled }
+                else list.firstOrNull { it.id == activeId && it.enabled }
+                    ?: list.firstOrNull { it.enabled }
+            } ?: run { loading = false; return }
         ServiceLocator.transportFor(sp).getOrchestratorGraphsList()
             .onSuccess { graphs = it.graphs }
         loading = false
@@ -91,9 +96,14 @@ internal fun OrchestratorGraphsCard() {
                 if (titleInput.isBlank()) { titleError = true; return@Button }
                 scope.launch {
                     runCatching {
-                        val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                        val sp = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.firstOrNull { it.enabled }
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                                    ?: list.firstOrNull { it.enabled }
+                            } ?: return@runCatching
                         ServiceLocator.transportFor(sp).createOrchestratorGraph(titleInput.trim(), dirInput.trim())
                             .onSuccess {
                                 titleInput = ""
@@ -122,9 +132,14 @@ internal fun OrchestratorGraphsCard() {
                     onRun = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).runOrchestratorGraph(g.id)
                                     .onSuccess { load() }
                             }
@@ -133,9 +148,14 @@ internal fun OrchestratorGraphsCard() {
                     onDelete = {
                         scope.launch {
                             runCatching {
-                                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                                val sp = ServiceLocator.profileRepository.observeAll().first()
-                                    .firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteOrchestratorGraph(g.id)
                                     .onSuccess { load() }
                             }

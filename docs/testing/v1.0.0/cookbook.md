@@ -4,7 +4,7 @@
 **Test host**: johnnyjohnny (32G GPU, Ollama `qwen3:1.7b`)  
 **Test environment**: Secondary instance (https://10.0.2.2:18443, port 18080/18443) + emulator dw_test_phone  
 **Emulator**: Android 14 / API 34, Pixel 6  
-**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.67 (updated from alpha.64)  
+**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.69 (updated from alpha.67)  
 **IMPORTANT**: ALL tests run against secondary test instance — never the production ring server.
 
 After each test run: update Status column. Keep notes in plan.md (see §1b for lessons learned).
@@ -21,7 +21,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T4 | New session creation | 15 | 11 | — | 3 | 1 | ✅ |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
 | T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 |
-| T7 | Settings General/Comms/Compute | 25 | 19 | — | 2 | 0 | 🟡 compute unblocked |
+| T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
 | T8 | Settings Automata/PRDs | 25 | 20 | — | — | 4 | 🟡 |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
 | T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 🟡 Wear AVD ready |
@@ -29,14 +29,14 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
 | T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | 🟡 Ollama configured; verify |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred |
-| T15 | New server endpoints | 20 | — | — | 7 | 13 | 🟡 identity/algo/council ready; evals blocked #42 |
-| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 0 | 📋 Ready (alpha.68) |
-| T17 | Parity audit | 10 | — | — | — | — | 📋 |
-| T18 | Test debt payoff | 18 | — | — | — | — | 📋 |
-| T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
+| T15 | New server endpoints | 20 | 9 | — | 4 | 7 | 🟡 identity/algo/council/evals verified; algo advance needs session |
+| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 8 | 0 | 🟡 server endpoint verified; direct UP registration needs distributor app |
+| T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-316–325 pass; TS-323 LLM#46 skip (open) |
+| T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
+| T19 | Dashboard hooks integration | 7 | 1 | — | 6 | — | 🟡 TS-344 file written; TS-345-350 skip (server write API not implemented) |
 | T20 | Howto validation (datawatch docs) | 9 | — | — | — | — | 📋 |
 | T21 | End-to-end user journeys | 3 | — | — | — | — | 📋 |
-| **TOTALS** | | **369** | **201** | **1** | **53** | **65** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **369** | **242** | **1** | **64** | **59** | **🟡 IN PROGRESS** |
 
 ---
 

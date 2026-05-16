@@ -243,9 +243,10 @@ public class SecretsCardViewModel : ViewModel() {
 
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile =
-            ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return null
-        return ServiceLocator.transportFor(profile)
+        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val profile = if (activeId == null) profiles.firstOrNull { it.enabled }
+            else profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
+        return profile?.let { ServiceLocator.transportFor(it) }
     }
 }

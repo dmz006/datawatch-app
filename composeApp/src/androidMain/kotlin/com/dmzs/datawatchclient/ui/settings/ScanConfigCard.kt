@@ -40,8 +40,14 @@ internal fun ScanConfigCard() {
 
     LaunchedEffect(Unit) {
         runCatching {
-            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-            val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+            val activeId = ServiceLocator.activeServerStore.get()
+            val sp = ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) list.firstOrNull { it.enabled }
+                    else list.firstOrNull { it.id == activeId && it.enabled }
+                        ?: list.firstOrNull { it.enabled }
+                } ?: return@runCatching
             ServiceLocator.transportFor(sp).getScanConfig().onSuccess { config = it }
         }
     }
@@ -50,8 +56,14 @@ internal fun ScanConfigCard() {
         config = updated
         scope.launch {
             runCatching {
-                val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                val activeId = ServiceLocator.activeServerStore.get()
+                val sp = ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) list.firstOrNull { it.enabled }
+                        else list.firstOrNull { it.id == activeId && it.enabled }
+                            ?: list.firstOrNull { it.enabled }
+                    } ?: return@runCatching
                 ServiceLocator.transportFor(sp).updateScanConfig(updated)
             }
         }
@@ -80,8 +92,14 @@ internal fun ScanConfigCard() {
                 onClick = {
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.firstOrNull { it.enabled }
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: list.firstOrNull { it.enabled }
+                                } ?: return@runCatching
                             // Stub: trigger scan on first PRD available via scan config context
                             ServiceLocator.transportFor(sp).updateScanConfig(cfg)
                         }
@@ -93,8 +111,14 @@ internal fun ScanConfigCard() {
                 onClick = {
                     scope.launch {
                         runCatching {
-                            val activeId = ServiceLocator.activeServerStore.get() ?: return@runCatching
-                            val sp = ServiceLocator.profileRepository.observeAll().first().firstOrNull { it.id == activeId && it.enabled } ?: return@runCatching
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.firstOrNull { it.enabled }
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: list.firstOrNull { it.enabled }
+                                } ?: return@runCatching
                             // Stub: trigger rules via scan config update (will hook up to dedicated endpoint in later sprint)
                             ServiceLocator.transportFor(sp).updateScanConfig(cfg)
                         }
