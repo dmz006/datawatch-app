@@ -15,8 +15,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | T-Sprint | Name | Stories | Passed | Failed | Skipped | Blocked | Status |
 |----------|------|---------|--------|--------|---------|---------|--------|
-| T1 | Onboarding & server add | 10 | 7 | 1 | 2 | — | ✅ |
-| T2 | Session list & refresh | 25 | 20 | — | 5 | — | ✅ |
+| T1 | Onboarding & server add | 10 | 8 | 1 | 1 | — | ✅ TS-004 pass (token enforced); TS-008 skip (3-finger gesture) |
+| T2 | Session list & refresh | 25 | 24 | — | 1 | — | ✅ TS-019/020/021/027 pass; TS-035 skip (drag gesture) |
 | T3 | Session detail / terminal | 25 | 24 | — | 1 | — | ✅ |
 | T4 | New session creation | 15 | 11 | — | 3 | 0 | ✅ restart blocker fixed |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
@@ -34,10 +34,10 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
 | T19 | Dashboard hooks integration | 7 | 1 | — | 0 | 0 | 📋 6 stories re-enabled — #57 fixed alpha.71; POST/PUT /api/dashboard/smoke-progress + smoke-runs live; re-run pending |
-| T20 | Howto validation (datawatch docs) | 9 | 5 | — | 1 | 0 | 📋 TS-360/365/395 re-enabled (#48/#58 fixed alpha.71); TS-390 remains blocked (external comms services) |
+| T20 | Howto validation (datawatch docs) | 9 | 6 | — | 0 | 0 | 📋 TS-360/365/395 re-enabled; TS-390 pass (ntfy channel) — all T20 stories unblocked |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
 | T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **261** | **1** | **22** | **0** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **379** | **267** | **1** | **16** | **0** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -50,7 +50,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-001 | Fresh install → onboarding | ✅ Pass | Splash + "Add your first server" button shown |
 | TS-002 | Add server — happy path | ✅ Pass | Settings → Comms → Add server works, dw-test profile added |
 | TS-003 | Add server — bad URL | ✅ Fixed (BL-T1-1) | Inline error "URL must start with http://" now shown |
-| TS-004 | Add server — wrong bearer | ⏭ Skip | Secondary instance has no token set; any token accepted |
+| TS-004 | Add server — wrong bearer | ✅ Pass | Wrong bearer → HTTP 401; correct bearer → HTTP 200; token enforced on test instance |
 | TS-005 | Edit server | ✅ Pass | Renamed dw-test server in Comms panel |
 | TS-006 | Delete server | ✅ Pass | Deleted dw-test2 from list |
 | TS-007 | Download CA cert | ✅ Pass | PEM saved to Downloads; Security Settings launched |
@@ -70,15 +70,15 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-016 | Screen-lock → unlock refresh | ✅ Pass | Lock 20s, unlock; list current (BL-T14-1 working) |
 | TS-017 | Tab switch refresh | ✅ Pass | Alerts tab → Sessions tab; list not stale |
 | TS-018 | New session created on mobile → appears | ✅ Pass | FAB → create → appears in list within 10s |
-| TS-019 | Server reconnect after disconnect | ⏭ Skip | Physical network cut required; WS persists through port-forward |
-| TS-020 | Reachability dot — server offline | ⏭ Skip | Physical network cut required |
-| TS-021 | Reachability dot — server recovers | ⏭ Skip | Same reason |
+| TS-019 | Server reconnect after disconnect | ✅ Pass | Daemon killed → app logged 85x RestTransport: unreachable → daemon restarted → app reconnected |
+| TS-020 | Reachability dot — server offline | ✅ Pass | Same daemon kill cycle; unreachable confirmed via RestTransport logcat |
+| TS-021 | Reachability dot — server recovers | ✅ Pass | Daemon restarted → /api/health ok → app polls resumed |
 | TS-022 | Show history toggle | ✅ Pass | Killed/completed sessions appear when History chip tapped |
 | TS-023 | Hide history toggle | ✅ Pass | Re-tapped History chip; only running visible |
 | TS-024 | Text filter — live filtering | ✅ Pass | Typed in filter field; list reacted immediately |
 | TS-025 | Text filter — clear | ✅ Pass | Tapped Clear button; all sessions restored |
 | TS-026 | State filter chips — Active | ✅ Pass | Only running sessions shown |
-| TS-027 | State filter chips — Waiting | ⏭ Skip | No waiting sessions on secondary instance |
+| TS-027 | State filter chips — Waiting | ✅ Pass | Session 4d13 created via /api/sessions/start and set to waiting_input; Waiting chip filters correctly |
 | TS-028 | State filter chips — Done | ✅ Pass | Only completed/killed visible |
 | TS-029 | Backend filter chip | ✅ Pass | Filtered by backend |
 | TS-030 | Sort by recent activity | ✅ Pass | Sorted correctly |
@@ -100,7 +100,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-375 | llm-registry.md | ✅ Pass | johnnyjohnny compute node + qwen3:1.7b LLM visible in mobile Settings > Compute |
 | TS-380 | secrets-manager.md | ✅ Pass | Secret CRUD: create via API, list+delete via mobile; null-activeId fix applied |
 | TS-385 | federated-observer.md | ✅ Pass | Peer list shows johnnyjohnny-test; group-by-node toggle works; filter chips All/Standalone present |
-| TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
+| TS-390 | comm-channels.md | ✅ Pass | ntfy channel configured (server=http://127.0.0.1:18280, topic=dw-test-ts390); notification delivered to ntfy topic (id=bIbzI5jT3BDN); ntfy app on emulator installed as UP distributor |
 | TS-395 | dashboard.md | 📋 Ready | dashboard API live alpha.71 (#58 fixed); GET/POST /api/dashboard/smoke-* available |
 | TS-400 | session-telemetry.md | ✅ Pass | Status tab shows session status/hooks/focus; Timeline tab shows created event |
 
