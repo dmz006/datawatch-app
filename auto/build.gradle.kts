@@ -43,6 +43,10 @@ android {
     lint {
         abortOnError = false
     }
+
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
+    }
 }
 
 ktlint {
@@ -53,4 +57,7 @@ dependencies {
     implementation(project(":shared"))
     implementation(libs.androidx.car.app)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(kotlin("test-junit5"))
+    testImplementation(libs.junit5.api)
+    testRuntimeOnly(libs.junit5.engine)
 }

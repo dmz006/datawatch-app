@@ -2508,10 +2508,11 @@ public class RestTransport(
         profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto,
     ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
         request {
-            client.post("${profile.baseUrl}/api/autonomous/guardrail-profiles") {
+            val dto = profile
+            client.post("${this.profile.baseUrl}/api/autonomous/guardrail-profiles") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(profile)
+                setBody(dto)
             }.body()
         }
 
@@ -2520,10 +2521,11 @@ public class RestTransport(
         profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto,
     ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
         request {
-            client.put("${profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
+            val dto = profile
+            client.put("${this.profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(profile)
+                setBody(dto)
             }.body()
         }
 
