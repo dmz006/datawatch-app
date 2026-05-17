@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,19 +14,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -48,6 +46,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 
 /**
  * Docs / help link — plain "?" text button that opens [docsPath] in an in-app WebView sheet.
@@ -69,7 +68,12 @@ internal fun DocsLinkAction(docsPath: String) {
 
     if (baseUrl != null) {
         val url = "$baseUrl/diagrams.html#docs/$docsPath"
-        IconButton(onClick = { showDocs = true }) {
+        Box(
+            modifier = Modifier
+                .clickable { showDocs = true }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
             Text(
                 "?",
                 fontSize = 18.sp,
@@ -83,40 +87,44 @@ internal fun DocsLinkAction(docsPath: String) {
 }
 
 /**
- * Alerts bell with badge count. Shows [alertsBadge] as a red badge when > 0,
- * a dimmed badge when 0. Bell icon dims when muted.
- * Placed second-from-right in the TopAppBar actions block.
+ * Alerts pill button matching the PWA headerAlertPill style.
+ * Shows "🔔 {count}" or "🔕 muted". Blue border/bg when alerts > 0,
+ * dimmed when 0, gray when muted. Clicking toggles [AlertDockChannel].
  */
 @Composable
 internal fun AlertsBellAction(alertsBadge: Int, alertsMuted: Boolean = false) {
-    BadgedBox(
-        badge = {
-            if (alertsBadge > 0 || alertsMuted) {
-                Badge(
-                    containerColor = if (alertsMuted || alertsBadge == 0) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
-                ) {
-                    val label = when {
-                        alertsMuted -> "🔕"
-                        alertsBadge > 0 -> alertsBadge.toString()
-                        else -> ""
-                    }
-                    if (label.isNotEmpty()) {
-                        Text(label, style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-        },
-        modifier = Modifier.padding(end = 4.dp),
+    val (bg, border, alpha) = when {
+        alertsMuted -> Triple(
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            0.55f,
+        )
+        alertsBadge > 0 -> Triple(
+            Color(0xFF60A5FA).copy(alpha = 0.18f),
+            Color(0xFF60A5FA),
+            1f,
+        )
+        else -> Triple(
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            0.55f,
+        )
+    }
+    val label = if (alertsMuted) "🔕 muted" else "🔔 $alertsBadge"
+    Box(
+        modifier = Modifier
+            .clickable { AlertDockChannel.toggle() }
+            .background(color = bg, shape = RoundedCornerShape(10.dp))
+            .border(width = 1.dp, color = border.copy(alpha = alpha), shape = RoundedCornerShape(10.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .graphicsLayer { this.alpha = alpha },
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            if (alertsBadge > 0 && !alertsMuted) Icons.Filled.NotificationsActive else Icons.Filled.NotificationsNone,
-            contentDescription = stringResource(R.string.nav_alerts),
-            tint = if (alertsMuted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                   else MaterialTheme.colorScheme.onSurfaceVariant,
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            color = border,
         )
     }
 }
