@@ -152,63 +152,49 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .setOnClickListener { screenManager.push(AutoSessionListScreen(carContext)) }
                 .build(),
         )
-        // Row 3: CPU / Mem (A6.3)
-        serverStats?.let { s ->
+        // Row 3: CPU / Mem (A6.3) — conditional on data availability (Drive: max 6 rows total)
+        val sysLine: String? = serverStats?.let { s ->
             val cpuPct = s.cpuLoad1?.let { load -> s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null } }
                 ?: s.cpuPct?.toInt()
             val memText = s.memUsed?.let { used -> s.memTotal?.let { total -> if (total > 0) "${used / MB}/${total / MB} MB" else null } }
                 ?: s.memPct?.let { "%.0f%% mem".format(it) }
-            val sysLine = listOfNotNull(cpuPct?.let { "CPU $it%" }, memText).joinToString(" · ")
-            if (sysLine.isNotBlank()) {
-                builder.addItem(
-                    Row.Builder()
-                        .setTitle("System")
-                        .addText(sysLine)
-                        .build(),
-                )
-            }
+            listOfNotNull(cpuPct?.let { "CPU $it%" }, memText).joinToString(" · ").takeIf { it.isNotBlank() }
         }
-        // Row 4: Last completed task (A6.4)
+        sysLine?.let { line ->
+            builder.addItem(Row.Builder().setTitle("System").addText(line).build())
+        }
+        // Row 4: Last completed task (A6.4) — conditional (Drive: max 6 rows total)
         lastCompletedTask?.let { task ->
             builder.addItem(
+                Row.Builder().setTitle("Last completed").addText("✓ ${task.take(60)}").build(),
+            )
+        }
+        // Row 5: Waiting input — only when sessions are waiting (tap → reply queue)
+        if (waiting > 0) {
+            builder.addItem(
                 Row.Builder()
-                    .setTitle("Last completed")
-                    .addText("✓ ${task.take(60)}")
+                    .setTitle(colored("Waiting input", CarColor.YELLOW))
+                    .addText("$waiting sessions — tap for reply queue")
+                    .setOnClickListener { screenManager.push(WaitingSessionsScreen(carContext)) }
                     .build(),
             )
         }
-        builder.addItem(
-            Row.Builder()
-                .setTitle(colored("Waiting input", CarColor.YELLOW))
-                .addText("$waiting sessions — tap for reply queue")
-                .setOnClickListener { screenManager.push(WaitingSessionsScreen(carContext)) }
-                .build(),
-        )
-        builder.addItem(
-            Row.Builder()
-                .setTitle(colored("Automata", CarColor.YELLOW))
-                .addText("Running plans overview")
-                .setOnClickListener {
-                    screenManager.push(AutoAutomataScreen(carContext))
-                }
-                .build(),
-        )
-        builder.addItem(
-            Row.Builder()
-                .setTitle("Autonomous Plans")
-                .addText("Review, approve, or stop plans")
-                .setOnClickListener {
-                    screenManager.push(WaitingPrdsScreen(carContext))
-                }
-                .build(),
-        )
-        // BL303-A5.3: alert dismiss row — only shown when there are unread alerts
+        // Row 6 (Drive max reached): Automata OR Alert dismiss — alerts take priority
+        // BL303-A5.3: alert dismiss; BL303-A7.1: Drive compliance — max 6 rows per page
         if (unreadAlerts > 0) {
             builder.addItem(
                 Row.Builder()
                     .setTitle(colored("⚠ $unreadAlerts Alert${if (unreadAlerts > 1) "s" else ""}", CarColor.RED))
                     .addText("Tap to dismiss all")
                     .setOnClickListener { onDismissAlerts() }
+                    .build(),
+            )
+        } else {
+            builder.addItem(
+                Row.Builder()
+                    .setTitle(colored("Automata", CarColor.YELLOW))
+                    .addText("Running plans overview")
+                    .setOnClickListener { screenManager.push(AutoAutomataScreen(carContext)) }
                     .build(),
             )
         }
