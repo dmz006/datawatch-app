@@ -1,14 +1,7 @@
 package com.dmzs.datawatchclient.ui.shell
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -32,6 +25,7 @@ internal fun BottomNavBar(
     navController: NavController,
     alertsBadge: Int = 0,
     prdsSupported: Boolean = true,
+    dashboardEnabled: Boolean = false,
     /** S6-2 (#74): show red dot on Settings icon when any federated peer is >6h stale. */
     anyPeerStale: Boolean = false,
     /** Sprint 22 (#115): when true the alerts badge dims and shows 🔕 instead of a count. */
@@ -55,7 +49,7 @@ internal fun BottomNavBar(
     // same size on every Android target.
     val items =
         buildList {
-            add(BottomNavItem(Destinations.Tabs.Sessions, stringResource(R.string.nav_sessions), icon = Icons.Filled.Chat))
+            add(BottomNavItem(Destinations.Tabs.Sessions, stringResource(R.string.nav_sessions), emoji = "🖥️"))
             // v0.42.5 — only render PRDs when the active server
             // actually exposes the autonomous surface. Local-only
             // setups + older daemons would otherwise dead-end into
@@ -63,11 +57,13 @@ internal fun BottomNavBar(
             if (prdsSupported) {
                 add(BottomNavItem(Destinations.Tabs.Autonomous, stringResource(R.string.nav_autonomous), emoji = "🤖"))
             }
-            add(BottomNavItem(Destinations.Tabs.Alerts, stringResource(R.string.nav_alerts), icon = Icons.Filled.NotificationsActive))
-            add(BottomNavItem(Destinations.Tabs.Observer, stringResource(R.string.nav_observer), icon = Icons.Filled.Sensors))
-            // BL303 parity with PWA alpha.71 ⊞ Dashboard tab.
-            add(BottomNavItem(Destinations.Tabs.Dashboard, stringResource(R.string.nav_dashboard), icon = Icons.Filled.Dashboard))
-            add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), icon = Icons.Filled.Settings))
+            add(BottomNavItem(Destinations.Tabs.Alerts, stringResource(R.string.nav_alerts), emoji = "⚠"))
+            add(BottomNavItem(Destinations.Tabs.Observer, stringResource(R.string.nav_observer), emoji = "📡"))
+            // BL303 parity with PWA alpha.71 ⊞ Dashboard tab — hidden by default.
+            if (dashboardEnabled) {
+                add(BottomNavItem(Destinations.Tabs.Dashboard, stringResource(R.string.nav_dashboard), emoji = "☷"))
+            }
+            add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), emoji = "⚙"))
         }
 
     val dw = LocalDatawatchColors.current
@@ -162,13 +158,10 @@ private data class BottomNavItem(
 
 @Composable
 private fun NavGlyph(item: BottomNavItem) {
-    when {
-        item.emoji != null ->
-            Text(
-                item.emoji,
-                style = TextStyle(fontSize = 22.sp),
-            )
-        item.icon != null ->
-            Icon(item.icon, contentDescription = item.label)
+    if (item.emoji != null) {
+        Text(
+            item.emoji,
+            style = TextStyle(fontSize = 22.sp),
+        )
     }
 }
