@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -70,7 +71,12 @@ public class DashboardViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
-        viewModelScope.launch { start() }
+        viewModelScope.launch {
+            _computedActiveProfile.collectLatest { _ ->
+                _state.value = _state.value.copy(cardsLoaded = false, cards = emptyList())
+                start()
+            }
+        }
     }
 
     public fun selectProfile(profileId: String) {
