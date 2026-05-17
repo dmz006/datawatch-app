@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -389,6 +390,17 @@ public class AlertsViewModel : ViewModel() {
                 ?: profiles.firstOrNull { it.enabled }
         }
 
+    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
+        .flatMapLatest { profile ->
+            if (profile == null) flowOf<Boolean?>(null)
+            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    public val lastProbeEpochMs: StateFlow<Long?> = reachable
+        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     public val state: StateFlow<UiState> =
         combine(
             combine(filteredState, _watchedIds) { filtered, watchedIds ->
@@ -499,6 +511,11 @@ public class AlertsViewModel : ViewModel() {
 
     public fun selectAllServers() {
         ServiceLocator.activeServerStore.set(ActiveServerStore.SENTINEL_ALL_SERVERS)
+    }
+
+    /** Trigger an immediate poll (e.g. after tapping the reachability-dot retry button). */
+    public fun refresh() {
+        viewModelScope.launch { _refreshing.value = true }
     }
 
     private companion object {

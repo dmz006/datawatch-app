@@ -69,6 +69,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,9 +80,13 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 public fun AutonomousScreen(
     vm: AutonomousViewModel = viewModel(),
     tmplVm: TemplatesViewModel = viewModel(),
+    alertsVm: AlertsViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
     val pinnedIds by vm.pinnedAutomataIds.collectAsState()
+    val reachable by vm.reachable.collectAsState()
+    val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
+    val alertsState by alertsVm.state.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
     var filterOpen by remember { mutableStateOf(false) }
     var includeTemplates by remember { mutableStateOf(false) }
@@ -107,10 +115,11 @@ public fun AutonomousScreen(
                     )
                 },
                 actions = {
-                    // Robot icon FIRST (left of search) — visible only on this screen
+                    // Robot icon FIRST (left of all) — screen-specific identity shortcut
                     IconButton(onClick = { identityWizardOpen = true }) {
                         Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
+                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code")
                     if (currentTab == 0) {
                         IconButton(onClick = { filterOpen = !filterOpen }) {
                             Icon(
@@ -118,6 +127,14 @@ public fun AutonomousScreen(
                                 contentDescription = if (filterOpen) stringResource(R.string.autonomous_filter_close) else stringResource(R.string.autonomous_filter_open),
                             )
                         }
+                    }
+                    AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
+                    if (!state.allServersMode && state.activeProfile != null) {
+                        ReachabilityDot(
+                            reachable = reachable,
+                            lastProbeEpochMs = lastProbeEpochMs,
+                            onRetry = vm::refresh,
+                        )
                     }
                 },
             )

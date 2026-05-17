@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -107,6 +108,19 @@ public class AutonomousViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
+    /** Reachability of the active single-server profile (null = probing). */
+    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
+        .flatMapLatest { profile ->
+            if (profile == null) flowOf<Boolean?>(null)
+            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** Epoch-ms of the last successful probe; updated whenever [reachable] flips to true. */
+    public val lastProbeEpochMs: StateFlow<Long?> = reachable
+        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     init {
         viewModelScope.launch {
             _activeId.collect { _ ->
@@ -118,7 +132,7 @@ public class AutonomousViewModel(
 
     /** Fetch PRD list and backends list together. */
     public fun refresh() {
-        if (_allServersMode.value) {
+        if (_activeId.value == ActiveServerStore.SENTINEL_ALL_SERVERS) {
             refreshAllServers()
             return
         }

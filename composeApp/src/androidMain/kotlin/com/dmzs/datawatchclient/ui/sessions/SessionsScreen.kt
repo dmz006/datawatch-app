@@ -94,6 +94,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
@@ -123,9 +126,11 @@ public fun SessionsScreen(
     onAddServer: () -> Unit = {},
     onNewSession: () -> Unit = {},
     vm: SessionsViewModel = viewModel(),
+    alertsVm: AlertsViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
+    val alertsState by alertsVm.state.collectAsState()
     val uriHandler = LocalUriHandler.current
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -198,15 +203,7 @@ public fun SessionsScreen(
                             )
                         }
                         // G3 — context help link (Claude Code hooks docs).
-                        IconButton(onClick = {
-                            uriHandler.openUri("https://docs.anthropic.com/en/docs/claude-code/hooks")
-                        }) {
-                            Icon(
-                                Icons.Filled.HelpOutline,
-                                contentDescription = stringResource(R.string.sessions_help_link),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code/hooks")
                         // User direction 2026-04-24 + dmz006/datawatch#23
                         // — search icon lives on the top app bar, left
                         // of the reachability dot. Tapping toggles the
@@ -219,6 +216,7 @@ public fun SessionsScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                         // Reachability dot on the right (PWA places
                         // its connection indicator in the same spot).
                         // Single-server mode only; all-servers mode

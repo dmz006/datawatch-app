@@ -41,6 +41,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -87,6 +92,8 @@ public fun AlertsScreen(
     vm: AlertsViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
+    val reachable by vm.reachable.collectAsState()
+    val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
     var scheduleFor by remember { mutableStateOf<Session?>(null) }
@@ -98,6 +105,9 @@ public fun AlertsScreen(
         topBar = {
             AlertsTopBar(
                 state = state,
+                reachable = reachable,
+                lastProbeEpochMs = lastProbeEpochMs,
+                onRetry = vm::refresh,
                 onSetChip = vm::setChipFilter,
                 onToggleSort = {
                     vm.setSortMode(
@@ -304,13 +314,16 @@ public fun AlertsScreen(
 /**
  * Custom top bar for the Alerts screen (Sprint 22 alpha.30 redesign).
  *
- * Row 0: Server-picker title + sort toggle + dismiss-all button
- * Row 1: Horizontal chip filter row (All / Prompts / Errors / Warn / Info)
- * Row 2: Search text field (always visible, matches PWA)
+ * Uses TopAppBar for consistent chrome with Sessions/Autonomous, then
+ * a Surface strip below for chip filters and search.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlertsTopBar(
     state: AlertsViewModel.UiState,
+    reachable: Boolean? = null,
+    lastProbeEpochMs: Long? = null,
+    onRetry: () -> Unit = {},
     onSetChip: (AlertsViewModel.ChipFilter) -> Unit,
     onToggleSort: () -> Unit,
     onDismissAll: () -> Unit,
@@ -319,35 +332,23 @@ private fun AlertsTopBar(
     onSelectAll: () -> Unit,
 ) {
     var pickerOpen by remember { mutableStateOf(false) }
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Row 0: server-picker title + sort toggle + dismiss-all
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
+    Column {
+        TopAppBar(
+            title = {
+                Box {
                     Row(
                         modifier = Modifier
                             .clickable(onClick = { pickerOpen = !pickerOpen })
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(end = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             if (state.allServersMode) stringResource(R.string.sessions_all_servers)
                             else (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server)),
-                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        Icon(
-                            Icons.Filled.ArrowDropDown,
-                            contentDescription = stringResource(R.string.sessions_switch_server),
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server))
                     }
                     DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
                         if (state.allProfiles.size > 1) {
@@ -383,14 +384,11 @@ private fun AlertsTopBar(
                         }
                     }
                 }
-                // Mute button (noop for now — future: toggle dock mute)
-                IconButton(onClick = { /* noop: mute dock */ }) {
-                    Text("🔕", style = TextStyle(fontSize = 20.sp))
-                }
+            },
+            actions = {
+                DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code")
                 // Sort toggle: BySession ↔ Chronological
-                IconButton(
-                    onClick = onToggleSort,
-                ) {
+                IconButton(onClick = onToggleSort) {
                     Icon(
                         Icons.Filled.SortByAlpha,
                         contentDescription = stringResource(R.string.alert_sort_tip),
@@ -409,45 +407,59 @@ private fun AlertsTopBar(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-
-            // Row 1: chip filter row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                AlertsViewModel.ChipFilter.entries.forEach { chip ->
-                    val label = when (chip) {
-                        AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
-                        AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
-                        AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
-                        AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
-                        AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
-                    }
-                    FilterChip(
-                        selected = state.chipFilter == chip,
-                        onClick = { onSetChip(chip) },
-                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                if (!state.allServersMode && state.activeProfile != null) {
+                    ReachabilityDot(
+                        reachable = reachable,
+                        lastProbeEpochMs = lastProbeEpochMs,
+                        onRetry = onRetry,
                     )
                 }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        )
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Chip filter row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    AlertsViewModel.ChipFilter.entries.forEach { chip ->
+                        val label = when (chip) {
+                            AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
+                            AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
+                            AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
+                            AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
+                            AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
+                        }
+                        FilterChip(
+                            selected = state.chipFilter == chip,
+                            onClick = { onSetChip(chip) },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+                // Search bar
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = onSearchChange,
+                    placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
             }
-
-            // Row 2: search bar (always visible)
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = onSearchChange,
-                placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                textStyle = MaterialTheme.typography.bodySmall,
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
@@ -504,29 +516,38 @@ private fun AlertGroupCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    group.label,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable(onClick = onOpenSession),
-                )
-                if (group.state != null) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        stateLabel(group.state),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = stateColor,
+                        group.label,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable(onClick = onOpenSession),
                     )
+                    if (group.state != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            stateLabel(group.state),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = stateColor,
+                            maxLines = 1,
+                        )
+                    }
+                    serverName?.let { name ->
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
-                serverName?.let { name ->
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
                 Text(
                     "${group.alerts.size} alert${if (group.alerts.size == 1) "" else "s"}",
                     style = MaterialTheme.typography.labelSmall,

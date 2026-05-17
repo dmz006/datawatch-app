@@ -6,31 +6,62 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import com.dmzs.datawatchclient.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.ReachabilityDot
+import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 
 /**
- * Observer tab — mirrors the PWA's Observer surface.
- * Aggregates monitoring cards: system stats, eBPF, cluster,
+ * Observer tab — aggregates monitoring cards: system stats, eBPF, cluster,
  * federated peers, plugins, memory, schedules, daemon log, observer.
+ * Previously duplicated in Settings → Monitor tab (removed in v0.x.x).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun ObserverScreen() {
+public fun ObserverScreen(
+    vm: ObserverViewModel = viewModel(),
+    alertsVm: AlertsViewModel = viewModel(),
+) {
+    val state by vm.state.collectAsState()
+    val reachable by vm.reachable.collectAsState()
+    val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
+    val alertsState by alertsVm.state.collectAsState()
+    var pickerOpen by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        stringResource(R.string.nav_observer),
-                        style = MaterialTheme.typography.titleMedium,
+                    SingleServerPickerTitle(
+                        active = state.activeProfile,
+                        open = pickerOpen,
+                        onToggle = { pickerOpen = !pickerOpen },
+                        onDismiss = { pickerOpen = false },
+                        profiles = state.allProfiles,
+                        onSelect = { vm.selectProfile(it); pickerOpen = false },
                     )
+                },
+                actions = {
+                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code")
+                    AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
+                    if (state.activeProfile != null) {
+                        ReachabilityDot(
+                            reachable = reachable,
+                            lastProbeEpochMs = lastProbeEpochMs,
+                            onRetry = {},
+                        )
+                    }
                 },
             )
         },

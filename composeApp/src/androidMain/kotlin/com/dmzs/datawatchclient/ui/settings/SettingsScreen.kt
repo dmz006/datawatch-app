@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.TextButton
@@ -78,6 +77,14 @@ import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
 import com.dmzs.datawatchclient.push.AlertTier
 import com.dmzs.datawatchclient.push.AlertTierDetector
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.ReachabilityDot
+import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -108,7 +115,6 @@ import java.io.FileOutputStream
  * so users land on Monitor first. About is mobile-only (no PWA equivalent).
  */
 private enum class SettingsTab(@StringRes val labelRes: Int) {
-    Monitor(R.string.settings_tab_monitor),
     General(R.string.settings_tab_general),
     Plugins(R.string.settings_tab_plugins),
     Comms(R.string.settings_tab_comms),
@@ -122,6 +128,7 @@ private enum class SettingsTab(@StringRes val labelRes: Int) {
 public fun SettingsScreen(
     onAddServer: () -> Unit = {},
     onEditServer: (String) -> Unit = {},
+    alertsVm: AlertsViewModel = viewModel(),
 ) {
     val profiles by ServiceLocator.profileRepository.observeAll()
         .collectAsState(initial = emptyList())
@@ -136,6 +143,13 @@ public fun SettingsScreen(
                 enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull()
             }
         }
+    val alertsState by alertsVm.state.collectAsState()
+    val transport = remember(activeProfile) { activeProfile?.let { ServiceLocator.transportFor(it) } }
+    val reachable by remember(transport) {
+        transport?.isReachable?.map { it as Boolean? } ?: flowOf<Boolean?>(null)
+    }.collectAsState(initial = null)
+    var lastProbeMs by remember { mutableStateOf<Long?>(null) }
+    androidx.compose.runtime.LaunchedEffect(reachable) { if (reachable == true) lastProbeMs = System.currentTimeMillis() }
 
     val prefs = LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val storedTab = prefs.getString("settings_active_tab", null)
@@ -144,39 +158,37 @@ public fun SettingsScreen(
         "plugins" -> SettingsTab.Plugins
         "comms" -> SettingsTab.Comms
         "automata" -> SettingsTab.Automata
-        "general" -> SettingsTab.General
+        "monitor" -> SettingsTab.General  // Monitor removed; redirect to General
         "about" -> SettingsTab.About
-        else -> SettingsTab.Monitor
+        else -> SettingsTab.General
     }
     var activeTab by remember { mutableStateOf(migratedTab) }
-    var serverPickerOpen by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(stringResource(R.string.settings_title))
-                        activeProfile?.let {
-                            Text(
-                                it.displayName,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    SingleServerPickerTitle(
+                        active = activeProfile,
+                        open = pickerOpen,
+                        onToggle = { pickerOpen = !pickerOpen },
+                        onDismiss = { pickerOpen = false },
+                        profiles = profiles.filter { it.enabled },
+                        onSelect = { id ->
+                            ServiceLocator.activeServerStore.set(id)
+                            pickerOpen = false
+                        },
+                    )
                 },
                 actions = {
-                    // Server picker — per-server surfaces (Monitor / General /
-                    // Comms / LLM) target whichever server this resolves to.
-                    // Tapping opens the same bottom sheet the 3-finger-swipe
-                    // summons, so user gesture + explicit tap both land on the
-                    // same chooser, and picking a server here re-fires every
-                    // settings card's refresh via activeProfileFlow().
-                    IconButton(onClick = { serverPickerOpen = true }) {
-                        Icon(
-                            Icons.Filled.Storage,
-                            contentDescription = stringResource(R.string.settings_switch_server),
+                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code/settings")
+                    AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
+                    if (activeProfile != null) {
+                        ReachabilityDot(
+                            reachable = reachable,
+                            lastProbeEpochMs = lastProbeMs,
+                            onRetry = {},
                         )
                     }
                 },
@@ -260,28 +272,6 @@ public fun SettingsScreen(
                         RestartNeededBanner(activeProfile)
 
                         when (activeTab) {
-                            SettingsTab.Monitor -> {
-                                // v0.36.0 federated monitoring suite. Cards
-                                // self-hide when their backing endpoint
-                                // returns nothing useful (older daemons,
-                                // single-node setups), so the Monitor tab
-                                // stays readable on minimal deployments and
-                                // grows on richer ones.
-                                com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
-                                com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
-                                com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
-                                com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
-                                com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
-                                com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
-                                com.dmzs.datawatchclient.ui.memory.MemoryCard()
-                                com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
-                                com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
-                                com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
-                                // v0.75.0 S6-7 (#88): Observer stub card.
-                                ObserverCard()
-                                // BL303 (alpha.75 issue #132): Dashboard card layout CRUD.
-                                DashboardCardsCard()
-                            }
                             SettingsTab.General -> {
                                 // v0.59.0 — General mirrors PWA v6.5.1 GENERAL tab:
                                 // Datawatch → Auto-Update → Session → Whisper →
@@ -314,6 +304,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.general.SessionTemplatesCard()
                                 com.dmzs.datawatchclient.ui.general.DeviceAliasesCard()
                                 com.dmzs.datawatchclient.ui.general.ToolingCard()
+                                // Dashboard card layout CRUD (moved from removed Monitor tab)
+                                DashboardCardsCard()
                             }
                             SettingsTab.Comms -> {
                                 // Matches PWA `data-group="comms"` order:
@@ -382,9 +374,6 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
                                 // v0.88.0 Sprint 19 (#111) — alpha.25 settings move
                                 SecretsCard()
-                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(
-                                    onNavigateToMonitor = { activeTab = SettingsTab.Monitor },
-                                )
                             }
                             SettingsTab.Automata -> {
                                 // v0.81.0 — flat PWA v7.0.0-alpha.23c order; no section headers
@@ -441,15 +430,6 @@ public fun SettingsScreen(
         }
     }
 
-    if (serverPickerOpen) {
-        com.dmzs.datawatchclient.ui.servers.ServerPickerSheet(
-            onDismiss = { serverPickerOpen = false },
-            onAdd = {
-                serverPickerOpen = false
-                onAddServer()
-            },
-        )
-    }
 }
 
 /**
