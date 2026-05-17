@@ -345,6 +345,7 @@ public fun SessionsScreen(
                                 onQuickReply = { text -> vm.quickReply(session.id, text) },
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
+                                whisperConfigured = state.whisperConfigured,
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
                                 isSelected = session.id in selectedIds,
@@ -705,6 +706,7 @@ private fun SessionRow(
     onWatchToggle: () -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
+    whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
@@ -1134,6 +1136,7 @@ private fun SessionRow(
                 quickCmdsOpen = false
             },
             onDismiss = { quickCmdsOpen = false },
+            whisperConfigured = whisperConfigured,
         )
     }
     if (restartConfirmOpen) {
@@ -1507,6 +1510,7 @@ internal fun QuickCommandsSheet(
     onDismiss: () -> Unit,
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
     sessionId: String? = null,
+    whisperConfigured: Boolean = false,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
@@ -1628,7 +1632,7 @@ internal fun QuickCommandsSheet(
                     enabled = !recording,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(
+                if (whisperConfigured) IconButton(
                     onClick = {
                         if (recording) {
                             val r = recorder ?: return@IconButton

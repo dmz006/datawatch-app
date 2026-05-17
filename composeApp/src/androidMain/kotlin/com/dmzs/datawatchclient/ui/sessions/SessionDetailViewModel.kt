@@ -55,6 +55,8 @@ public class SessionDetailViewModel(
          * is bound to — the PWA surfaces this same field.
          */
         val messagingBackend: String? = null,
+        /** True when the owning server has `whisper.backend` configured; hides mic button when false. */
+        val whisperConfigured: Boolean = false,
     ) {
         public val needsInput: Boolean
             // BL-T3-4: previously required a live PromptDetected WS event, which
@@ -93,6 +95,7 @@ public class SessionDetailViewModel(
     private val _banner = MutableStateFlow<String?>(null)
     private val _reachable = MutableStateFlow<Boolean?>(null)
     private val _messagingBackend = MutableStateFlow<String?>(null)
+    private val _whisperConfigured = MutableStateFlow(false)
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
@@ -115,6 +118,7 @@ public class SessionDetailViewModel(
             _renaming,
             _reachable,
             _messagingBackend,
+            _whisperConfigured,
         ) { args ->
             val session = args[0] as Session?
             val events =
@@ -127,6 +131,7 @@ public class SessionDetailViewModel(
             val renaming = args[6] as Boolean
             val reachable = args[7] as Boolean?
             val messagingBackend = args[8] as String?
+            val whisperConfigured = args[9] as Boolean
             UiState(
                 session = session,
                 events = events,
@@ -137,6 +142,7 @@ public class SessionDetailViewModel(
                 renaming = renaming,
                 reachable = reachable,
                 messagingBackend = messagingBackend,
+                whisperConfigured = whisperConfigured,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
     }
@@ -166,6 +172,12 @@ public class SessionDetailViewModel(
                 info.messagingBackend?.takeIf { it.isNotBlank() }?.let {
                     _messagingBackend.value = it
                 }
+            }
+            // Fetch whisper.backend once to decide whether to show the mic button.
+            ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
+                _whisperConfigured.value =
+                    (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.isNotBlank() == true
             }
         }
     }
