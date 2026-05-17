@@ -18,6 +18,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.AlertsView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,6 +41,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private var running: Int = 0
     private var waiting: Int = 0
     private var total: Int = 0
+    private var unreadAlerts: Int = 0
     private var activeProfile: ServerProfile? = null
     private var error: String? = null
     private var pollJob: Job? = null
@@ -85,7 +87,8 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     return
                 }
             activeProfile = profile
-            AutoServiceLocator.transportFor(profile).listSessions().fold(
+            val transport = AutoServiceLocator.transportFor(profile)
+            transport.listSessions().fold(
                 onSuccess = { list ->
                     error = null
                     running = list.count { it.state == SessionState.Running }
@@ -96,6 +99,8 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
                 },
             )
+            // BL303-A5.3: load unread alert count (best-effort — does not block main data)
+            transport.listAlerts().getOrNull()?.let { unreadAlerts = it.unreadCount }
         } catch (e: Throwable) {
             error = "Error: ${e.message ?: e::class.simpleName}"
         }
@@ -160,6 +165,16 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 }
                 .build(),
         )
+        // BL303-A5.3: alert dismiss row — only shown when there are unread alerts
+        if (unreadAlerts > 0) {
+            builder.addItem(
+                Row.Builder()
+                    .setTitle(colored("⚠ $unreadAlerts Alert${if (unreadAlerts > 1) "s" else ""}", CarColor.RED))
+                    .addText("Tap to dismiss all")
+                    .setOnClickListener { onDismissAlerts() }
+                    .build(),
+            )
+        }
         val title = "datawatch ${Version.VERSION}"
         val actionStrip =
             ActionStrip.Builder()
@@ -194,6 +209,17 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
             .setActionStrip(actionStrip)
             .setSingleList(builder.build())
             .build()
+    }
+
+    private fun onDismissAlerts() {
+        scope.launch {
+            runCatching {
+                val profile = resolveActiveProfile() ?: return@runCatching
+                AutoServiceLocator.transportFor(profile).markAlertRead(all = true)
+                unreadAlerts = 0
+            }
+            invalidate()
+        }
     }
 }
 

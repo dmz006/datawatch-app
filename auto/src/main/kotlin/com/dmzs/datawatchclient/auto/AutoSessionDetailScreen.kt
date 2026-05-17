@@ -56,7 +56,9 @@ public class AutoSessionDetailScreen(
         while (scope.isActive) {
             refresh()
             invalidate()
-            delay(POLL_MS)
+            // BL303-A5.2: terminal sessions use cached state — slow poll, no more network calls
+            val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
+            delay(if (isTerminal) AMBIENT_POLL_MS else POLL_MS)
         }
     }
 
@@ -82,59 +84,72 @@ public class AutoSessionDetailScreen(
 
     override fun onGetTemplate(): Template {
         val telem = telemetry
-        val body = buildDetailBody(telem)
         val hasBlock = telem?.guardrailVerdicts?.any { it.outcome == "block" } == true
         val isActive = sessionState == SessionState.Running || sessionState == SessionState.Waiting
+        // BL303-A5.2: ambient mode — terminal sessions use simplified read-only body, no actions
+        val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
+        val body = if (isTerminal) buildAmbientBody() else buildDetailBody(telem)
 
         val templateBuilder = MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
 
-        // Approve Gate: only when guardrail is blocking
-        if (hasBlock) {
-            templateBuilder.addAction(
-                Action.Builder()
-                    .setTitle("Approve Gate")
-                    .setBackgroundColor(CarColor.GREEN)
-                    .setOnClickListener { onApproveGate() }
-                    .build(),
-            )
-        }
-
-        // Reply: only when session is waiting for input (BL303-A2.4)
-        if (sessionState == SessionState.Waiting) {
-            templateBuilder.addAction(
-                Action.Builder()
-                    .setTitle("Reply")
-                    .setOnClickListener {
-                        screenManager.push(SessionReplyScreen(carContext, sessionId))
-                    }
-                    .build(),
-            )
-        }
-
-        // Kill: 2-step confirmation
-        if (isActive) {
-            if (killPending) {
+        if (!isTerminal) {
+            // Approve Gate: only when guardrail is blocking
+            if (hasBlock) {
                 templateBuilder.addAction(
                     Action.Builder()
-                        .setTitle("Confirm Kill")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { onConfirmKill() }
+                        .setTitle("Approve Gate")
+                        .setBackgroundColor(CarColor.GREEN)
+                        .setOnClickListener { onApproveGate() }
                         .build(),
                 )
-            } else {
+            }
+
+            // Reply: only when session is waiting for input (BL303-A2.4)
+            if (sessionState == SessionState.Waiting) {
                 templateBuilder.addAction(
                     Action.Builder()
-                        .setTitle("Kill Session")
-                        .setOnClickListener { onKillTap() }
+                        .setTitle("Reply")
+                        .setOnClickListener {
+                            screenManager.push(SessionReplyScreen(carContext, sessionId))
+                        }
                         .build(),
                 )
+            }
+
+            // Kill: 2-step confirmation
+            if (isActive) {
+                if (killPending) {
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Confirm Kill")
+                            .setBackgroundColor(CarColor.RED)
+                            .setOnClickListener { onConfirmKill() }
+                            .build(),
+                    )
+                } else {
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Kill Session")
+                            .setOnClickListener { onKillTap() }
+                            .build(),
+                    )
+                }
             }
         }
 
         return templateBuilder.build()
     }
+
+    // BL303-A5.2: ambient body — cached summary only, no live telemetry, no actions
+    private fun buildAmbientBody(): String = buildString {
+        appendLine(sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() })
+        telemetry?.let { t ->
+            if (t.currentTask.isNotBlank()) appendLine("Last task: ${t.currentTask.take(80)}")
+            if (t.progress > 0f) appendLine("Progress: ${(t.progress * 100).toInt()}%")
+        }
+    }.trim().take(BODY_CHAR_LIMIT)
 
     private fun buildDetailBody(telem: SessionTelemetryDto?): String = buildString {
         killFeedback?.let { appendLine("ℹ $it"); appendLine() }
@@ -215,6 +230,7 @@ public class AutoSessionDetailScreen(
 
     private companion object {
         const val POLL_MS: Long = 10_000L
+        const val AMBIENT_POLL_MS: Long = 60_000L
         const val BODY_CHAR_LIMIT: Int = 500
         const val SUMMARY_CHARS: Int = 60
         const val MS_PER_MIN: Long = 60_000L

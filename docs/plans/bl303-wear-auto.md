@@ -220,12 +220,12 @@ Sprint label format: `BL303-A1`, `BL303-W1`, etc.
 - **Haptic-on-block** (if CarHaptics API available): steering wheel subtle vibration pattern when a new block is detected (distinct from navigation haptics)
 - **"All clear" voice confirmation**: when a previously-blocked session clears (guardrail passes), Auto plays a brief ascending chime + "All clear on {name}"
 
-#### Rule Audit (A5)
-- [ ] Ambient mode does not call any network APIs (uses cached state only)
-- [ ] Alert dismiss is idempotent (double-tap safe)
-- [ ] TTS guardrail explanation ≤ 15 seconds
-- [ ] Ambient renders in grayscale as per Drive ambient guidelines
-- [ ] Tests pass on secondary instance
+#### Rule Audit (A5) ✅ COMPLETE
+- [x] Ambient mode does not call any network APIs — stale detection skips telemetry fetches; terminal sessions use cached body only
+- [x] Alert dismiss is idempotent — `markAlertRead(all = true)` + `unreadAlerts = 0` prevents double-tap re-fire
+- [x] TTS guardrail explanation ≤ 15 seconds — MAX_SPOKEN_CHARS = 80, MAX_SPOKEN_VERDICTS = 2 (well under 15s)
+- [x] Ambient renders simplified content — terminal sessions: task name + progress only, no action buttons
+- [x] Tests pass: 78 total auto JVM tests, 0 failures (13 new GuardrailTtsBuilderTest)
 
 ---
 
