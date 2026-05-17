@@ -232,10 +232,17 @@ public fun AlertsScreen(
                             },
                         )
                         activeGroups.forEach { group ->
-                            val shortLabel = group.session?.name
-                                ?.takeIf { it.isNotBlank() }
-                                ?.take(10)
-                                ?: group.sessionId.substringAfterLast('-').take(8)
+                            val serverName = state.groupProfileNames[group.sessionId]
+                            val shortLabel = if (serverName != null) {
+                                // all-servers mode: "srv/shortId" so the user can distinguish servers
+                                val shortId = group.sessionId.substringAfterLast('-').take(5)
+                                "${serverName.take(7)}/$shortId"
+                            } else {
+                                group.session?.name
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?.take(10)
+                                    ?: group.sessionId.substringAfterLast('-').take(8)
+                            }
                             Tab(
                                 selected = sessionFilter == group.sessionId,
                                 onClick = { sessionFilter = group.sessionId },
