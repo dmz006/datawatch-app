@@ -23,10 +23,6 @@
 
 ---
 
-## LLM Policy for Test Runs
-
-Use Ollama small models (`qwen3:1.7b` for LLM, `nomic-embed-text` for embedder) for all test-instance calls. Claude is reserved for final major release validation only. Include Ollama config in the test instance `config.yaml`.
-
 ## How to Use This Cookbook
 
 1. **Before test run**: Print this file; note the start time

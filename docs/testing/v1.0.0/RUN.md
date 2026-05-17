@@ -21,11 +21,11 @@ ls -la docs/testing/v1.0.0/
 # Should show: plan.md, cookbook.md, REQUIREMENTS.md, SETUP.md, RUN.md (this file)
 
 # Verify repositories are in place
-ls -la $(which datawatch) || ls -la /home/dmz/.local/bin/datawatch
-ls -la ~/workspace/datawatch-app/.datawatch-test-*/config.yaml | tail -1
+ls -la ~/workspace/datawatch/bin/datawatch
+ls -la ~/workspace/datawatch-app/.datawatch-test/config.yaml
 
 # Verify APK is built
-ls -la composeApp/build/outputs/apk/publicTrack/debug/composeApp-dev-debug.apk
+ls -la composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk
 
 # Verify evidence directory will exist (gitignored)
 grep "evidence/" docs/testing/v1.0.0/.gitignore
@@ -64,37 +64,19 @@ adb devices
 # Navigate to app root
 cd ~/workspace/datawatch-app
 
-# Generate unique hash (prevents conflicts with concurrent test runs)
-TEST_RUN_HASH=$(openssl rand -hex 4)
-echo "Run hash: $TEST_RUN_HASH"
-mkdir -p .datawatch-test-$TEST_RUN_HASH
-cat > .datawatch-test-$TEST_RUN_HASH/config.yaml <<'EOF'
-server:
-  port: 18080
-  tls_port: 18443
-  token: "dw-test-token-12345"
-session:
-  skip_permissions: true
-autonomous:
-  enabled: true
-memory:
-  enabled: true
-mcp:
-  enabled: true
-EOF
-
 # Start secondary instance
-/home/dmz/.local/bin/datawatch start --foreground \
-  --config .datawatch-test-$TEST_RUN_HASH/config.yaml \
-  2>&1 | tee /tmp/test-server-$TEST_RUN_HASH.log &
-echo $! > /tmp/test-daemon-$TEST_RUN_HASH.pid
+DATAWATCH_DATA_DIR=.datawatch-test \
+  ~/workspace/datawatch/bin/datawatch serve \
+  --port 18080 \
+  --tls-port 18443 \
+  2>&1 | tee /tmp/test-server.log &
 
 # Give server 5 seconds to start
 sleep 5
 
 # Verify server is healthy
 curl -sk https://127.0.0.1:18443/api/health
-# Expected: {"status":"ok",...}
+# Expected: {"status":"healthy",...}
 ```
 
 ### Terminal 3: Set Up Port Forwarding and Verify
@@ -118,10 +100,10 @@ adb shell curl -k https://10.0.2.2:18443/api/health
 adb shell pm list packages | grep datawatch
 
 # If not installed, install now:
-adb install -r ~/workspace/datawatch-app/composeApp/build/outputs/apk/publicTrack/debug/composeApp-dev-debug.apk
+adb install -r ~/workspace/datawatch-app/composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk
 
 # Launch app
-adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+adb shell am start -n com.anthropic.datawatch/.MainActivity
 ```
 
 ---
@@ -195,8 +177,8 @@ For each story (e.g., TS-001):
 TS-001 — Fresh install → onboarding
 **Tags**: [surface:phone]
 **Steps**: 
-  1. Clear app data: adb shell pm clear com.dmzs.datawatchclient.dev.debug
-  2. Launch app: adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+  1. Clear app data: adb shell pm clear com.anthropic.datawatch
+  2. Launch app: adb shell am start -n com.anthropic.datawatch/.MainActivity
   3. Observe: Splash screen appears, then onboarding flow
   4. Take screenshot
 **Expected**: Onboarding screen shows "Add your first server" button
@@ -211,10 +193,10 @@ mkdir -p docs/testing/v1.0.0/evidence/TS-001
 **c) Execute Steps**
 ```bash
 # Run step 1: Clear app data
-adb shell pm clear com.dmzs.datawatchclient.dev.debug
+adb shell pm clear com.anthropic.datawatch
 
 # Run step 2: Launch app
-adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+adb shell am start -n com.anthropic.datawatch/.MainActivity
 
 # Wait 3 seconds for app to load
 sleep 3
@@ -278,8 +260,8 @@ git push origin main
 
 # TS-001: Fresh install → onboarding
 mkdir -p evidence/TS-001
-adb shell pm clear com.dmzs.datawatchclient.dev.debug
-adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+adb shell pm clear com.anthropic.datawatch
+adb shell am start -n com.anthropic.datawatch/.MainActivity
 sleep 3
 adb shell screencap -p /sdcard/TS-001.png
 adb pull /sdcard/TS-001.png evidence/TS-001/splash.png
@@ -440,10 +422,10 @@ tail -20 /tmp/test-server.log | grep -i "error\|panic"
 ```bash
 # Story takes >5 minutes to complete?
 # Kill hanging process
-adb shell am force-stop com.dmzs.datawatchclient.dev.debug
+adb shell am force-stop com.anthropic.datawatch
 
 # Restart app
-adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+adb shell am start -n com.anthropic.datawatch/.MainActivity
 sleep 5
 
 # Mark story as ⏭ Skip with note "App hung; timeout >5min"
@@ -456,11 +438,11 @@ sleep 5
 tail -50 /tmp/test-server.log
 
 # Restart server
-pkill -f "datawatch start --foreground.*datawatch-test"
+pkill -f "datawatch serve"
 sleep 2
 
-DATAWATCH_DATA_DIR=.datawatch-test-$TEST_RUN_HASH \
-  /home/dmz/.local/bin/datawatch start --foreground \
+DATAWATCH_DATA_DIR=.datawatch-test \
+  ~/workspace/datawatch/bin/datawatch serve \
   --port 18080 \
   --tls-port 18443 \
   2>&1 | tee -a /tmp/test-server.log &
@@ -593,14 +575,14 @@ mv evidence-v1.0.0-*.tar.gz ~/Downloads/ || cp evidence-v1.0.0-*.tar.gz /mnt/bac
 cd ~/workspace/datawatch-app
 
 # Stop server and emulator
-pkill -f "datawatch start --foreground.*datawatch-test"
+pkill -f "datawatch serve"
 adb emu kill
 
 # Remove evidence (already committed to git, so safe)
 # rm -rf docs/testing/v1.0.0/evidence/
 
 # Remove test data directory
-# rm -rf .datawatch-test-$TEST_RUN_HASH/
+# rm -rf .datawatch-test/
 
 # Keep these for archival:
 # - docs/testing/v1.0.0/plan.md (immutable reference)
@@ -621,8 +603,8 @@ adb logcat -d | grep -A 20 "AndroidRuntime\|FATAL"
 adb logcat -d > evidence/TS-NNN/crash.log
 
 # Restart app
-adb shell am force-stop com.dmzs.datawatchclient.dev.debug
-adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
+adb shell am force-stop com.anthropic.datawatch
+adb shell am start -n com.anthropic.datawatch/.MainActivity
 
 # Mark story ❌ Fail or ⏭ Skip and continue
 ```
@@ -633,7 +615,7 @@ adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity
 # If story takes >5 minutes to reach expected result:
 
 # Option 1: Force stop and skip
-adb shell am force-stop com.dmzs.datawatchclient.dev.debug
+adb shell am force-stop com.anthropic.datawatch
 # Mark story ⏭ Skip with note "Timeout >5min; app unresponsive"
 
 # Option 2: Wait up to 10 minutes for slow network
@@ -672,11 +654,10 @@ df -h ~/workspace/
 # - Reduce emulator snapshot size
 # - Restart server with clean data
 
-pkill -f "datawatch start --foreground.*datawatch-test"
-rm -rf .datawatch-test-$TEST_RUN_HASH/
-TEST_RUN_HASH=$(openssl rand -hex 4)
-mkdir -p .datawatch-test-$TEST_RUN_HASH
-cat > .datawatch-test-$TEST_RUN_HASH/config.yaml <<EOF
+pkill -f "datawatch serve"
+rm -rf .datawatch-test/
+mkdir -p .datawatch-test
+cat > .datawatch-test/config.yaml <<EOF
 server:
   port: 18080
   tls_port: 18443
@@ -686,8 +667,8 @@ session:
 EOF
 
 # Restart server
-DATAWATCH_DATA_DIR=.datawatch-test-$TEST_RUN_HASH \
-  /home/dmz/.local/bin/datawatch start --foreground \
+DATAWATCH_DATA_DIR=.datawatch-test \
+  ~/workspace/datawatch/bin/datawatch serve \
   --port 18080 \
   --tls-port 18443 \
   2>&1 | tee /tmp/test-server.log &
@@ -700,7 +681,7 @@ DATAWATCH_DATA_DIR=.datawatch-test-$TEST_RUN_HASH \
 # Mobile app configured with Trust-all TLS: true for secondary instance
 
 # If cert errors persist:
-rm -rf .datawatch-test-$TEST_RUN_HASH/tls/
+rm -rf .datawatch-test/tls/
 # Restart server to regenerate
 
 # Verify from emulator

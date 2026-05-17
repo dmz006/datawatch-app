@@ -266,7 +266,7 @@ cd ~/workspace/datawatch
 mkdir -p bin
 
 # Build server binary
-# Binary is pre-installed: /home/dmz/.local/bin/datawatch
+go build -o bin/datawatch ./cmd/server
 
 # Verify binary exists and is executable
 ls -lh bin/datawatch
@@ -313,10 +313,10 @@ cd ~/workspace/datawatch-app
 ./gradlew clean
 
 # Build debug APK for publicTrack flavor
-./gradlew :composeApp:assembleDevDebug
+./gradlew :composeApp:assemblePublicTrackDebug
 
 # Verify APK was created
-ls -lh composeApp/build/outputs/apk/publicTrack/debug/composeApp-dev-debug.apk
+ls -lh composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk
 ```
 
 If build fails:
@@ -333,15 +333,14 @@ If build fails:
 ```bash
 # Create test data directory in datawatch-app root
 cd ~/workspace/datawatch-app
-TEST_RUN_HASH=$(openssl rand -hex 4)
-mkdir -p .datawatch-test-$TEST_RUN_HASH
+mkdir -p .datawatch-test
 ```
 
 ### Write Test Configuration
 
 ```bash
 # Create config.yaml for secondary instance
-cat > .datawatch-test-$TEST_RUN_HASH/config.yaml <<'EOF'
+cat > .datawatch-test/config.yaml <<'EOF'
 server:
   port: 18080
   tls_port: 18443
@@ -363,7 +362,7 @@ mcp:
 EOF
 
 # Verify file was created
-cat .datawatch-test-$TEST_RUN_HASH/config.yaml
+cat .datawatch-test/config.yaml
 ```
 
 ---
@@ -402,7 +401,7 @@ emulator-5554          device
 ```bash
 # Install APK
 cd ~/workspace/datawatch-app
-adb install -r composeApp/build/outputs/apk/publicTrack/debug/composeApp-dev-debug.apk
+adb install -r composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk
 
 # Verify installation
 adb shell pm list packages | grep datawatch
@@ -410,7 +409,7 @@ adb shell pm list packages | grep datawatch
 
 Expected output:
 ```
-package:com.dmzs.datawatchclient.dev.debug
+package:com.anthropic.datawatch
 ```
 
 ### Set Up ADB Port Forwarding
@@ -435,11 +434,12 @@ emulator-5554 tcp:18080 tcp:18080
 ```bash
 cd ~/workspace/datawatch-app
 
-# Start server in background (config file takes precedence over flags)
-/home/dmz/.local/bin/datawatch start --foreground \
-  --config .datawatch-test-$TEST_RUN_HASH/config.yaml \
-  2>&1 | tee /tmp/test-server-$TEST_RUN_HASH.log &
-echo $! > /tmp/test-daemon-$TEST_RUN_HASH.pid
+# Start server in background
+DATAWATCH_DATA_DIR=.datawatch-test \
+  ../datawatch/bin/datawatch serve \
+  --port 18080 \
+  --tls-port 18443 \
+  2>&1 | tee /tmp/test-server.log &
 
 # Give server time to start
 sleep 3
@@ -450,7 +450,7 @@ curl -sk https://127.0.0.1:18443/api/health
 
 Expected output:
 ```
-{"status":"ok","timestamp":"2026-05-16T..."}
+{"status":"healthy","timestamp":"2026-05-16T..."}
 ```
 
 ### Configure Mobile App with Test Server
@@ -519,7 +519,7 @@ ls -la | grep evidence
 adb emu kill
 
 # Stop datawatch server
-pkill -f "datawatch start --foreground.*datawatch-test"
+pkill -f "datawatch serve"
 
 # Kill ADB server (optional)
 adb kill-server
@@ -531,12 +531,11 @@ adb kill-server
 cd ~/workspace/datawatch-app
 
 # Remove test data
-rm -rf .datawatch-test-$TEST_RUN_HASH/
-TEST_RUN_HASH=$(openssl rand -hex 4)
-mkdir -p .datawatch-test-$TEST_RUN_HASH
+rm -rf .datawatch-test/
+mkdir -p .datawatch-test
 
 # Recreate config
-cat > .datawatch-test-$TEST_RUN_HASH/config.yaml <<'EOF'
+cat > .datawatch-test/config.yaml <<'EOF'
 server:
   port: 18080
   tls_port: 18443
@@ -604,7 +603,7 @@ rm -rf .gradle/
 ./gradlew clean
 
 # Try build again
-./gradlew :composeApp:assembleDevDebug
+./gradlew :composeApp:assemblePublicTrackDebug
 ```
 
 ### Datawatch Server Won't Start
@@ -618,11 +617,11 @@ lsof -i :18443
 kill -9 <PID>
 
 # Check server binary
-/home/dmz/.local/bin/datawatch --version
+~/workspace/datawatch/bin/datawatch --version
 
 # Check data directory
-ls -la .datawatch-test-$TEST_RUN_HASH/
-cat .datawatch-test-$TEST_RUN_HASH/config.yaml
+ls -la .datawatch-test/
+cat .datawatch-test/config.yaml
 ```
 
 ### Network Connectivity Issues
