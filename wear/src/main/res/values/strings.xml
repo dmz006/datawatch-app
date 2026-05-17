@@ -117,6 +117,10 @@
     <string name="wear_automata_progress">%d%%</string>
     <string name="wear_automata_heatmap_title">Weekly Health</string>
 
+    <!-- BL303-W6: Briefing tile + status complication -->
+    <string name="tile_briefing_label">datawatch Briefing</string>
+    <string name="complication_status_label">datawatch Status</string>
+
     <!-- BL303-W5: Voice status query -->
     <string name="wear_voice_ask_status">Ask Status</string>
     <string name="wear_voice_reply_default">No reply from phone</string>

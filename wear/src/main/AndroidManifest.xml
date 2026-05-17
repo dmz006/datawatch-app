@@ -216,6 +216,38 @@
                 android:value="300"/>
         </service>
 
+        <!-- BL303-W6: briefing tile (running / blocked counts + health dot). -->
+        <service
+            android:name=".tile.BriefingTileService"
+            android:exported="true"
+            android:label="@string/tile_briefing_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER"/>
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@android:drawable/ic_menu_info_details"/>
+        </service>
+
+        <!-- BL303-W6: mission status complication — "3R 1B" + progress ranged value. -->
+        <service
+            android:name=".complication.StatusComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/complication_status_label"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT,RANGED_VALUE"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
         <!-- BroadcastReceiver for server-switch complication tap (W-10). -->
         <receiver
             android:name=".complication.ServerSwitchReceiver"
