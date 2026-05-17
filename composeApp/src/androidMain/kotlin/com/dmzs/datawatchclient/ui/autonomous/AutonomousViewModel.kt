@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto
@@ -166,8 +167,11 @@ public class AutonomousViewModel(
                                 }
                             },
                             onFailure = { err ->
-                                synchronized(errors) {
-                                    errors += "${profile.displayName}: ${err.message ?: err::class.simpleName}"
+                                // 404 = autonomous not enabled on this server — skip silently
+                                if (err !is TransportError.NotFound) {
+                                    synchronized(errors) {
+                                        errors += "${profile.displayName}: ${err.message ?: err::class.simpleName}"
+                                    }
                                 }
                             },
                         )
