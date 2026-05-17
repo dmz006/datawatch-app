@@ -911,6 +911,9 @@
     <string name="docs_trust_dismiss">Dismiss selected</string>
     <string name="docs_trusted_sources">Trusted sources (%d)</string>
     <string name="docs_trust_remove">Remove trust</string>
+    <string name="docs_howtos_title">How-to guides (%d)</string>
+    <string name="docs_trust_add_source">Add source</string>
+    <string name="docs_trust_add_source_hint">Source ID (e.g. skill:name)</string>
 
     <!-- v0.75.0 — Mic toast + Observer card (S6-7, #88) -->
     <string name="mic_toast_recording">Recording…</string>

@@ -994,6 +994,12 @@ public interface TransportClient {
     /** DELETE /api/docs/trust/{path} — remove trust from a source. */
     public suspend fun docsTrustRemove(path: String): Result<Unit>
 
+    /** GET /api/docs/howtos — list how-to guides with exec metadata. */
+    public suspend fun docsListHowtos(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsHowtoDto>>
+
+    /** POST /api/docs/trust/add — add a new docs source to the trust list. */
+    public suspend fun docsTrustAdd(source: String): Result<Unit>
+
     // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
 
     /** GET /api/identity — fetch the server's identity profile. */

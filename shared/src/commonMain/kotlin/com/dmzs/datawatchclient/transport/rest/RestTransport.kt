@@ -1891,6 +1891,23 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun docsListHowtos(): Result<List<com.dmzs.datawatchclient.transport.dto.DocsHowtoDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/docs/howtos") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<com.dmzs.datawatchclient.transport.dto.DocsHowtosResponse>().howtos
+        }
+
+    override suspend fun docsTrustAdd(source: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/docs/trust/add") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.DocsTrustAddRequest(source))
+            }
+            Unit
+        }
+
     // ---- v0.73.0 Sprint 4: Identity, Algorithm Mode, Evals ----
 
     override suspend fun getIdentity(): Result<com.dmzs.datawatchclient.transport.dto.IdentityDto> =

@@ -1,6 +1,5 @@
 package com.dmzs.datawatchclient.ui.settings
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,10 +39,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto
 import com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto
 import com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest
 import com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto
+import com.dmzs.datawatchclient.transport.dto.DocsHowtoDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,23 +53,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * v0.75.0 S6-4 (#84, #85) — Documentation Search card.
- *
- * Full-text search via GET /api/docs/search with index_kind badge
- * (vector=teal, bm25=grey). Pending trust queue with bulk accept/dismiss
- * (GET/POST /api/docs/trust/pending, /accept, /dismiss). Trusted sources
- * collapsible list with remove (GET /api/docs/trust, DELETE /api/docs/trust/{path}).
- *
- * Placed in Settings → General after NotificationsCard.
+ * Datawatch inline docs: search, how-to guides, trust management.
+ * Placed in Settings → General.
  */
 @Composable
 public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var trustedExpanded by remember { mutableStateOf(false) }
+    var howtosExpanded by remember { mutableStateOf(false) }
+    var addSourceText by remember { mutableStateOf("") }
+    var addSourceExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        vm.loadPendingAndTrusted()
+        vm.loadAll()
     }
 
     androidx.compose.foundation.layout.Box(
@@ -102,7 +100,6 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
-                        // S6-4 (#85): index_kind badge — vector=teal, bm25=grey.
                         val badgeColor =
                             if (result.indexKind == "vector") Color(0xFF00ACC1) else Color(0xFF757575)
                         Surface(color = badgeColor, shape = RoundedCornerShape(4.dp)) {
@@ -125,7 +122,52 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                 HorizontalDivider()
             }
 
-            // Pending trust queue (shown if non-empty)
+            // How-to guides section
+            if (state.howtos.isNotEmpty()) {
+                TextButton(onClick = { howtosExpanded = !howtosExpanded }) {
+                    Text(stringResource(R.string.docs_howtos_title, state.howtos.size))
+                    Icon(
+                        if (howtosExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                    )
+                }
+                if (howtosExpanded) {
+                    state.howtos.forEach { howto ->
+                        Column(modifier = Modifier.padding(vertical = 2.dp).fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    howto.title,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                if (howto.hasExecSteps) {
+                                    Surface(
+                                        color = Color(0xFF00ACC1),
+                                        shape = RoundedCornerShape(4.dp),
+                                    ) {
+                                        Text(
+                                            "runnable",
+                                            fontSize = 9.sp,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            if (howto.topics.isNotEmpty()) {
+                                Text(
+                                    howto.topics.take(4).joinToString(" · "),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+
+            // Pending trust queue
             if (state.pending.isNotEmpty()) {
                 PwaSectionTitle(stringResource(R.string.docs_trust_pending_title))
                 val allSelected =
@@ -166,16 +208,16 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                 }
             }
 
-            // Trusted sources (collapsible)
+            // Trusted sources
             if (state.trusted.isNotEmpty()) {
-                TextButton(onClick = { expanded = !expanded }) {
+                TextButton(onClick = { trustedExpanded = !trustedExpanded }) {
                     Text(stringResource(R.string.docs_trusted_sources, state.trusted.size))
                     Icon(
-                        if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        if (trustedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         contentDescription = null,
                     )
                 }
-                if (expanded) {
+                if (trustedExpanded) {
                     state.trusted.forEach { source ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -190,6 +232,38 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            // Add source
+            TextButton(onClick = { addSourceExpanded = !addSourceExpanded }) {
+                Text(stringResource(R.string.docs_trust_add_source))
+                Icon(
+                    if (addSourceExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                )
+            }
+            if (addSourceExpanded) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = addSourceText,
+                        onValueChange = { addSourceText = it },
+                        label = { Text(stringResource(R.string.docs_trust_add_source_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = {
+                            if (addSourceText.isNotBlank()) {
+                                vm.addSource(addSourceText.trim())
+                                addSourceText = ""
+                                addSourceExpanded = false
+                            }
+                        },
+                        enabled = addSourceText.isNotBlank(),
+                    ) {
+                        Text(stringResource(R.string.docs_trust_accept))
                     }
                 }
             }
@@ -212,6 +286,7 @@ public class DocsSearchViewModel : ViewModel() {
         val results: List<DocsSearchResultDto> = emptyList(),
         val pending: List<DocsPendingSourceDto> = emptyList(),
         val trusted: List<DocsTrustedSourceDto> = emptyList(),
+        val howtos: List<DocsHowtoDto> = emptyList(),
         val selected: Set<String> = emptySet(),
         val error: String? = null,
     )
@@ -219,11 +294,12 @@ public class DocsSearchViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
-    public fun loadPendingAndTrusted() {
+    public fun loadAll() {
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
             transport.docsPendingList().onSuccess { _state.value = _state.value.copy(pending = it, selected = emptySet()) }
             transport.docsTrustedList().onSuccess { _state.value = _state.value.copy(trusted = it) }
+            transport.docsListHowtos().onSuccess { _state.value = _state.value.copy(howtos = it) }
         }
     }
 
@@ -258,7 +334,7 @@ public class DocsSearchViewModel : ViewModel() {
         if (paths.isEmpty()) return
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustAccept(paths).onSuccess { loadPendingAndTrusted() }
+            transport.docsTrustAccept(paths).onSuccess { loadAll() }
         }
     }
 
@@ -267,22 +343,31 @@ public class DocsSearchViewModel : ViewModel() {
         if (paths.isEmpty()) return
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustDismiss(paths).onSuccess { loadPendingAndTrusted() }
+            transport.docsTrustDismiss(paths).onSuccess { loadAll() }
         }
     }
 
     public fun removeTrusted(path: String) {
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
-            transport.docsTrustRemove(path).onSuccess { loadPendingAndTrusted() }
+            transport.docsTrustRemove(path).onSuccess { loadAll() }
+        }
+    }
+
+    public fun addSource(source: String) {
+        viewModelScope.launch {
+            val transport = resolveTransport() ?: return@launch
+            transport.docsTrustAdd(source).onSuccess { loadAll() }
+                .onFailure { _state.value = _state.value.copy(error = "Add failed: ${it.message}") }
         }
     }
 
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile =
-            ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return null
+        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val enabled = profiles.filter { it.enabled }
+        // Fall back to first enabled profile when in all-servers mode or no match
+        val profile = enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull() ?: return null
         return ServiceLocator.transportFor(profile)
     }
 }
