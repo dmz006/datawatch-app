@@ -51,6 +51,9 @@ public class AutoSessionListScreen(
     private var error: String? = null
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+    // BL303-A5.1: ambient mode — after STALE_THRESHOLD polls with no change, slow down to AMBIENT_POLL_MS
+    private var staleCount: Int = 0
+    private var lastRowsKey: Int = -1
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -70,7 +73,8 @@ public class AutoSessionListScreen(
         while (scope.isActive) {
             refresh()
             invalidate()
-            delay(POLL_MS)
+            val poll = if (staleCount >= STALE_THRESHOLD) AMBIENT_POLL_MS else POLL_MS
+            delay(poll)
         }
     }
 
@@ -86,24 +90,31 @@ public class AutoSessionListScreen(
             transport.listSessions().fold(
                 onSuccess = { sessions ->
                     error = null
-                    val telemetryMap: Map<String, SessionTelemetryDto?> = coroutineScope {
-                        sessions
-                            .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
-                            .map { s ->
-                                async { s.id to transport.getSessionTelemetry(s.id).getOrNull() }
-                            }
-                            .awaitAll()
-                            .toMap()
+                    val isAmbient = staleCount >= STALE_THRESHOLD
+                    // BL303-A5.1: ambient mode — skip per-session telemetry fetches, use cached rows
+                    val telemetryMap: Map<String, SessionTelemetryDto?> = if (isAmbient) {
+                        emptyMap()
+                    } else {
+                        coroutineScope {
+                            sessions
+                                .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
+                                .map { s ->
+                                    async { s.id to transport.getSessionTelemetry(s.id).getOrNull() }
+                                }
+                                .awaitAll()
+                                .toMap()
+                        }
                     }
-                    rows = sessions
+                    val newRows = sessions
                         .map { s ->
                             val telem = telemetryMap[s.id]
+                            val existing = if (isAmbient) rows.firstOrNull { it.session.id == s.id } else null
                             SessionRow(
                                 session = s,
-                                progress = telem?.progress?.takeIf { it > 0f },
+                                progress = telem?.progress?.takeIf { it > 0f } ?: existing?.progress,
                                 hasGuardrailBlock = telem?.guardrailVerdicts
-                                    ?.any { it.outcome == "block" } == true,
-                                automataName = telem?.sprint?.automata.orEmpty(),
+                                    ?.any { it.outcome == "block" } ?: existing?.hasGuardrailBlock ?: false,
+                                automataName = telem?.sprint?.automata.orEmpty().ifEmpty { existing?.automataName.orEmpty() },
                             )
                         }
                         // BL303-A3.4: filter by automaton id when coming from AutomataScreen
@@ -116,6 +127,10 @@ public class AutoSessionListScreen(
                             } else allRows
                         }
                         .sortedWith(compareBy { urgencyScore(it) })
+                    // Track stale state for ambient poll
+                    val newKey = newRows.map { it.session.id to it.session.state }.hashCode()
+                    if (newKey == lastRowsKey) staleCount++ else { staleCount = 0; lastRowsKey = newKey }
+                    rows = newRows
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
@@ -170,6 +185,8 @@ public class AutoSessionListScreen(
 
     private companion object {
         const val POLL_MS: Long = 10_000L
+        const val AMBIENT_POLL_MS: Long = 60_000L
+        const val STALE_THRESHOLD: Int = 3
         const val MAX_ROWS: Int = 5
 
         fun urgencyScore(row: SessionRow): Int =
