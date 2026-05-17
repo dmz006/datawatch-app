@@ -119,7 +119,7 @@ fi
 | T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ — TS-196/197 verified on isolated test daemon |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 17✅ / 18⏭ — TS-223/253 added; TS-232/233/234/236/237/239/240/241 blocked by datawatch#48 (decompose timeout) |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 17✅ / 18⏭ — TS-223/253 added; datawatch#48 closed (server fix); Cancel fix + Clone button landed (064993d); TS-232/233/234/236/237/239/245 now unblocked |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ 10✅ / 20⏭ — TS-265/282 added; BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
 
 **Priority order:** T2 and T14 first (session refresh regression), then T3, T1, T5.
@@ -503,20 +503,20 @@ fi
 | TS-229 | PRD detail — Decisions tab | PRD detail → Decisions tab | Decisions listed or "No decisions" msg | ✅ Pass | Decisions tab shows "No decisions logged yet." — no crash; BL-T13-2 DecisionDto fix confirmed |
 | TS-230 | PRD detail — Scan tab | PRD detail → Scan tab | Scan result shown | ⏭ | Blocked: scan infra unavailable; tab renders correctly with "Run scan" button + "No scan result yet." empty state |
 | TS-231 | Edit PRD title | Detail → edit icon | Edit dialog with title + spec | ✅ Pass | Edit dialog opens with Title + Spec fields pre-filled from existing PRD |
-| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | Blocked: datawatch server issue #48 — internal `api/ask` timeout (~300s) is too short for local Ollama inference. Tried qwen3:8b and Gemma3:12b; both hit context deadline. Compute node + autonomous config correctly wired (datawatch-ollama registered, decomposition_backend=ollama, decomposition_model=Gemma3:12b). PRD correctly enters `planning` state then reverts to `draft` on timeout. |
-| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Blocked: need PRD in reviewable state; Approve not shown on draft PRD (correct behavior) |
-| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Blocked: need PRD in reviewable state |
+| TS-232 | Decompose PRD | Detail → Decompose button | Stories created; status changes | ⏭ | datawatch#48 closed (server fix landed). Unblocked — pending re-test with live LLM decompose. |
+| TS-233 | Approve PRD | Detail → Approve | Status changes to approved | ⏭ | Unblocked (datawatch#48 closed); test daemon has PRD 5e2dcd29 in approved state |
+| TS-234 | Reject PRD | Detail → Reject → enter reason | Status changes; reason saved | ⏭ | Unblocked; test daemon has PRD a669e458 in rejected state for verification |
 | TS-235 | Set LLM on PRD | Detail → Set LLM | Backend + effort + model dialog | ✅ Pass | LLM button opens "Set LLM override" dialog with Backend + Effort dropdowns + optional Model field |
-| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Blocked: need LLM node + PRD in runnable state |
-| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Blocked: Cancel button not shown on draft or planning PRD in app UI (only Decompose/LLM/Edit/Delete visible). API-confirmed: `POST /api/autonomous/prds/{id}/cancel` works on draft → status=cancelled. App only exposes Cancel in higher states (running/approved?). Need running PRD to test via UI (blocked by TS-232 decompose timeout). |
+| TS-236 | Run PRD | Detail → Run | Session(s) created and started | ⏭ | Unblocked (datawatch#48 closed); test daemon has PRD 5e2dcd29 in approved state → Run button visible |
+| TS-237 | Cancel PRD | Detail → Cancel | Soft-delete; status = cancelled | ⏭ | Client fix landed (064993d): Cancel button now shows for draft/planning/decomposing/needs_review/revisions_asked/approved. Test daemon has PRD 8453c94c (cancelled) for verification; create fresh draft to test Cancel flow. |
 | TS-238 | Hard delete PRD | Detail → Delete → confirm | PRD removed permanently | ✅ | Deleted "TestPlan1": confirmation dialog shown; PRD removed; server confirmed empty list |
-| TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ⏭ | Blocked: need PRD detail access |
-| TS-240 | Edit story | Story → edit | Title + description editable | ⏭ | Blocked: no stories (decompose not run) |
-| TS-241 | Associate files with story | Story → Files → add | File paths associated | ⏭ | Blocked: no stories |
+| TS-239 | Request revision | Detail → Request revision → note | Status changes; note saved | ⏭ | Unblocked; test daemon has PRD 81b70a53 in revisions_asked state |
+| TS-240 | Edit story | Story → edit | Title + description editable | ⏭ | Unblocked once TS-232 (decompose) passes; PRD 7fc7492d (completed) has stories |
+| TS-241 | Associate files with story | Story → Files → add | File paths associated | ⏭ | Unblocked once TS-232 passes; same PRD 7fc7492d |
 | TS-242 | Template store — list | Templates tab | Templates listed | ✅ | Templates tab visible in Autonomous screen; tab renders correctly |
 | TS-243 | Template store — create template | + in templates | Create/edit form | ✅ | + in Templates opens distinct "New Template" dialog (separate from PRD create) |
 | TS-244 | Template store — instantiate | Template → Instantiate | PRD created from template | ✅ Pass | Created template via API; tapped "Use" → Instantiate dialog opened; filled workspace → new PRD 96a686ac created and appears in Automata list |
-| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Blocked: Clone as template button not yet visible in detail; need PRD with template support |
+| TS-245 | Template store — clone from PRD | PRD detail → Clone as template | Template created | ⏭ | Client fix landed (064993d): "Clone to Template" button now visible in secondary actions for completed/done/approved/cancelled/failed PRDs |
 | TS-246 | Security scan — run | PRD detail → Scan tab → Run Scan | Scan executes; verdict shown | ⏭ | Blocked: scan infra unavailable |
 | TS-247 | Security scan — findings | Scan complete with findings | Finding list shown with severity | ⏭ | Blocked: scan infra unavailable |
 | TS-248 | Security scan — fix action | Tap Fix on finding | Fix job started | ⏭ | Blocked: scan infra unavailable |
@@ -614,7 +614,9 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 | BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Fixed v0.109.0/e7743f6 — DB migration 7→8 adds llm_ref + compute_node_ref columns; upsertInternal + toDomain updated. |
 | BL-T15-1 | TS-156 | `ScanConfigCard` used wrong endpoint `/api/autonomous/scan_config` (404); field names `sast`/`secrets`/`deps` lacked `@SerialName` annotations (API uses `sast_enabled` etc.). Config never loaded. | Fixed 2026-05-17: endpoint → `/api/autonomous/scan/config`; added `@SerialName("sast_enabled")`, `@SerialName("secrets_enabled")`, `@SerialName("deps_enabled")` to `ScanConfigDto`. |
 | BL-T15-2 | TS-158 | `EvalSuiteDto.cases` lacked `@SerialName("case_count")`; `id: String` was non-nullable with no default → parse failure when server omits `id` field. Suites list always empty. | Fixed 2026-05-17: `id` → `= ""`; added `effectiveId` computed property (`id.ifEmpty { name }`); `cases` → `@SerialName("case_count")`; `EvalsCard` updated to use `effectiveId`. |
-| [datawatch#48](https://github.com/dmz006/datawatch/issues/48) | TS-232+ | Decompose pipeline `api/ask` internal timeout (~300s) too short for local Ollama LLMs (Gemma3:12b, qwen3:8b both exceed deadline). Blocks TS-228/232/233/234/236/237/239/240/241. Filed upstream: request configurable timeout or async decompose endpoint. | Open — awaiting datawatch fix |
+| [datawatch#48](https://github.com/dmz006/datawatch/issues/48) | TS-232+ | Decompose pipeline `api/ask` internal timeout (~300s) too short for local Ollama LLMs (Gemma3:12b, qwen3:8b both exceed deadline). Blocked TS-228/232/233/234/236/237/239/240/241. Client-side: Cancel button expanded to all cancellable states (064993d). | **Closed** — server fix landed |
+| BL-T13-3 | TS-237 | Cancel button in PrdDetailDialog only showed for `running` state — API confirmed cancel works on draft/planning/decomposing/needs_review/revisions_asked/approved. App blocked testing cancel on any non-running PRD. | Fixed 2026-05-17 (064993d): `isCancellable` set covers all soft-cancel states. |
+| BL-T13-4 | TS-245 | Clone as Template button missing from PrdDetailDialog secondary actions — API `POST .../clone_to_template` existed in TransportClient but no UI entry point. | Fixed 2026-05-17 (064993d): TextButton added to FlowRow for completed/done/approved/cancelled/failed states. |
 
 ---
 
