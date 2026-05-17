@@ -41,7 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalUriHandler
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
@@ -50,11 +52,14 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 /**
  * Docs / help link — HelpOutline icon that opens [url] in the system browser.
  * Placed leftmost in the TopAppBar actions block (appears left of filter, alerts, status).
+ * Uses explicit Intent(ACTION_VIEW) so it works on all Android devices regardless of UriHandler config.
  */
 @Composable
 internal fun DocsLinkAction(url: String) {
-    val uriHandler = LocalUriHandler.current
-    IconButton(onClick = { uriHandler.openUri(url) }) {
+    val ctx = LocalContext.current
+    IconButton(onClick = {
+        ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }) {
         Icon(
             Icons.Filled.HelpOutline,
             contentDescription = stringResource(R.string.sessions_help_link),
