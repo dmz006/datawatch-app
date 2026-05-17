@@ -31,5 +31,7 @@ public object Destinations {
         public const val Channels: String = "home/channels"
         public const val Stats: String = "home/stats"
         public const val Settings: String = "home/settings"
+        /** BL303 parity with PWA alpha.71 ⊞ Dashboard tab. */
+        public const val Dashboard: String = "home/dashboard"
     }
 }
