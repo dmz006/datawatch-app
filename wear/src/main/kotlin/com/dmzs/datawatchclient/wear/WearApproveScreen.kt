@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.wear.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
@@ -124,7 +126,7 @@ private fun ApproveContent(
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
             Text(
-                "Guardrail Blocked",
+                stringResource(R.string.wear_notification_guardrail_title),
                 style = MaterialTheme.typography.title3,
                 color = blockColor,
                 textAlign = TextAlign.Center,
@@ -153,11 +155,11 @@ private fun ApproveContent(
                     contentColor = Color(0xFF00140B),
                 ),
             ) {
-                Text("Confirm Approve", style = MaterialTheme.typography.button)
+                Text(stringResource(R.string.wear_approve_confirm), style = MaterialTheme.typography.button)
             }
 
             Text(
-                "Auto-dismiss in ${countdown}s",
+                stringResource(R.string.wear_approve_timeout, countdown),
                 style = MaterialTheme.typography.caption2,
                 color = Color(0xFF9AA7B3),
             )
