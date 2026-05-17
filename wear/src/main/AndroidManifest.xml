@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
         android:label="@string/app_name"
@@ -220,7 +221,7 @@
             android:name=".complication.ServerSwitchReceiver"
             android:exported="false"/>
 
-        <!-- WearableListenerService for session alerts (BL27, W-#107). -->
+        <!-- WearableListenerService for session alerts (BL27, W-#107, BL303-W3). -->
         <service
             android:name=".WearAlertListenerService"
             android:exported="true"
@@ -230,7 +231,24 @@
                 <data android:scheme="wear" android:pathPrefix="/datawatch/alert"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/council"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/error-alert"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/guardrailBlock"/>
             </intent-filter>
         </service>
+
+        <!-- BL303-W3: guardrail approve confirmation screen. -->
+        <activity
+            android:name=".WearApproveScreen"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity=".approve"/>
+
+        <!-- BL303-W3: dismiss BroadcastReceiver for guardrail block notification. -->
+        <receiver
+            android:name=".GuardrailDismissReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.dmzs.datawatchclient.wear.ACTION_GUARDRAIL_DISMISS"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -58,6 +58,8 @@ public class WearSyncService(
     private var prevWaitingIds: Set<String> = emptySet()
     private var prevErrorIds: Set<String> = emptySet()
     private var prevCouncilCompletedIds: Set<String> = emptySet()
+    // BL303-W3: track last blocked session to fire notification once per new block only.
+    private var lastGuardrailBlockSessionId: String = ""
     private val messageListener =
         MessageClient.OnMessageReceivedListener { ev: MessageEvent ->
             when (ev.path) {
@@ -388,18 +390,25 @@ public class WearSyncService(
                         val telem = ServiceLocator.transportFor(profile)
                             .getSessionTelemetry(activeSession.id).getOrNull()
                         val blocks = telem?.guardrailVerdicts?.filter { it.outcome == "block" }
-                        publishTelemetry(
-                            TelemetrySnapshot(
-                                sessionId = activeSession.id,
-                                currentTask = telem?.currentTask.orEmpty(),
-                                progress = telem?.progress ?: 0f,
-                                sprintName = telem?.sprint?.name.orEmpty(),
-                                automataName = telem?.sprint?.automata.orEmpty(),
-                                sessionState = activeSession.state.name,
-                                guardrailBlock = !blocks.isNullOrEmpty(),
-                                blockSummary = blocks?.firstOrNull()?.summary.orEmpty(),
-                            ),
+                        val snap = TelemetrySnapshot(
+                            sessionId = activeSession.id,
+                            currentTask = telem?.currentTask.orEmpty(),
+                            progress = telem?.progress ?: 0f,
+                            sprintName = telem?.sprint?.name.orEmpty(),
+                            automataName = telem?.sprint?.automata.orEmpty(),
+                            sessionState = activeSession.state.name,
+                            guardrailBlock = !blocks.isNullOrEmpty(),
+                            blockSummary = blocks?.firstOrNull()?.summary.orEmpty(),
                         )
+                        publishTelemetry(snap)
+                        // BL303-W3 — fire watch notification when a NEW block appears.
+                        // Idempotent: same session id does not re-fire.
+                        if (snap.guardrailBlock && snap.sessionId != lastGuardrailBlockSessionId) {
+                            lastGuardrailBlockSessionId = snap.sessionId
+                            guardrailBlockWatchNodes(snap.sessionId, snap.blockSummary)
+                        } else if (!snap.guardrailBlock) {
+                            lastGuardrailBlockSessionId = ""
+                        }
                     }
             }
         }.onFailure { err ->
@@ -950,6 +959,28 @@ public class WearSyncService(
     }
 
     /**
+     * BL303-W3 — send guardrail block alert to all connected watch nodes so the
+     * WearAlertListenerService can post a notification with the triple-buzz haptic.
+     * Payload: "sessionId\nblockSummary".
+     */
+    private fun guardrailBlockWatchNodes(sessionId: String, blockSummary: String) {
+        scope.launch {
+            runCatching {
+                val nodes =
+                    com.google.android.gms.tasks.Tasks.await(
+                        Wearable.getNodeClient(context).connectedNodes,
+                    )
+                val payload = "$sessionId\n$blockSummary".toByteArray(Charsets.UTF_8)
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, GUARDRAIL_BLOCK_PATH, payload)
+                }
+                Log.d(TAG, "guardrailBlock alert sent sid=$sessionId nodes=${nodes.size}")
+            }.onFailure { Log.w(TAG, "guardrailBlockWatchNodes FAILED", it) }
+        }
+    }
+
+    /**
      * BL303-W1 — publishes the active session's telemetry to the watch via
      * `/datawatch/telemetry`. The watch uses this for the progress ring,
      * current task text, sprint breadcrumb, and guardrail block notification.
@@ -1001,6 +1032,8 @@ public class WearSyncService(
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
         public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
         private const val TELEMETRY_DEBOUNCE_MS: Long = 500L
+        // BL303-W3: guardrail block notification
+        public const val GUARDRAIL_BLOCK_PATH: String = "/datawatch/guardrailBlock"
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable

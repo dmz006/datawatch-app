@@ -107,4 +107,15 @@
     <string name="wear_session_state_waiting">Waiting</string>
     <string name="wear_session_state_done">Done</string>
     <string name="wear_session_state_error">Error</string>
+
+    <!-- BL303-W3: Guardrail block notification + approve screen -->
+    <string name="wear_notification_guardrail_channel">Guardrail Blocks</string>
+    <string name="wear_notification_guardrail_title">Guardrail Blocked</string>
+    <string name="wear_notification_guardrail_action_approve">Approve Gate</string>
+    <string name="wear_notification_guardrail_action_dismiss">Dismiss</string>
+    <string name="wear_approve_title">Approve Gate?</string>
+    <string name="wear_approve_confirm">Confirm Approve</string>
+    <string name="wear_approve_timeout">Auto-dismiss in %ds</string>
+    <string name="wear_approve_success">Gate approved</string>
+    <string name="wear_approve_dismissed">Dismissed</string>
 </resources>
