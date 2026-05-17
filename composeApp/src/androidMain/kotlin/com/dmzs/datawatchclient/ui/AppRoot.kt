@@ -340,6 +340,7 @@ private fun HomeShell(
         android.util.Log.d("DWProbe", "probeAutonomous id=$id")
         if (id == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS) {
             prdsSupported = true
+            dashboardEnabled = true
             return
         }
         // When no explicit active server is stored, mirror SessionsViewModel: fall back

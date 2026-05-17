@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
@@ -164,7 +165,7 @@ public class AutonomousViewModel(
     private fun refreshAllServers() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true)
-            val profiles = _allProfiles.value.filter { it.enabled }
+            val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
             val merged = mutableListOf<PrdDto>()
             val nameMap = mutableMapOf<String, String>()
             val errors = mutableListOf<String>()
