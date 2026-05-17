@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.ui.autonomous
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto
@@ -12,11 +14,17 @@ import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
 import com.dmzs.datawatchclient.transport.dto.ScanResultDto
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -56,14 +64,51 @@ public class AutonomousViewModel(
         val showBatchCancelConfirm: Boolean = false,
         /** Sprint 30 — batch hard-delete confirm dialog pending. */
         val showBatchDeleteConfirm: Boolean = false,
+        /** All enabled profiles for the server picker. */
+        val allProfiles: List<ServerProfile> = emptyList(),
+        /** True when the user has selected "All servers" mode. */
+        val allServersMode: Boolean = false,
+        /** The currently active single-server profile (null in all-servers mode). */
+        val activeProfile: ServerProfile? = null,
+        /** prdId → profile displayName; populated only in all-servers mode. */
+        val prdProfileNames: Map<String, String> = emptyMap(),
     )
 
     private val _state = MutableStateFlow(UiState())
-    public val state: StateFlow<UiState> = _state
+
+    private val _allProfiles =
+        ServiceLocator.profileRepository.observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _activeId =
+        ServiceLocator.activeServerStore.observe()
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _allServersMode =
+        _activeId.map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private val _computedActiveProfile =
+        combine(_allProfiles, _activeId) { profiles, storedId ->
+            val enabled = profiles.filter { it.enabled }
+            if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
+            storedId?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.firstOrNull()
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    public val state: StateFlow<UiState> =
+        combine(_state, _allProfiles, _allServersMode, _computedActiveProfile) { s, profiles, allMode, activeProf ->
+            s.copy(
+                allProfiles = profiles.filter { it.enabled },
+                allServersMode = allMode,
+                activeProfile = activeProf,
+            )
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     init {
         viewModelScope.launch {
-            ServiceLocator.activeProfileFlow().collect { _ ->
+            _activeId.collect { _ ->
                 refresh()
                 loadAutomataTypes()
             }
@@ -72,6 +117,10 @@ public class AutonomousViewModel(
 
     /** Fetch PRD list and backends list together. */
     public fun refresh() {
+        if (_allServersMode.value) {
+            refreshAllServers()
+            return
+        }
         viewModelScope.launch {
             val (_, transport) =
                 resolver.resolve() ?: run {
@@ -93,6 +142,43 @@ public class AutonomousViewModel(
                             banner = "Load failed — ${err.message ?: err::class.simpleName}",
                         )
                 },
+            )
+        }
+    }
+
+    private fun refreshAllServers() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true)
+            val profiles = _allProfiles.value.filter { it.enabled }
+            val merged = mutableListOf<PrdDto>()
+            val nameMap = mutableMapOf<String, String>()
+            val errors = mutableListOf<String>()
+            coroutineScope {
+                profiles.map { profile ->
+                    async {
+                        ServiceLocator.transportFor(profile).listPrds().fold(
+                            onSuccess = { dto ->
+                                synchronized(merged) {
+                                    dto.prds.forEach { prd ->
+                                        merged.add(prd)
+                                        nameMap[prd.id] = profile.displayName
+                                    }
+                                }
+                            },
+                            onFailure = { err ->
+                                synchronized(errors) {
+                                    errors += "${profile.displayName}: ${err.message ?: err::class.simpleName}"
+                                }
+                            },
+                        )
+                    }
+                }.awaitAll()
+            }
+            _state.value = _state.value.copy(
+                loading = false,
+                prds = merged.toList(),
+                prdProfileNames = nameMap.toMap(),
+                banner = if (errors.isEmpty()) null else "Some servers unreachable: " + errors.take(3).joinToString("; "),
             )
         }
     }
@@ -327,6 +413,14 @@ public class AutonomousViewModel(
                 _state.value = _state.value.copy(automataTypes = types)
             }
         }
+    }
+
+    public fun selectProfile(profileId: String) {
+        ServiceLocator.activeServerStore.set(profileId)
+    }
+
+    public fun selectAllServers() {
+        ServiceLocator.activeServerStore.set(ActiveServerStore.SENTINEL_ALL_SERVERS)
     }
 
     /** Toggle selection state for an automaton row (v0.76.0). */
