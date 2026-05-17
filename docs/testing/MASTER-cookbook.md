@@ -45,6 +45,9 @@
 | ... | | | | | | | |
 | T20 | Howto validation | 9 | — | — | — | — | 📋 |
 | T21 | End-to-end journeys | 3+ | — | — | — | — | 📋 |
+| T22 | Wear OS surface tests | 15 | — | — | — | 13 | 📋 |
+| T23 | Android Auto surface tests | 15 | — | — | — | 14 | 📋 |
+| T24 | Algorithm Mode tests | 12 | — | — | — | — | 📋 |
 | **TOTALS** | | **{{ SUM }}** | **0** | **0** | **0** | **0** | **📋 PLANNED** |
 
 **Legend**: ✅ = Pass · ❌ = Fail · ⏭ = Skip · ⏳ = Blocked

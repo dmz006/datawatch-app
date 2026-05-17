@@ -120,15 +120,18 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 | T10 | Push & notifications | TS-181–TS-195 | ✅ Pass (Wear blocked) |
 | T11 | Security & keystore | TS-196–TS-205 | ✅ Pass |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ Pass |
-| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | ⏳ Blocked: datawatch#48 |
+| T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 #48 closed; re-run pending |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ Pass |
-| T15 | New server endpoints | TS-286–TS-305 | ⏳ Blocked: datawatch#40-43 |
-| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | ⏳ Blocked: datawatch#39 |
+| T15 | New server endpoints | TS-286–TS-305 | 🟡 #40-43 all closed; client implemented |
+| T16 | UnifiedPush Tier 1 | TS-306–TS-315 | 🟡 #39 closed; ready to run |
 | T17 | Parity audit | TS-316–TS-325 | 📋 Planned |
 | T18 | Test debt payoff | TS-326–TS-343 | 📋 Planned |
 | T19 | Dashboard hooks integration | TS-344–TS-350 | 📋 Planned |
 | T20 | Howto validation (datawatch docs) | TS-360–TS-400 | 📋 Planned |
 | T21 | End-to-end user journeys | TS-410–TS-420 | 📋 Planned |
+| T22 | Wear OS surface tests | TS-500–TS-514 | 📋 Planned |
+| T23 | Android Auto surface tests | TS-515–TS-529 | 📋 Planned |
+| T24 | Algorithm Mode tests | TS-530–TS-541 | 📋 Planned |
 | T26 | Dashboard Cards CRUD (Android) | TS-465–TS-474 | 📋 Planned |
 | T27 | Automata Orchestrator E2E (Android) | TS-475–TS-494 | 📋 Planned |
 
@@ -158,6 +161,13 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 - `[feature:parity]` — Cross-surface feature parity
 - `[feature:dashboard]` — Dashboard Cards CRUD (Settings → Monitor tab)
 - `[feature:orchestrator]` — Automata Orchestrator DAG graphs
+- `[feature:wear-tiles]` — Wear OS tiles (Briefing, Alerts, Monitor, Sessions, Waiting)
+- `[feature:wear-complications]` — Wear OS complications (Status, CPU, Memory, Sessions, Alerts, Automata, ServerSwitch, Waiting)
+- `[feature:wear-voice]` — Wear OS voice query dispatcher
+- `[feature:wear-notifications]` — Wear OS guardrail block notifications + haptics
+- `[feature:auto-screens]` — Android Auto screens (MissionControl, SessionList, SessionDetail, Automata)
+- `[feature:auto-voice]` — Android Auto voice commands
+- `[feature:algorithm]` — Algorithm Mode OODA loop (Start/Advance/Abort/Reset/Edit/Measure)
 
 **Conflict tags**:
 - `[conflict:physical-watch]` — Requires physical Wear device
@@ -165,6 +175,8 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 - `[conflict:compute-daemon]` — Requires compute node/LLM
 - `[conflict:signal]` — Requires Signal comm channel
 - `[conflict:network]` — Requires network state change
+- `[conflict:physical-auto]` — Requires Android Auto head unit or DHU emulator
+- `[conflict:wear-haptic]` — Requires physical Wear device for haptic verification
 
 ---
 
@@ -681,16 +693,428 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ---
 
+## T22 — Wear OS Surface Tests
+
+**Goal**: Verify Wear OS tiles, complications, voice query, and guardrail notification flows work end-to-end via DataLayer proxy (no direct server access from watch).
+
+**Conflict**: TS-509/510 require physical Wear device. All others run against emulator + DataLayer simulation.
+
+### TS-500 — WearMainActivity launches and shows health ring
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. Pair Wear emulator (or physical watch at 192.168.1.244:44631)
+2. Install wear APK: `adb -s <watch> install -r wear/build/outputs/apk/debug/*.apk`
+3. Launch datawatch watch app
+**Expected**: Progress ring visible; server name header shown; no crash
+**Evidence**: `t22_wear_main.png`
+**Status**: ⏳ Blocked (physical watch: ADB not enabled at 192.168.1.244)
+
+### TS-501 — BriefingTileService renders with session counts
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. Add BriefingTile to watch face
+2. Verify tile shows: server name, running count, blocked count
+**Expected**: All fields populated from DataLayer; tile refreshes within 30s of phone state change
+**Evidence**: `t22_briefing_tile.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-502 — AlertsTileService renders unread alert count
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. POST alert via API; wait for DataLayer sync
+2. View Alerts tile on watch
+**Expected**: Alert count updates; tap tile → opens WearMainActivity
+**Evidence**: `t22_alerts_tile.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-503 — MonitorTileService renders CPU/memory
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. View Monitor tile on watch
+**Expected**: CPU%, memory% displayed; server name in subtitle
+**Evidence**: `t22_monitor_tile.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-504 — SessionsTileService renders session list
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. View Sessions tile; verify running session names appear
+**Expected**: Session names + state chips visible; tap → WearSessionListScreen
+**Evidence**: `t22_sessions_tile.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-505 — WaitingTileService renders waiting session count
+**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Steps**:
+1. Create session that enters waiting_input state
+2. View Waiting tile
+**Expected**: "1 waiting" count shown; dot amber
+**Evidence**: `t22_waiting_tile.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-506 — StatusComplicationService renders on watch face
+**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Steps**:
+1. Add Status complication to watch face
+**Expected**: SHORT_TEXT shows running/blocked counts; RANGED_VALUE shows progress float
+**Evidence**: `t22_status_complication.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-507 — CpuComplicationService + MemoryComplicationService
+**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Steps**:
+1. Add CPU and Memory complications to watch face
+**Expected**: CPU% and Memory% values shown; update on DataLayer change
+**Evidence**: `t22_resource_complications.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-508 — ServerSwitchComplicationService switches active server
+**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Steps**:
+1. Add ServerSwitch complication; tap it
+**Expected**: Active server cycles to next enabled profile; WearSyncService publishes updated activeServer DataItem
+**Evidence**: `t22_server_switch.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-509 — Guardrail block notification fires on watch
+**Tags**: [surface:wear] [feature:wear-notifications] [conflict:physical-watch] [conflict:wear-haptic]
+**Steps**:
+1. Trigger a guardrail block in a session (via secondary instance)
+2. Watch for notification on watch within 5s
+**Expected**: Notification title = guardrail name; text = block summary; triple-buzz haptic pattern
+**Evidence**: `t22_block_notification.png`
+**Status**: ⏳ Blocked (physical watch required for haptic verification)
+
+### TS-510 — WearApproveScreen confirms approve action
+**Tags**: [surface:wear] [feature:wear-notifications] [conflict:physical-watch]
+**Steps**:
+1. Tap [Approve] on guardrail notification
+2. WearApproveScreen opens; tap Confirm
+**Expected**: Approve dispatched via DataLayer; phone calls `/api/autonomous/prds/{id}/approve`; ascending double-tap haptic
+**Evidence**: `t22_approve_flow.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-511 — Voice query "status" returns spoken response
+**Tags**: [surface:wear] [feature:wear-voice] [conflict:physical-watch]
+**Steps**:
+1. Open VoiceQueryDispatcher on watch; speak "status"
+2. Listen for TTS response
+**Expected**: Response reads running/blocked counts; under 15 seconds
+**Evidence**: `t22_voice_status.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-512 — Voice query "any blocks?" triggers blocked session summary
+**Tags**: [surface:wear] [feature:wear-voice] [conflict:physical-watch]
+**Steps**:
+1. Speak "any blocks?" while a session has a guardrail block
+**Expected**: TTS reads block summary; navigates to WearApproveScreen if available
+**Evidence**: `t22_voice_blocks.png`
+**Status**: ⏳ Blocked (physical watch)
+
+### TS-513 — WearSyncService DataLayer heartbeat (JVM unit test)
+**Tags**: [surface:wear] [feature:wear-tiles]
+**Steps**:
+1. `rtk ./gradlew :wear:testDebugUnitTest`
+2. Verify all 88 Wear JVM unit tests pass
+**Expected**: 88 tests, 0 failures, 0 errors
+**Evidence**: test output
+**Status**: 📋 Planned
+
+### TS-514 — Wear APK compiles and installs on emulator
+**Tags**: [surface:wear]
+**Steps**:
+1. `rtk ./gradlew :wear:assembleDebug`
+2. Install on Wear OS emulator (if paired)
+**Expected**: Build succeeds; no lint errors in Wear module
+**Evidence**: build output
+**Status**: 📋 Planned
+
+---
+
+## T23 — Android Auto Surface Tests
+
+**Goal**: Verify Android Auto screens, voice commands, and ambient mode work with the secondary test instance via the Auto DHU emulator.
+
+**Conflict**: All TS-515–TS-528 require Android Auto DHU (Desktop Head Unit) or physical head unit. TS-529 is a JVM-only build check.
+
+### TS-515 — AutoMissionControlScreen renders session counts
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Start DHU: `cd $ANDROID_HOME/extras/google/auto && ./desktop-head-unit`
+2. Launch app via Auto
+3. Verify mission control entry screen: running/waiting/blocked counts + server header
+**Expected**: ListTemplate renders; counts accurate; server name in header
+**Evidence**: `t23_mission_control.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-516 — AutoSessionListScreen shows sessions sorted by urgency
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. From mission control, navigate to session list
+2. Verify BLOCKED sessions appear first, then RUNNING, then recency
+**Expected**: Sort order matches: blocked-first, then running, then recency
+**Evidence**: `t23_session_list.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-517 — AutoSessionDetailScreen shows task + guardrail verdict
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Tap a running session row
+2. Verify MessageTemplate: current task, sprint ancestry, health status
+**Expected**: Body ≤ 500 chars; ETA shown; no crash
+**Evidence**: `t23_session_detail.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-518 — AutoSessionDetailScreen action buttons: max 2 per template
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. View BLOCKED session detail — verify [Approve Gate] + [Kill Session] shown (max 2)
+2. View non-blocked session detail — verify [Reply] + [Kill Session] shown
+**Expected**: Never more than 2 action buttons; correct pair per state
+**Evidence**: `t23_action_buttons.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-519 — Kill session requires 2-tap confirmation
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Tap [Kill Session] in AutoSessionDetailScreen
+2. Verify confirmation dialog appears with 15s auto-cancel
+3. Confirm — verify session killed
+**Expected**: 2-tap with auto-cancel; no accidental kill
+**Evidence**: `t23_kill_confirm.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-520 — AutoAutomataScreen lists running automata
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Navigate to Automata screen from mission control
+2. Verify automata rows: name + story/task position + progress arc
+**Expected**: ListTemplate rows ≤ 5; "N more" overflow for 6+
+**Evidence**: `t23_automata_screen.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-521 — Voice command: "status" reads server summary
+**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Steps**:
+1. Trigger voice in DHU; speak "status"
+2. Listen for TTS response (or verify REFRESH command fires)
+**Expected**: Running/blocked counts spoken; response under 15 seconds
+**Evidence**: `t23_voice_status.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-522 — Voice command: "switch to {name}" resolves server by name
+**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Steps**:
+1. Speak "switch to dw-test" (must match a profile displayName)
+**Expected**: Active server switches; spoken confirmation "Switched to dw-test"
+**Evidence**: `t23_voice_switch.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-523 — Voice command: "what failed" navigates to most recent BLOCKED session
+**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Steps**:
+1. Ensure a BLOCKED session exists; speak "what failed"
+**Expected**: AutoSessionDetailScreen opens for most recent blocked session; guardrail verdict read aloud
+**Evidence**: `t23_voice_whatfailed.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-524 — Ambient mode: session list renders monochrome, no action buttons
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Let Auto session go ambient
+2. Verify session list: monochrome; no tap targets; refreshes every 60s
+**Expected**: Simplified content; no button rendering in ambient
+**Evidence**: `t23_ambient_mode.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-525 — Alert dismiss from Auto
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Create alert on secondary instance
+2. In AutoSummaryScreen, tap [Dismiss alert] or speak "dismiss alert"
+3. Verify alert count drops to 0
+**Expected**: `/api/alerts` marked-read; UI updates; idempotent on second tap
+**Evidence**: `t23_alert_dismiss.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-526 — Drive compliance: ListTemplate row count ≤ 6
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Create 10 sessions on secondary instance
+2. Navigate to AutoSessionListScreen
+3. Verify at most 5 session rows + 1 "… N more" row
+**Expected**: MAX_ROWS = 5 enforced; overflow row present
+**Evidence**: `t23_row_limit.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-527 — Multi-server quick-switch row in mission control
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Have 2+ server profiles configured
+2. Navigate to AutoMissionControlScreen
+3. Verify server quick-switch row at bottom
+4. Tap to switch; verify server name spoken
+**Expected**: Server name changes; mission control re-fetches from new server
+**Evidence**: `t23_server_switch.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-528 — Back-stack navigation: all screens return correctly
+**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Steps**:
+1. Navigate: MissionControl → SessionList → SessionDetail → back → back → back
+**Expected**: Returns to MissionControl; no ghost screens; no crash
+**Evidence**: `t23_back_stack.png`
+**Status**: ⏳ Blocked (DHU required)
+
+### TS-529 — Auto JVM unit tests pass (92 tests)
+**Tags**: [surface:auto]
+**Steps**:
+1. `rtk ./gradlew :composeApp:testDevDebugUnitTest --tests "*.auto*"`
+2. Verify 92 Auto JVM tests pass
+**Expected**: 92 tests, 0 failures, 0 errors (7 test suites)
+**Evidence**: test output
+**Status**: 📋 Planned
+
+---
+
+## T24 — Algorithm Mode Tests
+
+**Goal**: Verify the Algorithm Mode OODA-loop card in Settings — all 6 actions (Start, Advance, Abort, Reset, Edit, Measure) work against the secondary instance.
+
+**Prerequisite**: Secondary test instance running; a session ID available to enter algorithm mode.
+
+### TS-530 — Algorithm Mode card visible in Settings → Automata
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**:
+1. Settings → Automata tab → scroll to "ALGORITHM MODE" section
+2. Verify card heading, session ID text field, and Start button present
+**Expected**: Card renders; no crash; "No active algorithm-mode sessions" shown initially
+**Evidence**: `t24_algo_card.png`
+**Status**: 📋 Planned
+
+### TS-531 — Start algorithm session by session ID
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Create a session via API; copy its ID
+2. Paste into Algorithm Mode session ID field; tap Start
+3. Verify session row appears with phase strip (7 dots, first blue/pulsing)
+**Expected**: POST /api/algorithm/{id} → 200; row renders with phase=observe, pulse on dot 0
+**Evidence**: `t24_algo_start.json`, `t24_algo_start.png`
+**Status**: 📋 Planned
+
+### TS-532 — Advance phase (observe → orient → decide…)
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Expand session row; tap [Advance]
+2. Verify phase strip advances (dot 0 turns teal, dot 1 pulses blue)
+3. Repeat through all 7 phases
+**Expected**: Each Advance call updates `current` field; PATCH action=advance → 200 each time
+**Evidence**: `t24_algo_advance.json`
+**Status**: 📋 Planned
+
+### TS-533 — Abort session
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Expand session row; tap [Abort]
+2. Verify phase strip dot changes to error color (red dot at current position)
+3. Verify Advance/Abort buttons hidden; only Reset remains
+**Expected**: `aborted=true` in response; dot color = error; action buttons filtered
+**Evidence**: `t24_algo_abort.json`, `t24_algo_abort.png`
+**Status**: 📋 Planned
+
+### TS-534 — Reset restores session to observe phase
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. With session aborted (or mid-run), tap [Reset]
+2. Verify phase strip resets: all dots grey except dot 0 (pulsing blue)
+**Expected**: PATCH action=reset → `current=observe, aborted=false`; strip resets
+**Evidence**: `t24_algo_reset.json`, `t24_algo_reset.png`
+**Status**: 📋 Planned
+
+### TS-535 — Edit phase output
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Expand session row; type text in "Edit phase output…" field
+2. Tap [Edit]
+3. Verify "Phase output" section updates with new text
+**Expected**: PATCH action=edit,output=… → 200; last history entry shows new output; field clears
+**Evidence**: `t24_algo_edit.json`, `t24_algo_edit.png`
+**Status**: 📋 Planned
+
+### TS-536 — Measure: run eval suite
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Expand session row; type suite name (e.g. "default") in "Eval suite" field
+2. Tap [Measure]
+3. Verify history updates with measurement result
+**Expected**: PATCH action=measure,suite=… → 200; updated session returned; field clears
+**Evidence**: `t24_algo_measure.json`
+**Status**: 📋 Planned
+
+### TS-537 — Phase strip dot colors: done=teal, current=blue pulse, aborted=red, future=grey
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**:
+1. Advance session to "decide" (3rd phase)
+2. Verify: dots 0-1 = teal (done), dot 2 = pulsing blue (current), dots 3-6 = grey (future)
+3. Abort; verify dot 2 turns red
+**Expected**: Color mapping correct per PhaseStrip logic
+**Evidence**: `t24_phase_strip.png`
+**Status**: 📋 Planned
+
+### TS-538 — Edit/Measure fields hidden when session is aborted
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**:
+1. Abort a session
+2. Expand the row
+3. Verify Edit and Measure input rows are not rendered
+**Expected**: `if (!state.aborted)` guard hides both input rows; only Reset button shown
+**Evidence**: `t24_aborted_state.png`
+**Status**: 📋 Planned
+
+### TS-539 — Algorithm list loaded on card open
+**Tags**: [surface:phone] [feature:algorithm] [surface:api]
+**Steps**:
+1. Start an algorithm session via API directly
+2. Navigate away and back to Settings → Automata
+3. Verify the existing session appears in the card (loaded via LaunchedEffect)
+**Expected**: GET /api/algorithm → sessions list populated on card init
+**Evidence**: `t24_algo_list.json`
+**Status**: 📋 Planned
+
+### TS-540 — Multiple sessions shown with dividers
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**:
+1. Start algorithm mode on 2 different sessions
+2. Navigate to Settings → Automata → Algorithm Mode
+3. Verify both rows appear with `HorizontalDivider` between them
+**Expected**: 2 rows; divider visible; each row independently expandable
+**Evidence**: `t24_multi_session.png`
+**Status**: 📋 Planned
+
+### TS-541 — Session ID field clears after successful Start
+**Tags**: [surface:phone] [feature:algorithm]
+**Steps**:
+1. Enter a valid session ID and tap Start
+2. On success, verify session ID field is empty
+**Expected**: `startSessionId = ""` fires on `onSuccess`; field blank after operation
+**Evidence**: `t24_field_clear.png`
+**Status**: 📋 Planned
+
+---
+
 ## Release Gate
 
 **v1.0.0 ship criteria**:
 - T1–T14: all non-skip stories ✅ Pass
-- T15–T16: ✅ Pass (once server ships #40-43, #39)
+- T15–T16: ✅ Pass (server #40-43, #39 all closed; client implemented)
 - T17: ✅ Pass (parity audit)
 - T18: ✅ Pass (test debt)
 - T19: ✅ Pass (dashboard hooks)
 - T20: ✅ Pass or ⏳ Blocked with known issue (howto validation)
 - T21: ✅ Pass or ⏳ Blocked with known issue (end-to-end journeys)
+- T22: ✅ Pass (emulator JVM tests); ⏳ Blocked acceptable for physical-watch stories
+- T23: ✅ Pass (Auto JVM tests); ⏳ Blocked acceptable for DHU-required stories
+- T24: ✅ Pass (Algorithm Mode — all 12 stories runnable on emulator)
 - T26: ✅ Pass (Dashboard Cards CRUD — Android)
 - T27: ✅ Pass (Automata Orchestrator E2E — Android)
 - No P0/P1 critical bugs
