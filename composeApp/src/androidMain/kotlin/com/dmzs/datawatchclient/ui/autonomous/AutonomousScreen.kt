@@ -119,7 +119,7 @@ public fun AutonomousScreen(
                     IconButton(onClick = { identityWizardOpen = true }) {
                         Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
-                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code")
+                    DocsLinkAction("datawatch-definitions.md#automata")
                     if (currentTab == 0) {
                         IconButton(onClick = { filterOpen = !filterOpen }) {
                             Icon(

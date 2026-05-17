@@ -45,7 +45,7 @@ internal fun TerminalDimensionsCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.terminal_dims_title))
+        PwaSectionTitle(stringResource(R.string.terminal_dims_title), docsAnchor = "session")
         Text(
             stringResource(R.string.terminal_dims_hint),
             style = MaterialTheme.typography.bodySmall,

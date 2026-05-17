@@ -145,6 +145,7 @@ public fun ComputeNodesCard(
             PwaSectionTitle(
                 stringResource(R.string.settings_compute_nodes_title),
                 modifier = Modifier.weight(1f),
+                docsAnchor = "compute-nodes",
             )
             IconButton(onClick = { selectedNode = null; showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.compute_node_add))

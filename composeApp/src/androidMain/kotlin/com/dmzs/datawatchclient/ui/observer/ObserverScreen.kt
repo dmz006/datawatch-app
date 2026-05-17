@@ -53,7 +53,7 @@ public fun ObserverScreen(
                     )
                 },
                 actions = {
-                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code")
+                    DocsLinkAction("datawatch-definitions.md#observer")
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (state.activeProfile != null) {
                         ReachabilityDot(

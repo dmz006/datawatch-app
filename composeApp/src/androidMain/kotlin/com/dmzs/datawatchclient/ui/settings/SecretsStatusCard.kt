@@ -70,6 +70,7 @@ public fun SecretsStatusCard() {
                     PwaSectionTitle(
                         stringResource(R.string.vault_status_title),
                         Modifier.weight(1f),
+                        docsAnchor = "secrets-store",
                     )
                     // Reachability dot — green if reachable, red if not.
                     Canvas(Modifier.size(10.dp)) {
@@ -115,6 +116,7 @@ public fun SecretsStatusCard() {
                     PwaSectionTitle(
                         stringResource(R.string.vault_status_title),
                         Modifier.weight(1f),
+                        docsAnchor = "secrets-store",
                     )
                     Text(
                         stringResource(R.string.vault_backend_local),

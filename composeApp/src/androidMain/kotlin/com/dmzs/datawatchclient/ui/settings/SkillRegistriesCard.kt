@@ -91,6 +91,7 @@ internal fun SkillRegistriesCard() {
             PwaSectionTitle(
                 stringResource(R.string.skills_section_title),
                 modifier = Modifier.weight(1f),
+                docsAnchor = "skill-registries",
             )
             TextButton(onClick = {
                 scope.launch {

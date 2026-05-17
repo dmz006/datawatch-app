@@ -70,7 +70,7 @@ internal fun OrchestratorGraphsCard() {
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(stringResource(R.string.orchestrator_graphs_title), modifier = Modifier.weight(1f))
+            PwaSectionTitle(stringResource(R.string.orchestrator_graphs_title), modifier = Modifier.weight(1f), docsAnchor = "automata-orchestrator")
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
 

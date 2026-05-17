@@ -65,6 +65,7 @@ internal fun IdentityCard() {
             PwaSectionTitle(
                 stringResource(R.string.identity_title),
                 modifier = Modifier.weight(1f),
+                docsAnchor = "identity",
             )
             IconButton(onClick = { wizardOpen = true }) {
                 Icon(Icons.Filled.SmartToy, contentDescription = stringResource(R.string.identity_wizard_open))

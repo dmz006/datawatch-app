@@ -76,7 +76,7 @@ internal fun ScanConfigCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.scan_config_title))
+        PwaSectionTitle(stringResource(R.string.scan_config_title), docsAnchor = "guardrail-library")
         val cfg = config ?: return@Column
         ScanToggleRow(stringResource(R.string.scan_config_enabled), cfg.enabled) { save(cfg.copy(enabled = it)) }
         ScanToggleRow(stringResource(R.string.scan_config_sast), cfg.sast) { save(cfg.copy(sast = it)) }

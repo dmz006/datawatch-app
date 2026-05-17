@@ -9,12 +9,20 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -24,7 +32,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.common.DocsViewerSheet
 
 /**
  * Shared visual primitives that mirror the parent PWA's `style.css`.
@@ -150,20 +161,69 @@ public fun Modifier.pwaCard(): Modifier {
  * 11sp uppercase section heading used in Settings cards. Mirrors
  * `.settings-section-title` (11px, text2 color, 0.8px letter-spacing,
  * 10px 16px padding).
+ *
+ * When [docsAnchor] is non-null, the title is shown in a Row with a
+ * small "?" button that opens the corresponding section in the
+ * in-app docs viewer.
  */
 @Composable
 public fun PwaSectionTitle(
     title: String,
     modifier: Modifier = Modifier,
+    docsAnchor: String? = null,
 ) {
-    Text(
-        title.uppercase(),
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-        fontSize = 11.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontWeight = FontWeight.Medium,
-        letterSpacing = 0.8.sp,
-    )
+    if (docsAnchor != null) {
+        Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title.uppercase(),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp).weight(1f),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.8.sp,
+            )
+            DocsInlineButton(anchor = docsAnchor)
+        }
+    } else {
+        Text(
+            title.uppercase(),
+            modifier = modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.8.sp,
+        )
+    }
+}
+
+/**
+ * Small inline "?" button that opens the given docs [anchor] in the
+ * in-app WebView sheet. Hidden when no active server is configured.
+ * Used inside [PwaSectionTitle] when [docsAnchor] is non-null.
+ */
+@Composable
+internal fun DocsInlineButton(anchor: String) {
+    val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
+    val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+    val baseUrl = remember(profiles, activeId) {
+        val enabled = profiles.filter { it.enabled }
+        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()?.baseUrl
+        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())?.baseUrl
+    }
+    var showDocs by remember { mutableStateOf(false) }
+
+    if (baseUrl != null) {
+        val url = "$baseUrl/diagrams.html#docs/datawatch-definitions.md#$anchor"
+        TextButton(
+            onClick = { showDocs = true },
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Text("?", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+        }
+        if (showDocs) {
+            DocsViewerSheet(url = url, onDismiss = { showDocs = false })
+        }
+    }
 }
 
 /**

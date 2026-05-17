@@ -182,7 +182,7 @@ public fun SettingsScreen(
                     )
                 },
                 actions = {
-                    DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code/settings")
+                    DocsLinkAction("datawatch-definitions.md#settings")
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (activeProfile != null) {
                         ReachabilityDot(
@@ -463,6 +463,7 @@ private fun ServersCard(
         actionIcon = Icons.Filled.Add,
         actionDescription = "Add server",
         onAction = onAddServer,
+        docsAnchor = "servers",
     ) {
         if (profiles.isEmpty()) {
             Text(
@@ -675,7 +676,7 @@ private fun SecurityCard() {
     var migrationError by remember { mutableStateOf<String?>(null) }
     val migrationFailedFmt = stringResource(R.string.security_migration_failed)
 
-    Section(title = "Security") {
+    Section(title = "Security", docsAnchor = "security") {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -971,6 +972,7 @@ private fun DaemonInfoRow(
 @Composable
 internal fun Section(
     title: String,
+    docsAnchor: String? = null,
     content: @Composable () -> Unit,
 ) {
     androidx.compose.foundation.layout.Box(
@@ -981,7 +983,7 @@ internal fun Section(
                 .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(title)
+            PwaSectionTitle(title, docsAnchor = docsAnchor)
             content()
         }
     }
@@ -993,6 +995,7 @@ private fun SectionWithAction(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     actionDescription: String,
     onAction: () -> Unit,
+    docsAnchor: String? = null,
     content: @Composable () -> Unit,
 ) {
     androidx.compose.foundation.layout.Box(
@@ -1010,6 +1013,7 @@ private fun SectionWithAction(
                 PwaSectionTitle(
                     title,
                     modifier = Modifier.weight(1f),
+                    docsAnchor = docsAnchor,
                 )
                 IconButton(onClick = onAction) {
                     Icon(

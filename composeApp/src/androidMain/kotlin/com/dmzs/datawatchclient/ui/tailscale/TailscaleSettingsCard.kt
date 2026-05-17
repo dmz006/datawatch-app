@@ -93,7 +93,7 @@ public fun TailscaleSettingsCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.tailscale_section_config))
+            PwaSectionTitle(stringResource(R.string.tailscale_section_config), docsAnchor = "tailscale-configuration")
             if (loadError != null) {
                 Text(
                     loadError ?: "",

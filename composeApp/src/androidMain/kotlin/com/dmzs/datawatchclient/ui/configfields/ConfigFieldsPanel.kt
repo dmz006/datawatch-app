@@ -133,7 +133,8 @@ public fun ConfigFieldsPanel(section: ConfigSection) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle(section.title)
+        val docsAnchor = section.title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trimStart('-').trimEnd('-')
+        PwaSectionTitle(section.title, docsAnchor = docsAnchor)
         banner?.let {
             // Only error banners fire after the autosave switch (S4). Drop
             // the old "Saved." success path — the inline "Saving…" label
