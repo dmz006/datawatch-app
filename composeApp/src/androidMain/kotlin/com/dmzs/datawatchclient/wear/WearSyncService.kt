@@ -60,6 +60,9 @@ public class WearSyncService(
     private var prevCouncilCompletedIds: Set<String> = emptySet()
     // BL303-W3: track last blocked session to fire notification once per new block only.
     private var lastGuardrailBlockSessionId: String = ""
+    // BL303-W5: most recent sessions cache for voice query replies (updated in publishSessions).
+    @Volatile private var lastSessionsCache: SessionsListSnapshot = SessionsListSnapshot(emptyList())
+    @Volatile private var lastCountsCache: Snapshot = Snapshot("", "", 0, 0, 0)
     private val messageListener =
         MessageClient.OnMessageReceivedListener { ev: MessageEvent ->
             when (ev.path) {
@@ -174,6 +177,14 @@ public class WearSyncService(
                     val sessionId = runCatching { String(ev.data, Charsets.UTF_8) }.getOrNull().orEmpty()
                     if (sessionId.isNotEmpty()) {
                         scope.launch { forwardApproveGate(sessionId) }
+                    }
+                }
+                VOICE_QUERY_PATH -> {
+                    // BL303-W5: watch-initiated voice status query.
+                    // Payload is plain query text (UTF-8), e.g. "status", "what's running".
+                    val query = runCatching { String(ev.data, Charsets.UTF_8) }.getOrNull().orEmpty()
+                    if (query.isNotEmpty()) {
+                        scope.launch { forwardVoiceQuery(query, ev.sourceNodeId) }
                     }
                 }
             }
@@ -701,6 +712,42 @@ public class WearSyncService(
     }
 
     /**
+     * BL303-W5 — handle a voice status query from the watch.
+     *
+     * Classifies the query text, builds a natural-language reply from the
+     * most recently cached session state, and sends it back to the source
+     * watch node on VOICE_REPLY_PATH so the watch can speak it via TTS.
+     *
+     * No network call is made — the cached state (refreshed by the reactive
+     * session flow and the 15-min heartbeat) is intentionally stale-tolerant;
+     * voice replies are best-effort status snapshots, not live data.
+     */
+    private suspend fun forwardVoiceQuery(query: String, sourceNodeId: String) {
+        runCatching {
+            val intent = com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.classifyQuery(query)
+            val counts = lastCountsCache
+            val sessions = lastSessionsCache.items.map { item ->
+                com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.SessionSummary(
+                    title = item.title,
+                    state = item.stateName,
+                )
+            }
+            val reply = com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.buildReply(
+                intent = intent,
+                running = counts.running,
+                waiting = counts.waiting,
+                error = counts.error,
+                sessions = sessions,
+                serverName = counts.serverName,
+            )
+            Log.d(TAG, "voiceQuery intent=$intent reply='$reply'")
+            val payload = reply.toByteArray(Charsets.UTF_8)
+            Wearable.getMessageClient(context)
+                .sendMessage(sourceNodeId, VOICE_REPLY_PATH, payload)
+        }.onFailure { Log.w(TAG, "forwardVoiceQuery FAILED", it) }
+    }
+
+    /**
      * BL27 — push a /datawatch/alert message to all connected watch nodes so the
      * WearAlertListenerService can post a notification without the watch holding
      * any open connections.
@@ -879,6 +926,7 @@ public class WearSyncService(
     }
 
     private fun publishCounts(snap: Snapshot) {
+        lastCountsCache = snap  // BL303-W5: cache for voice query
         runCatching {
             val req =
                 PutDataMapRequest.create(COUNTS_PATH).apply {
@@ -966,6 +1014,7 @@ public class WearSyncService(
     }
 
     private fun publishSessions(snap: SessionsListSnapshot) {
+        lastSessionsCache = snap  // BL303-W5: cache for voice query
         runCatching {
             Log.d(TAG, "publishSessions n=${snap.items.size}")
             val req =
@@ -1096,6 +1145,8 @@ public class WearSyncService(
         // BL303-W1: telemetry for the primary glance screen
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
         public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
+        // BL303-W5: phone replies on this path with the spoken status string.
+        public const val VOICE_REPLY_PATH: String = "/datawatch/voiceReply"
         private const val TELEMETRY_DEBOUNCE_MS: Long = 500L
         // BL303-W3: guardrail block notification + gate approval
         public const val GUARDRAIL_BLOCK_PATH: String = "/datawatch/guardrailBlock"

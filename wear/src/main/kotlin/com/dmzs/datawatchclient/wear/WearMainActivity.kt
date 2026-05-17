@@ -245,6 +245,40 @@ private fun WearRoot(
         }
     }
 
+    // BL303-W5 — TextToSpeech for spoken voice query replies.
+    val tts = remember {
+        var ref: android.speech.tts.TextToSpeech? = null
+        ref = android.speech.tts.TextToSpeech(context) { status ->
+            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                ref?.language = java.util.Locale.US
+            }
+        }
+        ref!!
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { tts.stop(); tts.shutdown() }
+    }
+
+    // Persistent listener for VOICE_REPLY_PATH — speaks the reply on arrival.
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val voiceReplyListener = com.google.android.gms.wearable.MessageClient
+            .OnMessageReceivedListener { ev ->
+                if (ev.path == WearSessionCountsViewModel.VOICE_REPLY_PATH) {
+                    val text = runCatching { String(ev.data, Charsets.UTF_8) }
+                        .getOrNull().orEmpty()
+                    if (text.isNotBlank()) {
+                        tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "dw-voice-reply")
+                    }
+                }
+            }
+        com.google.android.gms.wearable.Wearable.getMessageClient(context)
+            .addListener(voiceReplyListener)
+        onDispose {
+            com.google.android.gms.wearable.Wearable.getMessageClient(context)
+                .removeListener(voiceReplyListener)
+        }
+    }
+
     val micPermissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
@@ -281,7 +315,11 @@ private fun WearRoot(
             ) { page ->
                 when (page) {
                     0 -> GlancePage(state)
-                    1 -> MonitorPage(state, onSelectServer = { id -> vm.requestActiveServer(id) })
+                    1 -> MonitorPage(
+                        state,
+                        onSelectServer = { id -> vm.requestActiveServer(id) },
+                        onVoiceQuery = { vm.sendVoiceQuery("status") },
+                    )
                     // Note: page 2 is SessionsPage, page 3 is AutomataCarouselPage
                     2 ->
                         SessionsPage(
@@ -849,6 +887,7 @@ private fun WeeklyHealthHeatmap(dimColor: Color) {
 private fun MonitorPage(
     state: WearSessionCountsViewModel.UiState,
     onSelectServer: (String) -> Unit = {},
+    onVoiceQuery: () -> Unit = {},
 ) {
     if (state.loading) { WearSplash(); return }
     var detailServer by remember { mutableStateOf<WearSessionCountsViewModel.AllServerStat?>(null) }
@@ -866,6 +905,21 @@ private fun MonitorPage(
                 MonitorMultiServerSection(state, onSelectServer) { detailServer = it }
             } else {
                 MonitorSingleServerSection(state) { detailServer = it }
+            }
+            // BL303-W5: voice status query quick button
+            androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+            Button(
+                onClick = onVoiceQuery,
+                modifier = Modifier.fillMaxWidth(0.7f),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.surface,
+                    contentColor = MaterialTheme.colors.primary,
+                ),
+            ) {
+                Text(
+                    stringResource(R.string.wear_voice_ask_status),
+                    style = MaterialTheme.typography.caption2,
+                )
             }
         }
         detailServer?.let { s ->
@@ -2154,6 +2208,24 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     /**
+     * BL303-W5 — send a voice status query to the phone. Payload is the query
+     * text (UTF-8). The phone classifies it, builds a natural-language reply from
+     * its cached session state, and sends it back on VOICE_REPLY_PATH.
+     */
+    public fun sendVoiceQuery(query: String) {
+        if (query.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val payload = query.toByteArray(Charsets.UTF_8)
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, VOICE_QUERY_PATH, payload).await()
+                }
+            }
+        }
+    }
+
+    /**
      * BL303-W4 — send a memory sweep command to the phone. No payload needed;
      * the phone triggers the server's memory maintenance endpoint.
      */
@@ -2291,6 +2363,9 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
         // BL303-W4: memory sweep quick action
         public const val MEMORY_SWEEP_PATH: String = "/datawatch/memorySweep"
+        // BL303-W5: voice status query + reply paths
+        public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
+        public const val VOICE_REPLY_PATH: String = "/datawatch/voiceReply"
     }
 }
 

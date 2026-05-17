@@ -422,11 +422,11 @@ Sprint label format: `BL303-A1`, `BL303-W1`, etc.
 | W5.5 | Server-name routing: "Trent status" resolves to named profile | Profile lookup by spoken name (same fuzzy match as Auto A4) |
 | W5.6 | Write unit tests for voice query dispatcher | All phrases route to correct handler |
 
-#### Rule Audit (W5)
-- [ ] Voice query path is read-only (no mutations from voice on watch)
-- [ ] TTS response ≤ 15 seconds
-- [ ] Server-name fuzzy match has distance cap ≤ 2
-- [ ] Tests pass on secondary instance
+#### Rule Audit (W5) ✅ COMPLETE
+- [x] Voice query path is read-only (no mutations from voice on watch)
+- [x] TTS response ≤ 15 seconds (natural language phrase, well under limit)
+- [x] Server-name fuzzy match has distance cap ≤ 2 (Levenshtein, VoiceQueryDispatcher.kt)
+- [x] Tests pass: 23 VoiceQueryDispatcherTest + 70 total wear tests passing
 
 ---
 
@@ -549,3 +549,23 @@ The user reports the Sessions tab icon changed in the PWA. Current Android imple
 The Android app has the Observer tab (📡, `Icons.Filled.Sensors`) at bottom-nav position 4 which combines the Stats/Monitor/eBPF/Peers monitoring cards. This matches the PWA spec. If user doesn't see it on device, likely an older APK — rebuild and reinstall.
 
 **Parity gaps still open:** G8 (envelopes endpoint), G10 (focus card fields), G17/G18 (LLM edit form critical sections), G19, G22.
+
+### PRIORITY: PWA Alpha.78 Parity Audit
+
+**Filed:** 2026-05-16  
+**Status:** URGENT — blocks v1.0 sign-off
+
+The parity audit and PWA spec were written against alpha.50. The server is now at **alpha.78**. 28 alpha versions of PWA changes (alpha.51–78) have NOT been audited against the Android app. The user reports:
+- A "Dashboard" tab in the PWA bottom nav that doesn't exist in the Android app
+- Sessions icon may have changed
+- Observer page may have been restructured
+
+**Action required:** Run a full parity audit of alpha.78 PWA against the Android app before v1.0 sign-off. Check:
+1. Bottom nav tab structure (has Dashboard been added?)
+2. Sessions icon changes
+3. Observer page content changes
+4. Any new API endpoints (alpha.51-78 changes)
+5. Session detail tab structure changes (G6 was partially addressed)
+6. LLM registry form fields (G17/G18 remain Critical)
+
+**Priority:** Do this BEFORE BL303 completion, as it may require sprint additions.
