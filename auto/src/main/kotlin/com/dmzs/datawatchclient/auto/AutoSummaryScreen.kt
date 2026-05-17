@@ -135,8 +135,11 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         )
         builder.addItem(
             Row.Builder()
-                .setTitle("Total")
-                .addText("$total sessions")
+                .setTitle("All Sessions")
+                .addText("$total total · tap to see full list")
+                .setOnClickListener {
+                    screenManager.push(AutoSessionListScreen(carContext))
+                }
                 .build(),
         )
         builder.addItem(
