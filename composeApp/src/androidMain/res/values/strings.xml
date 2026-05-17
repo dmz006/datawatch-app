@@ -1269,4 +1269,8 @@
 
     <!-- ── Eval Runs history (alpha.68 issue #131) ── -->
     <string name="evals_runs_title">Recent Runs</string>
+
+    <!-- ── Council per-persona answers (alpha.41 BL295-296) ── -->
+    <string name="council_persona_answers_label">Persona Answers</string>
+    <string name="council_dissent_label">Dissent</string>
 </resources>
