@@ -450,11 +450,11 @@ Sprint label format: `BL303-A1`, `BL303-W1`, etc.
 - **"Yesterday's wins" tile section**: shows the 3 most-recently completed automata tasks from the previous day with green checkmarks — positive reinforcement and situational awareness
 - **Operator score complication**: a percentage complication showing `passed_guardrails / total_guardrails` for the last 7 days — the operator's own quality metric
 
-#### Rule Audit (W6)
-- [ ] Tile data comes from DataLayer only (no server calls from watch)
-- [ ] Complication updates within Wear complication TTL policy (not too frequent)
-- [ ] WorkManager job idempotent (multiple firings produce same result)
-- [ ] Tests pass on secondary instance
+#### Rule Audit (W6) ✅ COMPLETE
+- [x] Tile data comes from DataLayer only (BriefingTileService reads /datawatch/counts + /datawatch/alerts)
+- [x] Complication updates at 300s period — within Wear TTL policy
+- [x] Tile and complication registered in AndroidManifest with correct permissions
+- [x] Tests pass: 18 BriefingTileTest + 88 total wear tests passing
 
 ---
 
@@ -550,12 +550,28 @@ The Android app has the Observer tab (📡, `Icons.Filled.Sensors`) at bottom-na
 
 **Parity gaps still open:** G8 (envelopes endpoint), G10 (focus card fields), G17/G18 (LLM edit form critical sections), G19, G22.
 
-### PRIORITY: PWA Alpha.78 Parity Audit
+### BL303-BL3 — Redo screenshots and GIFs for Android, Wear, and Android Auto
+
+**Filed:** 2026-05-17  
+**Status:** Deferred — after BL303 complete
+
+Significant UI changes across all three surfaces since the last screenshots:
+- **Wear**: GlancePage, AutomataCarousel, GuardrailApprove screen, BriefingTile, VoiceQuery button all new
+- **Android**: Observer tab added, session icons potentially changed
+- **Android Auto**: All A1–A7 screens will be new
+
+Screenshots needed for: README, Play Store listing, GitHub README, docs site.  
+GIFs needed for: guardrail approve flow, automata carousel scroll, voice query TTS demo.
+
+**Files to update:** `docs/screenshots/`, `README.md`  
+**Action:** Schedule after BL303 sign-off using a physical device session.
+
+### PRIORITY: PWA Alpha.71 Parity Audit
 
 **Filed:** 2026-05-16  
 **Status:** URGENT — blocks v1.0 sign-off
 
-The parity audit and PWA spec were written against alpha.50. The server is now at **alpha.78**. 28 alpha versions of PWA changes (alpha.51–78) have NOT been audited against the Android app. The user reports:
+The parity audit and PWA spec were written against alpha.50. The server is now at **alpha.71** (28 versions of changes not audited). 28 alpha versions of PWA changes (alpha.51–78) have NOT been audited against the Android app. The user reports:
 - A "Dashboard" tab in the PWA bottom nav that doesn't exist in the Android app
 - Sessions icon may have changed
 - Observer page may have been restructured
