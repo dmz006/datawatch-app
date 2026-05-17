@@ -117,6 +117,10 @@
     <string name="wear_automata_progress">%d%%</string>
     <string name="wear_automata_heatmap_title">Weekly Health</string>
 
+    <!-- BL303-W5: Voice status query -->
+    <string name="wear_voice_ask_status">Ask Status</string>
+    <string name="wear_voice_reply_default">No reply from phone</string>
+
     <!-- BL303-W3: Guardrail block notification + approve screen -->
     <string name="wear_notification_guardrail_channel">Guardrail Blocks</string>
     <string name="wear_notification_guardrail_title">Guardrail Blocked</string>
