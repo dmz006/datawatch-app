@@ -56,6 +56,20 @@ public class VoiceStatusScreen(
                         buildStatusString(summary)
                     }
                 }
+                VoiceCommand.WHAT_FAILED -> buildWhatFailedReport()
+                VoiceCommand.SERVER_STATUS -> {
+                    val summary = buildStatusSummary()
+                    if (summary.isError || summary.noServer) carContext.getString(R.string.auto_voice_no_server)
+                    else buildStatusString(summary)
+                }
+                VoiceCommand.COST_REPORT -> "Cost reporting is coming soon."
+                VoiceCommand.MEMORY_RECALL -> "Memory recall is coming soon."
+                VoiceCommand.CREATE_SESSION,
+                VoiceCommand.APPROVE_GATE,
+                VoiceCommand.LIST_AUTOMATA,
+                VoiceCommand.PAUSE_SESSION,
+                VoiceCommand.KILL_SESSION,
+                VoiceCommand.SWITCH_SERVER -> "Use the datawatch screen to complete this action."
             }
             invalidate()
         }
