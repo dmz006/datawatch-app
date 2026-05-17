@@ -1458,3 +1458,93 @@ public data class AgentSettingsDto(
     /** alpha.28 #243 — multi-model pool; first entry is default when opencodeModel is empty. */
     @SerialName("opencode_models") val opencodeModels: List<String> = emptyList(),
 )
+
+// ---- Dashboard Cards (alpha.75, issue #132) ----
+@Serializable
+public data class DashboardCardDto(
+    val id: String = "",
+    val cs: Int = 12,
+    val rs: Int? = null,
+)
+
+// ---- Session Telemetry (alpha.75 BL303 S1, issue #128) ----
+@Serializable
+public data class TelemetrySprintDto(
+    val name: String = "",
+    val id: String = "",
+    val automata: String = "",
+    @SerialName("automata_id") val automataId: String = "",
+    val task: String = "",
+    @SerialName("task_id") val taskId: String = "",
+)
+
+@Serializable
+public data class TelemetryTaskDto(
+    val id: String = "",
+    val title: String = "",
+    val status: String = "pending",
+    @SerialName("duration_ms") val durationMs: Long = 0,
+)
+
+@Serializable
+public data class TelemetryTestsDto(
+    val pass: Int = 0,
+    val fail: Int = 0,
+    val skip: Int = 0,
+    val total: Int = 0,
+)
+
+@Serializable
+public data class GuardrailVerdictDto(
+    val guardrail: String = "",
+    val outcome: String = "pass",
+    val summary: String = "",
+)
+
+@Serializable
+public data class SessionTelemetryDto(
+    @SerialName("current_task") val currentTask: String = "",
+    val tool: String = "",
+    val file: String = "",
+    val sprint: TelemetrySprintDto? = null,
+    val tasks: List<TelemetryTaskDto> = emptyList(),
+    val tests: TelemetryTestsDto = TelemetryTestsDto(),
+    val progress: Float = 0f,
+    @SerialName("guardrail_verdicts") val guardrailVerdicts: List<GuardrailVerdictDto> = emptyList(),
+    @SerialName("parent_session_id") val parentSessionId: String = "",
+)
+
+// ---- Guardrail Library + Profiles (alpha.75 BL303 S2, issue #128) ----
+@Serializable
+public data class GuardrailLibraryItemDto(
+    val name: String = "",
+    val description: String = "",
+    val kind: String = "",
+)
+
+@Serializable
+public data class GuardrailProfileDto(
+    val id: String = "",
+    val name: String = "",
+    val guardrails: List<String> = emptyList(),
+    @SerialName("block_on") val blockOn: List<String> = emptyList(),
+    @SerialName("warn_on") val warnOn: List<String> = emptyList(),
+)
+
+@Serializable
+public data class GuardrailRunResultDto(
+    val verdicts: List<GuardrailVerdictDto> = emptyList(),
+)
+
+// ---- Smoke Progress (alpha.57 BL303 S4, issue #128) ----
+@Serializable
+public data class SmokeProgressDto(
+    @SerialName("run_id") val runId: String = "",
+    val status: String = "running",
+    val progress: Float = 0f,
+    val passed: Int = 0,
+    val failed: Int = 0,
+    val total: Int = 0,
+    @SerialName("started_at") val startedAt: String = "",
+    @SerialName("completed_at") val completedAt: String? = null,
+)

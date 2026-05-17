@@ -1180,6 +1180,55 @@ public interface TransportClient {
 
     // Sprint 35 — observer envelopes per-session (G8)
     public suspend fun getSessionEnvelopes(sessionId: String): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>>
+
+    // ---- Dashboard Cards (alpha.75, issue #132) ----
+
+    /** GET /api/dashboard/cards — list dashboard cards. Returns bare array. */
+    public suspend fun listDashboardCards(): Result<List<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>>
+
+    /** POST /api/dashboard/cards — append a new dashboard card. */
+    public suspend fun addDashboardCard(card: com.dmzs.datawatchclient.transport.dto.DashboardCardDto): Result<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>
+
+    /** PUT /api/dashboard/cards/{id} — update or create a dashboard card. */
+    public suspend fun updateDashboardCard(id: String, card: com.dmzs.datawatchclient.transport.dto.DashboardCardDto): Result<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>
+
+    /** DELETE /api/dashboard/cards/{id} — remove a dashboard card. */
+    public suspend fun deleteDashboardCard(id: String): Result<Unit>
+
+    // ---- Session Telemetry (BL303 S1, issue #128) ----
+
+    /** GET /api/sessions/{id}/telemetry — live task tree + sprint ancestry + guardrail verdicts. */
+    public suspend fun getSessionTelemetry(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto>
+
+    // ---- Guardrail Library + Profiles (BL303 S2, issue #128) ----
+
+    /** GET /api/autonomous/guardrails — browse available guardrail checks. */
+    public suspend fun listGuardrailLibrary(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto>>
+
+    /** GET /api/autonomous/guardrail-profiles — list guardrail profiles. */
+    public suspend fun listGuardrailProfiles(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>>
+
+    /** POST /api/autonomous/guardrail-profiles — create a guardrail profile. */
+    public suspend fun createGuardrailProfile(profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>
+
+    /** PUT /api/autonomous/guardrail-profiles/{id} — update a guardrail profile. */
+    public suspend fun updateGuardrailProfile(id: String, profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>
+
+    /** DELETE /api/autonomous/guardrail-profiles/{id} — delete a guardrail profile. */
+    public suspend fun deleteGuardrailProfile(id: String): Result<Unit>
+
+    /** POST /api/sessions/{id}/guardrail — run guardrail against session project dir. */
+    public suspend fun runSessionGuardrail(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.GuardrailRunResultDto>
+
+    // ---- Smoke Progress (BL303 S4, issue #128) ----
+
+    /**
+     * GET /api/smoke/progress — current smoke run progress. Returns null (204) when no run is active.
+     */
+    public suspend fun getSmokeProgress(): Result<com.dmzs.datawatchclient.transport.dto.SmokeProgressDto?>
+
+    /** DELETE /api/smoke/progress — clear a completed smoke run. */
+    public suspend fun clearSmokeProgress(): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

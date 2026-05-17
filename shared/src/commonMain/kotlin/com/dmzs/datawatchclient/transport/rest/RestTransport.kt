@@ -2445,6 +2445,120 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun listDashboardCards(): Result<List<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/dashboard/cards") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun addDashboardCard(
+        card: com.dmzs.datawatchclient.transport.dto.DashboardCardDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.DashboardCardDto> =
+        request {
+            client.post("${profile.baseUrl}/api/dashboard/cards") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(card)
+            }.body()
+        }
+
+    override suspend fun updateDashboardCard(
+        id: String,
+        card: com.dmzs.datawatchclient.transport.dto.DashboardCardDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.DashboardCardDto> =
+        request {
+            client.put("${profile.baseUrl}/api/dashboard/cards/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(card)
+            }.body()
+        }
+
+    override suspend fun deleteDashboardCard(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/dashboard/cards/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun getSessionTelemetry(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto> =
+        request {
+            client.get("${profile.baseUrl}/api/sessions/$sessionId/telemetry") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun listGuardrailLibrary(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/guardrails") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun listGuardrailProfiles(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/guardrail-profiles") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createGuardrailProfile(
+        profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/guardrail-profiles") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(profile)
+            }.body()
+        }
+
+    override suspend fun updateGuardrailProfile(
+        id: String,
+        profile: com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto> =
+        request {
+            client.put("${profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(profile)
+            }.body()
+        }
+
+    override suspend fun deleteGuardrailProfile(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/autonomous/guardrail-profiles/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun runSessionGuardrail(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.GuardrailRunResultDto> =
+        request {
+            client.post("${profile.baseUrl}/api/sessions/$sessionId/guardrail") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun getSmokeProgress(): Result<com.dmzs.datawatchclient.transport.dto.SmokeProgressDto?> =
+        request {
+            val response = client.get("${profile.baseUrl}/api/smoke/progress") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            if (response.status == io.ktor.http.HttpStatusCode.NoContent) null
+            else response.body<com.dmzs.datawatchclient.transport.dto.SmokeProgressDto>()
+        }
+
+    override suspend fun clearSmokeProgress(): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/smoke/progress") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
