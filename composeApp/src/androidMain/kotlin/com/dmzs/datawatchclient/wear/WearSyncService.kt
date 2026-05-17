@@ -724,27 +724,48 @@ public class WearSyncService(
      */
     private suspend fun forwardVoiceQuery(query: String, sourceNodeId: String) {
         runCatching {
-            val intent = com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.classifyQuery(query)
             val counts = lastCountsCache
-            val sessions = lastSessionsCache.items.map { item ->
-                com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.SessionSummary(
-                    title = item.title,
-                    state = item.stateName,
-                )
-            }
-            val reply = com.dmzs.datawatchclient.wear.VoiceQueryDispatcher.buildReply(
-                intent = intent,
+            val reply = buildVoiceReply(
+                query = query,
                 running = counts.running,
                 waiting = counts.waiting,
                 error = counts.error,
-                sessions = sessions,
                 serverName = counts.serverName,
+                sessionTitles = lastSessionsCache.items.map { it.title },
             )
-            Log.d(TAG, "voiceQuery intent=$intent reply='$reply'")
+            Log.d(TAG, "voiceQuery reply='$reply'")
             val payload = reply.toByteArray(Charsets.UTF_8)
             Wearable.getMessageClient(context)
                 .sendMessage(sourceNodeId, VOICE_REPLY_PATH, payload)
         }.onFailure { Log.w(TAG, "forwardVoiceQuery FAILED", it) }
+    }
+
+    private fun buildVoiceReply(
+        query: String,
+        running: Int,
+        waiting: Int,
+        error: Int,
+        serverName: String,
+        sessionTitles: List<String>,
+    ): String {
+        val lower = query.lowercase()
+        return when {
+            lower.contains("block") || lower.contains("guardrail") || lower.contains("fail") ->
+                if (error > 0) "$serverName has $error session${if (error > 1) "s" else ""} with errors." else "No blocked sessions on $serverName."
+            lower.contains("running") || lower.contains("active") ->
+                if (running > 0) "$serverName: $running running, $waiting waiting." else "No running sessions on $serverName."
+            else -> {
+                val total = running + waiting + error
+                buildString {
+                    if (serverName.isNotBlank()) append("$serverName: ")
+                    append("$total session${if (total != 1) "s" else ""}")
+                    if (running > 0) append(", $running running")
+                    if (waiting > 0) append(", $waiting waiting")
+                    if (error > 0) append(", $error error${if (error > 1) "s" else ""}")
+                    append(".")
+                }
+            }
+        }
     }
 
     /**
