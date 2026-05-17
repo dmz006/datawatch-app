@@ -98,8 +98,10 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .setTitle(colored(prd.name.ifBlank { prd.id }, CarColor.GREEN))
                         .addText(subtitle)
                         .setOnClickListener {
-                            // Navigate to session list filtered by automaton id
-                            screenManager.push(AutoSessionListScreen(carContext))
+                            // BL303-A3.4: navigate to session list filtered to this automaton
+                            screenManager.push(
+                                AutoSessionListScreen(carContext, automataId = prd.name.ifBlank { prd.id }),
+                            )
                         }
                         .build(),
                 )

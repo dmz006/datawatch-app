@@ -30,13 +30,20 @@ import kotlinx.coroutines.launch
  * then Error, Waiting, RateLimited, Running, then terminal states.
  * Progress % is fetched from telemetry for active sessions.
  * Tap a row → [AutoSessionDetailScreen].
+ *
+ * @param automataId When non-null, filters to sessions belonging to this automaton
+ *   (matched against session name prefix or automata telemetry field). BL303-A3.4.
  */
-public class AutoSessionListScreen(carContext: CarContext) : Screen(carContext) {
+public class AutoSessionListScreen(
+    carContext: CarContext,
+    private val automataId: String? = null,
+) : Screen(carContext) {
 
     private data class SessionRow(
         val session: Session,
         val progress: Float?,
         val hasGuardrailBlock: Boolean,
+        val automataName: String = "",
     )
 
     private var rows: List<SessionRow> = emptyList()
@@ -96,7 +103,17 @@ public class AutoSessionListScreen(carContext: CarContext) : Screen(carContext) 
                                 progress = telem?.progress?.takeIf { it > 0f },
                                 hasGuardrailBlock = telem?.guardrailVerdicts
                                     ?.any { it.outcome == "block" } == true,
+                                automataName = telem?.sprint?.automata.orEmpty(),
                             )
+                        }
+                        // BL303-A3.4: filter by automaton id when coming from AutomataScreen
+                        .let { allRows ->
+                            if (automataId != null) {
+                                allRows.filter { row ->
+                                    row.automataName.equals(automataId, ignoreCase = true) ||
+                                        row.session.name?.startsWith(automataId, ignoreCase = true) == true
+                                }
+                            } else allRows
                         }
                         .sortedWith(compareBy { urgencyScore(it) })
                 },
@@ -143,8 +160,9 @@ public class AutoSessionListScreen(carContext: CarContext) : Screen(carContext) 
                 )
             }
         }
+        val title = if (automataId != null) "$automataId Sessions" else "$serverName Sessions"
         return ListTemplate.Builder()
-            .setTitle("$serverName Sessions")
+            .setTitle(title)
             .setHeaderAction(Action.BACK)
             .setSingleList(builder.build())
             .build()
