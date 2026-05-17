@@ -261,6 +261,7 @@ public fun AutonomousScreen(
                 onSetType = { type -> vm.setPrdType(id, type) },
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },
                 onSetSkills = { skills -> vm.setPrdSkills(id, skills) },
+                onCloneTemplate = { vm.clonePrdToTemplate(id) },
             )
         }
     }

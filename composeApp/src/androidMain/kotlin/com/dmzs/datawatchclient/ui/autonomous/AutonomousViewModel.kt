@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
+import com.dmzs.datawatchclient.transport.dto.ClonePrdToTemplateRequestDto
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
@@ -311,6 +312,12 @@ public class AutonomousViewModel(
     public fun setPrdSkills(prdId: String, skills: List<String>) {
         val body = buildJsonObject { put("skills", buildJsonArray { skills.forEach { add(JsonPrimitive(it)) } }) }
         prdOp("Set skills") { it.prdAction(prdId, "set_skills", body) }
+    }
+
+    public fun clonePrdToTemplate(prdId: String) {
+        prdOp("Clone to template") { t ->
+            t.clonePrdToTemplate(prdId, ClonePrdToTemplateRequestDto()).map { }
+        }
     }
 
     public fun loadAutomataTypes() {
