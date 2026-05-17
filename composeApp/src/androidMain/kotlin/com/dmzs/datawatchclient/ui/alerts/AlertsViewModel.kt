@@ -266,11 +266,19 @@ public class AlertsViewModel : ViewModel() {
      * treat the group as Inactive — mirrors PWA app.js:5558-5566.
      */
     private val sessionsFlow =
-        activeProfileFlow.flatMapLatest { profile ->
-            if (profile == null) {
-                flowOf(emptyList())
-            } else {
-                ServiceLocator.sessionRepository.observeForProfile(profile.id)
+        combine(activeProfileFlow, _allServersModeFlow, _allProfiles) { profile, allMode, profiles ->
+            Triple(profile, allMode, profiles)
+        }.flatMapLatest { (profile, allMode, profiles) ->
+            when {
+                allMode -> {
+                    val enabled = profiles.filter { it.enabled }
+                    if (enabled.isEmpty()) flowOf(emptyList())
+                    else combine(
+                        enabled.map { ServiceLocator.sessionRepository.observeForProfile(it.id) }
+                    ) { arrays: Array<List<Session>> -> arrays.flatMap { it } }
+                }
+                profile == null -> flowOf(emptyList())
+                else -> ServiceLocator.sessionRepository.observeForProfile(profile.id)
             }
         }
 

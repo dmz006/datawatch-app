@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -255,17 +256,21 @@ public fun AlertsScreen(
                     state.visibleGroups
                 }
                 if (groups.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            text =
-                                when (state.selectedTab) {
-                                    AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
-                                    AlertsViewModel.Tab.Historical -> stringResource(R.string.alerts_empty_inactive)
-                                    AlertsViewModel.Tab.System -> stringResource(R.string.alerts_empty_inactive)
-                                },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        if (state.refreshing) {
+                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
+                        } else {
+                            Text(
+                                text =
+                                    when (state.selectedTab) {
+                                        AlertsViewModel.Tab.Active -> stringResource(R.string.alerts_empty_active)
+                                        AlertsViewModel.Tab.Historical -> stringResource(R.string.alerts_empty_inactive)
+                                        AlertsViewModel.Tab.System -> stringResource(R.string.alerts_empty_inactive)
+                                    },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {

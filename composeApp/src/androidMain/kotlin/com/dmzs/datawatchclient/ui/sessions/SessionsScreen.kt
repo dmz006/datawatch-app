@@ -288,7 +288,13 @@ public fun SessionsScreen(
 
             val visible = state.visibleSessions
             if (visible.isEmpty()) {
-                EmptyState()
+                if (state.refreshing) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
+                    }
+                } else {
+                    EmptyState()
+                }
             } else {
                 // v0.33.15 (B9): datawatch eye watermark behind the
                 // sessions list. PWA centers the brand icon at ~85%
