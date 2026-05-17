@@ -58,54 +58,28 @@ This plan covers all mobile, Wear, and Auto surfaces in a comprehensive test str
 ### Secondary Test Instance (datawatch server)
 
 **Prerequisites**: 
-- datawatch binary at `/home/dmz/.local/bin/datawatch`
-- Ollama running with `qwen3:1.7b` (LLM) and `nomic-embed-text` (embedder) — small models only for testing
+- datawatch binary at `~/workspace/datawatch/bin/datawatch`
 - Emulator `dw_test_phone` running
 
-**LLM policy**: Use Ollama (`qwen3:1.7b`) for all test-instance LLM calls. Claude (claude-haiku-4-5, quick effort) only for major release final validation. This host (johnnyjohnny) has a 32G GPU — sufficient for small models. datawatch server (ralfthewise) has 128G but is not used for app testing.
-
-**Start** (save the PID — never grep for it):
+**Start**:
 ```bash
-mkdir -p /home/dmz/workspace/datawatch-test-workspace
 mkdir -p .datawatch-test
 cat > .datawatch-test/config.yaml <<EOF
-data_dir: $(pwd)/.datawatch-test
-hostname: johnnyjohnny-test
 server:
-  enabled: true
-  host: 0.0.0.0
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
-  tls_enabled: true
-  tls_auto_generate: true
 session:
   skip_permissions: true
-  max_sessions: 10
-  llm_backend: ollama
-  default_project_dir: /home/dmz/workspace/datawatch-test-workspace
-  root_path: /home/dmz/workspace
 autonomous:
   enabled: true
 memory:
   enabled: true
-ollama:
-  enabled: true
-  model: qwen3:1.7b
-  url: http://localhost:11434
-  embedder: nomic-embed-text
-mcp:
-  enabled: false
 EOF
 
-/home/dmz/.local/bin/datawatch start --foreground \
-  --config "$(pwd)/.datawatch-test/config.yaml" \
-  > /tmp/test-server.log 2>&1 &
-TEST_DAEMON_PID=$!
-echo "$TEST_DAEMON_PID" > /tmp/test-daemon.pid
-sleep 5
+rtk ./bin/datawatch serve --data-dir .datawatch-test 2>&1 | tee /tmp/test-server.log &
+sleep 3
 curl -sk https://127.0.0.1:18443/api/health
-# Must return {"hostname":"johnnyjohnny-test","status":"ok"} before proceeding.
 ```
 
 **Emulator bridge**:
@@ -114,25 +88,10 @@ adb reverse tcp:18443 tcp:18443
 adb reverse tcp:18080 tcp:18080
 ```
 
-**Cleanup** — always use the saved PID, never grep:
+**Cleanup** (after run):
 ```bash
-# CORRECT: kill by PID saved at startup
-TEST_DAEMON_PID=$(cat /tmp/test-daemon.pid 2>/dev/null)
-if [ -n "$TEST_DAEMON_PID" ] && kill -0 "$TEST_DAEMON_PID" 2>/dev/null; then
-  # Verify it's actually the test instance (port 18080) before killing
-  if ss -tlnp 2>/dev/null | grep -q "18080.*pid=$TEST_DAEMON_PID"; then
-    kill "$TEST_DAEMON_PID"
-  else
-    echo "PID $TEST_DAEMON_PID is NOT listening on 18080 — refusing to kill"
-  fi
-fi
-rm -f /tmp/test-daemon.pid
+pkill -f "datawatch serve --data-dir .datawatch-test"
 rm -rf .datawatch-test docs/testing/{{VERSION}}/evidence/
-
-# WRONG (never do this — it will kill production if test daemon exited):
-# pkill -f "datawatch"
-# kill $(pgrep -f "datawatch")
-# kill $(ps aux | grep datawatch | ...)
 ```
 
 ### Mobile App (emulator)
@@ -143,7 +102,7 @@ rm -rf .datawatch-test docs/testing/{{VERSION}}/evidence/
   -avd dw_test_phone \
   -no-snapshot-save \
   -no-audio \
-  -gpu swiftshader_indirect \
+  -gpu swiftshaker_indirect \
   -no-boot-anim \
   2>/tmp/emulator.log &
 
@@ -163,24 +122,6 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 - URL: `https://10.0.2.2:18443`
 - Bearer token: `dw-test-token-12345`
 - Trust-all TLS: `true`
-
----
-
-## Lessons Learned (carry forward to each release)
-
-Add new entries here after each release. These patterns should be applied to every future test plan.
-
-### datawatch hooks — use HTTPS not HTTP (v1.0.0)
-Hook scripts in `~/.datawatch/hooks/` must set `DATAWATCH_URL=https://localhost:8443`. curl silently drops POST body on HTTP→HTTPS redirects. Both save and precompact hooks had this bug (datawatch#50). Always test hook delivery with `curl -sk -X POST https://localhost:8443/api/test/message -H "Content-Type: application/json" -d '{"text":"test"}'` before starting a test run.
-
-### datawatch session send — append empty send for Enter (v1.0.0)
-`datawatch session send <id> "msg"` does not send Enter (datawatch#53). Always follow with `datawatch session send <id> ""` until fixed. Applies to cross-host SSH send patterns too.
-
-### Verify datawatch health after any update or restart (v1.0.0)
-After any binary update, config change, or restart: `curl -sk https://localhost:8443/api/health` must return ok before continuing. If not healthy, check logs and fix. Silent failures waste test time.
-
-### LLM policy for test runs (v1.0.0)
-Use Ollama small models (e.g. `qwen3:1.7b`) for all test-instance LLM calls. Claude is reserved for final major release validation only. This keeps costs low and testing fast.
 
 ---
 

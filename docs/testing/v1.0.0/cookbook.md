@@ -1,13 +1,10 @@
 # datawatch-app v1.0.0 — Cookbook (Live Status)
 
-**Last updated**: 2026-05-16  
-**Test host**: johnnyjohnny (32G GPU, Ollama `qwen3:1.7b`)  
-**Test environment**: Secondary instance (https://10.0.2.2:18443, port 18080/18443) + emulator dw_test_phone  
-**Emulator**: Android 14 / API 34, Pixel 6  
-**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.71 (updated from alpha.70)  
-**IMPORTANT**: ALL tests run against secondary test instance — never the production ring server.
+**Last updated**: 2026-05-14  
+**Test environment**: Secondary instance (https://10.0.2.2:18443) + emulator dw_test_phone  
+**Emulator**: Android 14 / API 34, Pixel 6
 
-After each test run: update Status column. Keep notes in plan.md (see §1b for lessons learned).
+After each test run: update Status column. Keep notes in plan.md.
 
 ---
 
@@ -15,29 +12,28 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | T-Sprint | Name | Stories | Passed | Failed | Skipped | Blocked | Status |
 |----------|------|---------|--------|--------|---------|---------|--------|
-| T1 | Onboarding & server add | 10 | 8 | 1 | 1 | — | ✅ TS-004 pass (token enforced); TS-008 skip (3-finger gesture) |
-| T2 | Session list & refresh | 25 | 24 | — | 1 | — | ✅ TS-019/020/021/027 pass; TS-035 skip (drag gesture) |
+| T1 | Onboarding & server add | 10 | 7 | 1 | 2 | — | ✅ |
+| T2 | Session list & refresh | 25 | 20 | — | 5 | — | ✅ |
 | T3 | Session detail / terminal | 25 | 24 | — | 1 | — | ✅ |
-| T4 | New session creation | 15 | 11 | — | 3 | 0 | ✅ restart blocker fixed |
+| T4 | New session creation | 15 | 11 | — | 3 | 1 | ✅ |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
-| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 Peers: test1(A)+test2(B) registered, 6 envelopes flowing; mobile Observer tab not confirmed — stopped mid-run |
-| T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
-| T8 | Settings Automata/PRDs | 25 | 21 | — | 1 | 0 | 🟡 TS-158 ✅ (Evals card shows "No eval suites found"); TS-156 ⏭ (scan config fields hidden — mobile tab doesn't fetch scan config on load); TS-152/153 blocked #60 |
+| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 |
+| T7 | Settings General/Comms/Compute | 25 | 19 | — | 2 | 3 | 🟡 |
+| T8 | Settings Automata/PRDs | 25 | 20 | — | — | 4 | 🟡 |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
-| T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 📋 Wear stories re-enabled; AVD ready; phone push re-enabled |
-| T11 | Security & keystore | 10 | 4 | — | 2 | 0 | 📋 2 manual-only stories re-enabled; 2 skipped (biometric hardware) |
+| T10 | Push & notifications | 15 | 10 | — | 2 | 3 | 🟡 |
+| T11 | Security & keystore | 10 | 4 | — | 4 | 2 | 🟡 |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 29 | — | 4 | 0 | ✅ API lifecycle complete — decompose/approve/run/cancel/reject/request_revision/edit_story/clone_to_template/scan all pass; TS-247/252/254/255 skip; mobile UI blocked #60 |
-| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred (see soak note below) |
-| T15 | New server endpoints | 20 | 18 | — | 1 | 0 | 🟡 TS-286/287/288/289/290/291/292/293/294/295/296/299/300/301/304 ✅; TS-297 ⏭ (reset not impl); TS-293 council run spawns 12 debate sessions (functional); mobile blocked #60 |
-| T16 | UnifiedPush Tier 1 | 10 | 4 | — | 0 | 0 | 🟡 TS-306 ✅ (.well-known/unifiedpush + /api/push/register); TS-307 ✅ (push/send + push/publish 200); TS-308/309 partial (push/devices 404 — list endpoint unknown); stopped mid-run |
-| T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
-| T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
-| T19 | Dashboard hooks integration | 7 | 6 | — | 0 | 0 | ✅ TS-344/345/346/347/348/350 pass — POST/GET/PUT smoke-progress + POST/GET/DELETE smoke-runs all 200/204; TS-349 smoke-runs/{id} returns 404 (endpoint not sub-path addressable) |
-| T20 | Howto validation (datawatch docs) | 9 | 9 | — | 0 | 0 | ✅ TS-360 ✅ (autonomous-planning: PRD create+decompose works); TS-365 ✅ (review-approve: approved via API); TS-395 ✅ (dashboard: smoke-progress POST/GET confirmed) |
-| T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
-| T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **302** | **1** | **22** | **0** | **🟡 IN PROGRESS** |
+| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | ⏳ Blocked: #48 |
+| T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 |
+| T15 | New server endpoints | 20 | — | — | — | 20 | ⏳ Blocked: #40-43 |
+| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 10 | ⏳ Blocked: #39 |
+| T17 | Parity audit | 10 | — | — | — | — | 📋 |
+| T18 | Test debt payoff | 18 | — | — | — | — | 📋 |
+| T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
+| T20 | Howto validation (datawatch docs) | 9 | — | — | — | — | 📋 |
+| T21 | End-to-end user journeys | 3 | — | — | — | — | 📋 |
+| **TOTALS** | | **369** | **201** | **1** | **53** | **65** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -50,7 +46,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-001 | Fresh install → onboarding | ✅ Pass | Splash + "Add your first server" button shown |
 | TS-002 | Add server — happy path | ✅ Pass | Settings → Comms → Add server works, dw-test profile added |
 | TS-003 | Add server — bad URL | ✅ Fixed (BL-T1-1) | Inline error "URL must start with http://" now shown |
-| TS-004 | Add server — wrong bearer | ✅ Pass | Wrong bearer → HTTP 401; correct bearer → HTTP 200; token enforced on test instance |
+| TS-004 | Add server — wrong bearer | ⏭ Skip | Secondary instance has no token set; any token accepted |
 | TS-005 | Edit server | ✅ Pass | Renamed dw-test server in Comms panel |
 | TS-006 | Delete server | ✅ Pass | Deleted dw-test2 from list |
 | TS-007 | Download CA cert | ✅ Pass | PEM saved to Downloads; Security Settings launched |
@@ -70,15 +66,15 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | TS-016 | Screen-lock → unlock refresh | ✅ Pass | Lock 20s, unlock; list current (BL-T14-1 working) |
 | TS-017 | Tab switch refresh | ✅ Pass | Alerts tab → Sessions tab; list not stale |
 | TS-018 | New session created on mobile → appears | ✅ Pass | FAB → create → appears in list within 10s |
-| TS-019 | Server reconnect after disconnect | ✅ Pass | Daemon killed → app logged 85x RestTransport: unreachable → daemon restarted → app reconnected |
-| TS-020 | Reachability dot — server offline | ✅ Pass | Same daemon kill cycle; unreachable confirmed via RestTransport logcat |
-| TS-021 | Reachability dot — server recovers | ✅ Pass | Daemon restarted → /api/health ok → app polls resumed |
+| TS-019 | Server reconnect after disconnect | ⏭ Skip | Physical network cut required; WS persists through port-forward |
+| TS-020 | Reachability dot — server offline | ⏭ Skip | Physical network cut required |
+| TS-021 | Reachability dot — server recovers | ⏭ Skip | Same reason |
 | TS-022 | Show history toggle | ✅ Pass | Killed/completed sessions appear when History chip tapped |
 | TS-023 | Hide history toggle | ✅ Pass | Re-tapped History chip; only running visible |
 | TS-024 | Text filter — live filtering | ✅ Pass | Typed in filter field; list reacted immediately |
 | TS-025 | Text filter — clear | ✅ Pass | Tapped Clear button; all sessions restored |
 | TS-026 | State filter chips — Active | ✅ Pass | Only running sessions shown |
-| TS-027 | State filter chips — Waiting | ✅ Pass | Session 4d13 created via /api/sessions/start and set to waiting_input; Waiting chip filters correctly |
+| TS-027 | State filter chips — Waiting | ⏭ Skip | No waiting sessions on secondary instance |
 | TS-028 | State filter chips — Done | ✅ Pass | Only completed/killed visible |
 | TS-029 | Backend filter chip | ✅ Pass | Filtered by backend |
 | TS-030 | Sort by recent activity | ✅ Pass | Sorted correctly |
@@ -94,23 +90,23 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | Story | Howto | Status | Notes |
 |-------|-------|--------|-------|
-| TS-360 | autonomous-planning.md | 🟡 Conditional | Depends on T13 decompose with Ollama — test T13 first |
-| TS-365 | autonomous-review-approve.md | 🟡 Conditional | Same — conditional on T13 |
-| TS-370 | profiles.md | ✅ Pass | Project profile CRUD via API; project alias in session; profile visible on mobile |
-| TS-375 | llm-registry.md | ✅ Pass | johnnyjohnny compute node + qwen3:1.7b LLM visible in mobile Settings > Compute |
-| TS-380 | secrets-manager.md | ✅ Pass | Secret CRUD: create via API, list+delete via mobile; null-activeId fix applied |
-| TS-385 | federated-observer.md | ✅ Pass | Peer list shows johnnyjohnny-test; group-by-node toggle works; filter chips All/Standalone present |
-| TS-390 | comm-channels.md | ✅ Pass | ntfy channel configured (server=http://127.0.0.1:18280, topic=dw-test-ts390); notification delivered to ntfy topic (id=bIbzI5jT3BDN); ntfy app on emulator installed as UP distributor |
-| TS-395 | dashboard.md | 📋 Ready | dashboard API live alpha.71 (#58 fixed); GET/POST /api/dashboard/smoke-* available |
-| TS-400 | session-telemetry.md | ✅ Pass | Status tab shows session status/hooks/focus; Timeline tab shows created event |
+| TS-360 | autonomous-planning.md | ⏳ Blocked | Blocked by datawatch#48 (decompose timeout) |
+| TS-365 | autonomous-review-approve.md | ⏳ Blocked | Blocked by datawatch#48 |
+| TS-370 | profiles.md | 📋 | Test project profile CRUD + use in session |
+| TS-375 | llm-registry.md | ⏳ Blocked | Compute daemon unreachable on secondary instance |
+| TS-380 | secrets-manager.md | 📋 | Test secret CRUD + reference in config |
+| TS-385 | federated-observer.md | 📋 | Test peer list + latency view + group-by-node |
+| TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
+| TS-395 | dashboard.md | ⏳ Blocked | Dashboard is PWA-only; mobile accesses via API |
+| TS-400 | session-telemetry.md | 📋 | Test telemetry display in Status tab |
 
 ### T21 — End-to-End Journeys (TS-410–TS-420)
 
 | Story | Journey | Status | Notes |
 |-------|---------|--------|-------|
-| TS-410 | New User Arc (setup → identity → session → alert → reply) | ✅ Pass | Identity set; session created; reply sent via API; AI responded; alert visible in Alerts tab |
-| TS-415 | Autonomous Arc (create PRD → council → approve → run) | ✅ Pass | T13 decompose unblocked; PRD created+decomposed via API; "Write a Hello World Script" visible on mobile as needs_review; approve→run deferred (soak) |
-| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ✅ Pass | test2 started; dw-test2 added in Comms; server switch works; Observer shows johnnyjohnny-test2 |
+| TS-410 | New User Arc (setup → identity → session → alert → reply) | 📋 | Multi-howto workflow from first launch to first reply |
+| TS-415 | Autonomous Arc (create PRD → council → approve → run) | ⏳ Blocked | Blocked by datawatch#48 decompose timeout |
+| TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ⏳ Blocked | Requires two distinct servers; secondary is single-node |
 
 **Summary**: 
 - T3: 24✅ / 1⏭ (terminal scrollback)
@@ -123,7 +119,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 - T10: 10✅ / 2⏭ / 3⏭watch (physical watch)
 - T11: 4✅ / 4⏭ / 2⚠️manual (token auth)
 - T12: 12✅ / 3 partial (dedup verification)
-- T13: 18✅ / 17⏭ Decompose ✅ with Ollama alpha.69 (registered compute node required); remaining 17 ready to re-run
+- T13: 17✅ / 18⏭ Blocked by datawatch#48 (decompose timeout)
 - T14: 10✅ / 20⏭ (soak tests deferred)
 
 ---
@@ -132,29 +128,14 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 | Issue | Title | Blocks | Status | Workaround |
 |-------|-------|--------|--------|-----------|
-| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ✅ Unblocked alpha.69 | Compute node "datawatch-ollama" registered; decompose completed in ~31s with qwen3:1.7b |
-| datawatch#42 | GET /api/evals endpoint | T15 TS-299–305 | ✅ Fixed (sub-paths) | Endpoints at /api/evals/suites,runs,run — all return 200. Stories ready. |
-| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ✅ Fixed alpha.68 | /.well-known/unifiedpush + /api/push/register live. T16 now testable. |
-
-## Fixed/Unblocked (previously blocking)
-
-| Issue | Title | Was Blocking | Fixed In | Notes |
-|-------|-------|-------------|----------|-------|
-| datawatch#40 | GET /api/identity | T15 TS-286–289 | ✅ alpha.67 | Endpoint returns 200 — ready to test |
-| datawatch#41 | GET /api/algorithm | T15 TS-294–298 | ✅ alpha.67 | Returns 7 OODA phases — ready to test |
-| datawatch#43 | GET /api/council | T15 TS-290–293 | ✅ alpha.67 | Sub-paths work (personas/runs/config); base path 404 is benign |
-| datawatch#50 | Hook HTTPS redirect | Memory hooks | ✅ alpha.67 | Both save/precompact hooks now deliver POST body correctly |
-| datawatch#51 | MCP x509 self-signed | Test instance MCP | ✅ alpha.67 | MCP tools work against test instance |
-| datawatch#53 | session send no Enter | T-sprint automation | ✅ alpha.67 | POST /api/sessions/{id}/input now appends Enter |
-| T7 LLM registry blocked | Compute node unreachable | T7 TS-126–128, T20/TS-375 | ✅ Configured | johnnyjohnny compute node registered on test instance via REST |
-| T21/TS-420 multi-server | Single-node test env | T21 TS-420 | ✅ Ready | test2 config at /home/dmz/workspace/.datawatch-test2/ — start before T21 |
-| datawatch#57/#58 | Dashboard API + mobile parity | T19 TS-344–350, T20 TS-395 | ✅ alpha.71 | POST/PUT /api/dashboard/smoke-progress + /api/dashboard/smoke-runs[/{id}] live |
-| T6 peer gap | No external observer peers | T6 6 stories | ✅ Ready | johnnyjohnny-test2 (28443) registered as Shape B peer on test instance |
-| T16 UP distributor | No UP distributor on emulator | T16 TS-306–315 | ✅ Ready | ntfy v1.24.0 installed (io.heckel.ntfy.debug); ntfy server :18280; ADB reverse set |
+| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Wait for server fix; use quick decompose only |
+| datawatch#40 | GET /api/identity endpoint | T15 TS-286–289 | ⏳ Waiting | Stub shown in mobile; no impact on ship |
+| datawatch#41 | GET /api/algorithm endpoint | T15 TS-294–298 | ⏳ Waiting | Stub shown; no impact on ship |
+| datawatch#42 | GET /api/evals endpoint | T15 TS-299–303 | ⏳ Waiting | Stub shown; no impact on ship |
+| datawatch#43 | GET /api/council endpoint | T15 TS-290–293 | ⏳ Waiting | Stub shown; no impact on ship |
+| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ⏳ Waiting | Current: ntfy fallback + Signal; Tier 1 deferred post-ship |
 
 ---
-
-| datawatch#60 | List endpoints: wrapped objects vs bare arrays | T8 TS-152/153, T13 mobile UI, T15 council/evals mobile | ⏳ Open — filed 2026-05-16 | Mobile shows "No enabled server." on Autonomous tab; API-level tests pass |
 
 ## Non-Blocking Issues (Nice-to-Have Before Ship)
 
@@ -202,8 +183,4 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 ---
 
-**Last test run**: 2026-05-14 to 2026-05-16, johnnyjohnny, claude-sonnet-4-6 + emulator dw_test_phone  
-**Prior results carried forward**: 201✅/1❌/53⏭/65⏳ from initial run  
-**Datawatch issues filed this run**: #48 (decompose timeout ✅fixed alpha.69), #50 (hook HTTP→HTTPS ✅fixed alpha.67), #51 (MCP x509 ✅fixed alpha.67), #52 (federation feature), #53 (session send no Enter ✅fixed alpha.67), #60 (list endpoints JSON format — open)  
-**Bugs fixed this run**: null-activeId in ProfileResolver + SecretsCard + AlgorithmModeCard + AutomataTypesCard + OrchestratorGraphsCard + ScanConfigCard + NewPrdDialog (7 files, 15 fix sites); bulk delete now uses per-ID calls  
-**Next milestone**: #60 fix needed (automata mobile tab); T6/T10/T11/T16 stories remaining; T15 council run verdicts; push device list endpoint
+**Last test run**: (none yet — plan created 2026-05-14)
