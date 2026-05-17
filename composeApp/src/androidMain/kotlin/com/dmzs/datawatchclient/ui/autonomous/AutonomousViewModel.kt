@@ -60,6 +60,15 @@ public class AutonomousViewModel(
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
+    init {
+        viewModelScope.launch {
+            ServiceLocator.activeProfileFlow().collect { _ ->
+                refresh()
+                loadAutomataTypes()
+            }
+        }
+    }
+
     /** Fetch PRD list and backends list together. */
     public fun refresh() {
         viewModelScope.launch {

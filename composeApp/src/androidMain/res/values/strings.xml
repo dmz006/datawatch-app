@@ -1236,4 +1236,37 @@
     <string name="council_persona_none">No custom personas</string>
     <string name="council_persona_name_required">Name required</string>
     <string name="council_persona_delete_confirm_title">Delete %1$s?</string>
+
+    <!-- ── Dashboard Cards (alpha.75 issue #132) ── -->
+    <string name="dash_cards_title">Dashboard Cards</string>
+    <string name="dash_cards_empty">No cards configured</string>
+    <string name="dash_card_id">Card type</string>
+    <string name="dash_card_cs">Column span (1–12)</string>
+    <string name="dash_card_rs">Row span (optional)</string>
+    <string name="dash_card_add">Add card</string>
+    <string name="dash_card_remove">Remove</string>
+    <string name="dash_card_save">Save</string>
+    <string name="dash_card_id_hint">e.g. tree, events, smoke</string>
+
+    <!-- ── BL303 Guardrail Library + Profiles ── -->
+    <string name="guardrail_library_title">Guardrail Library</string>
+    <string name="guardrail_profiles_title">Guardrail Profiles</string>
+    <string name="guardrail_library_browse">Available Checks</string>
+    <string name="guardrail_profile_name_hint">Profile name</string>
+    <string name="guardrail_profile_add">Add Profile</string>
+    <string name="guardrail_profile_save">Save</string>
+    <string name="guardrail_profile_delete">Delete</string>
+    <string name="guardrail_profile_guardrails_label">Guardrails</string>
+    <string name="guardrail_block_on_label">Block on</string>
+    <string name="guardrail_warn_on_label">Warn on</string>
+    <string name="guardrail_no_profiles">No profiles yet</string>
+    <string name="guardrail_no_library">No guardrails available</string>
+    <string name="guardrail_profile_none_selected">None selected</string>
+
+    <!-- ── BL303 Session Telemetry ── -->
+    <string name="telemetry_task_tree_title">Task Tree</string>
+    <string name="telemetry_guardrails_title">Guardrail Verdicts</string>
+
+    <!-- ── Eval Runs history (alpha.68 issue #131) ── -->
+    <string name="evals_runs_title">Recent Runs</string>
 </resources>

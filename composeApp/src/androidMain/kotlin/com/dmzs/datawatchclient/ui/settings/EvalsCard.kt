@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto
 import com.dmzs.datawatchclient.transport.dto.EvalRunResultDto
 import com.dmzs.datawatchclient.transport.dto.EvalSuiteDto
 import com.dmzs.datawatchclient.transport.TransportError
@@ -44,6 +45,8 @@ internal fun EvalsCard() {
     var visible by remember { mutableStateOf(false) }
     var runningId by remember { mutableStateOf<String?>(null) }
     var results by remember { mutableStateOf<Map<String, EvalRunResultDto>>(emptyMap()) }
+    // issue #131 — alpha.68: GET /api/evals returns completed run history
+    var evalRuns by remember { mutableStateOf<List<EvalRunHistoryDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -55,14 +58,15 @@ internal fun EvalsCard() {
                     if (activeId == null) list.filter { it.enabled }.firstOrNull()
                     else list.firstOrNull { it.id == activeId && it.enabled }
                 } ?: return@runCatching
-            val result = ServiceLocator.transportFor(sp).evalsList()
-            result.onSuccess { list ->
+            val transport = ServiceLocator.transportFor(sp)
+            transport.evalsList().onSuccess { list ->
                 suites = list
                 visible = true
             }.onFailure { err ->
-                // Hide card entirely on 404 (endpoint not present on server)
                 visible = err !is TransportError.NotFound
             }
+            // Fetch run history from /api/evals (alpha.68+); graceful on 404
+            transport.listEvalRuns().onSuccess { runs -> evalRuns = runs }
         }
     }
 
@@ -111,6 +115,35 @@ internal fun EvalsCard() {
                 )
             }
         }
+
+        // issue #131 — alpha.68: Recent eval runs from GET /api/evals
+        if (evalRuns.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            PwaSectionTitle(stringResource(R.string.evals_runs_title))
+            evalRuns.take(5).forEachIndexed { idx, run ->
+                if (idx > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                EvalRunHistoryRow(run)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EvalRunHistoryRow(run: EvalRunHistoryDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val (dot, color) = if (run.status == "pass") "✓" to Color(0xFF10B981) else "✗" to Color(0xFFEF4444)
+        Text(dot, style = MaterialTheme.typography.labelSmall, color = color)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(run.name, style = MaterialTheme.typography.bodySmall)
+            if (run.createdAt.isNotBlank()) {
+                Text(run.createdAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        ScoreBadge(run.score)
     }
 }
 

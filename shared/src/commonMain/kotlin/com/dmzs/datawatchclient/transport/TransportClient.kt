@@ -1229,6 +1229,11 @@ public interface TransportClient {
 
     /** DELETE /api/smoke/progress — clear a completed smoke run. */
     public suspend fun clearSmokeProgress(): Result<Unit>
+
+    // ---- Eval Runs history (alpha.68, issue #131) ----
+
+    /** GET /api/evals — list completed eval runs (alpha.68+). Returns empty list on 404. */
+    public suspend fun listEvalRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto>>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
