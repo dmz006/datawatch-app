@@ -1270,6 +1270,14 @@ public data class CouncilPersonasDto(
 
 /** GET /api/council/runs — a single council run entry. */
 @Serializable
+/** BL295-296 (alpha.41): per-persona answer from InferenceFn. */
+@Serializable
+public data class PersonaAnswerDto(
+    val persona: String = "",
+    val role: String = "",
+    val answer: String = "",
+)
+
 public data class CouncilRunDto(
     val id: String,
     val proposal: String,
@@ -1279,6 +1287,8 @@ public data class CouncilRunDto(
     val round: Int = 0,
     val consensus: String? = null,
     val dissent: String? = null,
+    /** alpha.41 BL295-296 — per-persona answers from InferenceFn. */
+    val answers: List<PersonaAnswerDto> = emptyList(),
     @SerialName("started_at") val startedAt: String? = null,
     @SerialName("finished_at") val finishedAt: String? = null,
 )

@@ -561,6 +561,25 @@ private fun CouncilRunRow(
                 if (run.round > 0) {
                     MilestoneEntry(label = stringResource(R.string.council_round_label), value = run.round.toString())
                 }
+                // BL295-296 (alpha.41): per-persona answers from InferenceFn
+                if (run.answers.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.council_persona_answers_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
+                    )
+                    run.answers.forEach { ans ->
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Text(
+                                if (ans.role.isNotBlank()) "${ans.persona} (${ans.role})" else ans.persona,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF3B82F6),
+                            )
+                            Text(ans.answer, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
                 run.consensus?.let { c ->
                     Text(
                         stringResource(R.string.council_consensus),
@@ -569,6 +588,15 @@ private fun CouncilRunRow(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                     Text(c, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+                }
+                run.dissent?.let { d ->
+                    Text(
+                        stringResource(R.string.council_dissent_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFF59E0B),
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    Text(d, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                 }
                 if (isActive) {
                     OutlinedButton(
