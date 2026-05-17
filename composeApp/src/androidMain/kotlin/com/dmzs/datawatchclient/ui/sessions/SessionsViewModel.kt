@@ -111,6 +111,8 @@ public class SessionsViewModel : ViewModel() {
          * The UI greys the Delete menu item when false.
          */
         val deleteSupported: Boolean = true,
+        /** True when the active server has `whisper.backend` configured; hides mic button when false. */
+        val whisperConfigured: Boolean = false,
         // v0.83.0: state filter chip selection + counts for labels
         val stateFilter: SessionStateFilter = SessionStateFilter.ALL,
         val activeCount: Int = 0,
@@ -298,6 +300,7 @@ public class SessionsViewModel : ViewModel() {
     private val _lastProbeEpochMs = MutableStateFlow<Long?>(null)
     private val _deleteSupported = MutableStateFlow(true)
     private val _backendByProfileId = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val _whisperConfigured = MutableStateFlow(false)
 
     /**
      * Per-active-profile reachability. Flattens into `null` when the active
@@ -378,8 +381,8 @@ public class SessionsViewModel : ViewModel() {
                 reorderMode = args[15] as Boolean,
             )
         }
-        // v0.83.0: layer in state filter + counts
-        return combine(baseFlow, _stateFilter) { base, sf ->
+        // v0.83.0: layer in state filter + counts; whisperConfigured added alongside
+        return combine(baseFlow, _stateFilter, _whisperConfigured) { base, sf, wc ->
             val doneStates = setOf(
                 com.dmzs.datawatchclient.domain.SessionState.Completed,
                 com.dmzs.datawatchclient.domain.SessionState.Killed,
@@ -387,6 +390,7 @@ public class SessionsViewModel : ViewModel() {
             )
             base.copy(
                 stateFilter = sf,
+                whisperConfigured = wc,
                 activeCount = base.sessions.count { s ->
                     s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
                         s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
@@ -403,6 +407,20 @@ public class SessionsViewModel : ViewModel() {
         // Auto-refresh whenever the active profile identity changes (non-null).
         activeProfile
             .onEach { if (it != null) refresh() }
+            .launchIn(viewModelScope)
+        // Fetch whisper.backend config once per profile switch — hides mic when not configured.
+        activeProfile
+            .onEach { profile ->
+                if (profile == null) {
+                    _whisperConfigured.value = false
+                } else {
+                    ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
+                        _whisperConfigured.value =
+                            (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
+                                ?.content?.isNotBlank() == true
+                    }
+                }
+            }
             .launchIn(viewModelScope)
         // Periodic poll — PWA refreshes on every WS `session_update` tick;
         // mobile doesn't subscribe to WS at the list level yet, so we poll

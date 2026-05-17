@@ -686,6 +686,7 @@ public fun SessionDetailScreen(
                     },
                     hasResponse = hasResponse,
                     onSavedCommands = { savedCmdsOpen = true },
+                    whisperConfigured = state.whisperConfigured,
                 )
                 if (savedCmdsOpen) {
                     QuickCommandsSheet(
@@ -1859,6 +1860,7 @@ private fun ReplyComposer(
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
     onSavedCommands: () -> Unit = {},
+    whisperConfigured: Boolean = false,
 ) {
     HorizontalDivider()
     if (isRunning) GeneratingIndicator()
@@ -2052,7 +2054,7 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        IconButton(
+        if (whisperConfigured) IconButton(
             modifier = Modifier.size(40.dp),
             onClick = {
                 if (recording) {
