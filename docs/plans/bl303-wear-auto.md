@@ -527,3 +527,25 @@ These ideas were generated during design iteration and may be pulled into sprint
 *Plan created: 2026-05-16*
 *Author: Claude Code (BL303 planning pass)*
 *Next action: Create PRD BL303 in dashboard → Begin Sprint A1*
+
+---
+
+## Open Backlog Items (filed during BL303)
+
+### BL303-BL1 — Sessions icon alignment with PWA
+
+**Filed:** 2026-05-16  
+**Status:** Investigation needed
+
+The user reports the Sessions tab icon changed in the PWA. Current Android implementation uses `Icons.Filled.Chat` (💬) which matches PWA spec alpha.50. Verify against live PWA; if a new icon was introduced in alpha.51+, update `BottomNavBar.kt` line 56 to match.
+
+**File to edit:** `composeApp/src/androidMain/kotlin/com/dmzs/datawatchclient/ui/shell/BottomNavBar.kt:56`
+
+### BL303-BL2 — Observer/Dashboard tab visibility
+
+**Filed:** 2026-05-16  
+**Status:** Verified present (code), device verification needed
+
+The Android app has the Observer tab (📡, `Icons.Filled.Sensors`) at bottom-nav position 4 which combines the Stats/Monitor/eBPF/Peers monitoring cards. This matches the PWA spec. If user doesn't see it on device, likely an older APK — rebuild and reinstall.
+
+**Parity gaps still open:** G8 (envelopes endpoint), G10 (focus card fields), G17/G18 (LLM edit form critical sections), G19, G22.
