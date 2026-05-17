@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -350,7 +351,11 @@ private fun PrdsBody(
             contentDescription = null,
             modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.10f),
         )
-        if (visible.isEmpty() && !state.loading) {
+        if (visible.isEmpty() && state.loading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
+            }
+        } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.autonomous_empty_state), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

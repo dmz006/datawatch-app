@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -407,6 +408,12 @@ public class SessionsViewModel : ViewModel() {
         // Auto-refresh whenever the active profile identity changes (non-null).
         activeProfile
             .onEach { if (it != null) refresh() }
+            .launchIn(viewModelScope)
+        // Trigger immediate load when switching to all-servers mode (activeProfile emits null
+        // in this mode, so the activeProfile.onEach guard above never fires).
+        allServersMode
+            .filter { it }
+            .onEach { refreshAllServers() }
             .launchIn(viewModelScope)
         // Fetch whisper.backend config once per profile switch — hides mic when not configured.
         activeProfile
