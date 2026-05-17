@@ -144,7 +144,16 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         )
         builder.addItem(
             Row.Builder()
-                .setTitle(colored("Autonomous", CarColor.YELLOW))
+                .setTitle(colored("Automata", CarColor.YELLOW))
+                .addText("Running plans overview")
+                .setOnClickListener {
+                    screenManager.push(AutoAutomataScreen(carContext))
+                }
+                .build(),
+        )
+        builder.addItem(
+            Row.Builder()
+                .setTitle("Autonomous Plans")
                 .addText("Review, approve, or stop plans")
                 .setOnClickListener {
                     screenManager.push(WaitingPrdsScreen(carContext))
