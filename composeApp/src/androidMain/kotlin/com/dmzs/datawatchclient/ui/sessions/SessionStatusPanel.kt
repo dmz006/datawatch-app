@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,9 +36,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.transport.dto.GuardrailVerdictDto
 import com.dmzs.datawatchclient.transport.dto.LastEventDto
 import com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto
+import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import com.dmzs.datawatchclient.transport.dto.SprintStatusDto
+import com.dmzs.datawatchclient.transport.dto.TelemetrySprintDto
+import com.dmzs.datawatchclient.transport.dto.TelemetryTaskDto
 import kotlinx.serialization.json.Json
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -92,6 +97,18 @@ public fun SessionStatusPanel(
         board.sprint?.let { SprintCard(it) }
         board.tests?.let { TestsCard(it.passing, it.failing, it.total) }
         board.git?.let { GitCard(it.branch, it.uncommitted, it.ahead) }
+
+        // BL303 Telemetry: task tree, progress, guardrail verdicts
+        uiState.telemetry?.let { telem ->
+            if (telem.tasks.isNotEmpty()) TaskTreeCard(telem.tasks, telem.progress)
+            if (telem.guardrailVerdicts.isNotEmpty()) GuardrailVerdictsCard(telem.guardrailVerdicts)
+            // Sprint ancestry breadcrumb (only if richer than board.sprint)
+            telem.sprint?.let { sprint ->
+                if (sprint.automata.isNotBlank() && sprint.name.isNotBlank()) {
+                    TelemetrySprintBreadcrumb(sprint)
+                }
+            }
+        }
 
         if (board.currentFocus == null && board.sprint == null && board.tests == null && board.git == null) {
             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -250,6 +267,116 @@ private fun StatusCard(title: String, content: @Composable () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun TaskTreeCard(tasks: List<TelemetryTaskDto>, progress: Float) {
+    StatusCard(title = stringResource(R.string.telemetry_task_tree_title)) {
+        // Progress bar
+        if (progress > 0f) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "%.0f%%".format(progress * 100),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Task list
+        tasks.forEach { task ->
+            val (dot, color) = when (task.status) {
+                "completed" -> "✓" to Color(0xFF10B981)
+                "in_progress" -> "●" to Color(0xFF3B82F6)
+                "failed" -> "✗" to Color(0xFFEF4444)
+                else -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(dot, style = MaterialTheme.typography.labelSmall, color = color)
+                Text(
+                    task.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                if (task.durationMs > 0) {
+                    Text(
+                        formatDurationMs(task.durationMs),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuardrailVerdictsCard(verdicts: List<GuardrailVerdictDto>) {
+    StatusCard(title = stringResource(R.string.telemetry_guardrails_title)) {
+        verdicts.forEach { verdict ->
+            val (dot, color) = when (verdict.outcome) {
+                "pass" -> "✓" to Color(0xFF10B981)
+                "warn" -> "⚠" to Color(0xFFF59E0B)
+                "block" -> "✗" to Color(0xFFEF4444)
+                else -> "●" to MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(dot, style = MaterialTheme.typography.labelSmall, color = color)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(verdict.guardrail, style = MaterialTheme.typography.bodySmall)
+                    if (verdict.summary.isNotBlank()) {
+                        Text(
+                            verdict.summary,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Text(
+                    verdict.outcome,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TelemetrySprintBreadcrumb(sprint: TelemetrySprintDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(sprint.automata, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text("→", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(sprint.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (sprint.task.isNotBlank()) {
+            Text("→", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(sprint.task, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+private fun formatDurationMs(ms: Long): String {
+    val secs = ms / 1000
+    return if (secs < 60) "${secs}s" else "${secs / 60}m${secs % 60}s"
 }
 
 /** Returns the coloured dot for the Status tab label based on board state. */

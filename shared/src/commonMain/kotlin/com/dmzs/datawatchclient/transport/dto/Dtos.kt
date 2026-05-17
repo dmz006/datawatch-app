@@ -1536,6 +1536,22 @@ public data class GuardrailRunResultDto(
     val verdicts: List<GuardrailVerdictDto> = emptyList(),
 )
 
+// ---- Eval Runs history (alpha.68, issue #131) ----
+/** One entry in the GET /api/evals response (completed eval run). */
+@Serializable
+public data class EvalRunHistoryDto(
+    val id: String = "",
+    val name: String = "",
+    val status: String = "pass",
+    val score: Double = 0.0,
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+@Serializable
+internal data class EvalRunsResponseDto(
+    val runs: List<EvalRunHistoryDto> = emptyList(),
+)
+
 // ---- Smoke Progress (alpha.57 BL303 S4, issue #128) ----
 @Serializable
 public data class SmokeProgressDto(

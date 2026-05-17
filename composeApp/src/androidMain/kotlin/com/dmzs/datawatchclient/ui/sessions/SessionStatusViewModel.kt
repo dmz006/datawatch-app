@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto
+import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +20,7 @@ public class SessionStatusViewModel(
 
     public data class UiState(
         val board: SessionStatusBoardDto? = null,
+        val telemetry: SessionTelemetryDto? = null,
         val loading: Boolean = false,
         val error: String? = null,
     )
@@ -52,7 +54,8 @@ public class SessionStatusViewModel(
         _state.value = _state.value.copy(loading = _state.value.board == null)
         transport.getSessionStatus(sessionId).fold(
             onSuccess = { board ->
-                _state.value = UiState(board = board, loading = false, error = null)
+                val telemetry = transport.getSessionTelemetry(sessionId).getOrNull()
+                _state.value = UiState(board = board, telemetry = telemetry, loading = false, error = null)
             },
             onFailure = { err ->
                 _state.value = _state.value.copy(loading = false, error = err.message)

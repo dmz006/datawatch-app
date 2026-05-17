@@ -279,6 +279,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                                 // v0.75.0 S6-7 (#88): Observer stub card.
                                 ObserverCard()
+                                // BL303 (alpha.75 issue #132): Dashboard card layout CRUD.
+                                DashboardCardsCard()
                             }
                             SettingsTab.General -> {
                                 // v0.59.0 — General mirrors PWA v6.5.1 GENERAL tab:
@@ -402,6 +404,8 @@ public fun SettingsScreen(
                                 )
                                 SkillRegistriesCard()
                                 AutomataTypesCard()
+                                // BL303 (alpha.75 issue #128): Guardrail library + profile CRUD.
+                                GuardrailLibraryCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
                                 )

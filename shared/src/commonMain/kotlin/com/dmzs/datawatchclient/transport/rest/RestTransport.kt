@@ -2559,6 +2559,13 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun listEvalRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/evals") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<com.dmzs.datawatchclient.transport.dto.EvalRunsResponseDto>().runs
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
