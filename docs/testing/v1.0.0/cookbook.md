@@ -20,7 +20,7 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T3 | Session detail / terminal | 25 | 24 | — | 1 | — | ✅ |
 | T4 | New session creation | 15 | 11 | — | 3 | 0 | ✅ restart blocker fixed |
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
-| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 📋 6 peer stories re-enabled — johnnyjohnny-test2 (28443) registered as Shape B peer on test instance; re-run pending |
+| T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 🟡 Peers: test1(A)+test2(B) registered, 6 envelopes flowing; mobile Observer tab not confirmed — stopped mid-run |
 | T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
 | T8 | Settings Automata/PRDs | 25 | 21 | — | 1 | 0 | 🟡 TS-158 ✅ (Evals card shows "No eval suites found"); TS-156 ⏭ (scan config fields hidden — mobile tab doesn't fetch scan config on load); TS-152/153 blocked #60 |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
@@ -29,15 +29,15 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
 | T13 | Autonomous / PRD lifecycle | 35 | 29 | — | 4 | 0 | ✅ API lifecycle complete — decompose/approve/run/cancel/reject/request_revision/edit_story/clone_to_template/scan all pass; TS-247/252/254/255 skip; mobile UI blocked #60 |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred (see soak note below) |
-| T15 | New server endpoints | 20 | 9 | — | 0 | 0 | 📋 11 re-enabled — #40-43 all fixed; algo advance needs live session pre-created |
-| T16 | UnifiedPush Tier 1 | 10 | 2 | — | 0 | 0 | 📋 UP infra ready — ntfy v1.24.0 installed on emulator; ntfy server on :18280; ADB reverse set; re-run pending |
+| T15 | New server endpoints | 20 | 18 | — | 1 | 0 | 🟡 TS-286/287/288/289/290/291/292/293/294/295/296/299/300/301/304 ✅; TS-297 ⏭ (reset not impl); TS-293 council run spawns 12 debate sessions (functional); mobile blocked #60 |
+| T16 | UnifiedPush Tier 1 | 10 | 4 | — | 0 | 0 | 🟡 TS-306 ✅ (.well-known/unifiedpush + /api/push/register); TS-307 ✅ (push/send + push/publish 200); TS-308/309 partial (push/devices 404 — list endpoint unknown); stopped mid-run |
 | T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
 | T19 | Dashboard hooks integration | 7 | 6 | — | 0 | 0 | ✅ TS-344/345/346/347/348/350 pass — POST/GET/PUT smoke-progress + POST/GET/DELETE smoke-runs all 200/204; TS-349 smoke-runs/{id} returns 404 (endpoint not sub-path addressable) |
-| T20 | Howto validation (datawatch docs) | 9 | 6 | — | 0 | 0 | 📋 TS-360/365/395 re-enabled; TS-390 pass (ntfy channel) — all T20 stories unblocked |
+| T20 | Howto validation (datawatch docs) | 9 | 9 | — | 0 | 0 | ✅ TS-360 ✅ (autonomous-planning: PRD create+decompose works); TS-365 ✅ (review-approve: approved via API); TS-395 ✅ (dashboard: smoke-progress POST/GET confirmed) |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
 | T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **284** | **1** | **21** | **0** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **379** | **302** | **1** | **22** | **0** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -204,6 +204,6 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 
 **Last test run**: 2026-05-14 to 2026-05-16, johnnyjohnny, claude-sonnet-4-6 + emulator dw_test_phone  
 **Prior results carried forward**: 201✅/1❌/53⏭/65⏳ from initial run  
-**Datawatch issues filed this run**: #48 (decompose timeout), #50 (hook HTTP→HTTPS ✅fixed alpha.67), #51 (MCP x509 ✅fixed alpha.67), #52 (federation feature), #53 (session send no Enter ✅fixed alpha.67)  
+**Datawatch issues filed this run**: #48 (decompose timeout ✅fixed alpha.69), #50 (hook HTTP→HTTPS ✅fixed alpha.67), #51 (MCP x509 ✅fixed alpha.67), #52 (federation feature), #53 (session send no Enter ✅fixed alpha.67), #60 (list endpoints JSON format — open)  
 **Bugs fixed this run**: null-activeId in ProfileResolver + SecretsCard + AlgorithmModeCard + AutomataTypesCard + OrchestratorGraphsCard + ScanConfigCard + NewPrdDialog (7 files, 15 fix sites); bulk delete now uses per-ID calls  
-**Next milestone**: T13 retry (Ollama decompose), T15 algo-advance (needs running session), T21/TS-415 Autonomous Arc (depends on T13)
+**Next milestone**: #60 fix needed (automata mobile tab); T6/T10/T11/T16 stories remaining; T15 council run verdicts; push device list endpoint
