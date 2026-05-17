@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -58,6 +59,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
@@ -134,7 +139,7 @@ private fun WearRoot(
         ),
 ) {
     val state by vm.state.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0) { 5 }
+    val pagerState = rememberPagerState(initialPage = 0) { 6 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val sessionScrollState = rememberScrollState()
@@ -264,7 +269,7 @@ private fun WearRoot(
                             if (pagerState.currentPage == 2) {
                                 sessionScrollState.scrollBy(delta)
                             } else if (delta > 0) {
-                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(4))
+                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(5))
                             } else if (delta < 0) {
                                 pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
                             }
@@ -277,6 +282,7 @@ private fun WearRoot(
                 when (page) {
                     0 -> GlancePage(state)
                     1 -> MonitorPage(state, onSelectServer = { id -> vm.requestActiveServer(id) })
+                    // Note: page 2 is SessionsPage, page 3 is AutomataCarouselPage
                     2 ->
                         SessionsPage(
                             state = state,
@@ -290,16 +296,21 @@ private fun WearRoot(
                             scrollState = sessionScrollState,
                         )
                     3 ->
+                        AutomataCarouselPage(
+                            state = state,
+                            onMemorySweep = { vm.sendMemorySweep() },
+                        )
+                    4 ->
                         PrdsPage(
                             state = state,
                             onApprove = { id -> vm.sendPrdAction(id, "approve") },
                             onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
                         )
-                    4 -> AboutPage(state)
+                    5 -> AboutPage(state)
                     else -> GlancePage(state)
                 }
             }
-            PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            PagerDots(pagerState.currentPage, 6, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
             // v0.42.3 — re-resolve the open session against the
             // latest published list so the popup shows the freshest
             // lastResponse body the moment the phone republishes (in
@@ -615,6 +626,220 @@ private fun GlancePage(state: WearSessionCountsViewModel.UiState) {
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutomataCarouselPage(
+    state: WearSessionCountsViewModel.UiState,
+    onMemorySweep: () -> Unit = {},
+) {
+    val blockColor = Color(0xFFEF4444)
+    val runColor = Color(0xFF10B981)
+    val dimColor = MaterialTheme.colors.onSurfaceVariant
+    val listState = rememberScalingLazyListState()
+
+    // Gravitational sort: (blockedCount × 3) + runningHours descending
+    val automata = state.prds
+        .filter { it.status.lowercase() == "running" }
+        .sortedByDescending { it.gravityScore() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        ScalingLazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = 12.dp,
+                vertical = 24.dp,
+            ),
+        ) {
+            item {
+                Text(
+                    stringResource(R.string.wear_automata_page_title),
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (automata.isEmpty()) {
+                item {
+                    Text(
+                        stringResource(R.string.wear_automata_empty),
+                        style = MaterialTheme.typography.body2,
+                        color = dimColor,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
+            } else {
+                automata.forEachIndexed { idx, prd ->
+                    item {
+                        AutomataCard(
+                            prd = prd,
+                            blockColor = blockColor,
+                            runColor = runColor,
+                            dimColor = dimColor,
+                        )
+                    }
+                }
+            }
+
+            // Memory sweep quick action at end of carousel
+            item {
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick = onMemorySweep,
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.surface,
+                        contentColor = MaterialTheme.colors.primary,
+                    ),
+                ) {
+                    Text(
+                        stringResource(R.string.wear_automata_memory_sweep),
+                        style = MaterialTheme.typography.caption2,
+                    )
+                }
+            }
+
+            // Weekly health heatmap stub
+            item {
+                WeeklyHealthHeatmap(dimColor = dimColor)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutomataCard(
+    prd: WearSessionCountsViewModel.PrdItem,
+    blockColor: Color,
+    runColor: Color,
+    dimColor: Color,
+) {
+    val progressColor = if (prd.blockedCount > 0) blockColor else runColor
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colors.surface,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            // Mini progress arc
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp)) {
+                CircularProgressIndicator(
+                    progress = prd.progress.coerceIn(0f, 1f),
+                    modifier = Modifier.size(36.dp),
+                    strokeWidth = 3.dp,
+                    indicatorColor = progressColor,
+                    trackColor = progressColor.copy(alpha = 0.18f),
+                )
+                Text(
+                    "${(prd.progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.caption2,
+                    color = dimColor,
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    prd.title,
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurface,
+                    maxLines = 1,
+                )
+                // Miniature gantt bar
+                AutomataGanttBar(prd = prd, blockColor = blockColor, runColor = runColor)
+                if (prd.blockedCount > 0) {
+                    Text(
+                        stringResource(R.string.wear_automata_blocked, prd.blockedCount),
+                        style = MaterialTheme.typography.caption2,
+                        color = blockColor,
+                    )
+                } else if (prd.sprintName.isNotBlank()) {
+                    Text(
+                        prd.sprintName,
+                        style = MaterialTheme.typography.caption2,
+                        color = dimColor,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutomataGanttBar(
+    prd: WearSessionCountsViewModel.PrdItem,
+    blockColor: Color,
+    runColor: Color,
+) {
+    val doneColor = Color(0xFF00E5A0)
+    val waitColor = Color(0xFFF59E0B)
+    val doneW = prd.progress.coerceIn(0f, 1f)
+    val blockW = if (prd.blockedCount > 0) 0.12f else 0f
+    val waitW = ((1f - doneW - blockW) * 0.4f).coerceAtLeast(0f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(4.dp)
+            .background(Color.White.copy(alpha = 0.08f), shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (doneW > 0f) Box(Modifier.weight(doneW).fillMaxHeight().background(doneColor))
+            if (waitW > 0f) Box(Modifier.weight(waitW).fillMaxHeight().background(waitColor))
+            if (blockW > 0f) Box(Modifier.weight(blockW).fillMaxHeight().background(blockColor))
+        }
+    }
+}
+
+@Composable
+private fun WeeklyHealthHeatmap(dimColor: Color) {
+    // 7-day heatmap — placeholder until /api/audit DataLayer path is implemented in W6
+    val days = listOf("M", "T", "W", "T", "F", "S", "S")
+    val dotColor = Color(0xFF00E5A0)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    ) {
+        Text(
+            stringResource(R.string.wear_automata_heatmap_title),
+            style = MaterialTheme.typography.caption2,
+            color = dimColor,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            days.forEachIndexed { i, day ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(
+                                if (i < 5) dotColor else dimColor.copy(alpha = 0.3f),
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                            ),
+                    )
+                    Text(day, style = MaterialTheme.typography.caption2, color = dimColor)
+                }
             }
         }
     }
@@ -1671,7 +1896,15 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val id: String,
         val title: String,
         val status: String,
-    )
+        // BL303-W4: automata carousel extras
+        val blockedCount: Int = 0,
+        val progress: Float = 0f,
+        val sprintName: String = "",
+        val runningHours: Float = 0f,
+    ) {
+        /** Gravitational sort score: blocked weight × 3 + running time hours */
+        fun gravityScore(): Float = (blockedCount * 3) + runningHours
+    }
 
     public data class AllServerStat(
         val name: String,
@@ -1786,12 +2019,21 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val ids = map.getStringArray("ids") ?: emptyArray()
         val titles = map.getStringArray("titles") ?: emptyArray()
         val statuses = map.getStringArray("statuses") ?: emptyArray()
+        // BL303-W4: automata carousel extras
+        val blockedCounts = map.getIntegerArrayList("blockedCounts")?.toIntArray() ?: IntArray(0)
+        val progresses = map.getFloatArray("progresses") ?: FloatArray(0)
+        val sprintNames = map.getStringArray("sprintNames") ?: emptyArray()
+        val runningHours = map.getFloatArray("runningHours") ?: FloatArray(0)
         val items =
             ids.indices.map { i ->
                 PrdItem(
                     id = ids[i],
                     title = titles.getOrNull(i).orEmpty(),
                     status = statuses.getOrNull(i).orEmpty(),
+                    blockedCount = blockedCounts.getOrElse(i) { 0 },
+                    progress = progresses.getOrElse(i) { 0f },
+                    sprintName = sprintNames.getOrNull(i).orEmpty(),
+                    runningHours = runningHours.getOrElse(i) { 0f },
                 )
             }
         _state.value = _state.value.copy(prds = items)
@@ -1906,6 +2148,21 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 val nodes: List<Node> = nodeClient.connectedNodes.await()
                 nodes.forEach { node ->
                     messageClient.sendMessage(node.id, PRD_ACTION_PATH, payload).await()
+                }
+            }
+        }
+    }
+
+    /**
+     * BL303-W4 — send a memory sweep command to the phone. No payload needed;
+     * the phone triggers the server's memory maintenance endpoint.
+     */
+    public fun sendMemorySweep() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val nodes: List<Node> = nodeClient.connectedNodes.await()
+                nodes.forEach { node ->
+                    messageClient.sendMessage(node.id, MEMORY_SWEEP_PATH, ByteArray(0)).await()
                 }
             }
         }
@@ -2032,6 +2289,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
         // BL303-W1/W2
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
+        // BL303-W4: memory sweep quick action
+        public const val MEMORY_SWEEP_PATH: String = "/datawatch/memorySweep"
     }
 }
 

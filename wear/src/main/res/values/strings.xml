@@ -108,6 +108,15 @@
     <string name="wear_session_state_done">Done</string>
     <string name="wear_session_state_error">Error</string>
 
+    <!-- BL303-W4: Automata carousel -->
+    <string name="wear_automata_page_title">Automata</string>
+    <string name="wear_automata_empty">No running automata</string>
+    <string name="wear_automata_sessions">Sessions</string>
+    <string name="wear_automata_memory_sweep">Memory Sweep</string>
+    <string name="wear_automata_blocked">%d blocked</string>
+    <string name="wear_automata_progress">%d%%</string>
+    <string name="wear_automata_heatmap_title">Weekly Health</string>
+
     <!-- BL303-W3: Guardrail block notification + approve screen -->
     <string name="wear_notification_guardrail_channel">Guardrail Blocks</string>
     <string name="wear_notification_guardrail_title">Guardrail Blocked</string>
