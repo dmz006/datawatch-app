@@ -731,9 +731,9 @@ public data class ScanResultDto(
 @Serializable
 public data class ScanConfigDto(
     val enabled: Boolean = false,
-    val sast: Boolean = false,
-    val secrets: Boolean = false,
-    val deps: Boolean = false,
+    @SerialName("sast_enabled") val sast: Boolean = false,
+    @SerialName("secrets_enabled") val secrets: Boolean = false,
+    @SerialName("deps_enabled") val deps: Boolean = false,
     @SerialName("fail_on_severity") val failOnSeverity: String = "error",
     val grader: Boolean = false,
     @SerialName("fix_loop") val fixLoop: Boolean = false,
@@ -1223,13 +1223,17 @@ public data class AlgorithmPhaseDto(
 
 @Serializable
 public data class EvalSuiteDto(
-    val id: String,
+    val id: String = "",
     val name: String,
     val description: String = "",
-    val cases: Int = 0,
+    @SerialName("case_count") val cases: Int = 0,
     @SerialName("last_run") val lastRun: String? = null,
     @SerialName("last_score") val lastScore: Double? = null,
-)
+    @SerialName("pass_threshold") val passThreshold: Double = 0.7,
+) {
+    /** Server may omit `id`; fall back to `name` which is always unique per suite. */
+    val effectiveId: String get() = id.ifEmpty { name }
+}
 
 @Serializable
 public data class EvalRunResultDto(
