@@ -93,10 +93,10 @@ internal fun EvalsCard() {
                 if (idx > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 EvalSuiteRow(
                     suite = suite,
-                    running = runningId == suite.id,
-                    result = results[suite.id],
+                    running = runningId == suite.effectiveId,
+                    result = results[suite.effectiveId],
                     onRun = {
-                        runningId = suite.id
+                        runningId = suite.effectiveId
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
@@ -106,8 +106,8 @@ internal fun EvalsCard() {
                                         if (activeId == null) list.filter { it.enabled }.firstOrNull()
                                         else list.firstOrNull { it.id == activeId && it.enabled }
                                     } ?: return@runCatching
-                                ServiceLocator.transportFor(sp).evalsRun(suite.id)
-                                    .onSuccess { r -> results = results + (suite.id to r) }
+                                ServiceLocator.transportFor(sp).evalsRun(suite.effectiveId)
+                                    .onSuccess { r -> results = results + (suite.effectiveId to r) }
                             }
                             runningId = null
                         }

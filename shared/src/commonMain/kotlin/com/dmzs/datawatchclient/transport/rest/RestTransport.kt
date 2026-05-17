@@ -1074,14 +1074,14 @@ public class RestTransport(
 
     override suspend fun getScanConfig(): Result<com.dmzs.datawatchclient.transport.dto.ScanConfigDto> =
         request {
-            client.get("${profile.baseUrl}/api/autonomous/scan_config") {
+            client.get("${profile.baseUrl}/api/autonomous/scan/config") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
 
     override suspend fun updateScanConfig(config: com.dmzs.datawatchclient.transport.dto.ScanConfigDto): Result<Unit> =
         request {
-            client.put("${profile.baseUrl}/api/autonomous/scan_config") {
+            client.put("${profile.baseUrl}/api/autonomous/scan/config") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(config)

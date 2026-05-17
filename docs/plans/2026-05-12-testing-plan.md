@@ -113,11 +113,11 @@ fi
 | T4 | New session creation | TS-061–TS-075 | ✅ 11✅ 3⏭ 1❌→fixed — BL-T4-1 fixed (optimistic upsert on restart); TS-070 re-tested ✅ |
 | T5 | Alerts | TS-076–TS-095 | ✅ 20✅ — TS-080/081/090 unblocked by 2nd active session (414c waiting_input) |
 | T6 | Settings — Monitor/Observer | TS-096–TS-115 | ✅ 14✅ 6⏭ — standalone-server gaps (cluster/amber/red/hidden pill/restart) |
-| T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ✅ 19✅ 2⏭ 3⚠️blocked (LLM registry — no compute daemon) |
-| T8 | Settings — Automata/PRDs | TS-141–TS-165 | ✅ 20✅ 4⚠️blocked (skill browse/sync, scan cfg, evals) |
+| T7 | Settings — General/Comms/Compute | TS-116–TS-140 | ✅ 19✅ 5⏭ (LLM registry blocked — no compute daemon) |
+| T8 | Settings — Automata/PRDs | TS-141–TS-165 | ✅ 22✅ 4⏭ — BL-T15-1 fixed (scan config endpoint+DTO); BL-T15-2 fixed (evals DTO) |
 | T9 | Navigation & shell | TS-166–TS-180 | ✅ 13✅ 2⏭ |
 | T10 | Push & notifications | TS-181–TS-195 | ✅ 10✅ 2⏭ 3⏭watch — TS-190–192 needs physical watch |
-| T11 | Security & keystore | TS-196–TS-205 | ✅ 4✅ 4⏭ 2⚠️manual |
+| T11 | Security & keystore | TS-196–TS-205 | ✅ 6✅ 4⏭ — TS-196/197 verified on isolated test daemon |
 | T12 | Multi-server & federation | TS-206–TS-220 | ✅ |
 | T13 | Autonomous / PRD lifecycle | TS-221–TS-255 | 🟡 17✅ / 18⏭ — TS-223/253 added; TS-232/233/234/236/237/239/240/241 blocked by datawatch#48 (decompose timeout) |
 | T14 | Regression — session refresh | TS-256–TS-285 | ✅ 10✅ / 20⏭ — TS-265/282 added; BL-T14-1 fixed v0.117.0; BL-T14-2 fixed v0.109.0 |
@@ -350,10 +350,10 @@ fi
 | TS-132 | Settings Compute tab | Settings → Compute | Memory, RTK, CostRates, ClusterProfiles, Nodes, LLMs, Agents | ✅ | 10 cards: EPISODIC MEMORY / RTK (TOKEN SAVINGS) / COST RATES / CLUSTER PROFILES / COMPUTE NODES / LLMS / CONTAINER WORKERS / DETECTION FILTERS / SAVED COMMANDS / OUTPUT FILTERS + TAILSCALE CONFIGURATION + MESH STATUS below (plan expected "Agents" label; surfaced as CONTAINER WORKERS) |
 | TS-133 | LLM Registry — list | Compute → LLMs | Registered LLMs shown | ✅ | LLMS card shows "LLMs unavailable — Server unreachable"; compute daemon is a separate service from main datawatch API; UI card and header buttons present |
 | TS-134 | LLM Registry — add | Tap + → fill name/endpoint/key → Save | LLM added; appears in list | ✅ | "Add LLM" dialog: Name field, Kind (ollama default), Node/Model table + "Add row", Enable pretest toggle, API key ref field, Timeout (s), Add tag, Cancel/Save buttons — all fields accessible |
-| TS-135 | LLM Registry — edit | Tap LLM row → edit fields → Save | Changes saved | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); edit flow untestable |
-| TS-136 | LLM Registry — delete | Tap delete icon → confirm | LLM removed from list | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); delete flow untestable |
+| TS-135 | LLM Registry — edit | Tap LLM row → edit fields → Save | Changes saved | ⏭ | BLOCKED — no existing LLMs (compute daemon unreachable); edit flow untestable |
+| TS-136 | LLM Registry — delete | Tap delete icon → confirm | LLM removed from list | ⏭ | BLOCKED — no existing LLMs (compute daemon unreachable); delete flow untestable |
 | TS-137 | LLM Registry — help icon | Tap ? icon in header | Opens docs.anthropic.com in browser | ✅ | ? icon (content-desc "Claude Code hooks docs") fires browser intent; Chrome launched (Welcome to Chrome screen on fresh emulator) |
-| TS-138 | LLM Registry — toggle enable | Toggle switch on LLM row | PUT enable/disable called | ⚠️ | BLOCKED — no existing LLMs (compute daemon unreachable); toggle untestable |
+| TS-138 | LLM Registry — toggle enable | Toggle switch on LLM row | PUT enable/disable called | ⏭ | BLOCKED — no existing LLMs (compute daemon unreachable); toggle untestable |
 | TS-139 | Compute nodes card | Compute → Compute Nodes | Node list with delete | ✅ | COMPUTE NODES card shows "unavailable — Server unreachable"; + button opens "Add compute node" dialog (Name, Kind (ollama), Address, Declared capacity (1), Tags, Observer peer (none), Cancel/Save) |
 | TS-140 | Tailscale settings card | Compute → Tailscale Settings | Config fields shown; save works | ✅ | TAILSCALE CONFIGURATION card on Compute tab (below OUTPUT FILTERS): Sidecar enabled toggle (off), Coordinator URL (headscale), Sidecar image, Auth key, Admin API key, Save button — all fields present; MESH STATUS card follows |
 
@@ -376,13 +376,13 @@ fi
 | TS-149 | Council card — help icon | Tap ? on Council header | Opens docs in browser | ✅ | "?" icon fires browser intent; Chrome FRE launched (same pattern as TS-137) |
 | TS-150 | Skill registries card | Automata → Skill Registries | Registry list shown | ✅ | "SKILL REGISTRIES" card: "No registries configured."; "+ Add default (PAI)" TextButton + "+" IconButton in header row |
 | TS-151 | Skill registries — add default | Tap "Add Default (PAI)" | PAI registry added | ✅ | "+ Add default (PAI)" button visible; calls addDefaultSkillRegistry() on server (code-verified); no registries to confirm addition (server not providing registry endpoint) |
-| TS-152 | Skill registries — browse | Tap Browse skills | Skills list from registry shown | ⚠️ | BLOCKED — no registries configured; "Browse" TextButton exists per registry row (code-verified) but untestable |
-| TS-153 | Skill registries — sync | Tap Sync | Sync count shown | ⚠️ | BLOCKED — no registries configured; Sync is within BrowseSkillsDialog (select skills → syncSkills() API call) but untestable |
+| TS-152 | Skill registries — browse | Tap Browse skills | Skills list from registry shown | ⏭ | BLOCKED — no registries configured; "Browse" TextButton exists per registry row (code-verified) but untestable |
+| TS-153 | Skill registries — sync | Tap Sync | Sync count shown | ⏭ | BLOCKED — no registries configured; Sync is within BrowseSkillsDialog (select skills → syncSkills() API call) but untestable |
 | TS-154 | Pipeline manager | Automata → Pipeline Manager | Pipelines listed | ✅ | "PIPELINE MANAGER" card: "No pipelines running" |
 | TS-155 | Orchestrator graphs | Automata → Orchestrator | Graphs listed | ✅ | "AUTOMATA ORCHESTRATOR" card: Title (required) field, Project directory (optional) field, "Create Graph" button (purple), "No graphs — create one above" |
-| TS-156 | Scan config card | Automata → Scan Config | Config fields shown | ⚠️ | "SCAN CONFIGURATION" card shows only the section title; fields hidden because config==null (server returned no scan config); when config present: Enabled/SAST/Secrets/Deps/Grader/FixLoop toggles + Severity + MaxRetries + Run Scan + Run Rules buttons (code-verified) |
+| TS-156 | Scan config card | Automata → Scan Config | Config fields shown | ✅ Pass | Fixed two bugs: (1) endpoint was `/api/autonomous/scan_config` (404) → now `/api/autonomous/scan/config`; (2) field names `sast`/`secrets`/`deps` had no `@SerialName` → added `@SerialName("sast_enabled")` etc. Card now shows: Enable security scan toggle, SAST, Secrets, Dependencies, Grader, Fix loop toggles + Fail on severity. |
 | TS-157 | Algorithm mode card | Automata → Algorithm | Mode selector shown | ✅ | "ALGORITHM MODE" card: "No active algorithm-mode sessions" |
-| TS-158 | Evals card | Automata → Evals | Eval config shown | ⚠️ | EvalsCard renders with no visible content between ALGORITHM MODE and COUNCIL MODE; empty state not distinguishable from missing — no card header visible |
+| TS-158 | Evals card | Automata → Evals | Eval config shown | ✅ Pass | Fixed: `EvalSuiteDto.cases` lacked `@SerialName("case_count")`; `id` was non-nullable without default (parse failure when server omits it) → made `id` default `""` + added `effectiveId` computed property using name as fallback. Card now shows: "EVALS" header, "default" suite row with "Run" button, "RECENT RUNS" section with failed run entry. |
 | TS-159 | Identity card | Automata → Identity | Identity fields shown | ✅ | "IDENTITY" card (topmost on Automata tab): Role field, Current Focus field, Context Notes multi-line field, Save button (purple), Reset button; robot emoji icon in header |
 | TS-160 | Project profiles | Automata → Project Profiles | Profile list with add/delete | ✅ | "PROJECT PROFILES" card: "+ Add" button; "No project profiles. Create on the PWA → they'll appear here." |
 | TS-161 | Autonomous config fields | Automata → Autonomous cfg | enabled toggle; fields save | ✅ | "AUTONOMOUS PRD DECOMPOSITION" panel: Enable autonomous loop toggle (ON/purple), Poll interval (sec), Max parallel tasks, Decomposition backend (empty=inherit), Verification backend (empty=inherit), Decomposition effort (quick/normal/thorough), Verification effort, Stale task timeout (sec), Auto-fix retries, Per-story approval gate toggle |
@@ -449,8 +449,8 @@ fi
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
-| TS-196 | Add server with bearer token | Add server with non-empty bearer token | Token stored in Android Keystore (not plaintext) | ⚠️ MANUAL OPERATOR | **DO NOT run automated.** Setting a server token locks out PWA and all unauthenticated clients. Run on isolated test server only. Steps: (1) set `server.token` in config.yaml on isolated server, (2) add server in mobile app with that token, (3) confirm `bearerTokenRef` Keystore alias via `adb shell`, (4) clear token and restart server when done. Code verified: alias stored, not plaintext. |
-| TS-197 | Bearer token used in requests | Add server with token; make requests | Authorization header sent on all API calls | ⚠️ MANUAL OPERATOR | **DO NOT run automated.** Requires isolated server with bearer token set (see TS-196). Steps: (1) same isolated server setup, (2) monitor logcat `RestTransport` for `Authorization: Bearer ***` on any API call. Code verified: header injected from `tokenVault.get(alias)`. |
+| TS-196 | Add server with bearer token | Add server with non-empty bearer token | Token stored in Android Keystore (not plaintext) | ✅ Pass | Tested against isolated test daemon (johnnyjohnny-test, localhost:18443, token=dw-test-token-12345). Added "dw-localhost" server with token via Settings → Comms → +. Logcat confirmed `bearerTokenRef=dw.profile.srv-ab8f3a8c` (Keystore alias) — token is NOT stored in plaintext in the profile; stored under alias in Android Keystore. |
+| TS-197 | Bearer token used in requests | Add server with token; make requests | Authorization header sent on all API calls | ✅ Pass | Same isolated test daemon setup. Sessions load (WearSync.publishSessions n=12), Dashboard live data, Evals and Scan Config all returned 200 — all require Authorization header. Server returns 401 without header (tested manually via curl without header). Code path: `bearer()?.let { header(HttpHeaders.Authorization, it) }` in RestTransport; `bearer()` retrieves from Keystore via alias. |
 | TS-198 | Enable biometric | Settings → General → Security → enable | Prompts fingerprint; DB re-encrypted under biometric key | ⏭ Skip | Emulator has no Class-3 biometric enrolled; toggle disabled/greyed; not testable on emulator |
 | TS-199 | Disable biometric | Settings → General → biometric → disable | Prompts fingerprint to confirm; DB re-migrated | ⏭ Skip | Blocked by TS-198 |
 | TS-200 | Trust-all TLS | Add server with trust-all TLS option | Warning badge shown; all HTTPS accepted | ✅ Pass | "trust-all TLS" badge shown on ring server row in Settings → Comms; HTTPS to self-signed cert accepted without error |
@@ -585,6 +585,22 @@ fi
 
 ---
 
+## T15 — Dashboard Tab (BL303 Parity)
+
+**Goal:** Verify the new ⊞ Dashboard bottom-nav tab (added 2026-05-16 in BL303 parity sprint) renders correctly and polls live data.
+
+| Story | Description | Steps | Expected | Status | Notes |
+|-------|-------------|-------|----------|--------|-------|
+| TS-286 | Dashboard tab visible | Bottom nav | Dashboard (⊞) tab present | ✅ Pass | `Icons.Filled.Dashboard` tab present in 5-tab nav (Sessions · Alerts · Observer · Dashboard · Settings when Autonomous hidden; 6-tab when Autonomous shown) |
+| TS-287 | Dashboard tab navigates | Tap Dashboard tab | DashboardScreen shown with "Dashboard" header | ✅ Pass | Tap tab → "Dashboard" visible in header; content cards load |
+| TS-288 | Session Constellation card | Dashboard | SESSION CONSTELLATION card with running/waiting/error/done counts + session list | ✅ Pass | Live data: 12 Running, 0 Waiting, 0 Error, 8 Done; session names from test daemon shown (Council personas) |
+| TS-289 | Dashboard polls live data | Observe 30s | Stats and session list update without user action | ✅ Pass | DashboardViewModel polls every 10s via `while(isActive) { delay(POLL_MS) }`; counts updated across two observations |
+| TS-290 | Dashboard default cards | No `/api/dashboard/cards` configured | Falls back to tree/ekg/smoke default | ✅ Pass | Default card set renders: SESSION CONSTELLATION (tree→constellation), ACTIVITY PULSE (ekg→pulse), SYSTEM HEALTH (smoke) |
+| TS-291 | Tap session in constellation | Tap session row in constellation | Session detail opens | ⏭ | Blocked: constellation session rows are displayed but onOpenSession callback not wired in default test flow; no session detail tap verified |
+| TS-292 | Dashboard back-stack | Navigate Sessions → Dashboard → Sessions | State preserved; no duplicate ViewModels | ✅ Pass | Tab navigation preserves back stack; `viewModel()` scoped to NavBackStackEntry — no re-init on tab return |
+
+---
+
 ## Bug Triage
 
 Failures found during testing are filed as **BL entries** in `docs/plans/README.md` and linked here.
@@ -596,6 +612,8 @@ Failures found during testing are filed as **BL entries** in `docs/plans/README.
 | BL-T13-2 | TS-229 | `PrdDto.decisions` typed as `List<String>?` — server returns objects `{at,kind,actor,note}`; caused JSON deserialization crash. Fixed by adding `DecisionDto` and changing field type. | Fixed v0.117.0/195 |
 | BL-T14-1 | TS-258–265 | Sessions not refreshed on ON_RESUME: `AppRoot` lifecycle observer only calls `ping()`, not `vm.refresh()`. Fixed by adding dedicated `ON_RESUME` `LifecycleEventObserver` in `SessionsScreen.kt` that calls `vm.refresh()` directly. | Fixed (code verified) |
 | BL-T14-2 | TS-268 | `llmRef` and `computeNodeRef` not persisted in SQLDelight schema (`SessionRepository.upsertInternal`). After app restart, these fields are null — text search won't match on them. Affects TS-024 filtering. | Fixed v0.109.0/e7743f6 — DB migration 7→8 adds llm_ref + compute_node_ref columns; upsertInternal + toDomain updated. |
+| BL-T15-1 | TS-156 | `ScanConfigCard` used wrong endpoint `/api/autonomous/scan_config` (404); field names `sast`/`secrets`/`deps` lacked `@SerialName` annotations (API uses `sast_enabled` etc.). Config never loaded. | Fixed 2026-05-17: endpoint → `/api/autonomous/scan/config`; added `@SerialName("sast_enabled")`, `@SerialName("secrets_enabled")`, `@SerialName("deps_enabled")` to `ScanConfigDto`. |
+| BL-T15-2 | TS-158 | `EvalSuiteDto.cases` lacked `@SerialName("case_count")`; `id: String` was non-nullable with no default → parse failure when server omits `id` field. Suites list always empty. | Fixed 2026-05-17: `id` → `= ""`; added `effectiveId` computed property (`id.ifEmpty { name }`); `cases` → `@SerialName("case_count")`; `EvalsCard` updated to use `effectiveId`. |
 | [datawatch#48](https://github.com/dmz006/datawatch/issues/48) | TS-232+ | Decompose pipeline `api/ask` internal timeout (~300s) too short for local Ollama LLMs (Gemma3:12b, qwen3:8b both exceed deadline). Blocks TS-228/232/233/234/236/237/239/240/241. Filed upstream: request configurable timeout or async decompose endpoint. | Open — awaiting datawatch fix |
 
 ---
