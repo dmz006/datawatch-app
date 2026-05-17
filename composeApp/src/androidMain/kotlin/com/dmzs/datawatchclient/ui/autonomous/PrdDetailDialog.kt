@@ -92,10 +92,12 @@ internal fun PrdDetailDialog(
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
     onSetSkills: ((List<String>) -> Unit)? = null,
+    onCloneTemplate: (() -> Unit)? = null,
 ) {
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
     val canEdit = status != "running"
+    val isCancellable = status in setOf("running", "draft", "approved", "needs_review", "revisions_asked", "decomposing", "planning")
 
     var selectedTab by remember { mutableStateOf(0) }
     var rejectOpen by remember { mutableStateOf(false) }
@@ -156,8 +158,7 @@ internal fun PrdDetailDialog(
                 }
 
                 // Primary action — always visible
-                val hasPrimaryAction = canReview || status == "approved" || status == "running" ||
-                    status == "draft" || status == "revisions_asked"
+                val hasPrimaryAction = canReview || status == "approved" || isCancellable
                 if (hasPrimaryAction) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -183,7 +184,7 @@ internal fun PrdDetailDialog(
                                 ),
                             ) { Text(stringResource(R.string.prd_detail_run)) }
                         }
-                        if (status == "running") {
+                        if (isCancellable) {
                             FilledTonalButton(
                                 onClick = { onCancel(); onDismiss() },
                                 modifier = Modifier.weight(1f),
@@ -227,6 +228,11 @@ internal fun PrdDetailDialog(
                     }
                     TextButton(onClick = { deleteConfirmOpen = true }) {
                         Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                    }
+                    if (onCloneTemplate != null && status in setOf("completed", "done", "approved", "cancelled", "failed")) {
+                        TextButton(onClick = { onCloneTemplate(); onDismiss() }) {
+                            Text(stringResource(R.string.prd_btn_clone_template), style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
 
