@@ -95,8 +95,10 @@ public class AutoSessionDetailScreen(
             .setHeaderAction(Action.BACK)
 
         if (!isTerminal) {
-            // Approve Gate: only when guardrail is blocking
+            // BL303-A7.1: Drive compliance — max 2 action buttons per MessageTemplate.
+            // Priority: Approve Gate > Kill > Reply (when blocked, gate takes precedence over reply).
             if (hasBlock) {
+                // Blocked: Approve Gate + Kill (2 buttons)
                 templateBuilder.addAction(
                     Action.Builder()
                         .setTitle("Approve Gate")
@@ -104,22 +106,6 @@ public class AutoSessionDetailScreen(
                         .setOnClickListener { onApproveGate() }
                         .build(),
                 )
-            }
-
-            // Reply: only when session is waiting for input (BL303-A2.4)
-            if (sessionState == SessionState.Waiting) {
-                templateBuilder.addAction(
-                    Action.Builder()
-                        .setTitle("Reply")
-                        .setOnClickListener {
-                            screenManager.push(SessionReplyScreen(carContext, sessionId))
-                        }
-                        .build(),
-                )
-            }
-
-            // Kill: 2-step confirmation
-            if (isActive) {
                 if (killPending) {
                     templateBuilder.addAction(
                         Action.Builder()
@@ -128,13 +114,43 @@ public class AutoSessionDetailScreen(
                             .setOnClickListener { onConfirmKill() }
                             .build(),
                     )
-                } else {
+                } else if (isActive) {
                     templateBuilder.addAction(
                         Action.Builder()
                             .setTitle("Kill Session")
                             .setOnClickListener { onKillTap() }
                             .build(),
                     )
+                }
+            } else {
+                // Not blocked: Reply (if waiting) + Kill (if active) — max 2 buttons
+                if (sessionState == SessionState.Waiting) {
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Reply")
+                            .setOnClickListener {
+                                screenManager.push(SessionReplyScreen(carContext, sessionId))
+                            }
+                            .build(),
+                    )
+                }
+                if (isActive) {
+                    if (killPending) {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Confirm Kill")
+                                .setBackgroundColor(CarColor.RED)
+                                .setOnClickListener { onConfirmKill() }
+                                .build(),
+                        )
+                    } else {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Kill Session")
+                                .setOnClickListener { onKillTap() }
+                                .build(),
+                        )
+                    }
                 }
             }
         }
