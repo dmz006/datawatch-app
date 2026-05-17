@@ -1191,6 +1191,31 @@ public data class DocsTrustedSourceDto(val path: String)
 @Serializable
 public data class DocsTrustBulkRequest(val paths: List<String>)
 
+/** GET /api/docs/howtos — single how-to entry. */
+@Serializable
+public data class DocsHowtoDto(
+    val path: String,
+    val title: String,
+    val source: String = "core",
+    @SerialName("has_exec_steps") val hasExecSteps: Boolean = false,
+    @SerialName("exec_provenance") val execProvenance: String = "llm_translatable",
+    val topics: List<String> = emptyList(),
+)
+
+/** GET /api/docs/howtos response wrapper. */
+@Serializable
+public data class DocsHowtosResponse(
+    val howtos: List<DocsHowtoDto> = emptyList(),
+)
+
+/** POST /api/docs/trust/add request body. */
+@Serializable
+public data class DocsTrustAddRequest(
+    val source: String,
+    @SerialName("granted_by") val grantedBy: String = "operator",
+    val note: String? = null,
+)
+
 // ── v0.73.0 Identity + Algorithm + Evals (S4-1/2/3, #53/#54/#55) ────────────
 
 @Serializable

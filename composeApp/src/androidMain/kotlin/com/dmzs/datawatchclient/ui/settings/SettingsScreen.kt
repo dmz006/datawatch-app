@@ -278,19 +278,6 @@ public fun SettingsScreen(
                                 // Project Profiles → Cluster Profiles → Notifications.
                                 // Pipelines / Autonomous / Orchestrator / Agents →
                                 // Automata tab. Plugins → Plugins tab.
-                                val generalDocsCtx = LocalContext.current
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.End,
-                                ) {
-                                    TextButton(onClick = {
-                                        generalDocsCtx.startActivity(
-                                            Intent(Intent.ACTION_VIEW, Uri.parse("https://docs.anthropic.com/en/docs/claude-code/settings")),
-                                        )
-                                    }) {
-                                        Text("Claude Code documentation ↗", style = MaterialTheme.typography.labelMedium)
-                                    }
-                                }
                                 SecurityCard()
                                 // v0.75.0 S6-3 (#82): Vault/Secrets status.
                                 SecretsStatusCard()
