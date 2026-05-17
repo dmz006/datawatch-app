@@ -376,6 +376,32 @@ public class WearSyncService(
             }.onFailure {
                 // best-effort; silence so missing alerts endpoint doesn't break dashboard
             }
+            // BL303-W1 — telemetry for the watch primary glance screen.
+            // Debounce: at most one telemetry publish per 500ms window.
+            val now = System.currentTimeMillis()
+            if (now - lastTelemetryTs >= TELEMETRY_DEBOUNCE_MS) {
+                lastTelemetryTs = now
+                ServiceLocator.transportFor(profile).listSessions().getOrNull()
+                    ?.filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
+                    ?.maxByOrNull { it.lastActivityAt }
+                    ?.let { activeSession ->
+                        val telem = ServiceLocator.transportFor(profile)
+                            .getSessionTelemetry(activeSession.id).getOrNull()
+                        val blocks = telem?.guardrailVerdicts?.filter { it.outcome == "block" }
+                        publishTelemetry(
+                            TelemetrySnapshot(
+                                sessionId = activeSession.id,
+                                currentTask = telem?.currentTask.orEmpty(),
+                                progress = telem?.progress ?: 0f,
+                                sprintName = telem?.sprint?.name.orEmpty(),
+                                automataName = telem?.sprint?.automata.orEmpty(),
+                                sessionState = activeSession.state.name,
+                                guardrailBlock = !blocks.isNullOrEmpty(),
+                                blockSummary = blocks?.firstOrNull()?.summary.orEmpty(),
+                            ),
+                        )
+                    }
+            }
         }.onFailure { err ->
             Log.w(TAG, "fetchDashboard FAILED ${err.message}")
         }
@@ -839,6 +865,18 @@ public class WearSyncService(
         val online: Boolean,
     )
 
+    // BL303-W1
+    private data class TelemetrySnapshot(
+        val sessionId: String,
+        val currentTask: String,
+        val progress: Float,
+        val sprintName: String,
+        val automataName: String,
+        val sessionState: String,
+        val guardrailBlock: Boolean,
+        val blockSummary: String,
+    )
+
     private fun publishAllStats(rows: List<AllStatsRow>) {
         runCatching {
             val req = PutDataMapRequest.create(ALL_STATS_PATH).apply {
@@ -911,6 +949,32 @@ public class WearSyncService(
         }
     }
 
+    /**
+     * BL303-W1 — publishes the active session's telemetry to the watch via
+     * `/datawatch/telemetry`. The watch uses this for the progress ring,
+     * current task text, sprint breadcrumb, and guardrail block notification.
+     * No server credentials are published — all data is already resolved by
+     * the phone's transport layer.
+     */
+    private fun publishTelemetry(snap: TelemetrySnapshot) {
+        runCatching {
+            val req = PutDataMapRequest.create(TELEMETRY_PATH).apply {
+                dataMap.putString("currentTask", snap.currentTask)
+                dataMap.putFloat("progress", snap.progress)
+                dataMap.putString("sprintName", snap.sprintName)
+                dataMap.putString("automataName", snap.automataName)
+                dataMap.putString("sessionState", snap.sessionState)
+                dataMap.putBoolean("guardrailBlock", snap.guardrailBlock)
+                dataMap.putString("blockSummary", snap.blockSummary)
+                dataMap.putString("sessionId", snap.sessionId)
+                dataMap.putLong("ts", System.currentTimeMillis())
+            }.asPutDataRequest().setUrgent()
+            Wearable.getDataClient(context).putDataItem(req)
+        }.onFailure { Log.w(TAG, "publishTelemetry FAILED", it) }
+    }
+
+    private var lastTelemetryTs: Long = 0L
+
     public companion object {
         private const val TAG: String = "WearSync"
         public const val COUNTS_PATH: String = "/datawatch/counts"
@@ -933,6 +997,10 @@ public class WearSyncService(
         // S10-2 — watch-initiated demand sync request path.
         public const val SYNC_PATH: String = "/datawatch/sync"
         public const val ALERTS_PATH: String = "/datawatch/alerts"
+        // BL303-W1: telemetry for the primary glance screen
+        public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
+        public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
+        private const val TELEMETRY_DEBOUNCE_MS: Long = 500L
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable
