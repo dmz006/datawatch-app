@@ -5,14 +5,20 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
+import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -99,6 +105,14 @@ public class AlertsViewModel : ViewModel() {
          * (backward-compat: all alerts contribute to the badge).
          */
         val watchedAlertCount: Int = 0,
+        /** All enabled profiles for the server picker. */
+        val allProfiles: List<ServerProfile> = emptyList(),
+        /** True when the user has selected "All servers" mode. */
+        val allServersMode: Boolean = false,
+        /** The currently active single-server profile (null in all-servers mode). */
+        val activeProfile: ServerProfile? = null,
+        /** sessionId (or SYSTEM_BUCKET) → profile displayName; populated only in all-servers mode. */
+        val groupProfileNames: Map<String, String> = emptyMap(),
     ) {
         /** Bottom-nav badge — **active-only** count matches the PWA label `Active (N)`. */
         public val count: Int
@@ -129,14 +143,28 @@ public class AlertsViewModel : ViewModel() {
     private val _sortMode = MutableStateFlow(SortMode.BySession)
     private val _search = MutableStateFlow("")
 
+    private val _allProfiles =
+        ServiceLocator.profileRepository.observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _allServersModeFlow =
+        ServiceLocator.activeServerStore.observe()
+            .map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private val _groupProfileNames = MutableStateFlow<Map<String, String>>(emptyMap())
+
     // Active profile — alerts are per-server, so we re-fetch whenever
     // the user flips the active server.
     private val activeProfileFlow =
-        ServiceLocator.profileRepository.observeAll().flatMapLatest { profiles ->
-            ServiceLocator.activeServerStore.observe().map { id ->
-                profiles.firstOrNull { it.id == id && it.enabled }
-                    ?: profiles.firstOrNull { it.enabled }
-            }
+        combine(
+            ServiceLocator.profileRepository.observeAll(),
+            ServiceLocator.activeServerStore.observe(),
+        ) { profiles, id ->
+            if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
+            profiles.firstOrNull { it.id == id && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
         }
 
     // Sprint 23 (#116) — watched-session filter. Re-emits whenever the
@@ -155,21 +183,49 @@ public class AlertsViewModel : ViewModel() {
         loadPersistedTabState()
         // Polling loop. Cancelled automatically on VM clear.
         viewModelScope.launch {
-            activeProfileFlow.collect { profile ->
+            combine(
+                activeProfileFlow,
+                _allServersModeFlow,
+            ) { profile, allMode -> Pair(profile, allMode) }.collect { (profile, allMode) ->
                 _alerts.value = emptyList()
-                if (profile == null) return@collect
+                _groupProfileNames.value = emptyMap()
                 while (true) {
                     _refreshing.value = true
-                    ServiceLocator.transportFor(profile).listAlerts().fold(
-                        onSuccess = {
-                            _alerts.value = it.alerts
-                            _banner.value = null
-                        },
-                        onFailure = { err ->
-                            _banner.value =
-                                "Alerts fetch failed — ${err.message ?: err::class.simpleName}"
-                        },
-                    )
+                    if (allMode) {
+                        val profiles = _allProfiles.value.filter { it.enabled }
+                        val mergedAlerts = mutableListOf<Alert>()
+                        val nameMap = mutableMapOf<String, String>()
+                        val errors = mutableListOf<String>()
+                        coroutineScope {
+                            profiles.map { p ->
+                                async {
+                                    ServiceLocator.transportFor(p).listAlerts().fold(
+                                        onSuccess = { result ->
+                                            synchronized(mergedAlerts) {
+                                                result.alerts.forEach { alert ->
+                                                    mergedAlerts.add(alert)
+                                                    val key = alert.sessionId ?: AlertGroup.SYSTEM_BUCKET
+                                                    nameMap[key] = p.displayName
+                                                }
+                                            }
+                                        },
+                                        onFailure = { err ->
+                                            synchronized(errors) { errors += "${p.displayName}: ${err.message ?: err::class.simpleName}" }
+                                        },
+                                    )
+                                }
+                            }.awaitAll()
+                        }
+                        _alerts.value = mergedAlerts.sortedByDescending { it.createdAt }
+                        _groupProfileNames.value = nameMap.toMap()
+                        _banner.value = if (errors.isEmpty()) null else "Some unreachable: " + errors.take(2).joinToString("; ")
+                    } else {
+                        if (profile == null) { _refreshing.value = false; break }
+                        ServiceLocator.transportFor(profile).listAlerts().fold(
+                            onSuccess = { _alerts.value = it.alerts; _groupProfileNames.value = emptyMap(); _banner.value = null },
+                            onFailure = { err -> _banner.value = "Alerts fetch failed — ${err.message ?: err::class.simpleName}" },
+                        )
+                    }
                     _refreshing.value = false
                     delay(POLL_INTERVAL_MS)
                 }
@@ -326,21 +382,41 @@ public class AlertsViewModel : ViewModel() {
             )
         }
 
+    private val _computedActiveProfile =
+        combine(_allProfiles, ServiceLocator.activeServerStore.observe()) { profiles, id ->
+            if (id == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
+            profiles.firstOrNull { it.id == id && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
+        }
+
     public val state: StateFlow<UiState> =
-        combine(filteredState, _watchedIds) { filtered, watchedIds ->
-            // Sprint 23 (#116): when any sessions are watched, badge shows only
-            // those sessions' active-alert count. When nothing is watched
-            // (operator hasn't opted in), badge falls back to total count so
-            // existing behavior is preserved.
-            val watchedActiveCount =
-                if (watchedIds.isEmpty()) {
-                    filtered.count
-                } else {
-                    filtered.active
-                        .filter { group -> group.sessionId in watchedIds }
-                        .sumOf { it.alerts.size }
-                }
-            filtered.copy(watchedAlertCount = watchedActiveCount)
+        combine(
+            combine(filteredState, _watchedIds) { filtered, watchedIds ->
+                // Sprint 23 (#116): when any sessions are watched, badge shows only
+                // those sessions' active-alert count. When nothing is watched
+                // (operator hasn't opted in), badge falls back to total count so
+                // existing behavior is preserved.
+                val watchedActiveCount =
+                    if (watchedIds.isEmpty()) {
+                        filtered.count
+                    } else {
+                        filtered.active
+                            .filter { group -> group.sessionId in watchedIds }
+                            .sumOf { it.alerts.size }
+                    }
+                filtered.copy(watchedAlertCount = watchedActiveCount)
+            },
+            _allProfiles,
+            _allServersModeFlow,
+            _groupProfileNames,
+            _computedActiveProfile,
+        ) { watched, profiles, allMode, groupNames, activeProf ->
+            watched.copy(
+                allProfiles = profiles.filter { it.enabled },
+                allServersMode = allMode,
+                groupProfileNames = groupNames,
+                activeProfile = activeProf,
+            )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     public fun selectTab(tab: Tab) {
@@ -415,6 +491,14 @@ public class AlertsViewModel : ViewModel() {
 
     public fun dismissBanner() {
         _banner.value = null
+    }
+
+    public fun selectProfile(profileId: String) {
+        ServiceLocator.activeServerStore.set(profileId)
+    }
+
+    public fun selectAllServers() {
+        ServiceLocator.activeServerStore.set(ActiveServerStore.SENTINEL_ALL_SERVERS)
     }
 
     private companion object {

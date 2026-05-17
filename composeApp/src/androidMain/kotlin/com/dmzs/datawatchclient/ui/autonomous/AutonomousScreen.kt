@@ -18,20 +18,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +67,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 
@@ -81,17 +87,29 @@ public fun AutonomousScreen(
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
     var identityWizardOpen by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.autonomous_title)) },
+                title = {
+                    AutonomousServerPickerTitle(
+                        active = state.activeProfile,
+                        allMode = state.allServersMode,
+                        open = pickerOpen,
+                        onToggle = { pickerOpen = !pickerOpen },
+                        onDismiss = { pickerOpen = false },
+                        profiles = state.allProfiles,
+                        onSelectAll = { vm.selectAllServers(); pickerOpen = false },
+                        onSelect = { vm.selectProfile(it); pickerOpen = false },
+                    )
+                },
                 actions = {
                     // Robot icon FIRST (left of search) — visible only on this screen
                     IconButton(onClick = { identityWizardOpen = true }) {
-                        Icon(Icons.Filled.SmartToy, contentDescription = stringResource(R.string.identity_wizard_open))
+                        Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
                     if (currentTab == 0) {
                         IconButton(onClick = { filterOpen = !filterOpen }) {
@@ -326,6 +344,7 @@ private fun PrdsBody(
                         prd = prd,
                         selected = prd.id in state.selectedIds,
                         pinned = prd.id in pinnedIds,
+                        serverName = state.prdProfileNames[prd.id],
                         onClick = { onOpenPrd(prd.id) },
                         onLongClick = { onToggleSelect(prd.id) },
                         onTogglePin = { onTogglePin(prd.id) },
@@ -344,6 +363,7 @@ private fun PrdRow(
     prd: PrdDto,
     selected: Boolean = false,
     pinned: Boolean = false,
+    serverName: String? = null,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     onTogglePin: () -> Unit = {},
@@ -371,7 +391,12 @@ private fun PrdRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                    serverName?.let { name ->
+                        Text(name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    }
+                }
                 Row(modifier = Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(prd.status)
                     prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
@@ -480,3 +505,64 @@ internal fun prdStatusColor(status: String): Color =
         "draft", "complete", "completed", "cancelled" -> Color(0xFF94A3B8)
         else -> Color(0xFF94A3B8)
     }
+
+@Composable
+private fun AutonomousServerPickerTitle(
+    active: ServerProfile?,
+    allMode: Boolean,
+    open: Boolean,
+    onToggle: () -> Unit,
+    onDismiss: () -> Unit,
+    profiles: List<ServerProfile>,
+    onSelectAll: () -> Unit,
+    onSelect: (String) -> Unit,
+) {
+    Box {
+        Row(
+            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)))
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server), modifier = Modifier.padding(start = 4.dp))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+            if (profiles.size > 1) {
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            if (allMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    onClick = onSelectAll,
+                )
+                HorizontalDivider()
+            }
+            if (profiles.isEmpty()) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = onDismiss, enabled = false)
+            } else {
+                profiles.forEach { p ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AutonomousStatusDot(enabled = p.enabled)
+                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
+                                    Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (p.id == active?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        },
+                        onClick = { onSelect(p.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutonomousStatusDot(enabled: Boolean) {
+    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
+}

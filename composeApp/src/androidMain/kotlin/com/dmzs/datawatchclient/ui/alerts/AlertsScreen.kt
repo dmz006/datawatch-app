@@ -13,13 +13,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -56,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
+import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 
@@ -103,6 +110,8 @@ public fun AlertsScreen(
                 },
                 onDismissAll = vm::dismissAll,
                 onSearchChange = vm::setSearch,
+                onSelectProfile = vm::selectProfile,
+                onSelectAll = vm::selectAllServers,
             )
         },
     ) { padding ->
@@ -262,6 +271,7 @@ public fun AlertsScreen(
                             AlertGroupCard(
                                 group = group,
                                 expanded = expanded,
+                                serverName = state.groupProfileNames[group.sessionId],
                                 onToggleExpand = { vm.toggleExpanded(group.sessionId) },
                                 onOpenSession = {
                                     group.session?.let { onOpenSession(it.id) }
@@ -294,6 +304,7 @@ public fun AlertsScreen(
 /**
  * Custom top bar for the Alerts screen (Sprint 22 alpha.30 redesign).
  *
+ * Row 0: Server picker (all-servers mode support)
  * Row 1: "Alerts" title + sort toggle + dismiss-all button
  * Row 2: Horizontal chip filter row (All / Prompts / Errors / Warn / Info)
  * Row 3: Search text field (always visible, matches PWA)
@@ -305,12 +316,26 @@ private fun AlertsTopBar(
     onToggleSort: () -> Unit,
     onDismissAll: () -> Unit,
     onSearchChange: (String) -> Unit,
+    onSelectProfile: (String) -> Unit,
+    onSelectAll: () -> Unit,
 ) {
+    var pickerOpen by remember { mutableStateOf(false) }
     Surface(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 3.dp,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            // Row 0: server picker
+            AlertsServerPickerRow(
+                active = state.activeProfile,
+                allMode = state.allServersMode,
+                open = pickerOpen,
+                onToggle = { pickerOpen = !pickerOpen },
+                onDismiss = { pickerOpen = false },
+                profiles = state.allProfiles,
+                onSelectAll = { onSelectAll(); pickerOpen = false },
+                onSelect = { onSelectProfile(it); pickerOpen = false },
+            )
             // Row 1: title + sort toggle + dismiss-all
             Row(
                 modifier = Modifier
@@ -402,6 +427,7 @@ private fun AlertsTopBar(
 private fun AlertGroupCard(
     group: AlertsViewModel.AlertGroup,
     expanded: Boolean,
+    serverName: String? = null,
     onToggleExpand: () -> Unit,
     onOpenSession: () -> Unit,
     onDismiss: () -> Unit,
@@ -455,6 +481,14 @@ private fun AlertGroupCard(
                         stateLabel(group.state),
                         style = MaterialTheme.typography.labelSmall,
                         color = stateColor,
+                    )
+                }
+                serverName?.let { name ->
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -663,4 +697,69 @@ private fun timeAgo(ts: kotlinx.datetime.Instant): String {
         deltaSec < 86_400 -> "${deltaSec / 3_600}h ago"
         else -> "${deltaSec / 86_400}d ago"
     }
+}
+
+@Composable
+private fun AlertsServerPickerRow(
+    active: ServerProfile?,
+    allMode: Boolean,
+    open: Boolean,
+    onToggle: () -> Unit,
+    onDismiss: () -> Unit,
+    profiles: List<ServerProfile>,
+    onSelectAll: () -> Unit,
+    onSelect: (String) -> Unit,
+) {
+    Box(modifier = Modifier.padding(start = 8.dp, top = 4.dp)) {
+        Row(
+            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server), modifier = Modifier.padding(start = 2.dp).size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+            if (profiles.size > 1) {
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            if (allMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    onClick = onSelectAll,
+                )
+                HorizontalDivider()
+            }
+            if (profiles.isEmpty()) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = onDismiss, enabled = false)
+            } else {
+                profiles.forEach { p ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AlertsStatusDot(enabled = p.enabled)
+                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
+                                    Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (p.id == active?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        },
+                        onClick = { onSelect(p.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlertsStatusDot(enabled: Boolean) {
+    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
 }
