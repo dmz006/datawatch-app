@@ -4,7 +4,7 @@
 **Test host**: johnnyjohnny (32G GPU, Ollama `qwen3:1.7b`)  
 **Test environment**: Secondary instance (https://10.0.2.2:18443, port 18080/18443) + emulator dw_test_phone  
 **Emulator**: Android 14 / API 34, Pixel 6  
-**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.70 (updated from alpha.69)  
+**datawatch binary**: `/home/dmz/.local/bin/datawatch` v7.0.0-alpha.71 (updated from alpha.70)  
 **IMPORTANT**: ALL tests run against secondary test instance — never the production ring server.
 
 After each test run: update Status column. Keep notes in plan.md (see §1b for lessons learned).
@@ -22,22 +22,22 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T5 | Alerts | 20 | 20 | — | — | — | ✅ |
 | T6 | Observer/Monitor | 20 | 14 | — | 6 | — | 📋 6 peer stories re-enabled — johnnyjohnny-test2 (28443) registered as Shape B peer on test instance; re-run pending |
 | T7 | Settings General/Comms/Compute | 25 | 22 | — | 2 | 0 | ✅ compute node + LLM registry verified |
-| T8 | Settings Automata/PRDs | 25 | 20 | — | — | 0 | 📋 4 stories re-enabled — #48 fixed; re-run pending |
+| T8 | Settings Automata/PRDs | 25 | 21 | — | 1 | 0 | 🟡 TS-158 ✅ (Evals card shows "No eval suites found"); TS-156 ⏭ (scan config fields hidden — mobile tab doesn't fetch scan config on load); TS-152/153 blocked #60 |
 | T9 | Navigation & shell | 15 | 13 | — | 2 | — | ✅ |
 | T10 | Push & notifications | 15 | 10 | — | 2 | 0 | 📋 Wear stories re-enabled; AVD ready; phone push re-enabled |
 | T11 | Security & keystore | 10 | 4 | — | 2 | 0 | 📋 2 manual-only stories re-enabled; 2 skipped (biometric hardware) |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 18 | — | — | 0 | 📋 17 re-enabled — #48 fixed alpha.69; compute node registered; re-run pending |
+| T13 | Autonomous / PRD lifecycle | 35 | 29 | — | 4 | 0 | ✅ API lifecycle complete — decompose/approve/run/cancel/reject/request_revision/edit_story/clone_to_template/scan all pass; TS-247/252/254/255 skip; mobile UI blocked #60 |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 soak deferred (see soak note below) |
 | T15 | New server endpoints | 20 | 9 | — | 0 | 0 | 📋 11 re-enabled — #40-43 all fixed; algo advance needs live session pre-created |
 | T16 | UnifiedPush Tier 1 | 10 | 2 | — | 0 | 0 | 📋 UP infra ready — ntfy v1.24.0 installed on emulator; ntfy server on :18280; ADB reverse set; re-run pending |
 | T17 | Parity audit | 10 | 9 | — | 1 | — | ✅ TS-323 still skip (LLM#46 open on server — not mobile) |
 | T18 | Test debt payoff | 18 | 18 | — | — | — | ✅ all unit tests written |
-| T19 | Dashboard hooks integration | 7 | 1 | — | 0 | 0 | 📋 6 stories re-enabled — #57 fixed alpha.71; POST/PUT /api/dashboard/smoke-progress + smoke-runs live; re-run pending |
+| T19 | Dashboard hooks integration | 7 | 6 | — | 0 | 0 | ✅ TS-344/345/346/347/348/350 pass — POST/GET/PUT smoke-progress + POST/GET/DELETE smoke-runs all 200/204; TS-349 smoke-runs/{id} returns 404 (endpoint not sub-path addressable) |
 | T20 | Howto validation (datawatch docs) | 9 | 6 | — | 0 | 0 | 📋 TS-360/365/395 re-enabled; TS-390 pass (ntfy channel) — all T20 stories unblocked |
 | T21 | End-to-end user journeys | 3 | 3 | — | — | — | ✅ All 3 arcs pass (TS-410/415/420) |
 | T22 | LLM Enable Regression (alpha.70 #46) | 10 | 10 | — | — | — | ✅ aider/goose/gemini/shell enable with pretest:true all pass; mobile toggle confirmed; ollama regression guard pass; cleanup done |
-| **TOTALS** | | **379** | **267** | **1** | **16** | **0** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **379** | **284** | **1** | **21** | **0** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -153,6 +153,8 @@ After each test run: update Status column. Keep notes in plan.md (see §1b for l
 | T16 UP distributor | No UP distributor on emulator | T16 TS-306–315 | ✅ Ready | ntfy v1.24.0 installed (io.heckel.ntfy.debug); ntfy server :18280; ADB reverse set |
 
 ---
+
+| datawatch#60 | List endpoints: wrapped objects vs bare arrays | T8 TS-152/153, T13 mobile UI, T15 council/evals mobile | ⏳ Open — filed 2026-05-16 | Mobile shows "No enabled server." on Autonomous tab; API-level tests pass |
 
 ## Non-Blocking Issues (Nice-to-Have Before Ship)
 
