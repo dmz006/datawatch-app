@@ -101,6 +101,18 @@ public class AutoSessionDetailScreen(
             )
         }
 
+        // Reply: only when session is waiting for input (BL303-A2.4)
+        if (sessionState == SessionState.Waiting) {
+            templateBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Reply")
+                    .setOnClickListener {
+                        screenManager.push(SessionReplyScreen(carContext, sessionId))
+                    }
+                    .build(),
+            )
+        }
+
         // Kill: 2-step confirmation
         if (isActive) {
             if (killPending) {
