@@ -165,6 +165,17 @@ public class WearSyncService(
                         }
                     }
                 }
+                MEMORY_SWEEP_PATH -> {
+                    // BL303-W4: watch-initiated memory sweep command.
+                    scope.launch { forwardMemorySweep() }
+                }
+                APPROVE_GATE_PATH -> {
+                    // BL303-W3: watch-initiated guardrail gate approval.
+                    val sessionId = runCatching { String(ev.data, Charsets.UTF_8) }.getOrNull().orEmpty()
+                    if (sessionId.isNotEmpty()) {
+                        scope.launch { forwardApproveGate(sessionId) }
+                    }
+                }
             }
         }
 
@@ -353,10 +364,25 @@ public class WearSyncService(
                         }
                         .take(8)
                         .map { p ->
+                            // BL303-W4: compute automata carousel extras from story counts
+                            val totalStories = p.stories.size
+                            val doneStories = p.stories.count {
+                                it.status == "complete" || it.status == "rejected"
+                            }
+                            val blockedStories = p.stories.count {
+                                it.status == "awaiting_approval"
+                            }
+                            val prgress = if (totalStories > 0) {
+                                doneStories.toFloat() / totalStories.toFloat()
+                            } else 0f
                             PrdSnapshotItem(
                                 id = p.id,
                                 title = (p.title ?: p.name).take(40),
                                 status = p.status,
+                                blockedCount = blockedStories,
+                                progress = prgress,
+                                sprintName = "",
+                                runningHours = 0f,
                             )
                         }
                 publishPrds(items)
@@ -646,6 +672,35 @@ public class WearSyncService(
     }
 
     /**
+     * BL303-W4 — trigger memory sweep on the active server. Best-effort;
+     * calls the `/api/memory/sweep` endpoint if available.
+     */
+    private suspend fun forwardMemorySweep() {
+        runCatching {
+            val activeId = ServiceLocator.activeServerStore.get()
+            if (activeId.isNullOrEmpty() || activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) return
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return
+            ServiceLocator.transportFor(profile).memorySweepStale(olderThanDays = 30, dryRun = false)
+            Log.d(TAG, "memorySweep forwarded for profile=${profile.displayName}")
+        }.onFailure { Log.w(TAG, "forwardMemorySweep FAILED", it) }
+    }
+
+    /**
+     * BL303-W3 — approve the pending guardrail gate for the given session.
+     * Sends "approve" via the session's WS send_input channel — same path
+     * as watch-initiated replies, since the server's guardrail gate listens
+     * on the same input hub.
+     */
+    private suspend fun forwardApproveGate(sessionId: String) {
+        runCatching {
+            forwardWatchReply(sessionId, "approve")
+            Log.d(TAG, "approveGate forwarded via send_input sessionId=$sessionId")
+        }.onFailure { Log.w(TAG, "forwardApproveGate FAILED", it) }
+    }
+
+    /**
      * BL27 — push a /datawatch/alert message to all connected watch nodes so the
      * WearAlertListenerService can post a notification without the watch holding
      * any open connections.
@@ -854,6 +909,11 @@ public class WearSyncService(
                     dataMap.putStringArray("ids", items.map { it.id }.toTypedArray())
                     dataMap.putStringArray("titles", items.map { it.title }.toTypedArray())
                     dataMap.putStringArray("statuses", items.map { it.status }.toTypedArray())
+                    // BL303-W4: automata carousel extras
+                    dataMap.putIntegerArrayList("blockedCounts", ArrayList(items.map { it.blockedCount }))
+                    dataMap.putFloatArray("progresses", items.map { it.progress }.toFloatArray())
+                    dataMap.putStringArray("sprintNames", items.map { it.sprintName }.toTypedArray())
+                    dataMap.putFloatArray("runningHours", items.map { it.runningHours }.toFloatArray())
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
@@ -864,6 +924,11 @@ public class WearSyncService(
         val id: String,
         val title: String,
         val status: String,
+        // BL303-W4: automata carousel extras
+        val blockedCount: Int = 0,
+        val progress: Float = 0f,
+        val sprintName: String = "",
+        val runningHours: Float = 0f,
     )
 
     private data class AllStatsRow(
@@ -1032,8 +1097,11 @@ public class WearSyncService(
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
         public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
         private const val TELEMETRY_DEBOUNCE_MS: Long = 500L
-        // BL303-W3: guardrail block notification
+        // BL303-W3: guardrail block notification + gate approval
         public const val GUARDRAIL_BLOCK_PATH: String = "/datawatch/guardrailBlock"
+        public const val APPROVE_GATE_PATH: String = "/datawatch/approveGate"
+        // BL303-W4: memory sweep quick action
+        public const val MEMORY_SWEEP_PATH: String = "/datawatch/memorySweep"
 
         // v0.42.9 — full last_response body cap for the
         // /datawatch/sessionDetail MessageClient reply. The Wearable
