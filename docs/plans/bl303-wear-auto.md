@@ -572,19 +572,28 @@ GIFs needed for: guardrail approve flow, automata carousel scroll, voice query T
 ### PRIORITY: PWA Alpha.71 Parity Audit
 
 **Filed:** 2026-05-16  
-**Status:** URGENT — blocks v1.0 sign-off
+**Status:** IN PROGRESS — audited 2026-05-17
 
-The parity audit and PWA spec were written against alpha.50. The server is now at **alpha.71** (28 versions of changes not audited). 28 alpha versions of PWA changes (alpha.51–78) have NOT been audited against the Android app. The user reports:
-- A "Dashboard" tab in the PWA bottom nav that doesn't exist in the Android app
-- Sessions icon may have changed
-- Observer page may have been restructured
+**Confirmed gaps (alpha.71 vs Android app):**
 
-**Action required:** Run a full parity audit of alpha.78 PWA against the Android app before v1.0 sign-off. Check:
-1. Bottom nav tab structure (has Dashboard been added?)
-2. Sessions icon changes
-3. Observer page content changes
-4. Any new API endpoints (alpha.51-78 changes)
-5. Session detail tab structure changes (G6 was partially addressed)
-6. LLM registry form fields (G17/G18 remain Critical)
+#### GAP-1: Dashboard tab (⊞) missing from bottom nav — HIGH
+The PWA has a `/dashboard` Mission Control tab with:
+- Session constellation (SVG force-directed graph, node colour = session state)
+- EKG waveform (scrolling canvas trace fed by WebSocket hook_update events)
+- Sprint pipeline (horizontal stage bar with story nodes + gate rings)
+- Expand panel (task tree / session status board / guardrail verdicts)
 
-**Priority:** Do this BEFORE BL303 completion, as it may require sprint additions.
+Android bottom nav has: Sessions, Autonomous, Alerts, Observer, Settings.  
+PWA bottom nav has: Sessions, Dashboard (⊞), Alerts, Observer(?), Settings.  
+**Action:** Implement `DashboardScreen.kt` + add to `Destinations.Tabs` + `BottomNavBar`.  
+**Sprint filed:** BL303-BL4
+
+#### GAP-2: Sessions icon — LOW (verify needed)
+Currently `Icons.Filled.Chat`. PWA alpha.71 icon not confirmed changed.  
+**Action:** No change until user confirms icon changed on their device.
+
+#### GAP-3: CHANGELOG stops at alpha.30 — MEDIUM
+Android app CHANGELOG tracks alpha versions up to alpha.30. Gaps in alpha.31–71 may have introduced new API fields or tabs not yet implemented.  
+**Action:** Scan server API diff when alpha.76 update available.
+
+**api-parity.md** last updated v0.33.0 (2026-04-22) — needs refresh after Dashboard sprint.
