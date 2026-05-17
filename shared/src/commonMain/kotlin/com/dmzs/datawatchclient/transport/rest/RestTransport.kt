@@ -1934,6 +1934,55 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun algorithmStart(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody("""{}""")
+            }.body()
+        }
+
+    override suspend fun algorithmGet(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.get("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun algorithmReset(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody("""{"action":"reset"}""")
+            }.body()
+        }
+
+    override suspend fun algorithmEdit(sessionId: String, output: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("action", kotlinx.serialization.json.JsonPrimitive("edit"))
+                    put("output", kotlinx.serialization.json.JsonPrimitive(output))
+                }.toString())
+            }.body()
+        }
+
+    override suspend fun algorithmMeasure(sessionId: String, suite: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("action", kotlinx.serialization.json.JsonPrimitive("measure"))
+                    put("suite", kotlinx.serialization.json.JsonPrimitive(suite))
+                }.toString())
+            }.body()
+        }
+
     override suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>> =
         request {
             client.get("${profile.baseUrl}/api/evals/suites") {

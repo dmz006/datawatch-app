@@ -1011,6 +1011,21 @@ public interface TransportClient {
     /** PATCH /api/algorithm/{sessionId} with action=abort. */
     public suspend fun algorithmAbort(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
 
+    /** POST /api/algorithm/{sessionId} — register session in Algorithm Mode from Observe. (BL258) */
+    public suspend fun algorithmStart(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** GET /api/algorithm/{sessionId} — read one session's algorithm state. (BL258) */
+    public suspend fun algorithmGet(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** PATCH /api/algorithm/{sessionId} with action=reset — discard state, restart from Observe. (BL258) */
+    public suspend fun algorithmReset(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** PATCH /api/algorithm/{sessionId} with action=edit — replace most-recent phase output. (BL258) */
+    public suspend fun algorithmEdit(sessionId: String, output: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
+    /** PATCH /api/algorithm/{sessionId} with action=measure — bridge Measure phase to Evals. (BL259) */
+    public suspend fun algorithmMeasure(sessionId: String, suite: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto>
+
     /** GET /api/evals — list eval suites. */
     public suspend fun evalsList(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalSuiteDto>>
 

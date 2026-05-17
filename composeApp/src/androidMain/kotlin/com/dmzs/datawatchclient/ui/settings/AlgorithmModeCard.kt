@@ -22,7 +22,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +54,7 @@ private val ALGORITHM_PHASES = listOf(
 internal fun AlgorithmModeCard() {
     var sessions by remember { mutableStateOf<List<AlgorithmStateDto>>(emptyList()) }
     var expandedId by remember { mutableStateOf<String?>(null) }
+    var startSessionId by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     suspend fun loadSessions() {
@@ -76,6 +79,44 @@ internal fun AlgorithmModeCard() {
             .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.algorithm_mode_title))
+
+        // Start algorithm mode on any session by ID
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = startSessionId,
+                onValueChange = { startSessionId = it },
+                placeholder = { Text(stringResource(R.string.algorithm_start_hint), style = MaterialTheme.typography.labelSmall) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.bodySmall,
+            )
+            TextButton(
+                onClick = {
+                    val id = startSessionId.trim()
+                    if (id.isBlank()) return@TextButton
+                    scope.launch {
+                        runCatching {
+                            val activeId = ServiceLocator.activeServerStore.get()
+                            val sp = ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) list.firstOrNull { it.enabled }
+                                    else list.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: list.firstOrNull { it.enabled }
+                                } ?: return@runCatching
+                            ServiceLocator.transportFor(sp).algorithmStart(id).onSuccess { state ->
+                                sessions = (sessions.filter { it.sessionId != state.sessionId } + state)
+                                startSessionId = ""
+                            }
+                        }
+                    }
+                },
+            ) { Text(stringResource(R.string.algorithm_start_action), style = MaterialTheme.typography.labelSmall) }
+        }
 
         if (sessions.isEmpty()) {
             Text(
@@ -127,6 +168,24 @@ internal fun AlgorithmModeCard() {
                             }
                         }
                     },
+                    onReset = {
+                        scope.launch {
+                            runCatching {
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
+                                ServiceLocator.transportFor(sp).algorithmReset(state.sessionId)
+                                    .onSuccess { updated ->
+                                        sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
+                                    }
+                            }
+                        }
+                    },
                 )
             }
         }
@@ -140,6 +199,7 @@ private fun AlgorithmSessionRow(
     onToggle: () -> Unit,
     onAdvance: () -> Unit,
     onAbort: () -> Unit,
+    onReset: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -206,6 +266,14 @@ private fun AlgorithmSessionRow(
                             ),
                         ) { Text(stringResource(R.string.algorithm_abort)) }
                     }
+                    // Reset available always — restarts from Observe phase
+                    FilledTonalButton(
+                        onClick = onReset,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) { Text(stringResource(R.string.algorithm_reset)) }
                 }
             }
         }
