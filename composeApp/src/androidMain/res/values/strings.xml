@@ -1237,6 +1237,34 @@
     <string name="council_persona_name_required">Name required</string>
     <string name="council_persona_delete_confirm_title">Delete %1$s?</string>
 
+    <!-- ── Dashboard tab (BL303 parity with PWA alpha.71) ── -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="dash_card_constellation">Session Constellation</string>
+    <string name="dash_card_pulse">Activity Pulse</string>
+    <string name="dash_card_events">Recent Events</string>
+    <string name="dash_card_pipeline">Sprint Pipeline</string>
+    <string name="dash_card_heatmap">Activity Heatmap</string>
+    <string name="dash_card_guardrails">Guardrail Status</string>
+    <string name="dash_card_smoke">System Health</string>
+    <string name="dash_stat_running">Running</string>
+    <string name="dash_stat_waiting">Waiting</string>
+    <string name="dash_stat_error">Error</string>
+    <string name="dash_stat_done">Done</string>
+    <string name="dash_stat_total">Total</string>
+    <string name="dash_resource_cpu">CPU</string>
+    <string name="dash_resource_mem">Mem</string>
+    <string name="dash_no_active_sessions">No active sessions</string>
+    <string name="dash_more_sessions">+%d more</string>
+    <string name="dash_no_events">No recent events</string>
+    <string name="dash_no_pipeline">No active sessions</string>
+    <string name="dash_no_sessions">No sessions</string>
+    <string name="dash_guardrails_clear">All guardrails clear</string>
+    <string name="dash_guardrails_blocked">%d session(s) blocked</string>
+    <string name="dash_guardrails_running">%d session(s) running cleanly</string>
+    <string name="dash_health_ok">System healthy</string>
+    <string name="dash_health_warn">High resource usage</string>
+    <string name="dash_loading">Loading…</string>
+
     <!-- ── Dashboard Cards (alpha.75 issue #132) ── -->
     <string name="dash_cards_title">Dashboard Cards</string>
     <string name="dash_cards_empty">No cards configured</string>

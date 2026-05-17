@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.shell
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
@@ -63,6 +64,8 @@ internal fun BottomNavBar(
             }
             add(BottomNavItem(Destinations.Tabs.Alerts, stringResource(R.string.nav_alerts), icon = Icons.Filled.NotificationsActive))
             add(BottomNavItem(Destinations.Tabs.Observer, stringResource(R.string.nav_observer), icon = Icons.Filled.Sensors))
+            // BL303 parity with PWA alpha.71 ⊞ Dashboard tab.
+            add(BottomNavItem(Destinations.Tabs.Dashboard, stringResource(R.string.nav_dashboard), icon = Icons.Filled.Dashboard))
             add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), icon = Icons.Filled.Settings))
         }
 

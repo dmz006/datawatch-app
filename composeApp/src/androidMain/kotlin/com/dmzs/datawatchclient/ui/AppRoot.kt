@@ -53,6 +53,7 @@ import com.dmzs.datawatchclient.ui.servers.AddServerScreen
 import com.dmzs.datawatchclient.ui.servers.EditServerScreen
 import com.dmzs.datawatchclient.ui.servers.ServerPickerSheet
 import com.dmzs.datawatchclient.ui.sessions.NewSessionScreen
+import com.dmzs.datawatchclient.ui.dashboard.DashboardScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
@@ -493,6 +494,11 @@ private fun HomeShell(
                     }
                     composable(Destinations.Tabs.Observer) {
                         com.dmzs.datawatchclient.ui.observer.ObserverScreen()
+                    }
+                    composable(Destinations.Tabs.Dashboard) {
+                        DashboardScreen(
+                            onOpenSession = if (isWide) { id -> selectedSessionId = id } else onOpenSession,
+                        )
                     }
                     composable(Destinations.Tabs.Settings) {
                         SettingsScreen(
