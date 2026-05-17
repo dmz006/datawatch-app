@@ -134,7 +134,7 @@ private fun WearRoot(
         ),
 ) {
     val state by vm.state.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0) { 4 }
+    val pagerState = rememberPagerState(initialPage = 0) { 5 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val sessionScrollState = rememberScrollState()
@@ -261,10 +261,10 @@ private fun WearRoot(
                         val delta = if (event.verticalScrollPixels != 0f) event.verticalScrollPixels
                                     else event.horizontalScrollPixels
                         coroutineScope.launch {
-                            if (pagerState.currentPage == 1) {
+                            if (pagerState.currentPage == 2) {
                                 sessionScrollState.scrollBy(delta)
                             } else if (delta > 0) {
-                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(3))
+                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(4))
                             } else if (delta < 0) {
                                 pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
                             }
@@ -275,8 +275,9 @@ private fun WearRoot(
                     .focusable(),
             ) { page ->
                 when (page) {
-                    0 -> MonitorPage(state, onSelectServer = { id -> vm.requestActiveServer(id) })
-                    1 ->
+                    0 -> GlancePage(state)
+                    1 -> MonitorPage(state, onSelectServer = { id -> vm.requestActiveServer(id) })
+                    2 ->
                         SessionsPage(
                             state = state,
                             filter = sessionFilter,
@@ -288,16 +289,17 @@ private fun WearRoot(
                             },
                             scrollState = sessionScrollState,
                         )
-                    2 ->
+                    3 ->
                         PrdsPage(
                             state = state,
                             onApprove = { id -> vm.sendPrdAction(id, "approve") },
                             onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
                         )
-                    3 -> AboutPage(state)
+                    4 -> AboutPage(state)
+                    else -> GlancePage(state)
                 }
             }
-            PagerDots(pagerState.currentPage, 4, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            PagerDots(pagerState.currentPage, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
             // v0.42.3 — re-resolve the open session against the
             // latest published list so the popup shows the freshest
             // lastResponse body the moment the phone republishes (in
@@ -496,6 +498,124 @@ private fun WearSplash() {
                 indicatorColor = MaterialTheme.colors.primary,
                 trackColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
             )
+        }
+    }
+}
+
+/**
+ * BL303-W2 — Primary glance screen. Progress ring + current task +
+ * sprint breadcrumb + health dots. First page in the pager.
+ */
+@Composable
+private fun GlancePage(state: WearSessionCountsViewModel.UiState) {
+    val blockColor = Color(0xFFEF4444)
+    val runColor = Color(0xFF10B981)
+    val waitColor = Color(0xFFF59E0B)
+    val dimColor = MaterialTheme.colors.onSurfaceVariant
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Block indicator band — thin strip at top when blocked
+        if (state.guardrailBlock) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(blockColor)
+                    .align(Alignment.TopCenter),
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
+        ) {
+            // Server name
+            if (state.serverName.isNotBlank()) {
+                Text(
+                    state.serverName,
+                    style = MaterialTheme.typography.caption2,
+                    color = dimColor,
+                )
+            }
+
+            // Progress ring
+            Box(contentAlignment = Alignment.Center) {
+                val progressColor = when {
+                    state.guardrailBlock -> blockColor
+                    state.waiting > 0 -> waitColor
+                    else -> runColor
+                }
+                CircularProgressIndicator(
+                    progress = state.taskProgress.coerceIn(0f, 1f),
+                    modifier = Modifier.size(72.dp),
+                    strokeWidth = 5.dp,
+                    indicatorColor = progressColor,
+                    trackColor = progressColor.copy(alpha = 0.18f),
+                )
+                // Health dot cluster in ring center
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "${state.running}▶",
+                        style = MaterialTheme.typography.title3,
+                        color = runColor,
+                    )
+                    if (state.waiting > 0) {
+                        Text(
+                            "${state.waiting}⏳",
+                            style = MaterialTheme.typography.caption2,
+                            color = waitColor,
+                        )
+                    }
+                }
+            }
+
+            // Progress pct
+            if (state.taskProgress > 0f) {
+                Text(
+                    "${(state.taskProgress * 100).toInt()}%",
+                    style = MaterialTheme.typography.caption2,
+                    color = dimColor,
+                )
+            }
+
+            // Current task (truncated to 2 lines)
+            if (state.currentTask.isNotBlank()) {
+                Text(
+                    state.currentTask.take(60),
+                    style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                )
+            }
+
+            // Sprint breadcrumb
+            if (state.automataName.isNotBlank() && state.sprintName.isNotBlank()) {
+                Text(
+                    "${state.automataName} › ${state.sprintName}",
+                    style = MaterialTheme.typography.caption2,
+                    color = dimColor,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+            }
+
+            // Block warning
+            if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
+                Text(
+                    "⚠ ${state.blockSummary.take(40)}",
+                    style = MaterialTheme.typography.caption2,
+                    color = blockColor,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                )
+            }
         }
     }
 }
@@ -1491,6 +1611,14 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         // B28: compact summary for all enabled servers (multi-server mode).
         // Empty when ≤1 server is enabled — Monitor page shows gauge grid.
         val allServerStats: List<AllServerStat> = emptyList(),
+        // BL303-W2: active session telemetry for the glance screen
+        val currentTask: String = "",
+        val taskProgress: Float = 0f,
+        val sprintName: String = "",
+        val automataName: String = "",
+        val guardrailBlock: Boolean = false,
+        val blockSummary: String = "",
+        val telemetrySessionId: String = "",
     ) {
         public fun cpuText(): String =
             when {
@@ -1589,6 +1717,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                                 applySessions(DataMapItem.fromDataItem(item).dataMap)
                             PRDS_PATH ->
                                 applyPrds(DataMapItem.fromDataItem(item).dataMap)
+                            TELEMETRY_PATH ->
+                                applyTelemetry(DataMapItem.fromDataItem(item).dataMap)
                         }
                     }
                 } finally {
@@ -1642,6 +1772,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                             applySessions(DataMapItem.fromDataItem(event.dataItem).dataMap)
                         PRDS_PATH ->
                             applyPrds(DataMapItem.fromDataItem(event.dataItem).dataMap)
+                        TELEMETRY_PATH ->
+                            applyTelemetry(DataMapItem.fromDataItem(event.dataItem).dataMap)
                     }
                 }
             }
@@ -1663,6 +1795,19 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                 )
             }
         _state.value = _state.value.copy(prds = items)
+    }
+
+    // BL303-W2
+    private fun applyTelemetry(map: DataMap) {
+        _state.value = _state.value.copy(
+            currentTask = map.getString("currentTask", ""),
+            taskProgress = map.getFloat("progress", 0f),
+            sprintName = map.getString("sprintName", ""),
+            automataName = map.getString("automataName", ""),
+            guardrailBlock = map.getBoolean("guardrailBlock", false),
+            blockSummary = map.getString("blockSummary", ""),
+            telemetrySessionId = map.getString("sessionId", ""),
+        )
     }
 
     private fun applySessions(map: DataMap) {
@@ -1885,6 +2030,8 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         public const val REFRESH_SESSION_PATH: String = "/datawatch/refreshSession"
         public const val SESSION_DETAIL_PATH: String = "/datawatch/sessionDetail"
         public const val STOP_SESSION_PATH: String = "/datawatch/stopSession"
+        // BL303-W1/W2
+        public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
     }
 }
 

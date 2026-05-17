@@ -51,6 +51,9 @@ android {
     lint {
         abortOnError = false
     }
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
+    }
 }
 
 ktlint {
@@ -81,4 +84,7 @@ dependencies {
     implementation(libs.androidx.wear.watchface.complications.datasource)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    testImplementation(kotlin("test-junit5"))
+    testImplementation(libs.junit5.api)
+    testRuntimeOnly(libs.junit5.engine)
 }

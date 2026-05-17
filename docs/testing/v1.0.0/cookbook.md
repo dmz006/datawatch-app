@@ -33,7 +33,9 @@ After each test run: update Status column. Keep notes in plan.md.
 | T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
 | T20 | Howto validation (datawatch docs) | 9 | — | — | — | — | 📋 |
 | T21 | End-to-end user journeys | 3 | — | — | — | — | 📋 |
-| **TOTALS** | | **369** | **201** | **1** | **53** | **65** | **🟡 IN PROGRESS** |
+| T26 | Dashboard Cards CRUD (Android) | 10 | — | — | — | — | 📋 |
+| T27 | Automata Orchestrator E2E (Android) | 20 | — | — | — | — | 📋 |
+| **TOTALS** | | **399** | **201** | **1** | **53** | **65** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -168,6 +170,48 @@ After each test run: update Status column. Keep notes in plan.md.
 
 ---
 
+### T26 — Dashboard Cards CRUD (TS-465–TS-474)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-465 | DashboardCardsCard section visible (Settings → Monitor) | 📋 | |
+| TS-466 | Empty state when no cards configured | 📋 | |
+| TS-467 | Add card — smoke type, cs=12 | 📋 | |
+| TS-468 | Add card — tree type, cs=6, rs=2 | 📋 | |
+| TS-469 | Card list shows both entries with correct metadata | 📋 | |
+| TS-470 | Edit card inline (change column-span, Save) | 📋 | |
+| TS-471 | Delete dashboard card | 📋 | |
+| TS-472 | All 9 valid card types in add dropdown | 📋 | |
+| TS-473 | Card section hidden when server returns 404 | 📋 | |
+| TS-474 | CRUD round-trip (API create → mobile visible → mobile delete → API confirms) | 📋 | |
+
+### T27 — Automata Orchestrator E2E (TS-475–TS-494)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-475 | Orchestrator subsystem enabled (config check) | 📋 | |
+| TS-476 | Create graph via API (POST /api/orchestrator/graphs) | 📋 | |
+| TS-477 | List graphs via API (GET — graph appears) | 📋 | |
+| TS-478 | Get graph detail via API (nodes + edges arrays) | 📋 | |
+| TS-479 | Run graph via API (status advances from draft) | 📋 | |
+| TS-480 | Cancel graph via API (status → cancelled) | 📋 | |
+| TS-481 | Delete graph via API (cleanup) | 📋 | |
+| TS-482 | OrchestratorGraphsCard section visible (Settings → Automata) | 📋 | |
+| TS-483 | Empty state — "No orchestrator graphs" | 📋 | |
+| TS-484 | Create graph via mobile UI (title + dir form) | 📋 | |
+| TS-485 | Graph row: title, status dot, automata count, ▶/✕ buttons | 📋 | |
+| TS-486 | Title required validation (blank → inline error) | 📋 | |
+| TS-487 | Run graph via mobile ▶ button (status dot changes) | 📋 | |
+| TS-488 | Status dot colors (running=purple, done=green, failed=red, cancelled=grey) | 📋 | |
+| TS-489 | Delete graph via mobile ✕ button | 📋 | |
+| TS-490 | OrchestratorGraphDialog accessible from PRD detail (Graph button) | 📋 | |
+| TS-491 | Graph dialog shows node list (name, status) | 📋 | |
+| TS-492 | Graph dialog shows edges (→ target lines) | 📋 | |
+| TS-493 | Graph dialog node status colors (running=green, approved=blue, review=amber, rejected=red) | 📋 | |
+| TS-494 | Full E2E arc: API create → mobile run → API cancel → mobile shows cancelled | 📋 | |
+
+---
+
 ## Release Checklist
 
 - [ ] T1–T14: All non-skip ✅ Pass
@@ -176,6 +220,8 @@ After each test run: update Status column. Keep notes in plan.md.
 - [ ] T17: Parity audit pass
 - [ ] T18: Test debt all written + passing
 - [ ] T19: Dashboard hooks integration pass
+- [ ] T26: Dashboard Cards CRUD (Android) pass
+- [ ] T27: Automata Orchestrator E2E (Android) pass
 - [ ] Version bump: v1.0.0 in gradle.properties + Version.kt
 - [ ] CHANGELOG.md updated
 - [ ] Play Console release (Internal Testing → Beta → Production)
