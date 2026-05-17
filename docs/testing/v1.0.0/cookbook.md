@@ -24,10 +24,10 @@ After each test run: update Status column. Keep notes in plan.md.
 | T10 | Push & notifications | 15 | 10 | — | 2 | 3 | 🟡 |
 | T11 | Security & keystore | 10 | 4 | — | 4 | 2 | 🟡 |
 | T12 | Multi-server & federation | 15 | 12 | — | 3 | — | ✅ |
-| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | ⏳ Blocked: #48 |
+| T13 | Autonomous / PRD lifecycle | 35 | 17 | — | — | 18 | 🟡 #48 closed; Cancel+Clone fixed (064993d); re-run pending |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | 🟡 |
-| T15 | New server endpoints | 20 | — | — | — | 20 | ⏳ Blocked: #40-43 |
-| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 10 | ⏳ Blocked: #39 |
+| T15 | New server endpoints | 20 | — | — | — | 20 | 🟡 #40-43 all closed; client fully implemented |
+| T16 | UnifiedPush Tier 1 | 10 | — | — | — | 10 | 🟡 #39 closed; ready to run |
 | T17 | Parity audit | 10 | — | — | — | — | 📋 |
 | T18 | Test debt payoff | 18 | — | — | — | — | 📋 |
 | T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
@@ -92,14 +92,14 @@ After each test run: update Status column. Keep notes in plan.md.
 
 | Story | Howto | Status | Notes |
 |-------|-------|--------|-------|
-| TS-360 | autonomous-planning.md | ⏳ Blocked | Blocked by datawatch#48 (decompose timeout) |
-| TS-365 | autonomous-review-approve.md | ⏳ Blocked | Blocked by datawatch#48 |
+| TS-360 | autonomous-planning.md | 🟡 Unblocked | datawatch#48 closed; ready to validate decompose flow |
+| TS-365 | autonomous-review-approve.md | 🟡 Unblocked | datawatch#48 closed; test daemon has PRDs in all review states |
 | TS-370 | profiles.md | 📋 | Test project profile CRUD + use in session |
 | TS-375 | llm-registry.md | ⏳ Blocked | Compute daemon unreachable on secondary instance |
 | TS-380 | secrets-manager.md | 📋 | Test secret CRUD + reference in config |
 | TS-385 | federated-observer.md | 📋 | Test peer list + latency view + group-by-node |
 | TS-390 | comm-channels.md | ⏳ Blocked | Requires Signal + external webhook/Discord services |
-| TS-395 | dashboard.md | ⏳ Blocked | Dashboard is PWA-only; mobile accesses via API |
+| TS-395 | dashboard.md | 🟡 Unblocked | datawatch#58 closed; dashboard API exists; DashboardScreen + DashboardCardsCard fully implemented |
 | TS-400 | session-telemetry.md | 📋 | Test telemetry display in Status tab |
 
 ### T21 — End-to-End Journeys (TS-410–TS-420)
@@ -107,7 +107,7 @@ After each test run: update Status column. Keep notes in plan.md.
 | Story | Journey | Status | Notes |
 |-------|---------|--------|-------|
 | TS-410 | New User Arc (setup → identity → session → alert → reply) | 📋 | Multi-howto workflow from first launch to first reply |
-| TS-415 | Autonomous Arc (create PRD → council → approve → run) | ⏳ Blocked | Blocked by datawatch#48 decompose timeout |
+| TS-415 | Autonomous Arc (create PRD → council → approve → run) | 🟡 Unblocked | datawatch#48 closed; Cancel+Clone fixes landed |
 | TS-420 | Power User Arc (multi-server → profiles → observer → replicate) | ⏳ Blocked | Requires two distinct servers; secondary is single-node |
 
 **Summary**: 
@@ -130,12 +130,12 @@ After each test run: update Status column. Keep notes in plan.md.
 
 | Issue | Title | Blocks | Status | Workaround |
 |-------|-------|--------|--------|-----------|
-| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ⏳ Open | Wait for server fix; use quick decompose only |
-| datawatch#40 | GET /api/identity endpoint | T15 TS-286–289 | ⏳ Waiting | Stub shown in mobile; no impact on ship |
-| datawatch#41 | GET /api/algorithm endpoint | T15 TS-294–298 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#42 | GET /api/evals endpoint | T15 TS-299–303 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#43 | GET /api/council endpoint | T15 TS-290–293 | ⏳ Waiting | Stub shown; no impact on ship |
-| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ⏳ Waiting | Current: ntfy fallback + Signal; Tier 1 deferred post-ship |
+| datawatch#48 | Decompose timeout (api/ask ~300s) | T13 TS-232–241 | ✅ Closed (2026-05-17) | Cancel button expanded to all cancellable states (064993d); Clone to Template button added |
+| datawatch#40 | GET /api/identity endpoint | T15 TS-286–289 | ✅ Closed | IdentityCard fully implemented; GET+POST /api/identity wired |
+| datawatch#41 | GET /api/algorithm endpoint | T15 TS-294–298 | ✅ Closed (2026-05-17) | AlgorithmModeCard: Start/Reset/Edit/Measure added to Transport; Reset+Start UI added |
+| datawatch#42 | GET /api/evals endpoint | T15 TS-299–303 | ✅ Closed | EvalsCard fixed (BL-T15-2: id default + effectiveId + case_count SerialName) |
+| datawatch#43 | GET /api/council endpoint | T15 TS-290–293 | ✅ Closed | CouncilCard fully implemented (personas, runs, config, wizard) |
+| datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ✅ Closed | UnifiedPushSseService fully wired; T16 now runnable |
 
 ---
 
@@ -143,8 +143,8 @@ After each test run: update Status column. Keep notes in plan.md.
 
 | Issue | Title | Impact | Status |
 |-------|-------|--------|--------|
-| datawatch#46 | LLM enable fails for auto-created | UX: error modal on enable; should be warning | ⏳ Open |
-| datawatch#47 | Locale template vars unsubstituted | Mobile not affected (strings.xml); server-side fix | ✅ Fixed on server |
+| datawatch#46 | LLM enable fails for auto-created | UX: error modal on enable; should be warning | ✅ Closed — server now returns warning, client enableLlm discards body so no modal |
+| datawatch#47 | Locale template vars unsubstituted | Mobile not affected (strings.xml); server-side fix | ✅ Closed on server |
 | datawatch#32 | PWA i18n (DE/ES/FR/JA) | No mobile action; mobile ships 5 locales | 📋 Monitor |
 
 ---

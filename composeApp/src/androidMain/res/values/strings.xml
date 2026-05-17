@@ -979,6 +979,9 @@
     <string name="algorithm_current_phase">Current phase</string>
     <string name="algorithm_phase_output">Phase output</string>
     <string name="algorithm_no_active">No active algorithm-mode sessions</string>
+    <string name="algorithm_reset">Reset</string>
+    <string name="algorithm_start_hint">Session ID</string>
+    <string name="algorithm_start_action">Start</string>
     <string name="evals_title">Evals</string>
     <string name="evals_run">Run</string>
     <string name="evals_score">Score</string>
