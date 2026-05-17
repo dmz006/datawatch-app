@@ -7,15 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,8 +24,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NotificationsActive
 import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -58,6 +50,7 @@ import com.dmzs.datawatchclient.ui.sessions.SessionDetailScreen
 import com.dmzs.datawatchclient.ui.sessions.SessionsScreen
 import com.dmzs.datawatchclient.ui.settings.SettingsScreen
 import com.dmzs.datawatchclient.ui.monitoring.FederatedPeersViewModel
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
 import com.dmzs.datawatchclient.ui.shell.SettingsNavChannel
@@ -311,8 +304,8 @@ private fun HomeShell(
     val tabNav = rememberNavController()
     val alertsVm: AlertsViewModel = viewModel()
     val alertsState by alertsVm.state.collectAsState()
-    // alpha.29 #271 — alert dock state (session-scoped: reset on recompose root)
-    var dockDismissed by remember { mutableStateOf(false) }
+    // alpha.29 #271 — alert dock state driven by AlertDockChannel singleton
+    val dockOpen by AlertDockChannel.open.collectAsState()
     var dockMuted by remember { mutableStateOf(false) }
     // S6-2 (#74): observe federated peer stale state for Settings nav badge.
     val federatedPeersVm: FederatedPeersViewModel = viewModel()
@@ -334,6 +327,7 @@ private fun HomeShell(
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)
     var prdsSupported by remember { mutableStateOf(false) }
+    var dashboardEnabled by remember { mutableStateOf(false) }
 
     // v0.42.9 — probe `autonomous.enabled` from /api/config on
     // active-server change AND on every successful config save
@@ -376,6 +370,8 @@ private fun HomeShell(
                         ?.content?.lowercase() == "true"
                 android.util.Log.d("DWProbe", "fetchConfig ok auto=$auto enabled=$enabled")
                 prdsSupported = enabled
+                dashboardEnabled = enabled
+                android.util.Log.d("DWProbe", "dashboard enabled=$dashboardEnabled (same as autonomous)")
             }
             .onFailure { e ->
                 android.util.Log.e("DWProbe", "fetchConfig FAILED: ${e::class.simpleName}: ${e.message}")
@@ -384,6 +380,7 @@ private fun HomeShell(
 
     LaunchedEffect(activeId) {
         prdsSupported = false
+        dashboardEnabled = false
         probeAutonomous()
     }
     LaunchedEffect(activeId) {
@@ -406,64 +403,15 @@ private fun HomeShell(
         SettingsNavChannel.consume()
     }
 
-    val needsInputCount = alertsState.active.sumOf { g ->
-        g.alerts.count { it.type.contains("input", ignoreCase = true) }
-    }
-    val errorCount = alertsState.active.sumOf { g ->
-        g.alerts.count { it.severity == com.dmzs.datawatchclient.domain.AlertSeverity.Error }
-    }
-    val alertPillCount = alertsState.watchedAlertCount
-    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
-
-    @OptIn(ExperimentalMaterial3Api::class)
     val mainPane: @Composable (Modifier) -> Unit = { mod ->
         Scaffold(
             modifier = mod,
-            topBar = {
-                if (alertPillCount > 0) {
-                    TopAppBar(
-                        title = {},
-                        actions = {
-                            BadgedBox(
-                                badge = {
-                                    Badge(
-                                        containerColor = when {
-                                            needsInputCount > 0 -> dw.warning
-                                            errorCount > 0 -> MaterialTheme.colorScheme.error
-                                            else -> dw.success
-                                        },
-                                    ) {
-                                        Text(
-                                            alertPillCount.toString(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                        )
-                                    }
-                                },
-                            ) {
-                                IconButton(onClick = { dockDismissed = false }) {
-                                    Icon(
-                                        Icons.Filled.NotificationsActive,
-                                        contentDescription = stringResource(
-                                            R.string.header_alerts_pill_cd,
-                                            alertPillCount,
-                                        ),
-                                        tint = when {
-                                            needsInputCount > 0 -> dw.warning
-                                            errorCount > 0 -> MaterialTheme.colorScheme.error
-                                            else -> dw.success
-                                        },
-                                    )
-                                }
-                            }
-                        },
-                    )
-                }
-            },
             bottomBar = {
                 BottomNavBar(
                     tabNav,
                     alertsBadge = alertsState.watchedAlertCount,
                     prdsSupported = prdsSupported,
+                    dashboardEnabled = dashboardEnabled,
                     anyPeerStale = federatedPeersState.anyPeerStale,
                     alertsMuted = dockMuted,
                 )
@@ -507,18 +455,15 @@ private fun HomeShell(
                         )
                     }
                 }
-                // alpha.29 #271 — alert dock: appears when 2+ active alerts exist
+                // alert dock: only opens when user clicks the bell pill (AlertDockChannel)
                 val dockAlerts = alertsState.active.flatMap { it.alerts }
-                if (dockAlerts.size >= 2 && !dockDismissed && !dockMuted) {
+                if (dockOpen && !dockMuted) {
                     AlertDockOverlay(
                         alerts = dockAlerts,
-                        onDismiss = { dockDismissed = true },
+                        onDismiss = { AlertDockChannel.close() },
                         onMute = { dockMuted = true },
-                        modifier = Modifier.align(Alignment.BottomEnd),
+                        modifier = Modifier.align(Alignment.TopEnd),
                     )
-                } else if (dockAlerts.size < 2) {
-                    // Reset dismiss when alert count drops below threshold
-                    if (dockDismissed) dockDismissed = false
                 }
             }
         }
