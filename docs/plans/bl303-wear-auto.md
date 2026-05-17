@@ -1,0 +1,529 @@
+# BL303 — Wear OS & Android Auto Mission Control
+*Sprint plan v1.0 — 2026-05-16*
+*Codename: MOBILE COMMAND*
+
+---
+
+## Vision
+
+Make every datawatch operation reachable without a phone in hand.  
+Android Auto transforms the car dashboard into a live mission-control feed — blocked sessions bubble up, voice handles everything, guardrail verdicts read aloud before you merge.  
+Wear OS turns the wrist into a always-on health indicator with one-tap triage power — a glance tells you everything, a tap fixes it.
+
+**North star**: an operator can approve a critical guardrail gate, kill a runaway session, or get a full sprint status report — hands-free, glance-only, from anywhere — without ever unlocking the phone.
+
+---
+
+## Constraints (always enforced)
+
+- Tests run against secondary test instance ONLY (`localhost:18080`, token `dw-test-token-12345`)
+- Production ring (`johnnyjohnny`, ports 8080/8443) touched only for: session sends, smoke-run tracking, memory hooks
+- Never commit `.datawatch-test*/`, kubeconfig, or tokens to git
+- `root_path` = `/home/dmz/workspace` — never `/home/dmz` directly
+- PID saved to `/tmp/test-daemon-$HASH.pid` — never grep `ps` to kill
+- Each sprint ends with a rule audit before marking complete
+- Multi-server name addressing: servers are addressed by their human-readable registered name in all voice commands and UI labels (e.g., "Hey datawatch, status of Trent" → resolves to the profile with `displayName == "Trent"`)
+
+---
+
+## Frozen Backlog
+
+| Item | Reason |
+|------|--------|
+| Wear standalone (direct WiFi/LTE to server without phone) | No tailscale on watch; deferred indefinitely |
+
+---
+
+## Dashboard Integration
+
+Each sprint task maps to a PRD task in the datawatch autonomous system.  
+PRD ID: `BL303` (created before Sprint A1 begins).  
+Progress tracked live in the mobile dashboard via `/api/autonomous/prds`.  
+Sprint label format: `BL303-A1`, `BL303-W1`, etc.
+
+---
+
+## Sprint Map
+
+| Sprint | Surface | Theme | Est. |
+|--------|---------|-------|------|
+| A1 | Auto | Session List Screen | 1 day |
+| A2 | Auto | Session Detail Screen | 1 day |
+| A3 | Auto | Automata Overview Screen | 1 day |
+| A4 | Auto | Voice Expansion (6+ commands) | 1 day |
+| A5 | Auto | Ambient Mode + Alert Dismiss + Guardrail TTS | 1 day |
+| A6 | Auto | Dashboard Mission Control Primary View | 1 day |
+| A7 | Auto | Rule Audit + Drive Compliance + Polish | 0.5 day |
+| W1 | Wear | Telemetry DataItem Publishing | 0.5 day |
+| W2 | Wear | Primary Glance Screen | 1 day |
+| W3 | Wear | Guardrail Block Notification + Haptic | 1 day |
+| W4 | Wear | Crown Scroll Automata + Quick Action | 1 day |
+| W5 | Wear | Voice TTS Status Query | 0.5 day |
+| W6 | Wear | Daily Briefing Tile + Complication | 1 day |
+| W7 | Wear | Rule Audit + Polish | 0.5 day |
+
+---
+
+## Android Auto Sprints
+
+### Sprint A1 — Session List Screen (ListTemplate)
+
+**Goal**: Replace `AutoSummaryScreen`'s static count display with a live, scrollable session list sorted by urgency (BLOCKED first, RUNNING next, then recency).
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A1.1 | Create `AutoSessionListScreen.kt` with `ListTemplate` | Renders all active sessions; shows server name header |
+| A1.2 | Wire up `AutoSessionListViewModel` with telemetry polling | Polls `/api/sessions` + `/api/sessions/{id}/telemetry` every 10s |
+| A1.3 | Blocked-first sort with progress % in subtitle | BLOCKED sessions appear at top; subtitle = "12% — guardrail blocked" |
+| A1.4 | Health dot as row icon (green/amber/red `CarIcon`) | Icon color maps to session health state |
+| A1.5 | Tap row → navigate to `AutoSessionDetailScreen` | Back navigation returns to list |
+| A1.6 | Multi-server header: show active server name in `Header` | Pulls `displayName` from active profile |
+| A1.7 | Write JVM unit tests for sort order and progress formatting | Tests pass on secondary instance |
+
+#### Rule Audit (A1)
+- [ ] No hardcoded server URLs or tokens in new files
+- [ ] New files excluded from `.gitignore` check (no test artifacts)
+- [ ] `ListTemplate` row count ≤ 6 rows before pagination (Drive limit)
+- [ ] All strings in `strings.xml` (no inline literals visible to user)
+- [ ] Tests run against secondary test instance only
+- [ ] `rtk` prefix used in all shell commands during development
+- [ ] `git commit` includes sprint label `[BL303-A1]`
+
+---
+
+### Sprint A2 — Session Detail Screen (MessageTemplate)
+
+**Goal**: A rich session detail view reachable from the list, showing current task, sprint ancestry, guardrail verdicts, ETA, and action buttons.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A2.1 | Create `AutoSessionDetailScreen.kt` with `MessageTemplate` | Title = session name; body = current task + sprint ancestry |
+| A2.2 | Guardrail verdict section in body | Each verdict: outcome icon + guardrail name, block outcomes at top |
+| A2.3 | ETA display ("~14 min based on velocity") | Computed from `durationMs` average of completed tasks ÷ remaining count |
+| A2.4 | Action buttons: Approve Gate / Kill Session / Reply | `Action` buttons map to existing transport calls |
+| A2.5 | Approve Gate only shown when session has blocked guardrail | Conditional display based on telemetry `guardrailVerdicts` |
+| A2.6 | Navigate back to session list on kill confirmation | Confirmation dialog before destructive action |
+| A2.7 | Cost display: "Sprint cost so far: $0.43" | Pulls from session stats if available |
+| A2.8 | Write JVM unit tests for ETA computation | Tests cover zero-task, one-task, many-task cases |
+
+#### Creative Extras (implement if time allows)
+- **Predictive velocity badge**: badge showing "🚀 Fast" / "🐢 Slow" / "🔥 Blocked" based on rolling task completion rate
+- **Audio cue on entry**: brief chime (CarAudioManager) when opening a BLOCKED session detail — distinct tone from normal navigation
+- **Quick response softkeys**: physical steering wheel button (if API available) mapped to "Approve" for the most common action
+
+#### Rule Audit (A2)
+- [ ] `MessageTemplate` body text ≤ 500 chars (Drive limit)
+- [ ] Destructive actions (Kill) require confirmation step
+- [ ] No blocking calls on main thread — all transport calls in coroutines
+- [ ] All new string resources in `strings.xml`
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint A3 — Automata Overview Screen (ListTemplate)
+
+**Goal**: A dedicated screen listing all running automata — what story/task they're on, progress bar, and quick-navigate to their sessions.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A3.1 | Create `AutoAutomataScreen.kt` with `ListTemplate` | Lists automata from `/api/autonomous/prds` |
+| A3.2 | Row subtitle: "Sprint 12 > Story 3 > Task 7" | Sprint ancestry from `TelemetrySprintDto` |
+| A3.3 | Progress bar in row using `CarIcon` progress ring | Shows float progress 0.0–1.0 |
+| A3.4 | Tap automata row → filter session list to that automaton | Passes automaton ID as filter to `AutoSessionListScreen` |
+| A3.5 | Federation peer status row at bottom of list | "3 remote compute nodes online" if federation enabled |
+| A3.6 | Cost tracker row: "Today's spend: $1.24" | Pulls from `/api/cost/summary` if available |
+| A3.7 | Write unit tests for automata list rendering | Empty state, single automaton, many automata |
+
+#### Creative Extras
+- **Automaton health gradient**: row background hue shifts subtly green→red based on that automaton's error rate over last 24h
+- **"Mission complete" celebration**: when an automaton transitions to COMPLETE state, briefly show a `MessageTemplate` with a checkmark before auto-dismissing
+
+#### Rule Audit (A3)
+- [ ] ListTemplate pagination for > 6 automata
+- [ ] Federation section hidden gracefully if `/api/federation` returns 404
+- [ ] Cost section hidden gracefully if `/api/cost` returns 404
+- [ ] All new strings in `strings.xml`
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint A4 — Voice Expansion (6+ New Commands)
+
+**Goal**: Expand `VoiceCommandProcessor` from 4 commands to 12+, enabling hands-free control of every major operation including server-name addressing.
+
+#### New Commands
+
+| Command | Trigger phrases | Action |
+|---------|----------------|--------|
+| `CREATE_SESSION` | "new session", "start session", "create session" | Opens new session dialog (navigate to `AutoNewSessionScreen`) |
+| `APPROVE_GATE` | "approve", "approve gate", "approve guardrail" | Approves the highest-priority blocked guardrail across all sessions |
+| `WHAT_FAILED` | "what failed", "show errors", "what's broken" | Opens `AutoSessionDetailScreen` for the most recent BLOCKED session |
+| `LIST_AUTOMATA` | "list automata", "show automata", "automata status" | Navigates to `AutoAutomataScreen` |
+| `PAUSE_SESSION` | "pause session", "pause {name}" | Pauses the named or most-recent session |
+| `KILL_SESSION` | "kill session", "stop session", "abort {name}" | Kill with voice confirmation ("Say 'confirm' to kill {name}") |
+| `SERVER_STATUS` | "status of {name}", "{name} status" | Reads status summary for the named server profile |
+| `SWITCH_SERVER` | "switch to {name}", "use {name}" | Sets active server to the profile matching the spoken name |
+| `COST_REPORT` | "how much", "cost report", "spending" | Reads today's cost summary via TTS |
+| `MEMORY_RECALL` | "remember what", "what do you know about {topic}" | Calls `/api/memory/recall` with the topic; reads top result aloud |
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A4.1 | Expand `VoiceCommand` enum with 10 new values | All new enums recognized by `parseVoiceCommand()` |
+| A4.2 | Server-name resolution in `parseVoiceCommand()` | Loads profile list, matches spoken name fuzzy (Levenshtein ≤ 2) |
+| A4.3 | `VoiceStatusScreen.kt` handles all new commands | Routes to correct screen or reads TTS response |
+| A4.4 | Kill confirmation voice loop ("Say confirm to kill…") | 10s timeout before cancel |
+| A4.5 | `buildVerboseReport()` function for WHAT_FAILED | Returns structured spoken text with guardrail names |
+| A4.6 | MEMORY_RECALL transport call + TTS response builder | Reads top memory result, truncates to 15s |
+| A4.7 | Write unit tests for all new command parsers | All phrases map to correct enum |
+| A4.8 | Write unit tests for server-name resolution | Exact match, fuzzy match, no match → UNKNOWN |
+
+#### Creative Extras
+- **Personality voice mode**: server's `displayName` used in responses ("Trent has 3 sessions running, 1 blocked…")
+- **Ambient news ticker mode**: when REFRESH received with no active sessions, reads recent memory learnings aloud like a news headline
+- **Wake-word context awareness**: if last voice command was WHAT_FAILED and user says "approve", auto-resolve to APPROVE_GATE on the same session (stateful command context, 30s window)
+
+#### Rule Audit (A4)
+- [ ] Fuzzy matcher has a hard cap (distance ≤ 2) to prevent false positives
+- [ ] Kill confirmation timeout implemented (no orphaned confirmation state)
+- [ ] All new transport calls wrapped in `runCatching`
+- [ ] TTS text ≤ 15 seconds at normal speaking rate (~200 words)
+- [ ] Unit tests for all 10 new command parsers pass
+
+---
+
+### Sprint A5 — Ambient Mode + Alert Dismiss + Guardrail TTS
+
+**Goal**: Auto stays useful even when the screen is in ambient/always-on mode. Guardrail blocks get spoken verdicts. Alert dismiss works from Auto.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A5.1 | Implement ambient mode for `AutoSessionListScreen` | Low-power monochrome render of session list updates every 60s |
+| A5.2 | Ambient mode for `AutoSessionDetailScreen` | Shows task name + health status only; no action buttons |
+| A5.3 | Alert dismissal action in `AutoSummaryScreen` | "Dismiss alert" voice command + button calls `/api/alerts/{id}` |
+| A5.4 | `buildGuardrailVerdict()` TTS builder | Given a `GuardrailVerdictDto`, returns spoken explanation of what failed and why |
+| A5.5 | Auto-read guardrail block on session entry | When navigating to a BLOCKED session detail, auto-read the block verdict |
+| A5.6 | "Health pulse" ambient animation | Slow color breathe on health dot in ambient (green pulse = healthy, red flash = blocked) |
+| A5.7 | Write unit tests for `buildGuardrailVerdict()` | Covers pass, warn, block; sast-scan, secrets-scan, deps-scan, llm-grader |
+
+#### Creative Extras
+- **Dynamic ambient background**: ambient screen background shifts from dark-grey to deep-red hue as blocked session count increases — visible peripheral awareness while driving
+- **Haptic-on-block** (if CarHaptics API available): steering wheel subtle vibration pattern when a new block is detected (distinct from navigation haptics)
+- **"All clear" voice confirmation**: when a previously-blocked session clears (guardrail passes), Auto plays a brief ascending chime + "All clear on {name}"
+
+#### Rule Audit (A5)
+- [ ] Ambient mode does not call any network APIs (uses cached state only)
+- [ ] Alert dismiss is idempotent (double-tap safe)
+- [ ] TTS guardrail explanation ≤ 15 seconds
+- [ ] Ambient renders in grayscale as per Drive ambient guidelines
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint A6 — Dashboard Mission Control Primary View
+
+**Goal**: Replace the current `AutoSummaryScreen` entry screen with a true mission control view — a horizontal status strip, server switcher, and real-time feed — all navigable by voice.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A6.1 | Redesign `AutoSummaryScreen` as `AutoMissionControlScreen` | `ListTemplate` with server header + status strip rows |
+| A6.2 | Status strip row 1: Running / Waiting / Blocked counts | Colored icon + count for each state |
+| A6.3 | Status strip row 2: CPU% / Mem% / Active automata | Server health at a glance |
+| A6.4 | Status strip row 3: Last completed task name + time | "✓ Refactored auth layer — 3 min ago" |
+| A6.5 | Multi-server quick-switch row at bottom | Tapping switches active server; speaks server name |
+| A6.6 | Cross-surface continuity: "Continue on phone" deep-link | Tapping session row with phone connected sends deep-link intent |
+| A6.7 | Navigation graph update: new screens in `CarAppService` | All new screens registered, back-stack correct |
+| A6.8 | Write integration tests for navigation graph | All screens reachable, back-stack verified |
+
+#### Creative Extras
+- **Federation map row**: shows peer node count + combined active session count across the federation
+- **"Battle station mode"**: voice command "battle stations" makes all rows flash red and lists all BLOCKED sessions — dramatic but useful for an operator who just got paged
+- **Gantt ghost row**: a narrow row in the status strip shows a 60-minute timeline bar with colored segments for completed/running/waiting tasks — no labels, pure visual density
+
+#### Rule Audit (A6)
+- [ ] All new screens registered in `CarAppService` back-stack
+- [ ] Multi-server switch is confirmed by voice before switching
+- [ ] Deep-link intent uses package-internal scheme, not external URL
+- [ ] Navigation tested with 0, 1, 5+ sessions
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint A7 — Rule Audit + Drive Compliance + Polish
+
+**Goal**: Full Android Auto Drive compliance checklist, UI polish, and final BL303 Auto sign-off.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| A7.1 | Drive compliance audit: row counts, text lengths, button counts | All templates within Drive limits |
+| A7.2 | Drive compliance audit: no images > allowed size | All `CarIcon` resources within spec |
+| A7.3 | Accessibility: content descriptions on all `CarIcon`s | TalkBack reads all icons correctly |
+| A7.4 | Error state: all screens handle transport failures gracefully | Network error shown in template body, not crash |
+| A7.5 | Loading state: all screens show spinner while fetching | `LoadingTemplate` used during initial fetch |
+| A7.6 | String audit: all user-visible strings in `strings.xml` | `grep` for inline string literals finds zero in Auto module |
+| A7.7 | Final full test run against secondary instance | All Auto JVM tests pass, 0 fail |
+| A7.8 | BL303-Auto sign-off commit | `[BL303-A7-DONE]` tag in commit message |
+
+#### Rule Audit (A7 — Final Auto)
+- [ ] Drive compliance: `ListTemplate` max 6 rows per page, pagination present for overflow
+- [ ] Drive compliance: `MessageTemplate` body ≤ 500 chars
+- [ ] Drive compliance: max 2 action buttons per template
+- [ ] Drive compliance: no video, no maps (not a navigation app)
+- [ ] No hardcoded production server URLs or tokens
+- [ ] All JVM unit tests pass
+- [ ] `strings.xml` has no duplicate keys
+- [ ] Git log shows `[BL303-Ax]` tag on each sprint commit
+
+---
+
+## Wear OS Sprints
+
+### Sprint W1 — Telemetry DataItem Publishing
+
+**Goal**: `WearSyncService` publishes full telemetry (current task, progress, guardrail verdicts, sprint) to the DataLayer so the watch can display rich data without holding server credentials.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W1.1 | Add `/datawatch/telemetry` path to `WearSyncService` | DataItem published every 15s with telemetry from active session |
+| W1.2 | Publish: `currentTask`, `progress`, `sprintName`, `automataName` | All fields present; empty string if unavailable |
+| W1.3 | Publish: `guardrailBlock: Boolean`, `blockSummary: String` | True if any verdict is `block`; summary = first block reason |
+| W1.4 | Publish: `sessionState`, `hookHealth` | Maps to `SessionState` enum string |
+| W1.5 | Throttle: debounce rapid state changes (500ms window) | No more than 2 DataItem updates per second |
+| W1.6 | Publish alert path `/datawatch/alerts` additions for block events | Watch receives alert push when new block detected |
+| W1.7 | Write JVM unit tests for telemetry payload serialization | All fields serialize/deserialize correctly via DataMap |
+
+#### Rule Audit (W1)
+- [ ] No server credentials published to DataLayer
+- [ ] Telemetry throttled — no flooding the DataLayer
+- [ ] DataItem keys use stable constant names (not inline strings)
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W2 — Primary Glance Screen
+
+**Goal**: The Wear main screen is a glanceable health ring + live current task — all the info an operator needs in under 2 seconds of wrist-glance.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W2.1 | Replace placeholder main screen with `WearMainScreen.kt` | Progress ring (0–100%) centered; fills based on `progress` DataItem |
+| W2.2 | Current task text below ring (2-line max, truncated) | Task name + sprint breadcrumb ("Sprint 12 > Auth refactor") |
+| W2.3 | Health dot cluster in ring center | Green/amber/red dot(s) for running/waiting/blocked session counts |
+| W2.4 | Server name header ("Trent") | Shows active server `displayName` |
+| W2.5 | Tap ring → navigate to `WearSessionListScreen` | Scrollable list of all sessions |
+| W2.6 | Breathing animation on ring when session is RUNNING | Ring alpha pulses 80%→100%→80% at 2s period using `animate*` |
+| W2.7 | Battery-aware mode: when watch battery < 20%, show counts only | No animations; minimal data (counts + health dot only) |
+| W2.8 | `WearSessionListScreen`: scrollable list of sessions | Each row: name + state chip + progress % |
+| W2.9 | Write unit tests for progress ring calculation | 0%, 50%, 100%, null cases |
+
+#### Creative Extras
+- **Orbital ring segments**: instead of a single progress ring, show multiple arc segments — one per running session — each colored by health; total arc length = weighted average progress
+- **Crown scroll on main screen**: scroll down → reveals secondary stats (memory usage, federation peers, today's session count)
+- **Persistent block indicator band**: when any session is BLOCKED, a thin red band pulses at the top of the screen — visible even from a glance without reading
+
+#### Rule Audit (W2)
+- [ ] All UI reads from DataLayer only (no direct server calls from watch)
+- [ ] Breathing animation paused in ambient mode
+- [ ] Battery-aware mode triggers at < 20% reliably
+- [ ] All Wear composables use `MaterialTheme` (Wear variant)
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W3 — Guardrail Block Notification + Haptic Vocabulary
+
+**Goal**: When a guardrail blocks a session, the watch fires a notification with distinct haptic pattern and action buttons (Approve / Dismiss).
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W3.1 | `WearSyncService` fires `WearableExtender` notification on new block | Notification arrives on watch within 5s of DataItem update |
+| W3.2 | Notification: title = guardrail name, text = block summary | Content from DataItem `blockSummary` |
+| W3.3 | Haptic vocabulary: block = triple-buzz (distinctive pattern) | Distinct from standard Wear notification vibration |
+| W3.4 | Haptic vocabulary: approve = ascending double-tap | Haptic on successful approve action |
+| W3.5 | Haptic vocabulary: kill = descending triple-tap | Haptic on successful kill action |
+| W3.6 | Notification action: [Approve] → calls approve transport | Opens `WearApproveScreen` for confirmation |
+| W3.7 | Notification action: [Dismiss] → calls alert dismiss | Mark alert read via DataLayer message to phone |
+| W3.8 | `WearApproveScreen.kt`: single-button confirm, 10s auto-timeout | If no action in 10s, notification dismissed |
+| W3.9 | Write unit tests for block detection in `WearSyncService` | New block fires notification; repeat block does not re-fire |
+
+#### Creative Extras
+- **Triage mode**: swipe left on main screen enters "Triage" — cards of blocked sessions one at a time, approve/dismiss with left/right swipe gesture, haptic confirm on each
+- **Force-press quick-approve** (if available): force-press on watch face approves the highest-priority blocked gate without opening any screen — single gesture, triple-buzz confirm
+- **"All clear" celebration haptic**: when a previously-blocked session clears, a rising triple-tap signals the operator
+
+#### Rule Audit (W3)
+- [ ] Notification does not re-fire for same block event (idempotent via ID)
+- [ ] Approve action is confirmed before transport call
+- [ ] 10s auto-dismiss implemented correctly (no orphaned state)
+- [ ] Haptic patterns tested on physical device note in test ticket
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W4 — Crown Scroll Automata + Quick Action Screen
+
+**Goal**: Crown scroll from the main screen reveals an automata carousel — one card per running automaton — with quick-action buttons.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W4.1 | Crown scroll from `WearMainScreen` → automata carousel | `ScalingLazyColumn` used; smooth crown-driven scroll |
+| W4.2 | Automata card: name + story/task position + progress arc | Mini ring arc shows progress; 2-line text |
+| W4.3 | Tap automata card → `WearAutomataDetailScreen` | Shows sprint ancestry + active task + estimated ETA |
+| W4.4 | Quick action buttons: [Pause] [Sessions] | Pause via DataLayer message; Sessions filters to this automaton |
+| W4.5 | "Memory Sweep" quick action (swipe right from any automata card) | Sends memory sweep command to phone via DataLayer message |
+| W4.6 | Weekly health heatmap card at end of carousel | 7-day grid of pass/fail colored dots; reads from `/api/audit` if available |
+| W4.7 | Write unit tests for carousel data binding | Empty, 1, 5+ automata; correct ordering |
+
+#### Creative Extras
+- **Gravitational sort**: automata cards are ordered by "pull" = `(blocked_guardrails × 3) + (running_time_hours)` — most urgent floats to top
+- **Miniature gantt bars**: below automata name, a tiny horizontal bar shows completed/running/waiting proportions (no text — pure visual density)
+
+#### Rule Audit (W4)
+- [ ] Crown scroll accessible without touch
+- [ ] All quick actions go through DataLayer (no direct server calls from watch)
+- [ ] Empty carousel handled gracefully (shows "No automata running")
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W5 — Voice TTS Status Query
+
+**Goal**: "Hey Google, ask datawatch for status" returns a spoken summary on the watch via a Wear voice channel.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W5.1 | `/datawatch/voiceQuery` DataLayer message path | Watch sends query text; phone resolves + replies |
+| W5.2 | Phone-side message handler in `WearSyncService` | Receives query, calls `buildStatusSummary()` equivalent, sends reply |
+| W5.3 | Watch-side TTS playback of reply string | `TextToSpeech` on watch reads the response |
+| W5.4 | Voice queries: "status", "what's running", "any blocks?" | All three phrases handled on watch side |
+| W5.5 | Server-name routing: "Trent status" resolves to named profile | Profile lookup by spoken name (same fuzzy match as Auto A4) |
+| W5.6 | Write unit tests for voice query dispatcher | All phrases route to correct handler |
+
+#### Rule Audit (W5)
+- [ ] Voice query path is read-only (no mutations from voice on watch)
+- [ ] TTS response ≤ 15 seconds
+- [ ] Server-name fuzzy match has distance cap ≤ 2
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W6 — Daily Briefing Tile + Complication
+
+**Goal**: A Wear tile gives the operator a 7am daily briefing — overnight session summary, any guardrail blocks that need review. A complication on the watch face shows live session count + health dot.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W6.1 | `DatawatchBriefingTile.kt` — Wear Tile implementation | Shows: server name, running count, blocked count, last-24h passed/failed |
+| W6.2 | Tile refresh: driven by DataLayer updates (not polling) | Tile refreshes within 30s of state change |
+| W6.3 | Tile tap → opens `WearMainScreen` | Standard Wear tile launch behavior |
+| W6.4 | `DatawatchComplication.kt` — `SHORT_TEXT` + `RANGED_VALUE` types | SHORT_TEXT = "3R 1B"; RANGED_VALUE = progress float |
+| W6.5 | Complication health dot: green/amber/red tint on value | Color source from `ComplicationData.setValueType` |
+| W6.6 | Scheduled briefing push at 7am via WorkManager | `PeriodicWorkRequest` with 24h interval fires at 7am |
+| W6.7 | Write unit tests for tile data binding | All counts, dates, health states rendered correctly |
+
+#### Creative Extras
+- **"Yesterday's wins" tile section**: shows the 3 most-recently completed automata tasks from the previous day with green checkmarks — positive reinforcement and situational awareness
+- **Operator score complication**: a percentage complication showing `passed_guardrails / total_guardrails` for the last 7 days — the operator's own quality metric
+
+#### Rule Audit (W6)
+- [ ] Tile data comes from DataLayer only (no server calls from watch)
+- [ ] Complication updates within Wear complication TTL policy (not too frequent)
+- [ ] WorkManager job idempotent (multiple firings produce same result)
+- [ ] Tests pass on secondary instance
+
+---
+
+### Sprint W7 — Rule Audit + Polish
+
+**Goal**: Final Wear OS compliance check, UI polish, and BL303 Wear sign-off.
+
+#### Tasks
+
+| # | Task | Acceptance Criteria |
+|---|------|-------------------|
+| W7.1 | Wear Material 3 theme audit: all composables use Wear tokens | No Android Material imports in Wear module |
+| W7.2 | Round/square screen support: all screens adapt | Both form factors render correctly |
+| W7.3 | Accessibility: all interactive elements have content descriptions | TalkBack on Wear navigates all screens |
+| W7.4 | Ambient mode: all screens have ambient variant | No animations, reduced color, simplified layout |
+| W7.5 | Error states: all screens handle DataLayer disconnect | "Reconnecting…" state shown, no crash |
+| W7.6 | String audit: all user-visible strings in `strings.xml` | `grep` finds zero inline string literals in Wear module |
+| W7.7 | Final full test run against secondary instance | All Wear JVM tests pass, 0 fail |
+| W7.8 | BL303-Wear sign-off commit | `[BL303-W7-DONE]` tag in commit message |
+
+#### Rule Audit (W7 — Final Wear)
+- [ ] No server credentials in watch-side code
+- [ ] All DataLayer paths use stable constants
+- [ ] Ambient mode implemented for all screens
+- [ ] Round + square screen support verified
+- [ ] All JVM unit tests pass
+- [ ] Git log shows `[BL303-Wx]` tag on each sprint commit
+- [ ] `strings.xml` has no duplicate keys
+
+---
+
+## Additional Creative Ideas (Backlog)
+
+These ideas were generated during design iteration and may be pulled into sprints:
+
+### Auto
+- **"Battle stations" voice command**: all rows flash red, lists all BLOCKED sessions with urgency score
+- **Gantt ghost row**: narrow 60-min timeline bar in status strip with colored segments (no labels)
+- **Federation map row**: peer node count + combined active sessions across federation
+- **Wake-word context awareness**: 30s stateful command context (WHAT_FAILED → then "approve" auto-resolves)
+- **Ambient news ticker**: when idle, reads recent memory learnings aloud like headlines
+- **Physical button mapping**: steering wheel button → quick-approve highest-priority blocked gate
+- **Dynamic ambient background**: ambient hue shifts dark-grey → deep-red as blocked session count rises
+- **"All clear" chime**: ascending tone + spoken "All clear on {name}" when block resolves
+
+### Wear
+- **Orbital ring segments**: one arc per running session, colored by health, total arc = weighted progress
+- **Gravitational sort in carousel**: urgency formula `(blocked × 3) + runtime_hours`
+- **Force-press quick-approve**: single gesture approves highest-priority gate, triple-buzz confirm
+- **Triage mode**: swipe-card UI for blocked sessions, left=dismiss, right=approve
+- **Operator score complication**: `passed_guardrails / total` for last 7 days — personal quality metric
+- **"Yesterday's wins" tile section**: 3 most-recently completed tasks in green
+- **Miniature gantt bars**: horizontal bar per automata card showing completed/running/waiting proportions
+- **Persistent block band**: thin red pulsing band at top of screen when any session is BLOCKED
+
+---
+
+## Completion Criteria (BL303 Done)
+
+- [ ] All Auto sprints A1–A7 committed with `[BL303-Ax]` tags
+- [ ] All Wear sprints W1–W7 committed with `[BL303-Wx]` tags
+- [ ] All JVM unit tests pass on secondary test instance
+- [ ] Zero hardcoded production credentials in any new file
+- [ ] Drive compliance checklist (A7) fully signed off
+- [ ] Wear compliance checklist (W7) fully signed off
+- [ ] PRD `BL303` status = COMPLETE in datawatch dashboard
+
+---
+
+*Plan created: 2026-05-16*
+*Author: Claude Code (BL303 planning pass)*
+*Next action: Create PRD BL303 in dashboard → Begin Sprint A1*
