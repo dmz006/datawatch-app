@@ -107,6 +107,7 @@ internal fun GuardrailLibraryCard() {
             PwaSectionTitle(
                 stringResource(R.string.guardrail_library_title),
                 modifier = Modifier.weight(1f),
+                docsAnchor = "guardrail-library",
             )
             IconButton(
                 onClick = { libraryExpanded = !libraryExpanded },
@@ -142,7 +143,7 @@ internal fun GuardrailLibraryCard() {
         Spacer(modifier = Modifier.height(8.dp))
 
         // ── Section 2: Guardrail Profiles (always visible) ─────────────────
-        PwaSectionTitle(stringResource(R.string.guardrail_profiles_title))
+        PwaSectionTitle(stringResource(R.string.guardrail_profiles_title), docsAnchor = "guardrail-profiles")
 
         if (profiles.isEmpty()) {
             Text(

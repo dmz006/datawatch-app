@@ -79,7 +79,7 @@ internal fun EvalsCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.evals_title))
+        PwaSectionTitle(stringResource(R.string.evals_title), docsAnchor = "evals")
 
         if (suites.isEmpty()) {
             Text(

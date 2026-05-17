@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material3.Badge
@@ -33,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,30 +41,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
 
 /**
- * Docs / help link — HelpOutline icon that opens [url] in the system browser.
+ * Docs / help link — plain "?" text button that opens [docsPath] in an in-app WebView sheet.
+ * [docsPath] is relative to the server's diagrams page, e.g. "datawatch-definitions.md#sessions-list".
+ * The full URL becomes "$baseUrl/diagrams.html#docs/$docsPath".
+ * Hidden entirely when no active server is configured.
  * Placed leftmost in the TopAppBar actions block (appears left of filter, alerts, status).
- * Uses explicit Intent(ACTION_VIEW) so it works on all Android devices regardless of UriHandler config.
  */
 @Composable
-internal fun DocsLinkAction(url: String) {
-    val ctx = LocalContext.current
-    IconButton(onClick = {
-        ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-    }) {
-        Icon(
-            Icons.Filled.HelpOutline,
-            contentDescription = stringResource(R.string.sessions_help_link),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+internal fun DocsLinkAction(docsPath: String) {
+    val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
+    val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+    val baseUrl = remember(profiles, activeId) {
+        val enabled = profiles.filter { it.enabled }
+        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()?.baseUrl
+        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())?.baseUrl
+    }
+    var showDocs by remember { mutableStateOf(false) }
+
+    if (baseUrl != null) {
+        val url = "$baseUrl/diagrams.html#docs/$docsPath"
+        IconButton(onClick = { showDocs = true }) {
+            Text(
+                "?",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (showDocs) {
+            DocsViewerSheet(url = url, onDismiss = { showDocs = false })
+        }
     }
 }
 

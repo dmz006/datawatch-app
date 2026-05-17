@@ -60,7 +60,7 @@ public fun TailscaleMeshCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.tailscale_section_status))
+            PwaSectionTitle(stringResource(R.string.tailscale_section_status), docsAnchor = "mesh-status")
             if (loadError != null) {
                 Text(
                     loadError ?: "",

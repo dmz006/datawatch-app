@@ -86,7 +86,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -131,7 +130,6 @@ public fun SessionsScreen(
     val state by vm.state.collectAsState()
     val watchedIds by vm.watchedIds.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
-    val uriHandler = LocalUriHandler.current
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val selectionMode = selectedIds.isNotEmpty()
@@ -203,7 +201,7 @@ public fun SessionsScreen(
                             )
                         }
                         // G3 — context help link (Claude Code hooks docs).
-                        DocsLinkAction("https://docs.anthropic.com/en/docs/claude-code/hooks")
+                        DocsLinkAction("datawatch-definitions.md#sessions-list")
                         // User direction 2026-04-24 + dmz006/datawatch#23
                         // — search icon lives on the top app bar, left
                         // of the reachability dot. Tapping toggles the

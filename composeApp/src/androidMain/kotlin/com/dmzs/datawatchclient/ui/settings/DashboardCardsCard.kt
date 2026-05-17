@@ -119,7 +119,7 @@ internal fun DashboardCardsCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.dash_cards_title))
+        PwaSectionTitle(stringResource(R.string.dash_cards_title), docsAnchor = "dashboard")
 
         // Error banner
         errorMsg?.let { msg ->

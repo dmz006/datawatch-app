@@ -70,7 +70,7 @@ public fun SecretsCard(vm: SecretsCardViewModel = viewModel()) {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.secrets_section_store))
+            PwaSectionTitle(stringResource(R.string.secrets_section_store), docsAnchor = "secrets-store")
 
             // Add form
             OutlinedTextField(

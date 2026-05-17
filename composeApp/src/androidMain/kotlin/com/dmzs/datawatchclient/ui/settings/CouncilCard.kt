@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -47,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
@@ -165,18 +163,7 @@ internal fun CouncilCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        val uriHandler = LocalUriHandler.current
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(stringResource(R.string.council_title), modifier = Modifier.weight(1f))
-            IconButton(onClick = {
-                uriHandler.openUri("https://docs.anthropic.com/en/docs/claude-code/settings")
-            }) {
-                Icon(
-                    Icons.Filled.HelpOutline,
-                    contentDescription = stringResource(R.string.sessions_help_link),
-                )
-            }
-        }
+        PwaSectionTitle(stringResource(R.string.council_title), docsAnchor = "council-mode")
 
         // ── PERSONAS section ──────────────────────────────────────────────
         Row(

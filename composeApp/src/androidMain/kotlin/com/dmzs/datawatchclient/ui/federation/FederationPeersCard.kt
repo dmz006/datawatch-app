@@ -49,7 +49,7 @@ public fun FederationPeersCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Federated peers")
+        PwaSectionTitle("Federated peers", docsAnchor = "federated-observer")
         banner?.let {
             Text(
                 it,

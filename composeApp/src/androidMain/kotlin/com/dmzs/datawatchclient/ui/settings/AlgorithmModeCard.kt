@@ -78,7 +78,7 @@ internal fun AlgorithmModeCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.algorithm_mode_title))
+        PwaSectionTitle(stringResource(R.string.algorithm_mode_title), docsAnchor = "algorithm-mode")
 
         // Start algorithm mode on any session by ID
         Row(

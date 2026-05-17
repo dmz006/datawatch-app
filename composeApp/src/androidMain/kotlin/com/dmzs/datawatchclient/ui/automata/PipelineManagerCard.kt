@@ -61,7 +61,7 @@ internal fun PipelineManagerCard() {
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(stringResource(R.string.pipeline_manager_title), modifier = Modifier.weight(1f))
+            PwaSectionTitle(stringResource(R.string.pipeline_manager_title), modifier = Modifier.weight(1f), docsAnchor = "pipeline-manager")
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
 

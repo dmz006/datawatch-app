@@ -44,7 +44,6 @@ import com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto
 import com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto
 import com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest
 import com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto
-import com.dmzs.datawatchclient.transport.dto.DocsHowtoDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,7 +60,6 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
     var trustedExpanded by remember { mutableStateOf(false) }
-    var howtosExpanded by remember { mutableStateOf(false) }
     var addSourceText by remember { mutableStateOf("") }
     var addSourceExpanded by remember { mutableStateOf(false) }
 
@@ -76,7 +74,7 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.docs_search_title))
+            PwaSectionTitle(stringResource(R.string.docs_search_title), docsAnchor = "docs-search")
 
             // Search input
             OutlinedTextField(
@@ -120,51 +118,6 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                     )
                 }
                 HorizontalDivider()
-            }
-
-            // How-to guides section
-            if (state.howtos.isNotEmpty()) {
-                TextButton(onClick = { howtosExpanded = !howtosExpanded }) {
-                    Text(stringResource(R.string.docs_howtos_title, state.howtos.size))
-                    Icon(
-                        if (howtosExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
-                    )
-                }
-                if (howtosExpanded) {
-                    state.howtos.forEach { howto ->
-                        Column(modifier = Modifier.padding(vertical = 2.dp).fillMaxWidth()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    howto.title,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                if (howto.hasExecSteps) {
-                                    Surface(
-                                        color = Color(0xFF00ACC1),
-                                        shape = RoundedCornerShape(4.dp),
-                                    ) {
-                                        Text(
-                                            "runnable",
-                                            fontSize = 9.sp,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp),
-                                        )
-                                    }
-                                }
-                            }
-                            if (howto.topics.isNotEmpty()) {
-                                Text(
-                                    howto.topics.take(4).joinToString(" · "),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        HorizontalDivider()
-                    }
-                }
             }
 
             // Pending trust queue
@@ -286,7 +239,6 @@ public class DocsSearchViewModel : ViewModel() {
         val results: List<DocsSearchResultDto> = emptyList(),
         val pending: List<DocsPendingSourceDto> = emptyList(),
         val trusted: List<DocsTrustedSourceDto> = emptyList(),
-        val howtos: List<DocsHowtoDto> = emptyList(),
         val selected: Set<String> = emptySet(),
         val error: String? = null,
     )
@@ -299,7 +251,6 @@ public class DocsSearchViewModel : ViewModel() {
             val transport = resolveTransport() ?: return@launch
             transport.docsPendingList().onSuccess { _state.value = _state.value.copy(pending = it, selected = emptySet()) }
             transport.docsTrustedList().onSuccess { _state.value = _state.value.copy(trusted = it) }
-            transport.docsListHowtos().onSuccess { _state.value = _state.value.copy(howtos = it) }
         }
     }
 

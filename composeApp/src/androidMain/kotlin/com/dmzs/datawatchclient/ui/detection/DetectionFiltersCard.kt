@@ -171,7 +171,7 @@ public fun DetectionFiltersCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Detection filters")
+        PwaSectionTitle("Detection filters", docsAnchor = "detection-filters")
         banner?.let {
             Text(
                 it,
