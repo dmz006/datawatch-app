@@ -304,10 +304,9 @@ public fun AlertsScreen(
 /**
  * Custom top bar for the Alerts screen (Sprint 22 alpha.30 redesign).
  *
- * Row 0: Server picker (all-servers mode support)
- * Row 1: "Alerts" title + sort toggle + dismiss-all button
- * Row 2: Horizontal chip filter row (All / Prompts / Errors / Warn / Info)
- * Row 3: Search text field (always visible, matches PWA)
+ * Row 0: Server-picker title + sort toggle + dismiss-all button
+ * Row 1: Horizontal chip filter row (All / Prompts / Errors / Warn / Info)
+ * Row 2: Search text field (always visible, matches PWA)
  */
 @Composable
 private fun AlertsTopBar(
@@ -325,29 +324,65 @@ private fun AlertsTopBar(
         tonalElevation = 3.dp,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Row 0: server picker
-            AlertsServerPickerRow(
-                active = state.activeProfile,
-                allMode = state.allServersMode,
-                open = pickerOpen,
-                onToggle = { pickerOpen = !pickerOpen },
-                onDismiss = { pickerOpen = false },
-                profiles = state.allProfiles,
-                onSelectAll = { onSelectAll(); pickerOpen = false },
-                onSelect = { onSelectProfile(it); pickerOpen = false },
-            )
-            // Row 1: title + sort toggle + dismiss-all
+            // Row 0: server-picker title + sort toggle + dismiss-all
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                    .padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    stringResource(R.string.alerts_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier
+                            .clickable(onClick = { pickerOpen = !pickerOpen })
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (state.allServersMode) stringResource(R.string.sessions_all_servers)
+                            else (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server)),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = stringResource(R.string.sessions_switch_server),
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                    DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
+                        if (state.allProfiles.size > 1) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                        if (state.allServersMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
+                                onClick = { onSelectAll(); pickerOpen = false },
+                            )
+                            HorizontalDivider()
+                        }
+                        if (state.allProfiles.isEmpty()) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = { pickerOpen = false }, enabled = false)
+                        } else {
+                            state.allProfiles.forEach { p ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            AlertsStatusDot(enabled = p.enabled)
+                                            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                                                Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
+                                                Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                            if (p.id == state.activeProfile?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                    },
+                                    onClick = { onSelectProfile(p.id); pickerOpen = false },
+                                )
+                            }
+                        }
+                    }
+                }
                 // Mute button (noop for now — future: toggle dock mute)
                 IconButton(onClick = { /* noop: mute dock */ }) {
                     Text("🔕", style = TextStyle(fontSize = 20.sp))
@@ -376,7 +411,7 @@ private fun AlertsTopBar(
                 }
             }
 
-            // Row 2: chip filter row
+            // Row 1: chip filter row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -400,7 +435,7 @@ private fun AlertsTopBar(
                 }
             }
 
-            // Row 3: search bar (always visible)
+            // Row 2: search bar (always visible)
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = onSearchChange,
@@ -699,64 +734,6 @@ private fun timeAgo(ts: kotlinx.datetime.Instant): String {
     }
 }
 
-@Composable
-private fun AlertsServerPickerRow(
-    active: ServerProfile?,
-    allMode: Boolean,
-    open: Boolean,
-    onToggle: () -> Unit,
-    onDismiss: () -> Unit,
-    profiles: List<ServerProfile>,
-    onSelectAll: () -> Unit,
-    onSelect: (String) -> Unit,
-) {
-    Box(modifier = Modifier.padding(start = 8.dp, top = 4.dp)) {
-        Row(
-            modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server), modifier = Modifier.padding(start = 2.dp).size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            if (profiles.size > 1) {
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            if (allMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    onClick = onSelectAll,
-                )
-                HorizontalDivider()
-            }
-            if (profiles.isEmpty()) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = onDismiss, enabled = false)
-            } else {
-                profiles.forEach { p ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AlertsStatusDot(enabled = p.enabled)
-                                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                                    Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                if (p.id == active?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
-                            }
-                        },
-                        onClick = { onSelect(p.id) },
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun AlertsStatusDot(enabled: Boolean) {
