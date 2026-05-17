@@ -144,10 +144,31 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 - `[surface:api]` — REST API interaction
 
 **Feature tags**:
-- `[feature:{{FEATURE_NAME}}]` — (define for this release)
+- `[feature:sessions]` — Session lifecycle
+- `[feature:alerts]` — Alert system
+- `[feature:autonomous]` — Automata/PRD lifecycle
+- `[feature:settings]` — Settings panels
+- `[feature:push]` — Push / UnifiedPush notifications
+- `[feature:security]` — Auth, keystore, biometric
+- `[feature:multiserver]` — Multi-server + federation
+- `[feature:algorithm]` — Algorithm Mode OODA loop
+- `[feature:wear-tiles]` — Wear OS tiles
+- `[feature:wear-complications]` — Wear OS complications
+- `[feature:wear-voice]` — Wear OS voice query
+- `[feature:wear-notifications]` — Wear OS guardrail notifications + haptics
+- `[feature:auto-screens]` — Android Auto screens
+- `[feature:auto-voice]` — Android Auto voice commands
+- `[feature:dashboard]` — Dashboard Cards CRUD
+- `[feature:orchestrator]` — Automata Orchestrator DAG graphs
 
 **Conflict tags**:
-- `[conflict:{{BLOCKER_NAME}}]` — (define if applicable)
+- `[conflict:physical-watch]` — Requires physical Wear OS device
+- `[conflict:physical-auto]` — Requires Android Auto DHU or head unit
+- `[conflict:wear-haptic]` — Requires physical Wear device for haptic verification
+- `[conflict:biometric]` — Requires biometric enrollment
+- `[conflict:compute-daemon]` — Requires compute node/LLM daemon
+- `[conflict:signal]` — Requires Signal comm channel
+- `[conflict:network]` — Requires physical network state change
 
 ---
 
@@ -169,6 +190,39 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 **Expected**: Expected outcome
 **Evidence**: `filename.json`
 **Status**: 📋 Planned (or ✅/⏭/⚠️/⏳)
+
+---
+
+## T22 — Wear OS Surface Tests
+
+**Goal**: Verify Wear OS tiles (5), complications (8), voice query, guardrail notifications, and DataLayer proxy work end-to-end.
+
+**Note**: Stories requiring physical Wear device should be marked `[conflict:physical-watch]`. JVM unit test stories (88 Wear tests) are always runnable.
+
+**Stories**: TS-500–TS-514 (15 stories)
+- TS-500–TS-512: Wear tiles, complications, voice, notifications (physical watch required)
+- TS-513: Wear JVM unit tests (88 tests pass)
+- TS-514: Wear APK build check
+
+---
+
+## T23 — Android Auto Surface Tests
+
+**Goal**: Verify Android Auto screens (MissionControl, SessionList, SessionDetail, Automata), voice commands (12+), ambient mode, and Drive compliance.
+
+**Note**: Stories requiring DHU should be marked `[conflict:physical-auto]`. JVM unit test stories (92 Auto tests) are always runnable.
+
+**Stories**: TS-515–TS-529 (15 stories)
+- TS-515–TS-528: All Auto screens, voice commands, ambient, Drive compliance (DHU required)
+- TS-529: Auto JVM unit tests (92 tests pass)
+
+---
+
+## T24 — Algorithm Mode Tests
+
+**Goal**: Verify the Algorithm Mode OODA-loop card (Settings → Automata) — all 6 actions (Start, Advance, Abort, Reset, Edit, Measure) and UI state (phase strip, dot colors, field clearing).
+
+**Stories**: TS-530–TS-541 (12 stories; all runnable on phone emulator)
 
 ---
 

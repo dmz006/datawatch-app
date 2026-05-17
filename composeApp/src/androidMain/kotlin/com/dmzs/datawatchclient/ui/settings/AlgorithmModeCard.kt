@@ -186,6 +186,42 @@ internal fun AlgorithmModeCard() {
                             }
                         }
                     },
+                    onEdit = { output ->
+                        scope.launch {
+                            runCatching {
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
+                                ServiceLocator.transportFor(sp).algorithmEdit(state.sessionId, output)
+                                    .onSuccess { updated ->
+                                        sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
+                                    }
+                            }
+                        }
+                    },
+                    onMeasure = { suite ->
+                        scope.launch {
+                            runCatching {
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val sp = ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) list.firstOrNull { it.enabled }
+                                        else list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    } ?: return@runCatching
+                                ServiceLocator.transportFor(sp).algorithmMeasure(state.sessionId, suite)
+                                    .onSuccess { updated ->
+                                        sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
+                                    }
+                            }
+                        }
+                    },
                 )
             }
         }
@@ -200,7 +236,12 @@ private fun AlgorithmSessionRow(
     onAdvance: () -> Unit,
     onAbort: () -> Unit,
     onReset: () -> Unit = {},
+    onEdit: (String) -> Unit = {},
+    onMeasure: (String) -> Unit = {},
 ) {
+    var editOutput by remember { mutableStateOf("") }
+    var measureSuite by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -245,6 +286,53 @@ private fun AlgorithmSessionRow(
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }
+
+                // Edit phase output (non-aborted only)
+                if (!state.aborted) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = editOutput,
+                            onValueChange = { editOutput = it },
+                            placeholder = { Text(stringResource(R.string.algorithm_edit_hint), style = MaterialTheme.typography.labelSmall) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                        )
+                        TextButton(
+                            onClick = {
+                                val out = editOutput.trim()
+                                if (out.isNotBlank()) { onEdit(out); editOutput = "" }
+                            },
+                        ) { Text(stringResource(R.string.algorithm_edit_action), style = MaterialTheme.typography.labelSmall) }
+                    }
+
+                    // Measure: run eval suite against current phase
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = measureSuite,
+                            onValueChange = { measureSuite = it },
+                            placeholder = { Text(stringResource(R.string.algorithm_measure_hint), style = MaterialTheme.typography.labelSmall) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                        )
+                        TextButton(
+                            onClick = {
+                                val suite = measureSuite.trim()
+                                if (suite.isNotBlank()) { onMeasure(suite); measureSuite = "" }
+                            },
+                        ) { Text(stringResource(R.string.algorithm_measure_action), style = MaterialTheme.typography.labelSmall) }
+                    }
+                }
+
                 // Action buttons
                 Row(
                     modifier = Modifier.padding(top = 8.dp),

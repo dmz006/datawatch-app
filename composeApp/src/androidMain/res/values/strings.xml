@@ -982,6 +982,10 @@
     <string name="algorithm_reset">Reset</string>
     <string name="algorithm_start_hint">Session ID</string>
     <string name="algorithm_start_action">Start</string>
+    <string name="algorithm_edit_hint">Edit phase output…</string>
+    <string name="algorithm_edit_action">Edit</string>
+    <string name="algorithm_measure_hint">Eval suite</string>
+    <string name="algorithm_measure_action">Measure</string>
     <string name="evals_title">Evals</string>
     <string name="evals_run">Run</string>
     <string name="evals_score">Score</string>

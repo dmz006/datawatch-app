@@ -33,9 +33,12 @@ After each test run: update Status column. Keep notes in plan.md.
 | T19 | Dashboard hooks integration | 7 | — | — | — | — | 📋 |
 | T20 | Howto validation (datawatch docs) | 9 | — | — | — | — | 📋 |
 | T21 | End-to-end user journeys | 3 | — | — | — | — | 📋 |
+| T22 | Wear OS surface tests | 15 | — | — | — | 13 | 📋 Blocked (physical watch) |
+| T23 | Android Auto surface tests | 15 | — | — | — | 14 | 📋 Blocked (DHU required) |
+| T24 | Algorithm Mode tests | 12 | — | — | — | — | 📋 |
 | T26 | Dashboard Cards CRUD (Android) | 10 | — | — | — | — | 📋 |
 | T27 | Automata Orchestrator E2E (Android) | 20 | — | — | — | — | 📋 |
-| **TOTALS** | | **399** | **201** | **1** | **53** | **65** | **🟡 IN PROGRESS** |
+| **TOTALS** | | **441** | **201** | **1** | **53** | **92** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -212,14 +215,77 @@ After each test run: update Status column. Keep notes in plan.md.
 
 ---
 
+### T22 — Wear OS Surface Tests (TS-500–TS-514)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-500 | WearMainActivity launches — health ring visible | ⏳ Blocked | Physical watch: ADB not enabled at 192.168.1.244 |
+| TS-501 | BriefingTileService renders session counts | ⏳ Blocked | Physical watch |
+| TS-502 | AlertsTileService renders unread alert count | ⏳ Blocked | Physical watch |
+| TS-503 | MonitorTileService renders CPU/memory | ⏳ Blocked | Physical watch |
+| TS-504 | SessionsTileService renders session list | ⏳ Blocked | Physical watch |
+| TS-505 | WaitingTileService renders waiting session count | ⏳ Blocked | Physical watch |
+| TS-506 | StatusComplicationService on watch face | ⏳ Blocked | Physical watch |
+| TS-507 | CpuComplicationService + MemoryComplicationService | ⏳ Blocked | Physical watch |
+| TS-508 | ServerSwitchComplicationService cycles active server | ⏳ Blocked | Physical watch |
+| TS-509 | Guardrail block notification + triple-buzz haptic | ⏳ Blocked | Physical watch required for haptic |
+| TS-510 | WearApproveScreen confirms approve action | ⏳ Blocked | Physical watch |
+| TS-511 | Voice query "status" returns spoken TTS | ⏳ Blocked | Physical watch |
+| TS-512 | Voice query "any blocks?" triggers blocked summary | ⏳ Blocked | Physical watch |
+| TS-513 | Wear JVM unit tests pass (88 tests) | 📋 | `./gradlew :wear:testDebugUnitTest` |
+| TS-514 | Wear APK compiles and installs on emulator | 📋 | `./gradlew :wear:assembleDebug` |
+
+### T23 — Android Auto Surface Tests (TS-515–TS-529)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-515 | AutoMissionControlScreen renders session counts | ⏳ Blocked | DHU required |
+| TS-516 | AutoSessionListScreen — blocked-first sort | ⏳ Blocked | DHU required |
+| TS-517 | AutoSessionDetailScreen — task + guardrail verdict | ⏳ Blocked | DHU required |
+| TS-518 | Action buttons: max 2 per template (Drive compliance) | ⏳ Blocked | DHU required |
+| TS-519 | Kill session requires 2-tap confirmation + 15s auto-cancel | ⏳ Blocked | DHU required |
+| TS-520 | AutoAutomataScreen lists running automata | ⏳ Blocked | DHU required |
+| TS-521 | Voice command: "status" reads server summary | ⏳ Blocked | DHU required |
+| TS-522 | Voice command: "switch to {name}" resolves by profile name | ⏳ Blocked | DHU required |
+| TS-523 | Voice command: "what failed" → most recent BLOCKED session | ⏳ Blocked | DHU required |
+| TS-524 | Ambient mode: monochrome, no action buttons, 60s refresh | ⏳ Blocked | DHU required |
+| TS-525 | Alert dismiss from Auto | ⏳ Blocked | DHU required |
+| TS-526 | Drive compliance: ListTemplate row count ≤ 6 | ⏳ Blocked | DHU required |
+| TS-527 | Multi-server quick-switch row in mission control | ⏳ Blocked | DHU required |
+| TS-528 | Back-stack: MissionControl → SessionList → SessionDetail → back x2 | ⏳ Blocked | DHU required |
+| TS-529 | Auto JVM unit tests pass (92 tests) | 📋 | `./gradlew :composeApp:testDevDebugUnitTest --tests "*.auto*"` |
+
+### T24 — Algorithm Mode Tests (TS-530–TS-541)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-530 | Algorithm Mode card visible in Settings → Automata | 📋 | |
+| TS-531 | Start algorithm session by session ID | 📋 | |
+| TS-532 | Advance phase (observe → orient → … → improve) | 📋 | |
+| TS-533 | Abort session — red dot, Advance/Abort hidden | 📋 | |
+| TS-534 | Reset restores to observe phase | 📋 | |
+| TS-535 | Edit phase output (text field → Edit button) | 📋 | |
+| TS-536 | Measure: run eval suite by name | 📋 | |
+| TS-537 | Phase strip dot colors (done=teal, current=blue pulse, aborted=red, future=grey) | 📋 | |
+| TS-538 | Edit/Measure fields hidden when session aborted | 📋 | |
+| TS-539 | Algorithm list populated on card open (LaunchedEffect) | 📋 | |
+| TS-540 | Multiple sessions shown with HorizontalDivider | 📋 | |
+| TS-541 | Session ID field clears after successful Start | 📋 | |
+
+---
+
 ## Release Checklist
 
 - [ ] T1–T14: All non-skip ✅ Pass
-- [ ] T13: Retry once datawatch#48 fixed
-- [ ] T15–T16: Blocked on server; verify stubs present
+- [ ] T13: Re-run — #48 closed; Cancel+Clone fixes landed
+- [ ] T15: Re-run — all server endpoints (#40-43) closed; client implemented
+- [ ] T16: Re-run — #39 closed; UnifiedPush client wired
 - [ ] T17: Parity audit pass
 - [ ] T18: Test debt all written + passing
 - [ ] T19: Dashboard hooks integration pass
+- [ ] T22: JVM tests (TS-513/514) pass; physical-watch stories ⏳ Blocked acceptable
+- [ ] T23: JVM tests (TS-529) pass; DHU stories ⏳ Blocked acceptable
+- [ ] T24: All 12 Algorithm Mode stories ✅ Pass
 - [ ] T26: Dashboard Cards CRUD (Android) pass
 - [ ] T27: Automata Orchestrator E2E (Android) pass
 - [ ] Version bump: v1.0.0 in gradle.properties + Version.kt
