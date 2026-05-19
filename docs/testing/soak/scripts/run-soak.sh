@@ -1,31 +1,85 @@
 #!/usr/bin/env bash
 # run-soak.sh — datawatch-app soak test runner
 #
+# Creates an isolated working directory OUTSIDE the repo for each run so
+# test artifacts (daemon data, evidence, logs) never touch the source tree.
+# The directory is deleted on success; kept on failure for inspection.
+#
 # Usage:
 #   bash docs/testing/soak/scripts/run-soak.sh --story=SS-001 [--duration=2h]
 #   bash docs/testing/soak/scripts/run-soak.sh --all [--duration=auto]
 #
-# Environment:
-#   TEST_RUN_HASH  — override hash for test instance config dir (default: auto-generated)
-#   SKIP_SERVER    — set to 1 to skip starting test daemon (assume already running)
+# Resuming a failed run (reuses its working dir):
+#   SOAK_RUN_ID=abc123 bash docs/testing/soak/scripts/run-soak.sh --story=SS-001
 #
-# IMPORTANT: Tests run against secondary instance only (ports 18080/18443).
-# Result summaries are posted to production hook at https://localhost:8443/api/test/message.
-# Never run tests against production (8080/8443).
+# Keep working dir even on success (for debugging):
+#   KEEP_TEST_DIR=1 bash docs/testing/soak/scripts/run-soak.sh --story=SS-001
+#
+# Override ports (normally auto-assigned from OS-free ports):
+#   TEST_SERVER_TLS_PORT=18443 TEST_SERVER_HTTP_PORT=18080 bash ...
+#
+# Environment:
+#   SOAK_RUN_ID         — reuse a specific prior run's working directory
+#   KEEP_TEST_DIR       — set to 1 to keep working dir even on success
+#   TEST_SERVER_TLS_PORT / TEST_SERVER_HTTP_PORT — force specific ports
+#   DATAWATCH_BIN       — path to datawatch binary (default: ~/.local/bin/datawatch)
+#   SKIP_SERVER         — set to 1 to skip starting test daemon (assume already running)
+#
+# IMPORTANT: Tests run against a secondary isolated instance ONLY.
+# Never run tests against production (port 8443).
 
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+REPO_PARENT="$(cd "$REPO_ROOT/.." && pwd)"
 SOAK_DIR="$REPO_ROOT/docs/testing/soak"
-EVIDENCE_DIR="$SOAK_DIR/evidence"
+
+# ---------------------------------------------------------------------------
+# Run isolation
+# ---------------------------------------------------------------------------
+# Each run gets a unique 6-char hex ID so parallel runs on the same filesystem
+# don't collide. Set SOAK_RUN_ID to reuse a prior run's working directory
+# (e.g. to inspect evidence from a failure or resume a story).
+SOAK_RUN_ID="${SOAK_RUN_ID:-$(openssl rand -hex 3)}"
+TEST_WORK_DIR="$REPO_PARENT/datawatch-soak-${SOAK_RUN_ID}"
+mkdir -p "$TEST_WORK_DIR"
+
+FAILED=0
+
+cleanup() {
+  stop_test_daemon
+  if [[ $FAILED -ne 0 || -n "${KEEP_TEST_DIR:-}" ]]; then
+    echo ""
+    echo "Working dir kept: $TEST_WORK_DIR"
+    echo "  Resume: SOAK_RUN_ID=$SOAK_RUN_ID bash docs/testing/soak/scripts/run-soak.sh --story=<SS-NNN>"
+  else
+    rm -rf "$TEST_WORK_DIR"
+  fi
+}
+trap 'FAILED=$?; cleanup' EXIT
+
+# ---------------------------------------------------------------------------
+# Port allocation
+# ---------------------------------------------------------------------------
+# Ask the OS for a free port on 127.0.0.1. Each call returns a different port
+# so parallel runs never collide.
+free_port() {
+  python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); p=s.getsockname()[1]; s.close(); print(p)'
+}
+_port_free() {
+  ! ss -tlnH "sport = :$1" 2>/dev/null | grep -q . 2>/dev/null
+}
+# Prefer the given port if free; otherwise pick a fresh one.
+_fresh_port() {
+  local p="${1:-}"
+  if [[ -n "$p" ]] && _port_free "$p"; then echo "$p"; else free_port; fi
+}
+
+TEST_SERVER_TLS_PORT="$(_fresh_port "${TEST_SERVER_TLS_PORT:-18443}")"
+TEST_SERVER_HTTP_PORT="$(_fresh_port "${TEST_SERVER_HTTP_PORT:-18080}")"
 TEST_SERVER_HOST="127.0.0.1"
-TEST_SERVER_TLS_PORT="18443"
-TEST_SERVER_HTTP_PORT="18080"
-TEST_TOKEN="dw-test-token-12345"
+TEST_TOKEN="${TEST_TOKEN:-dw-test-token-12345}"
 TEST_BASE_URL="https://${TEST_SERVER_HOST}:${TEST_SERVER_TLS_PORT}"
 PROD_HOOK_URL="https://localhost:8443/api/test/message"
 APP_PACKAGE="com.dmzs.datawatchclient.dev.debug"
@@ -36,13 +90,19 @@ HEAP_WARN_MB=20
 HEAP_FAIL_MB=50
 
 # ---------------------------------------------------------------------------
-# Timestamp and log setup
+# Timestamp, log, and evidence setup
 # ---------------------------------------------------------------------------
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-LOG_FILE="/tmp/soak-run-${TIMESTAMP}.log"
+LOG_FILE="$TEST_WORK_DIR/soak-run-${TIMESTAMP}.log"
+EVIDENCE_DIR="$TEST_WORK_DIR/evidence"
 EVIDENCE_FILE="${EVIDENCE_DIR}/run-${TIMESTAMP}.json"
-
 mkdir -p "$EVIDENCE_DIR"
+
+echo "Soak run ID : $SOAK_RUN_ID"
+echo "Work dir    : $TEST_WORK_DIR"
+echo "Ports       : http=$TEST_SERVER_HTTP_PORT tls=$TEST_SERVER_TLS_PORT"
+echo "Log         : $LOG_FILE"
+echo ""
 
 log() {
     local level="$1"
@@ -88,7 +148,6 @@ ALL_STORIES=(SS-001 SS-002 SS-003 SS-004 SS-005 SS-006 SS-007 SS-008 SS-009 SS-0
              SS-011 SS-012 SS-013 SS-014 SS-015 SS-016 SS-017 SS-018 SS-019 SS-020)
 
 if [[ $RUN_ALL -eq 0 ]]; then
-    # Validate story ID
     valid=0
     for s in "${ALL_STORIES[@]}"; do
         [[ "$s" == "$STORY" ]] && valid=1 && break
@@ -99,10 +158,10 @@ fi
 # ---------------------------------------------------------------------------
 # Test daemon management
 # ---------------------------------------------------------------------------
-TEST_RUN_HASH="${TEST_RUN_HASH:-$(openssl rand -hex 4)}"
-TEST_CONFIG_DIR="${REPO_ROOT}/.datawatch-test-${TEST_RUN_HASH}"
-TEST_PID_FILE="/tmp/test-daemon-${TEST_RUN_HASH}.pid"
-TEST_SERVER_LOG="/tmp/test-server-${TEST_RUN_HASH}.log"
+# Per-run data dir lives inside the working dir, never inside the repo.
+TEST_CONFIG_DIR="${TEST_WORK_DIR}/.datawatch-test-$$"
+TEST_PID_FILE="$TEST_WORK_DIR/test-daemon.pid"
+TEST_SERVER_LOG="$TEST_WORK_DIR/test-server.log"
 
 start_test_daemon() {
     if [[ "${SKIP_SERVER:-0}" == "1" ]]; then
@@ -116,14 +175,16 @@ start_test_daemon() {
         return 0
     fi
 
-    info "Starting test daemon (hash: ${TEST_RUN_HASH})"
+    info "Starting test daemon (run: ${SOAK_RUN_ID})"
     mkdir -p "$TEST_CONFIG_DIR"
 
-    cat > "${TEST_CONFIG_DIR}/config.yaml" <<'YAML'
+    cat > "${TEST_CONFIG_DIR}/config.yaml" <<YAML
+data_dir: ${TEST_CONFIG_DIR}
+
 server:
-  port: 18080
-  tls_port: 18443
-  token: "dw-test-token-12345"
+  port: ${TEST_SERVER_HTTP_PORT}
+  tls_port: ${TEST_SERVER_TLS_PORT}
+  token: "${TEST_TOKEN}"
   tls_cert: ""
   tls_key: ""
   tls_enabled: true
@@ -142,31 +203,26 @@ memory:
 mcp:
   enabled: false
 YAML
-    sed -i "s|^|data_dir: ${TEST_CONFIG_DIR}\n|" "${TEST_CONFIG_DIR}/config.yaml" 2>/dev/null || true
-    # Prepend data_dir properly
-    {
-        echo "data_dir: ${TEST_CONFIG_DIR}"
-        cat "${TEST_CONFIG_DIR}/config.yaml"
-    } > "${TEST_CONFIG_DIR}/config.yaml.tmp"
-    mv "${TEST_CONFIG_DIR}/config.yaml.tmp" "${TEST_CONFIG_DIR}/config.yaml"
 
     "$DATAWATCH_BIN" start --foreground \
         --config "${TEST_CONFIG_DIR}/config.yaml" \
         >> "$TEST_SERVER_LOG" 2>&1 &
-    echo $! > "$TEST_PID_FILE"
+    local pid=$!
+    echo "$pid" > "$TEST_PID_FILE"
 
-    # Wait up to 15s for health
+    # Wait up to 30s for health
     local attempts=0
-    while [[ $attempts -lt 15 ]]; do
+    while [[ $attempts -lt 30 ]]; do
         if curl -sk "${TEST_BASE_URL}/api/health" 2>/dev/null | grep -q '"status":"ok"'; then
-            info "Test daemon healthy (PID $(cat "$TEST_PID_FILE"))"
+            info "Test daemon healthy (PID $pid)"
             return 0
         fi
         sleep 1
         ((attempts++))
     done
 
-    error "Test daemon failed to start within 15s. Check ${TEST_SERVER_LOG}"
+    error "Test daemon failed to start within 30s. Check ${TEST_SERVER_LOG}"
+    tail -20 "$TEST_SERVER_LOG" >&2 || true
     return 1
 }
 
@@ -176,7 +232,8 @@ stop_test_daemon() {
         pid="$(cat "$TEST_PID_FILE")"
         if kill -0 "$pid" 2>/dev/null; then
             info "Stopping test daemon (PID $pid)"
-            kill "$pid"
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
         fi
         rm -f "$TEST_PID_FILE"
     fi
@@ -188,12 +245,12 @@ restart_test_daemon() {
     "$DATAWATCH_BIN" start --foreground \
         --config "${TEST_CONFIG_DIR}/config.yaml" \
         >> "$TEST_SERVER_LOG" 2>&1 &
-    echo $! > "$TEST_PID_FILE"
-    # Wait for health
+    local pid=$!
+    echo "$pid" > "$TEST_PID_FILE"
     local attempts=0
     while [[ $attempts -lt 20 ]]; do
         if curl -sk "${TEST_BASE_URL}/api/health" 2>/dev/null | grep -q '"status":"ok"'; then
-            info "Daemon restarted (PID $(cat "$TEST_PID_FILE"))"
+            info "Daemon restarted (PID $pid)"
             return 0
         fi
         sleep 1
@@ -216,13 +273,14 @@ check_device() {
 }
 
 setup_adb_forwarding() {
-    adb reverse tcp:18443 tcp:18443 >/dev/null 2>&1 || warn "ADB reverse tcp:18443 failed (may already be set)"
-    adb reverse tcp:18080 tcp:18080 >/dev/null 2>&1 || warn "ADB reverse tcp:18080 failed (may already be set)"
-    info "ADB reverse forwarding: tcp:18443 and tcp:18080"
+    adb reverse tcp:$TEST_SERVER_TLS_PORT tcp:$TEST_SERVER_TLS_PORT >/dev/null 2>&1 \
+        || warn "ADB reverse tcp:${TEST_SERVER_TLS_PORT} failed (may already be set)"
+    adb reverse tcp:$TEST_SERVER_HTTP_PORT tcp:$TEST_SERVER_HTTP_PORT >/dev/null 2>&1 \
+        || warn "ADB reverse tcp:${TEST_SERVER_HTTP_PORT} failed (may already be set)"
+    info "ADB reverse forwarding: tcp:${TEST_SERVER_TLS_PORT} and tcp:${TEST_SERVER_HTTP_PORT}"
 }
 
 get_heap_pss_mb() {
-    # Returns total PSS in MB for the app process
     adb shell dumpsys meminfo "$APP_PACKAGE" 2>/dev/null \
         | grep "TOTAL PSS:" \
         | awk '{print $3}' \
@@ -327,7 +385,6 @@ run_ss001() {
             info "T+$(( (now - start_epoch) / 60 ))min — heap: ${snap_heap} MB (delta: $(( snap_heap - heap_start )) MB), iterations: ${iterations}"
             last_snapshot=$now
         fi
-        # Quick health check
         if ! app_running; then
             error "App crashed at iteration ${iterations}!"
             write_evidence "SS-001" "fail" "$heap_start" "$(get_heap_pss_mb)" "$iterations" '{"reason":"app_crash"}'
@@ -431,10 +488,8 @@ run_ss004() {
 
     local i
     for (( i=1; i<=iterations; i++ )); do
-        # Tap Alerts tab — adjust coordinates for your device/resolution
         adb shell input tap 900 2200 >/dev/null 2>&1
         sleep 2
-        # Tap Sessions tab
         adb shell input tap 180 2200 >/dev/null 2>&1
         sleep 3
         if ! app_running; then
@@ -460,7 +515,6 @@ run_ss005() {
     info "=== SS-005: 4-Hour Keep-Alive Session ==="
     info "Duration: ${duration_s}s"
 
-    # Create a session
     local session_id
     session_id="$(api POST /api/sessions '{"title":"soak-keepalive"}' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)"
     if [[ -z "$session_id" ]]; then
@@ -477,7 +531,7 @@ run_ss005() {
     local disconnects=0
 
     while [[ $(date +%s) -lt $end_epoch ]]; do
-        sleep 1800  # check every 30 min
+        sleep 1800
         local elapsed=$(( ($(date +%s) - start_epoch) / 60 ))
         local heap_now
         heap_now="$(get_heap_pss_mb)"
@@ -490,7 +544,6 @@ run_ss005() {
                 "{\"reason\":\"app_crash\",\"disconnects\":${disconnects}}"
             return 1
         fi
-        # Check for disconnect events in logcat
         local disc_count
         disc_count="$(adb logcat -d 2>/dev/null | grep -c "DISCONNECTED\|connection closed" 2>/dev/null || echo 0)"
         disconnects=$disc_count
@@ -523,7 +576,6 @@ run_ss006() {
     for (( i=1; i<=iterations; i++ )); do
         api POST /api/alerts "{\"message\":\"soak-alert-${i}\",\"level\":\"info\"}" >/dev/null 2>&1
         sleep 1
-        # Dismiss by tapping dismiss button (coordinates vary; adjust for device)
         adb shell input tap 900 500 >/dev/null 2>&1
         sleep 1
         if ! app_running; then
@@ -557,7 +609,6 @@ run_ss007() {
 
     local i
     for (( i=1; i<=iterations; i++ )); do
-        # Toggle server picker (toolbar icon, approximate tap)
         adb shell input tap 540 120 >/dev/null 2>&1
         sleep 1
         adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1
@@ -594,9 +645,9 @@ run_ss008() {
             warn "Failed to create session at iteration $i — skipping"
             continue
         fi
-        sleep 5  # wait for app to poll and show session
+        sleep 5
         api DELETE "/api/sessions/${session_id}" >/dev/null 2>&1
-        sleep 5  # wait for app to remove session
+        sleep 5
         if ! app_running; then
             error "App crashed at iteration $i"
             write_evidence "SS-008" "fail" "$heap_start" "$(get_heap_pss_mb)" "$i" '{"reason":"app_crash"}'
@@ -655,7 +706,6 @@ run_ss009() {
     local status="pass"
     [[ $heap_delta -gt $HEAP_FAIL_MB ]] && { error "FAIL: heap delta ${heap_delta}MB"; status="fail"; }
 
-    # Cleanup PRD
     api DELETE "/api/automata/prds/${prd_id}" >/dev/null 2>&1
 
     write_evidence "SS-009" "$status" "$heap_start" "$heap_end" "$(( duration_s / 10 ))" \
@@ -684,7 +734,6 @@ run_ss010() {
         restart_epoch="$(date +%s)"
         restart_test_daemon || { error "Daemon failed to restart at iteration $i"; break; }
 
-        # Wait for app to reconnect (check logcat for WebSocket opened)
         local reconnect_epoch reconnected=0
         local t
         for (( t=0; t<15; t++ )); do
@@ -705,7 +754,7 @@ run_ss010() {
             error "  Iteration $i: app did NOT reconnect within 15s"
         fi
 
-        sleep 5  # settle
+        sleep 5
     done
 
     local heap_end
@@ -765,8 +814,8 @@ parse_duration_to_seconds() {
         *h) echo $(( ${dur%h} * 3600 )) ;;
         *m) echo $(( ${dur%m} * 60 )) ;;
         *s) echo "${dur%s}" ;;
-        "auto"|"") echo "" ;;  # story default
-        *)  echo "$dur" ;;     # assume seconds
+        "auto"|"") echo "" ;;
+        *)  echo "$dur" ;;
     esac
 }
 
@@ -828,8 +877,7 @@ run_story() {
             ;;
         SS-016)
             local dur="${override_duration_s:-7200}"
-            run_ss001 "$dur" || result=1  # similar sustained loop; story=SS-016
-            EVIDENCE_FILE="${EVIDENCE_DIR}/run-${TIMESTAMP}.json"
+            run_ss001 "$dur" || result=1
             sed -i "s/\"story\": \"SS-001\"/\"story\": \"SS-016\"/" "$EVIDENCE_FILE" 2>/dev/null || true
             ;;
         SS-017)
@@ -843,7 +891,7 @@ run_story() {
             ;;
         SS-020)
             local dur="${override_duration_s:-7200}"
-            run_ss001 "$dur" || result=1  # full lifecycle loop; story=SS-020
+            run_ss001 "$dur" || result=1
             sed -i "s/\"story\": \"SS-001\"/\"story\": \"SS-020\"/" "$EVIDENCE_FILE" 2>/dev/null || true
             ;;
         *)
@@ -863,12 +911,10 @@ main() {
     info "Log: ${LOG_FILE}"
     info "Evidence dir: ${EVIDENCE_DIR}"
 
-    # Prerequisite checks
     check_device
     start_test_daemon
     setup_adb_forwarding
 
-    # Verify test server health
     if ! curl -sk "${TEST_BASE_URL}/api/health" | grep -q '"status":"ok"'; then
         die "Test server not healthy at ${TEST_BASE_URL}"
     fi
@@ -894,13 +940,13 @@ main() {
             ((pass_count++))
             post_production_hook "SOAK ${story} PASS — heap_delta=$(grep heap_delta_mb "$EVIDENCE_FILE" 2>/dev/null | grep -o '[0-9]*' | head -1)MB"
         else
+            FAILED=1
             ((fail_count++))
             failed_stories+=("$story")
             post_production_hook "SOAK ${story} FAIL — see ${EVIDENCE_FILE}"
         fi
     done
 
-    # Final summary
     info "==============================="
     info "SOAK RUN COMPLETE"
     info "Pass: ${pass_count} / Fail: ${fail_count}"
