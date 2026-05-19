@@ -21,6 +21,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -79,61 +80,81 @@ public class AutonomousViewModel(
 
     private val _state = MutableStateFlow(UiState())
 
-    private val _allProfiles =
+    // Lazy to avoid touching ServiceLocator at VM construction time — tests stub the
+    // resolver but don't init ServiceLocator (no Android appContext available).
+    private val _allProfiles: StateFlow<List<ServerProfile>> by lazy {
         ServiceLocator.profileRepository.observeAll()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }
 
-    private val _activeId =
+    private val _activeId: StateFlow<String?> by lazy {
         ServiceLocator.activeServerStore.observe()
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
 
-    private val _allServersMode =
+    private val _allServersMode: StateFlow<Boolean> by lazy {
         _activeId.map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }
 
-    private val _computedActiveProfile =
+    private val _computedActiveProfile: StateFlow<ServerProfile?> by lazy {
         combine(_allProfiles, _activeId) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
             if (storedId == ActiveServerStore.SENTINEL_ALL_SERVERS) return@combine null
             storedId?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.firstOrNull()
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
 
-    public val state: StateFlow<UiState> =
-        combine(_state, _allProfiles, _allServersMode, _computedActiveProfile) { s, profiles, allMode, activeProf ->
-            s.copy(
-                allProfiles = profiles.filter { it.enabled },
-                allServersMode = allMode,
-                activeProfile = activeProf,
-            )
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+    // When ServiceLocator is not yet initialized (unit-test environment), expose
+    // _state directly so tests can read loading/prds/banner/selectedIds without
+    // triggering the database + SharedPrefs initialization.
+    public val state: StateFlow<UiState> = run {
+        if (!ServiceLocator.isInitialized) {
+            _state.asStateFlow()
+        } else {
+            combine(_state, _allProfiles, _allServersMode, _computedActiveProfile) { s, profiles, allMode, activeProf ->
+                s.copy(
+                    allProfiles = profiles.filter { it.enabled },
+                    allServersMode = allMode,
+                    activeProfile = activeProf,
+                )
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+        }
+    }
 
     /** Reachability of the active single-server profile (null = probing). */
-    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf<Boolean?>(null)
-            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val reachable: StateFlow<Boolean?> by lazy {
+        _computedActiveProfile
+            .flatMapLatest { profile ->
+                if (profile == null) flowOf<Boolean?>(null)
+                else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
 
     /** Epoch-ms of the last successful probe; updated whenever [reachable] flips to true. */
-    public val lastProbeEpochMs: StateFlow<Long?> = reachable
-        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val lastProbeEpochMs: StateFlow<Long?> by lazy {
+        reachable
+            .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
 
     init {
-        viewModelScope.launch {
-            _activeId.collect { _ ->
-                refresh()
-                loadAutomataTypes()
+        if (ServiceLocator.isInitialized) {
+            viewModelScope.launch {
+                _activeId.collect { _ ->
+                    refresh()
+                    loadAutomataTypes()
+                }
             }
         }
     }
 
     /** Fetch PRD list and backends list together. */
     public fun refresh() {
-        if (_activeId.value == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+        if (ServiceLocator.isInitialized && _activeId.value == ActiveServerStore.SENTINEL_ALL_SERVERS) {
             refreshAllServers()
             return
         }
