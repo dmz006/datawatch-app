@@ -13,8 +13,9 @@ Production Daemon (8443)
 ├─ Production session johnnyjohnny-604c
 └─ NEVER touched by app tests (except hooks + comms)
 
-Test Daemon (18443)
-├─ Isolated data at ./datawatch-app/.datawatch-test/
+Test Daemon (18443, or OS-assigned free port)
+├─ Isolated data at ../datawatch-soak-<run_id>/.datawatch-test-<pid>/
+├─ Working dir is OUTSIDE the repo at $REPO_PARENT/datawatch-soak-<run_id>/
 ├─ Foreground mode (start --foreground --config)
 ├─ hostname: johnnyjohnny-test
 └─ root_path: /home/dmz/workspace (NEVER /home/dmz)
@@ -139,9 +140,11 @@ After any `datawatch update && datawatch stop && datawatch start`:
 
 | Variable | Value | Purpose |
 |---|---|---|
-| `TEST_BASE` | `https://127.0.0.1:18443` | Test daemon HTTPS |
-| `TEST_HTTP` | `http://127.0.0.1:18080` | Test daemon HTTP |
+| `TEST_BASE` | `https://127.0.0.1:$TEST_SERVER_TLS_PORT` | Test daemon HTTPS (default 18443, OS-free fallback) |
+| `TEST_HTTP` | `http://127.0.0.1:$TEST_SERVER_HTTP_PORT` | Test daemon HTTP (default 18080, OS-free fallback) |
 | `TEST_TOKEN` | `dw-test-token-12345` | Bearer token |
-| `TEST_DATA` | `./datawatch-app/.datawatch-test` | Data directory |
-| `TEST_BINARY` | `/home/dmz/.local/bin/datawatch` | Daemon binary |
-| `EMULATOR_URL` | `https://10.0.2.2:18443` | URL as seen from emulator |
+| `TEST_DATA` | `../datawatch-soak-<id>/.datawatch-test-<pid>/` | Data directory — always OUTSIDE the repo |
+| `SOAK_RUN_ID` | auto (6-char hex) | Reuse with `SOAK_RUN_ID=abc123` to resume a failed run |
+| `KEEP_TEST_DIR` | unset | Set to `1` to keep working dir on success |
+| `DATAWATCH_BIN` | `/home/dmz/.local/bin/datawatch` | Daemon binary |
+| `EMULATOR_URL` | `https://10.0.2.2:$TEST_SERVER_TLS_PORT` | URL as seen from emulator |
