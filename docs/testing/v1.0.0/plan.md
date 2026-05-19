@@ -208,7 +208,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ## T15 — New Server Endpoints (Identity / Algorithm / Evals / Council)
 
-**Prerequisite**: datawatch server ships #40, #41, #42, #43 endpoints
+**Prerequisite**: datawatch#75 (identity), #76 (push) server-side implementation
 
 ### TS-286 — Identity endpoint GET
 **Tags**: [surface:phone] [feature:identity]
@@ -218,7 +218,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Refresh settings
 **Expected**: Identity card populates with server data
 **Evidence**: `identity_get.json`, `identity_card.png`
-**Status**: ⏳ Blocked on datawatch#40
+**Status**: ⏳ Blocked on datawatch#75 (identity endpoint not yet implemented server-side)
 
 ### TS-287–TS-305: (14 stories similar pattern for Council/Algorithm/Evals CRUD)
 
@@ -226,7 +226,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ## T16 — UnifiedPush Tier 1 Integration
 
-**Prerequisite**: datawatch server ships #39 (UnifiedPush provider + `/api/push/*` endpoints)
+**Prerequisite**: datawatch#76 (UnifiedPush provider + /api/push/* endpoints)
 
 ### TS-306 — Mobile registers for push
 **Tags**: [surface:phone] [feature:unifiedpush] [feature:push]
@@ -236,7 +236,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Check secondary instance logs: registration accepted
 **Expected**: 200 OK, device endpoint stored on server
 **Evidence**: `push_register.json`, logcat
-**Status**: ⏳ Blocked on datawatch#39
+**Status**: ⏳ Blocked on datawatch#76 (UnifiedPush endpoints not yet implemented)
 
 ### TS-307–TS-315: (9 stories for push receipt, notification display, quick-reply, fallback chain)
 
@@ -304,16 +304,33 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 ### TS-360 — autonomous-planning.md: Create PRD, decompose, review
 **Tags**: [surface:phone] [feature:autonomous]
 **Steps**:
-1. Follow autonomous-planning.md workflow: Create PRD → fill task/project → tap Decompose
-2. Verify PRD enters `planning` state; stories appear in Stories tab
-3. Review each story; tap Approve
-**Expected**: Workflow completes as documented (or notes blocker if datawatch#48 prevents decompose)
-**Evidence**: `autonomous_planning_workflow.json`, screenshots of each step
-**Status**: ⏳ Blocked (datawatch#48 decompose timeout)
+1. Precondition — configure LLM: Settings → Compute → LLM Registry → Add LLM
+   - Name: `test-claude`, Kind: `claude-code`, Binary: `claude` → Save → Enable → Set as Default
+2. Settings → Automata → Autonomous Config → verify `autonomous.enabled` is on
+3. Autonomous tab → tap + → fill Title: "t360-planning-test", Description: "Write a hello-world function and test"
+4. Tap Create; verify PRD appears in list with status `draft`
+5. Open PRD → tap Decompose; observe loading state
+6. Wait up to 90s; verify status changes to `planning` then `needs_review`; stories appear in Stories sub-tab
+7. Review each generated story; tap Approve All (or approve individually)
+8. Verify PRD status advances to `approved`
+**Expected**: Full create → decompose → review workflow works in mobile; if decompose times out, this is known bug dmz006/datawatch#77 — capture logcat + screenshot as evidence and mark as FAIL pending fix
+**Evidence**: `t360_prd_workflow.json`, screenshots of each state
+**Status**: 📋 Planned
 
 ### TS-365 — autonomous-review-approve.md: Review & approve PRD
 **Tags**: [surface:phone] [feature:autonomous]
-**Status**: ⏳ Blocked (datawatch#48)
+**Prerequisites**: TS-360 passed (PRD in `needs_review` state)
+**Steps**:
+1. Autonomous tab → open the PRD from TS-360 in `needs_review` state
+2. Tap Stories sub-tab; verify all decomposed stories are listed
+3. Tap each story to expand; read the generated description
+4. Tap Approve on each story (or Reject with reason on any that look wrong)
+5. Tap Approve PRD button at the top
+6. Verify PRD status → `approved`
+7. Optionally: tap Run; verify status → `running`; tap Cancel; verify → `cancelled`
+**Expected**: Review and approve workflow navigable in mobile; status transitions reflect server state
+**Evidence**: `t365_prd_approve.json`, `t365_approved_state.png`
+**Status**: 📋 Planned
 
 ### TS-370 — profiles.md: Create/switch/use project profiles
 **Tags**: [surface:phone] [feature:sessions]
@@ -321,7 +338,19 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-375 — llm-registry.md: Register LLM, enable, set default, use in session
 **Tags**: [surface:phone] [feature:settings]
-**Status**: ⏳ Blocked (compute daemon unreachable)
+**Steps**:
+1. Settings → Compute → LLM Registry → verify card visible
+2. Tap "Add LLM" → fill in:
+   - Name: `test-ollama`, Kind: `ollama`, URL: `http://johnnyjohnny:11434`, Default model: `qwen3:1.7b`
+3. Tap Save; verify entry appears in LLM list
+4. Tap the entry; tap Enable toggle; verify enabled state
+5. Tap "Set as Default"; verify default indicator moves to this LLM
+6. Sessions tab → FAB → New Session → verify `test-ollama` appears in backend picker
+7. Select it; create session; verify session row shows `test-ollama` as backend
+8. Tap delete on the test LLM entry; verify removed from list
+**Expected**: Full LLM register → enable → set default → use in session → delete round-trip works in mobile UI; `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` confirms state at each step
+**Evidence**: `t375_llm_registry.json`, `t375_llm_session.png`
+**Status**: 📋 Planned
 
 ### TS-380 — secrets-manager.md: Create secret, use in config, rotate
 **Tags**: [surface:phone] [feature:security]
@@ -331,13 +360,35 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Tags**: [surface:phone] [feature:multiserver]
 **Status**: 📋 Planned
 
-### TS-390 — comm-channels.md: Set up channels (Signal, Webhook, Discord, ntfy)
+### TS-390 — comm-channels.md: Configure comm channels in mobile Settings
 **Tags**: [surface:phone] [feature:push]
-**Status**: ⏳ Blocked (requires external services)
+**Steps**:
+1. Settings → Comms → scroll to DNS Channel section
+   - Verify DNS Channel config fields render (domain, token)
+2. Settings → Comms → scroll to Webhook section
+   - Enter a test webhook URL: `https://webhook.site/test-t390` and save
+   - Verify channel appears in comms list with type "webhook"
+3. Settings → Comms → scroll to Discord/ntfy sections
+   - Verify config fields (token, channel ID) render; do NOT need to enter live credentials
+4. For each channel type: verify the config card renders and saves without crash
+**Expected**: All comm channel configuration cards render and accept input; webhook channel saved: `curl -sk https://127.0.0.1:18443/api/channels -H "Authorization: Bearer dw-test-token-12345"` shows webhook entry; no crash across any channel config screen. Note: actual message delivery is server-side and not tested here.
+**Evidence**: `t390_comms_config.png`, `t390_webhook_saved.json`
+**Status**: 📋 Planned
 
-### TS-395 — dashboard.md: Navigate to dashboard, configure cards
-**Tags**: [surface:phone] [feature:settings]
-**Status**: ⏳ Blocked (PWA-only; mobile accesses via API)
+### TS-395 — dashboard.md: Navigate Dashboard tab and verify live card data
+**Tags**: [surface:phone] [feature:dashboard]
+**Steps**:
+1. Bottom nav → Dashboard tab; verify it loads without crash
+2. Verify at least one dashboard card type is visible (smoke, tree, events, or any configured card)
+3. If no cards: Settings → Monitor → Dashboard Cards → add a "smoke" card (cs=12); navigate back to Dashboard; verify smoke card appears
+4. Sessions tab → FAB → create a new session (any backend); note session name
+5. Return to Dashboard tab; verify sessions count or events card reflects the new session
+6. In Sessions tab: send a message to the session; return to Dashboard; verify events card updates
+7. Submit an Automata PRD (or run a saved command) from Sessions tab; verify Dashboard shows the activity
+8. Settings → Monitor → Dashboard Cards → add "events" card and "ekg" card; navigate to Dashboard; verify new cards render
+**Expected**: Dashboard tab navigable; cards render with live data; adding a session causes dashboard to update; card configuration in Settings reflects in Dashboard view; no crash
+**Evidence**: `t395_dashboard_tab.png`, `t395_dashboard_live.png`, `t395_after_session.png`
+**Status**: 📋 Planned
 
 ### TS-400 — session-telemetry.md: Capture and view session telemetry data
 **Tags**: [surface:phone] [feature:sessions]
@@ -364,11 +415,35 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-415 — Autonomous Arc: create PRD → council review → approve → run
 **Tags**: [surface:phone] [feature:autonomous]
-**Status**: ⏳ Blocked (datawatch#48)
+**Prerequisites**: TS-360 and TS-365 passed; LLM configured via TS-375; council personas configured (TS-566/TS-620)
+**Steps**:
+1. Autonomous tab → + → Create PRD: title "t415-auto-arc", description "Refactor the greeting function to support multiple languages"
+2. Tap Decompose; wait for stories (if timeout occurs → known bug #77; capture evidence)
+3. Council sub-tab → tap "Council Review" on the PRD
+4. Verify each configured persona's response appears
+5. Approve PRD; verify status → `approved`
+6. Tap Run; verify status → `running`; observe task execution log
+7. Once complete (or after 60s): tap Cancel if still running; verify terminal state
+**Expected**: Full autonomous arc navigable through mobile; each state transition (draft→planning→needs_review→approved→running) visible in UI; council review renders persona responses; no crash
+**Evidence**: `t415_arc_workflow.json`, screenshots of each state
+**Status**: 📋 Planned
 
-### TS-420 — Power User Multi-Server Arc: setup profiles → switch servers → observer → config replication
+### TS-420 — Power User Multi-Server Arc: add second server → switch → observer → validate
 **Tags**: [surface:phone] [feature:multiserver]
-**Status**: ⏳ Blocked (requires two distinct servers)
+**Steps**:
+1. Settings → About → tap "Add Server" (or onboarding flow for second server)
+2. Add second server:
+   - URL: `https://10.0.2.2:8443` (production instance via ADB reverse for the emulator; or `https://10.0.2.2:18444` if a second test instance is running)
+   - Token: production bearer token
+   - Trust: accept cert or trust-all for test
+3. Tap Save; verify second server profile appears in server list
+4. All-servers mode: tap server picker → select "All Servers"; verify sessions from both servers shown (fan-out)
+5. Switch active server: tap server picker → select second server; verify Settings and Stats reflect second server data
+6. Observer tab: verify both servers appear in observer list; note per-server stats
+7. Remove second server: Settings → server entry → Delete; verify single-server state restored
+**Expected**: Multi-server add → switch → all-servers fan-out → observer → delete round-trip works; each server's data isolated correctly; no crash; all-servers mode shows combined session list
+**Evidence**: `t420_two_servers.png`, `t420_all_servers_fan_out.png`, `t420_observer_both.png`
+**Status**: 📋 Planned
 
 ---
 
@@ -1317,7 +1392,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-567 — CouncilCard run a one-shot council review
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
-**Prerequisites**: At least one persona added (TS-566) and an LLM backend registered: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` must return ≥1 enabled entry. If no LLM backend, run still proceeds — accept error response as pass.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Tap "Run Council" button (or equivalent)
 2. Enter a question prompt for the council
@@ -1339,7 +1414,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-569 — EvalsCard run an eval suite
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
-**Prerequisites**: At least one eval suite registered (TS-568) and an LLM backend enabled on the test instance. If no LLM backend, accept a structured error response as pass; mobile must not crash.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Tap Run on a suite row (or enter suite name and tap Run)
 2. Verify loading indicator while eval runs
@@ -1557,7 +1632,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-620 — council-mode.md: Council persona flow
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
-**Prerequisites**: LLM backend registered on test instance: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` returns ≥1 enabled entry. If none, the run returns an error — accept that as pass; mobile must render graceful error state.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Follow council-mode.md: Settings → Automata → Council section
 2. Add a persona (name: "Advocate", role: "Always defend the current plan")
@@ -1570,7 +1645,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-621 — evals.md: Run default eval suite
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
-**Prerequisites**: LLM backend registered on test instance. If none, accept structured error from eval run as pass.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Follow evals.md: Settings → Automata → Evals section
 2. Verify suites listed: `curl -sk https://127.0.0.1:18443/api/eval/suites -H "Authorization: Bearer dw-test-token-12345"`
@@ -1677,7 +1752,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-631 — chat-and-llm-quickstart.md: Start session with LLM backend
 **Tags**: [surface:phone] [feature:sessions] [conflict:compute-daemon]
-**Prerequisites**: LLM backend registered and enabled on test instance: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` returns ≥1 enabled entry.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Follow chat-and-llm-quickstart.md: Sessions → FAB → New Session
 2. Select a configured LLM backend in the new-session form
@@ -1729,7 +1804,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ### TS-636 — ollama-marketplace.md: Browse and pull Ollama model
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
-**Prerequisites**: Ollama compute node registered on the test instance: `curl -sk https://127.0.0.1:18443/api/compute/nodes -H "Authorization: Bearer dw-test-token-12345"` must return an Ollama node. If no Ollama node, verify the Marketplace section renders catalog data (or empty-state) and no crash — accept empty-state as pass.
+**Prerequisites**: Run TS-375 first to configure an LLM backend on the test instance. With LLM configured, this story should pass fully. If decompose/run still fails, capture the error as evidence and note bug #77.
 **Steps**:
 1. Settings → Compute → LLM Registry → scroll to Ollama section
 2. Verify "Marketplace" button or section visible
