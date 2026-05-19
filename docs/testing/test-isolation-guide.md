@@ -21,7 +21,7 @@ Test Daemon (18443, or OS-assigned free port)
 └─ root_path: /home/dmz/workspace (NEVER /home/dmz)
 
 Emulator (emulator-5554)
-├─ ADB reverse: tcp:18443 → localhost:18443
+├─ ADB reverse: tcp:$TEST_SERVER_TLS_PORT → localhost:$TEST_SERVER_TLS_PORT
 └─ Mobile app points to https://10.0.2.2:18443
 ```
 
@@ -41,24 +41,28 @@ kill $(pgrep -f "datawatch")
 
 ### CORRECT ✓ (always do this)
 ```bash
-# At startup — save PID immediately:
-/home/dmz/.local/bin/datawatch start --foreground --config .datawatch-test/config.yaml \
-  > /tmp/test-server.log 2>&1 &
+# Working dir is outside the repo — set SOAK_RUN_ID to reuse a prior run
+TEST_WORK_DIR="../datawatch-soak-${SOAK_RUN_ID:-$(openssl rand -hex 3)}"
+mkdir -p "$TEST_WORK_DIR"
+
+/home/dmz/.local/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 TEST_DAEMON_PID=$!
-echo "$TEST_DAEMON_PID" > /tmp/test-daemon.pid
+echo "$TEST_DAEMON_PID" > "${TEST_WORK_DIR}/test-daemon.pid"
 
 # At cleanup — validate before killing:
-TEST_DAEMON_PID=$(cat /tmp/test-daemon.pid 2>/dev/null)
+TEST_DAEMON_PID=$(cat "${TEST_WORK_DIR}/test-daemon.pid" 2>/dev/null)
 if [ -n "$TEST_DAEMON_PID" ] && kill -0 "$TEST_DAEMON_PID" 2>/dev/null; then
-  if ss -tlnp 2>/dev/null | grep -q "18080.*pid=$TEST_DAEMON_PID"; then
+  if ss -tlnp 2>/dev/null | grep -q ":${TEST_SERVER_HTTP_PORT:-18080}.*pid=$TEST_DAEMON_PID"; then
     kill "$TEST_DAEMON_PID"
     echo "Test daemon stopped."
   else
-    echo "ERROR: PID $TEST_DAEMON_PID is NOT on port 18080 — refusing to kill (would be wrong process)"
+    echo "ERROR: PID $TEST_DAEMON_PID is NOT on port ${TEST_SERVER_HTTP_PORT:-18080} — refusing to kill"
     exit 1
   fi
 fi
-rm -f /tmp/test-daemon.pid
+rm -f "${TEST_WORK_DIR}/test-daemon.pid"
 ```
 
 ---
@@ -75,8 +79,8 @@ datawatch config get                # hits production
 
 ### CORRECT ✓
 ```bash
-datawatch --config .datawatch-test/config.yaml session list
-datawatch --config .datawatch-test/config.yaml config get
+datawatch --config "${TEST_WORK_DIR}/config.yaml" session list
+datawatch --config "${TEST_WORK_DIR}/config.yaml" config get
 ```
 
 ---
@@ -119,7 +123,7 @@ Always verify both daemons before starting a test run:
 curl -sk https://localhost:8443/api/health | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='ok' and d['hostname']=='johnnyjohnny', 'PRODUCTION UNHEALTHY'"
 
 # Test instance healthy?
-curl -sk https://localhost:18443/api/health | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='ok' and d['hostname']=='johnnyjohnny-test', 'TEST INSTANCE UNHEALTHY'"
+curl -sk "https://localhost:${TEST_SERVER_TLS_PORT:-18443}/api/health" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='ok' and d['hostname']=='johnnyjohnny-test', 'TEST INSTANCE UNHEALTHY'"
 
 echo "Both daemons healthy — safe to proceed"
 ```

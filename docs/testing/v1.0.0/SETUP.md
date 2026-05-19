@@ -328,25 +328,33 @@ If build fails:
 
 ## Phase 7: Set Up Secondary Test Instance (5 minutes)
 
-### Create Data Directory
+### Create Working Directory (Outside the Repo)
 
 ```bash
-# Create test data directory in datawatch-app root
+# Working dir lives OUTSIDE the repo — never commit test data
 cd ~/workspace/datawatch-app
-mkdir -p .datawatch-test
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
+echo "Test working dir: $TEST_WORK_DIR"
 ```
 
 ### Write Test Configuration
 
 ```bash
 # Create config.yaml for secondary instance
-cat > .datawatch-test/config.yaml <<'EOF'
+cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
+data_dir: ${TEST_DATA_DIR}
+
 server:
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
   tls_cert: ""
   tls_key: ""
+  tls_enabled: true
+  tls_auto_generate: true
 
 session:
   skip_permissions: true
@@ -362,7 +370,7 @@ mcp:
 EOF
 
 # Verify file was created
-cat .datawatch-test/config.yaml
+cat "${TEST_WORK_DIR}/config.yaml"
 ```
 
 ---
@@ -432,14 +440,11 @@ emulator-5554 tcp:18080 tcp:18080
 ### Start Secondary Datawatch Instance
 
 ```bash
-cd ~/workspace/datawatch-app
-
-# Start server in background
-DATAWATCH_DATA_DIR=.datawatch-test \
-  ../datawatch/bin/datawatch serve \
-  --port 18080 \
-  --tls-port 18443 \
-  2>&1 | tee /tmp/test-server.log &
+# Start server using the config written in Phase 7
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 
 # Give server time to start
 sleep 3
@@ -518,8 +523,8 @@ ls -la | grep evidence
 # Stop emulator
 adb emu kill
 
-# Stop datawatch server
-pkill -f "datawatch serve"
+# Stop datawatch server via saved PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
 
 # Kill ADB server (optional)
 adb kill-server
@@ -528,28 +533,17 @@ adb kill-server
 ### Reset Test Instance (between test runs)
 
 ```bash
-cd ~/workspace/datawatch-app
+# Remove old working dir and create a fresh one
+rm -rf "${TEST_WORK_DIR}"
 
-# Remove test data
-rm -rf .datawatch-test/
-mkdir -p .datawatch-test
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
 
-# Recreate config
-cat > .datawatch-test/config.yaml <<'EOF'
-server:
-  port: 18080
-  tls_port: 18443
-  token: "dw-test-token-12345"
-session:
-  skip_permissions: true
-autonomous:
-  enabled: true
-memory:
-  enabled: true
-EOF
+# Re-run Phase 7 "Write Test Configuration" and Phase 8 "Start Secondary Instance"
 
-# Remove evidence from prior run (preserve for diagnosis if needed)
-rm -rf docs/testing/v1.0.0/evidence/
+# Evidence dir is inside the working dir — no separate cleanup needed
 ```
 
 ---

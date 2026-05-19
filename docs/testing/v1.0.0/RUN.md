@@ -22,7 +22,7 @@ ls -la docs/testing/v1.0.0/
 
 # Verify repositories are in place
 ls -la ~/workspace/datawatch/bin/datawatch
-ls -la ~/workspace/datawatch-app/.datawatch-test/config.yaml
+ls -la ~/workspace/datawatch-test-*/
 
 # Verify APK is built
 ls -la composeApp/build/outputs/apk/publicTrack/debug/composeApp-publicTrack-debug.apk
@@ -61,20 +61,34 @@ adb devices
 ### Terminal 2: Start Datawatch Server
 
 ```bash
-# Navigate to app root
-cd ~/workspace/datawatch-app
+# Working dir outside the repo — never commit test data
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
 
-# Start secondary instance
-DATAWATCH_DATA_DIR=.datawatch-test \
-  ~/workspace/datawatch/bin/datawatch serve \
-  --port 18080 \
-  --tls-port 18443 \
-  2>&1 | tee /tmp/test-server.log &
+cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
+data_dir: ${TEST_DATA_DIR}
+server:
+  port: 18080
+  tls_port: 18443
+  token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
+session:
+  skip_permissions: true
+autonomous:
+  enabled: true
+memory:
+  enabled: true
+EOF
 
-# Give server 5 seconds to start
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
+
 sleep 5
-
-# Verify server is healthy
 curl -sk https://127.0.0.1:18443/api/health
 # Expected: {"status":"healthy",...}
 ```
@@ -85,6 +99,7 @@ curl -sk https://127.0.0.1:18443/api/health
 # Set up ADB reverse forwarding
 adb reverse tcp:18443 tcp:18443
 adb reverse tcp:18080 tcp:18080
+# Replace 18443/18080 with $TEST_SERVER_TLS_PORT/$TEST_SERVER_HTTP_PORT if using dynamic ports
 
 # Verify forwarding
 adb reverse --list
@@ -331,7 +346,7 @@ adb logcat -d | grep -i "error\|exception\|crash" > evidence/TS-NNN/errors.log
 adb shell dumpsys > evidence/TS-NNN/dumpsys.txt
 
 # Get server logs if relevant
-tail -50 /tmp/test-server.log > evidence/TS-NNN/server-logs.txt
+tail -50 "${TEST_WORK_DIR}/daemon.log" > evidence/TS-NNN/server-logs.txt
 ```
 
 **3. Decide Action**
@@ -414,7 +429,7 @@ df -h ~/workspace/
 adb logcat -d | grep -c "FATAL\|CRASH"
 
 # No server crashes in logs
-tail -20 /tmp/test-server.log | grep -i "error\|panic"
+tail -20 "${TEST_WORK_DIR}/daemon.log" | grep -i "error\|panic"
 ```
 
 ### If Something Hangs
@@ -435,17 +450,16 @@ sleep 5
 
 ```bash
 # Check logs
-tail -50 /tmp/test-server.log
+tail -50 "${TEST_WORK_DIR}/daemon.log"
 
-# Restart server
-pkill -f "datawatch serve"
+# Stop by PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
 sleep 2
 
-DATAWATCH_DATA_DIR=.datawatch-test \
-  ~/workspace/datawatch/bin/datawatch serve \
-  --port 18080 \
-  --tls-port 18443 \
-  2>&1 | tee -a /tmp/test-server.log &
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 
 # Wait for startup
 sleep 5
@@ -572,17 +586,17 @@ mv evidence-v1.0.0-*.tar.gz ~/Downloads/ || cp evidence-v1.0.0-*.tar.gz /mnt/bac
 
 ```bash
 # If you won't run tests again on this system:
-cd ~/workspace/datawatch-app
 
-# Stop server and emulator
-pkill -f "datawatch serve"
+# Stop server by PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
 adb emu kill
 
 # Remove evidence (already committed to git, so safe)
 # rm -rf docs/testing/v1.0.0/evidence/
 
-# Remove test data directory
-# rm -rf .datawatch-test/
+# Remove test working dir (outside the repo)
+# Note: run-soak.sh auto-cleans TEST_WORK_DIR on success; only manual if needed
+rm -rf "${TEST_WORK_DIR}"
 
 # Keep these for archival:
 # - docs/testing/v1.0.0/plan.md (immutable reference)
@@ -635,6 +649,7 @@ adb reverse --list
 # If missing, re-enable
 adb reverse tcp:18443 tcp:18443
 adb reverse tcp:18080 tcp:18080
+# Replace 18443/18080 with $TEST_SERVER_TLS_PORT/$TEST_SERVER_HTTP_PORT if using dynamic ports
 
 # Verify from host
 curl -sk https://127.0.0.1:18443/api/health
@@ -644,7 +659,7 @@ curl -sk https://127.0.0.1:18443/api/health
 
 ```bash
 # Check server logs
-tail -50 /tmp/test-server.log
+tail -50 "${TEST_WORK_DIR}/daemon.log"
 
 # Check disk
 df -h ~/workspace/
@@ -654,24 +669,36 @@ df -h ~/workspace/
 # - Reduce emulator snapshot size
 # - Restart server with clean data
 
-pkill -f "datawatch serve"
-rm -rf .datawatch-test/
-mkdir -p .datawatch-test
-cat > .datawatch-test/config.yaml <<EOF
+# Stop by PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
+rm -rf "${TEST_WORK_DIR}"
+
+# Re-create working dir and config from scratch
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
+cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
+data_dir: ${TEST_DATA_DIR}
 server:
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
 session:
   skip_permissions: true
+autonomous:
+  enabled: true
+memory:
+  enabled: true
 EOF
 
 # Restart server
-DATAWATCH_DATA_DIR=.datawatch-test \
-  ~/workspace/datawatch/bin/datawatch serve \
-  --port 18080 \
-  --tls-port 18443 \
-  2>&1 | tee /tmp/test-server.log &
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 ```
 
 ### Certificate Issues (TLS Errors)
@@ -681,7 +708,7 @@ DATAWATCH_DATA_DIR=.datawatch-test \
 # Mobile app configured with Trust-all TLS: true for secondary instance
 
 # If cert errors persist:
-rm -rf .datawatch-test/tls/
+rm -rf "${TEST_WORK_DIR}/.datawatch-test-"*/tls/
 # Restart server to regenerate
 
 # Verify from emulator

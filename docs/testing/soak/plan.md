@@ -4,9 +4,9 @@
 **Date**: 2026-05-16
 **Scope**: Session refresh regression loops — phone surface only
 **Test host**: johnnyjohnny (32G GPU, Ollama `qwen3:1.7b`)
-**Test environment**: Secondary datawatch instance (ports 18080/18443) + emulator `dw_test_phone`
+**Test environment**: Secondary datawatch instance (default ports 18080/18443; OS-free fallback if busy) + emulator `dw_test_phone`
 **Story namespace**: SS-001–SS-020 (separate from TS-XXX)
-**IMPORTANT**: ALL soak tests run against the secondary test instance (`https://10.0.2.2:18443`). Production johnnyjohnny (8080/8443) is only used for posting result summaries via the hook endpoint.
+**IMPORTANT**: ALL soak tests run against the secondary test instance (`https://10.0.2.2:$TEST_SERVER_TLS_PORT` (default 18443)). Production johnnyjohnny (8080/8443) is only used for posting result summaries via the hook endpoint.
 
 ---
 
@@ -56,8 +56,8 @@ The 20 soak stories in this plan (SS-001–SS-020) correspond to the 20 T14 stor
 See `SETUP.md` in this directory for complete prerequisites. Summary:
 
 1. `dw_test_phone` emulator running, app installed
-2. Secondary datawatch instance healthy at `https://127.0.0.1:18443`
-3. ADB reverse forwarding active: `tcp:18443` and `tcp:18080`
+2. Secondary datawatch instance healthy at `https://127.0.0.1:$TEST_SERVER_TLS_PORT` (default 18443)
+3. ADB reverse forwarding active: `tcp:$TEST_SERVER_TLS_PORT` and `tcp:$TEST_SERVER_HTTP_PORT` (defaults 18443/18080)
 4. At least 6 GB free heap reported by Android Memory Profiler at baseline
 5. `adb shell dumpsys meminfo com.dmzs.datawatchclient.dev.debug` captures baseline before each story
 6. Production hook endpoint reachable: `curl -sk https://localhost:8443/api/test/message`
@@ -82,8 +82,8 @@ Unless overridden per-story:
 ## 5. Evidence Collection
 
 After each story run, the script writes:
-- `docs/testing/soak/evidence/run-TIMESTAMP.json` — structured result (heap delta, iteration count, pass/fail)
-- `/tmp/soak-run-TIMESTAMP.log` — full execution log
+- `../datawatch-soak-<id>/evidence/run-TIMESTAMP.json` — structured result (heap delta, iteration count, pass/fail) (outside repo, auto-cleaned on success)
+- `../datawatch-soak-<id>/soak-run-TIMESTAMP.log` — full execution log
 - `adb shell dumpsys meminfo` snapshot at start and end (embedded in JSON)
 
 Evidence directory is gitignored. Preserve failed runs for diagnosis.
@@ -98,7 +98,7 @@ Evidence directory is gitignored. Preserve failed runs for diagnosis.
 
 **Coroutine leak** evidence: logcat tag `CoroutineScope` lines with `Job was cancelled` that keep appearing after iterations complete (not just at teardown).
 
-**State drift** is checked by comparing `adb shell curl -sk -H "Authorization: Bearer dw-test-token-12345" https://10.0.2.2:18443/api/sessions | jq length` against the on-screen session count (read via `adb shell uiautomator dump`).
+**State drift** is checked by comparing `adb shell curl -sk -H "Authorization: Bearer dw-test-token-12345" https://10.0.2.2:$TEST_SERVER_TLS_PORT/api/sessions | jq length` against the on-screen session count (read via `adb shell uiautomator dump`).
 
 ---
 
@@ -163,7 +163,7 @@ Evidence directory is gitignored. Preserve failed runs for diagnosis.
 **Evidence**:
 - `/tmp/ss001-heap-start.txt`, `/tmp/ss001-heap-end.txt`
 - Logcat grep for `WebSocket reconnect`
-- `docs/testing/soak/evidence/run-TIMESTAMP.json` (written by script)
+- `../datawatch-soak-<id>/evidence/run-TIMESTAMP.json` (written by script, outside repo)
 
 ---
 
@@ -269,7 +269,7 @@ Evidence directory is gitignored. Preserve failed runs for diagnosis.
 **Source**: TS-265
 
 **Setup**:
-1. Create 1 long-running session on test server: `curl -sk -X POST -H "Authorization: Bearer dw-test-token-12345" https://127.0.0.1:18443/api/sessions -d '{"title":"soak-keepalive"}'`
+1. Create 1 long-running session on test server: `curl -sk -X POST -H "Authorization: Bearer dw-test-token-12345" https://127.0.0.1:$TEST_SERVER_TLS_PORT/api/sessions -d '{"title":"soak-keepalive"}'`
 2. Open session detail on phone
 3. Baseline heap; disable screen timeout (`adb shell settings put system screen_off_timeout 0`)
 
@@ -306,7 +306,7 @@ Evidence directory is gitignored. Preserve failed runs for diagnosis.
 
 **Steps**:
 1. For each iteration (1–200):
-   a. POST a new alert via API: `curl -sk -X POST -H "Authorization: Bearer dw-test-token-12345" https://127.0.0.1:18443/api/alerts -d '{"message":"soak-alert-N","level":"info"}'`
+   a. POST a new alert via API: `curl -sk -X POST -H "Authorization: Bearer dw-test-token-12345" https://127.0.0.1:$TEST_SERVER_TLS_PORT/api/alerts -d '{"message":"soak-alert-N","level":"info"}'`
    b. Wait for badge to increment (verify via adb uiautomator dump)
    c. Dismiss alert by tapping dismiss button in app
    d. Verify badge returns to 0
@@ -427,14 +427,14 @@ Evidence directory is gitignored. Preserve failed runs for diagnosis.
 **Setup**:
 1. App open on Sessions list; WS connected
 2. Baseline WS reconnect count from logcat
-3. Note PID of test server: `cat /tmp/test-daemon-$TEST_RUN_HASH.pid`
+3. Note PID of test server: `cat ../datawatch-soak-$SOAK_RUN_ID/test-daemon.pid`
 
 **Steps**:
 1. For each iteration (1–20):
-   a. Kill test server: `kill $(cat /tmp/test-daemon-$TEST_RUN_HASH.pid)`
+   a. Kill test server: `kill $(cat ../datawatch-soak-$SOAK_RUN_ID/test-daemon.pid)`
    b. Verify app shows disconnect indicator (≤ 5 s)
-   c. Restart server: `datawatch start --foreground --config .datawatch-test-$TEST_RUN_HASH/config.yaml &`
-   d. Wait for server health: `until curl -sk https://127.0.0.1:18443/api/health | grep ok; do sleep 1; done`
+   c. Restart server: handled internally by the script's `restart_test_daemon` function
+   d. Wait for server health: `until curl -sk https://127.0.0.1:$TEST_SERVER_TLS_PORT/api/health | grep ok; do sleep 1; done`
    e. Wait for app to reconnect (≤ 15 s; logcat `WebSocket opened`)
    f. Verify sessions list populated (not empty)
 

@@ -41,12 +41,20 @@ This plan covers **all mobile, Wear, and Auto surfaces** in a comprehensive test
 
 **Start**:
 ```bash
-mkdir -p .datawatch-test
-cat > .datawatch-test/config.yaml <<EOF
+# Working dir outside the repo — never commit test data
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
+
+cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
+data_dir: ${TEST_DATA_DIR}
 server:
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
 session:
   skip_permissions: true
 autonomous:
@@ -55,7 +63,10 @@ memory:
   enabled: true
 EOF
 
-rtk ./bin/datawatch serve --data-dir .datawatch-test 2>&1 | tee /tmp/test-server.log &
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 sleep 3
 curl -sk https://127.0.0.1:18443/api/health
 ```
@@ -68,8 +79,10 @@ adb reverse tcp:18080 tcp:18080
 
 **Cleanup** (after run):
 ```bash
-pkill -f "datawatch serve --data-dir .datawatch-test"
-rm -rf .datawatch-test evidence/
+# Stop via PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
+rm -rf "${TEST_WORK_DIR}"
+# Evidence is inside the working dir — deleted above
 ```
 
 ### Mobile App (emulator)
