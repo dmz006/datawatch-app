@@ -64,8 +64,13 @@ class NavigationGraphTest {
     }
 
     @Test fun `DatawatchPassengerService root is AutoSummaryScreen`() {
-        // Verify the service class no longer references the placeholder
-        val serviceClass = Class.forName("com.dmzs.datawatchclient.auto.dev.DatawatchPassengerService")
+        // DatawatchPassengerService is devPassenger-flavor only; skip in publicMessaging builds
+        val serviceClass = try {
+            Class.forName("com.dmzs.datawatchclient.auto.dev.DatawatchPassengerService")
+        } catch (_: ClassNotFoundException) {
+            org.junit.jupiter.api.Assumptions.assumeTrue(false, "devPassenger flavor not in classpath — skipping")
+            return
+        }
         val summaryClass = Class.forName("com.dmzs.datawatchclient.auto.AutoSummaryScreen")
         val placeholderClass = Class.forName("com.dmzs.datawatchclient.auto.PreMvpPlaceholderScreen")
         assertNotNull(serviceClass)

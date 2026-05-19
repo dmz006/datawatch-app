@@ -41,6 +41,8 @@ public object ServiceLocator {
         appContext = app.applicationContext
     }
 
+    public val isInitialized: Boolean get() = ::appContext.isInitialized
+
     /** Exposes the application context for use by ViewModels that need SharedPreferences etc. */
     public fun context(): Context = appContext
 
