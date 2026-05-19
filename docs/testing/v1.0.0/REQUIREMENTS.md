@@ -137,15 +137,16 @@ $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager list avd
 
 ### Configuration
 
-**Config file**: `.datawatch-test/config.yaml`
+**Config file**: `../datawatch-test-<RUN_ID>/config.yaml` (outside the repo)
 
 ```yaml
+data_dir: /home/dmz/workspace/datawatch-test-<RUN_ID>/.datawatch-test-<pid>
 server:
   port: 18080                    # HTTP port
   tls_port: 18443                # HTTPS port
   token: "dw-test-token-12345"   # Bearer token for auth
-  tls_cert: ""                   # Auto-generate self-signed cert
-  tls_key: ""                    # Auto-generate self-signed key
+  tls_enabled: true              # Enable TLS
+  tls_auto_generate: true        # Auto-generate self-signed cert
 
 session:
   skip_permissions: true         # Don't prompt for system permissions
@@ -163,15 +164,20 @@ mcp:
 ### Startup Commands
 
 ```bash
-# Create data directory
-mkdir -p ~/.datawatch-test
+# Working dir outside the repo
+RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+mkdir -p "$TEST_DATA_DIR"
 
-# Write config
-cat > ~/.datawatch-test/config.yaml <<'EOF'
+cat > "${TEST_WORK_DIR}/config.yaml" <<'EOF'
+data_dir: REPLACED_BY_STARTUP_SCRIPT
 server:
   port: 18080
   tls_port: 18443
   token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
 session:
   skip_permissions: true
 autonomous:
@@ -179,13 +185,13 @@ autonomous:
 memory:
   enabled: true
 EOF
+# Inject actual data_dir
+sed -i "s|data_dir: REPLACED_BY_STARTUP_SCRIPT|data_dir: ${TEST_DATA_DIR}|" "${TEST_WORK_DIR}/config.yaml"
 
-# Start daemon
-DATAWATCH_DATA_DIR=~/.datawatch-test \
-  ~/workspace/datawatch/bin/datawatch serve \
-  --port 18080 \
-  --tls-port 18443 \
-  2>&1 | tee /tmp/test-server.log &
+~/workspace/datawatch/bin/datawatch start --foreground \
+  --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 
 # Verify startup (poll until ready)
 sleep 3
@@ -289,7 +295,7 @@ adb reverse --list
 
 - **Self-signed**: Secondary instance auto-generates on first startup
 - **Trust-all**: Mobile app configured with `Trust-all TLS: true` for secondary instance
-- **Certificate location**: `~/.datawatch-test/tls/cert.pem` (auto-generated)
+- **Certificate location**: `${TEST_WORK_DIR}/.datawatch-test-<pid>/tls/cert.pem` (auto-generated)
 
 ---
 
@@ -371,13 +377,12 @@ emulator -avd dw_test_phone -no-snapshot-save &
 lsof -i :18080
 lsof -i :18443
 
-# Kill existing process if stuck
-pkill -f "datawatch serve"
+# Kill existing process by PID — never grep ps
+kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
 
-# Clean data dir and restart
-rm -rf ~/.datawatch-test
-mkdir -p ~/.datawatch-test
-# Recreate config and restart
+# Remove working dir and recreate from scratch
+rm -rf "${TEST_WORK_DIR}"
+# Re-run startup commands (set RUN_ID, TEST_WORK_DIR, etc.) to recreate config and restart
 ```
 
 ### ADB connection issues

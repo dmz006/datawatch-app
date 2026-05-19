@@ -18,9 +18,9 @@ adb devices | grep "emulator.*device"
 
 # ADB reverse forwarding
 adb reverse --list
-# Must show: tcp:18443 tcp:18443  AND  tcp:18080 tcp:18080
+# Must show: tcp:18443 (or dynamic port) and tcp:18080 (or dynamic port)
 
-# Test server healthy
+# Test server healthy (port is TEST_SERVER_TLS_PORT, default 18443)
 curl -sk https://127.0.0.1:18443/api/health
 # Expected: {"status":"ok", ...}
 
@@ -39,20 +39,26 @@ curl -sk -X POST https://localhost:8443/api/test/message \
 
 ## 2. Test Server Configuration
 
-The soak runner auto-creates the test instance if not running. It uses a hash-stamped directory:
+The soak runner auto-creates an ephemeral, fully isolated working directory **outside the repo** on every run. The directory is a sibling to the repo root and is identified by a 6-character hex `SOAK_RUN_ID`:
 
-```bash
-TEST_RUN_HASH=$(openssl rand -hex 4)
-mkdir -p .datawatch-test-$TEST_RUN_HASH
+```
+../datawatch-soak-<SOAK_RUN_ID>/          ← working dir (outside repo)
+    .datawatch-test-<pid>/                ← config/data dir
+        config.yaml
+    evidence/                             ← evidence JSON files
+    soak-run-TIMESTAMP.log                ← full run log
+    test-daemon.pid                       ← daemon PID file
 ```
 
-Config written at `.datawatch-test-$TEST_RUN_HASH/config.yaml`:
+To reuse a prior run directory (e.g., to resume or inspect), set `SOAK_RUN_ID` to the existing 6-char hex before running. Otherwise a new ID is generated automatically.
+
+Config written at `../datawatch-soak-<id>/.datawatch-test-<pid>/config.yaml`:
 
 ```yaml
-data_dir: /home/dmz/workspace/datawatch-app/.datawatch-test-<hash>
+data_dir: /home/dmz/workspace/datawatch-soak-<id>/.datawatch-test-<pid>
 server:
-  port: 18080
-  tls_port: 18443
+  port: 18080          # or dynamic fallback — set via TEST_SERVER_HTTP_PORT
+  tls_port: 18443      # or dynamic fallback — set via TEST_SERVER_TLS_PORT
   token: "dw-test-token-12345"
   tls_enabled: true
   tls_auto_generate: true
@@ -67,7 +73,7 @@ mcp:
   enabled: false
 ```
 
-**Never edit production config** at `/home/dmz/.local/bin/datawatch` or the ring server config.
+Ports default to 18443 (TLS) and 18080 (HTTP). If either port is busy, the script auto-selects a free OS port and updates ADB reverse forwarding accordingly. Override with env vars `TEST_SERVER_TLS_PORT` and `TEST_SERVER_HTTP_PORT`.
 
 ---
 
@@ -100,14 +106,22 @@ The script will:
 2. Start the test daemon if not already running
 3. Set up ADB reverse forwarding
 4. Run the soak loop for the selected story
-5. Write evidence to `docs/testing/soak/evidence/run-TIMESTAMP.json`
-6. Write a full log to `/tmp/soak-run-TIMESTAMP.log`
+5. Write evidence to `../datawatch-soak-<ID>/evidence/run-TIMESTAMP.json`
+6. Write a full log to `../datawatch-soak-<ID>/soak-run-TIMESTAMP.log`
 7. POST a result summary to the production hook at `https://localhost:8443/api/test/message`
+
+The working dir is deleted automatically on success. On failure it is preserved in place for diagnosis. Set `KEEP_TEST_DIR=1` to keep the working dir even on success.
 
 To override the duration of a time-based story:
 
 ```bash
 bash docs/testing/soak/scripts/run-soak.sh --story=SS-001 --duration=30m
+```
+
+To reuse a prior run directory or set a fixed run ID:
+
+```bash
+SOAK_RUN_ID=a1b2c3 bash docs/testing/soak/scripts/run-soak.sh --story=SS-001
 ```
 
 ---
@@ -148,21 +162,23 @@ This is the **only** interaction with production during soak tests. No sessions 
 
 ## 7. Evidence Directory
 
-Evidence files are saved to `docs/testing/soak/evidence/` and gitignored.
+Evidence files are saved to the run's working directory **outside the repo**, at `../datawatch-soak-<SOAK_RUN_ID>/evidence/`. The working dir is never inside the git tree, so no `.gitignore` entry is needed.
 
 ```bash
-# List evidence from a run
-ls -lh docs/testing/soak/evidence/
+# List evidence from a run (substitute the actual SOAK_RUN_ID)
+ls -lh ../datawatch-soak-<SOAK_RUN_ID>/evidence/
 
 # View a run result
-cat docs/testing/soak/evidence/run-20260516-120000.json | jq .
+cat ../datawatch-soak-<SOAK_RUN_ID>/evidence/run-20260516-120000.json | jq .
+
+# List all soak run dirs (if you have multiple)
+ls -d ../datawatch-soak-*/
 ```
 
-To preserve a failed run's evidence for diagnosis:
+On failure the working dir is kept automatically — no manual copy is needed. The full log and evidence are already at `../datawatch-soak-<SOAK_RUN_ID>/`. If you want to archive a failed run elsewhere:
 
 ```bash
-cp docs/testing/soak/evidence/run-TIMESTAMP.json /tmp/soak-fail-SS-NNN.json
-cp /tmp/soak-run-TIMESTAMP.log /tmp/soak-fail-SS-NNN.log
+cp -r ../datawatch-soak-<SOAK_RUN_ID>/ ~/soak-fail-SS-NNN/
 ```
 
 ---
@@ -183,16 +199,17 @@ cp /tmp/soak-run-TIMESTAMP.log /tmp/soak-fail-SS-NNN.log
 ## 9. Stopping a Running Soak Test
 
 ```bash
-# Ctrl-C in terminal (script handles cleanup)
+# Ctrl-C in terminal — the EXIT trap stops the daemon and cleans up automatically
 
-# Or kill by PID
+# Or kill the script by PID
 kill $(pgrep -f "run-soak.sh")
 
-# Stop test daemon if it was started by the script
-pkill -f "datawatch start --foreground.*datawatch-test"
+# Force-stop the test daemon using the PID file (if the script trap did not run)
+kill $(cat ../datawatch-soak-*/test-daemon.pid)
 
-# Clean up test data (only after run is done)
-rm -rf .datawatch-test-*/
+# Remove all soak working dirs manually (script auto-cleans on success;
+# only needed if you want to discard leftover failure dirs)
+rm -rf ../datawatch-soak-*/
 ```
 
 ---

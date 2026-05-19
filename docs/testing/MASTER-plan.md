@@ -45,9 +45,9 @@ This plan covers all mobile, Wear, and Auto surfaces in a comprehensive test str
 
 | Decision | Value |
 |---|---|
-| Secondary instance | Same host; data dir `.datawatch-test/`; ports 18080/18443 |
+| Secondary instance | Same host; working dir outside repo at `../datawatch-soak-<id>/`; default ports 18080/18443 (OS-free fallback) |
 | Emulator | `dw_test_phone` (Android 14 / API 34, Pixel 6) |
-| Mobile server URL | `https://10.0.2.2:18443` (adb reverse tcp:18443 tcp:18443) |
+| Mobile server URL | `https://10.0.2.2:18443` (`TEST_SERVER_TLS_PORT`, default 18443; via adb reverse) |
 | Test token | `dw-test-token-12345` |
 | Evidence root | `docs/testing/{{VERSION}}/evidence/` (gitignored) |
 
@@ -63,12 +63,24 @@ This plan covers all mobile, Wear, and Auto surfaces in a comprehensive test str
 
 **Start**:
 ```bash
-mkdir -p .datawatch-test
-cat > .datawatch-test/config.yaml <<EOF
+# Working dir is created OUTSIDE the repo (never commit test data)
+SOAK_RUN_ID=$(openssl rand -hex 3)
+TEST_WORK_DIR="../datawatch-soak-${SOAK_RUN_ID}"
+TEST_DATA_DIR="${TEST_WORK_DIR}/.datawatch-test-$$"
+mkdir -p "$TEST_DATA_DIR"
+
+# Ports: prefer 18080/18443; fall back to OS-free if busy
+TEST_TLS_PORT="${TEST_SERVER_TLS_PORT:-18443}"
+TEST_HTTP_PORT="${TEST_SERVER_HTTP_PORT:-18080}"
+
+cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
+data_dir: ${TEST_DATA_DIR}
 server:
-  port: 18080
-  tls_port: 18443
+  port: ${TEST_HTTP_PORT}
+  tls_port: ${TEST_TLS_PORT}
   token: "dw-test-token-12345"
+  tls_enabled: true
+  tls_auto_generate: true
 session:
   skip_permissions: true
 autonomous:
@@ -77,21 +89,26 @@ memory:
   enabled: true
 EOF
 
-rtk ./bin/datawatch serve --data-dir .datawatch-test 2>&1 | tee /tmp/test-server.log &
+datawatch start --foreground --config "${TEST_WORK_DIR}/config.yaml" \
+  >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
+echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 sleep 3
-curl -sk https://127.0.0.1:18443/api/health
+curl -sk "https://127.0.0.1:${TEST_TLS_PORT}/api/health"
 ```
 
 **Emulator bridge**:
 ```bash
-adb reverse tcp:18443 tcp:18443
-adb reverse tcp:18080 tcp:18080
+adb reverse tcp:$TEST_TLS_PORT tcp:$TEST_TLS_PORT
+adb reverse tcp:$TEST_HTTP_PORT tcp:$TEST_HTTP_PORT
 ```
 
 **Cleanup** (after run):
 ```bash
-pkill -f "datawatch serve --data-dir .datawatch-test"
-rm -rf .datawatch-test docs/testing/{{VERSION}}/evidence/
+# Stop daemon via saved PID (never grep ps)
+kill $(cat "../datawatch-soak-${SOAK_RUN_ID}/test-daemon.pid") 2>/dev/null || true
+# Remove working dir (script auto-cleans on success via EXIT trap)
+rm -rf "../datawatch-soak-${SOAK_RUN_ID}"
+# Evidence dir is inside the working dir — no separate cleanup needed
 ```
 
 ### Mobile App (emulator)
