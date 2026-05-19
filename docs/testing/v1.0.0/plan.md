@@ -28,8 +28,8 @@ This plan covers **all mobile, Wear, and Auto surfaces** in a comprehensive test
 | Emulator | `dw_test_phone` (Android 14 / API 34, Pixel 6) |
 | Mobile server URL | `https://10.0.2.2:18443` (adb reverse tcp:18443 tcp:18443) |
 | Test token | `dw-test-token-12345` |
-| Wear device | Physical Wear OS watch (192.168.1.244:44631) or emulator pairing |
-| Auto surface | Android Auto emulator (separate from phone emulator) |
+| Wear device | Wear OS emulator `dw_test_watch` (API 33, Small Round, x86_64) paired with phone emulator |
+| Auto surface | Android Auto DHU (Desktop Head Unit) emulator from Android SDK extras |
 
 ---
 
@@ -147,6 +147,8 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 | T24 | Algorithm Mode tests | TS-530–TS-541 | 📋 Planned |
 | T26 | Dashboard Cards CRUD (Android) | TS-465–TS-474 | 📋 Planned |
 | T27 | Automata Orchestrator E2E (Android) | TS-475–TS-494 | 📋 Planned |
+| T28 | Settings cards coverage gap-fill | TS-550–TS-614 | 📋 Planned |
+| T29 | Howto validation gap-fill | TS-620–TS-660 | 📋 Planned |
 
 ---
 
@@ -710,119 +712,121 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 **Goal**: Verify Wear OS tiles, complications, voice query, and guardrail notification flows work end-to-end via DataLayer proxy (no direct server access from watch).
 
-**Conflict**: TS-509/510 require physical Wear device. All others run against emulator + DataLayer simulation.
+**All stories run against the Wear OS emulator (dw_test_watch AVD, API 33). Pair the watch emulator with the phone emulator (dw_test_phone) before running. TS-509 haptic pattern is verified via logcat rather than physical sensation — functionally equivalent for release gating.**
 
 ### TS-500 — WearMainActivity launches and shows health ring
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
-1. Pair Wear emulator (or physical watch at 192.168.1.244:44631)
-2. Install wear APK: `adb -s <watch> install -r wear/build/outputs/apk/debug/*.apk`
+1. Launch Wear OS emulator: `$ANDROID_SDK_ROOT/emulator/emulator -avd dw_test_watch -no-boot-anim &` and pair with phone emulator via Android Studio Device Manager or `adb -s emulator-5556 forward tcp:44631 tcp:44631`
+2. Install wear APK: `adb -s emulator-5556 install -r wear/build/outputs/apk/debug/wear-debug.apk`
 3. Launch datawatch watch app
 **Expected**: Progress ring visible; server name header shown; no crash
 **Evidence**: `t22_wear_main.png`
-**Status**: ⏳ Blocked (physical watch: ADB not enabled at 192.168.1.244)
+**Status**: 📋 Planned
 
 ### TS-501 — BriefingTileService renders with session counts
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
 1. Add BriefingTile to watch face
 2. Verify tile shows: server name, running count, blocked count
 **Expected**: All fields populated from DataLayer; tile refreshes within 30s of phone state change
 **Evidence**: `t22_briefing_tile.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-502 — AlertsTileService renders unread alert count
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
 1. POST alert via API; wait for DataLayer sync
 2. View Alerts tile on watch
 **Expected**: Alert count updates; tap tile → opens WearMainActivity
 **Evidence**: `t22_alerts_tile.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-503 — MonitorTileService renders CPU/memory
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
 1. View Monitor tile on watch
 **Expected**: CPU%, memory% displayed; server name in subtitle
 **Evidence**: `t22_monitor_tile.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-504 — SessionsTileService renders session list
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
 1. View Sessions tile; verify running session names appear
 **Expected**: Session names + state chips visible; tap → WearSessionListScreen
 **Evidence**: `t22_sessions_tile.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-505 — WaitingTileService renders waiting session count
-**Tags**: [surface:wear] [feature:wear-tiles] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-tiles]
 **Steps**:
 1. Create session that enters waiting_input state
 2. View Waiting tile
 **Expected**: "1 waiting" count shown; dot amber
 **Evidence**: `t22_waiting_tile.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-506 — StatusComplicationService renders on watch face
-**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-complications]
 **Steps**:
 1. Add Status complication to watch face
 **Expected**: SHORT_TEXT shows running/blocked counts; RANGED_VALUE shows progress float
 **Evidence**: `t22_status_complication.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-507 — CpuComplicationService + MemoryComplicationService
-**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-complications]
 **Steps**:
 1. Add CPU and Memory complications to watch face
 **Expected**: CPU% and Memory% values shown; update on DataLayer change
 **Evidence**: `t22_resource_complications.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-508 — ServerSwitchComplicationService switches active server
-**Tags**: [surface:wear] [feature:wear-complications] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-complications]
 **Steps**:
 1. Add ServerSwitch complication; tap it
 **Expected**: Active server cycles to next enabled profile; WearSyncService publishes updated activeServer DataItem
 **Evidence**: `t22_server_switch.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-509 — Guardrail block notification fires on watch
-**Tags**: [surface:wear] [feature:wear-notifications] [conflict:physical-watch] [conflict:wear-haptic]
+**Tags**: [surface:wear] [feature:wear-notifications]
 **Steps**:
 1. Trigger a guardrail block in a session (via secondary instance)
 2. Watch for notification on watch within 5s
-**Expected**: Notification title = guardrail name; text = block summary; triple-buzz haptic pattern
+**Expected**: Notification appears on watch within 5s; triple-buzz haptic intent logged: `adb -s emulator-5556 logcat -d | grep -i 'haptic\|vibrate'` shows TRIPLE_BUZZ pattern
 **Evidence**: `t22_block_notification.png`
-**Status**: ⏳ Blocked (physical watch required for haptic verification)
+**Status**: 📋 Planned
 
 ### TS-510 — WearApproveScreen confirms approve action
-**Tags**: [surface:wear] [feature:wear-notifications] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-notifications]
 **Steps**:
 1. Tap [Approve] on guardrail notification
 2. WearApproveScreen opens; tap Confirm
 **Expected**: Approve dispatched via DataLayer; phone calls `/api/autonomous/prds/{id}/approve`; ascending double-tap haptic
 **Evidence**: `t22_approve_flow.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-511 — Voice query "status" returns spoken response
-**Tags**: [surface:wear] [feature:wear-voice] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-voice]
 **Steps**:
-1. Open VoiceQueryDispatcher on watch; speak "status"
-2. Listen for TTS response
+1. Open VoiceQueryDispatcher: `adb -s emulator-5556 shell am start -n com.dmzs.datawatchclient.dev.debug/.wear.WearVoiceActivity`
+2. Speak "status" (or inject via emulator microphone input)
+3. Listen for TTS response
 **Expected**: Response reads running/blocked counts; under 15 seconds
 **Evidence**: `t22_voice_status.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-512 — Voice query "any blocks?" triggers blocked session summary
-**Tags**: [surface:wear] [feature:wear-voice] [conflict:physical-watch]
+**Tags**: [surface:wear] [feature:wear-voice]
 **Steps**:
-1. Speak "any blocks?" while a session has a guardrail block
+1. Open VoiceQueryDispatcher: `adb -s emulator-5556 shell am start -n com.dmzs.datawatchclient.dev.debug/.wear.WearVoiceActivity`
+2. Speak "any blocks?" while a session has a guardrail block
 **Expected**: TTS reads block summary; navigates to WearApproveScreen if available
 **Evidence**: `t22_voice_blocks.png`
-**Status**: ⏳ Blocked (physical watch)
+**Status**: 📋 Planned
 
 ### TS-513 — WearSyncService DataLayer heartbeat (JVM unit test)
 **Tags**: [surface:wear] [feature:wear-tiles]
@@ -848,136 +852,150 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 **Goal**: Verify Android Auto screens, voice commands, and ambient mode work with the secondary test instance via the Auto DHU emulator.
 
-**Conflict**: All TS-515–TS-528 require Android Auto DHU (Desktop Head Unit) or physical head unit. TS-529 is a JVM-only build check.
+**All stories run against the Android Auto DHU (Desktop Head Unit) emulator from the Android SDK extras. Prerequisites: DHU installed at `$ANDROID_HOME/extras/google/auto/desktop-head-unit`; phone emulator (dw_test_phone) running with Android Auto enabled in developer options. Start DHU: `cd $ANDROID_HOME/extras/google/auto && ./desktop-head-unit`. TS-529 is a JVM build/unit-test check.**
 
 ### TS-515 — AutoMissionControlScreen renders session counts
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Start DHU: `cd $ANDROID_HOME/extras/google/auto && ./desktop-head-unit`
 2. Launch app via Auto
 3. Verify mission control entry screen: running/waiting/blocked counts + server header
+4. File → Save Screenshot for evidence
 **Expected**: ListTemplate renders; counts accurate; server name in header
 **Evidence**: `t23_mission_control.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-516 — AutoSessionListScreen shows sessions sorted by urgency
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. From mission control, navigate to session list
 2. Verify BLOCKED sessions appear first, then RUNNING, then recency
+3. File → Save Screenshot for evidence
 **Expected**: Sort order matches: blocked-first, then running, then recency
 **Evidence**: `t23_session_list.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-517 — AutoSessionDetailScreen shows task + guardrail verdict
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Tap a running session row
 2. Verify MessageTemplate: current task, sprint ancestry, health status
+3. File → Save Screenshot for evidence
 **Expected**: Body ≤ 500 chars; ETA shown; no crash
 **Evidence**: `t23_session_detail.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-518 — AutoSessionDetailScreen action buttons: max 2 per template
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. View BLOCKED session detail — verify [Approve Gate] + [Kill Session] shown (max 2)
 2. View non-blocked session detail — verify [Reply] + [Kill Session] shown
+3. File → Save Screenshot for evidence
 **Expected**: Never more than 2 action buttons; correct pair per state
 **Evidence**: `t23_action_buttons.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-519 — Kill session requires 2-tap confirmation
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Tap [Kill Session] in AutoSessionDetailScreen
 2. Verify confirmation dialog appears with 15s auto-cancel
 3. Confirm — verify session killed
+4. File → Save Screenshot for evidence
 **Expected**: 2-tap with auto-cancel; no accidental kill
 **Evidence**: `t23_kill_confirm.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-520 — AutoAutomataScreen lists running automata
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Navigate to Automata screen from mission control
 2. Verify automata rows: name + story/task position + progress arc
+3. File → Save Screenshot for evidence
 **Expected**: ListTemplate rows ≤ 5; "N more" overflow for 6+
 **Evidence**: `t23_automata_screen.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-521 — Voice command: "status" reads server summary
-**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-voice]
 **Steps**:
 1. Trigger voice in DHU; speak "status"
 2. Listen for TTS response (or verify REFRESH command fires)
+3. File → Save Screenshot for evidence
 **Expected**: Running/blocked counts spoken; response under 15 seconds
 **Evidence**: `t23_voice_status.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-522 — Voice command: "switch to {name}" resolves server by name
-**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-voice]
 **Steps**:
 1. Speak "switch to dw-test" (must match a profile displayName)
+2. File → Save Screenshot for evidence
 **Expected**: Active server switches; spoken confirmation "Switched to dw-test"
 **Evidence**: `t23_voice_switch.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-523 — Voice command: "what failed" navigates to most recent BLOCKED session
-**Tags**: [surface:auto] [feature:auto-voice] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-voice]
 **Steps**:
 1. Ensure a BLOCKED session exists; speak "what failed"
+2. File → Save Screenshot for evidence
 **Expected**: AutoSessionDetailScreen opens for most recent blocked session; guardrail verdict read aloud
 **Evidence**: `t23_voice_whatfailed.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-524 — Ambient mode: session list renders monochrome, no action buttons
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Let Auto session go ambient
 2. Verify session list: monochrome; no tap targets; refreshes every 60s
+3. File → Save Screenshot for evidence
 **Expected**: Simplified content; no button rendering in ambient
 **Evidence**: `t23_ambient_mode.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-525 — Alert dismiss from Auto
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Create alert on secondary instance
 2. In AutoSummaryScreen, tap [Dismiss alert] or speak "dismiss alert"
 3. Verify alert count drops to 0
+4. File → Save Screenshot for evidence
 **Expected**: `/api/alerts` marked-read; UI updates; idempotent on second tap
 **Evidence**: `t23_alert_dismiss.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-526 — Drive compliance: ListTemplate row count ≤ 6
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Create 10 sessions on secondary instance
 2. Navigate to AutoSessionListScreen
 3. Verify at most 5 session rows + 1 "… N more" row
+4. File → Save Screenshot for evidence
 **Expected**: MAX_ROWS = 5 enforced; overflow row present
 **Evidence**: `t23_row_limit.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-527 — Multi-server quick-switch row in mission control
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Have 2+ server profiles configured
 2. Navigate to AutoMissionControlScreen
 3. Verify server quick-switch row at bottom
 4. Tap to switch; verify server name spoken
+5. File → Save Screenshot for evidence
 **Expected**: Server name changes; mission control re-fetches from new server
 **Evidence**: `t23_server_switch.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-528 — Back-stack navigation: all screens return correctly
-**Tags**: [surface:auto] [feature:auto-screens] [conflict:physical-auto]
+**Tags**: [surface:auto] [feature:auto-screens]
 **Steps**:
 1. Navigate: MissionControl → SessionList → SessionDetail → back → back → back
+2. File → Save Screenshot for evidence
 **Expected**: Returns to MissionControl; no ghost screens; no crash
 **Evidence**: `t23_back_stack.png`
-**Status**: ⏳ Blocked (DHU required)
+**Status**: 📋 Planned
 
 ### TS-529 — Auto JVM unit tests pass (92 tests)
 **Tags**: [surface:auto]
@@ -1115,6 +1133,624 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ---
 
+## T28 — Settings Coverage Gap-Fill
+
+**Goal**: Achieve 100% coverage of Settings screen cards that have zero test stories. Covers the General, Comms, Compute, Automata, Plugins, and About tabs for every card not covered in T7–T15.
+
+**Prerequisites**: Secondary test instance running; test server configured in app.
+
+---
+
+### TS-550 — DocsSearchCard renders and executes a search
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "DOCS SEARCH" section
+2. Verify search field and "Search" button are visible
+3. Enter query "session" and tap Search
+4. Verify results list populates (or empty-state message if no results)
+**Expected**: Card renders; search fires API call; results or empty-state shown; no crash
+**Evidence**: `t28_docs_search.png`
+**Status**: 📋 Planned
+
+### TS-551 — DocsSearchCard howto result opens link
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Perform a search that returns a result
+2. Tap a result row
+3. Verify action (open URL or copy to clipboard)
+**Expected**: Result tap performs navigation or share action without crash
+**Evidence**: `t28_docs_search_result.png`
+**Status**: 📋 Planned
+
+### TS-552 — SessionTemplatesCard renders and lists templates
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "SESSION TEMPLATES" section
+2. Verify section heading and any existing templates listed
+3. If empty, verify empty-state text
+**Expected**: Card renders; no crash; template list or empty-state visible
+**Evidence**: `t28_session_templates.png`
+**Status**: 📋 Planned
+
+### TS-553 — SessionTemplatesCard create and delete template
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → SESSION TEMPLATES → tap "Add Template" or FAB
+2. Fill in name and command fields; tap Save
+3. Verify template appears in list
+4. Tap delete icon; verify template removed
+**Expected**: Create and delete round-trip works; API confirms via `/api/templates`
+**Evidence**: `t28_session_templates_crud.json`
+**Status**: 📋 Planned
+
+### TS-554 — DeviceAliasesCard renders and lists aliases
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "DEVICE ALIASES" section
+2. Verify card heading and alias list (or empty-state)
+**Expected**: Card renders; no crash
+**Evidence**: `t28_device_aliases.png`
+**Status**: 📋 Planned
+
+### TS-555 — DeviceAliasesCard create and delete alias
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Alias" in the Device Aliases card
+2. Enter device name and alias; tap Save
+3. Verify alias appears in list
+4. Tap delete; verify alias removed
+**Expected**: CRUD round-trip works; API confirms via `/api/devices/aliases`
+**Evidence**: `t28_device_alias_crud.json`
+**Status**: 📋 Planned
+
+### TS-556 — ToolingCard renders and shows git status
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "TOOLING" section
+2. Verify card renders with gitignore and cleanup action buttons
+3. Tap gitignore setup; verify response banner
+**Expected**: Card renders; actions callable; response shown; no crash
+**Evidence**: `t28_tooling_card.png`
+**Status**: 📋 Planned
+
+### TS-557 — RoutingRulesCard renders and lists rules
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Comms → scroll to "ROUTING RULES" section
+2. Verify routing rules list (or empty-state)
+3. Verify each rule shows: session filter, target backend
+**Expected**: Card renders; API response shown; no crash
+**Evidence**: `t28_routing_rules.png`
+**Status**: 📋 Planned
+
+### TS-558 — RoutingRulesCard test routing for a session
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. If routing rules exist: tap "Test" on a rule row (or use the test-routing API)
+2. Verify result shows which backend the rule routes to
+**Expected**: Test routing returns backend name; or empty-state if no rules; no crash
+**Evidence**: `t28_routing_rules_test.json`
+**Status**: 📋 Planned
+
+### TS-559 — CertInstallCard renders and shows TLS info
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Comms → scroll to "CERTIFICATE INSTALL" section
+2. Verify card shows current TLS/cert status for active server
+3. Verify "Install Certificate" action is present
+**Expected**: Card renders with cert details; no crash
+**Evidence**: `t28_cert_card.png`
+**Status**: 📋 Planned
+
+### TS-560 — CostRatesCard renders and shows LLM cost rates
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Compute → scroll to "COST RATES" section
+2. Verify card shows cost per 1K tokens for configured LLMs
+3. Verify total cost summary if usage data available
+**Expected**: Card renders; rates populated from API; no crash
+**Evidence**: `t28_cost_rates.png`
+**Status**: 📋 Planned
+
+### TS-561 — DetectionFiltersCard renders and lists filters
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Compute → scroll to "DETECTION FILTERS" section
+2. Verify filter list or empty-state
+3. Verify each filter shows pattern and action
+**Expected**: Card renders; filters listed; no crash
+**Evidence**: `t28_detection_filters.png`
+**Status**: 📋 Planned
+
+### TS-562 — DetectionFiltersCard add and delete filter
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Filter" in Detection Filters card
+2. Enter a pattern (e.g. `*.secret`) and action (e.g. `block`)
+3. Tap Save; verify filter appears
+4. Delete filter; verify removed
+**Expected**: CRUD works; API confirms via `/api/detection/config`
+**Evidence**: `t28_detection_filters_crud.json`
+**Status**: 📋 Planned
+
+### TS-563 — TailscaleSettingsCard renders and shows node status
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Compute → scroll to "TAILSCALE" section
+2. Verify card shows Tailscale connection status and current hostname
+3. Verify node list or empty-state if Tailscale not configured
+**Expected**: Card renders; status visible; no crash regardless of Tailscale auth state
+**Evidence**: `t28_tailscale_settings.png`
+**Status**: 📋 Planned
+
+### TS-564 — TailscaleMeshCard renders and shows peer nodes
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Compute → scroll past TailscaleSettings to "TAILSCALE MESH" section
+2. Verify mesh card shows peer count or empty-state
+**Expected**: Card renders; no crash
+**Evidence**: `t28_tailscale_mesh.png`
+**Status**: 📋 Planned
+
+### TS-565 — CouncilCard renders and shows persona list
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "COUNCIL" section
+2. Verify card shows persona count and persona rows
+3. Verify each persona row shows name and role
+**Expected**: Card renders; GET /api/council/personas populates list; no crash
+**Evidence**: `t28_council_personas.png`
+**Status**: 📋 Planned
+
+### TS-566 — CouncilCard add persona via wizard
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Persona" (or wizard FAB) in Council card
+2. Fill in persona name (e.g. "Critic") and system prompt
+3. Tap Save
+4. Verify persona appears in list
+**Expected**: POST /api/council/personas succeeds; persona added; no crash
+**Evidence**: `t28_council_add_persona.json`
+**Status**: 📋 Planned
+
+### TS-567 — CouncilCard run a one-shot council review
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Run Council" button (or equivalent)
+2. Enter a question prompt for the council
+3. Tap Submit; verify loading state
+4. Wait for council run to complete; verify response shown
+**Expected**: POST /api/council/run returns responses from each persona; results rendered
+**Evidence**: `t28_council_run.json`
+**Status**: 📋 Planned
+
+### TS-568 — EvalsCard renders and lists eval suites
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "EVALS" section
+2. Verify card shows eval suite list or empty-state
+3. Verify each suite row shows name and last-run status
+**Expected**: Card renders; GET /api/eval/suites populates; no crash
+**Evidence**: `t28_evals_list.png`
+**Status**: 📋 Planned
+
+### TS-569 — EvalsCard run an eval suite
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap Run on a suite row (or enter suite name and tap Run)
+2. Verify loading indicator while eval runs
+3. Verify result row updates with pass/fail count
+**Expected**: POST /api/eval/run → result returned; card updates; no crash
+**Evidence**: `t28_evals_run.json`
+**Status**: 📋 Planned
+
+### TS-570 — EvalsCard view run history
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. After TS-569, tap a completed eval row to see run details
+2. Verify pass/fail breakdown by test case
+**Expected**: Run history expandable; test-case results listed
+**Evidence**: `t28_evals_history.png`
+**Status**: 📋 Planned
+
+### TS-571 — GuardrailLibraryCard renders library items
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "GUARDRAIL LIBRARY" section
+2. Verify library items listed (name, kind: allow/block/warn)
+3. Verify profiles section shows existing profiles
+**Expected**: GET /api/guardrail/library and /api/guardrail/profiles both populate; no crash
+**Evidence**: `t28_guardrail_library.png`
+**Status**: 📋 Planned
+
+### TS-572 — GuardrailLibraryCard create guardrail profile
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Profile" in Guardrail Library card
+2. Enter profile name; select 1–2 guardrails from library to include
+3. Tap Save
+4. Verify profile appears in profiles list
+**Expected**: POST /api/guardrail/profiles succeeds; profile created with selected guardrails
+**Evidence**: `t28_guardrail_profile_create.json`
+**Status**: 📋 Planned
+
+### TS-573 — GuardrailLibraryCard delete guardrail profile
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap delete icon on the profile created in TS-572
+2. Verify profile removed from list
+**Expected**: DELETE /api/guardrail/profiles/{id} succeeds; list refreshes
+**Evidence**: `t28_guardrail_profile_delete.json`
+**Status**: 📋 Planned
+
+### TS-574 — PipelineManagerCard renders and lists pipelines
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "PIPELINES" section
+2. Verify pipeline list or empty-state
+3. Verify each pipeline row shows id, status, step count
+**Expected**: GET /api/pipeline/list returns; card renders; no crash
+**Evidence**: `t28_pipeline_list.png`
+**Status**: 📋 Planned
+
+### TS-575 — PipelineManagerCard start a pipeline
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Start Pipeline" or enter a pipeline config and tap Start
+2. Verify new pipeline row appears with running status
+**Expected**: POST /api/pipeline/start succeeds; pipeline ID returned; row rendered
+**Evidence**: `t28_pipeline_start.json`
+**Status**: 📋 Planned
+
+### TS-576 — PipelineManagerCard cancel a running pipeline
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. With pipeline running (from TS-575), tap Cancel on the row
+2. Verify status updates to cancelled
+**Expected**: POST /api/pipeline/{id}/cancel succeeds; row updates
+**Evidence**: `t28_pipeline_cancel.json`
+**Status**: 📋 Planned
+
+### TS-577 — SkillRegistriesCard renders and lists registries
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "SKILL REGISTRIES" section
+2. Verify registry list or empty-state
+3. Verify each row shows registry name and skill count
+**Expected**: Card renders; GET /api/skills/registry/list populates; no crash
+**Evidence**: `t28_skill_registries.png`
+**Status**: 📋 Planned
+
+### TS-578 — SkillRegistriesCard add a skill registry
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Registry" in Skill Registries card
+2. Enter registry URL and tap Save
+3. Verify registry appears in list
+**Expected**: POST /api/skills/registry/create succeeds; registry added
+**Evidence**: `t28_skill_registry_add.json`
+**Status**: 📋 Planned
+
+### TS-579 — SkillRegistriesCard sync skills from registry
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Sync" on a registry row
+2. Verify sync progress indicator; wait for completion
+3. Verify skill count updates
+**Expected**: POST /api/skills/registry/sync fires; skill count updates; no crash
+**Evidence**: `t28_skill_sync.json`
+**Status**: 📋 Planned
+
+### TS-580 — ScanConfigCard renders and shows scan rules
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Automata → scroll to "SCAN CONFIG" section
+2. Verify scan rules list or empty-state
+3. Verify each rule shows pattern and action (allow/block/warn)
+**Expected**: GET /api/autonomous/scan/config returns; card renders; no crash
+**Evidence**: `t28_scan_config.png`
+**Status**: 📋 Planned
+
+### TS-581 — ScanConfigCard toggle scan rule
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap toggle on a scan rule row
+2. Verify rule enable/disable state flips
+3. Confirm via API: GET /api/autonomous/scan/config shows updated state
+**Expected**: PUT /api/autonomous/scan/config succeeds; toggle reflected in UI
+**Evidence**: `t28_scan_config_toggle.json`
+**Status**: 📋 Planned
+
+### TS-582 — Plugins tab renders with plugin list
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Plugins tab
+2. Verify plugin list or empty-state
+3. Verify each plugin row shows name, version, enabled toggle
+**Expected**: GET /api/plugins returns; tab renders; no crash
+**Evidence**: `t28_plugins_tab.png`
+**Status**: 📋 Planned
+
+### TS-583 — Plugins tab enable/disable a plugin toggle
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. If plugin exists: tap enable toggle on a plugin row
+2. Verify toggle flips; API confirms new state
+3. Toggle back; verify reverted
+**Expected**: Plugin enable/disable toggles fire API calls; state persists across tab navigation
+**Evidence**: `t28_plugin_toggle.json`
+**Status**: 📋 Planned
+
+### TS-584 — Plugins tab config fields render for a plugin
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. If a plugin has config fields, verify they appear below the plugin row
+2. Edit a config field value; verify it saves
+**Expected**: Plugin-specific config fields rendered; save persists via API
+**Evidence**: `t28_plugin_config.png`
+**Status**: 📋 Planned
+
+### TS-585 — McpChannelCard renders MCP channel info
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → About → scroll to "MCP CHANNEL" section
+2. Verify card shows MCP server URL and connection status
+3. Verify channel name and token are displayed (masked)
+**Expected**: Card renders; MCP channel info populated; no crash
+**Evidence**: `t28_mcp_channel.png`
+**Status**: 📋 Planned
+
+### TS-586 — SubsystemReloadCard reloads a subsystem
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → About → scroll to "SUBSYSTEM RELOAD" section
+2. Tap "Reload" on one subsystem (e.g. Memory or Channels)
+3. Verify success banner or confirmation message
+**Expected**: POST /api/reload/{subsystem} returns 200; success message shown
+**Evidence**: `t28_subsystem_reload.png`
+**Status**: 📋 Planned
+
+### TS-587 — KillOrphansCard identifies and kills orphan sessions
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → About → scroll to "KILL ORPHANS" section
+2. Tap "Kill Orphans" button
+3. Verify count of orphan sessions killed shown in response banner
+**Expected**: POST /api/sessions/orphans or equivalent fires; response count shown; no crash
+**Evidence**: `t28_kill_orphans.png`
+**Status**: 📋 Planned
+
+### TS-588 — Settings tab persistence: last-viewed tab restored on re-open
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Navigate to Settings → Compute tab
+2. Back out of Settings; re-open Settings
+3. Verify Compute tab is still selected (persisted via SharedPreferences)
+**Expected**: Active tab persists across navigation; no reset to General
+**Evidence**: `t28_tab_persistence.png`
+**Status**: 📋 Planned
+
+### TS-589 — Settings deep-link: intent with tab param lands on correct tab
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Use ADB to send a deep-link intent: `adb shell am start -n com.dmzs.datawatchclient.dev.debug/.MainActivity -e settings_tab automata`
+2. Verify Settings screen opens with Automata tab active
+**Expected**: Deep-link lands on Automata tab; no crash
+**Evidence**: `t28_settings_deeplink.png`
+**Status**: 📋 Planned
+
+---
+
+## T29 — Howto Validation Gap-Fill
+
+**Goal**: Validate every datawatch howto that has a mobile surface but no T20 story. Each story follows the documented workflow end-to-end. Stories are read-heavy (verify config fields and API responses) rather than requiring side effects in external systems.
+
+---
+
+### TS-620 — council-mode.md: Council persona flow
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow council-mode.md: Settings → Automata → Council section
+2. Add a persona (name: "Advocate", role: "Always defend the current plan")
+3. Run a council one-shot with prompt: "Is this a good idea?"
+4. Verify each persona's response appears in the run result
+**Expected**: Council run returns responses from all configured personas; mobile renders result
+**Evidence**: `t29_council_mode.json`
+**Status**: 📋 Planned
+
+### TS-621 — evals.md: Run default eval suite
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow evals.md: Settings → Automata → Evals section
+2. Run the "default" eval suite (POST /api/eval/run with suite="default")
+3. Verify results shown: pass count, fail count, duration
+**Expected**: Eval run completes; results rendered in card; matches API response
+**Evidence**: `t29_evals_workflow.json`
+**Status**: 📋 Planned
+
+### TS-622 — guardrail-library.md: Create profile with library guardrails
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow guardrail-library.md: Settings → Automata → Guardrail Library
+2. View library items; note at least one available guardrail name
+3. Create a profile named "t29-profile" including that guardrail
+4. Verify profile listed under Profiles section
+5. Assign profile to an automaton via API: `PUT /api/autonomous/prds/{id}/guardrails`
+**Expected**: Full workflow (library browse → profile create → assign) works
+**Evidence**: `t29_guardrail_workflow.json`
+**Status**: 📋 Planned
+
+### TS-623 — pipeline-chaining.md: Start and monitor a pipeline
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow pipeline-chaining.md: Settings → Automata → Pipelines
+2. Start a pipeline with at least 2 steps using the card UI
+3. Verify pipeline status updates (running → complete) in the list
+**Expected**: Pipeline executes; status chain visible in mobile; matches API state
+**Evidence**: `t29_pipeline_workflow.json`
+**Status**: 📋 Planned
+
+### TS-624 — skills-sync.md: Add registry and sync skills
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow skills-sync.md: Settings → Automata → Skill Registries
+2. Add a registry (test URL from the howto example)
+3. Tap Sync; wait for completion
+4. Verify skill count shown on registry row
+**Expected**: Registry add + sync workflow completes; skills available in session skill picker
+**Evidence**: `t29_skills_workflow.json`
+**Status**: 📋 Planned
+
+### TS-625 — tailscale-mesh.md: View Tailscale mesh status
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow tailscale-mesh.md: Settings → Compute → Tailscale
+2. Verify TailscaleSettingsCard shows auth key status and device hostname
+3. Verify TailscaleMeshCard shows peer node count from `/api/tailscale/nodes`
+**Expected**: Both cards render with API data (or not-configured state); no crash
+**Evidence**: `t29_tailscale_workflow.json`
+**Status**: 📋 Planned
+
+### TS-626 — mcp-tools.md: View MCP channel configuration
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow mcp-tools.md: Settings → About → MCP Channel card
+2. Verify MCP server URL shown matches server config
+3. Verify McpServer config fields in Settings → Comms show MCP listen address
+**Expected**: MCP channel info visible and consistent between About and Comms; no crash
+**Evidence**: `t29_mcp_workflow.json`
+**Status**: 📋 Planned
+
+### TS-627 — cross-agent-memory.md: View and recall memory
+**Tags**: [surface:phone] [feature:sessions]
+**Steps**:
+1. Follow cross-agent-memory.md: in Settings → Compute, verify Memory config fields visible
+2. Create a session; send a message with a fact (e.g. "remember: test fact 627")
+3. In a second session, verify the fact is accessible via memory recall
+**Expected**: Memory config visible in Settings; memory system accessible via sessions; no crash
+**Evidence**: `t29_memory_workflow.json`
+**Status**: 📋 Planned
+
+### TS-628 — docs-as-mcp.md: Search docs and navigate result
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow docs-as-mcp.md: Settings → General → Docs Search card
+2. Search for "autonomous"
+3. Verify results list populates with howto titles
+4. Tap a result; verify navigation or link-copy action fires
+**Expected**: Docs search returns results from `/api/docs/search`; tap action works
+**Evidence**: `t29_docs_workflow.json`
+**Status**: 📋 Planned
+
+### TS-629 — compute-routing.md: View and test routing rules
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow compute-routing.md: Settings → Comms → Routing Rules card
+2. If rules exist: verify each shows session filter and target backend
+3. Tap "Test Route" on a rule; verify which backend is selected for test input
+**Expected**: Routing rules visible; test routing returns backend name; no crash
+**Evidence**: `t29_routing_workflow.json`
+**Status**: 📋 Planned
+
+### TS-630 — alert-rules.md: Create and verify an alert rule
+**Tags**: [surface:phone] [feature:alerts]
+**Steps**:
+1. Follow alert-rules.md: Sessions tab → a running session → Alerts sub-tab
+2. Create an alert rule: name "t29-cpu-alert", metric "cpu_pct", threshold 90
+3. Verify rule appears in Alerts tab
+4. Delete the rule; verify removed
+**Expected**: Alert rule CRUD via `/api/alert/rules` works; mobile renders rule list
+**Evidence**: `t29_alert_rules.json`
+**Status**: 📋 Planned
+
+### TS-631 — chat-and-llm-quickstart.md: Start session with LLM backend
+**Tags**: [surface:phone] [feature:sessions]
+**Steps**:
+1. Follow chat-and-llm-quickstart.md: Sessions → FAB → New Session
+2. Select a configured LLM backend in the new-session form
+3. Create session; verify it enters running state with the correct backend shown
+**Expected**: Session created with explicit backend; backend name shown in session row
+**Evidence**: `t29_chat_quickstart.json`
+**Status**: 📋 Planned
+
+### TS-632 — claude-hooks.md: View session status board via hooks
+**Tags**: [surface:phone] [feature:sessions]
+**Steps**:
+1. Follow claude-hooks.md: open Sessions tab → tap a running session
+2. Navigate to Session Status tab (if available) or Dashboard
+3. Verify hook health indicator is visible (from `/api/sessions/{id}/status`)
+**Expected**: Hook health field visible in session detail or status screen; no crash
+**Evidence**: `t29_hooks_workflow.json`
+**Status**: 📋 Planned
+
+### TS-633 — container-workers.md: View container worker config
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow container-workers.md: Settings → Compute → scroll to Agents config fields
+2. Verify container worker config fields render (max_workers, image, etc.)
+3. Update a field value; verify it saves via API
+**Expected**: Container worker config fields visible and editable; save persists
+**Evidence**: `t29_container_workers.json`
+**Status**: 📋 Planned
+
+### TS-634 — voice-input.md: Whisper voice input howto validation
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow voice-input.md: Settings → General → scroll to Whisper config section
+2. Verify Whisper config fields rendered (language, model, etc.)
+3. Tap "Test Whisper" button in TestWhisperCard
+4. Verify response: transcription result or "Whisper not configured" message
+**Expected**: Whisper config visible; test button calls API; response shown
+**Evidence**: `t29_voice_workflow.json`
+**Status**: 📋 Planned
+
+### TS-635 — federation-cbac.md: View CBAC config for a federation peer
+**Tags**: [surface:phone] [feature:multiserver]
+**Steps**:
+1. Follow federation-cbac.md: Settings → Comms → Federation Peers card
+2. Tap a peer row to expand its CBAC (capability-based access control) settings
+3. Verify allowed/denied capabilities are listed
+**Expected**: CBAC config visible per peer; no crash; GET /api/federation/peers/{id} shows groups
+**Evidence**: `t29_federation_cbac.json`
+**Status**: 📋 Planned
+
+### TS-636 — ollama-marketplace.md: Browse and pull Ollama model
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Compute → LLM Registry → scroll to Ollama section
+2. Verify "Marketplace" button or section visible
+3. Tap Marketplace; verify model catalog loads from `/api/marketplace/ollama/catalog`
+4. Tap Pull on a small model (e.g. tinyllama:latest)
+5. Verify pull task starts; progress shown
+**Expected**: Marketplace catalog renders; pull fires POST /api/marketplace/pull; task ID returned
+**Evidence**: `t29_ollama_marketplace.json`
+**Status**: 📋 Planned
+
+### TS-637 — daemon-operations.md: Restart daemon and verify health
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow daemon-operations.md: Settings → About → Restart Daemon card
+2. Tap "Restart"
+3. Wait ~5s; verify health check: `curl -sk https://10.0.2.2:18443/api/health` from emulator
+4. Verify app reconnects automatically
+**Expected**: Restart fires; daemon comes back healthy; app reconnects and sessions reload
+**Evidence**: `t29_daemon_restart.json`
+**Status**: 📋 Planned
+
+### TS-638 — setup-and-install.md: Complete howto new-server setup
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Follow setup-and-install.md end-to-end: add a second test server (use port 18081 if available)
+2. Configure URL, token, trust-all TLS
+3. Switch active server to the new one
+4. Verify sessions load from new server
+5. Delete the second server
+**Expected**: All setup steps work; second server functional; cleanup removes it cleanly
+**Evidence**: `t29_setup_install_workflow.json`
+**Status**: 📋 Planned
+
+---
+
 ## Release Gate
 
 **v1.0.0 ship criteria**:
@@ -1123,13 +1759,15 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T17: ✅ Pass (parity audit)
 - T18: ✅ Pass (test debt)
 - T19: ✅ Pass (dashboard hooks)
-- T20: ✅ Pass or ⏳ Blocked with known issue (howto validation)
-- T21: ✅ Pass or ⏳ Blocked with known issue (end-to-end journeys)
-- T22: ✅ Pass (emulator JVM tests); ⏳ Blocked acceptable for physical-watch stories
-- T23: ✅ Pass (Auto JVM tests); ⏳ Blocked acceptable for DHU-required stories
-- T24: ✅ Pass (Algorithm Mode — all 12 stories runnable on emulator)
-- T26: ✅ Pass (Dashboard Cards CRUD — Android)
-- T27: ✅ Pass (Automata Orchestrator E2E — Android)
+- T20: ✅ Pass (all howto validation stories)
+- T21: ✅ Pass (end-to-end journeys)
+- T22: ✅ Pass (Wear OS emulator — all 15 stories; haptic verified via logcat)
+- T23: ✅ Pass (Android Auto DHU emulator — all 15 stories)
+- T24: ✅ Pass (Algorithm Mode — all 12 stories)
+- T26: ✅ Pass (Dashboard Cards CRUD — all 10 stories)
+- T27: ✅ Pass (Automata Orchestrator E2E — all 20 stories)
+- T28: ✅ Pass (Settings coverage gap-fill — all 40 stories)
+- T29: ✅ Pass (Howto validation gap-fill — all 19 stories)
 - No P0/P1 critical bugs
 - Cookbook shows final pass counts
 

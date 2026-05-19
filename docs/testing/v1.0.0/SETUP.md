@@ -211,6 +211,141 @@ showDeviceFrame=no
 
 ---
 
+## Phase 3b: Create Wear OS Virtual Device (10 minutes)
+
+### Create the dw_test_watch AVD
+
+```bash
+# Install Wear OS system image
+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+  "system-images;android-33;android-wear;x86" \
+  "platforms;android-33"
+
+# Accept licenses
+yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+
+# Create Wear OS AVD
+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
+  -n dw_test_watch \
+  -k "system-images;android-33;android-wear;x86" \
+  -d "wear_round" \
+  --force
+
+# Verify AVD created
+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager list avd | grep dw_test_watch
+```
+
+### Launch Wear OS Emulator
+
+```bash
+# Launch watch emulator (usually gets emulator-5556)
+$ANDROID_SDK_ROOT/emulator/emulator \
+  -avd dw_test_watch \
+  -no-snapshot-save \
+  -no-audio \
+  -no-boot-anim \
+  2>/tmp/wear-emulator.log &
+
+adb wait-for-device
+# Verify both devices online
+adb devices
+# Expected:
+# emulator-5554   device   (phone)
+# emulator-5556   device   (watch)
+```
+
+### Build and Install Wear APK
+
+```bash
+cd ~/workspace/datawatch-app
+
+# Build wear APK
+./gradlew :wear:assembleDebug
+
+# Install on watch emulator
+adb -s emulator-5556 install -r wear/build/outputs/apk/debug/wear-debug.apk
+
+# Verify installation
+adb -s emulator-5556 shell pm list packages | grep datawatch
+```
+
+### Pair Watch with Phone Emulator
+
+```bash
+# Enable DataLayer communication between emulators
+# Open Android Studio → Device Manager → select emulator-5556 (watch)
+# OR: Use command line pairing
+adb -s emulator-5554 forward tcp:5601 tcp:5601
+adb -s emulator-5556 forward tcp:5601 tcp:5601
+
+# Verify DataLayer bridge works (phone should show companion app notification)
+adb -s emulator-5556 logcat -d | grep -i "DataLayer\|WearOS" | tail -10
+```
+
+---
+
+## Phase 3c: Set Up Android Auto DHU Emulator (15 minutes)
+
+### Install DHU from SDK
+
+```bash
+# Install Android Auto Desktop Head Unit
+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "extras;google;auto"
+
+# Verify DHU binary exists
+ls -la $ANDROID_HOME/extras/google/auto/desktop-head-unit
+```
+
+### Enable Android Auto Developer Mode on Phone Emulator
+
+```bash
+# Launch phone emulator if not running
+# In emulator UI: Settings → Apps → Android Auto → version → tap 10× to enable developer mode
+# OR via ADB:
+adb -s emulator-5554 shell settings put global development_settings_enabled 1
+
+# Enable unknown sources for Android Auto
+adb -s emulator-5554 shell settings put secure install_non_market_apps 1
+```
+
+### Connect DHU to Phone Emulator
+
+```bash
+# Port-forward for DHU TCP connection
+adb -s emulator-5554 forward tcp:5277 tcp:5277
+
+# Launch DHU (connects to first ADB device automatically)
+cd $ANDROID_HOME/extras/google/auto
+./desktop-head-unit &
+
+# Expected: DHU window opens showing Android Auto interface
+# The app's AutoSummaryScreen should appear within 5–10 seconds
+```
+
+### DHU Keyboard Controls
+
+| Key | Action |
+|---|---|
+| Arrow keys | Navigate list items |
+| Enter | Select / confirm |
+| Backspace | Go back |
+| M | Microphone (voice command) |
+| H | Home |
+| S | Stop (end call) |
+| F1–F9 | Software buttons |
+
+### Capture DHU Screenshots for Evidence
+
+```bash
+# Screenshots via ADB from the phone emulator
+adb -s emulator-5554 shell screencap -p /sdcard/auto_screenshot.png
+adb -s emulator-5554 pull /sdcard/auto_screenshot.png evidence/TS-NNN/
+
+# Or: DHU → File menu → Save Screenshot
+```
+
+---
+
 ## Phase 4: Clone Repositories (5 minutes)
 
 ### Verify Workspace Directory
