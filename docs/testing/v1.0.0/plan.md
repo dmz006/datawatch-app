@@ -1137,7 +1137,9 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 **Goal**: Achieve 100% coverage of Settings screen cards that have zero test stories. Covers the General, Comms, Compute, Automata, Plugins, and About tabs for every card not covered in T7–T15.
 
-**Prerequisites**: Secondary test instance running; test server configured in app.
+**Prerequisites**: Secondary test instance running on port 18443 (TLS) / 18080 (HTTP); test server configured in mobile app to `https://10.0.2.2:18443` (emulator ADB-reverse). Test token: `dw-test-token-12345`.
+
+**Test isolation**: All bare API paths in this sprint (`GET /api/...`, `POST /api/...`) target the **test instance only**. Expand any bare path as: `curl -sk https://127.0.0.1:18443/api/<endpoint> -H "Authorization: Bearer dw-test-token-12345"`. Never use port 8443 (production). Stories tagged `[conflict:compute-daemon]` require a registered LLM backend on the test instance — if none configured, accept an API error response as a passing result (the mobile UI must still render a graceful error state).
 
 ---
 
@@ -1179,7 +1181,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Fill in name and command fields; tap Save
 3. Verify template appears in list
 4. Tap delete icon; verify template removed
-**Expected**: Create and delete round-trip works; API confirms via `/api/templates`
+**Expected**: Create and delete round-trip works; `curl -sk https://127.0.0.1:18443/api/templates -H "Authorization: Bearer dw-test-token-12345"` confirms template created then absent after delete
 **Evidence**: `t28_session_templates_crud.json`
 **Status**: 📋 Planned
 
@@ -1199,7 +1201,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Enter device name and alias; tap Save
 3. Verify alias appears in list
 4. Tap delete; verify alias removed
-**Expected**: CRUD round-trip works; API confirms via `/api/devices/aliases`
+**Expected**: CRUD round-trip works; `curl -sk https://127.0.0.1:18443/api/devices/aliases -H "Authorization: Bearer dw-test-token-12345"` confirms alias created then absent after delete
 **Evidence**: `t28_device_alias_crud.json`
 **Status**: 📋 Planned
 
@@ -1269,7 +1271,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Enter a pattern (e.g. `*.secret`) and action (e.g. `block`)
 3. Tap Save; verify filter appears
 4. Delete filter; verify removed
-**Expected**: CRUD works; API confirms via `/api/detection/config`
+**Expected**: CRUD works; `curl -sk https://127.0.0.1:18443/api/detection/config -H "Authorization: Bearer dw-test-token-12345"` confirms filter added then absent after delete
 **Evidence**: `t28_detection_filters_crud.json`
 **Status**: 📋 Planned
 
@@ -1298,7 +1300,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "COUNCIL" section
 2. Verify card shows persona count and persona rows
 3. Verify each persona row shows name and role
-**Expected**: Card renders; GET /api/council/personas populates list; no crash
+**Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/council/personas -H "Authorization: Bearer dw-test-token-12345"` returns persona list; mobile populates rows; no crash
 **Evidence**: `t28_council_personas.png`
 **Status**: 📋 Planned
 
@@ -1309,18 +1311,19 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Fill in persona name (e.g. "Critic") and system prompt
 3. Tap Save
 4. Verify persona appears in list
-**Expected**: POST /api/council/personas succeeds; persona added; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/council/personas -H "Authorization: Bearer dw-test-token-12345"` shows new persona after save; mobile list updates; no crash
 **Evidence**: `t28_council_add_persona.json`
 **Status**: 📋 Planned
 
 ### TS-567 — CouncilCard run a one-shot council review
-**Tags**: [surface:phone] [feature:settings]
+**Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
+**Prerequisites**: At least one persona added (TS-566) and an LLM backend registered: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` must return ≥1 enabled entry. If no LLM backend, run still proceeds — accept error response as pass.
 **Steps**:
 1. Tap "Run Council" button (or equivalent)
 2. Enter a question prompt for the council
 3. Tap Submit; verify loading state
 4. Wait for council run to complete; verify response shown
-**Expected**: POST /api/council/run returns responses from each persona; results rendered
+**Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/council/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"prompt":"Is this a good idea?"}'` returns 200 with persona responses (or structured error if no LLM); mobile renders result or error state without crashing
 **Evidence**: `t28_council_run.json`
 **Status**: 📋 Planned
 
@@ -1330,17 +1333,18 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "EVALS" section
 2. Verify card shows eval suite list or empty-state
 3. Verify each suite row shows name and last-run status
-**Expected**: Card renders; GET /api/eval/suites populates; no crash
+**Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/eval/suites -H "Authorization: Bearer dw-test-token-12345"` returns suite list; mobile populates rows; no crash
 **Evidence**: `t28_evals_list.png`
 **Status**: 📋 Planned
 
 ### TS-569 — EvalsCard run an eval suite
-**Tags**: [surface:phone] [feature:settings]
+**Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
+**Prerequisites**: At least one eval suite registered (TS-568) and an LLM backend enabled on the test instance. If no LLM backend, accept a structured error response as pass; mobile must not crash.
 **Steps**:
 1. Tap Run on a suite row (or enter suite name and tap Run)
 2. Verify loading indicator while eval runs
 3. Verify result row updates with pass/fail count
-**Expected**: POST /api/eval/run → result returned; card updates; no crash
+**Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/eval/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"suite":"default"}'` returns result with pass/fail counts (or structured error if no LLM); mobile card updates; no crash
 **Evidence**: `t28_evals_run.json`
 **Status**: 📋 Planned
 
@@ -1359,7 +1363,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "GUARDRAIL LIBRARY" section
 2. Verify library items listed (name, kind: allow/block/warn)
 3. Verify profiles section shows existing profiles
-**Expected**: GET /api/guardrail/library and /api/guardrail/profiles both populate; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/library -H "Authorization: Bearer dw-test-token-12345"` and `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` both return data; mobile populates both sections; no crash
 **Evidence**: `t28_guardrail_library.png`
 **Status**: 📋 Planned
 
@@ -1370,7 +1374,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Enter profile name; select 1–2 guardrails from library to include
 3. Tap Save
 4. Verify profile appears in profiles list
-**Expected**: POST /api/guardrail/profiles succeeds; profile created with selected guardrails
+**Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` shows new profile with selected guardrails; mobile list updates
 **Evidence**: `t28_guardrail_profile_create.json`
 **Status**: 📋 Planned
 
@@ -1379,7 +1383,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Steps**:
 1. Tap delete icon on the profile created in TS-572
 2. Verify profile removed from list
-**Expected**: DELETE /api/guardrail/profiles/{id} succeeds; list refreshes
+**Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` no longer includes deleted profile; mobile list refreshes
 **Evidence**: `t28_guardrail_profile_delete.json`
 **Status**: 📋 Planned
 
@@ -1389,7 +1393,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "PIPELINES" section
 2. Verify pipeline list or empty-state
 3. Verify each pipeline row shows id, status, step count
-**Expected**: GET /api/pipeline/list returns; card renders; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` returns pipeline list; mobile card renders; no crash
 **Evidence**: `t28_pipeline_list.png`
 **Status**: 📋 Planned
 
@@ -1398,7 +1402,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Steps**:
 1. Tap "Start Pipeline" or enter a pipeline config and tap Start
 2. Verify new pipeline row appears with running status
-**Expected**: POST /api/pipeline/start succeeds; pipeline ID returned; row rendered
+**Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows new pipeline row with running status; pipeline ID returned; mobile renders row
 **Evidence**: `t28_pipeline_start.json`
 **Status**: 📋 Planned
 
@@ -1407,7 +1411,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Steps**:
 1. With pipeline running (from TS-575), tap Cancel on the row
 2. Verify status updates to cancelled
-**Expected**: POST /api/pipeline/{id}/cancel succeeds; row updates
+**Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows pipeline status as cancelled; mobile row updates
 **Evidence**: `t28_pipeline_cancel.json`
 **Status**: 📋 Planned
 
@@ -1417,7 +1421,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "SKILL REGISTRIES" section
 2. Verify registry list or empty-state
 3. Verify each row shows registry name and skill count
-**Expected**: Card renders; GET /api/skills/registry/list populates; no crash
+**Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` returns registry list; mobile populates; no crash
 **Evidence**: `t28_skill_registries.png`
 **Status**: 📋 Planned
 
@@ -1427,7 +1431,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Tap "Add Registry" in Skill Registries card
 2. Enter registry URL and tap Save
 3. Verify registry appears in list
-**Expected**: POST /api/skills/registry/create succeeds; registry added
+**Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows new registry; mobile list updates
 **Evidence**: `t28_skill_registry_add.json`
 **Status**: 📋 Planned
 
@@ -1437,7 +1441,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Tap "Sync" on a registry row
 2. Verify sync progress indicator; wait for completion
 3. Verify skill count updates
-**Expected**: POST /api/skills/registry/sync fires; skill count updates; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows updated skill count after sync; mobile row reflects count; no crash
 **Evidence**: `t28_skill_sync.json`
 **Status**: 📋 Planned
 
@@ -1447,7 +1451,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Automata → scroll to "SCAN CONFIG" section
 2. Verify scan rules list or empty-state
 3. Verify each rule shows pattern and action (allow/block/warn)
-**Expected**: GET /api/autonomous/scan/config returns; card renders; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/autonomous/scan/config -H "Authorization: Bearer dw-test-token-12345"` returns scan rules; mobile card renders; no crash
 **Evidence**: `t28_scan_config.png`
 **Status**: 📋 Planned
 
@@ -1457,7 +1461,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Tap toggle on a scan rule row
 2. Verify rule enable/disable state flips
 3. Confirm via API: GET /api/autonomous/scan/config shows updated state
-**Expected**: PUT /api/autonomous/scan/config succeeds; toggle reflected in UI
+**Expected**: `curl -sk https://127.0.0.1:18443/api/autonomous/scan/config -H "Authorization: Bearer dw-test-token-12345"` shows toggled rule state; mobile toggle reflects update
 **Evidence**: `t28_scan_config_toggle.json`
 **Status**: 📋 Planned
 
@@ -1467,7 +1471,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → Plugins tab
 2. Verify plugin list or empty-state
 3. Verify each plugin row shows name, version, enabled toggle
-**Expected**: GET /api/plugins returns; tab renders; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` returns plugin list; tab renders; no crash
 **Evidence**: `t28_plugins_tab.png`
 **Status**: 📋 Planned
 
@@ -1477,7 +1481,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. If plugin exists: tap enable toggle on a plugin row
 2. Verify toggle flips; API confirms new state
 3. Toggle back; verify reverted
-**Expected**: Plugin enable/disable toggles fire API calls; state persists across tab navigation
+**Expected**: `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` shows updated enabled state after toggle; state persists across tab navigation
 **Evidence**: `t28_plugin_toggle.json`
 **Status**: 📋 Planned
 
@@ -1486,7 +1490,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Steps**:
 1. If a plugin has config fields, verify they appear below the plugin row
 2. Edit a config field value; verify it saves
-**Expected**: Plugin-specific config fields rendered; save persists via API
+**Expected**: Plugin-specific config fields rendered; `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` confirms updated config field after save
 **Evidence**: `t28_plugin_config.png`
 **Status**: 📋 Planned
 
@@ -1506,7 +1510,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Settings → About → scroll to "SUBSYSTEM RELOAD" section
 2. Tap "Reload" on one subsystem (e.g. Memory or Channels)
 3. Verify success banner or confirmation message
-**Expected**: POST /api/reload/{subsystem} returns 200; success message shown
+**Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/reload/memory -H "Authorization: Bearer dw-test-token-12345"` returns 200; mobile shows success message; no crash
 **Evidence**: `t28_subsystem_reload.png`
 **Status**: 📋 Planned
 
@@ -1545,26 +1549,34 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 **Goal**: Validate every datawatch howto that has a mobile surface but no T20 story. Each story follows the documented workflow end-to-end. Stories are read-heavy (verify config fields and API responses) rather than requiring side effects in external systems.
 
+**Prerequisites**: Secondary test instance running on port 18443 (TLS); `autonomous.enabled: true`; `memory.enabled: true` in test config (`${TEST_WORK_DIR}/config.yaml`). Mobile app configured to `https://10.0.2.2:18443`. Test token: `dw-test-token-12345`.
+
+**Test isolation**: All API verification uses `curl -sk https://127.0.0.1:18443/api/<endpoint> -H "Authorization: Bearer dw-test-token-12345"`. Never use port 8443 (production). Stories tagged `[conflict:compute-daemon]` require an LLM backend registered on the test instance (`curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` must return at least one enabled entry) — if none, accept API error response as pass; mobile must show graceful error state.
+
 ---
 
 ### TS-620 — council-mode.md: Council persona flow
-**Tags**: [surface:phone] [feature:settings]
+**Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
+**Prerequisites**: LLM backend registered on test instance: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` returns ≥1 enabled entry. If none, the run returns an error — accept that as pass; mobile must render graceful error state.
 **Steps**:
 1. Follow council-mode.md: Settings → Automata → Council section
 2. Add a persona (name: "Advocate", role: "Always defend the current plan")
-3. Run a council one-shot with prompt: "Is this a good idea?"
-4. Verify each persona's response appears in the run result
-**Expected**: Council run returns responses from all configured personas; mobile renders result
+3. Verify persona saved: `curl -sk https://127.0.0.1:18443/api/council/personas -H "Authorization: Bearer dw-test-token-12345"`
+4. Run a council one-shot with prompt: "Is this a good idea?"
+5. Verify each persona's response appears in the run result
+**Expected**: Persona list shows Advocate; `curl -sk -X POST https://127.0.0.1:18443/api/council/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"prompt":"Is this a good idea?"}'` returns responses or structured error; mobile renders result
 **Evidence**: `t29_council_mode.json`
 **Status**: 📋 Planned
 
 ### TS-621 — evals.md: Run default eval suite
-**Tags**: [surface:phone] [feature:settings]
+**Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
+**Prerequisites**: LLM backend registered on test instance. If none, accept structured error from eval run as pass.
 **Steps**:
 1. Follow evals.md: Settings → Automata → Evals section
-2. Run the "default" eval suite (POST /api/eval/run with suite="default")
-3. Verify results shown: pass count, fail count, duration
-**Expected**: Eval run completes; results rendered in card; matches API response
+2. Verify suites listed: `curl -sk https://127.0.0.1:18443/api/eval/suites -H "Authorization: Bearer dw-test-token-12345"`
+3. Run the "default" eval suite via mobile UI
+4. Verify results shown: pass count, fail count, duration
+**Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/eval/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"suite":"default"}'` returns result; mobile card updates with pass/fail counts; no crash
 **Evidence**: `t29_evals_workflow.json`
 **Status**: 📋 Planned
 
@@ -1575,8 +1587,8 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. View library items; note at least one available guardrail name
 3. Create a profile named "t29-profile" including that guardrail
 4. Verify profile listed under Profiles section
-5. Assign profile to an automaton via API: `PUT /api/autonomous/prds/{id}/guardrails`
-**Expected**: Full workflow (library browse → profile create → assign) works
+5. Assign profile to an automaton via API: `curl -sk -X PUT https://127.0.0.1:18443/api/autonomous/prds/{id}/guardrails -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"profile_id":"t29-profile"}'`
+**Expected**: Full workflow (library browse → profile create → assign) works; all three API calls target test instance on port 18443
 **Evidence**: `t29_guardrail_workflow.json`
 **Status**: 📋 Planned
 
@@ -1586,7 +1598,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Follow pipeline-chaining.md: Settings → Automata → Pipelines
 2. Start a pipeline with at least 2 steps using the card UI
 3. Verify pipeline status updates (running → complete) in the list
-**Expected**: Pipeline executes; status chain visible in mobile; matches API state
+**Expected**: Pipeline executes; `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows status chain; mobile matches API state
 **Evidence**: `t29_pipeline_workflow.json`
 **Status**: 📋 Planned
 
@@ -1597,7 +1609,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Add a registry (test URL from the howto example)
 3. Tap Sync; wait for completion
 4. Verify skill count shown on registry row
-**Expected**: Registry add + sync workflow completes; skills available in session skill picker
+**Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows registry with updated skill count; skills available in session skill picker
 **Evidence**: `t29_skills_workflow.json`
 **Status**: 📋 Planned
 
@@ -1607,7 +1619,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Follow tailscale-mesh.md: Settings → Compute → Tailscale
 2. Verify TailscaleSettingsCard shows auth key status and device hostname
 3. Verify TailscaleMeshCard shows peer node count from `/api/tailscale/nodes`
-**Expected**: Both cards render with API data (or not-configured state); no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/tailscale/nodes -H "Authorization: Bearer dw-test-token-12345"` returns node list or not-configured state; both mobile cards render; no crash
 **Evidence**: `t29_tailscale_workflow.json`
 **Status**: 📋 Planned
 
@@ -1617,7 +1629,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Follow mcp-tools.md: Settings → About → MCP Channel card
 2. Verify MCP server URL shown matches server config
 3. Verify McpServer config fields in Settings → Comms show MCP listen address
-**Expected**: MCP channel info visible and consistent between About and Comms; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/channel/info -H "Authorization: Bearer dw-test-token-12345"` returns MCP channel config; mobile About and Comms cards show consistent values; no crash
 **Evidence**: `t29_mcp_workflow.json`
 **Status**: 📋 Planned
 
@@ -1638,7 +1650,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Search for "autonomous"
 3. Verify results list populates with howto titles
 4. Tap a result; verify navigation or link-copy action fires
-**Expected**: Docs search returns results from `/api/docs/search`; tap action works
+**Expected**: `curl -sk "https://127.0.0.1:18443/api/docs/search?q=autonomous" -H "Authorization: Bearer dw-test-token-12345"` returns howto matches; mobile renders result list; tap action works
 **Evidence**: `t29_docs_workflow.json`
 **Status**: 📋 Planned
 
@@ -1648,7 +1660,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Follow compute-routing.md: Settings → Comms → Routing Rules card
 2. If rules exist: verify each shows session filter and target backend
 3. Tap "Test Route" on a rule; verify which backend is selected for test input
-**Expected**: Routing rules visible; test routing returns backend name; no crash
+**Expected**: `curl -sk https://127.0.0.1:18443/api/routing/rules -H "Authorization: Bearer dw-test-token-12345"` returns rules; test routing shows backend name from test instance; no crash
 **Evidence**: `t29_routing_workflow.json`
 **Status**: 📋 Planned
 
@@ -1659,17 +1671,18 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Create an alert rule: name "t29-cpu-alert", metric "cpu_pct", threshold 90
 3. Verify rule appears in Alerts tab
 4. Delete the rule; verify removed
-**Expected**: Alert rule CRUD via `/api/alert/rules` works; mobile renders rule list
+**Expected**: `curl -sk https://127.0.0.1:18443/api/alert/rules -H "Authorization: Bearer dw-test-token-12345"` confirms rule created then absent after delete; mobile renders rule list
 **Evidence**: `t29_alert_rules.json`
 **Status**: 📋 Planned
 
 ### TS-631 — chat-and-llm-quickstart.md: Start session with LLM backend
-**Tags**: [surface:phone] [feature:sessions]
+**Tags**: [surface:phone] [feature:sessions] [conflict:compute-daemon]
+**Prerequisites**: LLM backend registered and enabled on test instance: `curl -sk https://127.0.0.1:18443/api/llm/list -H "Authorization: Bearer dw-test-token-12345"` returns ≥1 enabled entry.
 **Steps**:
 1. Follow chat-and-llm-quickstart.md: Sessions → FAB → New Session
 2. Select a configured LLM backend in the new-session form
 3. Create session; verify it enters running state with the correct backend shown
-**Expected**: Session created with explicit backend; backend name shown in session row
+**Expected**: Session created with explicit backend; `curl -sk https://127.0.0.1:18443/api/sessions -H "Authorization: Bearer dw-test-token-12345"` confirms session with correct backend field; backend name shown in session row
 **Evidence**: `t29_chat_quickstart.json`
 **Status**: 📋 Planned
 
@@ -1710,19 +1723,20 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 1. Follow federation-cbac.md: Settings → Comms → Federation Peers card
 2. Tap a peer row to expand its CBAC (capability-based access control) settings
 3. Verify allowed/denied capabilities are listed
-**Expected**: CBAC config visible per peer; no crash; GET /api/federation/peers/{id} shows groups
+**Expected**: CBAC config visible per peer; `curl -sk https://127.0.0.1:18443/api/federation/peers -H "Authorization: Bearer dw-test-token-12345"` shows peer list with group config; no crash
 **Evidence**: `t29_federation_cbac.json`
 **Status**: 📋 Planned
 
 ### TS-636 — ollama-marketplace.md: Browse and pull Ollama model
-**Tags**: [surface:phone] [feature:settings]
+**Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
+**Prerequisites**: Ollama compute node registered on the test instance: `curl -sk https://127.0.0.1:18443/api/compute/nodes -H "Authorization: Bearer dw-test-token-12345"` must return an Ollama node. If no Ollama node, verify the Marketplace section renders catalog data (or empty-state) and no crash — accept empty-state as pass.
 **Steps**:
 1. Settings → Compute → LLM Registry → scroll to Ollama section
 2. Verify "Marketplace" button or section visible
-3. Tap Marketplace; verify model catalog loads from `/api/marketplace/ollama/catalog`
+3. Tap Marketplace; verify model catalog loads: `curl -sk https://127.0.0.1:18443/api/marketplace/ollama/catalog -H "Authorization: Bearer dw-test-token-12345"`
 4. Tap Pull on a small model (e.g. tinyllama:latest)
 5. Verify pull task starts; progress shown
-**Expected**: Marketplace catalog renders; pull fires POST /api/marketplace/pull; task ID returned
+**Expected**: Marketplace catalog renders from test instance (not production); `curl -sk -X POST https://127.0.0.1:18443/api/marketplace/pull -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"model":"tinyllama:latest"}'` fires; task ID returned; mobile shows progress
 **Evidence**: `t29_ollama_marketplace.json`
 **Status**: 📋 Planned
 
