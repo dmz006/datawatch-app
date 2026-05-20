@@ -44,7 +44,7 @@ This plan covers **all mobile, Wear, and Auto surfaces** in a comprehensive test
 # Working dir outside the repo — never commit test data
 RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
-TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
 
 cat > "${TEST_WORK_DIR}/config.yaml" <<EOF

@@ -45,6 +45,11 @@ SOAK_RUN_ID="${SOAK_RUN_ID:-$(openssl rand -hex 3)}"
 TEST_WORK_DIR="$REPO_PARENT/datawatch-soak-${SOAK_RUN_ID}"
 mkdir -p "$TEST_WORK_DIR"
 
+# Prune stale soak working dirs older than 1 day so they don't accumulate
+# across runs. Safe to do before setting the trap — nothing is created yet.
+find "$REPO_PARENT" -maxdepth 1 -name 'datawatch-soak-*' -type d -mtime +1 \
+    -not -path "$TEST_WORK_DIR" -exec rm -rf {} + 2>/dev/null || true
+
 FAILED=0
 
 cleanup() {
@@ -159,7 +164,7 @@ fi
 # Test daemon management
 # ---------------------------------------------------------------------------
 # Per-run data dir lives inside the working dir, never inside the repo.
-TEST_CONFIG_DIR="${TEST_WORK_DIR}/.datawatch-test-$$"
+TEST_CONFIG_DIR="${TEST_WORK_DIR}/.datawatch-test-${SOAK_RUN_ID}"
 TEST_PID_FILE="$TEST_WORK_DIR/test-daemon.pid"
 TEST_SERVER_LOG="$TEST_WORK_DIR/test-server.log"
 
