@@ -1691,3 +1691,41 @@ public data class EncryptionStatusDto(
     @SerialName("secure_mode") val secureMode: Boolean = false,
     val files: List<EncryptedFileStatusDto> = emptyList(),
 )
+
+// ---- Observer cards: Cooldown, Analytics, Audit ----
+
+@Serializable
+public data class CooldownStatusDto(
+    val active: Boolean = false,
+    @SerialName("until_unix_ms") val untilUnixMs: Long? = null,
+    val reason: String? = null,
+)
+
+@Serializable
+public data class AnalyticsBucketDto(
+    val date: String = "",
+    @SerialName("session_count") val sessionCount: Int = 0,
+    val completed: Int = 0,
+    val failed: Int = 0,
+    val killed: Int = 0,
+)
+
+@Serializable
+public data class AnalyticsDto(
+    @SerialName("success_rate") val successRate: Double? = null,
+    val buckets: List<AnalyticsBucketDto> = emptyList(),
+)
+
+@Serializable
+public data class AuditEntryDto(
+    val ts: String? = null,
+    val action: String = "",
+    val actor: String? = null,
+    @SerialName("session_id") val sessionId: String? = null,
+    val details: kotlinx.serialization.json.JsonObject? = null,
+)
+
+@Serializable
+public data class AuditListDto(
+    val entries: List<AuditEntryDto> = emptyList(),
+)

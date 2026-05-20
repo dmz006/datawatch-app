@@ -1288,6 +1288,27 @@ public interface TransportClient {
     public suspend fun deleteAlertRule(name: String): Result<Unit>
     public suspend fun enableAlertRule(name: String): Result<Unit>
     public suspend fun disableAlertRule(name: String): Result<Unit>
+
+    // ---- Observer cards: Cooldown, Analytics, Audit ----
+
+    /** GET /api/cooldown — fetch current global cooldown status. */
+    public suspend fun getCooldownStatus(): Result<com.dmzs.datawatchclient.transport.dto.CooldownStatusDto>
+
+    /** POST /api/cooldown — set a global cooldown until the given epoch-ms. */
+    public suspend fun setCooldown(untilUnixMs: Long, reason: String): Result<Unit>
+
+    /** DELETE /api/cooldown — clear any active global cooldown. */
+    public suspend fun clearCooldown(): Result<Unit>
+
+    /** GET /api/analytics?range=<n>d — bucketed session analytics. */
+    public suspend fun getAnalytics(rangeDays: Int = 7): Result<com.dmzs.datawatchclient.transport.dto.AnalyticsDto>
+
+    /** GET /api/audit — audit log with optional actor/action filters. */
+    public suspend fun getAuditLog(
+        actor: String? = null,
+        action: String? = null,
+        limit: Int = 20,
+    ): Result<com.dmzs.datawatchclient.transport.dto.AuditListDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
