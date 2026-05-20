@@ -6,15 +6,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PrdStatusColorTest {
-    private val green = Color(0xFF22C55E)
-    private val teal = Color(0xFF14B8A6)
+    private val green = Color(0xFF10B981)  // DwSuccess — PWA var(--success)
+    private val accentPurple = Color(0xFF7C3AED)  // PWA var(--accent) — approved
     private val amber = Color(0xFFF59E0B)
     private val red = Color(0xFFEF4444)
     private val purple = Color(0xFFA855F7)
     private val grey = Color(0xFF94A3B8)
 
     @Test fun `running maps to green`() = assertEquals(green, prdStatusColor("running"))
-    @Test fun `approved maps to teal`() = assertEquals(teal, prdStatusColor("approved"))
+    @Test fun `approved maps to teal`() = assertEquals(accentPurple, prdStatusColor("approved"))
     @Test fun `needs_review maps to amber`() = assertEquals(amber, prdStatusColor("needs_review"))
     @Test fun `revisions_asked maps to amber`() = assertEquals(amber, prdStatusColor("revisions_asked"))
     @Test fun `awaiting_approval maps to amber`() = assertEquals(amber, prdStatusColor("awaiting_approval"))
