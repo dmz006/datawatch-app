@@ -41,6 +41,7 @@ internal fun OrchestratorGraphsCard() {
     var graphs by remember { mutableStateOf<List<OrchestratorGraphListItemDto>>(emptyList()) }
     var titleInput by remember { mutableStateOf("") }
     var dirInput by remember { mutableStateOf("") }
+    var prdIdsInput by remember { mutableStateOf("") }
     var titleError by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -91,9 +92,17 @@ internal fun OrchestratorGraphsCard() {
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             singleLine = true,
         )
+        OutlinedTextField(
+            value = prdIdsInput,
+            onValueChange = { prdIdsInput = it },
+            label = { Text(stringResource(R.string.orchestrator_graph_prd_ids_hint)) },
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            singleLine = true,
+        )
         Button(
             onClick = {
                 if (titleInput.isBlank()) { titleError = true; return@Button }
+                val prdIds = prdIdsInput.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
@@ -104,10 +113,11 @@ internal fun OrchestratorGraphsCard() {
                                 else list.firstOrNull { it.id == activeId && it.enabled }
                                     ?: list.firstOrNull { it.enabled }
                             } ?: return@runCatching
-                        ServiceLocator.transportFor(sp).createOrchestratorGraph(titleInput.trim(), dirInput.trim())
+                        ServiceLocator.transportFor(sp).createOrchestratorGraph(titleInput.trim(), dirInput.trim(), prdIds)
                             .onSuccess {
                                 titleInput = ""
                                 dirInput = ""
+                                prdIdsInput = ""
                                 load()
                             }
                     }

@@ -35,7 +35,8 @@ import java.util.UUID
  */
 public class UnifiedPushSseService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val jobs = mutableMapOf<String, Job>()
+    // profile.id → Pair(job, transportSignature) so we can detect profile trust changes
+    private val jobs = mutableMapOf<String, Pair<Job, String>>()
 
     override fun onCreate() {
         super.onCreate()
@@ -58,7 +59,12 @@ public class UnifiedPushSseService : Service() {
     private suspend fun reconcile() {
         val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
         for (profile in profiles) {
-            if (jobs[profile.id]?.isActive == true) continue
+            // Transport signature includes trust setting — restart the job if it changed
+            // (e.g. user toggled "Self-signed / trust all certs" after the service started).
+            val sig = "${profile.baseUrl}|${profile.trustAnchorSha256 ?: ""}"
+            val existing = jobs[profile.id]
+            if (existing != null && existing.first.isActive && existing.second == sig) continue
+            existing?.first?.cancel()
             val transport = ServiceLocator.transportFor(profile)
             // Generate or retrieve stable client_id per server URL.
             val prefs = applicationContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -76,10 +82,10 @@ public class UnifiedPushSseService : Service() {
                 )
             }
             // Subscribe and collect events indefinitely.
-            jobs[profile.id] = scope.launch {
+            val job = scope.launch {
                 transport.subscribePushAlerts().collect { event -> postNotification(event) }
             }
-
+            jobs[profile.id] = job to sig
         }
     }
 
