@@ -46,6 +46,7 @@ RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
 TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
+mkdir -p "${TEST_DATA_DIR}/.claude"  # BL318: scope MCP config to this instance
 
 cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
 data_dir: ${TEST_DATA_DIR}
@@ -63,7 +64,8 @@ memory:
   enabled: true
 EOF
 
-~/workspace/datawatch/bin/datawatch start --foreground \
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  ~/workspace/datawatch/bin/datawatch start --foreground \
   --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
