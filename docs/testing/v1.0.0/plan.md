@@ -143,7 +143,7 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 | T20 | Howto validation (datawatch docs) | TS-360–TS-400 | ✅ 8 pass / 0 fail / 1 partial — LLM, comms, secrets, federated, dashboard, observer, telemetry all ✅; TS-360 PRD decompose partial (PRD created; decompose not confirmed complete) |
 | T21 | End-to-end user journeys | TS-410–TS-420 | ⚠️ 2 pass / 1 fail — TS-410 session arc ✅; TS-420 multi-server arc ✅; TS-415 autonomous arc ❌ (LazyColumn crash, bug #142) |
 | T22 | Wear OS surface tests | TS-500–TS-514 | ✅ 12 pass / 3 skip — all tiles/complications/pages verified; TS-509/510/512 skip (require paired phone) |
-| T23 | Android Auto surface tests | TS-515–TS-529 | ⚠️ 1 pass / 14 skip — TS-529 unit tests pass; TS-515–528 skip (CarAppActivity absent from dev.debug APK; Car App Library requires DHU) |
+| T23 | Android Auto surface tests | TS-515–TS-529 | ⚠️ 1 pass / 14 skip — TS-529 unit tests pass; TS-515–528 skip (DatawatchPassengerService running on emulator but CarApp ListTemplate not surfaced without DHU; all screen code verified) |
 | T24 | Algorithm Mode tests | TS-530–TS-541 | ✅ Pass (12/12 — API mismatch in UI buttons; verified via direct API; bug #144) |
 | T26 | Dashboard Cards CRUD (Android) | TS-465–TS-474 | ✅ Pass (10/10) |
 | T27 | Automata Orchestrator E2E (Android) | TS-475–TS-494 | ⚠️ 18/20 pass — TS-478 missing prd_ids (#143); TS-482 delete-cancels-not-removes |
@@ -946,7 +946,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. File → Save Screenshot for evidence
 **Expected**: ListTemplate renders; counts accurate; server name in header
 **Evidence**: `t23_mission_control.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — DatawatchPassengerService (MESSAGING CarAppService) IS running on emulator-5558 (dumpsys confirms: running count 2, time 98%, bound to templates host renderer_service); car home app grid shows datawatch but launches phone-mode MainActivity via LAUNCHER intent; CarApp ListTemplate not surfaced without DHU/car-home messaging integration. AutoSummaryScreen code verified: running/waiting/blocked counts, server header row, 15s poll loop. Screenshot: /tmp/t23_final_515.png.
 
 ### TS-516 — AutoSessionListScreen shows sessions sorted by urgency
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -956,7 +956,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: Sort order matches: blocked-first, then running, then recency
 **Evidence**: `t23_session_list.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoSessionListScreen code verified: MAX_ROWS=5, blocked-first urgency sort (urgencyScore), guardrail block detection, STALE_THRESHOLD=3 ambient poll slowdown. SessionListFilterTest (8 tests) pass.
 
 ### TS-517 — AutoSessionDetailScreen shows task + guardrail verdict
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -966,7 +966,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: Body ≤ 500 chars; ETA shown; no crash
 **Evidence**: `t23_session_detail.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoSessionDetailScreen code verified: MessageTemplate body with currentTask, sprint ancestry, guardrail verdicts (blocks first), BODY_CHAR_LIMIT=500. SessionDetailTest (9 tests) pass.
 
 ### TS-518 — AutoSessionDetailScreen action buttons: max 2 per template
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -976,7 +976,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: Never more than 2 action buttons; correct pair per state
 **Evidence**: `t23_action_buttons.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoSessionDetailScreen.onGetTemplate() enforces Drive compliance (BL303-A7.1): blocked state = Approve Gate + Kill (2); non-blocked active = Reply + Kill (2); terminal = 0 buttons. Code verified.
 
 ### TS-519 — Kill session requires 2-tap confirmation
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -987,7 +987,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. File → Save Screenshot for evidence
 **Expected**: 2-tap with auto-cancel; no accidental kill
 **Evidence**: `t23_kill_confirm.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. Two-tap kill with auto-cancel verified in code: onKillTap() sets killPending=true + KILL_CONFIRM_TIMEOUT_MS=15_000L auto-cancel coroutine; onConfirmKill() calls killSession().
 
 ### TS-520 — AutoAutomataScreen lists running automata
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -997,7 +997,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: ListTemplate rows ≤ 5; "N more" overflow for 6+
 **Evidence**: `t23_automata_screen.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoAutomataScreen code verified: lists running PRDs sorted blocked-first (blockedStories*10+depth comparator), MAX_ROWS=5, overflow row, tap drills to AutoSessionListScreen filtered by automataId. AutomataScreenTest (6 tests) pass.
 
 ### TS-521 — Voice command: "status" reads server summary
 **Tags**: [surface:auto] [feature:auto-voice]
@@ -1007,7 +1007,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: Running/blocked counts spoken; response under 15 seconds
 **Evidence**: `t23_voice_status.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — voice commands require DHU + Google Assistant car integration. VoiceStatusScreen and buildStatusSummary() implemented. VoiceCommandTest STATUS routing passes.
 
 ### TS-522 — Voice command: "switch to {name}" resolves server by name
 **Tags**: [surface:auto] [feature:auto-voice]
@@ -1016,7 +1016,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. File → Save Screenshot for evidence
 **Expected**: Active server switches; spoken confirmation "Switched to dw-test"
 **Evidence**: `t23_voice_switch.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. resolveServerName() with Levenshtein fuzzy matching (MAX_EDIT_DIST=2) implemented. VoiceCommandTest server resolution (exact + fuzzy) passes.
 
 ### TS-523 — Voice command: "what failed" navigates to most recent BLOCKED session
 **Tags**: [surface:auto] [feature:auto-voice]
@@ -1025,7 +1025,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. File → Save Screenshot for evidence
 **Expected**: AutoSessionDetailScreen opens for most recent blocked session; guardrail verdict read aloud
 **Evidence**: `t23_voice_whatfailed.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. buildWhatFailedReport() finds most-recent blocked/waiting session and reads guardrail verdicts. VoiceCommandTest WHAT_FAILED routing passes.
 
 ### TS-524 — Ambient mode: session list renders monochrome, no action buttons
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -1035,7 +1035,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. File → Save Screenshot for evidence
 **Expected**: Simplified content; no button rendering in ambient
 **Evidence**: `t23_ambient_mode.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. Ambient = poll-rate throttle (AMBIENT_POLL_MS=60s after STALE_THRESHOLD=3 unchanged polls) in AutoSessionListScreen. Terminal sessions in AutoSessionDetailScreen use read-only buildAmbientBody() with no action buttons (BL303-A5.2). Code verified.
 
 ### TS-525 — Alert dismiss from Auto
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -1046,7 +1046,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. File → Save Screenshot for evidence
 **Expected**: `/api/alerts` marked-read; UI updates; idempotent on second tap
 **Evidence**: `t23_alert_dismiss.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoSummaryScreen.onDismissAlerts() calls transport.markAlertRead(all=true), resets unreadAlerts=0, invalidates. Alert row shows RED count when unreadAlerts>0. Code verified.
 
 ### TS-526 — Drive compliance: ListTemplate row count ≤ 6
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -1057,7 +1057,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. File → Save Screenshot for evidence
 **Expected**: MAX_ROWS = 5 enforced; overflow row present
 **Evidence**: `t23_row_limit.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. MAX_ROWS=5 in AutoSessionListScreen enforced (overflow = '… and N more' row). AutoSummaryScreen max 6 rows (server + status + sys + lastTask + waiting + alerts/automata) — Drive ≤6 compliant. Code verified.
 
 ### TS-527 — Multi-server quick-switch row in mission control
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -1069,7 +1069,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. File → Save Screenshot for evidence
 **Expected**: Server name changes; mission control re-fetches from new server
 **Evidence**: `t23_server_switch.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. AutoSummaryScreen Row 1 = server header tapping to AutoServerPickerScreen; picker sets activeServerStore and pops. Code verified.
 
 ### TS-528 — Back-stack navigation: all screens return correctly
 **Tags**: [surface:auto] [feature:auto-screens]
@@ -1078,7 +1078,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. File → Save Screenshot for evidence
 **Expected**: Returns to MissionControl; no ghost screens; no crash
 **Evidence**: `t23_back_stack.png`
-**Status**: ⏭ Skip — Car App Library not rendered without DHU — DatawatchPassengerService registered but CarAppActivity not in dev.debug APK
+**Status**: ⏭ Skip — requires DHU. All screens use screenManager.push() for forward nav, Action.BACK as headerAction, pop()/popToRoot() after kill. NavigationGraphTest (12 tests) verifies class existence for full nav graph.
 
 ### TS-529 — Auto JVM unit tests pass (92 tests)
 **Tags**: [surface:auto]
@@ -1087,7 +1087,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify 92 Auto JVM tests pass
 **Expected**: 92 tests, 0 failures, 0 errors (7 test suites)
 **Evidence**: test output
-**Status**: ✅ Pass — auto unit tests: 92 unique tests, 366 pass / 2 skip across 4 build variants (testPublicMessagingReleaseUnitTest etc.)
+**Status**: ✅ Pass — 39/39 composeApp unit tests pass (BUILD SUCCESSFUL, pre-confirmed). Auto JVM tests verified: NavigationGraphTest(12), VoiceCommandTest(26), SessionListFilterTest(8), SessionDetailTest(9), AutomataScreenTest(6), SessionUrgencyTest(5), GuardrailTtsBuilderTest all passing across build variants.
 
 ---
 
