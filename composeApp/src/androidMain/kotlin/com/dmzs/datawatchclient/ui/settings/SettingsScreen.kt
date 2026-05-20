@@ -128,6 +128,7 @@ private enum class SettingsTab(@StringRes val labelRes: Int) {
 public fun SettingsScreen(
     onAddServer: () -> Unit = {},
     onEditServer: (String) -> Unit = {},
+    onNavigateToObserver: () -> Unit = {},
     alertsVm: AlertsViewModel = viewModel(),
 ) {
     val profiles by ServiceLocator.profileRepository.observeAll()
@@ -381,6 +382,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleMeshCard()
                                 // v0.88.0 Sprint 19 (#111) — alpha.25 settings move
                                 SecretsCard()
+                                // PWA alpha.25 #230 — Observer quicklink moved from General → Compute
+                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(onNavigateToMonitor = onNavigateToObserver)
                             }
                             SettingsTab.Automata -> {
                                 // v0.81.0 — flat PWA v7.0.0-alpha.23c order; no section headers
