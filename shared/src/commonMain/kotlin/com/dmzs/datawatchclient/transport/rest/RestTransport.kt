@@ -2727,6 +2727,62 @@ public class RestTransport(
             Unit
         }
 
+    // ---- Observer cards: Cooldown, Analytics, Audit ----
+
+    override suspend fun getCooldownStatus(): Result<com.dmzs.datawatchclient.transport.dto.CooldownStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/cooldown") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun setCooldown(untilUnixMs: Long, reason: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/cooldown") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("until_unix_ms", kotlinx.serialization.json.JsonPrimitive(untilUnixMs))
+                        put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+                    },
+                )
+            }
+            Unit
+        }
+
+    override suspend fun clearCooldown(): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/cooldown") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun getAnalytics(rangeDays: Int): Result<com.dmzs.datawatchclient.transport.dto.AnalyticsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/analytics?range=${rangeDays}d") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun getAuditLog(
+        actor: String?,
+        action: String?,
+        limit: Int,
+    ): Result<com.dmzs.datawatchclient.transport.dto.AuditListDto> =
+        request {
+            val params =
+                buildList {
+                    add("limit=$limit")
+                    actor?.let { add("actor=${it.replace(" ", "%20")}") }
+                    action?.let { add("action=${it.replace(" ", "%20")}") }
+                }.joinToString("&")
+            client.get("${profile.baseUrl}/api/audit?$params") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
