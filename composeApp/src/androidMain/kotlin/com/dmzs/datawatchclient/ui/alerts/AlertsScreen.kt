@@ -450,10 +450,20 @@ private fun AlertsTopBar(
                             AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
                             AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
                         }
+                        val chipColor = when (chip) {
+                            AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
+                            AlertsViewModel.ChipFilter.Prompt -> Color(0xFFF59E0B)
+                            AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
+                            else -> null
+                        }
                         FilterChip(
                             selected = state.chipFilter == chip,
                             onClick = { onSetChip(chip) },
                             label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            colors = if (chipColor != null) androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = chipColor.copy(alpha = 0.18f),
+                                selectedLabelColor = chipColor,
+                            ) else androidx.compose.material3.FilterChipDefaults.filterChipColors(),
                         )
                     }
                 }

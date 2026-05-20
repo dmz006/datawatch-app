@@ -327,15 +327,35 @@ private fun PrdsBody(
     onApprove: (String) -> Unit = {},
 ) {
     if (filterOpen) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            FilterChip(selected = statusFilter == null, onClick = { onStatusFilter(null) }, label = { Text(stringResource(R.string.autonomous_filter_all)) })
-            listOf("needs_review", "revisions_asked", "approved", "decomposing", "running", "complete", "rejected", "cancelled").forEach { s ->
-                FilterChip(selected = statusFilter == s, onClick = { onStatusFilter(if (statusFilter == s) null else s) }, label = { Text(s.replace('_', ' ')) })
+            item {
+                FilterChip(selected = statusFilter == null, onClick = { onStatusFilter(null) }, label = { Text(stringResource(R.string.autonomous_filter_all), style = MaterialTheme.typography.labelSmall) })
             }
-            FilterChip(selected = includeTemplates, onClick = { onIncludeTemplates(!includeTemplates) }, label = { Text(stringResource(R.string.autonomous_filter_templates)) })
+            items(listOf("needs_review", "revisions_asked", "approved", "decomposing", "running", "complete", "rejected", "cancelled")) { s ->
+                val statusColor = prdStatusColor(s)
+                FilterChip(
+                    selected = statusFilter == s,
+                    onClick = { onStatusFilter(if (statusFilter == s) null else s) },
+                    label = { Text(s.replace('_', ' '), style = MaterialTheme.typography.labelSmall) },
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = statusColor.copy(alpha = 0.18f),
+                        selectedLabelColor = statusColor,
+                        selectedLeadingIconColor = statusColor,
+                    ),
+                    border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+                        borderColor = if (statusFilter == s) statusColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        selectedBorderColor = statusColor,
+                        enabled = true,
+                        selected = statusFilter == s,
+                    ),
+                )
+            }
+            item {
+                FilterChip(selected = includeTemplates, onClick = { onIncludeTemplates(!includeTemplates) }, label = { Text(stringResource(R.string.autonomous_filter_templates), style = MaterialTheme.typography.labelSmall) })
+            }
         }
     }
     state.banner?.let { banner ->
@@ -526,7 +546,7 @@ private fun TypeBadge(type: String) {
  * Danger states (rejected/cancelled) show all pills in red.
  */
 @Composable
-private fun LifecycleStrip(status: String) {
+internal fun LifecycleStrip(status: String) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
     val steps = listOf("review", "approved", "decompose", "run", "done")
     val statusLower = status.lowercase()
