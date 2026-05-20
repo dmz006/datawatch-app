@@ -73,17 +73,14 @@ import com.dmzs.datawatchclient.domain.SessionState
 
 /**
  * Alerts tab — matches PWA `renderAlertsView` (app.js:5516) structure:
- *  - Active(N) / Inactive(N) sub-tabs sourced from `/api/alerts`
+ *  - Active(N) / Historical(N) / System(N) primary tabs (always visible)
+ *  - Per-tab chip filters (All/Prompt/Error/Warn/Info) below the tabs
  *  - Per-session collapsible group headers with state pill + count
  *  - Per-alert cards with level-colored left border + timestamp +
  *    title + body
  *  - Quick-reply dropdown on the first (latest) alert of any
  *    `waiting_input` session (PWA app.js:5573-5580)
- *  - Swipe-left on a group header mutes the session (legacy mobile
- *    convention, retained since it's a useful gesture the PWA lacks)
- *
- * Sprint 22 (alpha.30 #115): redesigned top bar with chip filters,
- * sort toggle, search bar, and dismiss-all action.
+ *  - Swipe-left on a group header mutes the session
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +94,6 @@ public fun AlertsScreen(
     val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
     var scheduleFor by remember { mutableStateOf<Session?>(null) }
-    // G16: per-session filter within the Active tab; reset on tab change.
     var sessionFilter by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(state.selectedTab) { sessionFilter = null }
 
@@ -108,7 +104,6 @@ public fun AlertsScreen(
                 reachable = reachable,
                 lastProbeEpochMs = lastProbeEpochMs,
                 onRetry = vm::refresh,
-                onSetChip = vm::setChipFilter,
                 onToggleSort = {
                     vm.setSortMode(
                         if (state.sortMode == AlertsViewModel.SortMode.BySession) {
@@ -119,13 +114,13 @@ public fun AlertsScreen(
                     )
                 },
                 onDismissAll = vm::dismissAll,
-                onSearchChange = vm::setSearch,
                 onSelectProfile = vm::selectProfile,
                 onSelectAll = vm::selectAllServers,
             )
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            // Error banner
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -143,9 +138,155 @@ public fun AlertsScreen(
                 }
             }
 
+            // PWA-style primary tab row — always visible regardless of sort mode.
+            TabRow(
+                selectedTabIndex = when (state.selectedTab) {
+                    AlertsViewModel.Tab.Active -> 0
+                    AlertsViewModel.Tab.Historical -> 1
+                    AlertsViewModel.Tab.System -> 2
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Tab(
+                    selected = state.selectedTab == AlertsViewModel.Tab.Active,
+                    onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
+                    text = {
+                        Text(
+                            "${stringResource(R.string.alerts_active_tab_label)} (${state.active.sumOf { it.alerts.size }})",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    },
+                )
+                Tab(
+                    selected = state.selectedTab == AlertsViewModel.Tab.Historical,
+                    onClick = { vm.selectTab(AlertsViewModel.Tab.Historical) },
+                    text = {
+                        Text(
+                            "${stringResource(R.string.alerts_historical_tab_label)} (${state.historical.sumOf { it.alerts.size }})",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    },
+                )
+                Tab(
+                    selected = state.selectedTab == AlertsViewModel.Tab.System,
+                    onClick = { vm.selectTab(AlertsViewModel.Tab.System) },
+                    text = {
+                        Text(
+                            "${stringResource(R.string.alerts_system_tab_label)} (${state.system.sumOf { it.alerts.size }})",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    },
+                )
+            }
+
+            // Per-tab chip filters + search bar (PWA secondary nav inside each tab).
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        AlertsViewModel.ChipFilter.entries.forEach { chip ->
+                            val label = when (chip) {
+                                AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
+                                AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
+                                AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
+                                AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
+                                AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
+                            }
+                            val chipColor = when (chip) {
+                                AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
+                                AlertsViewModel.ChipFilter.Prompt -> Color(0xFFF59E0B)
+                                AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
+                                else -> null
+                            }
+                            FilterChip(
+                                selected = state.chipFilter == chip,
+                                onClick = { vm.setChipFilter(chip) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                colors = if (chipColor != null) androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = chipColor.copy(alpha = 0.18f),
+                                    selectedLabelColor = chipColor,
+                                ) else androidx.compose.material3.FilterChipDefaults.filterChipColors(),
+                            )
+                        }
+                    }
+                    OutlinedTextField(
+                        value = state.searchQuery,
+                        onValueChange = vm::setSearch,
+                        placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        textStyle = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            // Session sub-tabs when Active tab has 2+ groups (per-session quick filter).
+            if (state.selectedTab == AlertsViewModel.Tab.Active && state.active.size >= 2) {
+                val activeGroups = state.active
+                val filterIdx = if (sessionFilter == null) 0 else
+                    activeGroups.indexOfFirst { it.sessionId == sessionFilter }
+                        .let { if (it < 0) 0 else it + 1 }
+                ScrollableTabRow(
+                    selectedTabIndex = filterIdx,
+                    edgePadding = 8.dp,
+                    containerColor = MaterialTheme.colorScheme.background,
+                ) {
+                    Tab(
+                        selected = sessionFilter == null,
+                        onClick = { sessionFilter = null },
+                        text = {
+                            Text(
+                                stringResource(R.string.alerts_filter_all),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        },
+                    )
+                    activeGroups.forEach { group ->
+                        val serverName = state.groupProfileNames[group.sessionId]
+                        val shortLabel = if (serverName != null) {
+                            val shortId = group.sessionId.substringAfterLast('-').take(5)
+                            "${serverName.take(7)}/$shortId"
+                        } else {
+                            group.session?.name
+                                ?.takeIf { it.isNotBlank() }
+                                ?.take(10)
+                                ?: group.sessionId.substringAfterLast('-').take(8)
+                        }
+                        Tab(
+                            selected = sessionFilter == group.sessionId,
+                            onClick = { sessionFilter = group.sessionId },
+                            text = {
+                                Text(
+                                    shortLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+
+            val groups = if (sessionFilter != null && state.selectedTab == AlertsViewModel.Tab.Active) {
+                state.active.filter { it.sessionId == sessionFilter }
+            } else {
+                state.visibleGroups
+            }
+
             if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
-                // Flat chronological view — no group headers, newest-first.
-                if (state.flatChronoAlerts.isEmpty()) {
+                // Flat chronological view scoped to the current tab's groups.
+                val flatChrono = groups.flatMap { it.alerts }.sortedByDescending { it.createdAt }
+                if (flatChrono.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
                             stringResource(R.string.alerts_empty_active),
@@ -155,7 +296,7 @@ public fun AlertsScreen(
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(state.flatChronoAlerts, key = { it.id }) { alert ->
+                        items(flatChrono, key = { it.id }) { alert ->
                             AlertCard(
                                 alert = alert,
                                 showQuickReply = false,
@@ -169,99 +310,7 @@ public fun AlertsScreen(
                     }
                 }
             } else {
-                // 3-tab layout: Active / Historical / System (Sprint 27 alpha.33).
-                TabRow(
-                    selectedTabIndex = when (state.selectedTab) {
-                        AlertsViewModel.Tab.Active -> 0
-                        AlertsViewModel.Tab.Historical -> 1
-                        AlertsViewModel.Tab.System -> 2
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Tab(
-                        selected = state.selectedTab == AlertsViewModel.Tab.Active,
-                        onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
-                        text = {
-                            Text(
-                                "${stringResource(R.string.alerts_active_tab_label)} (${state.active.sumOf { it.alerts.size }})",
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        },
-                    )
-                    Tab(
-                        selected = state.selectedTab == AlertsViewModel.Tab.Historical,
-                        onClick = { vm.selectTab(AlertsViewModel.Tab.Historical) },
-                        text = {
-                            Text(
-                                "${stringResource(R.string.alerts_historical_tab_label)} (${state.historical.sumOf { it.alerts.size }})",
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        },
-                    )
-                    Tab(
-                        selected = state.selectedTab == AlertsViewModel.Tab.System,
-                        onClick = { vm.selectTab(AlertsViewModel.Tab.System) },
-                        text = {
-                            Text(
-                                "${stringResource(R.string.alerts_system_tab_label)} (${state.system.sumOf { it.alerts.size }})",
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        },
-                    )
-                }
-
-                // G16: per-session sub-tabs when Active + 2+ groups.
-                if (state.selectedTab == AlertsViewModel.Tab.Active && state.active.size >= 2) {
-                    val activeGroups = state.active
-                    val filterIdx = if (sessionFilter == null) 0 else
-                        activeGroups.indexOfFirst { it.sessionId == sessionFilter }
-                            .let { if (it < 0) 0 else it + 1 }
-                    ScrollableTabRow(
-                        selectedTabIndex = filterIdx,
-                        edgePadding = 8.dp,
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ) {
-                        Tab(
-                            selected = sessionFilter == null,
-                            onClick = { sessionFilter = null },
-                            text = {
-                                Text(
-                                    stringResource(R.string.alerts_filter_all),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            },
-                        )
-                        activeGroups.forEach { group ->
-                            val serverName = state.groupProfileNames[group.sessionId]
-                            val shortLabel = if (serverName != null) {
-                                // all-servers mode: "srv/shortId" so the user can distinguish servers
-                                val shortId = group.sessionId.substringAfterLast('-').take(5)
-                                "${serverName.take(7)}/$shortId"
-                            } else {
-                                group.session?.name
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?.take(10)
-                                    ?: group.sessionId.substringAfterLast('-').take(8)
-                            }
-                            Tab(
-                                selected = sessionFilter == group.sessionId,
-                                onClick = { sessionFilter = group.sessionId },
-                                text = {
-                                    Text(
-                                        shortLabel,
-                                        style = MaterialTheme.typography.labelMedium,
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
-
-                val groups = if (sessionFilter != null && state.selectedTab == AlertsViewModel.Tab.Active) {
-                    state.active.filter { it.sessionId == sessionFilter }
-                } else {
-                    state.visibleGroups
-                }
+                // Grouped (BySession) view.
                 if (groups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.refreshing) {
@@ -284,7 +333,6 @@ public fun AlertsScreen(
                         items(groups, key = { it.sessionId }) { group ->
                             val expanded =
                                 group.sessionId in state.expandedSessionIds ||
-                                    // Active groups default-expand; others default-collapse.
                                     (
                                         state.selectedTab == AlertsViewModel.Tab.Active &&
                                             group.sessionId !in state.expandedSessionIds
@@ -323,10 +371,9 @@ public fun AlertsScreen(
 }
 
 /**
- * Custom top bar for the Alerts screen (Sprint 22 alpha.30 redesign).
- *
- * Uses TopAppBar for consistent chrome with Sessions/Autonomous, then
- * a Surface strip below for chip filters and search.
+ * Alerts top bar: server picker dropdown + sort toggle + dismiss-all.
+ * Chip filters and search have moved below the primary TabRow in the
+ * content area (PWA-style per-tab secondary filters).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -335,153 +382,95 @@ private fun AlertsTopBar(
     reachable: Boolean? = null,
     lastProbeEpochMs: Long? = null,
     onRetry: () -> Unit = {},
-    onSetChip: (AlertsViewModel.ChipFilter) -> Unit,
     onToggleSort: () -> Unit,
     onDismissAll: () -> Unit,
-    onSearchChange: (String) -> Unit,
     onSelectProfile: (String) -> Unit,
     onSelectAll: () -> Unit,
 ) {
     var pickerOpen by remember { mutableStateOf(false) }
-    Column {
-        TopAppBar(
-            title = {
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .clickable(onClick = { pickerOpen = !pickerOpen })
-                            .padding(end = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            if (state.allServersMode) stringResource(R.string.sessions_all_servers)
-                            else (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server)),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+    TopAppBar(
+        title = {
+            Box {
+                Row(
+                    modifier = Modifier
+                        .clickable(onClick = { pickerOpen = !pickerOpen })
+                        .padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        if (state.allServersMode) stringResource(R.string.sessions_all_servers)
+                        else (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server)),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server))
+                }
+                DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
+                    if (state.allProfiles.size > 1) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    if (state.allServersMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            },
+                            onClick = { onSelectAll(); pickerOpen = false },
                         )
-                        Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server))
+                        HorizontalDivider()
                     }
-                    DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
-                        if (state.allProfiles.size > 1) {
+                    if (state.allProfiles.isEmpty()) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = { pickerOpen = false }, enabled = false)
+                    } else {
+                        state.allProfiles.forEach { p ->
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                        if (state.allServersMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                        AlertsStatusDot(enabled = p.enabled)
+                                        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                                            Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
+                                            Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        if (p.id == state.activeProfile?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
                                     }
                                 },
-                                onClick = { onSelectAll(); pickerOpen = false },
+                                onClick = { onSelectProfile(p.id); pickerOpen = false },
                             )
-                            HorizontalDivider()
-                        }
-                        if (state.allProfiles.isEmpty()) {
-                            DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = { pickerOpen = false }, enabled = false)
-                        } else {
-                            state.allProfiles.forEach { p ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            AlertsStatusDot(enabled = p.enabled)
-                                            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                                                Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                                Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                            if (p.id == state.activeProfile?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
-                                        }
-                                    },
-                                    onClick = { onSelectProfile(p.id); pickerOpen = false },
-                                )
-                            }
                         }
                     }
                 }
-            },
-            actions = {
-                // Sort toggle: BySession ↔ Chronological
-                IconButton(onClick = onToggleSort) {
-                    Icon(
-                        Icons.Filled.SortByAlpha,
-                        contentDescription = stringResource(R.string.alert_sort_tip),
-                        tint = if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                }
-                // Dismiss-all button
-                IconButton(onClick = onDismissAll) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.alert_dismiss_all_tip),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (!state.allServersMode && state.activeProfile != null) {
-                    ReachabilityDot(
-                        reachable = reachable,
-                        lastProbeEpochMs = lastProbeEpochMs,
-                        onRetry = onRetry,
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-        )
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 3.dp,
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Chip filter row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    AlertsViewModel.ChipFilter.entries.forEach { chip ->
-                        val label = when (chip) {
-                            AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
-                            AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
-                            AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
-                            AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
-                            AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
-                        }
-                        val chipColor = when (chip) {
-                            AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
-                            AlertsViewModel.ChipFilter.Prompt -> Color(0xFFF59E0B)
-                            AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
-                            else -> null
-                        }
-                        FilterChip(
-                            selected = state.chipFilter == chip,
-                            onClick = { onSetChip(chip) },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                            colors = if (chipColor != null) androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = chipColor.copy(alpha = 0.18f),
-                                selectedLabelColor = chipColor,
-                            ) else androidx.compose.material3.FilterChipDefaults.filterChipColors(),
-                        )
-                    }
-                }
-                // Search bar
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = onSearchChange,
-                    placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
             }
-        }
-    }
+        },
+        actions = {
+            IconButton(onClick = onToggleSort) {
+                Icon(
+                    Icons.Filled.SortByAlpha,
+                    contentDescription = stringResource(R.string.alert_sort_tip),
+                    tint = if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            IconButton(onClick = onDismissAll) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.alert_dismiss_all_tip),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (!state.allServersMode && state.activeProfile != null) {
+                ReachabilityDot(
+                    reachable = reachable,
+                    lastProbeEpochMs = lastProbeEpochMs,
+                    onRetry = onRetry,
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    )
 }
 
 /**
@@ -582,8 +571,6 @@ private fun AlertGroupCard(
             }
 
             if (expanded) {
-                // Quick-reply dropdown on the latest alert for an
-                // actively-waiting session — mirrors PWA app.js:5573-5580.
                 val canQuickReply =
                     group.session?.state == SessionState.Waiting &&
                         group.sessionId != AlertsViewModel.AlertGroup.SYSTEM_BUCKET
@@ -591,12 +578,7 @@ private fun AlertGroupCard(
                     AlertCard(
                         alert = alert,
                         showQuickReply = canQuickReply && idx == 0,
-                        onQuickReply = {
-                            // Open session-detail; the composer auto-focuses
-                            // when state==Waiting and the reply text auto-
-                            // seeds from the latest prompt upstream.
-                            onOpenSession()
-                        },
+                        onQuickReply = { onOpenSession() },
                         onSchedule = onSchedule,
                         onOpenSession = onOpenSession,
                         onMarkRead = { onMarkRead(alert.id) },
@@ -613,9 +595,6 @@ private fun AlertGroupCard(
 /**
  * Per-alert card. Left border is level-colored; title sits bold above
  * the body. PWA mirror: app.js:5583-5591.
- *
- * Sprint 22: background tint based on alert type (prompt = amber,
- * error = red, others = surface).
  */
 @Composable
 private fun AlertCard(
@@ -639,14 +618,12 @@ private fun AlertCard(
     Row(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        // Level-colored left border (3dp wide).
         Box(
             modifier =
                 Modifier
                     .width(3.dp)
                     .background(levelColor),
         ) {
-            // Height is expanded by the sibling Column; Box itself has no intrinsic height.
             Spacer(modifier = Modifier.fillMaxSize())
         }
         Column(
@@ -680,13 +657,12 @@ private fun AlertCard(
             }
             if (alert.message.isNotBlank()) {
                 Text(
-                    alert.message.take(500), // match PWA `truncated` cutoff
+                    alert.message.take(500),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            // Action row — quick reply (if applicable) + Open + Schedule.
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 horizontalArrangement = Arrangement.End,
@@ -769,7 +745,6 @@ private fun stateLabel(s: SessionState?): String =
         else -> s.name.lowercase()
     }
 
-/** Minimal "x m ago" / "x h ago" formatter matching PWA timeAgo. */
 private fun timeAgo(ts: kotlinx.datetime.Instant): String {
     val now = kotlinx.datetime.Clock.System.now()
     val deltaSec = (now - ts).inWholeSeconds
@@ -780,7 +755,6 @@ private fun timeAgo(ts: kotlinx.datetime.Instant): String {
         else -> "${deltaSec / 86_400}d ago"
     }
 }
-
 
 @Composable
 private fun AlertsStatusDot(enabled: Boolean) {
