@@ -147,9 +147,9 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 | T24 | Algorithm Mode tests | TS-530–TS-541 | 📋 Planned |
 | T26 | Dashboard Cards CRUD (Android) | TS-465–TS-474 | 📋 Planned |
 | T27 | Automata Orchestrator E2E (Android) | TS-475–TS-494 | 📋 Planned |
-| T28 | Settings cards coverage gap-fill | TS-550–TS-614 | 📋 Planned |
-| T29 | Howto validation gap-fill | TS-620–TS-660 | 📋 Planned |
-| T30 | v8.2–v8.6 new feature coverage | TS-660–TS-670 | 📋 Planned |
+| T28 | Settings cards coverage gap-fill | TS-550–TS-614 | ✅ Pass (38/0/2) |
+| T29 | Howto validation gap-fill | TS-620–TS-660 | ✅ Pass (15/0/4) |
+| T30 | v8.2–v8.6 new feature coverage | TS-660–TS-670 | ❌ Fail (2/9/0) — 4 mobile cards missing |
 | T31 | Matrix backend (v8.7.0 / BL241) | TS-671–TS-680 | 📋 Planned |
 
 ---
@@ -1235,7 +1235,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify results list populates (or empty-state message if no results)
 **Expected**: Card renders; search fires API call; results or empty-state shown; no crash
 **Evidence**: `t28_docs_search.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-551 — DocsSearchCard howto result opens link
 **Tags**: [surface:phone] [feature:settings]
@@ -1245,7 +1245,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify action (open URL or copy to clipboard)
 **Expected**: Result tap performs navigation or share action without crash
 **Evidence**: `t28_docs_search_result.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-552 — SessionTemplatesCard renders and lists templates
 **Tags**: [surface:phone] [feature:settings]
@@ -1255,7 +1255,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. If empty, verify empty-state text
 **Expected**: Card renders; no crash; template list or empty-state visible
 **Evidence**: `t28_session_templates.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-553 — SessionTemplatesCard create and delete template
 **Tags**: [surface:phone] [feature:settings]
@@ -1266,7 +1266,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Tap delete icon; verify template removed
 **Expected**: Create and delete round-trip works; `curl -sk https://127.0.0.1:18443/api/templates -H "Authorization: Bearer dw-test-token-12345"` confirms template created then absent after delete
 **Evidence**: `t28_session_templates_crud.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-554 — DeviceAliasesCard renders and lists aliases
 **Tags**: [surface:phone] [feature:settings]
@@ -1275,7 +1275,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify card heading and alias list (or empty-state)
 **Expected**: Card renders; no crash
 **Evidence**: `t28_device_aliases.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-555 — DeviceAliasesCard create and delete alias
 **Tags**: [surface:phone] [feature:settings]
@@ -1286,7 +1286,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Tap delete; verify alias removed
 **Expected**: CRUD round-trip works; `curl -sk https://127.0.0.1:18443/api/devices/aliases -H "Authorization: Bearer dw-test-token-12345"` confirms alias created then absent after delete
 **Evidence**: `t28_device_alias_crud.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-556 — ToolingCard renders and shows git status
 **Tags**: [surface:phone] [feature:settings]
@@ -1296,7 +1296,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Tap gitignore setup; verify response banner
 **Expected**: Card renders; actions callable; response shown; no crash
 **Evidence**: `t28_tooling_card.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-557 — RoutingRulesCard renders and lists rules
 **Tags**: [surface:phone] [feature:settings]
@@ -1306,7 +1306,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each rule shows: session filter, target backend
 **Expected**: Card renders; API response shown; no crash
 **Evidence**: `t28_routing_rules.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-558 — RoutingRulesCard test routing for a session
 **Tags**: [surface:phone] [feature:settings]
@@ -1315,7 +1315,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify result shows which backend the rule routes to
 **Expected**: Test routing returns backend name; or empty-state if no rules; no crash
 **Evidence**: `t28_routing_rules_test.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-559 — CertInstallCard renders and shows TLS info
 **Tags**: [surface:phone] [feature:settings]
@@ -1325,7 +1325,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify "Install Certificate" action is present
 **Expected**: Card renders with cert details; no crash
 **Evidence**: `t28_cert_card.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-560 — CostRatesCard renders and shows LLM cost rates
 **Tags**: [surface:phone] [feature:settings]
@@ -1335,7 +1335,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify total cost summary if usage data available
 **Expected**: Card renders; rates populated from API; no crash
 **Evidence**: `t28_cost_rates.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-561 — DetectionFiltersCard renders and lists filters
 **Tags**: [surface:phone] [feature:settings]
@@ -1345,7 +1345,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each filter shows pattern and action
 **Expected**: Card renders; filters listed; no crash
 **Evidence**: `t28_detection_filters.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-562 — DetectionFiltersCard add and delete filter
 **Tags**: [surface:phone] [feature:settings]
@@ -1356,7 +1356,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Delete filter; verify removed
 **Expected**: CRUD works; `curl -sk https://127.0.0.1:18443/api/detection/config -H "Authorization: Bearer dw-test-token-12345"` confirms filter added then absent after delete
 **Evidence**: `t28_detection_filters_crud.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-563 — TailscaleSettingsCard renders and shows node status
 **Tags**: [surface:phone] [feature:settings]
@@ -1366,7 +1366,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify node list or empty-state if Tailscale not configured
 **Expected**: Card renders; status visible; no crash regardless of Tailscale auth state
 **Evidence**: `t28_tailscale_settings.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-564 — TailscaleMeshCard renders and shows peer nodes
 **Tags**: [surface:phone] [feature:settings]
@@ -1375,7 +1375,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify mesh card shows peer count or empty-state
 **Expected**: Card renders; no crash
 **Evidence**: `t28_tailscale_mesh.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-565 — CouncilCard renders and shows persona list
 **Tags**: [surface:phone] [feature:settings]
@@ -1385,7 +1385,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each persona row shows name and role
 **Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/council/personas -H "Authorization: Bearer dw-test-token-12345"` returns persona list; mobile populates rows; no crash
 **Evidence**: `t28_council_personas.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-566 — CouncilCard add persona via wizard
 **Tags**: [surface:phone] [feature:settings]
@@ -1396,7 +1396,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify persona appears in list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/council/personas -H "Authorization: Bearer dw-test-token-12345"` shows new persona after save; mobile list updates; no crash
 **Evidence**: `t28_council_add_persona.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-567 — CouncilCard run a one-shot council review
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
@@ -1408,7 +1408,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Wait for council run to complete; verify response shown
 **Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/council/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"prompt":"Is this a good idea?"}'` returns 200 with persona responses (or structured error if no LLM); mobile renders result or error state without crashing
 **Evidence**: `t28_council_run.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-568 — EvalsCard renders and lists eval suites
 **Tags**: [surface:phone] [feature:settings]
@@ -1418,7 +1418,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each suite row shows name and last-run status
 **Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/eval/suites -H "Authorization: Bearer dw-test-token-12345"` returns suite list; mobile populates rows; no crash
 **Evidence**: `t28_evals_list.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-569 — EvalsCard run an eval suite
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
@@ -1429,7 +1429,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify result row updates with pass/fail count
 **Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/eval/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"suite":"default"}'` returns result with pass/fail counts (or structured error if no LLM); mobile card updates; no crash
 **Evidence**: `t28_evals_run.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-570 — EvalsCard view run history
 **Tags**: [surface:phone] [feature:settings]
@@ -1438,7 +1438,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify pass/fail breakdown by test case
 **Expected**: Run history expandable; test-case results listed
 **Evidence**: `t28_evals_history.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-571 — GuardrailLibraryCard renders library items
 **Tags**: [surface:phone] [feature:settings]
@@ -1448,7 +1448,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify profiles section shows existing profiles
 **Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/library -H "Authorization: Bearer dw-test-token-12345"` and `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` both return data; mobile populates both sections; no crash
 **Evidence**: `t28_guardrail_library.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-572 — GuardrailLibraryCard create guardrail profile
 **Tags**: [surface:phone] [feature:settings]
@@ -1459,7 +1459,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify profile appears in profiles list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` shows new profile with selected guardrails; mobile list updates
 **Evidence**: `t28_guardrail_profile_create.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-573 — GuardrailLibraryCard delete guardrail profile
 **Tags**: [surface:phone] [feature:settings]
@@ -1468,7 +1468,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify profile removed from list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/guardrail/profiles -H "Authorization: Bearer dw-test-token-12345"` no longer includes deleted profile; mobile list refreshes
 **Evidence**: `t28_guardrail_profile_delete.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-574 — PipelineManagerCard renders and lists pipelines
 **Tags**: [surface:phone] [feature:settings]
@@ -1478,7 +1478,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each pipeline row shows id, status, step count
 **Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` returns pipeline list; mobile card renders; no crash
 **Evidence**: `t28_pipeline_list.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-575 — PipelineManagerCard start a pipeline
 **Tags**: [surface:phone] [feature:settings]
@@ -1487,7 +1487,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify new pipeline row appears with running status
 **Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows new pipeline row with running status; pipeline ID returned; mobile renders row
 **Evidence**: `t28_pipeline_start.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-576 — PipelineManagerCard cancel a running pipeline
 **Tags**: [surface:phone] [feature:settings]
@@ -1496,7 +1496,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify status updates to cancelled
 **Expected**: `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows pipeline status as cancelled; mobile row updates
 **Evidence**: `t28_pipeline_cancel.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-577 — SkillRegistriesCard renders and lists registries
 **Tags**: [surface:phone] [feature:settings]
@@ -1506,7 +1506,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each row shows registry name and skill count
 **Expected**: Card renders; `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` returns registry list; mobile populates; no crash
 **Evidence**: `t28_skill_registries.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-578 — SkillRegistriesCard add a skill registry
 **Tags**: [surface:phone] [feature:settings]
@@ -1516,7 +1516,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify registry appears in list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows new registry; mobile list updates
 **Evidence**: `t28_skill_registry_add.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-579 — SkillRegistriesCard sync skills from registry
 **Tags**: [surface:phone] [feature:settings]
@@ -1526,7 +1526,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify skill count updates
 **Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows updated skill count after sync; mobile row reflects count; no crash
 **Evidence**: `t28_skill_sync.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-580 — ScanConfigCard renders and shows scan rules
 **Tags**: [surface:phone] [feature:settings]
@@ -1536,7 +1536,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each rule shows pattern and action (allow/block/warn)
 **Expected**: `curl -sk https://127.0.0.1:18443/api/autonomous/scan/config -H "Authorization: Bearer dw-test-token-12345"` returns scan rules; mobile card renders; no crash
 **Evidence**: `t28_scan_config.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-581 — ScanConfigCard toggle scan rule
 **Tags**: [surface:phone] [feature:settings]
@@ -1546,7 +1546,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Confirm via API: GET /api/autonomous/scan/config shows updated state
 **Expected**: `curl -sk https://127.0.0.1:18443/api/autonomous/scan/config -H "Authorization: Bearer dw-test-token-12345"` shows toggled rule state; mobile toggle reflects update
 **Evidence**: `t28_scan_config_toggle.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-582 — Plugins tab renders with plugin list
 **Tags**: [surface:phone] [feature:settings]
@@ -1556,7 +1556,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each plugin row shows name, version, enabled toggle
 **Expected**: `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` returns plugin list; tab renders; no crash
 **Evidence**: `t28_plugins_tab.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-583 — Plugins tab enable/disable a plugin toggle
 **Tags**: [surface:phone] [feature:settings]
@@ -1566,7 +1566,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Toggle back; verify reverted
 **Expected**: `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` shows updated enabled state after toggle; state persists across tab navigation
 **Evidence**: `t28_plugin_toggle.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-584 — Plugins tab config fields render for a plugin
 **Tags**: [surface:phone] [feature:settings]
@@ -1575,7 +1575,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Edit a config field value; verify it saves
 **Expected**: Plugin-specific config fields rendered; `curl -sk https://127.0.0.1:18443/api/plugins -H "Authorization: Bearer dw-test-token-12345"` confirms updated config field after save
 **Evidence**: `t28_plugin_config.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-585 — McpChannelCard renders MCP channel info
 **Tags**: [surface:phone] [feature:settings]
@@ -1585,7 +1585,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify channel name and token are displayed (masked)
 **Expected**: Card renders; MCP channel info populated; no crash
 **Evidence**: `t28_mcp_channel.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-586 — SubsystemReloadCard reloads a subsystem
 **Tags**: [surface:phone] [feature:settings]
@@ -1595,7 +1595,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify success banner or confirmation message
 **Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/reload/memory -H "Authorization: Bearer dw-test-token-12345"` returns 200; mobile shows success message; no crash
 **Evidence**: `t28_subsystem_reload.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-587 — KillOrphansCard identifies and kills orphan sessions
 **Tags**: [surface:phone] [feature:settings]
@@ -1605,7 +1605,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify count of orphan sessions killed shown in response banner
 **Expected**: POST /api/sessions/orphans or equivalent fires; response count shown; no crash
 **Evidence**: `t28_kill_orphans.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-588 — Settings tab persistence: last-viewed tab restored on re-open
 **Tags**: [surface:phone] [feature:settings]
@@ -1615,7 +1615,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify Compute tab is still selected (persisted via SharedPreferences)
 **Expected**: Active tab persists across navigation; no reset to General
 **Evidence**: `t28_tab_persistence.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-589 — Settings deep-link: intent with tab param lands on correct tab
 **Tags**: [surface:phone] [feature:settings]
@@ -1624,7 +1624,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify Settings screen opens with Automata tab active
 **Expected**: Deep-link lands on Automata tab; no crash
 **Evidence**: `t28_settings_deeplink.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ---
 
@@ -1649,7 +1649,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Verify each persona's response appears in the run result
 **Expected**: Persona list shows Advocate; `curl -sk -X POST https://127.0.0.1:18443/api/council/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"prompt":"Is this a good idea?"}'` returns responses or structured error; mobile renders result
 **Evidence**: `t29_council_mode.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-621 — evals.md: Run default eval suite
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
@@ -1661,7 +1661,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify results shown: pass count, fail count, duration
 **Expected**: `curl -sk -X POST https://127.0.0.1:18443/api/eval/run -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"suite":"default"}'` returns result; mobile card updates with pass/fail counts; no crash
 **Evidence**: `t29_evals_workflow.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-622 — guardrail-library.md: Create profile with library guardrails
 **Tags**: [surface:phone] [feature:settings]
@@ -1673,7 +1673,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Assign profile to an automaton via API: `curl -sk -X PUT https://127.0.0.1:18443/api/autonomous/prds/{id}/guardrails -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"profile_id":"t29-profile"}'`
 **Expected**: Full workflow (library browse → profile create → assign) works; all three API calls target test instance on port 18443
 **Evidence**: `t29_guardrail_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-623 — pipeline-chaining.md: Start and monitor a pipeline
 **Tags**: [surface:phone] [feature:settings]
@@ -1683,7 +1683,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify pipeline status updates (running → complete) in the list
 **Expected**: Pipeline executes; `curl -sk https://127.0.0.1:18443/api/pipeline/list -H "Authorization: Bearer dw-test-token-12345"` shows status chain; mobile matches API state
 **Evidence**: `t29_pipeline_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-624 — skills-sync.md: Add registry and sync skills
 **Tags**: [surface:phone] [feature:settings]
@@ -1694,7 +1694,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify skill count shown on registry row
 **Expected**: `curl -sk https://127.0.0.1:18443/api/skills/registry/list -H "Authorization: Bearer dw-test-token-12345"` shows registry with updated skill count; skills available in session skill picker
 **Evidence**: `t29_skills_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-625 — tailscale-mesh.md: View Tailscale mesh status
 **Tags**: [surface:phone] [feature:settings]
@@ -1704,7 +1704,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify TailscaleMeshCard shows peer node count from `/api/tailscale/nodes`
 **Expected**: `curl -sk https://127.0.0.1:18443/api/tailscale/nodes -H "Authorization: Bearer dw-test-token-12345"` returns node list or not-configured state; both mobile cards render; no crash
 **Evidence**: `t29_tailscale_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-626 — mcp-tools.md: View MCP channel configuration
 **Tags**: [surface:phone] [feature:settings]
@@ -1714,7 +1714,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify McpServer config fields in Settings → Comms show MCP listen address
 **Expected**: `curl -sk https://127.0.0.1:18443/api/channel/info -H "Authorization: Bearer dw-test-token-12345"` returns MCP channel config; mobile About and Comms cards show consistent values; no crash
 **Evidence**: `t29_mcp_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-627 — cross-agent-memory.md: View and recall memory
 **Tags**: [surface:phone] [feature:sessions]
@@ -1724,7 +1724,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. In a second session, verify the fact is accessible via memory recall
 **Expected**: Memory config visible in Settings; memory system accessible via sessions; no crash
 **Evidence**: `t29_memory_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-628 — docs-as-mcp.md: Search docs and navigate result
 **Tags**: [surface:phone] [feature:settings]
@@ -1735,7 +1735,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Tap a result; verify navigation or link-copy action fires
 **Expected**: `curl -sk "https://127.0.0.1:18443/api/docs/search?q=autonomous" -H "Authorization: Bearer dw-test-token-12345"` returns howto matches; mobile renders result list; tap action works
 **Evidence**: `t29_docs_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-629 — compute-routing.md: View and test routing rules
 **Tags**: [surface:phone] [feature:settings]
@@ -1745,7 +1745,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Tap "Test Route" on a rule; verify which backend is selected for test input
 **Expected**: `curl -sk https://127.0.0.1:18443/api/routing/rules -H "Authorization: Bearer dw-test-token-12345"` returns rules; test routing shows backend name from test instance; no crash
 **Evidence**: `t29_routing_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-630 — alert-rules.md: Create and verify an alert rule
 **Tags**: [surface:phone] [feature:alerts]
@@ -1756,7 +1756,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Delete the rule; verify removed
 **Expected**: `curl -sk https://127.0.0.1:18443/api/alert/rules -H "Authorization: Bearer dw-test-token-12345"` confirms rule created then absent after delete; mobile renders rule list
 **Evidence**: `t29_alert_rules.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-631 — chat-and-llm-quickstart.md: Start session with LLM backend
 **Tags**: [surface:phone] [feature:sessions] [conflict:compute-daemon]
@@ -1767,7 +1767,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Create session; verify it enters running state with the correct backend shown
 **Expected**: Session created with explicit backend; `curl -sk https://127.0.0.1:18443/api/sessions -H "Authorization: Bearer dw-test-token-12345"` confirms session with correct backend field; backend name shown in session row
 **Evidence**: `t29_chat_quickstart.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-632 — claude-hooks.md: View session status board via hooks
 **Tags**: [surface:phone] [feature:sessions]
@@ -1777,7 +1777,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify hook health indicator is visible (from `/api/sessions/{id}/status`)
 **Expected**: Hook health field visible in session detail or status screen; no crash
 **Evidence**: `t29_hooks_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-633 — container-workers.md: View container worker config
 **Tags**: [surface:phone] [feature:settings]
@@ -1787,7 +1787,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Update a field value; verify it saves via API
 **Expected**: Container worker config fields visible and editable; save persists
 **Evidence**: `t29_container_workers.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-634 — voice-input.md: Whisper voice input howto validation
 **Tags**: [surface:phone] [feature:settings]
@@ -1798,7 +1798,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify response: transcription result or "Whisper not configured" message
 **Expected**: Whisper config visible; test button calls API; response shown
 **Evidence**: `t29_voice_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-635 — federation-cbac.md: View CBAC config for a federation peer
 **Tags**: [surface:phone] [feature:multiserver]
@@ -1808,7 +1808,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify allowed/denied capabilities are listed
 **Expected**: CBAC config visible per peer; `curl -sk https://127.0.0.1:18443/api/federation/peers -H "Authorization: Bearer dw-test-token-12345"` shows peer list with group config; no crash
 **Evidence**: `t29_federation_cbac.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-636 — ollama-marketplace.md: Browse and pull Ollama model
 **Tags**: [surface:phone] [feature:settings] [conflict:compute-daemon]
@@ -1821,7 +1821,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Verify pull task starts; progress shown
 **Expected**: Marketplace catalog renders from test instance (not production); `curl -sk -X POST https://127.0.0.1:18443/api/marketplace/pull -H "Authorization: Bearer dw-test-token-12345" -H "Content-Type: application/json" -d '{"model":"tinyllama:latest"}'` fires; task ID returned; mobile shows progress
 **Evidence**: `t29_ollama_marketplace.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip
 
 ### TS-637 — daemon-operations.md: Restart daemon and verify health
 **Tags**: [surface:phone] [feature:settings]
@@ -1832,7 +1832,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 4. Verify app reconnects automatically
 **Expected**: Restart fires; daemon comes back healthy; app reconnects and sessions reload
 **Evidence**: `t29_daemon_restart.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-638 — setup-and-install.md: Complete howto new-server setup
 **Tags**: [surface:phone] [feature:settings]
@@ -1844,7 +1844,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Delete the second server
 **Expected**: All setup steps work; second server functional; cleanup removes it cleanly
 **Evidence**: `t29_setup_install_workflow.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ---
 
@@ -1866,7 +1866,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each rule row shows: channel pattern, peer name, automata type
 **Expected**: `curl -sk https://127.0.0.1:18443/api/channel/routing -H "Authorization: Bearer dw-test-token-12345"` returns rules array; mobile card populates; no crash
 **Evidence**: `t30_channel_routing.png`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-661 — Channel Routing card add a routing rule
 **Tags**: [surface:phone] [feature:settings]
@@ -1876,7 +1876,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Tap Save; verify rule appears in list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/channel/routing -H "Authorization: Bearer dw-test-token-12345"` shows new rule; mobile list updates; no crash
 **Evidence**: `t30_channel_routing_add.json`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-662 — Channel Routing card delete a rule
 **Tags**: [surface:phone] [feature:settings]
@@ -1885,7 +1885,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify rule removed from list
 **Expected**: API confirms rule removed; list refreshes; no crash
 **Evidence**: `t30_channel_routing_delete.json`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-663 — File Service card renders
 **Tags**: [surface:phone] [feature:settings]
@@ -1894,7 +1894,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify card renders with upload button and file list (or empty-state)
 **Expected**: Card visible; `curl -sk https://127.0.0.1:18443/api/files/meta -H "Authorization: Bearer dw-test-token-12345"` returns meta; no crash
 **Evidence**: `t30_file_service.png`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-664 — File Service upload and list a file
 **Tags**: [surface:phone] [feature:settings]
@@ -1904,7 +1904,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify file appears in the list with name and size
 **Expected**: File uploaded; list shows the file entry; no crash
 **Evidence**: `t30_file_upload.json`, `t30_file_list.png`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-665 — File Service delete a file
 **Tags**: [surface:phone] [feature:settings]
@@ -1913,7 +1913,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify file removed from list
 **Expected**: `curl -sk https://127.0.0.1:18443/api/files/meta -H "Authorization: Bearer dw-test-token-12345"` no longer shows deleted file; list refreshes; no crash
 **Evidence**: `t30_file_delete.json`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-666 — Discussion Scopes card renders
 **Tags**: [surface:phone] [feature:settings]
@@ -1923,7 +1923,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify each discussion row shows ID and participant count
 **Expected**: `curl -sk https://127.0.0.1:18443/api/memory/discussion -H "Authorization: Bearer dw-test-token-12345"` returns list; card renders; no crash
 **Evidence**: `t30_discussion_scopes.png`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-667 — Discussion Scopes create and write a message
 **Tags**: [surface:phone] [feature:settings]
@@ -1935,7 +1935,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Verify entry appears in the discussion WAL
 **Expected**: Discussion created; message written; `curl -sk https://127.0.0.1:18443/api/memory/discussion/t30-discussion/wal -H "Authorization: Bearer dw-test-token-12345"` shows the WAL entry; no crash
 **Evidence**: `t30_discussion_write.json`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-668 — Encryption status visible in Settings → About
 **Tags**: [surface:phone] [feature:settings]
@@ -1945,7 +1945,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Tap "Encryption Status" detail — verify each store category listed
 **Expected**: `curl -sk https://127.0.0.1:18443/api/security/encryption/status -H "Authorization: Bearer dw-test-token-12345"` returns status; mobile card reflects it; no crash
 **Evidence**: `t30_encryption_status.png`
-**Status**: 📋 Planned
+**Status**: ❌ Fail
 
 ### TS-669 — Async decompose progress visible in Autonomous tab
 **Tags**: [surface:phone] [feature:autonomous]
@@ -1957,7 +1957,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. Verify final story count matches `total` from status API
 **Expected**: Decompose is non-blocking; stories stream in incrementally; no timeout; no crash; `GET /api/autonomous/prds/{id}/decompose/status` shows `status=complete` when done
 **Evidence**: `t30_async_decompose.png`, `t30_decompose_status.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ### TS-670 — v8.6.0 version shown in Settings → About
 **Tags**: [surface:phone] [feature:settings]
@@ -1967,7 +1967,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Verify app version shown in About
 **Expected**: Server version reflects v8.6.0; no crash
 **Evidence**: `t30_version_check.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass
 
 ---
 
