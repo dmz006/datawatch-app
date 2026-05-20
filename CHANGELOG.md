@@ -8,6 +8,174 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [0.123.0] — 2026-05-20 (PWA parity pass — Sprint 44)
+### Added
+- AlertsScreen: primary tabs (Active/Historical/System) always visible; chip filters (All/Prompt/Error/Warn/Info) moved to per-tab secondary filter row matching PWA layout
+- AutonomousScreen: LifecycleStrip on PRD rows showing review→approved→decompose→run→done
+- AutonomousScreen FAB: ⚡ emoji on PRDs tab, + on Templates tab (PWA parity)
+- Observer, Dashboard: loading spinner when server changes
+### Fixed
+- #136: UnifiedPushSseService SSL trust gap — tracks transport signature per job; cancels and restarts with fresh OkHttpClient on trust-setting change
+- #142: Automata LazyColumn duplicate-key crash — key now uses "profileName|prdId" composite
+- #143: Orchestrator graph creation — add prd_ids to CreateOrchestratorGraphRequestDto so graph-creation wires automata at creation time
+- #144: Algorithm Mode UI buttons — all 6 RestTransport methods now use correct subpath routes (start, advance, abort, reset, edit, measure)
+- PwaStatePill: 1dp border matching PWA `border: 1px solid currentColor`
+- BottomNavBar: Dashboard emoji ☷ → ⊞ (U+229E, matches PWA)
+- AlertsScreen stateAccentColor: Running 0xFF22C55E → DwSuccess 0xFF10B981; global alignment of all ok/running/enabled indicators with PWA --success token
+### Changed
+- Version bump: 0.122.0/200 → 0.123.0/201
+
+## [0.122.0] — 2026-05-20 (Observer/Dashboard loading spinners — Sprint 43)
+### Added
+- ObserverScreen: fullscreen spinner while loading (profile change or initial load)
+- DashboardScreen: spinner on server switch via cardsLoaded flag reset
+### Changed
+- Version bump: 0.121.0/199 → 0.122.0/200
+
+## [0.121.0] — 2026-05-20 (Automata race fix; alerts sub-tab labels; Dashboard all-servers — Sprint 43)
+### Fixed
+- AutonomousViewModel: fix race in refreshAllServers() — now uses profileRepository.observeAll().first() to wait for actual DB data (was reading empty _allProfiles.value)
+- AlertsScreen: all-servers sub-tabs show "server/shortId" format instead of repeating session names
+- AppRoot: set dashboardEnabled=true in all-servers mode early-return branch
+### Changed
+- Version bump: 0.120.0/198 → 0.121.0/199
+
+## [0.120.0] — 2026-05-20 (Loading states + all-servers data — Sprint 43)
+### Fixed
+- Sessions: immediate refresh when switching to all-servers mode; CircularProgressIndicator during refresh
+- Automata: show spinner while state.loading==true (was blank/watermark-only)
+- Alerts: fix all-servers mode Active tab empty — sessionsFlow now combines sessions from all enabled profiles
+### Changed
+- Version bump: 0.119.0/197 → 0.120.0/198
+
+## [0.119.0] — 2026-05-16 (PWA-parity UI pass — Sprint 42)
+### Added
+- In-app docs viewer (? button): howtos browser, add-source, all-servers mode; link in Settings General and all tab headers
+- Alert pill matching PWA headerAlertPill (🔔 N style); dock explicit-open-only (never auto-spawns)
+- All-servers / combined view for Autonomous and Alerts screens
+- Alerts header server picker as dropdown title; autonomous combined mode skips unconfigured servers
+- Standardized tab headers across all 6 tabs: server picker, status, alerts, filter, docs
+- Algorithm Mode: Start, Reset, Edit, Measure UI actions wired to transport endpoints
+- Autonomous: Cancel button expanded to all cancellable states; Clone to Template button added
+- Dashboard tab added for PWA alpha.71 parity
+- Nav icons all emoji matching PWA (⊞ for Dashboard, 🤖 for Automata, etc.)
+- Hide mic button when server has no Whisper backend configured
+### Fixed
+- Transport: scan config endpoint + DTO field name mismatches; evals DTO id/cases SerialName fix
+### Changed
+- Version bump: 0.118.0/196 → 0.119.0/197
+
+## [0.118.0] — 2026-05-15 (QA bug fixes — Sprint 34)
+### Fixed
+- BL-T1-1: AddServerScreen URL field now shows error + message "URL must start with http:// or https://" when scheme is missing (was silently disabling Submit)
+- BL-T4-1: SessionsViewModel.restart() now optimistically upserts the returned Session before calling refresh(), preventing restart→invisible-session race
+### Changed
+- Version bump: 0.117.0/195 → 0.118.0/196
+
+## [0.117.0] — 2026-05-15 (T13 QA fixes — Sprint 33)
+### Added
+- NewPrdDialog: spec field wired to NewPrdRequestDto (was missing from PRD create form)
+- PrdDto.decisions: List<DecisionDto> replacing List<String>; DecisionDto(at, kind, actor, note) renders structured decision labels in PrdDetailDialog
+### Changed
+- Version bump: 0.116.0/194 → 0.117.0/195
+
+## [0.116.0] — 2026-05-14 (Multi-server & federation QA — Sprint 32)
+### Changed
+- Multi-server dedup and federation story TS-206–220 completed; known gap: true session interleave requires two distinct backend URLs
+- Version bump: 0.115.0/193 → 0.116.0/194
+
+## [0.115.0] — 2026-05-14 (Security & keystore QA — Sprint 31)
+### Changed
+- T11 Security & Keystore QA complete: 6 pass, 4 skip (biometric requires physical device; SecretsStatusCard requires /api/secrets/status)
+- Version bump: 0.114.0/192 → 0.115.0/193
+
+## [0.114.0] — 2026-05-14 (Push SSE fixes — Sprint 30)
+### Fixed
+- SSE infinite stream: use prepareGet().execute{} instead of client.get() to avoid requestTimeout
+- SSE event parsing: DefaultJson with ignoreUnknownKeys for ring server event shape
+- ForegroundSessionTracker.isForeground("") forced onto main thread at app start
+- Mute-preservation: INSERT OR REPLACE overwrote muted column on every server refresh; replaceAll() now captures mutedIds before delete and restores overrideMuted
+### Changed
+- Version bump: 0.113.0/191 → 0.114.0/192
+
+## [0.113.0] — 2026-05-13 (Navigation & shell QA — Sprint 29)
+### Changed
+- T9 Navigation & Shell complete: bottom nav, back-stack, deep links (dwclient://session/<id>), splash, landscape two-pane, Autonomous tab visibility all verified
+- Version bump: 0.112.0/190 → 0.113.0/191
+
+## [0.112.0] — 2026-05-13 (Session detail terminal fixes — Sprint 28)
+### Fixed
+- BL-T3-3: filter PaneCapture+ChatMessage before ChatEventList; zero-height items no longer make the channel tab appear blank on tmux sessions
+- BL-T3-4: InputRequiredBanner wired into terminal branch; needsInput simplified to session?.needsInput==true (no longer requires a live PromptDetected WS event)
+### Changed
+- Version bump: 0.110.0/188 → 0.112.0/190
+
+## [0.110.0] — 2026-05-12 (Session rename modal — Sprint 27)
+### Fixed
+- BL-T3-2: replace inline rename BasicTextField with RenameDialog modal; inline field lost focus immediately due to WebView recapture via headerRenameFocusChain
+### Changed
+- Version bump: 0.109.0/187 → 0.110.0/188
+
+## [0.109.0] — 2026-05-12 (Session list DB fixes — Sprint 26)
+### Fixed
+- BL-T14-1: ON_RESUME lifecycle observer on SessionsScreen calls vm.refresh() immediately on app-foreground/unlock/screen-return
+- BL-T14-2: llmRef and computeNodeRef now persisted to SQLDelight; DB migration 7→8 adds llm_ref + compute_node_ref columns
+### Changed
+- Version bump: 0.108.0/186 → 0.109.0/187
+
+## [0.108.0] — 2026-05-12 (Cosmetic PWA gaps — Sprint 39)
+### Added
+- Help links in Settings cards; drag handle glyph on bottom sheets; alert dock anchored to screen bottom
+### Changed
+- Version bump: 0.107.0/185 → 0.108.0/186
+
+## [0.107.0] — 2026-05-12 (Alerts per-session sub-tabs — Sprint 38)
+### Added
+- AlertsScreen: ScrollableTabRow sub-tabs when 2+ sessions have alerts (per-session filtering; G16)
+### Changed
+- Version bump: 0.106.0/184 → 0.107.0/185
+
+## [0.106.0] — 2026-05-12 (Observer nav tab + alert pill — Sprint 37)
+### Added
+- Observer screen promoted to bottom navigation tab (G1)
+- Global header alert pill showing unread alert count (G2)
+### Changed
+- Version bump: 0.105.0/183 → 0.106.0/184
+
+## [0.105.0] — 2026-05-12 (Sprint card JSON + Council config + PRD 4-tabs — Sprint 36)
+### Added
+- SprintCard: full JSON rendered via prettyPrint in scrollable SelectionContainer (matches PWA pre-block; G11)
+- CouncilConfigDto: llm_ref, max_parallel, draft_retention_days; CouncilCard adds three config fields with Save button (G14/G22)
+- PrdDetailDialog: 4-tab layout (Overview | Stories | Decisions | Scan); Decisions tab renders DecisionDto list (G21)
+### Changed
+- Version bump: 0.104.0/182 → 0.105.0/183
+
+## [0.104.0] — 2026-05-12 (Observer stats + PID + Focus card — Sprint 35)
+### Added
+- SessionStatsViewModel: migrated from WebSocket StatsHub to polling GET /api/observer/envelopes?session_id={id} every 5 s (G8)
+- Host card: PID row with child-process count when rootPid > 0 (G9)
+- FocusCard: lastEvent subtitle (event · tool · timeAgo) + amber idle-since chip when idleSince > 5 min (G10)
+- HookHealthPill: clickable — tap triggers immediate status refresh (G12)
+- Docs ↗ TextButton next to hook pill when hooks are stale/missing (G13)
+### Changed
+- Version bump: 0.103.0/181 → 0.104.0/182
+
+## [0.103.0] — 2026-05-12 (LLM alpha.41 overhaul — Sprint 34)
+### Added
+- LlmRegistryEntryDto: 16 new alpha.41 fields (api_key_ref, timeout, tags, session-backend binary/console/git/output/input, claude-code skip_permissions/channel_enabled/auto_accept/permission_mode/default_effort/fallback_chain)
+- LLM add/edit dialog: three collapsible sections for new fields; pretest Checkbox → Switch (G20)
+- 18 i18n keys in all 5 locales
+### Changed
+- Version bump: 0.102.0/180 → 0.103.0/181
+
+## [0.102.0] — 2026-05-12 (Session detail tab restructure — Sprint 33)
+### Added
+- Session detail Status tab: Status|Stats sub-tabs matching PWA alpha.36 (G6)
+- Channel tab gated to claude/claude-code/opencode-acp backends only (G7)
+### Changed
+- Removed obsolete statsMode flag; replaced with statusMode + statusSubStats state vars
+- Version bump: 0.101.0/179 → 0.102.0/180
+
 ## [0.101.0] — 2026-05-12 (Wear sessions list + state badges — Sprint 32)
 ### Added
 - `WearSyncService` publishes `/datawatch/sessions` DataItem with shortId, state, task, and lastActivity arrays (top 10 by last-activity); republishes on every session state or task change
