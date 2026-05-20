@@ -97,6 +97,12 @@ Living list of improvements, enhancements, and fun ideas. Add as they come up du
 - **Per-project identity profiles** — different role/focus when working in different project directories
 - **Encrypted identity store** — identity fields encrypted at rest when `--secure` mode active (server encrypts inference/llms.json and others in v8.6.0; identity.json could follow)
 
+### Matrix Backend (v8.7.0 / BL241)
+- ~~**Matrix.org backend foundation**~~ — ✅ shipped v8.7.0 (BL241-P1): cleartext send, alias resolution, bridge classifier, 7-surface parity
+- **Matrix channel status in Observer** — server moved Matrix status to Observer tab in PWA (v8.7.0); mobile Observer tab needs a Matrix backend status card to match (gap: mobile has config in Settings → Comms but no Observer status)
+- **Matrix secret ref enforcement** — v8.7.0 enforces `auth_secret_ref` (no plaintext tokens); mobile `access_token` field should show a hint to use `${secret:name}` vault references
+- **Matrix session_id embed** — v8.7.0 embeds session IDs in Matrix messages (Q5.3); mobile session detail could show the Matrix room thread link
+
 ### Security
 - **Encryption status card** — server v8.6.0 has `GET /api/security/encryption/status`; mobile Settings → About should surface whether encryption is active and which stores are protected
 - **Secure mode toggle** — one-tap enable/disable of `--secure` mode from mobile (with confirmation dialog given the migration step involved)
