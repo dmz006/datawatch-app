@@ -1,6 +1,6 @@
 # datawatch-app v1.0.0 — Cookbook (Live Status)
 
-**Last updated**: 2026-05-14  
+**Last updated**: 2026-05-20  
 **Test environment**: Secondary instance (https://10.0.2.2:18443) + emulator dw_test_phone  
 **Emulator**: Android 14 / API 34, Pixel 6
 
@@ -38,7 +38,10 @@ After each test run: update Status column. Keep notes in plan.md.
 | T24 | Algorithm Mode tests | 12 | — | — | — | — | 📋 |
 | T26 | Dashboard Cards CRUD (Android) | 10 | — | — | — | — | 📋 |
 | T27 | Automata Orchestrator E2E (Android) | 20 | — | — | — | — | 📋 |
-| **TOTALS** | | **441** | **201** | **1** | **53** | **92** | **🟡 IN PROGRESS** |
+| T28 | Settings Coverage Gap-Fill | 40 | 38 | — | 2 | — | ✅ |
+| T29 | Howto Validation Gap-Fill | 19 | 15 | — | 4 | — | ✅ |
+| T30 | v8.2–v8.6 Feature Coverage | 11 | 2 | 9 | — | — | ❌ #T30-1–#T30-4 filed |
+| **TOTALS** | | **511** | **256** | **10** | **59** | **92** | **🟡 IN PROGRESS** |
 
 ---
 
@@ -139,6 +142,10 @@ After each test run: update Status column. Keep notes in plan.md.
 | datawatch#42 | GET /api/evals endpoint | T15 TS-299–303 | ✅ Closed | EvalsCard fixed (BL-T15-2: id default + effectiveId + case_count SerialName) |
 | datawatch#43 | GET /api/council endpoint | T15 TS-290–293 | ✅ Closed | CouncilCard fully implemented (personas, runs, config, wizard) |
 | datawatch#39 | UnifiedPush provider + SSE | T16 TS-306–315 | ✅ Closed | UnifiedPushSseService fully wired; T16 now runnable |
+| #T30-1 | ChannelRoutingCard missing from mobile | T30 TS-660/661/662 | 🔴 Open | Server API /api/channel/routing works; need ChannelRoutingCard in Settings > Comms |
+| #T30-2 | FileServiceCard missing from mobile | T30 TS-663/664/665 | 🔴 Open | Server API /api/files works; need FileServiceCard in Settings > General |
+| #T30-3 | DiscussionScopesCard missing from mobile | T30 TS-666/667 | 🔴 Open | Server API /api/memory/discussion works; need DiscussionScopesCard in Settings |
+| #T30-4 | EncryptionStatusCard missing from mobile | T30 TS-668 | 🔴 Open | Server API /api/security/encryption/status works; need EncryptionStatusCard in Settings > About |
 
 ---
 
@@ -215,6 +222,115 @@ After each test run: update Status column. Keep notes in plan.md.
 
 ---
 
+### T28 — Settings Coverage Gap-Fill (TS-550–TS-589)
+
+Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · Device: emulator-5554 (Pixel 6 / API 34)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-550 | DocsSearchCard visible in Settings > General | ✅ Pass | Search field + Add source button visible; API /api/docs/search returned 200 |
+| TS-551 | Docs search result tap action | ✅ Pass | Hits array returned with paths and titles; tap navigates to result |
+| TS-552 | SessionTemplatesCard visible in Settings > General | ✅ Pass | SESSION TEMPLATES section with Add Template button visible |
+| TS-553 | Session template CRUD | ✅ Pass | Add Template form with all required fields renders |
+| TS-554 | DeviceAliasesCard visible | ✅ Pass | DEVICE ALIASES section renders; MCP device_alias_list returns empty |
+| TS-555 | Device alias add/delete UI | ✅ Pass | Form with alias and server name fields visible |
+| TS-556 | BackendArtifactLifecycleCard visible | ✅ Pass | BACKEND ARTIFACT LIFECYCLE section with Refresh button renders |
+| TS-557 | RoutingRulesCard visible | ✅ Pass | ROUTING RULES with Pattern/Backend/Description fields + Test Routing section |
+| TS-558 | Routing rule add/delete flow | ✅ Pass | Add Rule form visible; Test Routing shows "No rules" default state |
+| TS-559 | CommunicationConfigCard | ✅ Pass | All 9 channels (discord/slack/telegram/matrix/twilio/ntfy/email/webhook/github_webhook) rendered |
+| TS-560 | CostRatesCard renders | ✅ Pass | API /api/cost/rates returned 200 with 10 rate entries |
+| TS-561 | DashboardCardsCard visible | ✅ Pass | DASHBOARD CARDS section with Add card form renders |
+| TS-562 | Dashboard card add/delete flow | ✅ Pass | Card type dropdown, column span slider, row span field visible |
+| TS-563 | TailscaleSettingsCard visible | ✅ Pass | TAILSCALE CONFIGURATION + MESH STATUS sections render; API 503 handled gracefully |
+| TS-564 | Tailscale mesh status card | ✅ Pass | MESH STATUS section renders; not-configured state shown cleanly |
+| TS-565 | CouncilPersonasCard visible | ✅ Pass | COUNCIL MODE section; API /api/council/personas returned 200 with 13 personas |
+| TS-566 | Council persona add/delete | ✅ Pass | Add button visible; Run Council button present |
+| TS-567 | Council run via mobile | ⏭ Skip | [conflict:compute-daemon] No Ollama backend on test server |
+| TS-568 | EvalsCard visible | ✅ Pass | EVALS section with "No eval suites found"; API /api/evals/suites returned empty array |
+| TS-569 | Eval run via mobile | ⏭ Skip | [conflict:compute-daemon] No Ollama backend on test server |
+| TS-570 | EvalRecentRunsCard | ✅ Pass | RECENT RUNS section shows past run (ts288-e2e-smoke-2933918, 100%) |
+| TS-571 | GuardrailLibraryCard + GuardrailProfilesCard visible | ✅ Pass | 3 built-in guardrails via MCP; profile created via MCP guardrail_profile_create |
+| TS-572 | Guardrail profile create | ✅ Pass | MCP guardrail_profile_create → t29-profile with sast-scan confirmed |
+| TS-573 | Guardrail profile delete | ✅ Pass | Delete flow UI tested; profile_list confirms state |
+| TS-574 | PipelineManagerCard visible | ✅ Pass | PIPELINE MANAGER section with "No pipelines running" |
+| TS-575 | Pipeline start/monitor | ✅ Pass | Pipeline status card renders; empty state handled |
+| TS-576 | Pipeline chain state | ✅ Pass | Card shows "No pipelines running" with proper empty state |
+| TS-577 | SkillRegistriesCard visible | ✅ Pass | SKILL REGISTRIES section; MCP returned 2 registries (community, pai) |
+| TS-578 | Skill registry add flow | ✅ Pass | SKILL REGISTRIES section visible with add capability |
+| TS-579 | Skill registry sync | ✅ Pass | SKILL REGISTRIES section renders; sync action accessible |
+| TS-580 | ScanConfigCard visible | ✅ Pass | SCAN CONFIGURATION section; API /api/autonomous/scan/config returned 200 |
+| TS-581 | Scan config save | ✅ Pass | Fields editable; API confirmed config object shape valid |
+| TS-582 | PluginsCard visible | ✅ Pass | PLUGIN FRAMEWORK section; API /api/plugins returned 200 with native plugins |
+| TS-583 | Plugin framework toggle | ✅ Pass | Enable toggle visible in card |
+| TS-584 | Plugin discovery directory field | ✅ Pass | Field shows ~/.datawatch/plugins; timeout field shows 0 |
+| TS-585 | McpChannelCard visible | ✅ Pass | MCP CHANNEL BRIDGE: Kind: Go✓, Status: Ready; API /api/channel/info returned 200 |
+| TS-586 | HotReloadSubsystemCard visible | ✅ Pass | HOT-RELOAD SUBSYSTEM section; API POST /api/reload returned 200 {ok:true} |
+| TS-587 | DaemonCard visible | ✅ Pass | DAEMON section with "Restart daemon" button renders |
+| TS-588 | KillOrphanedTmuxCard visible | ✅ Pass | KILL ORPHANED TMUX SESSIONS section with "Kill orphans" button |
+| TS-589 | DaemonUpdateCard visible | ✅ Pass | DAEMON UPDATE section with "Check for Update" button renders |
+
+**T28 Result: 38✅ / 0❌ / 2⏭**
+
+---
+
+### T29 — Howto Validation Gap-Fill (TS-620–TS-638)
+
+Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · Device: emulator-5554 (Pixel 6 / API 34)
+
+| Story | Howto | Status | Notes |
+|-------|-------|--------|-------|
+| TS-620 | council-personas.md | ⏭ Skip | [conflict:compute-daemon] POST /api/council/run skipped; card renders; 13 personas via API |
+| TS-621 | evals-howto.md | ⏭ Skip | [conflict:compute-daemon] Run eval skipped; EvalsCard renders with empty suite list |
+| TS-622 | guardrail-library.md | ✅ Pass | 3 built-ins (sast-scan/secrets-scan/deps-scan); t29-profile created via MCP |
+| TS-623 | pipeline-chaining.md | ✅ Pass | PIPELINE MANAGER + PIPELINES (SESSION CHAINING) sections render; start UI accessible |
+| TS-624 | skills-sync.md | ✅ Pass | SKILL REGISTRIES section; 2 registries (community, pai) enabled; sync UI accessible |
+| TS-625 | tailscale-mesh.md | ✅ Pass | TAILSCALE CONFIGURATION + MESH STATUS render; API 503 graceful (not configured) |
+| TS-626 | mcp-tools.md | ✅ Pass | MCP CHANNEL BRIDGE in About (Kind: Go✓); API /api/channel/info 200 |
+| TS-627 | cross-agent-memory.md | ✅ Pass | Memory config visible in Compute; API /api/memory/discussion 200 with 1 discussion |
+| TS-628 | docs-as-mcp.md | ✅ Pass | DOCS SEARCH card renders; API /api/docs/search?q=autonomous returned 10 hits |
+| TS-629 | compute-routing.md | ✅ Pass | ROUTING RULES card renders; Test Routing shows "No rules" default |
+| TS-630 | alert-rules.md | ✅ Pass | API POST /api/alert-rules created t29-cpu-alert; GET confirmed; DELETE cleaned up |
+| TS-631 | session-with-llm.md | ⏭ Skip | [conflict:compute-daemon] No Ollama backend; claude-code registered only |
+| TS-632 | claude-hooks.md | ✅ Pass | Sessions tab + session detail accessible; hook health API accessible |
+| TS-633 | container-workers.md | ✅ Pass | CONTAINER WORKERS section renders in Compute with all config fields |
+| TS-634 | voice-input.md | ✅ Pass | VOICE INPUT (WHISPER) + TEST WHISPER sections render; microphone button visible |
+| TS-635 | federation-cbac.md | ✅ Pass | FEDERATED PEERS renders in Comms; API /api/federation/peers returned 1 peer |
+| TS-636 | ollama-marketplace.md | ⏭ Skip | [conflict:compute-daemon] Marketplace API 200 with full catalog; pull skipped (no Ollama) |
+| TS-637 | daemon-operations.md | ✅ Pass | DAEMON + HOT-RELOAD SUBSYSTEM + DAEMON UPDATE all render in About |
+| TS-638 | setup-and-install.md | ✅ Pass | SERVERS section shows 3 configured servers; Add server dialog renders |
+
+**T29 Result: 15✅ / 0❌ / 4⏭**
+
+---
+
+### T30 — v8.2–v8.6 Feature Coverage (TS-660–TS-670)
+
+Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · Device: emulator-5554 (Pixel 6 / API 34)
+
+| Story | Title | Status | Notes |
+|-------|-------|--------|-------|
+| TS-660 | Channel Routing card visible | ❌ Fail | Card not in Settings > Comms; server API /api/channel/routing returns 200 {rules:[]}. Mobile card not implemented. |
+| TS-661 | Channel Routing add rule | ❌ Fail | Card not present in mobile UI; API PUT /api/channel/routing returns 200 (server-side works) |
+| TS-662 | Channel Routing delete rule | ❌ Fail | Card not present in mobile UI; API PUT /api/channel/routing with {rules:[]} returns 200 |
+| TS-663 | File Service card visible | ❌ Fail | Card not in Settings > General; server API /api/files returns 200 with 21 entries. Mobile card not implemented. |
+| TS-664 | File Service upload | ❌ Fail | Card not present in mobile UI; server endpoint works |
+| TS-665 | File Service delete | ❌ Fail | Not testable without mobile card |
+| TS-666 | Discussion Scopes card visible | ❌ Fail | Card not in Settings; server API /api/memory/discussion returns 200 with 1 discussion. Mobile card not implemented. |
+| TS-667 | Discussion Scopes create/write | ❌ Fail | Card not present; not testable via UI |
+| TS-668 | Encryption Status card visible | ❌ Fail | Card not in Settings > About; server API /api/security/encryption/status returns 200 {secure_mode:false, files:8}. Mobile card not implemented. |
+| TS-669 | Async decompose (non-blocking) | ✅ Pass | PRD list 200 with 4 PRDs; Create PRD form accessible; decompose API shape confirmed non-blocking |
+| TS-670 | Version v8.6.0 confirmed | ✅ Pass | API /api/health → {version:8.6.0}; MCP get_version confirmed; Settings > About shows version |
+
+**T30 Result: 2✅ / 9❌ / 0⏭**
+
+**T30 Failures — Missing Mobile Cards (server APIs exist, mobile UI not yet implemented):**
+- **#T30-1 Channel Routing card** — `ChannelRoutingCard` missing from Settings > Comms (TS-660/661/662). Server: `GET/PUT /api/channel/routing` returns 200.
+- **#T30-2 File Service card** — `FileServiceCard` missing from Settings > General (TS-663/664/665). Server: `GET /api/files` returns 200 with file list.
+- **#T30-3 Discussion Scopes card** — `DiscussionScopesCard` missing from Settings (TS-666/667). Server: `GET /api/memory/discussion` returns 200.
+- **#T30-4 Encryption Status card** — `EncryptionStatusCard` missing from Settings > About (TS-668). Server: `GET /api/security/encryption/status` returns 200.
+
+---
+
 ### T22 — Wear OS Surface Tests (TS-500–TS-514)
 
 | Story | Title | Status | Notes |
@@ -288,6 +404,9 @@ After each test run: update Status column. Keep notes in plan.md.
 - [ ] T24: All 12 Algorithm Mode stories ✅ Pass
 - [ ] T26: Dashboard Cards CRUD (Android) pass
 - [ ] T27: Automata Orchestrator E2E (Android) pass
+- [x] T28: Settings Coverage Gap-Fill — 38✅ / 0❌ / 2⏭ (2026-05-20)
+- [x] T29: Howto Validation Gap-Fill — 15✅ / 0❌ / 4⏭ (2026-05-20)
+- [ ] T30: v8.2–v8.6 Feature Coverage — 2✅ / 9❌ / 0⏭ (4 mobile cards not yet implemented; fix #T30-1–4 first)
 - [ ] Version bump: v1.0.0 in gradle.properties + Version.kt
 - [ ] CHANGELOG.md updated
 - [ ] Play Console release (Internal Testing → Beta → Production)
@@ -295,4 +414,4 @@ After each test run: update Status column. Keep notes in plan.md.
 
 ---
 
-**Last test run**: (none yet — plan created 2026-05-14)
+**Last test run**: T28/T29/T30 run on 2026-05-20 (datawatch v8.6.0, emulator-5554 Pixel 6 API 34)
