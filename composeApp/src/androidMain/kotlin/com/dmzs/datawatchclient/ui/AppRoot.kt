@@ -453,6 +453,13 @@ private fun HomeShell(
                         SettingsScreen(
                             onAddServer = onAddServer,
                             onEditServer = onEditServer,
+                            onNavigateToObserver = {
+                                tabNav.navigate(Destinations.Tabs.Observer) {
+                                    popUpTo(Destinations.Tabs.Settings) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = false
+                                }
+                            },
                         )
                     }
                 }

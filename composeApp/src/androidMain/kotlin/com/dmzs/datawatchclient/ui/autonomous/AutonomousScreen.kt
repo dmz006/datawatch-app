@@ -95,6 +95,7 @@ public fun AutonomousScreen(
     var filterOpen by remember { mutableStateOf(false) }
     var includeTemplates by remember { mutableStateOf(false) }
     var statusFilter by remember { mutableStateOf<String?>(null) }
+    var typeFilter by remember { mutableStateOf<String?>(null) }
     var openPrdId by remember { mutableStateOf<String?>(null) }
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
@@ -165,7 +166,7 @@ public fun AutonomousScreen(
                     Tab(selected = currentTab == 1, onClick = { currentTab = 1 }, text = { Text(stringResource(R.string.autonomous_tab_templates)) })
                 }
                 when (currentTab) {
-                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) })
+                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) })
                     else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
                 }
             }
@@ -318,9 +319,11 @@ private fun PrdsBody(
     filterOpen: Boolean,
     includeTemplates: Boolean,
     statusFilter: String?,
+    typeFilter: String? = null,
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
+    onTypeFilter: (String?) -> Unit = {},
     onToggleSelect: (String) -> Unit = {},
     onTogglePin: (String) -> Unit = {},
     onRequestCancel: (String) -> Unit = {},
@@ -353,6 +356,14 @@ private fun PrdsBody(
                     ),
                 )
             }
+            // PWA type filters: software / research / operational / personal
+            items(listOf("software", "research", "operational", "personal")) { t ->
+                FilterChip(
+                    selected = typeFilter == t,
+                    onClick = { onTypeFilter(if (typeFilter == t) null else t) },
+                    label = { Text(t, style = MaterialTheme.typography.labelSmall) },
+                )
+            }
             item {
                 FilterChip(selected = includeTemplates, onClick = { onIncludeTemplates(!includeTemplates) }, label = { Text(stringResource(R.string.autonomous_filter_templates), style = MaterialTheme.typography.labelSmall) })
             }
@@ -363,7 +374,9 @@ private fun PrdsBody(
     }
     val visible = state.prds
         .filter { prd ->
-            (includeTemplates || !prd.isTemplate) && (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true))
+            (includeTemplates || !prd.isTemplate) &&
+                (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
+                (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true))
         }
         .sortedWith(
             compareBy(
