@@ -1431,6 +1431,7 @@ public data class OrchestratorGraphsListDto(
 public data class CreateOrchestratorGraphRequestDto(
     val title: String,
     val directory: String = "",
+    @SerialName("prd_ids") val prdIds: List<String> = emptyList(),
 )
 
 // v0.82.0 — Sprint 13: General tab — Templates / Device Aliases / Tooling / Secrets
@@ -1602,4 +1603,58 @@ public data class SmokeProgressDto(
     val total: Int = 0,
     @SerialName("started_at") val startedAt: String = "",
     @SerialName("completed_at") val completedAt: String? = null,
+)
+
+// ---- T30: Channel Routing ----
+@Serializable
+public data class ChannelRoutingRuleDto(
+    @SerialName("channel_pattern") val channelPattern: String = "",
+    @SerialName("peer_name") val peerName: String = "",
+    @SerialName("automata_type") val automataType: String = "",
+)
+
+@Serializable
+public data class ChannelRoutingListDto(
+    val rules: List<ChannelRoutingRuleDto> = emptyList(),
+)
+
+// ---- T30: File Service ----
+@Serializable
+public data class FileServiceMetaDto(
+    val discussions: List<String> = emptyList(),
+    val peers: List<String> = emptyList(),
+    val root: String = "",
+)
+
+// ---- T30: Discussion Scopes ----
+@Serializable
+public data class DiscussionListDto(
+    val count: Int = 0,
+    val discussions: List<String> = emptyList(),
+)
+
+@Serializable
+public data class DiscussionWriteRequestDto(
+    val content: String,
+)
+
+@Serializable
+public data class DiscussionWriteResponseDto(
+    @SerialName("discussion_id") val discussionId: String = "",
+    @SerialName("memory_id") val memoryId: Int = 0,
+    val ok: Boolean = false,
+)
+
+// ---- T30: Encryption Status ----
+@Serializable
+public data class EncryptedFileStatusDto(
+    val path: String = "",
+    val encrypted: Boolean = false,
+    val exists: Boolean = true,
+)
+
+@Serializable
+public data class EncryptionStatusDto(
+    @SerialName("secure_mode") val secureMode: Boolean = false,
+    val files: List<EncryptedFileStatusDto> = emptyList(),
 )

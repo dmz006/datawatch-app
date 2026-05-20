@@ -1033,6 +1033,7 @@
     <string name="orchestrator_create_graph">Create Graph</string>
     <string name="orchestrator_graph_title_hint">Title (required)</string>
     <string name="orchestrator_graph_dir_hint">Project directory (optional)</string>
+    <string name="orchestrator_graph_prd_ids_hint">Automata IDs (comma-separated, optional)</string>
     <string name="orchestrator_no_graphs">No graphs — create one above</string>
     <string name="orchestrator_title_required">Title required</string>
     <string name="orchestrator_graph_run">Run</string>
@@ -1311,4 +1312,36 @@
     <!-- ── Council per-persona answers (alpha.41 BL295-296) ── -->
     <string name="council_persona_answers_label">Persona Answers</string>
     <string name="council_dissent_label">Dissent</string>
+
+    <!-- ── T30: Channel Routing ── -->
+    <string name="channel_routing_title">Channel Routing</string>
+    <string name="channel_routing_add_rule">Add Rule</string>
+    <string name="channel_routing_pattern_hint">Channel pattern (e.g. #general)</string>
+    <string name="channel_routing_peer_hint">Peer name (optional)</string>
+    <string name="channel_routing_type_hint">Automata type (optional)</string>
+    <string name="channel_routing_no_rules">No channel routing rules configured.</string>
+
+    <!-- ── T30: File Service ── -->
+    <string name="file_service_title">File Service</string>
+    <string name="file_service_root">Root directory</string>
+    <string name="file_service_discussions">Discussions linked</string>
+    <string name="file_service_peers">Peers linked</string>
+
+    <!-- ── T30: Discussion Scopes ── -->
+    <string name="discussion_scopes_title">Discussion Scopes</string>
+    <string name="discussion_no_scopes">No discussion scopes found.</string>
+    <string name="discussion_tap_hint">Tap a discussion to write a message to its WAL.</string>
+    <string name="discussion_write_btn">Write</string>
+    <string name="discussion_message_hint">Message text</string>
+    <string name="discussion_send_ok">Message written successfully.</string>
+
+    <!-- ── T30: Encryption Status ── -->
+    <string name="encryption_status_title">Encryption Status</string>
+    <string name="encryption_secure_on">Secure mode: ON</string>
+    <string name="encryption_secure_off">Secure mode: OFF</string>
+    <string name="encryption_files_title">Files</string>
+    <string name="encryption_check">✓</string>
+    <string name="encryption_cross">✗</string>
+    <string name="encryption_encrypted_label">enc</string>
+    <string name="encryption_exists_label">exists</string>
 </resources>
