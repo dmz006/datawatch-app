@@ -1935,25 +1935,21 @@ public class RestTransport(
 
     override suspend fun algorithmAdvance(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId/advance") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(io.ktor.http.ContentType.Application.Json)
-                setBody("""{"action":"advance"}""")
             }.body()
         }
 
     override suspend fun algorithmAbort(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId/abort") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(io.ktor.http.ContentType.Application.Json)
-                setBody("""{"action":"abort"}""")
             }.body()
         }
 
     override suspend fun algorithmStart(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.post("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId/start") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(io.ktor.http.ContentType.Application.Json)
                 setBody("""{}""")
@@ -1969,20 +1965,17 @@ public class RestTransport(
 
     override suspend fun algorithmReset(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.delete("${profile.baseUrl}/api/algorithm/$sessionId") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(io.ktor.http.ContentType.Application.Json)
-                setBody("""{"action":"reset"}""")
             }.body()
         }
 
     override suspend fun algorithmEdit(sessionId: String, output: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId/edit") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(io.ktor.http.ContentType.Application.Json)
                 setBody(kotlinx.serialization.json.buildJsonObject {
-                    put("action", kotlinx.serialization.json.JsonPrimitive("edit"))
                     put("output", kotlinx.serialization.json.JsonPrimitive(output))
                 }.toString())
             }.body()
@@ -1990,13 +1983,9 @@ public class RestTransport(
 
     override suspend fun algorithmMeasure(sessionId: String, suite: String): Result<com.dmzs.datawatchclient.transport.dto.AlgorithmStateDto> =
         request {
-            client.patch("${profile.baseUrl}/api/algorithm/$sessionId") {
+            client.post("${profile.baseUrl}/api/algorithm/$sessionId/measure") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-                contentType(io.ktor.http.ContentType.Application.Json)
-                setBody(kotlinx.serialization.json.buildJsonObject {
-                    put("action", kotlinx.serialization.json.JsonPrimitive("measure"))
-                    put("suite", kotlinx.serialization.json.JsonPrimitive(suite))
-                }.toString())
+                url { parameters.append("suite", suite) }
             }.body()
         }
 
@@ -2206,6 +2195,7 @@ public class RestTransport(
     override suspend fun createOrchestratorGraph(
         title: String,
         directory: String,
+        prdIds: List<String>,
     ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto> =
         request {
             client.post("${profile.baseUrl}/api/orchestrator/graphs") {
@@ -2215,6 +2205,7 @@ public class RestTransport(
                     com.dmzs.datawatchclient.transport.dto.CreateOrchestratorGraphRequestDto(
                         title = title,
                         directory = directory,
+                        prdIds = prdIds,
                     ),
                 )
             }.body()
@@ -2632,6 +2623,65 @@ public class RestTransport(
             client.get("${profile.baseUrl}/api/evals") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body<com.dmzs.datawatchclient.transport.dto.EvalRunsResponseDto>().runs
+        }
+
+    // ---- T30: Channel Routing ----
+
+    override suspend fun getChannelRouting(): Result<com.dmzs.datawatchclient.transport.dto.ChannelRoutingListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/channel/routing") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun putChannelRouting(
+        rules: List<com.dmzs.datawatchclient.transport.dto.ChannelRoutingRuleDto>,
+    ): Result<com.dmzs.datawatchclient.transport.dto.ChannelRoutingListDto> =
+        request {
+            client.put("${profile.baseUrl}/api/channel/routing") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.ChannelRoutingListDto(rules = rules))
+            }.body()
+        }
+
+    // ---- T30: File Service ----
+
+    override suspend fun getFileServiceMeta(): Result<com.dmzs.datawatchclient.transport.dto.FileServiceMetaDto> =
+        request {
+            client.get("${profile.baseUrl}/api/files/meta") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    // ---- T30: Discussion Scopes ----
+
+    override suspend fun listDiscussions(): Result<com.dmzs.datawatchclient.transport.dto.DiscussionListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/discussion") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun writeDiscussionMessage(
+        id: String,
+        content: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.DiscussionWriteResponseDto> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/discussion/$id") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.DiscussionWriteRequestDto(content = content))
+            }.body()
+        }
+
+    // ---- T30: Encryption Status ----
+
+    override suspend fun getEncryptionStatus(): Result<com.dmzs.datawatchclient.transport.dto.EncryptionStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/security/encryption/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
         }
 
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }

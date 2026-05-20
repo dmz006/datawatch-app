@@ -306,6 +306,9 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.general.ToolingCard()
                                 // Dashboard card layout CRUD (moved from removed Monitor tab)
                                 DashboardCardsCard()
+                                // T30 — File Service + Discussion Scopes
+                                FileServiceCard()
+                                DiscussionScopesCard()
                             }
                             SettingsTab.Comms -> {
                                 // Matches PWA `data-group="comms"` order:
@@ -339,6 +342,8 @@ public fun SettingsScreen(
                                 // v0.80.0 Sprint 11 — RoutingRulesCard after Proxy (PWA parity)
                                 com.dmzs.datawatchclient.ui.routing.RoutingRulesCard()
                                 com.dmzs.datawatchclient.ui.channels.ChannelsCard()
+                                // T30 — Channel Routing
+                                com.dmzs.datawatchclient.ui.routing.ChannelRoutingCard()
                                 com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
@@ -416,6 +421,8 @@ public fun SettingsScreen(
                                 LanguagePickerCard()
                                 ThemePickerCard()
                                 AboutCard(activeProfile = activeProfile)
+                                // T30 — Encryption Status
+                                EncryptionStatusCard()
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
                                 com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()

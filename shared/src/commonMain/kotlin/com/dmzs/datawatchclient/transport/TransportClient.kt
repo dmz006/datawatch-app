@@ -1112,7 +1112,7 @@ public interface TransportClient {
     public suspend fun getOrchestratorGraphsList(): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto>
 
     /** POST /api/orchestrator/graphs — create a new orchestrator graph. */
-    public suspend fun createOrchestratorGraph(title: String, directory: String = ""): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto>
+    public suspend fun createOrchestratorGraph(title: String, directory: String = "", prdIds: List<String> = emptyList()): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto>
 
     /** POST /api/orchestrator/graphs/{id}/run — run an orchestrator graph. */
     public suspend fun runOrchestratorGraph(id: String): Result<Unit>
@@ -1255,6 +1255,32 @@ public interface TransportClient {
 
     /** GET /api/evals — list completed eval runs (alpha.68+). Returns empty list on 404. */
     public suspend fun listEvalRuns(): Result<List<com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto>>
+
+    // ---- T30: Channel Routing ----
+
+    /** GET /api/channel/routing — list channel routing rules. */
+    public suspend fun getChannelRouting(): Result<com.dmzs.datawatchclient.transport.dto.ChannelRoutingListDto>
+
+    /** PUT /api/channel/routing — replace channel routing rules. */
+    public suspend fun putChannelRouting(rules: List<com.dmzs.datawatchclient.transport.dto.ChannelRoutingRuleDto>): Result<com.dmzs.datawatchclient.transport.dto.ChannelRoutingListDto>
+
+    // ---- T30: File Service ----
+
+    /** GET /api/files/meta — file service metadata. */
+    public suspend fun getFileServiceMeta(): Result<com.dmzs.datawatchclient.transport.dto.FileServiceMetaDto>
+
+    // ---- T30: Discussion Scopes ----
+
+    /** GET /api/memory/discussion — list discussion scope IDs. */
+    public suspend fun listDiscussions(): Result<com.dmzs.datawatchclient.transport.dto.DiscussionListDto>
+
+    /** POST /api/memory/discussion/{id} — write a message to a discussion WAL. */
+    public suspend fun writeDiscussionMessage(id: String, content: String): Result<com.dmzs.datawatchclient.transport.dto.DiscussionWriteResponseDto>
+
+    // ---- T30: Encryption Status ----
+
+    /** GET /api/security/encryption/status — encryption status. */
+    public suspend fun getEncryptionStatus(): Result<com.dmzs.datawatchclient.transport.dto.EncryptionStatusDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
