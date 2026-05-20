@@ -157,7 +157,7 @@ public fun RoutingRulesCard() {
                 if (testMatched && testResult != null) {
                     Text(
                         stringResource(R.string.routing_matched) + " " + testResult,
-                        color = Color(0xFF4CAF50),
+                        color = Color(0xFF10B981),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 4.dp),
                     )

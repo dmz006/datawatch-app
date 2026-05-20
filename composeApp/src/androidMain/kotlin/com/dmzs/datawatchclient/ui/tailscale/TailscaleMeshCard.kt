@@ -97,7 +97,7 @@ public fun TailscaleMeshCard() {
                     Text(
                         if (s.enabled) stringResource(R.string.tailscale_enabled) else stringResource(R.string.tailscale_disabled),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (s.enabled) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (s.enabled) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                     )
                 }
@@ -153,7 +153,7 @@ public fun TailscaleMeshCard() {
                         Text(
                             if (node.online) "●" else "○",
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (node.online) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (node.online) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(

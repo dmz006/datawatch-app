@@ -273,7 +273,7 @@ private fun staleDotColor(lastPushAt: String?): Color {
     }.getOrDefault(-1)
     return when {
         ageHours < 0  -> Color(0xFF94A3B8)
-        ageHours < 1  -> Color(0xFF00E676)
+        ageHours < 1  -> Color(0xFF10B981)
         ageHours < 6  -> Color(0xFFFFB300)
         else          -> Color(0xFFEF4444)
     }

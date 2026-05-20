@@ -83,7 +83,7 @@ public fun EncryptionStatusCard() {
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = if (s.secureMode) Color(0xFF4CAF50) else Color(0xFFFF5722),
+                            color = if (s.secureMode) Color(0xFF10B981) else Color(0xFFFF5722),
                             modifier = Modifier.size(8.dp),
                         ) {}
                         Spacer(Modifier.width(6.dp))
@@ -120,7 +120,7 @@ public fun EncryptionStatusCard() {
                                 Text(
                                     if (file.encrypted) stringResource(R.string.encryption_check) else stringResource(R.string.encryption_cross),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (file.encrypted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (file.encrypted) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
@@ -132,7 +132,7 @@ public fun EncryptionStatusCard() {
                                 Text(
                                     if (file.exists) stringResource(R.string.encryption_check) else stringResource(R.string.encryption_cross),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (file.exists) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                                    color = if (file.exists) Color(0xFF10B981) else MaterialTheme.colorScheme.error,
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
