@@ -803,7 +803,7 @@ private fun SessionRow(
                 )
                 .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
     ) {
-        // Header row: id + state pill + mute/more actions.
+        // Header row: name/id + state pill + mute/more actions.
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (reorderMode) {
                 Icon(
@@ -813,11 +813,22 @@ private fun SessionRow(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                session.id,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(end = 8.dp),
-            )
+            Column(modifier = Modifier.padding(end = 8.dp)) {
+                val displayName = session.name?.takeIf { it.isNotBlank() }
+                Text(
+                    displayName ?: session.id,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                )
+                if (displayName != null) {
+                    Text(
+                        session.id,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        maxLines = 1,
+                    )
+                }
+            }
             PwaStatePill(session.state)
             if (!backend.isNullOrBlank()) {
                 Spacer(modifier = Modifier.width(6.dp))
@@ -919,10 +930,10 @@ private fun SessionRow(
             }
         }
 
-        // Task / display text — row body. PWA prefers `name` (user-
-        // assigned label from rename) over `task` (original prompt); we
-        // do the same. Truncate matches the PWA's 80-char cap.
-        val displayText = session.name?.takeIf { it.isNotBlank() } ?: session.taskSummary
+        // Task / display text — row body shows taskSummary (original prompt).
+        // The user-assigned name now lives in the header row above.
+        // Truncate matches the PWA's 80-char cap.
+        val displayText = session.taskSummary
         val taskText =
             when {
                 displayText == null -> stringResource(R.string.sessions_no_task)

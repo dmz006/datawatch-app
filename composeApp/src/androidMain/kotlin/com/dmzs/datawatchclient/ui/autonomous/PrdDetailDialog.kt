@@ -140,6 +140,9 @@ internal fun PrdDetailDialog(
                     }
                 }
 
+                // Lifecycle strip — mirrors PWA step-pill row in the PRD detail panel
+                LifecycleStrip(status)
+
                 // Terminal-state hint (v0.76.0)
                 if (status in listOf("done", "aborted", "failed", "archived")) {
                     Spacer(Modifier.height(8.dp))
