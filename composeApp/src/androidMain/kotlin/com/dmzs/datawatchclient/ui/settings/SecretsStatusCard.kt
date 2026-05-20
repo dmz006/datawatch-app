@@ -75,7 +75,7 @@ public fun SecretsStatusCard() {
                     // Reachability dot — green if reachable, red if not.
                     Canvas(Modifier.size(10.dp)) {
                         drawCircle(
-                            color = if (s.reachable) Color(0xFF00E676) else Color(0xFFEF4444),
+                            color = if (s.reachable) Color(0xFF10B981) else Color(0xFFEF4444),
                         )
                     }
                 }

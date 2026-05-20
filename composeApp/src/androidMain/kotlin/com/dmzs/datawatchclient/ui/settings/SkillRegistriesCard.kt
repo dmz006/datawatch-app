@@ -263,7 +263,7 @@ private fun RegistryRow(
                 Surface(
                     modifier = Modifier.size(8.dp),
                     shape = MaterialTheme.shapes.extraSmall,
-                    color = if (reg.status == "connected") Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    color = if (reg.status == "connected") Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     content = {},
                 )
             }

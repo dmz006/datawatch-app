@@ -174,7 +174,7 @@ public fun LiveDot(modifier: Modifier = Modifier) {
         modifier = modifier
             .size(8.dp)
             .drawBehind {
-                drawCircle(color = Color(0xFF00E676), alpha = alpha)
+                drawCircle(color = Color(0xFF10B981), alpha = alpha)
             },
     )
 }
