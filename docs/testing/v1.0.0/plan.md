@@ -149,6 +149,7 @@ adb -s emulator-5554 install -r composeApp/build/outputs/apk/publicTrack/debug/*
 | T27 | Automata Orchestrator E2E (Android) | TS-475–TS-494 | 📋 Planned |
 | T28 | Settings cards coverage gap-fill | TS-550–TS-614 | 📋 Planned |
 | T29 | Howto validation gap-fill | TS-620–TS-660 | 📋 Planned |
+| T30 | v8.2–v8.6 new feature coverage | TS-660–TS-670 | 📋 Planned |
 
 ---
 
@@ -208,17 +209,20 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ## T15 — New Server Endpoints (Identity / Algorithm / Evals / Council)
 
-**Prerequisite**: datawatch#75 (identity), #76 (push) server-side implementation
+**Prerequisite**: None — all endpoints implemented in v8.2.0
 
-### TS-286 — Identity endpoint GET
+### TS-286 — Identity endpoint: GET, SET, and mobile card render
 **Tags**: [surface:phone] [feature:identity]
-**Steps**: 
-1. Settings → Automata → Identity card should be empty (waiting for endpoint)
-2. Once server #40 ships: GET /api/identity returns `{role, current_focus, context_notes}`
-3. Refresh settings
-**Expected**: Identity card populates with server data
-**Evidence**: `identity_get.json`, `identity_card.png`
-**Status**: ⏳ Blocked on datawatch#75 (identity endpoint not yet implemented server-side)
+**Steps**:
+1. Settings → Automata → scroll to "IDENTITY" section; verify card renders
+2. Verify GET populated: `curl -sk https://127.0.0.1:18443/api/identity -H "Authorization: Bearer dw-test-token-12345"`
+3. Tap the Role field; enter "mobile tester"; tap Save
+4. Tap the Current Focus field; enter "v1.0.0 QA"; tap Save
+5. Verify fields updated: `curl -sk https://127.0.0.1:18443/api/identity -H "Authorization: Bearer dw-test-token-12345"` shows new values
+6. Reload Settings; verify persisted values still shown
+**Expected**: Identity card renders; GET populates fields; POST/PATCH saves role and focus; values persist across navigation; no crash
+**Evidence**: `t15_identity_get.json`, `t15_identity_set.json`, `t15_identity_card.png`
+**Status**: 📋 Planned
 
 ### TS-287–TS-305: (14 stories similar pattern for Council/Algorithm/Evals CRUD)
 
@@ -226,17 +230,18 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ## T16 — UnifiedPush Tier 1 Integration
 
-**Prerequisite**: datawatch#76 (UnifiedPush provider + /api/push/* endpoints)
+**Prerequisite**: None — all endpoints implemented in v8.2.0 (BL330)
 
-### TS-306 — Mobile registers for push
+### TS-306 — Mobile registers for UnifiedPush
 **Tags**: [surface:phone] [feature:unifiedpush] [feature:push]
 **Steps**:
-1. App launches, `UnifiedPushSseService` discovers `/.well-known/unifiedpush`
-2. Registers device endpoint: POST /api/push/register with `{endpoint, keys}`
-3. Check secondary instance logs: registration accepted
-**Expected**: 200 OK, device endpoint stored on server
-**Evidence**: `push_register.json`, logcat
-**Status**: ⏳ Blocked on datawatch#76 (UnifiedPush endpoints not yet implemented)
+1. Verify discovery endpoint: `curl -sk https://10.0.2.2:18443/.well-known/unifiedpush` from emulator (or `https://127.0.0.1:18443` from host) returns `{version:1, unifiedpush:{gateway:"/api/push/notify"}}`
+2. Launch app on emulator; verify `UnifiedPushSseService` discovers push provider (logcat: `UnifiedPush.*registered`)
+3. Check registration: `curl -sk https://127.0.0.1:18443/api/push/register -H "Authorization: Bearer dw-test-token-12345"` returns registered endpoint
+4. Settings → Comms → Push Notifications card; verify registration status shown
+**Expected**: Discovery + registration succeeds automatically on app launch; server stores device endpoint; push card shows registered status
+**Evidence**: `t16_push_register.json`, `t16_push_logcat.txt`, `t16_push_card.png`
+**Status**: 📋 Planned
 
 ### TS-307–TS-315: (9 stories for push receipt, notification display, quick-reply, fallback chain)
 
@@ -309,11 +314,13 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Settings → Automata → Autonomous Config → verify `autonomous.enabled` is on
 3. Autonomous tab → tap + → fill Title: "t360-planning-test", Description: "Write a hello-world function and test"
 4. Tap Create; verify PRD appears in list with status `draft`
-5. Open PRD → tap Decompose; observe loading state
-6. Wait up to 90s; verify status changes to `planning` then `needs_review`; stories appear in Stories sub-tab
-7. Review each generated story; tap Approve All (or approve individually)
-8. Verify PRD status advances to `approved`
-**Expected**: Full create → decompose → review workflow works in mobile; if decompose times out, this is known bug dmz006/datawatch#77 — capture logcat + screenshot as evidence and mark as FAIL pending fix
+5. Tap Decompose; verify a loading indicator appears briefly then clears (async — returns immediately)
+6. Verify PRD status shows `planning` with a progress indicator in the Stories sub-tab
+7. Poll until complete (up to 60s): verify stories appear one by one as they stream in
+8. Verify final status `needs_review`; all generated stories listed in Stories sub-tab
+9. Review each generated story; tap Approve All (or approve individually)
+10. Verify PRD status advances to `approved`
+**Expected**: Decompose returns immediately (no timeout); stories stream into the Stories sub-tab; final status needs_review; full workflow completes without hanging; no crash; decompose is async since v8.2.0 (fixed dmz006/datawatch#77) — should not time out
 **Evidence**: `t360_prd_workflow.json`, screenshots of each state
 **Status**: 📋 Planned
 
@@ -418,7 +425,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 **Prerequisites**: TS-360 and TS-365 passed; LLM configured via TS-375; council personas configured (TS-566/TS-620)
 **Steps**:
 1. Autonomous tab → + → Create PRD: title "t415-auto-arc", description "Refactor the greeting function to support multiple languages"
-2. Tap Decompose; wait for stories (if timeout occurs → known bug #77; capture evidence)
+2. Tap Decompose; wait for stories (decompose is async since v8.2.0, fixed dmz006/datawatch#77 — should not time out)
 3. Council sub-tab → tap "Council Review" on the PRD
 4. Verify each configured persona's response appears
 5. Approve PRD; verify status → `approved`
@@ -1840,6 +1847,129 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 
 ---
 
+## T30 — New v8.2–v8.6 Feature Coverage
+
+**Goal**: Validate mobile surfaces for features shipped in datawatch v8.2.0–v8.6.0: Channel Routing, File Service, Discussion Scopes, and Encryption Status. These features have Settings cards in the PWA that mirror expected mobile cards.
+
+**Prerequisites**: Server running v8.6.0+ (confirmed via Settings → About → version card). Test token: `dw-test-token-12345`.
+
+**Test isolation**: All API calls use `curl -sk https://127.0.0.1:18443/api/<endpoint> -H "Authorization: Bearer dw-test-token-12345"`.
+
+---
+
+### TS-660 — Channel Routing card renders and lists rules
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → Comms → scroll to "CHANNEL ROUTING" section
+2. Verify card renders with routing rules list or empty-state
+3. Verify each rule row shows: channel pattern, peer name, automata type
+**Expected**: `curl -sk https://127.0.0.1:18443/api/channel/routing -H "Authorization: Bearer dw-test-token-12345"` returns rules array; mobile card populates; no crash
+**Evidence**: `t30_channel_routing.png`
+**Status**: 📋 Planned
+
+### TS-661 — Channel Routing card add a routing rule
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Add Rule" in Channel Routing card
+2. Enter channel pattern: `#general`, peer: `test-peer`, automata type: leave blank
+3. Tap Save; verify rule appears in list
+**Expected**: `curl -sk https://127.0.0.1:18443/api/channel/routing -H "Authorization: Bearer dw-test-token-12345"` shows new rule; mobile list updates; no crash
+**Evidence**: `t30_channel_routing_add.json`
+**Status**: 📋 Planned
+
+### TS-662 — Channel Routing card delete a rule
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap delete on the rule added in TS-661
+2. Verify rule removed from list
+**Expected**: API confirms rule removed; list refreshes; no crash
+**Evidence**: `t30_channel_routing_delete.json`
+**Status**: 📋 Planned
+
+### TS-663 — File Service card renders
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "FILE SERVICE" section
+2. Verify card renders with upload button and file list (or empty-state)
+**Expected**: Card visible; `curl -sk https://127.0.0.1:18443/api/files/meta -H "Authorization: Bearer dw-test-token-12345"` returns meta; no crash
+**Evidence**: `t30_file_service.png`
+**Status**: 📋 Planned
+
+### TS-664 — File Service upload and list a file
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "Upload File" in File Service card
+2. Select a small test file from device storage (or create one: `echo "test" > /tmp/t30test.txt`)
+3. Verify file appears in the list with name and size
+**Expected**: File uploaded; list shows the file entry; no crash
+**Evidence**: `t30_file_upload.json`, `t30_file_list.png`
+**Status**: 📋 Planned
+
+### TS-665 — File Service delete a file
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap delete on the file uploaded in TS-664
+2. Verify file removed from list
+**Expected**: `curl -sk https://127.0.0.1:18443/api/files/meta -H "Authorization: Bearer dw-test-token-12345"` no longer shows deleted file; list refreshes; no crash
+**Evidence**: `t30_file_delete.json`
+**Status**: 📋 Planned
+
+### TS-666 — Discussion Scopes card renders
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → General → scroll to "DISCUSSION SCOPES" section
+2. Verify card renders with discussion list or empty-state
+3. Verify each discussion row shows ID and participant count
+**Expected**: `curl -sk https://127.0.0.1:18443/api/memory/discussion -H "Authorization: Bearer dw-test-token-12345"` returns list; card renders; no crash
+**Evidence**: `t30_discussion_scopes.png`
+**Status**: 📋 Planned
+
+### TS-667 — Discussion Scopes create and write a message
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Tap "New Discussion" in Discussion Scopes card
+2. Enter discussion ID: `t30-discussion`; tap Create
+3. Tap the discussion row to open it; tap "Write" or compose field
+4. Enter message: "t30 test entry"; tap Submit
+5. Verify entry appears in the discussion WAL
+**Expected**: Discussion created; message written; `curl -sk https://127.0.0.1:18443/api/memory/discussion/t30-discussion/wal -H "Authorization: Bearer dw-test-token-12345"` shows the WAL entry; no crash
+**Evidence**: `t30_discussion_write.json`
+**Status**: 📋 Planned
+
+### TS-668 — Encryption status visible in Settings → About
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → About → scroll to "SECURITY" or "ENCRYPTION" section
+2. Verify encryption status card shows current state (enabled/disabled, which stores are encrypted)
+3. Tap "Encryption Status" detail — verify each store category listed
+**Expected**: `curl -sk https://127.0.0.1:18443/api/security/encryption/status -H "Authorization: Bearer dw-test-token-12345"` returns status; mobile card reflects it; no crash
+**Evidence**: `t30_encryption_status.png`
+**Status**: 📋 Planned
+
+### TS-669 — Async decompose progress visible in Autonomous tab
+**Tags**: [surface:phone] [feature:autonomous]
+**Steps**:
+1. Autonomous tab → + → Create PRD: title "t30-async-test", description "Build a REST API with authentication"
+2. Tap Decompose; verify the UI returns control immediately (does NOT hang)
+3. Verify a progress indicator (spinner or "N/M stories") appears in the Stories sub-tab
+4. Watch stories appear one by one as they stream in (within 30s)
+5. Verify final story count matches `total` from status API
+**Expected**: Decompose is non-blocking; stories stream in incrementally; no timeout; no crash; `GET /api/autonomous/prds/{id}/decompose/status` shows `status=complete` when done
+**Evidence**: `t30_async_decompose.png`, `t30_decompose_status.json`
+**Status**: 📋 Planned
+
+### TS-670 — v8.6.0 version shown in Settings → About
+**Tags**: [surface:phone] [feature:settings]
+**Steps**:
+1. Settings → About tab
+2. Verify server version card shows 8.6.0 (or higher)
+3. Verify app version shown in About
+**Expected**: Server version reflects v8.6.0; no crash
+**Evidence**: `t30_version_check.png`
+**Status**: 📋 Planned
+
+---
+
 ## Release Gate
 
 **v1.0.0 ship criteria**:
@@ -1857,6 +1987,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T27: ✅ Pass (Automata Orchestrator E2E — all 20 stories)
 - T28: ✅ Pass (Settings coverage gap-fill — all 40 stories)
 - T29: ✅ Pass (Howto validation gap-fill — all 19 stories)
+- T30: ✅ Pass (v8.2–v8.6 feature coverage — 11 stories)
 - No P0/P1 critical bugs
 - Cookbook shows final pass counts
 
