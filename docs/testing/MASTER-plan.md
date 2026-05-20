@@ -66,7 +66,7 @@ This plan covers all mobile, Wear, and Auto surfaces in a comprehensive test str
 # Working dir is created OUTSIDE the repo (never commit test data)
 SOAK_RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR="../datawatch-soak-${SOAK_RUN_ID}"
-TEST_DATA_DIR="${TEST_WORK_DIR}/.datawatch-test-$$"
+TEST_DATA_DIR="${TEST_WORK_DIR}/.datawatch-test-${SOAK_RUN_ID}"
 mkdir -p "$TEST_DATA_DIR"
 
 # Ports: prefer 18080/18443; fall back to OS-free if busy

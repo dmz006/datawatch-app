@@ -470,7 +470,7 @@ If build fails:
 cd ~/workspace/datawatch-app
 RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
-TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
 echo "Test working dir: $TEST_WORK_DIR"
 ```
@@ -673,7 +673,7 @@ rm -rf "${TEST_WORK_DIR}"
 
 RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
-TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
 
 # Re-run Phase 7 "Write Test Configuration" and Phase 8 "Start Secondary Instance"

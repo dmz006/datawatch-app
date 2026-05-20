@@ -167,7 +167,7 @@ mcp:
 # Working dir outside the repo
 RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
-TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-$$
+TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
 
 cat > "${TEST_WORK_DIR}/config.yaml" <<'EOF'
