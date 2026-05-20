@@ -373,6 +373,8 @@ public fun SettingsScreen(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
                                 )
                                 com.dmzs.datawatchclient.ui.detection.DetectionFiltersCard()
+                                // S14b — Alert Rules (PWA Settings > Compute parity)
+                                com.dmzs.datawatchclient.ui.alertrules.AlertRulesCard()
                                 com.dmzs.datawatchclient.ui.commands.SavedCommandsCard()
                                 com.dmzs.datawatchclient.ui.filters.FiltersCard()
                                 com.dmzs.datawatchclient.ui.tailscale.TailscaleSettingsCard()

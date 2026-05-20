@@ -1645,6 +1645,39 @@ public data class DiscussionWriteResponseDto(
     val ok: Boolean = false,
 )
 
+// ---- S14b: Alert Rules ----
+@Serializable
+public data class AlertConditionDto(
+    val metric: String = "",
+    val operator: String = ">",
+    val threshold: Double = 0.0,
+)
+
+@Serializable
+public data class AlertActionDto(
+    val kind: String = "alert",
+    @SerialName("scale_target") val scaleTarget: String? = null,
+    @SerialName("scale_amount") val scaleAmount: Int = 1,
+)
+
+@Serializable
+public data class AlertRuleDto(
+    val name: String = "",
+    val description: String? = null,
+    val condition: AlertConditionDto = AlertConditionDto(),
+    @SerialName("source_filter") val sourceFilter: String? = null,
+    @SerialName("window_seconds") val windowSeconds: Int = 60,
+    val action: AlertActionDto = AlertActionDto(),
+    val enabled: Boolean = true,
+    @SerialName("cooldown_seconds") val cooldownSeconds: Int = 300,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+public data class AlertRulesListDto(
+    val rules: List<AlertRuleDto> = emptyList(),
+)
+
 // ---- T30: Encryption Status ----
 @Serializable
 public data class EncryptedFileStatusDto(

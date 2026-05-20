@@ -1281,6 +1281,13 @@ public interface TransportClient {
 
     /** GET /api/security/encryption/status — encryption status. */
     public suspend fun getEncryptionStatus(): Result<com.dmzs.datawatchclient.transport.dto.EncryptionStatusDto>
+
+    // ---- S14b: Alert Rules ----
+    public suspend fun listAlertRules(): Result<com.dmzs.datawatchclient.transport.dto.AlertRulesListDto>
+    public suspend fun createAlertRule(rule: com.dmzs.datawatchclient.transport.dto.AlertRuleDto): Result<Unit>
+    public suspend fun deleteAlertRule(name: String): Result<Unit>
+    public suspend fun enableAlertRule(name: String): Result<Unit>
+    public suspend fun disableAlertRule(name: String): Result<Unit>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
