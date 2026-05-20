@@ -451,6 +451,16 @@ private fun PrdRow(
                     prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
                     if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                     if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    prd.parentPrdId?.takeIf { it.isNotBlank() }?.let { pid ->
+                        val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+                        Box(
+                            modifier = Modifier
+                                .background(accent2.copy(alpha = 0.16f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        ) {
+                            Text("↗ parent ${pid.take(8)}", style = MaterialTheme.typography.labelSmall, color = accent2)
+                        }
+                    }
                     prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
                         Text(profile, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

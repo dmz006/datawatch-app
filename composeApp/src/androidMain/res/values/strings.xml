@@ -1250,13 +1250,13 @@
 
     <!-- ── Dashboard tab (BL303 parity with PWA alpha.71) ── -->
     <string name="nav_dashboard">Dashboard</string>
-    <string name="dash_card_constellation">Session Constellation</string>
-    <string name="dash_card_pulse">Activity Pulse</string>
-    <string name="dash_card_events">Recent Events</string>
-    <string name="dash_card_pipeline">Sprint Pipeline</string>
-    <string name="dash_card_heatmap">Activity Heatmap</string>
-    <string name="dash_card_guardrails">Guardrail Status</string>
-    <string name="dash_card_smoke">System Health</string>
+    <string name="dash_card_constellation">⣿ Automata</string>
+    <string name="dash_card_pulse">♡ Multi-EKG</string>
+    <string name="dash_card_events">⚡ Live Events</string>
+    <string name="dash_card_pipeline">≡ Timeline · 6h</string>
+    <string name="dash_card_heatmap">🔥 30-Day Activity</string>
+    <string name="dash_card_guardrails">🛡 Guardrails</string>
+    <string name="dash_card_smoke">🔬 Smoke Run</string>
     <string name="dash_stat_running">Running</string>
     <string name="dash_stat_waiting">Waiting</string>
     <string name="dash_stat_error">Error</string>

@@ -618,7 +618,7 @@ public data class PrdDto(
     val backend: String? = null,
     val effort: String? = null,
     val model: String? = null,
-    val parent: String? = null,
+    @SerialName("parent_prd_id") val parentPrdId: String? = null,
     val depth: Int = 0,
     @SerialName("is_template") val isTemplate: Boolean = false,
     @SerialName("created_at") val createdAt: String? = null,
