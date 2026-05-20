@@ -361,7 +361,7 @@ private fun PrdsBody(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(visible, key = { it.id }) { prd ->
+                items(visible, key = { "${state.prdProfileNames[it.id].orEmpty()}|${it.id}" }) { prd ->
                     PrdRow(
                         prd = prd,
                         selected = prd.id in state.selectedIds,
@@ -519,8 +519,8 @@ internal fun prdStateRank(status: String): Int =
 
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
-        "running" -> Color(0xFF22C55E)
-        "approved" -> Color(0xFF14B8A6)
+        "running" -> Color(0xFF10B981)
+        "approved" -> Color(0xFF7C3AED)
         "needs_review", "revisions_asked", "awaiting_approval" -> Color(0xFFF59E0B)
         "blocked", "rejected" -> Color(0xFFEF4444)
         "decomposing" -> Color(0xFFA855F7)
