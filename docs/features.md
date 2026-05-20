@@ -19,11 +19,13 @@ Living list of improvements, enhancements, and fun ideas. Add as they come up du
 - **Saved command quick-tile** — Android Quick Settings tile to launch a saved command in one tap
 
 ### Autonomous / PRD
-- **PRD decompose streaming** — show tasks appearing one by one as the LLM generates them (needs server #77)
+- **PRD decompose streaming UI** — server now streams stories via SSE (v8.2.0 BL328); mobile should show them appearing one by one with a live counter "3/8 stories generated…"
 - **PRD template gallery** — pick from common project types (web app, CLI tool, refactor, etc.)
 - **PRD progress widget** — home-screen widget showing active PRD name + % complete
 - **Council reply threading** — show each persona's response as a collapsible thread in session view
 - **Inline task approval** — approve/reject individual PRD tasks with swipe gesture
+- **Decompose reconnect** — if the SSE stream drops mid-decompose, reconnect via `Last-Event-ID` and resume from where it left off (server already supports this in v8.2.0)
+- **Discussion scope viewer** — in-session view showing the discussion WAL for cross-agent memory (Discussion Scopes shipped in v8.4.0)
 
 ### Dashboard
 - **Real-time dashboard push** — WebSocket subscription so cards update without polling
@@ -65,12 +67,14 @@ Living list of improvements, enhancements, and fun ideas. Add as they come up du
 ## Datawatch Server
 
 ### API & Performance
-- **PRD decompose streaming** — `text/event-stream` or async+polling to fix timeout (#77)
+- ~~**PRD decompose streaming**~~ — ✅ shipped v8.2.0 (BL328), async SSE
 - **WebSocket real-time session events** — push session state changes to mobile instead of polling
 - **Session cost tracking** — token usage × configured cost rates per session, shown in telemetry
 - **Batch session operations** — `POST /api/sessions/batch { action: "kill", filter: { tag: "test" } }`
 - **LLM hot-swap** — change an active session's backend mid-run without restart
 - **Session archiving API** — mark sessions as archived; mobile shows them in a separate "Archive" tab
+- **File service mobile UI** — server has federated file service (v8.3.0 BL333); mobile needs upload/browse/share UI beyond the Settings card
+- **Discussion scope conflicts UI** — server detects WAL write conflicts (v8.4.0); mobile could surface a "conflict detected" badge when two agents wrote conflicting entries
 
 ### Intelligence
 - **Conditional alert rules** — "alert if session in waiting_input for >15 minutes"
@@ -83,11 +87,20 @@ Living list of improvements, enhancements, and fun ideas. Add as they come up du
 - **Differential config sync** — propagate config changes from primary to peer servers
 - **Cross-server session migration** — move a running session to another server
 - **Federation health dashboard** — see all peer server health in one view on mobile
+- **Channel routing mobile UI** — server v8.3.0 has channel routing rules (channel pattern → peer); mobile Settings → Comms card exists but could also surface active routing decisions in the Observer tab
+- **File sharing between peers** — server v8.3.0 has `GET /api/files/peers/{name}`; mobile could show files shared by federated peers in a "Shared Files" section
 
 ### Identity & Context
-- **Identity endpoint implementation** (datawatch#75) — `GET/POST /api/identity`
+- ~~**Identity endpoint**~~ — ✅ shipped v8.2.0 (BL329), GET/POST/PUT/PATCH /api/identity
+- ~~**UnifiedPush registration**~~ — ✅ shipped v8.2.0 (BL330), full push pipeline
 - **Context auto-summarize** — periodically compress identity context_notes using LLM
 - **Per-project identity profiles** — different role/focus when working in different project directories
+- **Encrypted identity store** — identity fields encrypted at rest when `--secure` mode active (server encrypts inference/llms.json and others in v8.6.0; identity.json could follow)
+
+### Security
+- **Encryption status card** — server v8.6.0 has `GET /api/security/encryption/status`; mobile Settings → About should surface whether encryption is active and which stores are protected
+- **Secure mode toggle** — one-tap enable/disable of `--secure` mode from mobile (with confirmation dialog given the migration step involved)
+- **Encrypted log viewer** — server v8.6.0 has `datawatch security logs`; mobile could show daemon log tail in Settings → About with decryption handled transparently
 
 ---
 
