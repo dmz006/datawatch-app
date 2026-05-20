@@ -2081,8 +2081,8 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T27: ✅ Pass (Automata Orchestrator E2E — all 20 stories)
 - T28: ✅ Pass (Settings coverage gap-fill — all 40 stories)
 - T29: ✅ Pass (Howto validation gap-fill — all 19 stories)
-- T30: ✅ Pass (v8.2–v8.6 feature coverage — 11 stories)
-- T31: 📋 Planned (Matrix backend v8.7.0/BL241 — 8 stories; requires daemon upgrade to v8.7.0)
+- T30: 🔴 2/11 pass — 4 mobile cards missing: ChannelRouting (#138), FileService (#139), DiscussionScopes (#140), EncryptionStatus (#141); async decompose ✅
+- T31: 📋 Planned (Matrix backend v8.7.0/BL241 — 8 stories; daemon upgraded to v8.7.0 2026-05-20)
 - No P0/P1 critical bugs
 - Cookbook shows final pass counts
 
