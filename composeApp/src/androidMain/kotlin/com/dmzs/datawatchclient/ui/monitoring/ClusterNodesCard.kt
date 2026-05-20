@@ -63,7 +63,7 @@ private fun ClusterNodeRow(node: ObserverClusterNodeDto) {
                 Modifier
                     .size(10.dp)
                     .background(
-                        if (node.ready) Color(0xFF22C55E) else Color(0xFFEF4444),
+                        if (node.ready) Color(0xFF10B981) else Color(0xFFEF4444),
                         CircleShape,
                     ),
         )
@@ -135,7 +135,7 @@ private fun UsageBar(
                 when {
                     pct >= 80 -> Color(0xFFEF4444)
                     pct >= 60 -> Color(0xFFF59E0B)
-                    else -> Color(0xFF22C55E)
+                    else -> Color(0xFF10B981)
                 },
         )
     }

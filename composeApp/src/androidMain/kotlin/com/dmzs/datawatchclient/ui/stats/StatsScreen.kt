@@ -721,7 +721,7 @@ private fun CoreMiniBar(
         when {
             clamped >= 80 -> Color(0xFFEF4444)
             clamped >= 60 -> Color(0xFFF59E0B)
-            else -> Color(0xFF22C55E)
+            else -> Color(0xFF10B981)
         }
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(

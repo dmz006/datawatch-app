@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.autonomous
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,7 +66,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -146,7 +149,11 @@ public fun AutonomousScreen(
                     onClick = { if (currentTab == 1) tmplCreateOpen = true else newOpen = true },
                     modifier = Modifier.offset(y = 36.dp).padding(end = 4.dp),
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.autonomous_fab_new))
+                    if (currentTab == 0) {
+                        Text("⚡", style = MaterialTheme.typography.titleMedium)
+                    } else {
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.autonomous_fab_new))
+                    }
                 }
             }
         },
@@ -429,6 +436,7 @@ private fun PrdRow(
                     }
                 }
                 metaText?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp)) }
+                LifecycleStrip(prd.status)
                 prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
                     Text(stringResource(R.string.automata_last_activity, ts.take(10)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.padding(top = 1.dp))
                 }
@@ -487,9 +495,12 @@ private fun PrdRow(
 private fun StatusPill(status: String) {
     val color = prdStatusColor(status)
     Box(
-        modifier = Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
+        modifier = Modifier
+            .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+            .border(1.dp, color, RoundedCornerShape(10.dp))
+            .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
-        Text(status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = color)
+        Text(status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = color, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
     }
 }
 
@@ -504,6 +515,61 @@ private fun TypeBadge(type: String) {
     }
     Box(Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
         Text(type, style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+/**
+ * Horizontal lifecycle progress strip — mirrors PWA's step-pill row on
+ * each PRD card. Shows 5 steps: review → approved → decompose → run → done.
+ * Steps before the current one are shown as "done" (green tint), the current
+ * step is highlighted with the status color, future steps are dim.
+ * Danger states (rejected/cancelled) show all pills in red.
+ */
+@Composable
+private fun LifecycleStrip(status: String) {
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val steps = listOf("review", "approved", "decompose", "run", "done")
+    val statusLower = status.lowercase()
+    val isDanger = statusLower in setOf("rejected", "cancelled", "blocked")
+    val currentIndex = when {
+        isDanger -> -1
+        statusLower in setOf("needs_review", "revisions_asked", "awaiting_approval") -> 0
+        statusLower == "approved" -> 1
+        statusLower == "decomposing" -> 2
+        statusLower == "running" -> 3
+        statusLower in setOf("complete", "completed") -> 4
+        else -> -1
+    }
+    if (currentIndex == -1 && !isDanger) return
+    Row(
+        modifier = Modifier.padding(top = 4.dp, start = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        steps.forEachIndexed { idx, step ->
+            val (bg, fg) = when {
+                isDanger -> Color(0xFFEF4444).copy(alpha = 0.12f) to Color(0xFFEF4444)
+                currentIndex == -1 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.08f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                idx < currentIndex -> dw.success.copy(alpha = 0.15f) to dw.success
+                idx == currentIndex -> prdStatusColor(status).copy(alpha = 0.2f) to prdStatusColor(status)
+                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+            }
+            Box(
+                modifier = Modifier
+                    .background(bg, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 5.dp, vertical = 1.dp),
+            ) {
+                Text(
+                    step,
+                    fontSize = 9.sp,
+                    color = fg,
+                    fontWeight = if (idx == currentIndex) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+            if (idx < steps.size - 1) {
+                Text("›", fontSize = 8.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+            }
+        }
     }
 }
 

@@ -146,7 +146,7 @@ private fun ObserverBadge(s: ObserverSummaryDto) {
 
 private fun nodeStatusColor(status: String): Color =
     when (status.lowercase()) {
-        "running" -> Color(0xFF22C55E)
+        "running" -> Color(0xFF10B981)
         "complete", "approved" -> Color(0xFF3B82F6)
         "needs_review", "awaiting_approval" -> Color(0xFFF59E0B)
         "rejected", "cancelled" -> Color(0xFFEF4444)

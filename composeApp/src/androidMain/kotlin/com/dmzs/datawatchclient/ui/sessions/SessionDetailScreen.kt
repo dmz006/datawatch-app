@@ -346,7 +346,7 @@ public fun SessionDetailScreen(
                                 .background(
                                     color =
                                         when (state.reachable) {
-                                            true -> Color(0xFF22C55E) // green-500
+                                            true -> Color(0xFF10B981) // green-500
                                             false -> Color(0xFFEF4444) // red-500
                                             null -> Color(0xFF94A3B8) // slate-400
                                         },

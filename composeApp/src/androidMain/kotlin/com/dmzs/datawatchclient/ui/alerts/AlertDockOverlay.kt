@@ -161,7 +161,7 @@ private fun DockAlertRow(alert: Alert) {
     val railColor = when (alert.severity) {
         AlertSeverity.Error -> Color(0xFFEF4444)
         AlertSeverity.Warning -> Color(0xFFF59E0B)
-        else -> Color(0xFF22C55E)
+        else -> Color(0xFF10B981)
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),

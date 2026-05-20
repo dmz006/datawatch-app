@@ -678,7 +678,7 @@ private fun StoryRow(
                     val others = conflicts[f]?.filter { it != story.id }.orEmpty()
                     FilePill(name = f, color = Color(0xFF3B82F6), conflict = others.isNotEmpty(), conflictNote = if (others.isNotEmpty()) "also in ${others.joinToString(", ")}" else null)
                 }
-                story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF22C55E)) }
+                story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
                 if (canEdit) {
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = onEditFiles) { Text(stringResource(R.string.prd_detail_edit_files), style = MaterialTheme.typography.labelSmall) }
@@ -692,7 +692,7 @@ private fun StoryRow(
 private fun StoryStatusPill(status: String) {
     val color = when (status.lowercase()) {
         "complete" -> Color(0xFF3B82F6)
-        "in_progress" -> Color(0xFF22C55E)
+        "in_progress" -> Color(0xFF10B981)
         "awaiting_approval" -> Color(0xFFF59E0B)
         "rejected" -> Color(0xFFEF4444)
         else -> Color(0xFF94A3B8)

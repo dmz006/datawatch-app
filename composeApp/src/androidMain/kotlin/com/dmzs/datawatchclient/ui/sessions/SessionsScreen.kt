@@ -682,11 +682,19 @@ private fun SessionsToolbar(
 @Composable
 private fun EmptyState() {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Text(
-            stringResource(R.string.sessions_empty_state),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "🖥️",
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+            )
+            Text(
+                stringResource(R.string.sessions_empty_state),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
     }
 }
 
@@ -1364,7 +1372,7 @@ private fun ReachabilityDot(
     var sheetOpen by remember { mutableStateOf(false) }
     val color =
         when (reachable) {
-            true -> Color(0xFF22C55E)
+            true -> Color(0xFF10B981)
             false -> Color(0xFFEF4444)
             null -> Color(0xFFF59E0B)
         }

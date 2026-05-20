@@ -61,7 +61,7 @@ internal fun BottomNavBar(
             add(BottomNavItem(Destinations.Tabs.Observer, stringResource(R.string.nav_observer), emoji = "📡"))
             // BL303 parity with PWA alpha.71 ⊞ Dashboard tab — hidden by default.
             if (dashboardEnabled) {
-                add(BottomNavItem(Destinations.Tabs.Dashboard, stringResource(R.string.nav_dashboard), emoji = "☷"))
+                add(BottomNavItem(Destinations.Tabs.Dashboard, stringResource(R.string.nav_dashboard), emoji = "⊞"))
             }
             add(BottomNavItem(Destinations.Tabs.Settings, stringResource(R.string.nav_settings), emoji = "⚙"))
         }
