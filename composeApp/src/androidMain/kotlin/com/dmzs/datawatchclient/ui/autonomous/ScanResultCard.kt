@@ -103,7 +103,7 @@ internal fun ScanResultCard(
 @Composable
 private fun VerdictBadge(verdict: String) {
     val (color, label) = when (verdict.lowercase()) {
-        "pass" -> Color(0xFF22C55E) to stringResource(R.string.scan_verdict_pass)
+        "pass" -> Color(0xFF10B981) to stringResource(R.string.scan_verdict_pass)
         "warn" -> Color(0xFFF59E0B) to stringResource(R.string.scan_verdict_warn)
         else -> Color(0xFFEF4444) to stringResource(R.string.scan_verdict_fail)
     }

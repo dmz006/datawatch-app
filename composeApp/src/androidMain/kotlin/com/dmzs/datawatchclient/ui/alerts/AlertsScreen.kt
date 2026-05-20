@@ -540,6 +540,12 @@ private fun AlertGroupCard(
                     )
                     if (group.state != null) {
                         Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(stateColor, CircleShape),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             stateLabel(group.state),
                             style = MaterialTheme.typography.labelSmall,
@@ -738,9 +744,9 @@ private fun severityColor(s: AlertSeverity): Color =
 @Composable
 private fun stateAccentColor(s: SessionState?): Color =
     when (s) {
-        SessionState.Running -> Color(0xFF22C55E)
-        SessionState.Waiting -> Color(0xFFF59E0B)
-        SessionState.RateLimited -> Color(0xFFEAB308)
+        SessionState.Running -> Color(0xFF10B981)
+        SessionState.Waiting -> Color(0xFF3B82F6)
+        SessionState.RateLimited -> Color(0xFFF59E0B)
         SessionState.Error, SessionState.Killed, SessionState.Completed ->
             MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.onSurfaceVariant

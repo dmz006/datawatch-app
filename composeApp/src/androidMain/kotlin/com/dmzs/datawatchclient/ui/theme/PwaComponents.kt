@@ -84,6 +84,7 @@ public fun PwaStatePill(state: SessionState) {
         modifier =
             Modifier
                 .background(color = bg.copy(alpha = bg.alpha * alpha), shape = RoundedCornerShape(10.dp))
+                .border(width = 1.dp, color = fg.copy(alpha = alpha), shape = RoundedCornerShape(10.dp))
                 .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
         Text(

@@ -78,7 +78,7 @@ private fun EBpfFlag(
     label: String,
     ok: Boolean,
 ) {
-    val color = if (ok) Color(0xFF22C55E) else Color(0xFFEF4444)
+    val color = if (ok) Color(0xFF10B981) else Color(0xFFEF4444)
     Row(
         modifier =
             Modifier

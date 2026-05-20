@@ -665,7 +665,7 @@ private fun ComputeNodeDialog(
                         Text(
                             stringResource(R.string.ollama_pull_done, model),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF22C55E),
+                            color = Color(0xFF10B981),
                         )
                     }
                     if (installedModelsLoading) {
@@ -926,12 +926,12 @@ private fun OllamaTagRow(
         Text(
             if (tag.fits) stringResource(R.string.ollama_tag_fits) else stringResource(R.string.ollama_tag_tight),
             style = MaterialTheme.typography.labelSmall,
-            color = if (tag.fits) Color(0xFF22C55E) else Color(0xFFF59E0B),
+            color = if (tag.fits) Color(0xFF10B981) else Color(0xFFF59E0B),
             modifier = Modifier.width(36.dp),
         )
         Spacer(Modifier.weight(1f))
         when {
-            isInstalled -> Text("✓", style = MaterialTheme.typography.labelSmall, color = Color(0xFF22C55E))
+            isInstalled -> Text("✓", style = MaterialTheme.typography.labelSmall, color = Color(0xFF10B981))
             pullTask != null -> Column(horizontalAlignment = Alignment.End) {
                 Text(
                     "${pullTask.progress}%",

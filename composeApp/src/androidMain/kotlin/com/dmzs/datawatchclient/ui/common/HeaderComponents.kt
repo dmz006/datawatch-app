@@ -143,7 +143,7 @@ internal fun ReachabilityDot(
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
     val color = when (reachable) {
-        true -> Color(0xFF22C55E)
+        true -> Color(0xFF10B981)
         false -> Color(0xFFEF4444)
         null -> Color(0xFFF59E0B)
     }

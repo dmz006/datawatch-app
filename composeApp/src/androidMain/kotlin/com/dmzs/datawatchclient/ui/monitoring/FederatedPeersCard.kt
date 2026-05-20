@@ -251,7 +251,7 @@ private fun ShapeBadge(shape: String) {
     val s = shape.lowercase()
     val (label, color) = when (s) {
         "agent" -> "agent" to Color(0xFF7C3AED)
-        "cluster" -> "cluster" to Color(0xFF22C55E)
+        "cluster" -> "cluster" to Color(0xFF10B981)
         "standalone" -> "standalone" to Color(0xFF3B82F6)
         else -> (s.ifBlank { "—" }) to MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -285,7 +285,7 @@ private fun healthDotColor(lastPushAt: String?): Color {
         ?: return Color(0xFF94A3B8)
     val ageSec = (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()) / 1000
     return when {
-        ageSec <= 15 -> Color(0xFF22C55E)
+        ageSec <= 15 -> Color(0xFF10B981)
         ageSec <= 60 -> Color(0xFFF59E0B)
         else         -> Color(0xFFEF4444)
     }

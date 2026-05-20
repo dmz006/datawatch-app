@@ -66,7 +66,7 @@ private fun PluginRow(plugin: PluginDto) {
                 Modifier
                     .size(8.dp)
                     .background(
-                        if (plugin.enabled) Color(0xFF22C55E) else Color(0xFF94A3B8),
+                        if (plugin.enabled) Color(0xFF10B981) else Color(0xFF94A3B8),
                         CircleShape,
                     ),
         )
