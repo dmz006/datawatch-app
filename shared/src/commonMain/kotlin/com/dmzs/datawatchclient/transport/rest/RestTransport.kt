@@ -2684,6 +2684,49 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- S14b: Alert Rules ----
+
+    override suspend fun listAlertRules(): Result<com.dmzs.datawatchclient.transport.dto.AlertRulesListDto> =
+        request {
+            client.get("${profile.baseUrl}/api/alert-rules") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun createAlertRule(rule: com.dmzs.datawatchclient.transport.dto.AlertRuleDto): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/alert-rules") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(io.ktor.http.ContentType.Application.Json)
+                setBody(rule)
+            }
+            Unit
+        }
+
+    override suspend fun deleteAlertRule(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/alert-rules/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun enableAlertRule(name: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/alert-rules/${name.replace(" ", "%20")}/enable") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun disableAlertRule(name: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/alert-rules/${name.replace(" ", "%20")}/disable") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
