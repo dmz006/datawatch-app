@@ -2075,7 +2075,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T20: ✅ Pass (all howto validation stories)
 - T21: ✅ Pass (end-to-end journeys)
 - T22: ✅ 12/15 Pass, 3 Skip (all Wear pages/tiles/complications verified; TS-509/510/512 skip — notification delivery and voice transcription require paired phone)
-- T23: ✅ 14/15 Pass (car launcher, onboarding, voice unit tests pass; TS-527 skip — DHU not installed)
+- T23: ⚠️ 1/15 Pass, 14 Skip — TS-529 unit tests pass (39/39 JVM); TS-515–528 skip (DatawatchPassengerService running but CarApp ListTemplate not surfaced without DHU; all screen code verified)
 - T24: ✅ Pass (Algorithm Mode — all 12 stories; note: UI buttons broken due to API mismatch in RestTransport — bug #144)
 - T26: ✅ Pass (Dashboard Cards CRUD — all 10 stories)
 - T27: ⚠️ 18/20 pass — TS-478 missing prd_ids (#143); TS-482 DELETE cancels not removes (no true delete endpoint)
