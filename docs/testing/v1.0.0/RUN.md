@@ -67,6 +67,10 @@ TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
 TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
 
+# BL318: scope Claude config to this test instance so the daemon never
+# writes MCP registrations into ~/.claude.json or ~/.mcp.json
+mkdir -p "${TEST_DATA_DIR}/.claude"
+
 cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
 data_dir: ${TEST_DATA_DIR}
 server:
@@ -83,7 +87,8 @@ memory:
   enabled: true
 EOF
 
-~/workspace/datawatch/bin/datawatch start --foreground \
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  ~/workspace/datawatch/bin/datawatch start --foreground \
   --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
@@ -456,7 +461,8 @@ tail -50 "${TEST_WORK_DIR}/daemon.log"
 kill $(cat "${TEST_WORK_DIR}/test-daemon.pid") 2>/dev/null || true
 sleep 2
 
-~/workspace/datawatch/bin/datawatch start --foreground \
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  ~/workspace/datawatch/bin/datawatch start --foreground \
   --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
@@ -594,8 +600,8 @@ adb emu kill
 # Remove evidence (already committed to git, so safe)
 # rm -rf docs/testing/v1.0.0/evidence/
 
-# Remove test working dir (outside the repo)
-# Note: run-soak.sh auto-cleans TEST_WORK_DIR on success; only manual if needed
+# Remove test working dir (outside the repo) — includes TEST_DATA_DIR/.claude/
+# and TEST_DATA_DIR/.mcp.json so no stale MCP registrations survive cleanup.
 rm -rf "${TEST_WORK_DIR}"
 
 # Keep these for archival:
@@ -678,6 +684,7 @@ RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
 TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
+mkdir -p "${TEST_DATA_DIR}/.claude"
 cat > "${TEST_WORK_DIR}/config.yaml" <<EOF
 data_dir: ${TEST_DATA_DIR}
 server:
@@ -695,7 +702,8 @@ memory:
 EOF
 
 # Restart server
-~/workspace/datawatch/bin/datawatch start --foreground \
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  ~/workspace/datawatch/bin/datawatch start --foreground \
   --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"

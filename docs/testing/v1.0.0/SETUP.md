@@ -472,6 +472,9 @@ RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
 TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
+# BL318: pre-create .claude/ inside the data dir so the daemon scopes
+# all MCP registrations here instead of writing to ~/.claude.json
+mkdir -p "${TEST_DATA_DIR}/.claude"
 echo "Test working dir: $TEST_WORK_DIR"
 ```
 
@@ -575,8 +578,10 @@ emulator-5554 tcp:18080 tcp:18080
 ### Start Secondary Datawatch Instance
 
 ```bash
-# Start server using the config written in Phase 7
-~/workspace/datawatch/bin/datawatch start --foreground \
+# Start server — CLAUDE_CONFIG_DIR keeps MCP registrations inside the
+# test data dir (BL318 pattern; never touches ~/.claude.json or ~/.mcp.json)
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  ~/workspace/datawatch/bin/datawatch start --foreground \
   --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
@@ -675,10 +680,12 @@ RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR=~/workspace/datawatch-test-${RUN_ID}
 TEST_DATA_DIR=${TEST_WORK_DIR}/.datawatch-test-${RUN_ID}
 mkdir -p "$TEST_DATA_DIR"
+mkdir -p "${TEST_DATA_DIR}/.claude"
 
 # Re-run Phase 7 "Write Test Configuration" and Phase 8 "Start Secondary Instance"
 
-# Evidence dir is inside the working dir — no separate cleanup needed
+# TEST_WORK_DIR cleanup removes TEST_DATA_DIR/.claude/ and .mcp.json — no stale
+# MCP registrations survive across runs.
 ```
 
 ---

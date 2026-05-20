@@ -183,6 +183,11 @@ start_test_daemon() {
     info "Starting test daemon (run: ${SOAK_RUN_ID})"
     mkdir -p "$TEST_CONFIG_DIR"
 
+    # BL318: scope Claude config to this test instance so claude mcp add /
+    # SweepUserScopeMCPConfig never touch ~/.claude.json or ~/.mcp.json.
+    local test_claude_dir="${TEST_CONFIG_DIR}/.claude"
+    mkdir -p "$test_claude_dir"
+
     cat > "${TEST_CONFIG_DIR}/config.yaml" <<YAML
 data_dir: ${TEST_CONFIG_DIR}
 
@@ -209,7 +214,8 @@ mcp:
   enabled: false
 YAML
 
-    "$DATAWATCH_BIN" start --foreground \
+    CLAUDE_CONFIG_DIR="${test_claude_dir}" \
+        "$DATAWATCH_BIN" start --foreground \
         --config "${TEST_CONFIG_DIR}/config.yaml" \
         >> "$TEST_SERVER_LOG" 2>&1 &
     local pid=$!
@@ -231,7 +237,40 @@ YAML
     return 1
 }
 
+# Delete all sessions and PRDs created by soak stories via the API so nothing
+# leaks to the next run or to production. Called before killing the daemon so
+# the server is still reachable. Safe to call even if the daemon is not up.
+cleanup_test_api_resources() {
+    curl -sk "${TEST_BASE_URL}/api/health" 2>/dev/null | grep -q '"status":"ok"' || return 0
+    info "Cleaning up test API resources (sessions + PRDs)..."
+    local curl_auth=(-sk -H "Authorization: Bearer ${TEST_TOKEN}" --max-time 10)
+
+    # Kill/delete all sessions
+    local sessions
+    sessions=$(curl "${curl_auth[@]}" "${TEST_BASE_URL}/api/sessions" 2>/dev/null \
+        | python3 -c "import json,sys; d=json.load(sys.stdin); [print(s['id']) for s in d.get('sessions',[])]" \
+        2>/dev/null || true)
+    local sid
+    while IFS= read -r sid; do
+        [[ -z "$sid" ]] && continue
+        curl "${curl_auth[@]}" -X POST -H "Content-Type: application/json" \
+            -d "{\"id\":\"$sid\"}" "${TEST_BASE_URL}/api/sessions/delete" >/dev/null 2>&1 || true
+    done <<< "$sessions"
+
+    # Cancel/delete all PRDs
+    local prds
+    prds=$(curl "${curl_auth[@]}" "${TEST_BASE_URL}/api/autonomous/prds" 2>/dev/null \
+        | python3 -c "import json,sys; d=json.load(sys.stdin); [print(p['id']) for p in d.get('prds',[])]" \
+        2>/dev/null || true)
+    local prd_id
+    while IFS= read -r prd_id; do
+        [[ -z "$prd_id" ]] && continue
+        curl "${curl_auth[@]}" -X DELETE "${TEST_BASE_URL}/api/autonomous/prds/${prd_id}" >/dev/null 2>&1 || true
+    done <<< "$prds"
+}
+
 stop_test_daemon() {
+    cleanup_test_api_resources
     if [[ -f "$TEST_PID_FILE" ]]; then
         local pid
         pid="$(cat "$TEST_PID_FILE")"
@@ -242,12 +281,18 @@ stop_test_daemon() {
         fi
         rm -f "$TEST_PID_FILE"
     fi
+    # Remove any tmux sessions the test daemon created (hostname comes from config).
+    tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^cs-" | \
+        while read -r s; do tmux kill-session -t "$s" 2>/dev/null || true; done
 }
 
 restart_test_daemon() {
     stop_test_daemon
     sleep 2
-    "$DATAWATCH_BIN" start --foreground \
+    local test_claude_dir="${TEST_CONFIG_DIR}/.claude"
+    mkdir -p "$test_claude_dir"
+    CLAUDE_CONFIG_DIR="${test_claude_dir}" \
+        "$DATAWATCH_BIN" start --foreground \
         --config "${TEST_CONFIG_DIR}/config.yaml" \
         >> "$TEST_SERVER_LOG" 2>&1 &
     local pid=$!

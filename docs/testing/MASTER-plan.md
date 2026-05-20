@@ -68,6 +68,7 @@ SOAK_RUN_ID=$(openssl rand -hex 3)
 TEST_WORK_DIR="../datawatch-soak-${SOAK_RUN_ID}"
 TEST_DATA_DIR="${TEST_WORK_DIR}/.datawatch-test-${SOAK_RUN_ID}"
 mkdir -p "$TEST_DATA_DIR"
+mkdir -p "${TEST_DATA_DIR}/.claude"  # BL318: scope MCP config to this instance
 
 # Ports: prefer 18080/18443; fall back to OS-free if busy
 TEST_TLS_PORT="${TEST_SERVER_TLS_PORT:-18443}"
@@ -89,7 +90,8 @@ memory:
   enabled: true
 EOF
 
-datawatch start --foreground --config "${TEST_WORK_DIR}/config.yaml" \
+CLAUDE_CONFIG_DIR="${TEST_DATA_DIR}/.claude" \
+  datawatch start --foreground --config "${TEST_WORK_DIR}/config.yaml" \
   >> "${TEST_WORK_DIR}/daemon.log" 2>&1 &
 echo $! > "${TEST_WORK_DIR}/test-daemon.pid"
 sleep 3
