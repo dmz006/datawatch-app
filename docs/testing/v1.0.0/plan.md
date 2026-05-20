@@ -223,7 +223,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 6. Reload Settings; verify persisted values still shown
 **Expected**: Identity card renders; GET populates fields; POST/PATCH saves role and focus; values persist across navigation; no crash
 **Evidence**: `t15_identity_get.json`, `t15_identity_set.json`, `t15_identity_card.png`
-**Status**: 📋 Planned
+**Status**: ✅ Pass — Identity card renders; GET returns {role, current_focus}; PATCH saves values; API confirmed {role:"mobile tester", current_focus:"v1.0.0 QA"}; persists across navigation
 
 ### TS-287–TS-305: (14 stories similar pattern for Council/Algorithm/Evals CRUD)
 
@@ -262,7 +262,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 5. GET /api/sessions, verify deleted
 **Expected**: All CRUD operations match server state
 **Evidence**: `sessions_contract.json`
-**Status**: 📋 Planned
+**Status**: ✅ Pass — Sessions CRUD contract verified: GET /api/sessions lists active sessions; session created via mobile; DELETE removes from list; server state matches mobile UI
 
 ### TS-317–TS-325: (9 stories for Alerts, Autonomous, Config, Memory, Channels, Locale, LLM #46, Locale #47, Token auth)
 
@@ -280,7 +280,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 3. Assert: `SessionDto` with `backendFamily=null, llmBackend=claude-code` → `Session.backend=claude-code`
 **Expected**: Test passes; fallback logic verified
 **Evidence**: test output, coverage report
-**Status**: 📋 Planned
+**Status**: ✅ Pass — shared unit tests 186/186 pass including backend fallback logic: SessionDto(backendFamily=ollama) → backend=ollama; SessionDto(llmBackend=claude-code) → backend=claude-code
 
 ### TS-327–TS-343: (17 stories, one per deferred test class)
 
@@ -297,7 +297,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 2. Verify file contains: `{"active": true, "phase": "T1", "pass": 0, "fail": 0}`
 **Expected**: File exists and has correct JSON shape
 **Evidence**: `smoke_progress_init.json`
-**Status**: 📋 Planned
+**Status**: ⏭ Skip — T19 Dashboard Hooks infra sprint not built; acceptable for v1.0.0; entire sprint skipped
 
 ### TS-345–TS-350: (6 stories for progress updates, Smoke Run card, history, cleanup)
 
@@ -2082,7 +2082,7 @@ Stories TS-001 through TS-285 from the prior test plan. See `cookbook.md` for cu
 - T28: ✅ Pass (Settings coverage gap-fill — all 40 stories)
 - T29: ✅ Pass (Howto validation gap-fill — all 19 stories)
 - T30: 🔴 2/11 pass — 4 mobile cards missing: ChannelRouting (#138), FileService (#139), DiscussionScopes (#140), EncryptionStatus (#141); async decompose ✅
-- T31: 📋 Planned (Matrix backend v8.7.0/BL241 — 8 stories; daemon upgraded to v8.7.0 2026-05-20)
+- T31: ⚠️ 6/8 pass — Matrix config/API/channels ✅; Observer parity gap (#137 open); no secret-ref hint in UI
 - No P0/P1 critical bugs
 - Cookbook shows final pass counts
 
