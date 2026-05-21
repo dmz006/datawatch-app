@@ -113,7 +113,8 @@ play {
     val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
     serviceAccountCredentials.set(file(keyPath))
 
-    // Wear OS app requires dedicated Wear OS track (as of August 2023)
+    // Internal testing track for v1.0.0 pre-release validation
+    // Wear OS apps require AAB format (no APK support on Play Console)
     track.set("internal")
-    defaultToAppBundles.set(true)  // Play Console requires AAB for Wear OS
+    defaultToAppBundles.set(true)
 }
