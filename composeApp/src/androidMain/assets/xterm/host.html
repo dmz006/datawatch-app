@@ -183,6 +183,13 @@
     function safeFit() {
       if (!fit) return;
       try {
+        // When the soft keyboard is open, window.visualViewport.height is
+        // smaller than the document height. Adjust the container's bottom
+        // edge so the FitAddon sees only the actually-visible rows.
+        if (window.visualViewport) {
+          var keyboardH = document.documentElement.clientHeight - window.visualViewport.height;
+          container.style.bottom = (keyboardH > 0 ? keyboardH : 0) + 'px';
+        }
         // Bail if the container hasn't been laid out yet.
         var r = container.getBoundingClientRect();
         if (r.width < 40 || r.height < 40) {
