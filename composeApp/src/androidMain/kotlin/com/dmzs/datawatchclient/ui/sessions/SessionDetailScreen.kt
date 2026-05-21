@@ -402,8 +402,7 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize()
-                    .imePadding(),
+                    .fillMaxSize(),
         ) {
             // Terminal and banners in a scrollable container that responds to IME
             Column(
@@ -629,7 +628,7 @@ public fun SessionDetailScreen(
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier.weight(1f).fillMaxWidth().imePadding(),
                     controller = terminalController,
                 )
                 TerminalScrollModeStrip(toolbarState)
