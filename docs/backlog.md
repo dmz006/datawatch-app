@@ -24,8 +24,10 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 ### BL-SD-6: Tmux layout doesn't match PWA
 - Location and layout of tmux pane controls don't match PWA. Needs full layout audit.
 
-### BL-SD-7: Generating indicator removed from PWA but present on mobile
+### BL-SD-7: Generating indicator removed from PWA but present on mobile ✅ FIXED v0.128.0
 - The "generating" indicator/animation was removed from the PWA. Mobile still shows it.
+- Fix: Removed `GeneratingIndicator` composable and `isRunning` parameter from `SessionInputBar`.
+- File: `ui/sessions/SessionDetailScreen.kt`
 
 ---
 
@@ -44,8 +46,10 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Automata
 
-### BL-AT-1: Interview button in Automata does nothing
-- "Interview" / Council persona wizard button is non-functional.
+### BL-AT-1: Interview button in Automata does nothing ✅ FIXED v0.128.0
+- "Interview" / Council persona wizard button (🤖 icon in Automata TopAppBar) was non-functional.
+- Fix: Added `IdentityWizardSheet` rendering + identity load/save to `AutonomousScreen.kt`.
+- File: `ui/autonomous/AutonomousScreen.kt`
 
 ---
 

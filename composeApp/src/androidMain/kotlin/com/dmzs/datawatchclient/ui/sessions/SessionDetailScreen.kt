@@ -682,7 +682,6 @@ public fun SessionDetailScreen(
                     onTranscribed = { vm.onReplyTextChange(it) },
                     onSchedule = { scheduleOpen = true },
                     waitingInput = state.session?.state == SessionState.Waiting,
-                    isRunning = state.session?.state == SessionState.Running,
                     onQuickReply = vm::sendQuickReply,
                     onResponse = {
                         vm.refreshFromServer()
@@ -1078,45 +1077,6 @@ private fun stateLabel(s: SessionState): String =
         SessionState.New -> "new"
     }
 
-/**
- * Animated "generating…" row shown at the bottom of the terminal/output
- * area when the session is actively Running. Mirrors the PWA's processing
- * indicator so the user gets visual feedback without scrolling to the composer.
- */
-@Composable
-private fun GeneratingIndicator() {
-    val infinite = rememberInfiniteTransition(label = "generating")
-    val dot1 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 0), RepeatMode.Reverse),
-        label = "d1",
-    )
-    val dot2 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 200), RepeatMode.Reverse),
-        label = "d2",
-    )
-    val dot3 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 400), RepeatMode.Reverse),
-        label = "d3",
-    )
-    val dw = LocalDatawatchColors.current
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(R.string.session_detail_generating),
-            fontSize = 10.sp,
-            color = dw.success.copy(alpha = 0.55f),
-        )
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot1))
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot2))
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot3))
-    }
-}
 
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
@@ -1859,7 +1819,6 @@ private fun ReplyComposer(
     onTranscribed: (String) -> Unit,
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
-    isRunning: Boolean = false,
     onQuickReply: (String) -> Unit = {},
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
@@ -1867,7 +1826,6 @@ private fun ReplyComposer(
     whisperConfigured: Boolean = false,
 ) {
     HorizontalDivider()
-    if (isRunning) GeneratingIndicator()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
