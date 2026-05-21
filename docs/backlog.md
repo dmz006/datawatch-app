@@ -6,11 +6,14 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Session Detail
 
-### BL-SD-1: Session popup missing
+### BL-SD-1: Session popup missing ✅ ALREADY IMPLEMENTED
 - PWA has a popup/context menu on session rows; mobile has none.
+- Status: Mobile already has both (a) ⋮ dropdown (rename/watch/restart/delete) and (b) `QuickCommandsSheet` (approve/reject/continue/skip/ESC/Ctrl-b/arrows/PgUp/PgDn/Tab/saved commands/custom). ▶ Commands button appears on `waiting_input` rows, matching PWA parity (`showCardCmds` also only renders for `isWaiting`).
 
-### BL-SD-2: Timeline tab incorrect
+### BL-SD-2: Timeline tab incorrect ✅ FIXED v0.132.0
 - Timeline tab icons, font, and layout don't match PWA. Needs audit vs PWA.
+- Fix: Timeline button icon changed from ⏱ to 🕐 (&#128336; matching PWA). Quick-key strip: added ␛ ESC and ⏎ Enter buttons, reordered arrows to match PWA order (↑ ↓ ← →).
+- File: `ui/sessions/SessionDetailScreen.kt`
 
 ### BL-SD-3: Font dropdown incorrect ✅ FIXED v0.131.0
 - Font size control in session detail doesn't match PWA behavior/location.
@@ -22,11 +25,15 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 - Fix: Changed label from `"📜"` to `"⤒"` with `scrollIcon = true` → 18sp bold styling.
 - File: `ui/sessions/TerminalToolbar.kt`
 
-### BL-SD-5: No microphone button in session detail
+### BL-SD-5: No microphone button in session detail ✅ FIXED v0.129.0 (via BL-MIC-1)
 - PWA has a mic button directly in the session input area; mobile is missing it.
+- Fix: Mic button now shows when `SpeechRecognizer.isRecognitionAvailable()` || `whisperConfigured`. Device speech recognition (Google ASR) is the primary path.
+- File: `ui/sessions/SessionDetailScreen.kt`
 
-### BL-SD-6: Tmux layout doesn't match PWA
+### BL-SD-6: Tmux layout doesn't match PWA ✅ FIXED v0.132.0
 - Location and layout of tmux pane controls don't match PWA. Needs full layout audit.
+- Fix: Tab row (Tmux | Channel | Status + Aa▾ + ⤒ on right) already matched PWA. Quick-key strip had missing ESC/Enter buttons — added ␛ and ⏎, reordered arrows to PWA order (↑ ↓ ← →).
+- File: `ui/sessions/SessionDetailScreen.kt`
 
 ### BL-SD-7: Generating indicator removed from PWA but present on mobile ✅ FIXED v0.128.0
 - The "generating" indicator/animation was removed from the PWA. Mobile still shows it.
