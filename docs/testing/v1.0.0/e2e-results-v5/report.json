@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-05-21T04:37:18.292Z",
+  "duration": 10.1,
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "passRate": 100
+  },
+  "results": [
+    {
+      "name": "PWA Load",
+      "status": "PASSED",
+      "details": "Content found"
+    },
+    {
+      "name": "Page: Sessions",
+      "status": "PASSED",
+      "details": "Navigated"
+    },
+    {
+      "name": "Page: Automata",
+      "status": "PASSED",
+      "details": "Navigated"
+    },
+    {
+      "name": "Page: Alerts",
+      "status": "PASSED",
+      "details": "Navigated"
+    },
+    {
+      "name": "Page: Observer",
+      "status": "PASSED",
+      "details": "Navigated"
+    },
+    {
+      "name": "Page: Dashboard",
+      "status": "PASSED",
+      "details": "Navigated"
+    },
+    {
+      "name": "Page: Settings",
+      "status": "PASSED",
+      "details": "Navigated"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "Initial Load",
+      "path": "00_initial_load.png"
+    },
+    {
+      "name": "Sessions Page",
+      "path": "01_sessions_page.png"
+    },
+    {
+      "name": "Automata Page",
+      "path": "02_automata_page.png"
+    },
+    {
+      "name": "Alerts Page",
+      "path": "03_alerts_page.png"
+    },
+    {
+      "name": "Observer Page",
+      "path": "04_observer_page.png"
+    },
+    {
+      "name": "Dashboard Page",
+      "path": "05_dashboard_page.png"
+    },
+    {
+      "name": "Settings Page",
+      "path": "06_settings_page.png"
+    }
+  ]
+}
