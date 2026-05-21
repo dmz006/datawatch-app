@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-05-21T04:25:51.491Z",
+  "duration": 6.46,
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 6,
+    "total": 10,
+    "passRate": "100.0"
+  },
+  "results": [
+    {
+      "name": "PWA Navigation",
+      "status": "PASSED",
+      "details": "Successfully navigated to https://localhost:8443 (SSL warning expected)",
+      "timestamp": "2026-05-21T04:25:57.606Z"
+    },
+    {
+      "name": "Sessions: Filter Dropdown",
+      "status": "SKIPPED",
+      "details": "Filter button not in DOM",
+      "timestamp": "2026-05-21T04:25:57.614Z"
+    },
+    {
+      "name": "Sessions: Search",
+      "status": "SKIPPED",
+      "details": "Search input not found",
+      "timestamp": "2026-05-21T04:25:57.614Z"
+    },
+    {
+      "name": "Sessions: Select All",
+      "status": "SKIPPED",
+      "details": "Select all button not found",
+      "timestamp": "2026-05-21T04:25:57.615Z"
+    },
+    {
+      "name": "PAGE 1: Sessions List",
+      "status": "PASSED",
+      "details": "Tested sessions, filters, search (18 total)",
+      "timestamp": "2026-05-21T04:25:57.705Z"
+    },
+    {
+      "name": "PAGE 2: Session Detail",
+      "status": "SKIPPED",
+      "details": "No sessions to test",
+      "timestamp": "2026-05-21T04:25:57.708Z"
+    },
+    {
+      "name": "PAGE 3: Automata",
+      "status": "PASSED",
+      "details": "0 automata found (UI + API)",
+      "timestamp": "2026-05-21T04:25:57.804Z"
+    },
+    {
+      "name": "PAGE 4: New Automata",
+      "status": "SKIPPED",
+      "details": "New button not found",
+      "timestamp": "2026-05-21T04:25:57.806Z"
+    },
+    {
+      "name": "PAGE 5: Alerts",
+      "status": "PASSED",
+      "details": "0 alerts found",
+      "timestamp": "2026-05-21T04:25:57.905Z"
+    },
+    {
+      "name": "PAGE 6: Settings",
+      "status": "SKIPPED",
+      "details": "Settings button not found",
+      "timestamp": "2026-05-21T04:25:57.906Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "Initial PWA Load",
+      "path": "e2e-results/screenshots/initial_pwa_load.png",
+      "timestamp": "2026-05-21T04:25:57.606Z"
+    },
+    {
+      "name": "Sessions List View",
+      "path": "e2e-results/screenshots/sessions_list_view.png",
+      "timestamp": "2026-05-21T04:25:57.705Z"
+    },
+    {
+      "name": "Automata Page",
+      "path": "e2e-results/screenshots/automata_page.png",
+      "timestamp": "2026-05-21T04:25:57.804Z"
+    },
+    {
+      "name": "Alerts Page",
+      "path": "e2e-results/screenshots/alerts_page.png",
+      "timestamp": "2026-05-21T04:25:57.905Z"
+    }
+  ],
+  "apiData": {
+    "sessionsCount": 18,
+    "automataCount": 0,
+    "alertsCount": 0
+  }
+}
