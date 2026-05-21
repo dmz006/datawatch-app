@@ -26,6 +26,7 @@ play-services-wearable = "18.2.0"
 firebase-messaging = "24.0.1"
 detekt = "1.23.7"
 ktlint-plugin = "12.3.0"
+gradle-play-publisher = "3.10.0"
 junit5 = "5.10.2"
 turbine = "1.1.0"
 mockwebserver = "4.12.0"
@@ -106,3 +107,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-plugin" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "gradle-play-publisher" }

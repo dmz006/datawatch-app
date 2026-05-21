@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.play.publisher)
 }
 
 val appVersion: String = providers.gradleProperty("DATAWATCH_APP_VERSION").get()
@@ -143,4 +144,17 @@ android {
 
 ktlint {
     ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
+}
+
+play {
+    // Read JSON service account key from environment or local file.
+    // Set PLAY_PUBLISHER_KEY env var to path of the JSON key, or
+    // place key at ~/.android/datawatch-play-key.json
+    val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
+    serviceAccountCredentials.set(file(keyPath))
+
+    // For the dev track, only publicTrack variant uploads to Play Console.
+    // Dev builds are internal-testing-only; do not publish (ADR-0031).
+    track.set("internal")  // internal, alpha, beta, production
+    defaultToAppBundles.set(true)
 }
