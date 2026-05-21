@@ -129,3 +129,17 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 - New Session screen, New Automata dialog, and configuration tabs had oversized text/spacing.
 - Fix: `labelLarge` → `labelMedium` for section headers; outer padding 16→12dp; section spacing 16→12dp; task textarea min height 120→100dp.
 - Files: `ui/sessions/NewSessionScreen.kt`, `ui/autonomous/NewPrdDialog.kt`
+
+---
+
+## Wear OS
+
+### BL-WR-1: Glance page too small, didn't show 0-counts ✅ FIXED v0.134.0
+- GlancePage used a tiny centered progress ring with small text, only showed non-zero values for waiting/running.
+- Fix: Full-screen bold stats panel. `title1` rows for RUNNING (teal, always shown even at 0), WAITING (amber), AUTOMATA (purple), FOR REVIEW (red, only when >0). Guardrail block stripe at top. Current task caption at bottom.
+- File: `wear/src/main/kotlin/com/dmzs/datawatchclient/wear/WearMainActivity.kt`
+
+### BL-WR-2: PRD terminology in wear UI ✅ FIXED v0.134.0
+- "No plans in review." and "%1$d pending" used old PRD/plans language not automata terminology.
+- Fix: Updated strings to "No automata in review." and "%1$d awaiting". Comments updated throughout WearMainActivity.
+- File: `wear/src/main/res/values/strings.xml`
