@@ -379,7 +379,7 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(onNavigateToMonitor = onNavigateToObserver)
                             }
                             SettingsTab.Automata -> {
-                                // v0.81.0 — flat PWA v7.0.0-alpha.23c order; no section headers
+                                // Order mirrors PWA v8.6.0 Settings → Automata tab
                                 com.dmzs.datawatchclient.ui.settings.IdentityCard()
                                 com.dmzs.datawatchclient.ui.settings.AlgorithmModeCard()
                                 com.dmzs.datawatchclient.ui.settings.EvalsCard()
@@ -390,21 +390,22 @@ public fun SettingsScreen(
                                 )
                                 com.dmzs.datawatchclient.ui.automata.PipelineManagerCard()
                                 com.dmzs.datawatchclient.ui.automata.OrchestratorGraphsCard()
+                                // Guardrail Library (PWA: automata_scan + automata_guardrail_profiles)
                                 ScanConfigCard()
+                                GuardrailLibraryCard()
+                                // Autonomous config + Skill Registries
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Autonomous,
                                 )
                                 SkillRegistriesCard()
+                                // Below: extra config panels and registry types not in PWA main flow
                                 AutomataTypesCard()
-                                // BL303 (alpha.75 issue #128): Guardrail library + profile CRUD.
-                                GuardrailLibraryCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Pipelines,
                                 )
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Orchestrator,
                                 )
-                                // NOTE: ConfigFieldSchemas.Agents removed here — moved to Compute tab in v0.80.0
                             }
                             SettingsTab.Plugins -> {
                                 // v0.59.0 — mirrors PWA v6.5.1 Plugins tab

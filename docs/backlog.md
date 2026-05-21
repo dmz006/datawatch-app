@@ -80,8 +80,9 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Dashboard
 
-### BL-ST-1: Settings > Automata full page redo to match PWA
-- Entire Settings > Automata page needs audit and reorder vs PWA. Icon on Identity card changed to RecordVoiceOver.
+### BL-ST-1: Settings > Automata full page redo to match PWA ✅ FIXED v0.130.0
+- Reordered to match PWA v8.6.0: ScanConfigCard + GuardrailLibraryCard moved to positions 8-9 (before Autonomous Config); SkillRegistries at 10; AutomataTypes + config panels at end.
+- Identity icon changed to RecordVoiceOver (v0.126.0). Interview wizard wired in main Automata tab (v0.128.0).
 - Datawatch PRD filed: 4df28305 — PWA to add Interview wizard to Settings > Automata.
 
 ### BL-ST-2: Settings > About — PWA parity for ops cards
