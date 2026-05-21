@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-20 (General availability release)
+### Changed
+- Version bump: 0.134.0/212 → 1.0.0/213
+- Stable public release candidate; alpha/beta releases follow as 1.0.0-alpha.N, 1.0.0-beta.N format.
+- All PWA parity UI goals from Sprint 44 included in this baseline.
+
 ## [0.123.0] — 2026-05-20 (PWA parity pass — Sprint 44)
 ### Added
 - AlertsScreen: primary tabs (Active/Historical/System) always visible; chip filters (All/Prompt/Error/Warn/Info) moved to per-tab secondary filter row matching PWA layout
