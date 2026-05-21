@@ -409,7 +409,8 @@ public fun SessionDetailScreen(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .imePadding(),
             ) {
             SessionInfoBar(
                 backend = state.session?.backend,
@@ -628,7 +629,7 @@ public fun SessionDetailScreen(
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
-                    modifier = Modifier.weight(1f).fillMaxWidth().imePadding(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     controller = terminalController,
                 )
                 TerminalScrollModeStrip(toolbarState)
