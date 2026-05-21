@@ -4,7 +4,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Current release: v1.0.0 (2026-05-21).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.7.0+`. **Production-ready** — full platform parity across Android phone, Wear OS, and Android Automotive OS with comprehensive testing and Play Store integration.
+**Current release: v1.0.0 (2026-05-21).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.6.1+`. **Production-ready** — full platform parity across Android phone, Wear OS, and Android Automotive OS with comprehensive testing and Play Store integration.
 
 ---
 
@@ -68,7 +68,7 @@ Full feature matrix: [docs/parity-status.md](docs/parity-status.md).
 <td align="center"><img src="docs/media/phone/04-alerts.png" width="180"/><br/><sub>Alerts</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/media/phone/03-prds.png" width="180"/><br/><sub>PRDs</sub></td>
+<td align="center"><img src="docs/media/phone/03-prds.png" width="180"/><br/><sub>Automata</sub></td>
 <td align="center"><img src="docs/media/phone/10-new-session.png" width="180"/><br/><sub>New session</sub></td>
 <td align="center"><img src="docs/media/phone/05-settings-monitor.png" width="180"/><br/><sub>Settings — Monitor</sub></td>
 <td align="center"><img src="docs/media/phone/09-settings-about.png" width="180"/><sub>About</sub></td>
@@ -89,7 +89,7 @@ arrow keys, PgUp/PgDn, and a saved-commands picker — no need to type `\033[A` 
 <td align="center"><img src="docs/media/watch/02-sessions.png" width="160"/><br/><sub>Sessions</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/media/watch/03-prds.png" width="160"/><br/><sub>PRDs</sub></td>
+<td align="center"><img src="docs/media/watch/03-prds.png" width="160"/><br/><sub>Automata</sub></td>
 <td align="center"><img src="docs/media/watch/04-servers.png" width="160"/><br/><sub>Servers</sub></td>
 <td align="center"><img src="docs/media/watch/05-about.png" width="160"/><br/><sub>About</sub></td>
 </tr>

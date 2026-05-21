@@ -36,7 +36,7 @@ This release delivers feature parity across all supported platforms (Android pho
 - ✅ Certificate fingerprints registered for secure app signing
 
 ### Infrastructure
-- Pairs with `datawatch v8.7.0+` server daemon
+- Pairs with `datawatch v8.6.1+` server daemon
 - Minimum: Android API 29 (Android 10), Wear OS 2.0+, AAOS 11+
 - Target: Android API 35 (Android 15)
 - Build system: Kotlin Multiplatform + Compose Multiplatform for cross-platform UI
