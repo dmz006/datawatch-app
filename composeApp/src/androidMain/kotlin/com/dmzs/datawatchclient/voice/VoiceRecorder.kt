@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.voice
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaRecorder
 import android.os.Build
 import java.io.File
@@ -36,6 +37,16 @@ public class VoiceRecorder(private val context: Context) {
                 setAudioChannels(1)
                 setAudioEncodingBitRate(48_000)
                 setOutputFile(file.absolutePath)
+                // Suppress system sounds — set usage to app-specific and silent
+                // audio attributes. This prevents the "beep" sounds on start/stop.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                    )
+                }
                 prepare()
                 start()
             }

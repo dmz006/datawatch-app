@@ -28,7 +28,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
     Session(
         id = id,
         serverProfileId = serverProfileId,
-        hostnamePrefix = hostname,
+        hostnamePrefix = extractHostnamePrefix(),
         state = SessionState.fromWire(state),
         taskSummary = task,
         createdAt = createdAt.toInstantOrEpoch(),
@@ -44,6 +44,16 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         llmRef = llmRef,
         computeNodeRef = computeNodeRef,
     )
+
+private fun SessionDto.extractHostnamePrefix(): String? {
+    // If the server sent full_id (hostname-shortid), extract the hostname prefix.
+    // Otherwise fall back to the hostname field.
+    return if (fullId != null && fullId.contains("-")) {
+        fullId.substringBefore("-")
+    } else {
+        hostname
+    }
+}
 
 internal fun AlertDto.toDomain(serverProfileId: String): Alert {
     // The live server emits {level, title, body}; legacy builds emit
