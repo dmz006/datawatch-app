@@ -321,10 +321,8 @@ public fun TerminalView(
                         }
 
                         @JavascriptInterface
-                        fun onInput(
-                            @Suppress("UNUSED_PARAMETER") data: String,
-                        ) {
-                            // Sprint 3: bridge typed input back to the WS reply lane.
+                        fun onInput(data: String) {
+                            com.dmzs.datawatchclient.transport.ws.WsOutbound.sendInput(sessionId, data)
                         }
 
                         /**

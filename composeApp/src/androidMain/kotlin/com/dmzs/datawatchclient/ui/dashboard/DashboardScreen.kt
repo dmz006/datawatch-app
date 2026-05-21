@@ -17,15 +17,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -77,6 +83,27 @@ public fun DashboardScreen(
     val alertsState by alertsVm.state.collectAsState()
     val dw = LocalDatawatchColors.current
     var pickerOpen by remember { mutableStateOf(false) }
+    var editSheetOpen by remember { mutableStateOf(false) }
+    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
+    if (editSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                editSheetOpen = false
+                vm.refreshCards()
+            },
+            sheetState = editSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 24.dp),
+            ) {
+                com.dmzs.datawatchclient.ui.settings.DashboardCardsCard()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -92,6 +119,13 @@ public fun DashboardScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = { editSheetOpen = true }) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = "Edit dashboard layout",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (state.activeProfile != null) {
                         ReachabilityDot(

@@ -168,9 +168,9 @@ internal fun NewPrdDialog(
                     value = spec,
                     onValueChange = { spec = it },
                     label = { Text(stringResource(R.string.new_prd_spec_label)) },
-                    minLines = 3,
-                    maxLines = 6,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 )
 
                 // ── Profile dropdown ──────────────────────────────────────

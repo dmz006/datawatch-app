@@ -83,6 +83,14 @@ public class DashboardViewModel : ViewModel() {
         ServiceLocator.activeServerStore.set(profileId)
     }
 
+    public fun refreshCards() {
+        viewModelScope.launch {
+            resolveTransport()?.listDashboardCards()?.onSuccess { cards ->
+                _state.value = _state.value.copy(cards = cards)
+            }
+        }
+    }
+
     private suspend fun resolveTransport(): TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
         return runCatching {

@@ -292,8 +292,6 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Session,
                                 )
-                                // BL13 — adjustable terminal dimensions (v0.67.0)
-                                TerminalDimensionsCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Whisper,
                                 )
@@ -305,8 +303,6 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.general.SessionTemplatesCard()
                                 com.dmzs.datawatchclient.ui.general.DeviceAliasesCard()
                                 com.dmzs.datawatchclient.ui.general.ToolingCard()
-                                // Dashboard card layout CRUD (moved from removed Monitor tab)
-                                DashboardCardsCard()
                                 // T30 — File Service + Discussion Scopes
                                 FileServiceCard()
                                 DiscussionScopesCard()
@@ -349,26 +345,23 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
                             SettingsTab.Compute -> {
-                                // v0.80.0 Sprint 11 — reordered to match PWA v7.0.0-alpha.23c:
-                                // Memory → RTK → CostRates → ClusterProfiles → ComputeNodes →
-                                // LLMs → ContainerWorkers → Detection → SavedCmds → Filters →
-                                // TailscaleSettings → TailscaleMesh
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
-                                )
-                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
-                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                                // LLMs + ComputeNodes first — most-used section on Compute tab.
+                                LlmRegistryCard()
+                                var computeNodesRefreshTick by remember { mutableStateOf(0) }
+                                ComputeNodesCard(
+                                    onNodeDeleted = { computeNodesRefreshTick++ },
                                 )
                                 com.dmzs.datawatchclient.ui.compute.CostRatesCard()
                                 com.dmzs.datawatchclient.ui.profiles.KindProfilesCard(
                                     kind = "cluster",
                                     title = stringResource(R.string.settings_cluster_profiles_title),
                                 )
-                                var computeNodesRefreshTick by remember { mutableStateOf(0) }
-                                ComputeNodesCard(
-                                    onNodeDeleted = { computeNodesRefreshTick++ },
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Memory,
                                 )
-                                LlmRegistryCard()
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
+                                )
                                 // Container Workers (cfg.agents)
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,
@@ -420,20 +413,16 @@ public fun SettingsScreen(
                                 )
                             }
                             SettingsTab.About -> {
-                                // v0.60.0 — language picker now at top of About
-                                // (PWA v5.28.3 parity). Daemon admin cluster below.
-                                // v0.70.0 — theme picker added below language picker.
+                                AboutCard(activeProfile = activeProfile)
                                 LanguagePickerCard()
                                 ThemePickerCard()
-                                AboutCard(activeProfile = activeProfile)
-                                // T30 — Encryption Status
-                                EncryptionStatusCard()
                                 com.dmzs.datawatchclient.ui.about.ApiLinksCard()
                                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
                                 com.dmzs.datawatchclient.ui.ops.UpdateDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.SubsystemReloadCard()
                                 com.dmzs.datawatchclient.ui.ops.RestartDaemonCard()
                                 com.dmzs.datawatchclient.ui.ops.KillOrphansCard()
+                                EncryptionStatusCard()
                             }
                         }
                     }

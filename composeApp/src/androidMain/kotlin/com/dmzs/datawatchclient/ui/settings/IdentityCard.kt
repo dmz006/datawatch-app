@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,7 +68,7 @@ internal fun IdentityCard() {
                 docsAnchor = "identity",
             )
             IconButton(onClick = { wizardOpen = true }) {
-                Icon(Icons.Filled.SmartToy, contentDescription = stringResource(R.string.identity_wizard_open))
+                Icon(Icons.Filled.RecordVoiceOver, contentDescription = stringResource(R.string.identity_wizard_open))
             }
         }
         OutlinedTextField(

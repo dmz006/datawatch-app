@@ -289,7 +289,7 @@ public fun NewSessionScreen(
                     .padding(padding)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(12.dp),
         ) {
             banner?.let {
                 Surface(
@@ -307,7 +307,7 @@ public fun NewSessionScreen(
 
             Text(
                 stringResource(R.string.new_session_name_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
@@ -325,7 +325,7 @@ public fun NewSessionScreen(
             ) {
                 Text(
                     stringResource(R.string.new_session_task_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                 )
@@ -340,15 +340,15 @@ public fun NewSessionScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 120.dp),
+                        .heightIn(min = 100.dp),
                 maxLines = 8,
             )
 
             Text(
                 stringResource(R.string.new_session_server_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
             )
             ServerPickerDropdown(
                 profiles = profiles.filter { it.enabled },
@@ -369,9 +369,9 @@ public fun NewSessionScreen(
             if (llmEntries.isNotEmpty()) {
                 Text(
                     stringResource(R.string.session_llm_picker_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 Text(
                     stringResource(R.string.session_llm_hint),
@@ -394,7 +394,7 @@ public fun NewSessionScreen(
                     if (allNodes.isNotEmpty()) {
                         Text(
                             stringResource(R.string.session_compute_node_label),
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                         )
@@ -425,7 +425,7 @@ public fun NewSessionScreen(
                 )
                 Text(
                     stringResource(R.string.new_session_backend_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
@@ -458,9 +458,9 @@ public fun NewSessionScreen(
             if (serverProfiles.isNotEmpty()) {
                 Text(
                     stringResource(R.string.new_session_profile_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 ProfilePickerDropdown(
                     profiles = serverProfiles,
@@ -476,9 +476,9 @@ public fun NewSessionScreen(
             if (pickedServerProfile != null) {
                 Text(
                     stringResource(R.string.new_session_cluster_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 var clusterMenuOpen by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -532,9 +532,9 @@ public fun NewSessionScreen(
             if (models.isNotEmpty()) {
                 Text(
                     "Model (server-configured)",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 ModelPickerDropdown(
                     models = models,
@@ -557,9 +557,9 @@ public fun NewSessionScreen(
             if (claudeOptionsAvailable && isClaudeCode) {
                 Text(
                     stringResource(R.string.new_session_advanced_claude),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 if (claudePermissionModes.isNotEmpty()) {
                     SimpleDropdown(
@@ -595,9 +595,9 @@ public fun NewSessionScreen(
 
             Text(
                 stringResource(R.string.new_session_working_dir_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -624,9 +624,9 @@ public fun NewSessionScreen(
             if (recentDone.isNotEmpty()) {
                 Text(
                     stringResource(R.string.new_session_resume_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 ResumePickerDropdown(
                     sessions = recentDone,
@@ -637,9 +637,9 @@ public fun NewSessionScreen(
 
             Text(
                 stringResource(R.string.new_session_git_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -672,9 +672,9 @@ public fun NewSessionScreen(
             if (recentDone.isNotEmpty()) {
                 Text(
                     stringResource(R.string.new_session_recent_sessions),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 16.dp, bottom = 2.dp),
                 )
                 recentDone.take(20).forEach { s ->
                     Row(

@@ -10,6 +10,6 @@ package com.dmzs.datawatchclient
  * The CI `check-version` job enforces parity across all four.
  */
 public object Version {
-    public const val VERSION: String = "0.123.0"
-    public const val VERSION_CODE: Int = 201
+    public const val VERSION: String = "0.125.0"
+    public const val VERSION_CODE: Int = 203
 }
