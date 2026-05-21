@@ -1,0 +1,27 @@
+datawatch Wear OS is the official smartwatch companion to the datawatch server — the open-source daemon that bridges
+  AI coding sessions across machines.
+
+  Monitor from your wrist:
+
+  • See every active session across every datawatch server you run.
+  • Reply to prompts by voice directly from your watch.
+  • Stream live status, logs, and alerts to your Wear OS device.
+  • Voice commands to trigger session actions without touching your phone.
+
+  Built for developers on the move:
+
+  • Wear OS tiles show active session count at a glance.
+  • Complications for CPU, memory, and session counters on your watchface.
+  • Voice notifications wake you when a session needs attention.
+  • On-device transcription for hands-free replies.
+
+  Secure and private:
+
+  • No ads. No analytics. No tracking.
+  • Bearer token secured in Android Keystore.
+  • All push notifications encrypted and content-free.
+  • Requires: an existing datawatch server you operate. Get datawatch at https://github.com/dmz006/datawatch
+
+  Source: https://github.com/dmz006/datawatch-app
+  License: Polyform Noncommercial 1.0.0
+  Privacy policy: https://dmzs.com/datawatch-client/privacy
