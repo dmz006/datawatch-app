@@ -190,12 +190,15 @@
           var keyboardH = document.documentElement.clientHeight - window.visualViewport.height;
           container.style.bottom = (keyboardH > 0 ? keyboardH : 0) + 'px';
         }
-        // Bail if the container hasn't been laid out yet.
+        // Check if the container has been laid out. Only bail on width since
+        // height can legitimately be small when the IME is open (don't skip fit).
         var r = container.getBoundingClientRect();
-        if (r.width < 40 || r.height < 40) {
-          log('skip fit: container ' + r.width + 'x' + r.height);
+        if (r.width < 40) {
+          log('skip fit: container width too small ' + r.width + 'x' + r.height);
           return;
         }
+        // Allow fit even with small height (when keyboard is up) — xterm will
+        // render whatever rows fit in the available space.
         fit.fit();
         // Enforce minimum cols when the backend requires it (e.g.
         // claude-code 120). Matches PWA's initXterm resize logic.
