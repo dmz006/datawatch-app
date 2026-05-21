@@ -105,7 +105,7 @@ public fun MatrixSplashScreen(
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
-                "v${Version.VERSION}",
+                "${Version.VERSION} (build ${Version.VERSION_CODE})",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFA855F7).copy(alpha = 0.85f),
                 modifier = Modifier.padding(top = 8.dp),
