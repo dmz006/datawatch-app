@@ -268,7 +268,6 @@ public fun SessionDetailScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -838,7 +837,6 @@ public fun SessionDetailScreen(
     // Loading overlay — rendered on top of the Scaffold; fades out when
     // the first pane_capture arrives (sessionLoaded = true).
     SessionLoadingOverlay(visible = !sessionLoaded)
-    } // end Box
 }
 
 /**
