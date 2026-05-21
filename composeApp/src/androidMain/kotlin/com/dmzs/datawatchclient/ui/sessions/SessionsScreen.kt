@@ -283,6 +283,12 @@ public fun SessionsScreen(
                     waitingCount = state.waitingCount,
                     doneCount = state.doneCount,
                     onStateFilterChange = vm::setStateFilter,
+                    historyAllSelected = state.historySessionIds.isNotEmpty() &&
+                        selectedIds.containsAll(state.historySessionIds),
+                    onSelectAllHistory = {
+                        val histIds = state.historySessionIds.toSet()
+                        selectedIds = if (selectedIds.containsAll(histIds)) emptySet() else histIds
+                    },
                 )
             }
 
@@ -504,6 +510,9 @@ private fun SessionsToolbar(
     waitingCount: Int = 0,
     doneCount: Int = 0,
     onStateFilterChange: (SessionsViewModel.SessionStateFilter) -> Unit = {},
+    // BL-SL-2: select-all button for history sessions (PWA ☑ All / None)
+    historyAllSelected: Boolean = false,
+    onSelectAllHistory: (() -> Unit)? = null,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     // Toolbar is rendered only when expanded (user toggled search) OR
@@ -516,52 +525,49 @@ private fun SessionsToolbar(
     if (!show) return
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
         run {
-            OutlinedTextField(
-                value = filterText,
-                onValueChange = onFilterTextChange,
-                placeholder = { Text(stringResource(R.string.sessions_filter_hint)) },
-                singleLine = true,
-                trailingIcon = {
-                    Row {
+            // BL-SL-3: PWA layout — text input + LLM button + State button on same row.
+            var stateExpanded by remember { mutableStateOf(false) }
+            var llmExpanded by remember { mutableStateOf(false) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+            ) {
+                OutlinedTextField(
+                    value = filterText,
+                    onValueChange = onFilterTextChange,
+                    placeholder = { Text(stringResource(R.string.sessions_filter_hint)) },
+                    singleLine = true,
+                    trailingIcon = {
                         if (filterText.isNotEmpty()) {
                             IconButton(onClick = { onFilterTextChange("") }) {
                                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.sessions_clear_filter))
                             }
+                        } else {
+                            IconButton(onClick = { onFilterTextChange(""); onCollapse() }) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.sessions_collapse_toolbar),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
-                        IconButton(onClick = {
-                            onFilterTextChange("")
-                            onCollapse()
-                        }) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.sessions_collapse_toolbar),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            // Sprint 29 (BL295) — collapsible State and LLM filter buttons
-            var stateExpanded by remember { mutableStateOf(false) }
-            var llmExpanded by remember { mutableStateOf(false) }
-            Row(
-                modifier = Modifier.padding(top = 6.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = { stateExpanded = !stateExpanded },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(stringResource(R.string.state_filter_btn_tip, activeCount + waitingCount + doneCount), style = MaterialTheme.typography.labelSmall)
-                    Icon(if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(14.dp))
-                }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
                 OutlinedButton(
                     onClick = { llmExpanded = !llmExpanded },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1), style = MaterialTheme.typography.labelSmall)
-                    Icon(if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Icon(if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(12.dp))
+                }
+                OutlinedButton(
+                    onClick = { stateExpanded = !stateExpanded },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(stringResource(R.string.state_filter_btn_tip, activeCount + waitingCount + doneCount), style = MaterialTheme.typography.labelSmall)
+                    Icon(if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(12.dp))
                 }
             }
             AnimatedVisibility(visible = stateExpanded) {
@@ -635,6 +641,18 @@ private fun SessionsToolbar(
                             stringResource(R.string.sessions_history_count, historyCount),
                             style = MaterialTheme.typography.labelSmall,
                         )
+                    }
+                    // BL-SL-2: select-all button matches PWA ☑ All / None toggle.
+                    if (showHistory && onSelectAllHistory != null) {
+                        OutlinedButton(
+                            onClick = onSelectAllHistory,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                if (historyAllSelected) "☑ None" else "☑ All",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
                 Box {

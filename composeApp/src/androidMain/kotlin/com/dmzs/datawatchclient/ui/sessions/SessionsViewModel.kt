@@ -227,6 +227,9 @@ public class SessionsViewModel : ViewModel() {
             }
 
         public val historyCount: Int
+            get() = historySessionIds.size
+
+        public val historySessionIds: List<String>
             get() {
                 val doneStates =
                     setOf(
@@ -234,7 +237,7 @@ public class SessionsViewModel : ViewModel() {
                         com.dmzs.datawatchclient.domain.SessionState.Killed,
                         com.dmzs.datawatchclient.domain.SessionState.Error,
                     )
-                return sessions.count { it.state in doneStates }
+                return sessions.filter { it.state in doneStates }.map { it.id }
             }
 
         private companion object {
