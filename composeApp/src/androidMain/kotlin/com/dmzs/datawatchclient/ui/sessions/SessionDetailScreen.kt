@@ -90,6 +90,11 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
+import android.content.Intent
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -1832,6 +1837,13 @@ private fun ReplyComposer(
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
 
+    val speechAvailable = remember { SpeechRecognizer.isRecognitionAvailable(context) }
+    var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var recognizing by remember { mutableStateOf(false) }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { recognizer?.destroy(); recognizer = null }
+    }
+
     // RECORD_AUDIO is a runtime permission on Android 6+; without it
     // MediaRecorder.start() throws and the tap appears to do nothing
     // (2026-04-22 user report). Request at first use, start recording
@@ -2016,10 +2028,56 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        if (whisperConfigured) IconButton(
+        if (speechAvailable || whisperConfigured) IconButton(
             modifier = Modifier.size(40.dp),
             onClick = {
-                if (recording) {
+                if (speechAvailable) {
+                    // Android SpeechRecognizer path (Google ASR — mirrors PWA WebSpeechAPI)
+                    if (recognizing) {
+                        recognizer?.stopListening()
+                        recognizer?.destroy()
+                        recognizer = null
+                        recognizing = false
+                    } else {
+                        val sr = SpeechRecognizer.createSpeechRecognizer(context)
+                        recognizer = sr
+                        sr.setRecognitionListener(object : RecognitionListener {
+                            override fun onResults(results: Bundle?) {
+                                val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim() ?: ""
+                                if (text.isNotEmpty()) onTranscribed(text)
+                                recognizing = false
+                                recognizer?.destroy()
+                                recognizer = null
+                            }
+                            override fun onError(error: Int) {
+                                recognizing = false
+                                recognizer?.destroy()
+                                recognizer = null
+                            }
+                            override fun onReadyForSpeech(params: Bundle?) {}
+                            override fun onBeginningOfSpeech() {}
+                            override fun onRmsChanged(rmsdB: Float) {}
+                            override fun onBufferReceived(buffer: ByteArray?) {}
+                            override fun onEndOfSpeech() {}
+                            override fun onPartialResults(partialResults: Bundle?) {}
+                            override fun onEvent(eventType: Int, params: Bundle?) {}
+                        })
+                        val grant = androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.RECORD_AUDIO
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        if (grant) {
+                            sr.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                            })
+                            recognizing = true
+                        } else {
+                            sr.destroy()
+                            recognizer = null
+                            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                        }
+                    }
+                } else if (recording) {
                     val r = recorder ?: return@IconButton
                     recorder = null
                     val captured = r.stop() ?: return@IconButton
@@ -2163,15 +2221,11 @@ private fun ReplyComposer(
             if (transcribing) {
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
             } else {
+                val active = recording || recognizing
                 Icon(
-                    if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
-                    contentDescription = if (recording) "Stop recording" else "Voice reply",
-                    tint =
-                        if (recording) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
+                    if (active) Icons.Filled.Stop else Icons.Filled.Mic,
+                    contentDescription = if (active) "Stop" else "Voice input",
+                    tint = if (active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 )
             }
         }

@@ -55,11 +55,11 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Mic / Voice
 
-### BL-MIC-1: Mic should use device speech recognition (Google)
+### BL-MIC-1: Mic should use device speech recognition (Google) ✅ FIXED v0.129.0
 - Mic button should behave like PWA which uses browser WebSpeechAPI (Google ASR).
-- User wants Google/Gemini as speech recognition option, not just Whisper WAV.
-- Current: records WAV → POST /api/voice/transcribe (Whisper only).
-- Desired: offer Android native SpeechRecognizer (Google ASR) in addition to/instead of Whisper.
+- Fix: Mic button now uses `SpeechRecognizer` (Android/Google ASR) when available; falls back to Whisper POST only when SpeechRecognizer is unavailable.
+- Button visible even when Whisper is not configured (as long as device has speech recognition).
+- File: `ui/sessions/SessionDetailScreen.kt`
 
 ---
 
