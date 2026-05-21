@@ -61,13 +61,32 @@ public class KeystoreManager(private val context: Context) {
             .build()
 
     private val prefs: SharedPreferences =
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_FILE,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        runCatching {
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_FILE,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        }.recoverCatching { exception ->
+            // Keystore2 state change (e.g., after Android OS update) can invalidate
+            // the master key, causing "Signature/MAC verification failed" when
+            // decrypting existing preferences. Delete the corrupted file and recreate.
+            if (exception.message?.contains("Signature/MAC verification failed") == true
+                || exception.cause?.message?.contains("Signature/MAC verification failed") == true) {
+                context.deleteSharedPreferences(PREFS_FILE)
+                EncryptedSharedPreferences.create(
+                    context,
+                    PREFS_FILE,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
+            } else {
+                throw exception
+            }
+        }.getOrThrow()
 
     private val biometricPrefs: SharedPreferences =
         context.getSharedPreferences(BIOMETRIC_PREFS_FILE, Context.MODE_PRIVATE)
