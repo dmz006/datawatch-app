@@ -242,8 +242,12 @@ public class SessionDetailViewModel(
         wsSessionRefreshFired = false
         wsWasDisconnected = false
         val transport = ServiceLocator.wsTransportFor(profile)
+        // Subscribe with fullId (hostname-shortid format), not just short sessionId.
+        // The server keys all pane_capture frames on fullId, so we must subscribe with it.
+        // But store events with short sessionId for the UI to query.
+        val subscriptionId = fullIdOrShort()
         streamJob =
-            transport.events(sessionId)
+            transport.events(subscriptionId, sessionId)
                 .onEach { ev ->
                     // B59 — WS-connection state drives the reachability dot.
                     // Error events mean the WS disconnected; any live event means
