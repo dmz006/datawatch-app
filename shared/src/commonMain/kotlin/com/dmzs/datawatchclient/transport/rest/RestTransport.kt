@@ -595,12 +595,30 @@ public class RestTransport(
 
     private suspend fun listClaudeEndpoint(sub: String): Result<List<String>> =
         request {
-            val arr: kotlinx.serialization.json.JsonArray =
+            val root: kotlinx.serialization.json.JsonElement =
                 client.get("${profile.baseUrl}/api/llm/claude/$sub") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                 }.body()
+            val arr = when (root) {
+                is kotlinx.serialization.json.JsonArray -> root
+                is kotlinx.serialization.json.JsonObject -> {
+                    // API returns {aliases: [...], full_names: [...]} for models,
+                    // {levels: [...], source: ...} for efforts, {modes: [...], source: ...} for permission_modes.
+                    // Extract the first array field found.
+                    root.values.filterIsInstance<kotlinx.serialization.json.JsonArray>().firstOrNull()
+                        ?: kotlinx.serialization.json.JsonArray(emptyList())
+                }
+                else -> kotlinx.serialization.json.JsonArray(emptyList())
+            }
             arr.mapNotNull { el ->
-                (el as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+                when (el) {
+                    is kotlinx.serialization.json.JsonPrimitive ->
+                        el.takeIf { it.isString }?.content
+                    is kotlinx.serialization.json.JsonObject ->
+                        (el["value"] as? kotlinx.serialization.json.JsonPrimitive)
+                            ?.takeIf { it.isString }?.content
+                    else -> null
+                }
             }
         }
 
