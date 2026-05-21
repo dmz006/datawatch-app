@@ -43,12 +43,35 @@ public actual class DatabaseFactory(
                 keystore.deriveDatabasePassphrase()
             }
         val factory = SupportOpenHelperFactory(passphrase)
-        return AndroidSqliteDriver(
-            schema = DatawatchDb.Schema,
-            context = context,
-            name = DB_NAME,
-            factory = factory,
-        )
+
+        // If database decryption fails (e.g., after OS update changes Keystore2 state),
+        // delete the corrupted database and create a fresh one. Users will need to
+        // re-authenticate with the server but their settings are preserved locally.
+        return runCatching {
+            AndroidSqliteDriver(
+                schema = DatawatchDb.Schema,
+                context = context,
+                name = DB_NAME,
+                factory = factory,
+            )
+        }.recoverCatching { exception ->
+            if (exception is Exception && exception.message?.contains("Signature/MAC verification failed") == true
+                || exception.cause?.message?.contains("Signature/MAC verification failed") == true) {
+                // Keystore decryption failed — database is corrupted. Delete it and try again with fresh key.
+                context.deleteDatabase(DB_NAME)
+                keystore.renewMasterKey()
+                val newPassphrase = keystore.deriveDatabasePassphrase()
+                val newFactory = SupportOpenHelperFactory(newPassphrase)
+                AndroidSqliteDriver(
+                    schema = DatawatchDb.Schema,
+                    context = context,
+                    name = DB_NAME,
+                    factory = newFactory,
+                )
+            } else {
+                throw exception
+            }
+        }.getOrThrow()
     }
 
     public companion object {

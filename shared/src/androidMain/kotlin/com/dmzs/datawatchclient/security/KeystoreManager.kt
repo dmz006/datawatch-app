@@ -157,6 +157,21 @@ public class KeystoreManager(private val context: Context) {
         }
     }
 
+    /**
+     * Delete and regenerate the master key. Used when the database decryption fails
+     * (e.g., after Android OS update changes Keystore2 state). This destroys the old
+     * encrypted database key but does NOT delete the database file itself — callers
+     * must handle deletion before this is called.
+     */
+    public fun renewMasterKey() {
+        prefs.edit().remove(KEY_DB_PASSPHRASE).apply()
+        biometricPrefs.edit().remove(KEY_BIOMETRIC_PASSPHRASE).apply()
+        runCatching {
+            val keyStore = KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
+            keyStore.deleteEntry(BIOMETRIC_KEY_ALIAS)
+        }
+    }
+
     private fun ensureBiometricKeyExists() {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
         if (keyStore.containsAlias(BIOMETRIC_KEY_ALIAS)) return
