@@ -12,11 +12,15 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 ### BL-SD-2: Timeline tab incorrect
 - Timeline tab icons, font, and layout don't match PWA. Needs audit vs PWA.
 
-### BL-SD-3: Font dropdown incorrect
+### BL-SD-3: Font dropdown incorrect ✅ FIXED v0.131.0
 - Font size control in session detail doesn't match PWA behavior/location.
+- Fix: Replaced A−/A+/Fit buttons with single "Aa▾" button that opens a `DropdownMenu` with A−, `{N}px` label, A+, and Fit items — matches PWA `app.js` font-size dropdown.
+- File: `ui/sessions/TerminalToolbar.kt`
 
-### BL-SD-4: Scroll back icon incorrect
-- Scroll-back button uses wrong icon and/or is in the wrong location vs PWA.
+### BL-SD-4: Scroll back icon incorrect ✅ FIXED v0.131.0
+- Scroll-back button used 📜 emoji; PWA uses ⤒ (U+2912) at 18sp bold.
+- Fix: Changed label from `"📜"` to `"⤒"` with `scrollIcon = true` → 18sp bold styling.
+- File: `ui/sessions/TerminalToolbar.kt`
 
 ### BL-SD-5: No microphone button in session detail
 - PWA has a mic button directly in the session input area; mobile is missing it.
