@@ -6,6 +6,27 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 **Current release: v1.0.0 (2026-05-21).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.7.0+`. **Production-ready** — full platform parity across Android phone, Wear OS, and Android Automotive OS with comprehensive testing and Play Store integration.
 
+---
+
+## 🧪 Alpha Testing Program
+
+**We're seeking alpha testers for Wear OS and Android apps!**
+
+v1.0.0 is production-ready with full feature parity and comprehensive testing. If you're interested in testing the Wear OS companion or Android Auto (AAOS) functionality before the general release, we'd love your feedback.
+
+**Interested?** Contact **[@dmz006](https://github.com/dmz006)** via:
+- GitHub Issues: [datawatch-app/issues](https://github.com/dmz006/datawatch-app/issues)
+- Direct message on GitHub
+
+What we're testing:
+- ✅ Wear OS session monitoring and voice reply
+- ✅ Android Auto (AAOS) integration for vehicle displays
+- ✅ Cross-platform data synchronization
+- ✅ Real-world daemon connectivity (Tailscale, LAN, remote)
+- ✅ Performance on various devices
+
+---
+
 ## At a glance
 
 | Phone | Watch | Auto (AAOS) | PWA reference |
