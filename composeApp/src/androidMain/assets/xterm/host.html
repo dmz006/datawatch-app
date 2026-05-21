@@ -17,6 +17,12 @@
       overflow: hidden;
       font-family: "Roboto Mono", "Droid Sans Mono", monospace;
     }
+    /* Keyboard height variable — synced with visualViewport by JS.
+       When the soft keyboard appears, --keyboard-h tracks its height
+       so the terminal container can shrink above it (PWA-style). */
+    :root {
+      --keyboard-h: 0px;
+    }
     /* Outer scroll container. Horizontal scroll lets a 120-col Claude
        pane display on a 40-char phone viewport (the TUI stays laid out
        at 120 cols; user swipes to see the rest). Vertical scroll is
@@ -27,7 +33,7 @@
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: var(--keyboard-h);
       padding: 0;
       overflow-x: auto;
       overflow-y: hidden;
@@ -183,13 +189,6 @@
     function safeFit() {
       if (!fit) return;
       try {
-        // When the soft keyboard is open, window.visualViewport.height is
-        // smaller than the document height. Adjust the container's bottom
-        // edge so the FitAddon sees only the actually-visible rows.
-        if (window.visualViewport) {
-          var keyboardH = document.documentElement.clientHeight - window.visualViewport.height;
-          container.style.bottom = (keyboardH > 0 ? keyboardH : 0) + 'px';
-        }
         // Check if the container has been laid out. Only bail on width since
         // height can legitimately be small when the IME is open (don't skip fit).
         var r = container.getBoundingClientRect();
@@ -236,6 +235,29 @@
       setTimeout(safeFit, 1200);
       setTimeout(safeFit, 2500);
     });
+
+    // ── Visual viewport height tracking (mobile keyboard) ────
+    // When soft keyboard appears, reduce container height so xterm.js
+    // FitAddon calculates correct row count. Set --keyboard-h CSS variable
+    // AND explicitly set container height to force proper layout.
+    if (window.visualViewport) {
+      var _updateKeyboardHeight = function() {
+        var vvh = window.visualViewport.height;
+        var offsetTop = window.visualViewport.offsetTop || 0;
+        // Keyboard height = layout viewport height minus visual viewport
+        // (minus any top offset from scroll/pinch — normally 0 on typical use).
+        var keyboardH = Math.max(0, window.innerHeight - vvh - offsetTop);
+        document.documentElement.style.setProperty('--keyboard-h', keyboardH + 'px');
+        // Also explicitly set container height to shrink when keyboard appears.
+        // Use visualViewport.height as the maximum available height for xterm.
+        container.style.height = vvh + 'px';
+        log('keyboard: h=' + keyboardH + 'px, vv=' + vvh + 'px, set container.height=' + vvh + 'px');
+        // Trigger a fit after the height change settles
+        setTimeout(safeFit, 50);
+      };
+      _updateKeyboardHeight(); // set immediately
+      window.visualViewport.addEventListener('resize', _updateKeyboardHeight);
+    }
 
     // Respond to every resize signal the platform gives us.
     window.addEventListener('resize', safeFit);
