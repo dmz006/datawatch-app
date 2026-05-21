@@ -61,6 +61,11 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Terminal (xterm)
 
+### BL-TX-2: Keyboard covers terminal cursor in tmux and xterm ✅ FIXED v0.126.0
+- When soft keyboard opens in session detail, terminal didn't shrink — cursor area was hidden behind keyboard.
+- Fix: `imePadding()` moved to the outer Column; `contentWindowInsets = WindowInsets(0)` on Scaffold to prevent double-counting.
+- File: `ui/sessions/SessionDetailScreen.kt`
+
 ### BL-TX-1: Typing in xterm doesn't send on Enter ✅ FIXED v0.124.0
 - `onInput` bridge in `TerminalView.kt` was a no-op stub.
 - Fix: call `WsOutbound.sendInput(sessionId, data)` in the bridge.
@@ -69,6 +74,13 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 ---
 
 ## Dashboard
+
+### BL-ST-1: Settings > Automata full page redo to match PWA
+- Entire Settings > Automata page needs audit and reorder vs PWA. Icon on Identity card changed to RecordVoiceOver.
+- Datawatch PRD filed: 4df28305 — PWA to add Interview wizard to Settings > Automata.
+
+### BL-ST-2: Settings > About — PWA parity for ops cards
+- Datawatch PRD filed: d35561b2 — PWA to add ApiLinks, McpChannel, UpdateDaemon, SubsystemReload, RestartDaemon, KillOrphans, EncryptionStatus to About tab.
 
 ### BL-DB-1: No way to edit dashboard layout ✅ FIXED v0.124.0
 - Dashboard had no edit button. Editing was buried in Settings > General (wrong).

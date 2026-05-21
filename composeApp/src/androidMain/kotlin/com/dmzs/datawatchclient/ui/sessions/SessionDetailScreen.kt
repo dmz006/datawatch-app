@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -252,6 +253,7 @@ public fun SessionDetailScreen(
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -367,16 +369,18 @@ public fun SessionDetailScreen(
         // left the composer partially occluded — the composer would
         // lift a bit but not enough to clear the keyboard.
         //
-        // New approach: let the terminal / chat surface keep its full
-        // height and move only the composer row above the keyboard
-        // via `imePadding()` on ReplyComposer directly. This mirrors
-        // how the PWA handles it — the output area stays fixed; only
-        // the input bar lifts.
+        // imePadding() on the Column shrinks the entire content area
+        // (terminal + composer) when the soft keyboard opens, keeping
+        // the terminal cursor and composer visible above the keyboard.
+        // contentWindowInsets = WindowInsets(0) on the Scaffold above
+        // prevents double-counting of insets (the prior single-composer
+        // approach left the terminal cursor hidden behind the keyboard).
         Column(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .imePadding(),
         ) {
             // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
             // (user direction 2026-04-28). PWA carries the chips at
@@ -1994,7 +1998,7 @@ private fun ReplyComposer(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().imePadding().padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
