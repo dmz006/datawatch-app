@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -264,33 +265,42 @@ public fun SessionsScreen(
                     )
                 }
             }
-            if (!selectionMode) {
-                SessionsToolbar(
-                    filterText = state.filterText,
-                    onFilterTextChange = vm::setFilterText,
-                    backendCounts = state.backendCounts,
-                    activeBackendFilter = state.backendFilter,
-                    onToggleBackend = vm::toggleBackendFilter,
-                    showHistory = state.showHistory,
-                    historyCount = state.historyCount,
-                    onToggleShowHistory = vm::toggleShowHistory,
-                    sortOrder = state.sortOrder,
-                    onSortOrderChange = vm::setSortOrder,
-                    expanded = toolbarExpanded,
-                    onCollapse = { toolbarExpanded = false },
-                    stateFilter = state.stateFilter,
-                    activeCount = state.activeCount,
-                    waitingCount = state.waitingCount,
-                    doneCount = state.doneCount,
-                    onStateFilterChange = vm::setStateFilter,
-                    historyAllSelected = state.historySessionIds.isNotEmpty() &&
-                        selectedIds.containsAll(state.historySessionIds),
-                    onSelectAllHistory = {
-                        val histIds = state.historySessionIds.toSet()
-                        selectedIds = if (selectedIds.containsAll(histIds)) emptySet() else histIds
-                    },
-                )
-            }
+            SessionsToolbar(
+                filterText = state.filterText,
+                onFilterTextChange = vm::setFilterText,
+                backendCounts = state.backendCounts,
+                activeBackendFilter = state.backendFilter,
+                onToggleBackend = vm::toggleBackendFilter,
+                showHistory = state.showHistory,
+                historyCount = state.historyCount,
+                onToggleShowHistory = vm::toggleShowHistory,
+                sortOrder = state.sortOrder,
+                onSortOrderChange = vm::setSortOrder,
+                expanded = toolbarExpanded,
+                onCollapse = { toolbarExpanded = false },
+                stateFilter = state.stateFilter,
+                activeCount = state.activeCount,
+                waitingCount = state.waitingCount,
+                doneCount = state.doneCount,
+                onStateFilterChange = vm::setStateFilter,
+                historyAllSelected = state.historySessionIds.isNotEmpty() &&
+                    selectedIds.containsAll(state.historySessionIds),
+                onSelectAllHistory = {
+                    val histIds = state.historySessionIds.toSet()
+                    selectedIds = if (selectedIds.containsAll(histIds)) emptySet() else histIds
+                },
+                // PWA parity: show action buttons in toolbar when in select mode
+                selectMode = selectionMode,
+                selectedCount = selectedIds.size,
+                onSelectAllInactive = {
+                    val doneIds = state.visibleSessions.filter {
+                        it.state == SessionState.Completed || it.state == SessionState.Killed || it.state == SessionState.Error
+                    }.map { it.id }.toSet()
+                    selectedIds = if (selectedIds.containsAll(doneIds)) emptySet() else selectedIds + doneIds
+                },
+                onCancelSelection = { selectedIds = emptySet() },
+                onDeleteSelected = { bulkDeleteConfirmOpen = true },
+            )
 
             val visible = state.visibleSessions
             if (visible.isEmpty()) {
@@ -513,6 +523,12 @@ private fun SessionsToolbar(
     // BL-SL-2: select-all button for history sessions (PWA ☑ All / None)
     historyAllSelected: Boolean = false,
     onSelectAllHistory: (() -> Unit)? = null,
+    // PWA parity: action bar for select mode
+    selectMode: Boolean = false,
+    selectedCount: Int = 0,
+    onSelectAllInactive: () -> Unit = {},
+    onCancelSelection: () -> Unit = {},
+    onDeleteSelected: () -> Unit = {},
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     // Toolbar is rendered only when expanded (user toggled search) OR
@@ -694,6 +710,49 @@ private fun SessionsToolbar(
                 }
             }
         }
+        // PWA parity: action bar when in select mode
+        if (selectMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onSelectAllInactive,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        "☑ ${if (selectedCount == doneCount && doneCount > 0) "None" else "All"} ($doneCount)",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                OutlinedButton(
+                    onClick = onDeleteSelected,
+                    enabled = selectedCount > 0,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        "🗑 Delete ($selectedCount)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                OutlinedButton(
+                    onClick = onCancelSelection,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        "Done",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -823,6 +882,15 @@ private fun SessionRow(
     ) {
         // Header row: name/id + state pill + mute/more actions.
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // PWA parity: show checkbox for non-active sessions when in select mode
+            val isActive = session.state == SessionState.Running || session.state == SessionState.Waiting || session.state == SessionState.RateLimited
+            if (selectionMode && !isActive) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+            }
             if (reorderMode) {
                 Icon(
                     Icons.Filled.DragHandle,
