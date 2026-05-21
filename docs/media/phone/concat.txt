@@ -1,0 +1,12 @@
+file '01-sessions-v1.0.0.png'
+duration 2.5
+file '02-automata-v1.0.0.png'
+duration 2.5
+file '03-alerts-v1.0.0.png'
+duration 2.5
+file '04-observer-v1.0.0.png'
+duration 2.5
+file '05-dashboard-v1.0.0.png'
+duration 2.5
+file '06-settings-v1.0.0.png'
+duration 2.5
