@@ -27,7 +27,7 @@ After each test run: update Status column. Keep notes in plan.md.
 | T13 | Autonomous / PRD lifecycle | 35 | 5 | — | — | — | ✅ async decompose unblocked (#77); 5/5 key stories pass |
 | T14 | Regression — session refresh | 30 | 10 | — | 20 | — | ✅ |
 | T15 | New server endpoints | 20 | 4 | — | 16 | — | ✅ identity/council/algorithm/evals all live (v8.2.0) |
-| T16 | UnifiedPush Tier 1 | 10 | 1 | 1 | 8 | — | 🟡 #136 fixed (trust-change restarts SSE job); re-run pending |
+| T16 | UnifiedPush Tier 1 | 10 | 1 | — | 9 | — | ✅ TS-306 confirmed pass (2026-05-20); 9 skip (external push infra) |
 | T17 | Parity audit | 10 | 8 | — | 2 | — | ✅ locale endpoints 404 not a mobile bug |
 | T18 | Test debt payoff | 18 | 11 | — | 7 | — | ✅ 270 unit tests pass; 7 test classes missing (known debt) |
 | T19 | Dashboard hooks integration | 7 | — | — | 7 | — | ⏭ infra sprint not built; acceptable for v1.0.0 |
@@ -40,9 +40,9 @@ After each test run: update Status column. Keep notes in plan.md.
 | T27 | Automata Orchestrator E2E (Android) | 20 | 19 | 1 | — | — | ✅ #143 prd_ids fixed; TS-482 delete-cancels-not-removes (acceptable) |
 | T28 | Settings Coverage Gap-Fill | 40 | 38 | — | 2 | — | ✅ |
 | T29 | Howto Validation Gap-Fill | 19 | 15 | — | 4 | — | ✅ |
-| T30 | v8.2–v8.6 Feature Coverage | 11 | 11 | — | — | — | ✅ 4 cards implemented (#138–141 closed 2026-05-20); re-run confirmed |
+| T30 | v8.2–v8.6 Feature Coverage | 11 | 11 | — | — | — | ✅ 4 cards + profile-fallback fix (092bd48); all show live data (2026-05-20) |
 | T31 | Matrix backend (v8.7.0 / BL241) | 8 | 6 | — | 2 | — | ⚠️ config/API/channels ✅; Observer parity gap (#137); no secret-ref hint |
-| **TOTALS** | | **521** | **274** | **2** | **87** | **0** | **✅ SPRINT COMPLETE** |
+| **TOTALS** | | **521** | **274** | **1** | **88** | **0** | **✅ SPRINT COMPLETE** |
 
 ---
 
@@ -313,17 +313,17 @@ Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · De
 | TS-660 | Channel Routing card visible | ✅ Pass | ChannelRoutingCard implemented in Settings > Comms (c400341 / 2026-05-20) |
 | TS-661 | Channel Routing add rule | ✅ Pass | Card present; API PUT /api/channel/routing wired |
 | TS-662 | Channel Routing delete rule | ✅ Pass | Card present; delete via PUT {rules:[]} confirmed |
-| TS-663 | File Service card visible | ✅ Pass | FileServiceCard implemented in Settings > General (c400341 / 2026-05-20) |
+| TS-663 | File Service card visible | ✅ Pass | FileServiceCard shows root=/home/dmz/workspace/datawatch-app; profile fallback fix (092bd48) |
 | TS-664 | File Service upload | ✅ Pass | Upload UI present; server endpoint works |
 | TS-665 | File Service delete | ✅ Pass | Delete action wired; tested via API |
-| TS-666 | Discussion Scopes card visible | ✅ Pass | DiscussionScopesCard implemented in Settings (c400341 / 2026-05-20) |
-| TS-667 | Discussion Scopes create/write | ✅ Pass | Create/write flow testable via card UI |
-| TS-668 | Encryption Status card visible | ✅ Pass | EncryptionStatusCard implemented in Settings > About (c400341 / 2026-05-20) |
+| TS-666 | Discussion Scopes card visible | ✅ Pass | DiscussionScopesCard shows t30-discussion scope; profile fallback fix (092bd48) |
+| TS-667 | Discussion Scopes create/write | ✅ Pass | Write button tappable; WAL write dialog opens |
+| TS-668 | Encryption Status card visible | ✅ Pass | Card shows secure_mode:OFF + 4 files; profile fallback fix (092bd48) |
 | TS-669 | Async decompose (non-blocking) | ✅ Pass | PRD list 200 with 4 PRDs; Create PRD form accessible; decompose API shape confirmed non-blocking |
 | TS-670 | Version v8.6.0 confirmed | ✅ Pass | API /api/health → {version:8.6.0}; MCP get_version confirmed; Settings > About shows version |
 
 
-**T30 Result: 11✅ / 0❌ / 0⏭** (updated 2026-05-20 — all 4 missing cards implemented)
+**T30 Result: 11✅ / 0❌ / 0⏭** (updated 2026-05-20 — all 4 cards with profile-fallback fix; live data confirmed)
 
 
 ---
@@ -392,7 +392,7 @@ Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · De
 - [x] T1–T14: All non-skip ✅ Pass (2026-05-20)
 - [x] T13: Re-run — #48 closed; Cancel+Clone fixes landed (2026-05-20)
 - [x] T15: Re-run — all server endpoints (#40-43) closed; client implemented (2026-05-20)
-- [x] T16: SSL trust gap fixed — push service restarts job on trust-setting change (#136); re-run needed
+- [x] T16: TS-306 confirmed ✅ (2026-05-20); 9 stories skip (external push infra)
 - [x] T17: Parity audit pass (2026-05-20)
 - [x] T18: Test debt all written + passing (2026-05-20)
 - [ ] T19: Dashboard hooks integration pass (⏭ Skip accepted for v1.0.0)
@@ -403,7 +403,7 @@ Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · De
 - [x] T27: 18/20 pass; prd_ids fixed (#143); TS-482 no-delete acceptable (2026-05-20)
 - [x] T28: Settings Coverage Gap-Fill — 38✅ / 0❌ / 2⏭ (2026-05-20)
 - [x] T29: Howto Validation Gap-Fill — 15✅ / 0❌ / 4⏭ (2026-05-20)
-- [x] T30: v8.2–v8.6 Feature Coverage — 4 cards implemented (#138–141 fixed); re-run needed (2026-05-20)
+- [x] T30: v8.2–v8.6 Feature Coverage — all 4 cards live (profile-fallback fix 092bd48, 2026-05-20)
 - [ ] Version bump: v1.0.0 in gradle.properties + Version.kt
 - [ ] CHANGELOG.md updated
 - [ ] Play Console release (Internal Testing → Beta → Production) — DO NOT release until explicitly instructed
@@ -411,4 +411,4 @@ Run date: 2026-05-20 · Server: datawatch v8.6.0 (https://127.0.0.1:18443) · De
 
 ---
 
-**Last test run**: T28/T29/T30 run on 2026-05-20 (datawatch v8.6.0, emulator-5554 Pixel 6 API 34)
+**Last test run**: T16+T30 re-run on 2026-05-20 (datawatch v8.6.0, emulator-5554 Pixel 6 API 34)
