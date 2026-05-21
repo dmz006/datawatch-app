@@ -39,8 +39,8 @@
     <string name="wear_action_send">Send</string>
 
     <!-- Autonomous page -->
-    <string name="wear_prds_empty">No plans in review.</string>
-    <string name="wear_prds_pending">%1$d pending</string>
+    <string name="wear_prds_empty">No automata in review.</string>
+    <string name="wear_prds_pending">%1$d awaiting</string>
 
     <!-- Server page -->
     <string name="wear_servers_empty">No enabled servers</string>
