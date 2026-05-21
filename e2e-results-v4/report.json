@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-05-21T04:32:32.634Z",
+  "duration": 231.65,
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "skipped": 0,
+    "total": 4,
+    "passRate": 50
+  },
+  "results": [
+    {
+      "name": "PWA Load",
+      "status": "PASSED",
+      "details": "Main content found",
+      "timestamp": "2026-05-21T04:32:34.945Z"
+    },
+    {
+      "name": "PAGE: Automata",
+      "status": "PASSED",
+      "details": "Content loaded (561 chars)",
+      "timestamp": "2026-05-21T04:32:36.579Z"
+    },
+    {
+      "name": "PAGE: Alerts",
+      "status": "FAILED",
+      "details": "Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.",
+      "timestamp": "2026-05-21T04:35:36.584Z"
+    },
+    {
+      "name": "PAGE: Sessions",
+      "status": "FAILED",
+      "details": "Protocol error (Runtime.callFunctionOn): Target closed",
+      "timestamp": "2026-05-21T04:36:24.284Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "PWA_Loaded",
+      "path": "e2e-results-v4/screenshots/01_pwa_loaded.png"
+    },
+    {
+      "name": "Automata_Page",
+      "path": "e2e-results-v4/screenshots/01_automata_page.png"
+    }
+  ]
+}
