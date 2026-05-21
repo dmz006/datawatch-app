@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.play.publisher)
 }
 
 val appVersion: String = providers.gradleProperty("DATAWATCH_APP_VERSION").get()
@@ -22,7 +23,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.dmzs.datawatchclient"
+        applicationId = "com.dmzs.datawatchclient.wear"
         minSdk = 30
         targetSdk = 35
         versionCode = appVersionCode
@@ -30,15 +31,33 @@ android {
     }
 
     buildFeatures { compose = true }
+
+    signingConfigs {
+        // Read keystore password from KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file
+        val keystorePasswordProvider = {
+            System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+                ?: file("${System.getProperty("user.home")}/.android/.keystore-env").takeIf { it.exists() }?.readText()?.trim()
+                ?: error("KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file required for release signing")
+        }
+
+        create("release") {
+            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-dev-upload-ring.jks")
+            storePassword = keystorePasswordProvider()
+            keyAlias = "datawatch-dev-upload"
+            keyPassword = keystorePasswordProvider()
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
         debug {
             // Mirror composeApp's `.debug` suffix so side-loaded debug
             // builds on phone + watch share the same applicationId
-            // (`com.dmzs.datawatchclient.debug`).
+            // (`com.dmzs.datawatchclient.wear.debug`).
             applicationIdSuffix = ".debug"
         }
     }
@@ -87,4 +106,14 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testImplementation(libs.junit5.api)
     testRuntimeOnly(libs.junit5.engine)
+}
+
+play {
+    // Read JSON service account key from environment or local file.
+    val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
+    serviceAccountCredentials.set(file(keyPath))
+
+    // Wear OS app publishes to internal testing track.
+    track.set("internal")
+    defaultToAppBundles.set(true)  // Play Console requires AAB for Wear OS
 }
