@@ -1,7 +1,7 @@
 package com.dmzs.datawatchclient.voice
 
 import android.content.Context
-import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaRecorder
 import android.os.Build
 import java.io.File
@@ -13,14 +13,25 @@ import java.io.File
  * some vendors. The server accepts any whisper-supported format.
  *
  * Single-use: construct, [start], [stop] (→ File), discard.
+ *
+ * Suppresses system sounds during recording by temporarily muting the
+ * ringer volume, matching the behavior of voice input on PWA.
  */
 public class VoiceRecorder(private val context: Context) {
     private var recorder: MediaRecorder? = null
     private var outputFile: File? = null
+    private var savedRingerVolume: Int = 0
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     public fun start() {
         val file = File.createTempFile("dw-voice-", ".m4a", context.cacheDir)
         outputFile = file
+
+        // Suppress system sounds by temporarily muting the ringer.
+        // Save the current volume to restore it on stop().
+        savedRingerVolume = audioManager.getStreamVolume(AudioManager.STREAM_RING)
+        audioManager.setStreamVolume(AudioManager.STREAM_RING, 0, 0)
+
         @Suppress("DEPRECATION")
         recorder =
             (
@@ -37,16 +48,6 @@ public class VoiceRecorder(private val context: Context) {
                 setAudioChannels(1)
                 setAudioEncodingBitRate(48_000)
                 setOutputFile(file.absolutePath)
-                // Suppress system sounds — set usage to app-specific and silent
-                // audio attributes. This prevents the "beep" sounds on start/stop.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .build()
-                    )
-                }
                 prepare()
                 start()
             }
@@ -67,6 +68,7 @@ public class VoiceRecorder(private val context: Context) {
         } finally {
             recorder = null
             outputFile = null
+            restoreRingerVolume()
             runCatching { f.delete() }
         }
     }
@@ -77,5 +79,12 @@ public class VoiceRecorder(private val context: Context) {
         recorder = null
         outputFile?.delete()
         outputFile = null
+        restoreRingerVolume()
+    }
+
+    private fun restoreRingerVolume() {
+        runCatching {
+            audioManager.setStreamVolume(AudioManager.STREAM_RING, savedRingerVolume, 0)
+        }
     }
 }
