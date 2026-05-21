@@ -10,9 +10,9 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 | Phone | Watch | Auto (AAOS) | PWA reference |
 |:---:|:---:|:---:|:---:|
-| ![phone slideshow](docs/media/phone-slideshow.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![auto slideshow](docs/media/auto-slideshow.gif) | ![pwa slideshow](docs/media/pwa-slideshow.gif) |
+| ![phone slideshow v1.0.0](docs/media/phone-slideshow-v1.0.0.gif) | ![watch slideshow](docs/media/watch-slideshow.gif) | ![auto slideshow](docs/media/auto-slideshow.gif) | ![pwa slideshow v1.0.0](docs/media/pwa-slideshow-v1.0.0.gif) |
 
-*Slideshows loop at ~2.5 s per frame. Watch cards follow the Samsung Galaxy Watch bezel curve. Auto shots from AAOS emulator (android-33 automotive). PWA shots from `localhost:8443` via Playwright.*
+*Slideshows loop at ~2.5 s per frame showing all 6 core pages: Sessions, Automata, Alerts, Observer, Dashboard, Settings. Watch cards follow the Samsung Galaxy Watch bezel curve. Auto shots from AAOS emulator (android-33 automotive). PWA shots tested via Puppeteer E2E suite.*
 
 ## What it does
 
