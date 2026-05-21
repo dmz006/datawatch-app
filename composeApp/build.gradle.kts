@@ -73,6 +73,28 @@ android {
 
     buildFeatures { buildConfig = true }
 
+    signingConfigs {
+        // Read keystore password from KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file
+        val keystorePasswordProvider = {
+            System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+                ?: file("${System.getProperty("user.home")}/.android/.keystore-env").takeIf { it.exists() }?.readText()?.trim()
+                ?: error("KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file required for release signing")
+        }
+
+        create("publicTrack") {
+            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
+            storePassword = keystorePasswordProvider()
+            keyAlias = "datawatch-upload"
+            keyPassword = keystorePasswordProvider()
+        }
+        create("dev") {
+            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-dev-upload-ring.jks")
+            storePassword = keystorePasswordProvider()
+            keyAlias = "datawatch-dev-upload"
+            keyPassword = keystorePasswordProvider()
+        }
+    }
+
     defaultConfig {
         applicationId = "com.dmzs.datawatchclient"
         minSdk = 29
@@ -103,6 +125,7 @@ android {
             // pair publicTrack → publicMessaging so the
             // CarAppService + manifest merge into the release APK.
             missingDimensionStrategy("surface", "publicMessaging")
+            signingConfig = signingConfigs.getByName("publicTrack")
         }
         create("dev") {
             dimension = "track"
@@ -110,6 +133,7 @@ android {
             versionNameSuffix = "-dev"
             manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
             missingDimensionStrategy("surface", "devPassenger")
+            signingConfig = signingConfigs.getByName("dev")
         }
     }
 
@@ -127,6 +151,7 @@ android {
             isMinifyEnabled = false
         }
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
