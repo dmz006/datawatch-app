@@ -557,115 +557,139 @@ private fun WearSplash() {
  */
 @Composable
 private fun GlancePage(state: WearSessionCountsViewModel.UiState) {
+    val runColor   = Color(0xFF10B981)
+    val waitColor  = Color(0xFFF59E0B)
+    val autoColor  = Color(0xFFA855F7)
     val blockColor = Color(0xFFEF4444)
-    val runColor = Color(0xFF10B981)
-    val waitColor = Color(0xFFF59E0B)
-    val dimColor = MaterialTheme.colors.onSurfaceVariant
+    val dimColor   = MaterialTheme.colors.onSurfaceVariant
+
+    val runningAutomata = state.prds.count { it.status.lowercase() == "running" }
+    val reviewCount     = state.prds.count {
+        it.status.lowercase() in listOf("needs_review", "revisions_asked")
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colors.background),
-        contentAlignment = Alignment.Center,
     ) {
-        // Block indicator band — thin strip at top when blocked
+        // Full-width block stripe at top when guardrail fires
         if (state.guardrailBlock) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(4.dp)
+                    .height(6.dp)
                     .background(blockColor)
                     .align(Alignment.TopCenter),
             )
         }
 
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.SpaceEvenly,
         ) {
-            // Server name
+            // Server name header
             if (state.serverName.isNotBlank()) {
                 Text(
                     state.serverName,
                     style = MaterialTheme.typography.caption2,
                     color = dimColor,
+                    textAlign = TextAlign.Center,
                 )
             }
 
-            // Progress ring
-            Box(contentAlignment = Alignment.Center) {
-                val progressColor = when {
-                    state.guardrailBlock -> blockColor
-                    state.waiting > 0 -> waitColor
-                    else -> runColor
-                }
-                CircularProgressIndicator(
-                    progress = state.taskProgress.coerceIn(0f, 1f),
-                    modifier = Modifier.size(72.dp),
-                    strokeWidth = 5.dp,
-                    indicatorColor = progressColor,
-                    trackColor = progressColor.copy(alpha = 0.18f),
+            // Running — always shown, 0 included
+            GlanceStat(
+                count = state.running,
+                label = "RUNNING",
+                activeColor = runColor,
+                dimColor = dimColor,
+                alwaysBright = true,
+            )
+
+            // Waiting — amber and bold when non-zero
+            GlanceStat(
+                count = state.waiting,
+                label = "WAITING",
+                activeColor = waitColor,
+                dimColor = dimColor,
+                alwaysBright = false,
+            )
+
+            // Automata running
+            GlanceStat(
+                count = runningAutomata,
+                label = "AUTOMATA",
+                activeColor = autoColor,
+                dimColor = dimColor,
+                alwaysBright = false,
+            )
+
+            // Review needed — only shown when > 0
+            if (reviewCount > 0) {
+                GlanceStat(
+                    count = reviewCount,
+                    label = "FOR REVIEW",
+                    activeColor = blockColor,
+                    dimColor = dimColor,
+                    alwaysBright = true,
                 )
-                // Health dot cluster in ring center
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "${state.running}▶",
-                        style = MaterialTheme.typography.title3,
-                        color = runColor,
-                    )
-                    if (state.waiting > 0) {
-                        Text(
-                            "${state.waiting}⏳",
-                            style = MaterialTheme.typography.caption2,
-                            color = waitColor,
-                        )
-                    }
-                }
             }
 
-            // Progress pct
-            if (state.taskProgress > 0f) {
+            // Guardrail block summary
+            if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
                 Text(
-                    "${(state.taskProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.caption2,
-                    color = dimColor,
-                )
-            }
-
-            // Current task (truncated to 2 lines)
-            if (state.currentTask.isNotBlank()) {
-                Text(
-                    state.currentTask.take(60),
+                    "⚠ ${state.blockSummary.take(44)}",
                     style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.onSurface,
+                    color = blockColor,
+                    fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
-            }
-
-            // Sprint breadcrumb
-            if (state.automataName.isNotBlank() && state.sprintName.isNotBlank()) {
+            } else if (state.currentTask.isNotBlank()) {
+                // Active task snippet at bottom
                 Text(
-                    "${state.automataName} › ${state.sprintName}",
+                    state.currentTask.take(52),
                     style = MaterialTheme.typography.caption2,
                     color = dimColor,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                )
-            }
-
-            // Block warning
-            if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
-                Text(
-                    "⚠ ${state.blockSummary.take(40)}",
-                    style = MaterialTheme.typography.caption2,
-                    color = blockColor,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun GlanceStat(
+    count: Int,
+    label: String,
+    activeColor: Color,
+    dimColor: Color,
+    alwaysBright: Boolean,
+) {
+    val isActive = alwaysBright || count > 0
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.title1,
+            fontWeight = FontWeight.Bold,
+            color = if (isActive) activeColor else dimColor,
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.caption1,
+            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isActive) activeColor.copy(alpha = 0.85f) else dimColor,
+        )
     }
 }
 
@@ -1648,7 +1672,7 @@ private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> 
 }
 
 /**
- * v0.40.0 — PRDs glance page. Renders needs_review / running PRDs
+ * v0.40.0 — Automata review page. Renders needs_review / running automata
  * the phone publishes on `/datawatch/prds`. Tap the green ✓ to
  * approve or the red ✕ to reject (with an automatic "rejected on
  * watch" reason — full rejection-with-reason flow stays on the
@@ -1883,7 +1907,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         // /datawatch/sessions. Sorted by last-activity desc, capped
         // at SESSIONS_PUBLISH_LIMIT on the phone side.
         val sessions: List<SessionItem> = emptyList(),
-        // PRDs in needs_review/running/revisions_asked (v0.40.0).
+        // Automata in needs_review/running/revisions_asked (v0.40.0).
         val prds: List<PrdItem> = emptyList(),
         // Enabled profiles the user can switch between.
         val profiles: List<Pair<String, String>> = emptyList(),
@@ -2178,11 +2202,11 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
     }
 
     /**
-     * Send a PRD action to the phone for forwarding to
+     * Send an automata action to the phone for forwarding to
      * /api/autonomous/prds/{id}/{action}. Payload format is
      * "prdId\naction\nreason?" — `reason` only meaningful for
      * `reject`. Best-effort; failure is silent (the watch UI just
-     * won't see the PRD disappear from needs_review on next refresh).
+     * won't see the automaton disappear from needs_review on next refresh).
      */
     public fun sendPrdAction(
         prdId: String,
