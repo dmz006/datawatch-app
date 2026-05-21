@@ -35,8 +35,8 @@ internal fun TerminalDimensionsCard() {
     var cols by remember { mutableIntStateOf(prefs.getInt(TerminalPrefs.KEY_COLS, TerminalPrefs.DEFAULT_COLS)) }
     var rows by remember { mutableIntStateOf(prefs.getInt(TerminalPrefs.KEY_ROWS, TerminalPrefs.DEFAULT_ROWS)) }
 
-    fun saveCols(v: Int) { cols = v; prefs.edit().putInt(TerminalPrefs.KEY_COLS, v).apply() }
-    fun saveRows(v: Int) { rows = v; prefs.edit().putInt(TerminalPrefs.KEY_ROWS, v).apply() }
+    fun saveCols(v: Int) { cols = v; prefs.edit().putInt(TerminalPrefs.KEY_COLS, maxOf(0, v)).apply() }
+    fun saveRows(v: Int) { rows = v; prefs.edit().putInt(TerminalPrefs.KEY_ROWS, maxOf(0, v)).apply() }
 
     Column(
         modifier = Modifier
@@ -58,8 +58,8 @@ internal fun TerminalDimensionsCard() {
             min = 0,
             max = 250,
             step = 10,
-            onDecrement = { if (cols >= 10) saveCols(cols - 10) else saveCols(0) },
-            onIncrement = { if (cols < 250) saveCols(cols + 10) },
+            onDecrement = { saveCols(maxOf(0, cols - 10)) },
+            onIncrement = { saveCols(minOf(250, cols + 10)) },
         )
         TermDimRow(
             label = stringResource(R.string.terminal_dims_rows),
@@ -67,8 +67,8 @@ internal fun TerminalDimensionsCard() {
             min = 0,
             max = 80,
             step = 5,
-            onDecrement = { if (rows >= 5) saveRows(rows - 5) else saveRows(0) },
-            onIncrement = { if (rows < 80) saveRows(rows + 5) },
+            onDecrement = { saveRows(maxOf(0, rows - 5)) },
+            onIncrement = { saveRows(minOf(80, rows + 5)) },
         )
     }
 }
