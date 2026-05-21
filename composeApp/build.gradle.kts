@@ -178,8 +178,7 @@ play {
     val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
     serviceAccountCredentials.set(file(keyPath))
 
-    // For the dev track, only publicTrack variant uploads to Play Console.
-    // Dev builds are internal-testing-only; do not publish (ADR-0031).
-    track.set("internal")  // internal, alpha, beta, production
+    // Internal testing track for v1.0.0 pre-release validation
+    track.set("internal")
     defaultToAppBundles.set(true)
 }
