@@ -34,20 +34,19 @@ public actual class DatabaseFactory(
     private val keystore: KeystoreManager = KeystoreManager(context),
 ) {
     public actual fun driver(): SqlDriver {
-        keystore.ensureMasterKey()
-        val passphrase =
-            if (keystore.hasBiometricPassphrase()) {
-                runCatching { keystore.deriveDatabasePassphraseFromBiometricKey() }
-                    .getOrElse { keystore.deriveDatabasePassphrase() }
-            } else {
-                keystore.deriveDatabasePassphrase()
-            }
-        val factory = SupportOpenHelperFactory(passphrase)
-
         // If database decryption fails (e.g., after OS update changes Keystore2 state),
         // delete the corrupted database and create a fresh one. Users will need to
         // re-authenticate with the server but their settings are preserved locally.
         return runCatching {
+            keystore.ensureMasterKey()
+            val passphrase =
+                if (keystore.hasBiometricPassphrase()) {
+                    runCatching { keystore.deriveDatabasePassphraseFromBiometricKey() }
+                        .getOrElse { keystore.deriveDatabasePassphrase() }
+                } else {
+                    keystore.deriveDatabasePassphrase()
+                }
+            val factory = SupportOpenHelperFactory(passphrase)
             AndroidSqliteDriver(
                 schema = DatawatchDb.Schema,
                 context = context,
