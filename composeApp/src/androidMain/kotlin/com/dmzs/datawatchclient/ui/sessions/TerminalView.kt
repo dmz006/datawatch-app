@@ -352,6 +352,7 @@ public fun TerminalView(
         update = { webView ->
             // Compose may resize us across configuration changes; nudge xterm.
             webView.evaluateJavascript("window.dwResize && window.dwResize();", null)
+            webView.requestLayout()
             controller?.webView = webView
         },
     )
