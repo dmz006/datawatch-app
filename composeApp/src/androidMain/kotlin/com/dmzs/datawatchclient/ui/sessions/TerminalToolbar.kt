@@ -2,12 +2,15 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -111,35 +114,47 @@ public fun TerminalToolbarControls(
 ) {
     val controller = state.controller
     val sessionId = state.sessionId
-    // v0.42.12 — tighten the inline toolbar so the Scroll button
-    // stays visible at phone widths. Drop the "{N}px" font-size
-    // label (the A−/A+ buttons themselves communicate the action;
-    // the size only matters when actively tweaking) and the two
-    // visual `|` separators (decorative, ~20 dp saved). Compact
-    // labels — "F" for Fit, "↕" for Scroll, "⏹" for Exit — keep
-    // every button on one line at any phone width.
+    var fontMenuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
+        // BL-SD-3: "Aa▾" button opens inline font dropdown (PWA parity).
+        Box {
+            TermToolBtn(label = "Aa▾", onClick = { fontMenuOpen = true })
+            DropdownMenu(
+                expanded = fontMenuOpen,
+                onDismissRequest = { fontMenuOpen = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("A−", fontSize = 11.sp) },
+                    onClick = {
+                        if (state.fontSize > MIN_TERM_FONT_PX) state.fontSize -= FONT_STEP_PX
+                    },
+                    enabled = state.fontSize > MIN_TERM_FONT_PX,
+                )
+                DropdownMenuItem(
+                    text = { Text("${state.fontSize}px", fontSize = 11.sp) },
+                    onClick = {},
+                    enabled = false,
+                )
+                DropdownMenuItem(
+                    text = { Text("A+", fontSize = 11.sp) },
+                    onClick = {
+                        if (state.fontSize < MAX_TERM_FONT_PX) state.fontSize += FONT_STEP_PX
+                    },
+                    enabled = state.fontSize < MAX_TERM_FONT_PX,
+                )
+                DropdownMenuItem(
+                    text = { Text("Fit", fontSize = 11.sp) },
+                    onClick = { controller.autoFitToWidth(); fontMenuOpen = false },
+                )
+            }
+        }
+        // BL-SD-4: scroll-back icon matches PWA ⤒ (U+2912), 18sp bold.
         TermToolBtn(
-            label = "A−",
-            onClick = {
-                if (state.fontSize > MIN_TERM_FONT_PX) state.fontSize -= FONT_STEP_PX
-            },
-            enabled = state.fontSize > MIN_TERM_FONT_PX,
-        )
-        TermToolBtn(
-            label = "A+",
-            onClick = {
-                if (state.fontSize < MAX_TERM_FONT_PX) state.fontSize += FONT_STEP_PX
-            },
-            enabled = state.fontSize < MAX_TERM_FONT_PX,
-        )
-        TermToolBtn(label = "Fit", onClick = { controller.autoFitToWidth() })
-        TermToolBtn(
-            label = if (state.scrollMode) "⏹" else "📜",
+            label = if (state.scrollMode) "⏹" else "⤒",
             onClick = {
                 if (sessionId == null) return@TermToolBtn
                 if (state.scrollMode) {
@@ -153,6 +168,7 @@ public fun TerminalToolbarControls(
             },
             enabled = sessionId != null,
             highlight = state.scrollMode,
+            scrollIcon = !state.scrollMode,
         )
     }
 }
@@ -273,6 +289,7 @@ private fun TermToolBtn(
     onClick: () -> Unit,
     enabled: Boolean = true,
     highlight: Boolean = false,
+    scrollIcon: Boolean = false,
 ) {
     TextButton(
         onClick = onClick,
@@ -281,18 +298,10 @@ private fun TermToolBtn(
     ) {
         Text(
             label,
-            // v0.42.11 — `maxLines = 1, softWrap = false` keep the
-            // button on a single row even when the inline toolbar is
-            // squished against the screen edge. Without this, the
-            // last button ("↕ Scroll" / "⏹ Exit") was wrapping into
-            // ~5 stacked lines on phone widths and dragging the row
-            // 154 dp tall via Compose's CenterVertically alignment —
-            // surfaced as the empty band above the tabs row that
-            // user reported 2026-04-29.
             maxLines = 1,
             softWrap = false,
-            fontSize = 11.sp,
-            fontWeight = if (highlight) FontWeight.Medium else FontWeight.Normal,
+            fontSize = if (scrollIcon) 18.sp else 11.sp,
+            fontWeight = if (highlight || scrollIcon) FontWeight.Bold else FontWeight.Normal,
             color =
                 if (highlight) {
                     MaterialTheme.colorScheme.primary
