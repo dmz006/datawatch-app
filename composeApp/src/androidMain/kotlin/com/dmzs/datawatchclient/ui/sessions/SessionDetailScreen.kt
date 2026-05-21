@@ -403,6 +403,7 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
+                    .navigationBarsPadding()
                     .fillMaxSize(),
         ) {
             // Terminal and banners in a scrollable container that responds to IME
