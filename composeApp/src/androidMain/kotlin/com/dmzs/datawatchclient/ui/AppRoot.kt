@@ -384,7 +384,7 @@ private fun HomeShell(
         dashboardEnabled = false
         probeAutonomous()
     }
-    LaunchedEffect(activeId) {
+    LaunchedEffect(Unit) {
         com.dmzs.datawatchclient.events.ConfigSaveBus.events.collect {
             probeAutonomous()
         }
