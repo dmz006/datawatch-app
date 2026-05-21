@@ -1005,7 +1005,7 @@ private fun SessionInfoBar(
                 onClick = onTimeline,
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
             ) {
-                Text("⏱ Timeline", style = MaterialTheme.typography.labelSmall)
+                Text("🕐 Timeline", style = MaterialTheme.typography.labelSmall)
             }
             if (hasResponse) {
                 TextButton(
@@ -1921,6 +1921,37 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
+        // ESC — matches PWA savedCmdsQuick ␛ button
+        TextButton(
+            onClick = { onQuickReply("\u001B") },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp),
+        ) {
+            Text("␛", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        // PWA arrow order: ↑ ↓ ← →
+        IconButton(
+            onClick = { onQuickReply("\u001B[A") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.Filled.KeyboardArrowUp,
+                contentDescription = stringResource(R.string.session_detail_up_arrow),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(
+            onClick = { onQuickReply("\u001B[B") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.session_detail_down_arrow),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         IconButton(
             onClick = { onQuickReply("\u001B[D") },
             modifier = Modifier.size(32.dp),
@@ -1943,27 +1974,13 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        IconButton(
-            onClick = { onQuickReply("\u001B[A") },
-            modifier = Modifier.size(32.dp),
+        // Enter — matches PWA savedCmdsQuick ⏎ button
+        TextButton(
+            onClick = { onQuickReply("\r") },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp),
         ) {
-            Icon(
-                Icons.Filled.KeyboardArrowUp,
-                contentDescription = stringResource(R.string.session_detail_up_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(
-            onClick = { onQuickReply("\u001B[B") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.session_detail_down_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("⏎", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
