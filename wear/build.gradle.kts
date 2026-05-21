@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.dmzs.datawatchclient.wear"
-        minSdk = 30
+        minSdk = 28  // Support Wear OS 4.0+ (API 28+) for broader device compatibility
         targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersion
@@ -113,7 +113,7 @@ play {
     val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
     serviceAccountCredentials.set(file(keyPath))
 
-    // Wear OS app publishes to internal testing track.
+    // Wear OS app requires dedicated Wear OS track (as of August 2023)
     track.set("internal")
     defaultToAppBundles.set(true)  // Play Console requires AAB for Wear OS
 }
