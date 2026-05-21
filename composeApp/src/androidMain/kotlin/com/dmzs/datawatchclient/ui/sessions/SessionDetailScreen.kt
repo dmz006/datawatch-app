@@ -271,7 +271,6 @@ public fun SessionDetailScreen(
     Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -412,8 +411,7 @@ public fun SessionDetailScreen(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .fillMaxWidth()
-                        .imePadding(),
+                        .fillMaxWidth(),
             ) {
             SessionInfoBar(
                 backend = state.session?.backend,
@@ -632,7 +630,7 @@ public fun SessionDetailScreen(
                 TerminalView(
                     sessionId = sessionId,
                     events = state.events,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier.weight(1f).fillMaxWidth().imePadding(),
                     controller = terminalController,
                 )
                 TerminalScrollModeStrip(toolbarState)
