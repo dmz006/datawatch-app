@@ -102,8 +102,9 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 - Identity icon changed to RecordVoiceOver (v0.126.0). Interview wizard wired in main Automata tab (v0.128.0).
 - Datawatch PRD filed: 4df28305 — PWA to add Interview wizard to Settings > Automata.
 
-### BL-ST-2: Settings > About — PWA parity for ops cards
+### BL-ST-2: Settings > About — PWA parity for ops cards ✅ ALREADY IMPLEMENTED (mobile ahead of PWA)
 - Datawatch PRD filed: d35561b2 — PWA to add ApiLinks, McpChannel, UpdateDaemon, SubsystemReload, RestartDaemon, KillOrphans, EncryptionStatus to About tab.
+- Status: Mobile already has all these cards: `ApiLinksCard`, `McpChannelCard`, `UpdateDaemonCard`, `SubsystemReloadCard`, `RestartDaemonCard`, `KillOrphansCard`, `EncryptionStatusCard`. The PRD d35561b2 is for the PWA (server) side to catch up to mobile. No mobile changes needed.
 
 ### BL-DB-1: No way to edit dashboard layout ✅ FIXED v0.124.0
 - Dashboard had no edit button. Editing was buried in Settings > General (wrong).
