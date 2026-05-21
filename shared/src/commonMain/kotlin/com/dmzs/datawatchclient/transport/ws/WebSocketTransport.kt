@@ -58,9 +58,17 @@ public class WebSocketTransport(
      * end — it emits a [SessionEvent.Error], waits exponential backoff +
      * jitter, then reconnects. Cancelling the coroutine that is collecting
      * this Flow stops reconnection cleanly.
+     *
+     * @param subscriptionId the session ID to send in the subscribe frame to the server
+     *   (typically the full "hostname-shortid" format)
+     * @param storageId the session ID to use when storing events (typically the short ID).
+     *   Defaults to subscriptionId if not provided.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    public fun events(sessionId: String): Flow<SessionEvent> =
+    public fun events(
+        subscriptionId: String,
+        storageId: String = subscriptionId,
+    ): Flow<SessionEvent> =
         callbackFlow {
             val producer = this
             // Critical protocol correction (v1.0.3): datawatch's /ws is a hub —
@@ -69,7 +77,7 @@ public class WebSocketTransport(
             var backoff = INITIAL_BACKOFF_MS
 
             println(
-                "WsTransport: stream start for $sessionId → $wsUrl (trustAll=${profile.trustAnchorSha256 == "ALLOW_ALL_INSECURE"})",
+                "WsTransport: stream start for $storageId (subscribe as $subscriptionId) → $wsUrl (trustAll=${profile.trustAnchorSha256 == "ALLOW_ALL_INSECURE"})",
             )
 
             while (!isClosedForSend) {
@@ -82,7 +90,7 @@ public class WebSocketTransport(
                             bearerHeader?.let { header(HttpHeaders.Authorization, it) }
                         },
                     ) {
-                        println("WsTransport: connected $wsUrl; sending subscribe($sessionId)")
+                        println("WsTransport: connected $wsUrl; sending subscribe($subscriptionId)")
                         // Send subscribe immediately after upgrade — the server
                         // registers our client in its hub with no output stream
                         // until we opt in.
@@ -91,7 +99,7 @@ public class WebSocketTransport(
                                 put("type", "subscribe")
                                 put(
                                     "data",
-                                    buildJsonObject { put("session_id", sessionId) },
+                                    buildJsonObject { put("session_id", subscriptionId) },
                                 )
                             }
                         send(json.encodeToString(JsonObject.serializer(), subscribeFrame))
@@ -104,7 +112,7 @@ public class WebSocketTransport(
                         val writerJob =
                             launch {
                                 WsOutbound.frames
-                                    .filter { it.sessionId == sessionId }
+                                    .filter { it.sessionId == storageId }
                                     .collect { env -> send(env.text) }
                             }
 
@@ -134,7 +142,7 @@ public class WebSocketTransport(
                                     // get filtered by EventMapper's
                                     // session-id check (B27 live-update
                                     // investigation).
-                                    val events = dto.toDomainEvents(sessionId)
+                                    val events = dto.toDomainEvents(subscriptionId, storageId)
                                     println(
                                         "WsTransport: rx type=${dto.type} " +
                                             "mapped=${events.size} bytes=${text.length}",
@@ -170,7 +178,7 @@ public class WebSocketTransport(
                     runCatching {
                         producer.trySend(
                             SessionEvent.Error(
-                                sessionId = sessionId,
+                                sessionId = storageId,
                                 ts = Clock.System.now(),
                                 message = "WS ${e::class.simpleName}: ${e.message?.take(120) ?: "no message"}",
                             ),

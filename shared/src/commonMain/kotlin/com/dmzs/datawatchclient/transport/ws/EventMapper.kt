@@ -33,10 +33,16 @@ import kotlinx.serialization.json.longOrNull
  * forward-compat server additions survive a round-trip through this client.
  *
  * @param forSessionId filters raw_output / output frames to the session the
- *   UI is currently showing. Non-session-filtered frames (global errors,
- *   alerts) pass through unconditionally.
+ *   UI is currently showing (may be full or short ID). Non-session-filtered
+ *   frames (global errors, alerts) pass through unconditionally.
+ * @param storageSessionId the ID to normalize events to when storing them.
+ *   If omitted, defaults to forSessionId. Used when forSessionId is the full ID
+ *   (for filtering) but we want to store events using the short ID (to match UI queries).
  */
-internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent> {
+internal fun WsFrameDto.toDomainEvents(
+    forSessionId: String,
+    storageSessionId: String = forSessionId,
+): List<SessionEvent> {
     val ts =
         timestamp?.let { runCatching { Instant.parse(it) }.getOrNull() }
             ?: Clock.System.now()
@@ -52,9 +58,9 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
         // (gap #2 from the 72h audit). De-duped per session so we
         // don't spam REST on every push of an unchanged state.
         "sessions" -> buildBulkStateChangeEvents(obj, ts, forSessionId)
-        "pane_capture" -> buildPaneCaptureEvents(obj, ts, forSessionId)
-        "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId)
-        "chat_message" -> listOfNotNull(buildChatMessage(obj, ts, forSessionId))
+        "pane_capture" -> buildPaneCaptureEvents(obj, ts, forSessionId, storageSessionId)
+        "raw_output", "output" -> buildOutputEvents(obj, ts, forSessionId, storageSessionId)
+        "chat_message" -> listOfNotNull(buildChatMessage(obj, ts, forSessionId, storageSessionId))
         "needs_input", "prompt", "prompt_detected" ->
             listOfNotNull(
                 buildPrompt(obj, ts, forSessionId),
@@ -64,7 +70,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
         "error" ->
             listOf(
                 SessionEvent.Error(
-                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
+                    sessionId = obj?.jsonString("session_id") ?: storageSessionId,
                     ts = ts,
                     message = obj?.jsonString("message") ?: "server error",
                 ),
@@ -76,7 +82,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
             } else {
                 listOf(
                     SessionEvent.StateChange(
-                        sessionId = obj.jsonString("id") ?: forSessionId,
+                        sessionId = obj.jsonString("id") ?: storageSessionId,
                         ts = ts,
                         from = SessionState.New,
                         to = from,
@@ -87,7 +93,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
         "rate_limited", "rate_limit" ->
             listOf(
                 SessionEvent.RateLimited(
-                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
+                    sessionId = obj?.jsonString("session_id") ?: storageSessionId,
                     ts = ts,
                     retryAfter =
                         obj?.jsonString("retry_after")
@@ -97,7 +103,7 @@ internal fun WsFrameDto.toDomainEvents(forSessionId: String): List<SessionEvent>
         "completed", "done" ->
             listOf(
                 SessionEvent.Completed(
-                    sessionId = obj?.jsonString("session_id") ?: forSessionId,
+                    sessionId = obj?.jsonString("session_id") ?: storageSessionId,
                     ts = ts,
                     exitCode = obj?.get("exit_code")?.jsonPrimitive?.longOrNull?.toInt(),
                 ),
@@ -181,15 +187,19 @@ private fun buildPaneCaptureEvents(
     obj: JsonObject?,
     ts: Instant,
     forSessionId: String,
+    storageSessionId: String = forSessionId,
 ): List<SessionEvent> {
     if (obj == null) return emptyList()
     val rawSid = obj.jsonString("session_id") ?: forSessionId
     // Filter by the session the UI is currently rendering.
-    if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return emptyList()
-    // Normalise to forSessionId so the stored id matches selectEventsForSession's
+    if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) {
+        println("EventMapper: pane_capture session_id mismatch: rawSid='$rawSid' forSessionId='$forSessionId'")
+        return emptyList()
+    }
+    // Normalise to storageSessionId so the stored id matches selectEventsForSession's
     // exact-match query — the server may send the full "hostname-short" id while
     // the observer holds only the short id returned from startSession().
-    val sid = forSessionId
+    val sid = storageSessionId
     val lines =
         runCatching {
             obj["lines"]?.jsonArray?.mapNotNull { el ->
@@ -212,13 +222,14 @@ private fun buildOutputEvents(
     obj: JsonObject?,
     ts: Instant,
     forSessionId: String,
+    storageSessionId: String = forSessionId,
 ): List<SessionEvent> {
     if (obj == null) return emptyList()
     val rawSid = obj.jsonString("session_id") ?: forSessionId
     // Only render frames that belong to the session the UI is showing.
     if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return emptyList()
-    // Normalise to forSessionId — see buildPaneCaptureEvents comment.
-    val sid = forSessionId
+    // Normalise to storageSessionId — see buildPaneCaptureEvents comment.
+    val sid = storageSessionId
     val lines =
         runCatching {
             obj["lines"]?.jsonArray?.mapNotNull { el ->
@@ -302,11 +313,12 @@ private fun buildChatMessage(
     obj: JsonObject?,
     ts: Instant,
     forSessionId: String,
+    storageSessionId: String = forSessionId,
 ): SessionEvent? {
     if (obj == null) return null
     val rawSid = obj.jsonString("session_id") ?: forSessionId
     if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) return null
-    // Normalise to forSessionId so the stored id matches selectEventsForSession's
+    // Normalise to storageSessionId so the stored id matches selectEventsForSession's
     // exact-match query — the server may send the full "hostname-short" id.
     val content = obj.jsonString("content") ?: ""
     val role =
@@ -319,7 +331,7 @@ private fun buildChatMessage(
     val streaming =
         runCatching { obj["streaming"]?.jsonPrimitive?.booleanOrNull }.getOrNull() ?: false
     return SessionEvent.ChatMessage(
-        sessionId = forSessionId,
+        sessionId = storageSessionId,
         ts = ts,
         role = role,
         content = content,
