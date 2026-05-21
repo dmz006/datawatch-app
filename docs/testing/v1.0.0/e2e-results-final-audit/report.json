@@ -1,0 +1,124 @@
+{
+  "timestamp": "2026-05-21T04:57:13.215Z",
+  "summary": {
+    "pwa": {
+      "passed": 6,
+      "total": 6
+    },
+    "android": {
+      "passed": 6,
+      "total": 6
+    }
+  },
+  "pwa": [
+    {
+      "name": "Sessions",
+      "status": "PASSED",
+      "emoji": "🖥️",
+      "screenshot": "pwa_00_sessions.png"
+    },
+    {
+      "name": "Automata",
+      "status": "PASSED",
+      "emoji": "🤖",
+      "screenshot": "pwa_01_automata.png"
+    },
+    {
+      "name": "Alerts",
+      "status": "PASSED",
+      "emoji": "⚠",
+      "screenshot": "pwa_02_alerts.png"
+    },
+    {
+      "name": "Observer",
+      "status": "PASSED",
+      "emoji": "📡",
+      "screenshot": "pwa_03_observer.png"
+    },
+    {
+      "name": "Dashboard",
+      "status": "PASSED",
+      "emoji": "☷",
+      "screenshot": "pwa_04_dashboard.png"
+    },
+    {
+      "name": "Settings",
+      "status": "PASSED",
+      "emoji": "⚙",
+      "screenshot": "pwa_05_settings.png"
+    }
+  ],
+  "android": [
+    {
+      "name": "Sessions",
+      "status": "PASSED",
+      "emoji": "🖥️"
+    },
+    {
+      "name": "Automata",
+      "status": "PASSED",
+      "emoji": "🤖"
+    },
+    {
+      "name": "Alerts",
+      "status": "PASSED",
+      "emoji": "⚠"
+    },
+    {
+      "name": "Observer",
+      "status": "PASSED",
+      "emoji": "📡"
+    },
+    {
+      "name": "Dashboard",
+      "status": "PASSED",
+      "emoji": "☷"
+    },
+    {
+      "name": "Settings",
+      "status": "PASSED",
+      "emoji": "⚙"
+    }
+  ],
+  "audit": {
+    "pagesMatch": true,
+    "pages": [
+      {
+        "page": "Sessions",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      },
+      {
+        "page": "Automata",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      },
+      {
+        "page": "Alerts",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      },
+      {
+        "page": "Observer",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      },
+      {
+        "page": "Dashboard",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      },
+      {
+        "page": "Settings",
+        "pwaStatus": "PASSED",
+        "androidStatus": "PASSED",
+        "match": true
+      }
+    ]
+  }
+}
