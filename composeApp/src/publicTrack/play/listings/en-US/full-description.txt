@@ -1,0 +1,36 @@
+datawatch (mobile client) is the official companion app to the datawatch server — the open-source daemon that bridges AI coding sessions across machines and messaging platforms.
+
+Stay in control of your coding agents from anywhere:
+• See every active session across every datawatch server you run.
+• Reply to prompts from the lock screen, by typing, or by voice.
+• Stream the live terminal, logs, timeline, and memory for any session.
+• Trigger any of the 37 datawatch MCP tools — session management, memory recall, knowledge graph, stats — with one tap or a voice command.
+• Invoke sessions by voice and let the server transcribe them via Whisper.
+
+Built for multi-machine setups:
+• Add every server — laptop, workstation, VPS, Raspberry Pi — as a profile.
+• Drill through proxy chains with a breadcrumb that shows exactly which host a session belongs to.
+• Unified "all servers" view when you want to see everything at once.
+
+Works on every screen you wear or carry:
+• Phone (Android 10+, Material You).
+• Wear OS — watchface complication shows active session count, notifications support voice reply and approve/deny actions.
+• Android Auto — hear prompts read aloud while driving, reply by voice, start a new session with a voice command.
+
+Connects the way you do:
+• Direct over Tailscale or local Wi-Fi — datawatch is never public, and neither is this app.
+• DNS TXT covert channel and messaging-backend relay (Signal, SMS, Slack, Telegram, Matrix, ntfy) work as fallbacks when the direct path is down.
+• Your bearer token stays in the Android Keystore; self-signed certificates are supported per-server.
+
+Private by design:
+• No ads. No analytics. No crash-reporting-as-a-service.
+• All on-device data is encrypted at rest with SQLCipher.
+• Push notifications contain no session content — only a wake-up ping.
+• Google Drive Auto Backup protects your configuration without exposing your tokens.
+
+Requires: an existing datawatch server you operate. Get datawatch at
+https://github.com/dmz006/datawatch — Polyform Noncommercial.
+
+Source: https://github.com/dmz006/datawatch-app
+License: Polyform Noncommercial 1.0.0
+Privacy policy: https://dmzs.com/datawatch-client/privacy
