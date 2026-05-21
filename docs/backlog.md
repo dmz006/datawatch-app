@@ -61,10 +61,11 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Terminal (xterm)
 
-### BL-TX-2: Keyboard covers terminal cursor in tmux and xterm ✅ FIXED v0.126.0
+### BL-TX-2: Keyboard covers terminal cursor in tmux and xterm ✅ FIXED v0.127.0
 - When soft keyboard opens in session detail, terminal didn't shrink — cursor area was hidden behind keyboard.
-- Fix: `imePadding()` moved to the outer Column; `contentWindowInsets = WindowInsets(0)` on Scaffold to prevent double-counting.
-- File: `ui/sessions/SessionDetailScreen.kt`
+- Fix (v0.126.0): `imePadding()` moved to the outer Column; `contentWindowInsets = WindowInsets(0)` on Scaffold to prevent double-counting.
+- Fix (v0.127.0): `safeFit()` in host.html now uses `window.visualViewport.height` to compute keyboard height and adjusts `container.style.bottom` so xterm.js `FitAddon` sees only the visible rows.
+- Files: `ui/sessions/SessionDetailScreen.kt`, `assets/xterm/host.html`
 
 ### BL-TX-1: Typing in xterm doesn't send on Enter ✅ FIXED v0.124.0
 - `onInput` bridge in `TerminalView.kt` was a no-op stub.
