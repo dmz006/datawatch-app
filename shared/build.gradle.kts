@@ -81,7 +81,7 @@ android {
     namespace = "com.dmzs.datawatchclient.shared"
     compileSdk = 35
     defaultConfig {
-        minSdk = 29
+        minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

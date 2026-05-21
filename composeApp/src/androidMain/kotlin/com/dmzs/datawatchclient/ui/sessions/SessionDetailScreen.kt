@@ -367,36 +367,40 @@ public fun SessionDetailScreen(
         // Window-inset handling for the soft keyboard (user report
         // 2026-04-23: "tmux input window is hidden behind the keyboard").
         //
-        // Prior iteration applied `imePadding()` to the outer Column,
-        // which shrunk the *entire* content (terminal + banners +
-        // composer) whenever the IME opened. On SDK 35+ edge-to-edge
-        // that combined with Scaffold's content insets in ways that
-        // left the composer partially occluded — the composer would
-        // lift a bit but not enough to clear the keyboard.
-        //
-        // imePadding() on the Column shrinks the entire content area
-        // (terminal + composer) when the soft keyboard opens, keeping
-        // the terminal cursor and composer visible above the keyboard.
-        // contentWindowInsets = WindowInsets(0) on the Scaffold above
-        // prevents double-counting of insets (the prior single-composer
-        // approach left the terminal cursor hidden behind the keyboard).
+        // Split the layout: terminal/content in a scrollable area with
+        // imePadding(), and the composer in a separate Box below that
+        // responds to keyboard insets independently. This ensures the
+        // composer always scrolls up above the keyboard, even when the
+        // terminal content is large.
+        // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
+        // (user direction 2026-04-28). PWA carries the chips at
+        // the top of the session-info-bar; mobile aligning here
+        // makes the most-used actions (Stop, Timeline, state
+        // override) reachable without scrolling past the tabs.
+        // The Last Response button stays here on the badge bar
+        // — Description-glyph is the single canonical icon used
+        // across SessionInfoBar + the quick-actions row below.
+        var responseOpen by remember { mutableStateOf(false) }
+        val hasResponse = !state.session?.lastResponse.isNullOrBlank()
+        val isCouncilVirtual = state.session?.backend == "council-virtual" ||
+            state.session?.fullId?.startsWith("council-") == true
+        val terminalController = rememberTerminalController()
+        val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
+
         Column(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize()
-                    .imePadding(),
+                    .fillMaxSize(),
         ) {
-            // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
-            // (user direction 2026-04-28). PWA carries the chips at
-            // the top of the session-info-bar; mobile aligning here
-            // makes the most-used actions (Stop, Timeline, state
-            // override) reachable without scrolling past the tabs.
-            // The Last Response button stays here on the badge bar
-            // — Description-glyph is the single canonical icon used
-            // across SessionInfoBar + the quick-actions row below.
-            var responseOpen by remember { mutableStateOf(false) }
-            val hasResponse = !state.session?.lastResponse.isNullOrBlank()
+            // Terminal and banners in a scrollable container that responds to IME
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .imePadding(),
+            ) {
             SessionInfoBar(
                 backend = state.session?.backend,
                 llmRef = state.session?.llmRef,
@@ -429,11 +433,6 @@ public fun SessionDetailScreen(
             // wasted a vertical strip of phone real estate and split
             // the controls onto a separate row from the mode tabs —
             // the PWA carries them on the same line.
-            // v0.74.0 S5-7 — Council virtual sessions hide terminal/channel tabs
-            val isCouncilVirtual = state.session?.backend == "council-virtual" ||
-                state.session?.fullId?.startsWith("council-") == true
-            val terminalController = rememberTerminalController()
-            val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
             val tabRowBorderColor = LocalDatawatchColors.current.border
             if (!isCouncilVirtual) {
                 Row(
@@ -660,20 +659,29 @@ public fun SessionDetailScreen(
                 InlineNotices(state.events)
             }
 
-            // Per-session "Scheduled" strip — mirrors PWA
-            // loadSessionSchedules() in app.js. Hidden when no pending
-            // schedules or when the server predates the session_id filter.
-            if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
-                SessionSchedulesStrip(
-                    schedules = sessionSchedules.schedules,
-                    onCancel = sessionSchedulesVm::cancel,
-                )
+                // Per-session "Scheduled" strip — mirrors PWA
+                // loadSessionSchedules() in app.js. Hidden when no pending
+                // schedules or when the server predates the session_id filter.
+                if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
+                    SessionSchedulesStrip(
+                        schedules = sessionSchedules.schedules,
+                        onCancel = sessionSchedulesVm::cancel,
+                    )
+                }
             }
 
+            // Composer in its own layer responding to keyboard insets separately.
             // In scroll mode the big PgUp/PgDn overlay replaces the composer.
             if (!toolbarState.scrollMode) {
                 var savedCmdsOpen by remember { mutableStateOf(false) }
-                ReplyComposer(
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .imePadding(),
+                ) {
+                    Column {
+                        ReplyComposer(
                     text = state.replyText,
                     onTextChange = vm::onReplyTextChange,
                     onSend = vm::sendReply,
@@ -690,17 +698,19 @@ public fun SessionDetailScreen(
                     hasResponse = hasResponse,
                     onSavedCommands = { savedCmdsOpen = true },
                     whisperConfigured = state.whisperConfigured,
-                )
-                if (savedCmdsOpen) {
-                    QuickCommandsSheet(
-                        fetchSavedCommands = { vm.fetchSavedCommands() },
-                        onSend = { cmd ->
-                            vm.sendQuickReply(cmd)
-                            savedCmdsOpen = false
-                        },
-                        onDismiss = { savedCmdsOpen = false },
-                        sessionId = sessionId,
-                    )
+                        )
+                        if (savedCmdsOpen) {
+                            QuickCommandsSheet(
+                                fetchSavedCommands = { vm.fetchSavedCommands() },
+                                onSend = { cmd ->
+                                    vm.sendQuickReply(cmd)
+                                    savedCmdsOpen = false
+                                },
+                                onDismiss = { savedCmdsOpen = false },
+                                sessionId = sessionId,
+                            )
+                        }
+                    }
                 }
             }
         }
