@@ -44,14 +44,20 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 
 ## Session List
 
-### BL-SL-1: Filter badges don't fit one row
+### BL-SL-1: Filter badges don't fit one row ✅ FIXED v0.133.0
 - Filter dropdown doesn't display all state badges in a single row.
+- Fix: State/LLM filter buttons moved to same row as search input (match PWA layout). Chip rows expand below with LazyRow (horizontal scroll handles overflow).
+- File: `ui/sessions/SessionsScreen.kt`
 
-### BL-SL-2: No "select all" in filter dropdown
+### BL-SL-2: No "select all" in filter dropdown ✅ FIXED v0.133.0
 - PWA has a select-all option for filter badges; mobile is missing it.
+- Fix: Added "☑ All / None" button next to History button when `showHistory` is active. Selects/deselects all done sessions at once. Added `historySessionIds` computed property to UiState.
+- Files: `ui/sessions/SessionsScreen.kt`, `ui/sessions/SessionsViewModel.kt`
 
-### BL-SL-3: Filter layout doesn't match PWA
+### BL-SL-3: Filter layout doesn't match PWA ✅ FIXED v0.133.0
 - Overall filter/sort toolbar layout doesn't match PWA design.
+- Fix: Restructured filter toolbar so search input + LLM button + State button are on one row (matches PWA). Removed separate second row for filter buttons.
+- File: `ui/sessions/SessionsScreen.kt`
 
 ---
 
