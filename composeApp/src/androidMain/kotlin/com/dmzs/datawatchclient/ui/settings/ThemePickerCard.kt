@@ -1,13 +1,14 @@
 package com.dmzs.datawatchclient.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,10 +26,18 @@ import com.dmzs.datawatchclient.ui.theme.ThemeMode
 import com.dmzs.datawatchclient.ui.theme.ThemePrefs
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun ThemePickerCard(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var selected by remember { mutableStateOf(ThemePrefs.load(context)) }
+    var expanded by remember { mutableStateOf(false) }
+
+    fun label(mode: ThemeMode) = when (mode) {
+        ThemeMode.Dark -> context.getString(R.string.settings_theme_dark)
+        ThemeMode.Light -> context.getString(R.string.settings_theme_light)
+        ThemeMode.System -> context.getString(R.string.settings_theme_system)
+    }
 
     Column(
         modifier = modifier
@@ -37,33 +46,41 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle(stringResource(R.string.settings_theme_title))
-        ThemeMode.entries.forEach { mode ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        selected = mode
-                        ThemePrefs.save(context, mode)
-                    }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PwaSectionTitle(
+                stringResource(R.string.settings_theme_title),
+                modifier = Modifier.weight(1f),
+            )
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
             ) {
-                RadioButton(
-                    selected = selected == mode,
-                    onClick = {
-                        selected = mode
-                        ThemePrefs.save(context, mode)
-                    },
+                OutlinedTextField(
+                    value = label(selected),
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor(),
+                    singleLine = true,
                 )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    when (mode) {
-                        ThemeMode.Dark -> stringResource(R.string.settings_theme_dark)
-                        ThemeMode.Light -> stringResource(R.string.settings_theme_light)
-                        ThemeMode.System -> stringResource(R.string.settings_theme_system)
-                    },
-                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    ThemeMode.entries.forEach { mode ->
+                        DropdownMenuItem(
+                            text = { Text(label(mode)) },
+                            onClick = {
+                                selected = mode
+                                ThemePrefs.save(context, mode)
+                                expanded = false
+                            },
+                        )
+                    }
+                }
             }
         }
     }

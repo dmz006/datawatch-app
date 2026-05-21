@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -343,6 +344,7 @@ private fun LlmRegistryRow(
     onDetails: () -> Unit,
 ) {
     var toggling by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
     val displayPairs = llm.models.ifEmpty {
         if (llm.computeNode.isNotBlank() || llm.model.isNotBlank())
             listOf(LlmModelPairDto(llm.computeNode, llm.model))
@@ -355,10 +357,14 @@ private fun LlmRegistryRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(llm.name, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    llm.name,
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 AssistChip(
                     onClick = {},
-                    label = { Text(llm.kind, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(llm.kind, style = MaterialTheme.typography.labelSmall, maxLines = 1) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -379,7 +385,8 @@ private fun LlmRegistryRow(
                 Text(stringResource(R.string.llm_models_none), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 displayPairs.take(3).forEach { pair ->
-                    Text("${pair.computeNode} / ${pair.model}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val label = if (pair.computeNode.isNotBlank()) "${pair.computeNode} / ${pair.model}" else pair.model
+                    Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (displayPairs.size > 3) {
                     Text("…+${displayPairs.size - 3} more", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -401,14 +408,27 @@ private fun LlmRegistryRow(
                 ),
             )
         }
-        IconButton(onClick = onDetails) {
-            Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.llm_registry_edit), tint = MaterialTheme.colorScheme.primary)
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.error)
+        Box {
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(Icons.Filled.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.llm_in_use_tab)) },
+                    leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
+                    onClick = { menuOpen = false; onDetails() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.llm_registry_edit)) },
+                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                    onClick = { menuOpen = false; onEdit() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_delete)) },
+                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    onClick = { menuOpen = false; onDelete() },
+                )
+            }
         }
     }
 }
