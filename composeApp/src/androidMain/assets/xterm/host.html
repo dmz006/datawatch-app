@@ -6,37 +6,34 @@
   <link rel="stylesheet" href="xterm.min.css" />
   <style>
     /* Palette matches PWA internal/server/web/app.js terminal init:
-       background #0f1117 (charcoal), foreground #e2e8f0 (slate). */
+       background #0f1117 (charcoal), foreground #e2e8f0 (slate).
+       Use 100dvh (dynamic viewport height) instead of 100% so the height
+       shrinks when the soft keyboard appears on Android. */
     html, body {
       background: #0f1117;
       color: #e2e8f0;
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
+      height: 100dvh;
       overflow: hidden;
       font-family: "Roboto Mono", "Droid Sans Mono", monospace;
-    }
-    /* Keyboard height variable — synced with visualViewport by JS.
-       When the soft keyboard appears, --keyboard-h tracks its height
-       so the terminal container can shrink above it (PWA-style). */
-    :root {
-      --keyboard-h: 0px;
     }
     /* Outer scroll container. Horizontal scroll lets a 120-col Claude
        pane display on a 40-char phone viewport (the TUI stays laid out
        at 120 cols; user swipes to see the rest). Vertical scroll is
        suppressed — xterm handles its own scrollback. Matches PWA's
-       .output-area rules and fixes parent issue 0393e262 / v0.14.0. */
+       .output-area rules and fixes parent issue 0393e262 / v0.14.0.
+       Note: no bottom CSS property — height is set via JS when keyboard appears. */
     #term {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      bottom: var(--keyboard-h);
       padding: 0;
       overflow-x: auto;
       overflow-y: hidden;
+      box-sizing: border-box;
     }
     /* Box-sizing reset override — known xterm.js issue #1283 when a
        global `* { box-sizing: border-box }` is active. Even though we
@@ -237,26 +234,35 @@
     });
 
     // ── Visual viewport height tracking (mobile keyboard) ────
-    // When soft keyboard appears, reduce container height so xterm.js
-    // FitAddon calculates correct row count. Set --keyboard-h CSS variable
-    // AND explicitly set container height to force proper layout.
+    // When soft keyboard appears, shrink the container height so xterm.js
+    // FitAddon sees the correct available space. Use visualViewport.height
+    // to measure the visible area (excluding keyboard).
+    // Sequence: set height → rAF (apply to DOM) → safeFit() → wait 350ms → repeat
+    // This ensures fit() measures after the height change has taken effect.
     if (window.visualViewport) {
-      var _updateKeyboardHeight = function() {
+      var _setContainerH = function() {
         var vvh = window.visualViewport.height;
-        var offsetTop = window.visualViewport.offsetTop || 0;
-        // Keyboard height = layout viewport height minus visual viewport
-        // (minus any top offset from scroll/pinch — normally 0 on typical use).
-        var keyboardH = Math.max(0, window.innerHeight - vvh - offsetTop);
-        document.documentElement.style.setProperty('--keyboard-h', keyboardH + 'px');
-        // Also explicitly set container height to shrink when keyboard appears.
-        // Use visualViewport.height as the maximum available height for xterm.
         container.style.height = vvh + 'px';
-        log('keyboard: h=' + keyboardH + 'px, vv=' + vvh + 'px, set container.height=' + vvh + 'px');
-        // Trigger a fit after the height change settles
-        setTimeout(safeFit, 50);
+        var offsetTop = window.visualViewport.offsetTop || 0;
+        var keyboardH = Math.max(0, window.innerHeight - vvh - offsetTop);
+        log('visualViewport: h=' + vvh + 'px, keyboard=' + keyboardH + 'px');
       };
-      _updateKeyboardHeight(); // set immediately
-      window.visualViewport.addEventListener('resize', _updateKeyboardHeight);
+
+      var _vvResize = function() {
+        _setContainerH();
+        // First pass: rAF waits for height to be applied before fit() measures
+        requestAnimationFrame(function() {
+          safeFit();
+          // Second pass at 350ms for slow keyboard animations
+          setTimeout(function() {
+            _setContainerH();
+            requestAnimationFrame(safeFit);
+          }, 350);
+        });
+      };
+
+      _setContainerH(); // initialize
+      window.visualViewport.addEventListener('resize', _vvResize);
     }
 
     // Respond to every resize signal the platform gives us.
