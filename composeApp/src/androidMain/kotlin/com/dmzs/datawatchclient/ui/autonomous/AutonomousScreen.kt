@@ -56,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,13 +72,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.transport.dto.IdentityDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
+import com.dmzs.datawatchclient.ui.settings.IdentityWizardSheet
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,9 +106,25 @@ public fun AutonomousScreen(
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
     var identityWizardOpen by remember { mutableStateOf(false) }
+    var identity by remember { mutableStateOf(IdentityDto()) }
     var pickerOpen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
+    LaunchedEffect(identityWizardOpen) {
+        if (identityWizardOpen) {
+            runCatching {
+                val activeId = ServiceLocator.activeServerStore.get()
+                val sp = ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                        else list.firstOrNull { it.id == activeId && it.enabled }
+                    } ?: return@runCatching
+                ServiceLocator.transportFor(sp).getIdentity().onSuccess { identity = it }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -308,6 +330,29 @@ public fun AutonomousScreen(
                 onCloneTemplate = { vm.clonePrdToTemplate(id) },
             )
         }
+    }
+
+    if (identityWizardOpen) {
+        IdentityWizardSheet(
+            initial = identity,
+            onDismiss = { identityWizardOpen = false },
+            onFinish = { updated ->
+                identity = updated
+                identityWizardOpen = false
+                scope.launch {
+                    runCatching {
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val sp = ServiceLocator.profileRepository.observeAll()
+                            .first { list -> list.any { it.enabled } }
+                            .let { list ->
+                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                else list.firstOrNull { it.id == activeId && it.enabled }
+                            } ?: return@launch
+                        ServiceLocator.transportFor(sp).setIdentity(updated)
+                    }
+                }
+            },
+        )
     }
 }
 
