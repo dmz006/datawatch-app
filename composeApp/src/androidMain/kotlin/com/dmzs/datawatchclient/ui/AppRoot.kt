@@ -88,8 +88,18 @@ public fun AppRoot() {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 PushRegistrationCoordinator(context).registerAll()
             }
-            NtfyFallbackService.start(context)
-            UnifiedPushSseService.start(context)
+            // Defer service startup to allow system to settle after app init
+            delay(500)
+            try {
+                NtfyFallbackService.start(context)
+            } catch (e: Throwable) {
+                android.util.Log.w("AppRoot", "NtfyFallbackService start failed: ${e.message}")
+            }
+            try {
+                UnifiedPushSseService.start(context)
+            } catch (e: Throwable) {
+                android.util.Log.w("AppRoot", "UnifiedPushSseService start failed: ${e.message}")
+            }
         }
 
         // v0.36.2 — screen-unlock lifecycle observer. On every

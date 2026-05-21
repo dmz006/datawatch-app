@@ -21,8 +21,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -64,7 +65,12 @@ public class NtfyFallbackService : Service() {
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.ensureRegistered(this)
-        startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
+        try {
+            startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
+        } catch (e: Throwable) {
+            android.util.Log.w("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(
@@ -86,7 +92,7 @@ public class NtfyFallbackService : Service() {
         super.onDestroy()
         try { unregisterReceiver(dozeReceiver) } catch (_: Exception) {}
         scope.cancel()
-        client.close()
+        try { client.close() } catch (_: Exception) {}
     }
 
     /** S10-3: Cancel all active ntfy subscription jobs (Doze entered). */
@@ -105,14 +111,18 @@ public class NtfyFallbackService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private suspend fun reconcile() {
-        val store = ServiceLocator.pushTokenStore
-        val profiles =
-            ServiceLocator.profileRepository.observeAll().first()
-                .filter { it.enabled }
-        for (profile in profiles) {
-            val topic = store.ntfyTopicFor(profile.id) ?: continue
-            val server = store.ntfyServerFor(profile.id) ?: PushTokenStore.DEFAULT_NTFY_SERVER
-            jobs.getOrPut(profile.id) { scope.launch { subscribe(server, topic) } }
+        try {
+            val store = ServiceLocator.pushTokenStore
+            val profiles = withTimeoutOrNull(5_000L) {
+                ServiceLocator.profileRepository.observeAll().firstOrNull()
+            }?.filter { it.enabled } ?: return
+            for (profile in profiles) {
+                val topic = store.ntfyTopicFor(profile.id) ?: continue
+                val server = store.ntfyServerFor(profile.id) ?: PushTokenStore.DEFAULT_NTFY_SERVER
+                jobs.getOrPut(profile.id) { scope.launch { subscribe(server, topic) } }
+            }
+        } catch (e: Throwable) {
+            android.util.Log.w("NtfyFallback", "reconcile failed: ${e.message}")
         }
     }
 
