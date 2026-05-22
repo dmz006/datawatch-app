@@ -423,7 +423,7 @@ public fun SessionDetailScreen(
                             .weight(1f)
                             .fillMaxWidth(),
                 ) {
-                Spacer(modifier = Modifier.height(96.dp))
+                Spacer(modifier = Modifier.height(80.dp))
             if (responseOpen) {
                 LastResponseSheet(
                     response = state.session?.lastResponse.orEmpty(),
