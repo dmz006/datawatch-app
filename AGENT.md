@@ -22,9 +22,23 @@ decisions belong here in `AGENT.md`.
 
 Before executing any user prompt that involves code changes, new features, or bug fixes:
 
-1. **Re-read AGENT.md rules** relevant to the task (planning, documentation, versioning, testing, etc.)
-2. **Verify compliance** — ensure the planned approach follows all applicable rules.
-3. **Flag conflicts** — if the prompt conflicts with a rule, notify the user before proceeding.
+1. **Load AI-APP-SEED.md context** (this directory)
+   ```bash
+   rtk head -50 AI-APP-SEED.md  # Quick read to understand project identity
+   ```
+   This file contains: project purpose, critical rules, module structure, build/release procedures, testing strategy, datawatch MCP tooling, memory system, and known issues.
+
+2. **Query project memory** for episodic knowledge from prior work
+   ```bash
+   datawatch memory_recall "terminal scrolling" --top 5
+   datawatch memory_recall "v1.0.0 UI/UX changes" --top 3
+   ```
+
+3. **Re-read AGENT.md rules** relevant to the task (planning, documentation, versioning, testing, etc.)
+
+4. **Verify compliance** — ensure the planned approach follows all applicable rules.
+
+5. **Flag conflicts** — if the prompt conflicts with a rule, notify the user before proceeding.
 
 ## Decision Making (inherited from parent, strengthened)
 
