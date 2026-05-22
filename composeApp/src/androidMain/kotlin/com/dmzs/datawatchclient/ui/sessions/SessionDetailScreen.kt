@@ -391,31 +391,6 @@ public fun SessionDetailScreen(
             // across SessionInfoBar + the quick-actions row below.
             var responseOpen by remember { mutableStateOf(false) }
             val hasResponse = !state.session?.lastResponse.isNullOrBlank()
-            SessionInfoBar(
-                backend = state.session?.backend,
-                llmRef = state.session?.llmRef,
-                computeNodeRef = state.session?.computeNodeRef,
-                sessionMode = state.messagingBackend ?: "tmux",
-                state = state.session?.state,
-                reachable = state.reachable,
-                onStateClick = { stateMenuOpen = true },
-                onStop = { killConfirm = true },
-                onRestart = { /* parent-level reschedule not wired here yet */ },
-                onTimeline = { timelineOpen = true },
-                onDelete = { deleteConfirm = true },
-                stateMenuOpen = stateMenuOpen,
-                onStateMenuDismiss = { stateMenuOpen = false },
-                onPickState = { s ->
-                    stateMenuOpen = false
-                    vm.overrideState(s)
-                },
-                // v0.42.12 — Response affordance lives on the
-                // quick-actions row above the composer (📄 button,
-                // ReplyComposer line ~1729). User direction
-                // 2026-04-29: don't duplicate it on the chip bar.
-                hasResponse = false,
-                onResponse = {},
-            )
             // v0.42.0 — PWA-style compact tabs: tmux/channel pill
             // buttons (width of the label) on the left, font + Fit +
             // Scroll buttons inline on the right. Replaces the
