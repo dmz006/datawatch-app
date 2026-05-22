@@ -488,7 +488,8 @@ public fun SessionDetailScreen(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
                 ) {
             if (responseOpen) {
                 LastResponseSheet(
