@@ -617,31 +617,6 @@ public fun SessionDetailScreen(
                         onCancel = sessionSchedulesVm::cancel,
                     )
                 }
-                SessionInfoBar(
-                    backend = state.session?.backend,
-                    llmRef = state.session?.llmRef,
-                    computeNodeRef = state.session?.computeNodeRef,
-                    sessionMode = state.messagingBackend ?: "tmux",
-                    state = state.session?.state,
-                    reachable = state.reachable,
-                    onStateClick = { stateMenuOpen = true },
-                    onStop = { killConfirm = true },
-                    onRestart = { /* parent-level reschedule not wired here yet */ },
-                    onTimeline = { timelineOpen = true },
-                    onDelete = { deleteConfirm = true },
-                    stateMenuOpen = stateMenuOpen,
-                    onStateMenuDismiss = { stateMenuOpen = false },
-                    onPickState = { s ->
-                        stateMenuOpen = false
-                        vm.overrideState(s)
-                    },
-                    // v0.42.12 — Response affordance lives on the
-                    // quick-actions row above the composer (📄 button,
-                    // ReplyComposer line ~1729). User direction
-                    // 2026-04-29: don't duplicate it on the chip bar.
-                    hasResponse = false,
-                    onResponse = {},
-                )
             }
 
                 // Composer in its own layer responding to keyboard insets separately.
@@ -689,42 +664,66 @@ public fun SessionDetailScreen(
                 }
             }
 
-            // Fixed tab row overlay - stays at top while content scrolls behind
-            if (!isCouncilVirtual) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .zIndex(1f)
-                            .drawBehind {
-                                drawLine(
-                                    color = tabRowBorderColor,
-                                    start = Offset(0f, size.height),
-                                    end = Offset(size.width, size.height),
-                                    strokeWidth = 1.dp.toPx(),
-                                )
-                            },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    val sessionBackend = state.session?.backend
-                    val showChannelTab = sessionBackend?.let {
-                        it == "claude" || it == "claude-code" || it == "opencode-acp"
-                    } == true
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
-                    if (showChannelTab) {
-                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
-                    }
-                    SessionModeTab(
-                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
-                        selected = statusMode,
-                        onClick = { statusMode = true; statusSubStats = false },
-                    )
-                    Spacer(Modifier.weight(1f))
-                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
-                    if (showToolbar) {
-                        TerminalToolbarControls(toolbarState)
+            // Fixed headers - SessionInfoBar and Tab Row stacked vertically
+            Column(modifier = Modifier.fillMaxWidth().zIndex(2f)) {
+                SessionInfoBar(
+                    backend = state.session?.backend,
+                    llmRef = state.session?.llmRef,
+                    computeNodeRef = state.session?.computeNodeRef,
+                    sessionMode = state.messagingBackend ?: "tmux",
+                    state = state.session?.state,
+                    reachable = state.reachable,
+                    onStateClick = { stateMenuOpen = true },
+                    onStop = { killConfirm = true },
+                    onRestart = { /* parent-level reschedule not wired here yet */ },
+                    onTimeline = { timelineOpen = true },
+                    onDelete = { deleteConfirm = true },
+                    stateMenuOpen = stateMenuOpen,
+                    onStateMenuDismiss = { stateMenuOpen = false },
+                    onPickState = { s ->
+                        stateMenuOpen = false
+                        vm.overrideState(s)
+                    },
+                    hasResponse = false,
+                    onResponse = {},
+                )
+
+                // Fixed tab row overlay - stays below SessionInfoBar while content scrolls behind
+                if (!isCouncilVirtual) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                                .drawBehind {
+                                    drawLine(
+                                        color = tabRowBorderColor,
+                                        start = Offset(0f, size.height),
+                                        end = Offset(size.width, size.height),
+                                        strokeWidth = 1.dp.toPx(),
+                                    )
+                                },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    ) {
+                        val sessionBackend = state.session?.backend
+                        val showChannelTab = sessionBackend?.let {
+                            it == "claude" || it == "claude-code" || it == "opencode-acp"
+                        } == true
+                        SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
+                        if (showChannelTab) {
+                            SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
+                        }
+                        SessionModeTab(
+                            label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
+                            selected = statusMode,
+                            onClick = { statusMode = true; statusSubStats = false },
+                        )
+                        Spacer(Modifier.weight(1f))
+                        val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
+                        if (showToolbar) {
+                            TerminalToolbarControls(toolbarState)
+                        }
                     }
                 }
             }
