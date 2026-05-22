@@ -186,6 +186,13 @@
     function safeFit() {
       if (!fit) return;
       try {
+        // When the soft keyboard is open, window.visualViewport.height is
+        // smaller than the document height. Adjust the container's bottom
+        // edge so the FitAddon sees only the actually-visible rows.
+        if (window.visualViewport) {
+          var keyboardH = document.documentElement.clientHeight - window.visualViewport.height;
+          container.style.bottom = (keyboardH > 0 ? keyboardH : 0) + 'px';
+        }
         // Check if the container has been laid out. Only bail on width since
         // height can legitimately be small when the IME is open (don't skip fit).
         var r = container.getBoundingClientRect();
