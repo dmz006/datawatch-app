@@ -414,7 +414,8 @@ public fun SessionDetailScreen(
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .imePadding(),
             ) {
                 // Fixed headers - SessionInfoBar and Tab Row stacked vertically
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -486,8 +487,7 @@ public fun SessionDetailScreen(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth()
-                            .imePadding(),
+                            .fillMaxWidth(),
                 ) {
             if (responseOpen) {
                 LastResponseSheet(
@@ -693,8 +693,7 @@ public fun SessionDetailScreen(
                     Box(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .imePadding(),
+                                .fillMaxWidth(),
                     ) {
                         Column {
                             ReplyComposer(
