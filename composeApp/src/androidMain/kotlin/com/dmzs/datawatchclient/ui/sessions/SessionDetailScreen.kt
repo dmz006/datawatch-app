@@ -379,8 +379,7 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize()
-                    .imePadding(),
+                    .fillMaxSize(),
         ) {
             // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
             // (user direction 2026-04-28). PWA carries the chips at
@@ -605,11 +604,6 @@ public fun SessionDetailScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             } else {
-                // BL-T3-4: InputRequiredBanner was implemented but never called.
-                // Show amber banner above terminal when session needs user input.
-                if (state.needsInput) {
-                    InputRequiredBanner(prompt = state.pendingPromptText)
-                }
                 // v0.42.0 — controller + toolbar state are hoisted
                 // above the tabs row so the font / scroll buttons
                 // render inline next to the tmux/channel pills.
@@ -672,7 +666,7 @@ public fun SessionDetailScreen(
             // In scroll mode the big PgUp/PgDn overlay replaces the composer.
             if (!toolbarState.scrollMode) {
                 var savedCmdsOpen by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.padding(bottom = 48.dp)) {
+                Box(modifier = Modifier.imePadding().padding(bottom = 48.dp)) {
                     ReplyComposer(
                         text = state.replyText,
                         onTextChange = vm::onReplyTextChange,
@@ -1161,85 +1155,6 @@ private fun ConnectionBanner(onRetry: () -> Unit) {
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
             TextButton(onClick = onRetry) { Text("Retry") }
-        }
-    }
-}
-
-/**
- * Amber strip right above the terminal when the session is
- * `waiting_input`. Body shows the latest prompt text (live event
- * preferred, falling back to `Session.lastPrompt`) so the user can
- * decide-then-reply without scrolling backlog.
- */
-@Composable
-private fun InputRequiredBanner(prompt: String?) {
-    // v0.33.22 — big yellow PWA-style `.needs-input-banner` block
-    // (app.js:1584-1589). Left-aligned "Input Required" pill, multi-
-    // line prompt body (last ~6 lines), ✕ dismiss on the right. Big
-    // amber fill + bold header so it's unmissable, matching the PWA
-    // treatment.
-    var dismissed by remember(prompt) { mutableStateOf(false) }
-    if (dismissed) return
-    val lines =
-        prompt?.trim().orEmpty().lines().map { it.trim() }.filter { it.isNotEmpty() }
-            .takeLast(PROMPT_CTX_LINES)
-    val amberBg = Color(0xFFFEF3C7) // amber-100
-    val amberFg = Color(0xFF92400E) // amber-800
-    val amberEdge = Color(0xFFD97706) // amber-600
-    Surface(
-        color = amberBg,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier =
-                        Modifier
-                            .background(
-                                color = amberEdge,
-                                shape = RoundedCornerShape(4.dp),
-                            )
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                ) {
-                    Text(
-                        stringResource(R.string.session_detail_input_required),
-                        fontSize = 11.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = Color.White,
-                        letterSpacing = 0.3.sp,
-                    )
-                }
-                if (lines.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(top = 6.dp)) {
-                        lines.forEach { l ->
-                            Text(
-                                l,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = amberFg,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        stringResource(R.string.session_detail_waiting_reply),
-                        modifier = Modifier.padding(top = 6.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = amberFg,
-                    )
-                }
-            }
-            IconButton(onClick = { dismissed = true }, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.action_dismiss),
-                    modifier = Modifier.size(16.dp),
-                    tint = amberFg,
-                )
-            }
         }
     }
 }
