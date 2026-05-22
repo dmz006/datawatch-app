@@ -269,10 +269,10 @@ public fun SessionDetailScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            contentWindowInsets = WindowInsets(0),
-            topBar = {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0),
+        topBar = {
             TopAppBar(
                 title = {
                     // Tap title to rename — same wire as Sessions-list overflow.
@@ -691,7 +691,8 @@ public fun SessionDetailScreen(
                 Box(
                     modifier =
                         Modifier
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .imePadding(),
                 ) {
                     Column {
                         ReplyComposer(
@@ -840,6 +841,7 @@ public fun SessionDetailScreen(
     // Loading overlay — rendered on top of the Scaffold; fades out when
     // the first pane_capture arrives (sessionLoaded = true).
     SessionLoadingOverlay(visible = !sessionLoaded)
+    } // end Box
 }
 
 /**
@@ -2189,7 +2191,6 @@ private fun ReplyComposer(
                 )
             }
         }
-    }
     }
 }
 
