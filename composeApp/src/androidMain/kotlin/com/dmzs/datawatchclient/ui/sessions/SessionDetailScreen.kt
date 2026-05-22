@@ -270,6 +270,7 @@ public fun SessionDetailScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -402,7 +403,8 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .imePadding(),
         ) {
             // Terminal and banners in a scrollable container that responds to IME
             Column(
