@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +74,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.drawBehind
@@ -375,80 +380,30 @@ public fun SessionDetailScreen(
         // contentWindowInsets = WindowInsets(0) on the Scaffold above
         // prevents double-counting of insets (the prior single-composer
         // approach left the terminal cursor hidden behind the keyboard).
-        Column(
-            modifier =
-                Modifier
-                    .padding(padding)
-                    .fillMaxSize(),
+        Box(
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
-            // (user direction 2026-04-28). PWA carries the chips at
-            // the top of the session-info-bar; mobile aligning here
-            // makes the most-used actions (Stop, Timeline, state
-            // override) reachable without scrolling past the tabs.
-            // The Last Response button stays here on the badge bar
-            // — Description-glyph is the single canonical icon used
-            // across SessionInfoBar + the quick-actions row below.
             var responseOpen by remember { mutableStateOf(false) }
             val hasResponse = !state.session?.lastResponse.isNullOrBlank()
-            // v0.42.0 — PWA-style compact tabs: tmux/channel pill
-            // buttons (width of the label) on the left, font + Fit +
-            // Scroll buttons inline on the right. Replaces the
-            // full-width Material TabRow because the previous layout
-            // wasted a vertical strip of phone real estate and split
-            // the controls onto a separate row from the mode tabs —
-            // the PWA carries them on the same line.
-            // v0.74.0 S5-7 — Council virtual sessions hide terminal/channel tabs
             val isCouncilVirtual = state.session?.backend == "council-virtual" ||
                 state.session?.fullId?.startsWith("council-") == true
             val terminalController = rememberTerminalController()
             val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
             val tabRowBorderColor = LocalDatawatchColors.current.border
-            if (!isCouncilVirtual) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .drawBehind {
-                                drawLine(
-                                    color = tabRowBorderColor,
-                                    start = Offset(0f, size.height),
-                                    end = Offset(size.width, size.height),
-                                    strokeWidth = 1.dp.toPx(),
-                                )
-                            },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    // G7: Channel tab only for claude / claude-code / opencode-acp backends
-                    val sessionBackend = state.session?.backend
-                    val showChannelTab = sessionBackend?.let {
-                        it == "claude" || it == "claude-code" || it == "opencode-acp"
-                    } == true
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
-                    if (showChannelTab) {
-                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
-                    }
-                    // G6: Status is now the single top-level tab; Stats lives as a sub-tab inside it
-                    SessionModeTab(
-                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
-                        selected = statusMode,
-                        onClick = { statusMode = true; statusSubStats = false },
+
+            // Scrollable content: starts at top (y=0), scrolls behind tabs
+            Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            ) {
+                // Spacer matching header + tabs height to allow content to scroll behind them
+                Spacer(modifier = Modifier.height(200.dp))
+
+                if (responseOpen) {
+                    LastResponseSheet(
+                        response = state.session?.lastResponse.orEmpty(),
+                        onDismiss = { responseOpen = false },
                     )
-                    Spacer(Modifier.weight(1f))
-                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
-                    if (showToolbar) {
-                        TerminalToolbarControls(toolbarState)
-                    }
                 }
-            }
-            if (responseOpen) {
-                LastResponseSheet(
-                    response = state.session?.lastResponse.orEmpty(),
-                    onDismiss = { responseOpen = false },
-                )
-            }
             state.banner?.let { banner ->
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Row(
@@ -672,6 +627,48 @@ public fun SessionDetailScreen(
                         onDismiss = { savedCmdsOpen = false },
                         sessionId = sessionId,
                     )
+                }
+            }
+            // Bottom spacer to ensure Column is taller than viewport, allowing scroll behind header
+            Spacer(modifier = Modifier.height(100.dp))
+            }
+            // Tab row overlay — fixed at top, scrollable content behind it
+            if (!isCouncilVirtual) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .zIndex(1f)
+                            .drawBehind {
+                                drawLine(
+                                    color = tabRowBorderColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    val sessionBackend = state.session?.backend
+                    val showChannelTab = sessionBackend?.let {
+                        it == "claude" || it == "claude-code" || it == "opencode-acp"
+                    } == true
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
+                    if (showChannelTab) {
+                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
+                    }
+                    SessionModeTab(
+                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
+                        selected = statusMode,
+                        onClick = { statusMode = true; statusSubStats = false },
+                    )
+                    Spacer(Modifier.weight(1f))
+                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
+                    if (showToolbar) {
+                        TerminalToolbarControls(toolbarState)
+                    }
                 }
             }
         }
