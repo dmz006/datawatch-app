@@ -419,8 +419,7 @@ public fun SessionDetailScreen(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth()
-                            .imePadding(),
+                            .fillMaxWidth(),
                 ) {
                 Spacer(modifier = Modifier.height(48.dp))
                 SessionInfoBar(
