@@ -657,7 +657,6 @@ public fun SessionDetailScreen(
                             st == SessionState.Error
                     terminalController.setFrozen(frozen)
                 }
-                InlineNotices(state.events)
             }
 
             // Per-session "Scheduled" strip — mirrors PWA
@@ -673,25 +672,27 @@ public fun SessionDetailScreen(
             // In scroll mode the big PgUp/PgDn overlay replaces the composer.
             if (!toolbarState.scrollMode) {
                 var savedCmdsOpen by remember { mutableStateOf(false) }
-                ReplyComposer(
-                    text = state.replyText,
-                    onTextChange = vm::onReplyTextChange,
-                    onSend = vm::sendReply,
-                    sending = state.replying,
-                    sessionId = sessionId,
-                    onTranscribed = { vm.onReplyTextChange(it) },
-                    onSchedule = { scheduleOpen = true },
-                    waitingInput = state.session?.state == SessionState.Waiting,
-                    isRunning = state.session?.state == SessionState.Running,
-                    onQuickReply = vm::sendQuickReply,
-                    onResponse = {
-                        vm.refreshFromServer()
-                        responseOpen = true
-                    },
-                    hasResponse = hasResponse,
-                    onSavedCommands = { savedCmdsOpen = true },
-                    whisperConfigured = state.whisperConfigured,
-                )
+                Box(modifier = Modifier.padding(bottom = 48.dp)) {
+                    ReplyComposer(
+                        text = state.replyText,
+                        onTextChange = vm::onReplyTextChange,
+                        onSend = vm::sendReply,
+                        sending = state.replying,
+                        sessionId = sessionId,
+                        onTranscribed = { vm.onReplyTextChange(it) },
+                        onSchedule = { scheduleOpen = true },
+                        waitingInput = state.session?.state == SessionState.Waiting,
+                        isRunning = state.session?.state == SessionState.Running,
+                        onQuickReply = vm::sendQuickReply,
+                        onResponse = {
+                            vm.refreshFromServer()
+                            responseOpen = true
+                        },
+                        hasResponse = hasResponse,
+                        onSavedCommands = { savedCmdsOpen = true },
+                        whisperConfigured = state.whisperConfigured,
+                    )
+                }
                 if (savedCmdsOpen) {
                     QuickCommandsSheet(
                         fetchSavedCommands = { vm.fetchSavedCommands() },
@@ -1077,78 +1078,6 @@ private fun stateLabel(s: SessionState): String =
         SessionState.Error -> "failed"
         SessionState.New -> "new"
     }
-
-/**
- * Animated "generating…" row shown at the bottom of the terminal/output
- * area when the session is actively Running. Mirrors the PWA's processing
- * indicator so the user gets visual feedback without scrolling to the composer.
- */
-@Composable
-private fun GeneratingIndicator() {
-    val infinite = rememberInfiniteTransition(label = "generating")
-    val dot1 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 0), RepeatMode.Reverse),
-        label = "d1",
-    )
-    val dot2 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 200), RepeatMode.Reverse),
-        label = "d2",
-    )
-    val dot3 by infinite.animateFloat(
-        initialValue = 0.2f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = 400), RepeatMode.Reverse),
-        label = "d3",
-    )
-    val dw = LocalDatawatchColors.current
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(R.string.session_detail_generating),
-            fontSize = 10.sp,
-            color = dw.success.copy(alpha = 0.55f),
-        )
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot1))
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot2))
-        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot3))
-    }
-}
-
-@Composable
-private fun InlineNotices(events: List<SessionEvent>) {
-    val latestRateLimit =
-        events.asReversed().firstOrNull { it is SessionEvent.RateLimited }
-            as? SessionEvent.RateLimited ?: return
-    var rateDismissed by remember(latestRateLimit.ts) { mutableStateOf(false) }
-    if (rateDismissed) return
-    val yellow = androidx.compose.ui.graphics.Color(0xFFFEF3C7)
-    val yellowText = androidx.compose.ui.graphics.Color(0xFF92400E)
-    Surface(color = yellow, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                "Rate-limited" + (latestRateLimit.retryAfter?.let { ts -> " · retry at $ts" } ?: ""),
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.labelSmall,
-                color = yellowText,
-            )
-            IconButton(onClick = { rateDismissed = true }, modifier = Modifier.size(24.dp)) {
-                Icon(
-                    Icons.Filled.Close,
-                    stringResource(R.string.action_dismiss),
-                    modifier = Modifier.size(16.dp),
-                    tint = yellowText,
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun StatePill(
