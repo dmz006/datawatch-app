@@ -402,15 +402,15 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .imePadding(),
         ) {
             // Terminal and banners in a scrollable container that responds to IME
             Column(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .fillMaxWidth()
-                        .imePadding(),
+                        .fillMaxWidth(),
             ) {
             SessionInfoBar(
                 backend = state.session?.backend,
