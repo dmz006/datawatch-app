@@ -418,6 +418,7 @@ public fun SessionDetailScreen(
                         .imePadding(),
             ) {
                 // Fixed headers - SessionInfoBar and Tab Row stacked vertically
+                // These occupy their natural height, not expanded
                 Column(modifier = Modifier.fillMaxWidth()) {
                     SessionInfoBar(
                         backend = state.session?.backend,
