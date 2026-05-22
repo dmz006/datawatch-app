@@ -632,12 +632,16 @@ public fun SessionDetailScreen(
                 // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
                 // appears directly under the terminal viewport so
                 // the keys land where the user is reading.
-                TerminalView(
-                    sessionId = sessionId,
-                    events = state.events,
+                Column(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    controller = terminalController,
-                )
+                ) {
+                    TerminalView(
+                        sessionId = sessionId,
+                        events = state.events,
+                        modifier = Modifier.fillMaxWidth(),
+                        controller = terminalController,
+                    )
+                }
                 TerminalScrollModeStrip(toolbarState)
                 // Backend-specific minimum cols/rows. Matches parent
                 // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
