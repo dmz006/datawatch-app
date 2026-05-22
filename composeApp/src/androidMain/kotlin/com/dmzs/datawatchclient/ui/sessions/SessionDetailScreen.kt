@@ -694,6 +694,7 @@ public fun SessionDetailScreen(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
                                 .padding(horizontal = 8.dp)
                                 .drawBehind {
                                     drawLine(
