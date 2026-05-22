@@ -688,7 +688,8 @@ public fun SessionDetailScreen(
                 Box(
                     modifier =
                         Modifier
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .imePadding(),
                 ) {
                     Column {
                         ReplyComposer(
