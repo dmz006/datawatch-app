@@ -8,6 +8,31 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 ---
 
+## 🤖 For Developers & AI Sessions
+
+**Starting a new coding session on this codebase?** Before you begin:
+
+1. **Read [`AI-APP-SEED.md`](AI-APP-SEED.md)** — Comprehensive context loader covering:
+   - Project identity, platforms, and architecture
+   - Non-negotiable rules from `AGENT.md`
+   - Build, test, and release procedures
+   - Datawatch MCP tooling and memory system
+   - Known issues and workarounds
+
+2. **Check `CLAUDE.md`** (local to your session) — Pre-execution rules that enforce:
+   - Loading AI-APP-SEED.md context
+   - Querying project memory for recent work
+   - Building and testing before code changes
+   - Version and documentation requirements
+
+3. **Query project memory** for recent changes and learnings:
+   ```bash
+   datawatch memory_recall "terminal scrolling" --top 5
+   datawatch memory_recall "v1.0.0 changes" --top 3
+   ```
+
+---
+
 ## 🧪 Alpha Testing Program
 
 **We're seeking alpha testers for Wear OS and Android apps!**
