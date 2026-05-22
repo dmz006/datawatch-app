@@ -17,10 +17,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -92,11 +90,6 @@ import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import android.content.Intent
-import android.os.Bundle
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -164,46 +157,35 @@ public fun SessionDetailScreen(
             factory = viewModelFactory { initializer { SessionSchedulesViewModel(sessionId) } },
         )
     val sessionSchedules by sessionSchedulesVm.state.collectAsState()
-    // Loading overlay — shown for new sessions until the first content arrives
-    // (pane_capture), OR for any session if it has no pane_capture yet and is
-    // still running/waiting (reconnection case). Minimum 1s display on isNew,
-    // 500ms on reconnect so the eye is always visible.
+    // Loading overlay — shown for new sessions until the first content
+    // arrives (pane_capture OR output event) or a terminal state is reached.
+    // overlayReady gates the dismiss: even if a pane_capture arrives within
+    // milliseconds (bus replay), the eye is always visible for at least 2 s
+    // so the user can perceive it.
     var sessionLoaded by remember { mutableStateOf(!isNew) }
     var overlayMinWaitDone by remember { mutableStateOf(!isNew) }
-    var overlayDataArrived by remember { mutableStateOf(
-        state.events.any { it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture }
-    ) }
-
-    // Minimum display time depends on whether this is a new session or reconnect
-    val minWaitMs = if (isNew) 2_000 else 500
-    val maxWaitMs = if (isNew) 15_000 else 8_000
-
-    // Minimum wait + safety-net dismiss
-    androidx.compose.runtime.LaunchedEffect(isNew, sessionLoaded) {
-        if (!sessionLoaded) {
-            delay(minWaitMs.toLong())
+    var overlayDataArrived by remember { mutableStateOf(!isNew) }
+    // 2 s minimum display + 15 s safety-net dismiss — both in one block.
+    androidx.compose.runtime.LaunchedEffect(isNew) {
+        if (isNew) {
+            delay(2_000)
             overlayMinWaitDone = true
-            delay((maxWaitMs - minWaitMs).toLong())
+            delay(13_000) // 2 + 13 = 15 s total
             sessionLoaded = true
         }
     }
-
-    // Watch for first pane_capture (means session is streaming data)
     androidx.compose.runtime.LaunchedEffect(state.events.size) {
-        if (!overlayDataArrived && state.events.any {
+        if (!sessionLoaded && state.events.any {
                 it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture
             }
         ) {
             overlayDataArrived = true
         }
     }
-
-    // Dismiss once both the minimum time AND first data have arrived
+    // Dismiss once both the minimum time AND first data have arrived.
     androidx.compose.runtime.LaunchedEffect(overlayMinWaitDone, overlayDataArrived) {
         if (overlayMinWaitDone && overlayDataArrived) sessionLoaded = true
     }
-
-    // Also dismiss if session reaches terminal state
     androidx.compose.runtime.LaunchedEffect(state.session?.state) {
         if (!sessionLoaded) {
             val st = state.session?.state
@@ -268,7 +250,7 @@ public fun SessionDetailScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0),
@@ -380,41 +362,36 @@ public fun SessionDetailScreen(
         // Window-inset handling for the soft keyboard (user report
         // 2026-04-23: "tmux input window is hidden behind the keyboard").
         //
-        // Split the layout: terminal/content in a scrollable area with
-        // imePadding(), and the composer in a separate Box below that
-        // responds to keyboard insets independently. This ensures the
-        // composer always scrolls up above the keyboard, even when the
-        // terminal content is large.
-        // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
-        // (user direction 2026-04-28). PWA carries the chips at
-        // the top of the session-info-bar; mobile aligning here
-        // makes the most-used actions (Stop, Timeline, state
-        // override) reachable without scrolling past the tabs.
-        // The Last Response button stays here on the badge bar
-        // — Description-glyph is the single canonical icon used
-        // across SessionInfoBar + the quick-actions row below.
-        var responseOpen by remember { mutableStateOf(false) }
-        val hasResponse = !state.session?.lastResponse.isNullOrBlank()
-        val isCouncilVirtual = state.session?.backend == "council-virtual" ||
-            state.session?.fullId?.startsWith("council-") == true
-        val terminalController = rememberTerminalController()
-        val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
-
+        // Prior iteration applied `imePadding()` to the outer Column,
+        // which shrunk the *entire* content (terminal + banners +
+        // composer) whenever the IME opened. On SDK 35+ edge-to-edge
+        // that combined with Scaffold's content insets in ways that
+        // left the composer partially occluded — the composer would
+        // lift a bit but not enough to clear the keyboard.
+        //
+        // imePadding() on the Column shrinks the entire content area
+        // (terminal + composer) when the soft keyboard opens, keeping
+        // the terminal cursor and composer visible above the keyboard.
+        // contentWindowInsets = WindowInsets(0) on the Scaffold above
+        // prevents double-counting of insets (the prior single-composer
+        // approach left the terminal cursor hidden behind the keyboard).
         Column(
             modifier =
                 Modifier
                     .padding(padding)
-                    .navigationBarsPadding()
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .imePadding(),
         ) {
-            // Terminal and banners in a scrollable container that responds to IME
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .imePadding(),
-            ) {
+            // v0.35.9 — badges row moves ABOVE the tmux/channel tabs
+            // (user direction 2026-04-28). PWA carries the chips at
+            // the top of the session-info-bar; mobile aligning here
+            // makes the most-used actions (Stop, Timeline, state
+            // override) reachable without scrolling past the tabs.
+            // The Last Response button stays here on the badge bar
+            // — Description-glyph is the single canonical icon used
+            // across SessionInfoBar + the quick-actions row below.
+            var responseOpen by remember { mutableStateOf(false) }
+            val hasResponse = !state.session?.lastResponse.isNullOrBlank()
             SessionInfoBar(
                 backend = state.session?.backend,
                 llmRef = state.session?.llmRef,
@@ -447,6 +424,11 @@ public fun SessionDetailScreen(
             // wasted a vertical strip of phone real estate and split
             // the controls onto a separate row from the mode tabs —
             // the PWA carries them on the same line.
+            // v0.74.0 S5-7 — Council virtual sessions hide terminal/channel tabs
+            val isCouncilVirtual = state.session?.backend == "council-virtual" ||
+                state.session?.fullId?.startsWith("council-") == true
+            val terminalController = rememberTerminalController()
+            val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
             val tabRowBorderColor = LocalDatawatchColors.current.border
             if (!isCouncilVirtual) {
                 Row(
@@ -623,6 +605,11 @@ public fun SessionDetailScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             } else {
+                // BL-T3-4: InputRequiredBanner was implemented but never called.
+                // Show amber banner above terminal when session needs user input.
+                if (state.needsInput) {
+                    InputRequiredBanner(prompt = state.pendingPromptText)
+                }
                 // v0.42.0 — controller + toolbar state are hoisted
                 // above the tabs row so the font / scroll buttons
                 // render inline next to the tmux/channel pills.
@@ -673,29 +660,20 @@ public fun SessionDetailScreen(
                 InlineNotices(state.events)
             }
 
-                // Per-session "Scheduled" strip — mirrors PWA
-                // loadSessionSchedules() in app.js. Hidden when no pending
-                // schedules or when the server predates the session_id filter.
-                if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
-                    SessionSchedulesStrip(
-                        schedules = sessionSchedules.schedules,
-                        onCancel = sessionSchedulesVm::cancel,
-                    )
-                }
+            // Per-session "Scheduled" strip — mirrors PWA
+            // loadSessionSchedules() in app.js. Hidden when no pending
+            // schedules or when the server predates the session_id filter.
+            if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
+                SessionSchedulesStrip(
+                    schedules = sessionSchedules.schedules,
+                    onCancel = sessionSchedulesVm::cancel,
+                )
             }
 
-            // Composer in its own layer responding to keyboard insets separately.
             // In scroll mode the big PgUp/PgDn overlay replaces the composer.
             if (!toolbarState.scrollMode) {
                 var savedCmdsOpen by remember { mutableStateOf(false) }
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .imePadding(),
-                ) {
-                    Column {
-                        ReplyComposer(
+                ReplyComposer(
                     text = state.replyText,
                     onTextChange = vm::onReplyTextChange,
                     onSend = vm::sendReply,
@@ -704,6 +682,7 @@ public fun SessionDetailScreen(
                     onTranscribed = { vm.onReplyTextChange(it) },
                     onSchedule = { scheduleOpen = true },
                     waitingInput = state.session?.state == SessionState.Waiting,
+                    isRunning = state.session?.state == SessionState.Running,
                     onQuickReply = vm::sendQuickReply,
                     onResponse = {
                         vm.refreshFromServer()
@@ -712,19 +691,17 @@ public fun SessionDetailScreen(
                     hasResponse = hasResponse,
                     onSavedCommands = { savedCmdsOpen = true },
                     whisperConfigured = state.whisperConfigured,
-                        )
-                        if (savedCmdsOpen) {
-                            QuickCommandsSheet(
-                                fetchSavedCommands = { vm.fetchSavedCommands() },
-                                onSend = { cmd ->
-                                    vm.sendQuickReply(cmd)
-                                    savedCmdsOpen = false
-                                },
-                                onDismiss = { savedCmdsOpen = false },
-                                sessionId = sessionId,
-                            )
-                        }
-                    }
+                )
+                if (savedCmdsOpen) {
+                    QuickCommandsSheet(
+                        fetchSavedCommands = { vm.fetchSavedCommands() },
+                        onSend = { cmd ->
+                            vm.sendQuickReply(cmd)
+                            savedCmdsOpen = false
+                        },
+                        onDismiss = { savedCmdsOpen = false },
+                        sessionId = sessionId,
+                    )
                 }
             }
         }
@@ -1022,20 +999,20 @@ private fun SessionInfoBar(
             }
             TextButton(
                 onClick = onTimeline,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
             ) {
-                Text("🕐", style = MaterialTheme.typography.labelSmall)
+                Text("⏱ Timeline", style = MaterialTheme.typography.labelSmall)
             }
             if (hasResponse) {
                 TextButton(
                     onClick = onResponse,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 6.dp,
+                            horizontal = 10.dp,
                             vertical = 2.dp,
                         ),
                 ) {
-                    Text("💾", style = MaterialTheme.typography.labelSmall)
+                    Text("💾 Response", style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -1101,6 +1078,45 @@ private fun stateLabel(s: SessionState): String =
         SessionState.New -> "new"
     }
 
+/**
+ * Animated "generating…" row shown at the bottom of the terminal/output
+ * area when the session is actively Running. Mirrors the PWA's processing
+ * indicator so the user gets visual feedback without scrolling to the composer.
+ */
+@Composable
+private fun GeneratingIndicator() {
+    val infinite = rememberInfiniteTransition(label = "generating")
+    val dot1 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 0), RepeatMode.Reverse),
+        label = "d1",
+    )
+    val dot2 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 200), RepeatMode.Reverse),
+        label = "d2",
+    )
+    val dot3 by infinite.animateFloat(
+        initialValue = 0.2f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(600, delayMillis = 400), RepeatMode.Reverse),
+        label = "d3",
+    )
+    val dw = LocalDatawatchColors.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.session_detail_generating),
+            fontSize = 10.sp,
+            color = dw.success.copy(alpha = 0.55f),
+        )
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot1))
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot2))
+        Text("●", fontSize = 9.sp, color = dw.success.copy(alpha = dot3))
+    }
+}
 
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
@@ -1226,6 +1242,80 @@ private fun ConnectionBanner(onRetry: () -> Unit) {
  * preferred, falling back to `Session.lastPrompt`) so the user can
  * decide-then-reply without scrolling backlog.
  */
+@Composable
+private fun InputRequiredBanner(prompt: String?) {
+    // v0.33.22 — big yellow PWA-style `.needs-input-banner` block
+    // (app.js:1584-1589). Left-aligned "Input Required" pill, multi-
+    // line prompt body (last ~6 lines), ✕ dismiss on the right. Big
+    // amber fill + bold header so it's unmissable, matching the PWA
+    // treatment.
+    var dismissed by remember(prompt) { mutableStateOf(false) }
+    if (dismissed) return
+    val lines =
+        prompt?.trim().orEmpty().lines().map { it.trim() }.filter { it.isNotEmpty() }
+            .takeLast(PROMPT_CTX_LINES)
+    val amberBg = Color(0xFFFEF3C7) // amber-100
+    val amberFg = Color(0xFF92400E) // amber-800
+    val amberEdge = Color(0xFFD97706) // amber-600
+    Surface(
+        color = amberBg,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier =
+                        Modifier
+                            .background(
+                                color = amberEdge,
+                                shape = RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.session_detail_input_required),
+                        fontSize = 11.sp,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = Color.White,
+                        letterSpacing = 0.3.sp,
+                    )
+                }
+                if (lines.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(top = 6.dp)) {
+                        lines.forEach { l ->
+                            Text(
+                                l,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = amberFg,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        stringResource(R.string.session_detail_waiting_reply),
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = amberFg,
+                    )
+                }
+            }
+            IconButton(onClick = { dismissed = true }, modifier = Modifier.size(28.dp)) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.action_dismiss),
+                    modifier = Modifier.size(16.dp),
+                    tint = amberFg,
+                )
+            }
+        }
+    }
+}
+
+private const val PROMPT_CTX_LINES = 6
 
 /**
  * Bottom-sheet session timeline. Prefers the parent server's
@@ -1769,6 +1859,7 @@ private fun ReplyComposer(
     onTranscribed: (String) -> Unit,
     onSchedule: () -> Unit,
     waitingInput: Boolean = false,
+    isRunning: Boolean = false,
     onQuickReply: (String) -> Unit = {},
     onResponse: () -> Unit = {},
     hasResponse: Boolean = false,
@@ -1776,18 +1867,12 @@ private fun ReplyComposer(
     whisperConfigured: Boolean = false,
 ) {
     HorizontalDivider()
+    if (isRunning) GeneratingIndicator()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
-
-    val speechAvailable = remember { SpeechRecognizer.isRecognitionAvailable(context) }
-    var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
-    var recognizing by remember { mutableStateOf(false) }
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        onDispose { recognizer?.destroy(); recognizer = null }
-    }
 
     // RECORD_AUDIO is a runtime permission on Android 6+; without it
     // MediaRecorder.start() throws and the tap appears to do nothing
@@ -1866,37 +1951,6 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        // ESC — matches PWA savedCmdsQuick ␛ button
-        TextButton(
-            onClick = { onQuickReply("\u001B") },
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-            modifier = Modifier.height(32.dp),
-        ) {
-            Text("␛", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        // PWA arrow order: ↑ ↓ ← →
-        IconButton(
-            onClick = { onQuickReply("\u001B[A") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowUp,
-                contentDescription = stringResource(R.string.session_detail_up_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(
-            onClick = { onQuickReply("\u001B[B") },
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.session_detail_down_arrow),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
         IconButton(
             onClick = { onQuickReply("\u001B[D") },
             modifier = Modifier.size(32.dp),
@@ -1919,13 +1973,27 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        // Enter — matches PWA savedCmdsQuick ⏎ button
-        TextButton(
-            onClick = { onQuickReply("\r") },
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-            modifier = Modifier.height(32.dp),
+        IconButton(
+            onClick = { onQuickReply("\u001B[A") },
+            modifier = Modifier.size(32.dp),
         ) {
-            Text("⏎", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                Icons.Filled.KeyboardArrowUp,
+                contentDescription = stringResource(R.string.session_detail_up_arrow),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(
+            onClick = { onQuickReply("\u001B[B") },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.session_detail_down_arrow),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 
@@ -1990,56 +2058,10 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        if (speechAvailable || whisperConfigured) IconButton(
+        if (whisperConfigured) IconButton(
             modifier = Modifier.size(40.dp),
             onClick = {
-                if (speechAvailable) {
-                    // Android SpeechRecognizer path (Google ASR — mirrors PWA WebSpeechAPI)
-                    if (recognizing) {
-                        recognizer?.stopListening()
-                        recognizer?.destroy()
-                        recognizer = null
-                        recognizing = false
-                    } else {
-                        val sr = SpeechRecognizer.createSpeechRecognizer(context)
-                        recognizer = sr
-                        sr.setRecognitionListener(object : RecognitionListener {
-                            override fun onResults(results: Bundle?) {
-                                val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim() ?: ""
-                                if (text.isNotEmpty()) onTranscribed(text)
-                                recognizing = false
-                                recognizer?.destroy()
-                                recognizer = null
-                            }
-                            override fun onError(error: Int) {
-                                recognizing = false
-                                recognizer?.destroy()
-                                recognizer = null
-                            }
-                            override fun onReadyForSpeech(params: Bundle?) {}
-                            override fun onBeginningOfSpeech() {}
-                            override fun onRmsChanged(rmsdB: Float) {}
-                            override fun onBufferReceived(buffer: ByteArray?) {}
-                            override fun onEndOfSpeech() {}
-                            override fun onPartialResults(partialResults: Bundle?) {}
-                            override fun onEvent(eventType: Int, params: Bundle?) {}
-                        })
-                        val grant = androidx.core.content.ContextCompat.checkSelfPermission(
-                            context, android.Manifest.permission.RECORD_AUDIO
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                        if (grant) {
-                            sr.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-                            })
-                            recognizing = true
-                        } else {
-                            sr.destroy()
-                            recognizer = null
-                            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                        }
-                    }
-                } else if (recording) {
+                if (recording) {
                     val r = recorder ?: return@IconButton
                     recorder = null
                     val captured = r.stop() ?: return@IconButton
@@ -2183,11 +2205,15 @@ private fun ReplyComposer(
             if (transcribing) {
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
             } else {
-                val active = recording || recognizing
                 Icon(
-                    if (active) Icons.Filled.Stop else Icons.Filled.Mic,
-                    contentDescription = if (active) "Stop" else "Voice input",
-                    tint = if (active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
+                    contentDescription = if (recording) "Stop recording" else "Voice reply",
+                    tint =
+                        if (recording) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                 )
             }
         }
