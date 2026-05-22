@@ -632,11 +632,12 @@ public fun SessionDetailScreen(
                 // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
                 // appears directly under the terminal viewport so
                 // the keys land where the user is reading.
+                val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                 ) {
                     TerminalView(
                         sessionId = sessionId,
