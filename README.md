@@ -12,18 +12,18 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 **Starting a new coding session on this codebase?** Before you begin:
 
-1. **Read [`AI-APP-SEED.md`](AI-APP-SEED.md)** — Comprehensive context loader covering:
-   - Project identity, platforms, and architecture
-   - Non-negotiable rules from `AGENT.md`
-   - Build, test, and release procedures
-   - Datawatch MCP tooling and memory system
-   - Known issues and workarounds
+1. **Read [`AGENT.md`](AGENT.md)** — Canonical rules and guardrails for all work on this codebase
+   - Non-negotiable project invariants
+   - Pre-execution checklist (load AI-APP-SEED.md + query memory)
+   - Code quality, testing, versioning, and release discipline
+   - Security, documentation, and dependency rules
 
-2. **Check `CLAUDE.md`** (local to your session) — Pre-execution rules that enforce:
-   - Loading AI-APP-SEED.md context
-   - Querying project memory for recent work
-   - Building and testing before code changes
-   - Version and documentation requirements
+2. **Read [`AI-APP-SEED.md`](AI-APP-SEED.md)** — Comprehensive context loader covering:
+   - Project identity, platforms, and architecture
+   - Module structure and build system with RTK token optimization
+   - Testing strategy (JVM unit tests + live device validation)
+   - Datawatch MCP tooling and memory system reference
+   - Common task patterns and known issues with workarounds
 
 3. **Query project memory** for recent changes and learnings:
    ```bash
