@@ -8,12 +8,15 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -74,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.drawBehind
@@ -400,93 +404,54 @@ public fun SessionDetailScreen(
         val terminalController = rememberTerminalController()
         val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
 
-        Column(
+        Box(
             modifier =
                 Modifier
                     .padding(padding)
                     .navigationBarsPadding()
                     .fillMaxSize(),
         ) {
-            // Terminal and banners in a scrollable container that responds to IME
+            val tabRowBorderColor = LocalDatawatchColors.current.border
             Column(
                 modifier =
                     Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .imePadding(),
+                        .fillMaxSize(),
             ) {
-            SessionInfoBar(
-                backend = state.session?.backend,
-                llmRef = state.session?.llmRef,
-                computeNodeRef = state.session?.computeNodeRef,
-                sessionMode = state.messagingBackend ?: "tmux",
-                state = state.session?.state,
-                reachable = state.reachable,
-                onStateClick = { stateMenuOpen = true },
-                onStop = { killConfirm = true },
-                onRestart = { /* parent-level reschedule not wired here yet */ },
-                onTimeline = { timelineOpen = true },
-                onDelete = { deleteConfirm = true },
-                stateMenuOpen = stateMenuOpen,
-                onStateMenuDismiss = { stateMenuOpen = false },
-                onPickState = { s ->
-                    stateMenuOpen = false
-                    vm.overrideState(s)
-                },
-                // v0.42.12 — Response affordance lives on the
-                // quick-actions row above the composer (📄 button,
-                // ReplyComposer line ~1729). User direction
-                // 2026-04-29: don't duplicate it on the chip bar.
-                hasResponse = false,
-                onResponse = {},
-            )
-            // v0.42.0 — PWA-style compact tabs: tmux/channel pill
-            // buttons (width of the label) on the left, font + Fit +
-            // Scroll buttons inline on the right. Replaces the
-            // full-width Material TabRow because the previous layout
-            // wasted a vertical strip of phone real estate and split
-            // the controls onto a separate row from the mode tabs —
-            // the PWA carries them on the same line.
-            val tabRowBorderColor = LocalDatawatchColors.current.border
-            if (!isCouncilVirtual) {
-                Row(
+                // Terminal and banners in a scrollable container that responds to IME
+                Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .drawBehind {
-                                drawLine(
-                                    color = tabRowBorderColor,
-                                    start = Offset(0f, size.height),
-                                    end = Offset(size.width, size.height),
-                                    strokeWidth = 1.dp.toPx(),
-                                )
-                            },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            .fillMaxHeight()
+                            .imePadding()
+                            .verticalScroll(rememberScrollState()),
                 ) {
-                    // G7: Channel tab only for claude / claude-code / opencode-acp backends
-                    val sessionBackend = state.session?.backend
-                    val showChannelTab = sessionBackend?.let {
-                        it == "claude" || it == "claude-code" || it == "opencode-acp"
-                    } == true
-                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
-                    if (showChannelTab) {
-                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
-                    }
-                    // G6: Status is now the single top-level tab; Stats lives as a sub-tab inside it
-                    SessionModeTab(
-                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
-                        selected = statusMode,
-                        onClick = { statusMode = true; statusSubStats = false },
-                    )
-                    Spacer(Modifier.weight(1f))
-                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
-                    if (showToolbar) {
-                        TerminalToolbarControls(toolbarState)
-                    }
-                }
-            }
+                Spacer(modifier = Modifier.height(48.dp))
+                SessionInfoBar(
+                    backend = state.session?.backend,
+                    llmRef = state.session?.llmRef,
+                    computeNodeRef = state.session?.computeNodeRef,
+                    sessionMode = state.messagingBackend ?: "tmux",
+                    state = state.session?.state,
+                    reachable = state.reachable,
+                    onStateClick = { stateMenuOpen = true },
+                    onStop = { killConfirm = true },
+                    onRestart = { /* parent-level reschedule not wired here yet */ },
+                    onTimeline = { timelineOpen = true },
+                    onDelete = { deleteConfirm = true },
+                    stateMenuOpen = stateMenuOpen,
+                    onStateMenuDismiss = { stateMenuOpen = false },
+                    onPickState = { s ->
+                        stateMenuOpen = false
+                        vm.overrideState(s)
+                    },
+                    // v0.42.12 — Response affordance lives on the
+                    // quick-actions row above the composer (📄 button,
+                    // ReplyComposer line ~1729). User direction
+                    // 2026-04-29: don't duplicate it on the chip bar.
+                    hasResponse = false,
+                    onResponse = {},
+                )
             if (responseOpen) {
                 LastResponseSheet(
                     response = state.session?.lastResponse.orEmpty(),
@@ -684,46 +649,87 @@ public fun SessionDetailScreen(
                 }
             }
 
-            // Composer in its own layer responding to keyboard insets separately.
-            // In scroll mode the big PgUp/PgDn overlay replaces the composer.
-            if (!toolbarState.scrollMode) {
-                var savedCmdsOpen by remember { mutableStateOf(false) }
-                Box(
+                // Composer in its own layer responding to keyboard insets separately.
+                // In scroll mode the big PgUp/PgDn overlay replaces the composer.
+                if (!toolbarState.scrollMode) {
+                    var savedCmdsOpen by remember { mutableStateOf(false) }
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .imePadding(),
+                    ) {
+                        Column {
+                            ReplyComposer(
+                        text = state.replyText,
+                        onTextChange = vm::onReplyTextChange,
+                        onSend = vm::sendReply,
+                        sending = state.replying,
+                        sessionId = sessionId,
+                        onTranscribed = { vm.onReplyTextChange(it) },
+                        onSchedule = { scheduleOpen = true },
+                        waitingInput = state.session?.state == SessionState.Waiting,
+                        onQuickReply = vm::sendQuickReply,
+                        onResponse = {
+                            vm.refreshFromServer()
+                            responseOpen = true
+                        },
+                        hasResponse = hasResponse,
+                        onSavedCommands = { savedCmdsOpen = true },
+                        whisperConfigured = state.whisperConfigured,
+                            )
+                            if (savedCmdsOpen) {
+                                QuickCommandsSheet(
+                                    fetchSavedCommands = { vm.fetchSavedCommands() },
+                                    onSend = { cmd ->
+                                        vm.sendQuickReply(cmd)
+                                        savedCmdsOpen = false
+                                    },
+                                    onDismiss = { savedCmdsOpen = false },
+                                    sessionId = sessionId,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fixed tab row overlay - stays at top while content scrolls behind
+            if (!isCouncilVirtual) {
+                Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .imePadding(),
+                            .padding(horizontal = 8.dp)
+                            .zIndex(1f)
+                            .drawBehind {
+                                drawLine(
+                                    color = tabRowBorderColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    Column {
-                        ReplyComposer(
-                    text = state.replyText,
-                    onTextChange = vm::onReplyTextChange,
-                    onSend = vm::sendReply,
-                    sending = state.replying,
-                    sessionId = sessionId,
-                    onTranscribed = { vm.onReplyTextChange(it) },
-                    onSchedule = { scheduleOpen = true },
-                    waitingInput = state.session?.state == SessionState.Waiting,
-                    onQuickReply = vm::sendQuickReply,
-                    onResponse = {
-                        vm.refreshFromServer()
-                        responseOpen = true
-                    },
-                    hasResponse = hasResponse,
-                    onSavedCommands = { savedCmdsOpen = true },
-                    whisperConfigured = state.whisperConfigured,
-                        )
-                        if (savedCmdsOpen) {
-                            QuickCommandsSheet(
-                                fetchSavedCommands = { vm.fetchSavedCommands() },
-                                onSend = { cmd ->
-                                    vm.sendQuickReply(cmd)
-                                    savedCmdsOpen = false
-                                },
-                                onDismiss = { savedCmdsOpen = false },
-                                sessionId = sessionId,
-                            )
-                        }
+                    val sessionBackend = state.session?.backend
+                    val showChannelTab = sessionBackend?.let {
+                        it == "claude" || it == "claude-code" || it == "opencode-acp"
+                    } == true
+                    SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
+                    if (showChannelTab) {
+                        SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
+                    }
+                    SessionModeTab(
+                        label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
+                        selected = statusMode,
+                        onClick = { statusMode = true; statusSubStats = false },
+                    )
+                    Spacer(Modifier.weight(1f))
+                    val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
+                    if (showToolbar) {
+                        TerminalToolbarControls(toolbarState)
                     }
                 }
             }
