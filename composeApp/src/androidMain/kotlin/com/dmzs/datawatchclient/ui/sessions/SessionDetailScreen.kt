@@ -422,31 +422,6 @@ public fun SessionDetailScreen(
                             .fillMaxWidth(),
                 ) {
                 Spacer(modifier = Modifier.height(48.dp))
-                SessionInfoBar(
-                    backend = state.session?.backend,
-                    llmRef = state.session?.llmRef,
-                    computeNodeRef = state.session?.computeNodeRef,
-                    sessionMode = state.messagingBackend ?: "tmux",
-                    state = state.session?.state,
-                    reachable = state.reachable,
-                    onStateClick = { stateMenuOpen = true },
-                    onStop = { killConfirm = true },
-                    onRestart = { /* parent-level reschedule not wired here yet */ },
-                    onTimeline = { timelineOpen = true },
-                    onDelete = { deleteConfirm = true },
-                    stateMenuOpen = stateMenuOpen,
-                    onStateMenuDismiss = { stateMenuOpen = false },
-                    onPickState = { s ->
-                        stateMenuOpen = false
-                        vm.overrideState(s)
-                    },
-                    // v0.42.12 — Response affordance lives on the
-                    // quick-actions row above the composer (📄 button,
-                    // ReplyComposer line ~1729). User direction
-                    // 2026-04-29: don't duplicate it on the chip bar.
-                    hasResponse = false,
-                    onResponse = {},
-                )
             if (responseOpen) {
                 LastResponseSheet(
                     response = state.session?.lastResponse.orEmpty(),
@@ -642,6 +617,31 @@ public fun SessionDetailScreen(
                         onCancel = sessionSchedulesVm::cancel,
                     )
                 }
+                SessionInfoBar(
+                    backend = state.session?.backend,
+                    llmRef = state.session?.llmRef,
+                    computeNodeRef = state.session?.computeNodeRef,
+                    sessionMode = state.messagingBackend ?: "tmux",
+                    state = state.session?.state,
+                    reachable = state.reachable,
+                    onStateClick = { stateMenuOpen = true },
+                    onStop = { killConfirm = true },
+                    onRestart = { /* parent-level reschedule not wired here yet */ },
+                    onTimeline = { timelineOpen = true },
+                    onDelete = { deleteConfirm = true },
+                    stateMenuOpen = stateMenuOpen,
+                    onStateMenuDismiss = { stateMenuOpen = false },
+                    onPickState = { s ->
+                        stateMenuOpen = false
+                        vm.overrideState(s)
+                    },
+                    // v0.42.12 — Response affordance lives on the
+                    // quick-actions row above the composer (📄 button,
+                    // ReplyComposer line ~1729). User direction
+                    // 2026-04-29: don't duplicate it on the chip bar.
+                    hasResponse = false,
+                    onResponse = {},
+                )
             }
 
                 // Composer in its own layer responding to keyboard insets separately.
