@@ -1867,7 +1867,6 @@ private fun ReplyComposer(
     whisperConfigured: Boolean = false,
 ) {
     HorizontalDivider()
-    if (isRunning) GeneratingIndicator()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
