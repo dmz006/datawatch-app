@@ -268,10 +268,11 @@ public fun SessionDetailScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
+    Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            contentWindowInsets = WindowInsets(0),
+            topBar = {
             TopAppBar(
                 title = {
                     // Tap title to rename — same wire as Sessions-list overflow.
@@ -403,15 +404,16 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .fillMaxSize()
-                    .imePadding(),
+                    .navigationBarsPadding()
+                    .fillMaxSize(),
         ) {
             // Terminal and banners in a scrollable container that responds to IME
             Column(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .imePadding(),
             ) {
             SessionInfoBar(
                 backend = state.session?.backend,
@@ -2187,6 +2189,7 @@ private fun ReplyComposer(
                 )
             }
         }
+    }
     }
 }
 
