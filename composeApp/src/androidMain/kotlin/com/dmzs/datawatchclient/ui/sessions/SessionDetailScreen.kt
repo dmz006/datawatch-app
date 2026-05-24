@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -411,77 +410,76 @@ public fun SessionDetailScreen(
                     .fillMaxSize(),
         ) {
             val tabRowBorderColor = LocalDatawatchColors.current.border
+
             Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .imePadding(),
             ) {
-                // Fixed headers - SessionInfoBar and Tab Row stacked vertically
-                // These occupy their natural height, not expanded
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    SessionInfoBar(
-                        backend = state.session?.backend,
-                        llmRef = state.session?.llmRef,
-                        computeNodeRef = state.session?.computeNodeRef,
-                        sessionMode = state.messagingBackend ?: "tmux",
-                        state = state.session?.state,
-                        reachable = state.reachable,
-                        onStateClick = { stateMenuOpen = true },
-                        onStop = { killConfirm = true },
-                        onRestart = { /* parent-level reschedule not wired here yet */ },
-                        onTimeline = { timelineOpen = true },
-                        onDelete = { deleteConfirm = true },
-                        stateMenuOpen = stateMenuOpen,
-                        onStateMenuDismiss = { stateMenuOpen = false },
-                        onPickState = { s ->
-                            stateMenuOpen = false
-                            vm.overrideState(s)
-                        },
-                        hasResponse = false,
-                        onResponse = {},
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        SessionInfoBar(
+                            backend = state.session?.backend,
+                            llmRef = state.session?.llmRef,
+                            computeNodeRef = state.session?.computeNodeRef,
+                            sessionMode = state.messagingBackend ?: "tmux",
+                            state = state.session?.state,
+                            reachable = state.reachable,
+                            onStateClick = { stateMenuOpen = true },
+                            onStop = { killConfirm = true },
+                            onRestart = { /* parent-level reschedule not wired here yet */ },
+                            onTimeline = { timelineOpen = true },
+                            onDelete = { deleteConfirm = true },
+                            stateMenuOpen = stateMenuOpen,
+                            onStateMenuDismiss = { stateMenuOpen = false },
+                            onPickState = { s ->
+                                stateMenuOpen = false
+                                vm.overrideState(s)
+                            },
+                            hasResponse = false,
+                            onResponse = {},
+                        )
 
-                    // Fixed tab row - stays below SessionInfoBar while content scrolls below
-                    if (!isCouncilVirtual) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .padding(horizontal = 8.dp)
-                                    .drawBehind {
-                                        drawLine(
-                                            color = tabRowBorderColor,
-                                            start = Offset(0f, size.height),
-                                            end = Offset(size.width, size.height),
-                                            strokeWidth = 1.dp.toPx(),
-                                        )
-                                    },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(0.dp),
-                        ) {
-                            val sessionBackend = state.session?.backend
-                            val showChannelTab = sessionBackend?.let {
-                                it == "claude" || it == "claude-code" || it == "opencode-acp"
-                            } == true
-                            SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
-                            if (showChannelTab) {
-                                SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
-                            }
-                            SessionModeTab(
-                                label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
-                                selected = statusMode,
-                                onClick = { statusMode = true; statusSubStats = false },
-                            )
-                            Spacer(Modifier.weight(1f))
-                            val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
-                            if (showToolbar) {
-                                TerminalToolbarControls(toolbarState)
+                        // Fixed tab row - stays below SessionInfoBar while content scrolls below
+                        if (!isCouncilVirtual) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(horizontal = 8.dp)
+                                        .drawBehind {
+                                            drawLine(
+                                                color = tabRowBorderColor,
+                                                start = Offset(0f, size.height),
+                                                end = Offset(size.width, size.height),
+                                                strokeWidth = 1.dp.toPx(),
+                                            )
+                                        },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            ) {
+                                val sessionBackend = state.session?.backend
+                                val showChannelTab = sessionBackend?.let {
+                                    it == "claude" || it == "claude-code" || it == "opencode-acp"
+                                } == true
+                                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
+                                if (showChannelTab) {
+                                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
+                                }
+                                SessionModeTab(
+                                    label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
+                                    selected = statusMode,
+                                    onClick = { statusMode = true; statusSubStats = false },
+                                )
+                                Spacer(Modifier.weight(1f))
+                                val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
+                                if (showToolbar) {
+                                    TerminalToolbarControls(toolbarState)
+                                }
                             }
                         }
                     }
-                }
 
                 // Terminal and banners in a scrollable container that responds to IME
                 Column(
@@ -632,16 +630,19 @@ public fun SessionDetailScreen(
                 // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
                 // appears directly under the terminal viewport so
                 // the keys land where the user is reading.
-                Column(
+                // TerminalView must take a direct weight so its inner
+                // AndroidView/WebView gets a finite Compose height to
+                // bind MATCH_PARENT against. The extra wrapper Column
+                // that lived here (commits 0dac78b → 4b4c371) gave the
+                // wrapper the weight but left TerminalView unbounded,
+                // collapsing the WebView and producing "text up off the
+                // top of the screen" + broken IME resize.
+                TerminalView(
+                    sessionId = sessionId,
+                    events = state.events,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                ) {
-                    TerminalView(
-                        sessionId = sessionId,
-                        events = state.events,
-                        modifier = Modifier.fillMaxWidth(),
-                        controller = terminalController,
-                    )
-                }
+                    controller = terminalController,
+                )
                 TerminalScrollModeStrip(toolbarState)
                 // Backend-specific minimum cols/rows. Matches parent
                 // v0.14.1 per-LLM console-size rule (claude-code = 120×40).

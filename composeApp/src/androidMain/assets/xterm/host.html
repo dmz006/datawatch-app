@@ -7,15 +7,17 @@
   <style>
     /* Palette matches PWA internal/server/web/app.js terminal init:
        background #0f1117 (charcoal), foreground #e2e8f0 (slate).
-       Use 100dvh (dynamic viewport height) instead of 100% so the height
-       shrinks when the soft keyboard appears on Android. */
+       Compose (`Modifier.imePadding()` on the outer Column) owns the
+       WebView's outer pixel size, so we always size to 100% of whatever
+       the WebView is given. Using 100dvh would lock to the *outer*
+       viewport on Chromium and fight Compose's resize on IME open. */
     html, body {
       background: #0f1117;
       color: #e2e8f0;
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100dvh;
+      height: 100%;
       overflow: hidden;
       font-family: "Roboto Mono", "Droid Sans Mono", monospace;
     }
@@ -24,12 +26,16 @@
        at 120 cols; user swipes to see the rest). Vertical scroll is
        suppressed — xterm handles its own scrollback. Matches PWA's
        .output-area rules and fixes parent issue 0393e262 / v0.14.0.
-       Note: no bottom CSS property — height is set via JS when keyboard appears. */
+       width + height come from `dwExplicitSize` (Kotlin onSizeChanged) so
+       the fit addon measures exactly the available pixel area Compose
+       allocated; the top/left/right/bottom = 0 fallback covers the brief
+       window before the first onSizeChanged callback. */
     #term {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
+      bottom: 0;
       padding: 0;
       overflow-x: auto;
       overflow-y: hidden;
@@ -183,16 +189,14 @@
       safeFit();
     };
 
+    // Pure measurement + fit. No CSS writes here — `dwExplicitSize`
+    // (called from Compose's onSizeChanged) is the sole owner of
+    // container width/height. Under Compose+imePadding the WebView
+    // never actually resizes itself so visualViewport-driven CSS
+    // tweaks fired here would race with Compose's resize callback.
     function safeFit() {
       if (!fit) return;
       try {
-        // When the soft keyboard is open, window.visualViewport.height is
-        // smaller than the document height. Adjust the container's bottom
-        // edge so the FitAddon sees only the actually-visible rows.
-        if (window.visualViewport) {
-          var keyboardH = document.documentElement.clientHeight - window.visualViewport.height;
-          container.style.bottom = (keyboardH > 0 ? keyboardH : 0) + 'px';
-        }
         // Check if the container has been laid out. Only bail on width since
         // height can legitimately be small when the IME is open (don't skip fit).
         var r = container.getBoundingClientRect();
@@ -240,47 +244,24 @@
       setTimeout(safeFit, 2500);
     });
 
-    // ── Visual viewport height tracking (mobile keyboard) ────
-    // When soft keyboard appears, shrink the container height so xterm.js
-    // FitAddon sees the correct available space. Use visualViewport.height
-    // to measure the visible area (excluding keyboard).
-    // Sequence: set height → rAF (apply to DOM) → safeFit() → wait 350ms → repeat
-    // This ensures fit() measures after the height change has taken effect.
-    if (window.visualViewport) {
-      var _setContainerH = function() {
-        var vvh = window.visualViewport.height;
-        container.style.height = vvh + 'px';
-        var offsetTop = window.visualViewport.offsetTop || 0;
-        var keyboardH = Math.max(0, window.innerHeight - vvh - offsetTop);
-        log('visualViewport: h=' + vvh + 'px, keyboard=' + keyboardH + 'px');
-      };
-
-      var _vvResize = function() {
-        _setContainerH();
-        // First pass: rAF waits for height to be applied before fit() measures
-        requestAnimationFrame(function() {
-          safeFit();
-          // Second pass at 350ms for slow keyboard animations
-          setTimeout(function() {
-            _setContainerH();
-            requestAnimationFrame(safeFit);
-          }, 350);
-        });
-      };
-
-      _setContainerH(); // initialize
-      window.visualViewport.addEventListener('resize', _vvResize);
-    }
-
-    // Respond to every resize signal the platform gives us.
+    // Keyboard handling under Compose:
+    //   - WindowCompat doesn't expose IME insets to the WebView when
+    //     Compose intercepts them via `Modifier.imePadding()`.
+    //   - `visualViewport.resize` does not reliably fire in that
+    //     configuration — the WebView itself never resizes; Compose
+    //     just shrinks the AndroidView around it.
+    //   - Therefore the SOLE source of truth for terminal pixel size
+    //     is `dwExplicitSize(w, h)` invoked from Kotlin's onSizeChanged
+    //     callback in TerminalView.kt. The handler is defined below.
+    //
+    // We still listen for native resize / load / ResizeObserver as a
+    // belt-and-braces signal for the legacy paths (rotation pre-Compose
+    // settle, initial layout) — these only trigger a re-fit, never CSS.
     window.addEventListener('resize', safeFit);
     window.addEventListener('load', safeFit);
     if (window.ResizeObserver) {
       try { new ResizeObserver(safeFit).observe(container); }
       catch (e) { log('ResizeObserver failed: ' + e); }
-    }
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', safeFit);
     }
 
     var opened = true; // term.open already called above
@@ -297,6 +278,34 @@
     };
 
     window.dwResize = function () { safeFit(); };
+
+    /**
+     * Single source of truth for terminal viewport dimensions. Called
+     * from `TerminalView.kt`'s `onSizeChanged` whenever the Compose
+     * layout gives the WebView a new pixel size — keyboard open/close,
+     * rotation, foldable hinge change, etc.
+     *
+     * Sequence: set CSS dims → rAF (let layout commit) → fit →
+     * 350 ms later → fit again (covers slow IME slide animations
+     * where the first fit measured a half-animated frame) →
+     * scrollToBottom (so the user always sees the live tail after a
+     * resize, never an arbitrary scrollback position).
+     */
+    window.dwExplicitSize = function (w, h) {
+      container.style.width = w + 'px';
+      container.style.height = h + 'px';
+      requestAnimationFrame(function () {
+        safeFit();
+        setTimeout(function () {
+          requestAnimationFrame(function () {
+            safeFit();
+            if (!_scrollMode && !_userScrolled) {
+              try { term.scrollToBottom(); } catch (e) {}
+            }
+          });
+        }, 350);
+      });
+    };
 
     /**
      * Explicit user-driven fit. Distinct from `dwResize` only in
