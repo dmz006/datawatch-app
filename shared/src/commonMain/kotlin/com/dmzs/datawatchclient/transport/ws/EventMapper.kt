@@ -190,10 +190,18 @@ private fun buildPaneCaptureEvents(
     storageSessionId: String = forSessionId,
 ): List<SessionEvent> {
     if (obj == null) return emptyList()
+    // Reject frames addressed to a DIFFERENT session — defence-in-depth against
+    // cross-session bleed when WS subscriptions overlap during navigation.
+    // Server emits `session_id` as either the short id ("9245") or the full id
+    // ("johnnyjohnny-9245"); subscription scope may be the other form. The
+    // bidirectional substring check accepts both directions and only rejects
+    // genuinely-different sessions. Matches the same predicate used in
+    // `buildOutputEvents` (line ~224) and `resetPaneCaptureSeen`.
+    // Was briefly deleted alongside the d488447 fullId-subscribe change in the
+    // mistaken belief the filter was over-rejecting; the original blank-terminal
+    // bug was actually caused by the wrong subscriptionId, which is now correct.
     val rawSid = obj.jsonString("session_id") ?: forSessionId
-    // Filter by the session the UI is currently rendering.
     if (!rawSid.contains(forSessionId) && !forSessionId.contains(rawSid)) {
-        println("EventMapper: pane_capture session_id mismatch: rawSid='$rawSid' forSessionId='$forSessionId'")
         return emptyList()
     }
     // Normalise to storageSessionId so the stored id matches selectEventsForSession's
