@@ -17,6 +17,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dmzs.datawatchclient.domain.SessionEvent
 import org.json.JSONObject
@@ -230,6 +232,9 @@ public fun TerminalView(
     // stale-true from causing dwPaneCapture to fire against a not-yet-loaded WebView.
     var ready by remember(sessionId) { mutableStateOf(false) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
+    // Track actual render size so we can force xterm to re-fit when keyboard
+    // opens/closes — the update block fires before WebView internal layout settles.
+    var viewSize by remember { mutableStateOf(IntSize.Zero) }
 
     // When the session changes, wipe the xterm DOM so session A's scrollback
     // doesn't bleed into session B's view. Also reset the pane_capture
@@ -240,6 +245,24 @@ public fun TerminalView(
             null,
         )
         com.dmzs.datawatchclient.transport.ws.resetPaneCaptureSeen(sessionId)
+    }
+
+    // Compose is the sole owner of the WebView's pixel size. Whenever
+    // onSizeChanged fires (keyboard open/close, rotation, foldable hinge,
+    // tablet split), ship the exact dimensions to xterm so FitAddon
+    // measures the right area. No cap — capping the height clipped the
+    // terminal to the top portion of a tall WebView, leaving the rest
+    // black (regression that produced "text is up off the top of the
+    // screen" reports). visualViewport-based handlers inside host.html
+    // do not fire reliably under Compose+imePadding, so this callback
+    // is load-bearing.
+    LaunchedEffect(viewSize, ready) {
+        if (!ready || viewSize.width == 0 || viewSize.height == 0) return@LaunchedEffect
+        val wv = webViewRef.value ?: return@LaunchedEffect
+        wv.evaluateJavascript(
+            "window.dwExplicitSize && window.dwExplicitSize(${viewSize.width}, ${viewSize.height});",
+            null,
+        )
     }
 
     // Watchdog removed in v0.33.13: it captured `events` at
@@ -254,7 +277,7 @@ public fun TerminalView(
     // fallback path and is no longer useful.
 
     AndroidView(
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { size -> viewSize = size },
         factory = { ctx ->
             WebView(ctx).apply {
                 layoutParams =
@@ -350,9 +373,12 @@ public fun TerminalView(
             }
         },
         update = { webView ->
-            // Compose may resize us across configuration changes; nudge xterm.
+            // onSizeChanged → dwExplicitSize is the primary resize path
+            // (above LaunchedEffect). Keep dwResize() as a no-op nudge for
+            // recompositions where dimensions did NOT change but state
+            // settled (font-size toggle, controller swap) — safeFit() is
+            // idempotent when measurements are unchanged.
             webView.evaluateJavascript("window.dwResize && window.dwResize();", null)
-            webView.requestLayout()
             controller?.webView = webView
         },
     )
