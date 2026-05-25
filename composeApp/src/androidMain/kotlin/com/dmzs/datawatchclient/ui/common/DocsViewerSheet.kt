@@ -18,7 +18,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,15 +59,29 @@ internal fun DocsViewerSheet(
      */
     allowSelfSigned: Boolean = false,
 ) {
-    // Full-screen Dialog instead of ModalBottomSheet — the sheet's
-    // drag-to-dismiss gesture intercepts every vertical drag on the
-    // WebView and the page itself never scrolls. A Dialog has no such
-    // gesture; the WebView gets all touch events and scrolls naturally.
+    // WebView ref + tracked back-stack state so the title bar back arrow
+    // and the device back button both navigate within the docs first and
+    // only dismiss the dialog once we're back at the original page.
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var canGoBack by remember { mutableStateOf(false) }
+
+    // Device back button: pop the WebView's back stack first, then dismiss.
+    BackHandler(enabled = true) {
+        val wv = webViewRef
+        if (wv != null && wv.canGoBack()) {
+            wv.goBack()
+        } else {
+            onDismiss()
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
+            // BackHandler above takes priority over Dialog's own back
+            // handling, so we set dismissOnBackPress = false here.
+            dismissOnBackPress = false,
             dismissOnClickOutside = false,
         ),
     ) {
@@ -79,11 +98,31 @@ internal fun DocsViewerSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(
-                        "Documentation",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Back-within-docs arrow — only enabled when the
+                        // WebView has back history (i.e., user has
+                        // followed a cross-doc link). Tapping it returns
+                        // to the previously-viewed doc page.
+                        IconButton(
+                            onClick = { webViewRef?.goBack() },
+                            enabled = canGoBack,
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back to previous doc",
+                                tint = if (canGoBack) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                },
+                            )
+                        }
+                        Text(
+                            "Documentation",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                     IconButton(onClick = onDismiss) {
                         Icon(
                             Icons.Filled.Close,
@@ -203,6 +242,10 @@ internal fun DocsViewerSheet(
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             println("DocsViewer: page finished url=$url")
+                            // Update the back-stack enabled state after each
+                            // navigation so the title-bar arrow lights up
+                            // when we've followed a cross-doc link.
+                            canGoBack = view?.canGoBack() == true
                             // Inject mobile-only style tweaks:
                             //   1. Hide "← PWA" link — it loads the PWA web
                             //      interface in the WebView (not a "back"
@@ -234,12 +277,8 @@ internal fun DocsViewerSheet(
                     }
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
-                    // Without trust-all here, self-signed certs fail the
-                    // mixed-cert check that NetworkSecurityConfig enforces
-                    // for the app's MAIN WebView; the per-profile trust
-                    // anchor only applies to OkHttp. For the docs page,
-                    // proceed on SSL error (we already do via WebViewClient).
                     loadUrl(url)
+                    webViewRef = this
                 }
             },
                     modifier = Modifier.weight(1f).fillMaxWidth(),
