@@ -486,19 +486,24 @@ public fun SessionDetailScreen(
                         }
                     }
 
-                // Terminal and banners area. imePadding ONLY here so when the
-                // keyboard opens, this column shrinks (giving xterm fewer rows)
-                // while the composer sibling below stays naturally at the
-                // bottom of the parent Column (which rides up with the
-                // system's window resize). Layering imePadding on the parent
-                // double-pads on top of system resize — see the comment on
-                // the parent Column above (bug fixed 2026-05-24).
+                // Terminal and banners area. NO imePadding here either:
+                // MainActivity doesn't call enableEdgeToEdge, so the system
+                // auto-resizes the activity window when the IME opens (the
+                // default adjustResize behaviour). Compose's WindowInsets.ime
+                // still reports the keyboard height in that mode, so wrapping
+                // any modifier in `imePadding()` adds a SECOND keyboard-height
+                // padding on top of the system's already-resized window,
+                // producing a ~700-1000 px black gap between the terminal and
+                // the composer (S24 Ultra @ density 600). Confirmed via
+                // `onSizeChanged → 1440x680` while the visual terminal was
+                // smaller than that, the rest of the WebView area dark and
+                // empty. System resize alone makes the composer sit just
+                // above the keyboard, weighted child shrinks accordingly.
                 Column(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth()
-                            .imePadding(),
+                            .fillMaxWidth(),
                 ) {
             if (responseOpen) {
                 LastResponseSheet(
