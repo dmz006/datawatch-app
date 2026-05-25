@@ -9,14 +9,27 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,7 +41,6 @@ import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DocsViewerSheet(
     url: String,
@@ -42,13 +54,45 @@ internal fun DocsViewerSheet(
      */
     allowSelfSigned: Boolean = false,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    // Full-screen Dialog instead of ModalBottomSheet — the sheet's
+    // drag-to-dismiss gesture intercepts every vertical drag on the
+    // WebView and the page itself never scrolls. A Dialog has no such
+    // gesture; the WebView gets all touch events and scrolls naturally.
+    Dialog(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+        ),
     ) {
-        AndroidView(
-            factory = { ctx ->
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF0e1013),
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "Documentation",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Close documentation",
+                        )
+                    }
+                }
+                AndroidView(
+                    factory = { ctx ->
                 WebView(ctx).apply {
                     println("DocsViewer: loading url=$url allowSelfSigned=$allowSelfSigned")
                     // MATCH_PARENT on both axes so the WebView fills the
@@ -60,6 +104,31 @@ internal fun DocsViewerSheet(
                     )
                     setBackgroundColor(android.graphics.Color.parseColor("#0e1013"))
                     webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                        ): Boolean {
+                            val target = request?.url?.toString() ?: return false
+                            // Cross-doc links in the diagrams viewer render as
+                            // relative <a href="howto/foo.md">. Clicking them
+                            // navigates the WebView to the raw .md URL —
+                            // which then displays as plain text instead of the
+                            // rendered docs page. Rewrite any .md link to use
+                            // the viewer's #docs/<path> hash format so
+                            // openFromHash() picks it up and renders properly.
+                            if (target.endsWith(".md") && target.contains("/docs/")) {
+                                val docPath = target.substringAfter("/docs/", "")
+                                if (docPath.isNotBlank()) {
+                                    val origin = target.substringBefore("/docs/")
+                                    val rewritten = "$origin/diagrams.html#docs/$docPath"
+                                    println("DocsViewer: rewriting .md link $target -> $rewritten")
+                                    view?.loadUrl(rewritten)
+                                    return true
+                                }
+                            }
+                            return false
+                        }
+
                         override fun onReceivedSslError(
                             view: WebView?,
                             handler: SslErrorHandler,
@@ -134,6 +203,27 @@ internal fun DocsViewerSheet(
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             println("DocsViewer: page finished url=$url")
+                            // Inject mobile-only style tweaks:
+                            //   1. Hide "← PWA" link — it loads the PWA web
+                            //      interface in the WebView (not a "back"
+                            //      action), confusing on mobile.
+                            //   2. Stack the right-side links (API spec /
+                            //      MCP tools) vertically so MCP tools fits
+                            //      on a narrow phone screen instead of
+                            //      wrapping awkwardly.
+                            view?.evaluateJavascript(
+                                """
+                                (function(){
+                                  var style = document.createElement('style');
+                                  style.textContent = ''
+                                    + 'header a[href="/"] { display: none !important; }'
+                                    + 'header .links { display: flex !important; flex-direction: column !important; gap: 2px !important; align-items: flex-end !important; }'
+                                    + 'header .links a { white-space: nowrap !important; }';
+                                  document.head.appendChild(style);
+                                })();
+                                """.trimIndent(),
+                                null,
+                            )
                         }
                     }
                     webChromeClient = object : WebChromeClient() {
@@ -152,8 +242,10 @@ internal fun DocsViewerSheet(
                     loadUrl(url)
                 }
             },
-            modifier = Modifier.fillMaxSize().heightIn(min = 500.dp),
-        )
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+            }
+        }
     }
 }
 
