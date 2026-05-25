@@ -359,6 +359,18 @@ public fun SessionDetailScreen(
                 // Stop, Timeline, chips) still lives in SessionInfoBar
                 // below the tabs.
                 actions = {
+                    // Docs link + Alerts bell — same pattern as the
+                    // Sessions-list TopAppBar (user request 2026-05-25: each
+                    // screen's header should expose these actions).
+                    com.dmzs.datawatchclient.ui.common.DocsLinkAction(
+                        "datawatch-definitions.md#session-detail",
+                    )
+                    val alertsVm: com.dmzs.datawatchclient.ui.alerts.AlertsViewModel =
+                        viewModel()
+                    val alertsState by alertsVm.state.collectAsState()
+                    com.dmzs.datawatchclient.ui.common.AlertsBellAction(
+                        alertsBadge = alertsState.watchedAlertCount,
+                    )
                     Box(
                         modifier =
                             Modifier
@@ -1044,27 +1056,28 @@ private fun SessionInfoBar(
                 }
             }
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
-            // Last Response button lives in the header next to Timeline
-            // (user request 2026-05-25 — previously hidden in the composer
-            // toolbar). hasResponse comes from the call site, no longer
-            // hard-coded to false at the SessionInfoBar level.
-            if (hasResponse) {
-                TextButton(
-                    onClick = onResponse,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 6.dp,
-                            vertical = 0.dp,
-                        ),
-                ) {
-                    Text("💾", style = MaterialTheme.typography.labelSmall)
-                }
-            }
+            // Right-aligned cluster: Timeline FIRST, then Last Response.
+            // User request 2026-05-25: Last Response uses the same
+            // `Description` icon as it did in the composer toolbar — the
+            // single canonical glyph for "view last response".
             TextButton(
                 onClick = onTimeline,
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
             ) {
                 Text("🕐", style = MaterialTheme.typography.labelSmall)
+            }
+            if (hasResponse) {
+                IconButton(
+                    onClick = onResponse,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = "View last response",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
@@ -1852,36 +1865,14 @@ private fun ReplyComposer(
     // and custom commands; the redundant chip row was eating ~40 dp
     // of vertical space the terminal viewport could use instead.
 
-    // v0.35.9 — unified quick-actions row above the composer.
-    // PWA-aligned per user direction 2026-04-28: the Last Response
-    // viewer + Saved Commands sheet + tmux arrow keys all live on
-    // one strip so the under-mic Saved-Commands button can go away
-    // and the composer row holds only typing/sending controls.
-    // Last Response anchors left, Saved Commands next, then arrow
-    // keys. Same `Description` icon as the SessionInfoBar's 1F4BE
-    // Response button — single canonical glyph for the action.
+    // Quick-actions row above the composer. The Last Response button
+    // moved to the SessionInfoBar (header) per user request 2026-05-25,
+    // so this row holds Saved Commands + ESC + arrow keys only.
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp),
     ) {
-        IconButton(
-            onClick = onResponse,
-            modifier = Modifier.size(32.dp),
-            enabled = !sending,
-        ) {
-            Icon(
-                Icons.Filled.Description,
-                contentDescription = "View last response",
-                modifier = Modifier.size(16.dp),
-                tint =
-                    if (hasResponse) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-        }
         IconButton(
             onClick = onSavedCommands,
             modifier = Modifier.size(32.dp),
@@ -2280,7 +2271,7 @@ private fun SessionModeTab(
                     Modifier
                 },
             )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 2.dp),
     ) {
         Text(
             label,
