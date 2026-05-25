@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
@@ -22,6 +23,60 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dmzs.datawatchclient.domain.SessionEvent
 import org.json.JSONObject
+
+/**
+ * WebView that ignores its own attempts at vertical scrolling. The Android
+ * WebView still synthesises scrollY changes from touch drags even when the
+ * loaded document has `body { overflow: hidden; touch-action: none }` —
+ * user-observed on Samsung S24 Ultra (Android 16): dragging across the
+ * terminal area moved the whole xterm content as if scrolling a webpage.
+ *
+ * Disabling vertical movement at the view layer:
+ *  - `overScrollBy` is called by the framework for every touch-driven
+ *    scroll update; clamping deltaY = 0 / scrollRangeY = 0 stops the slide
+ *  - `scrollTo` / `scrollBy` ignore the y component, so programmatic
+ *    requests (e.g. accessibility "scroll forward") don't move us either
+ *  - `computeVerticalScrollRange` returns 0 so the framework never thinks
+ *    there's room to scroll vertically
+ *
+ * Horizontal scroll is left intact — xterm's `#term` container uses
+ * `overflow-x: auto` so wide terminals (claude-code 120 cols on a 40-char
+ * phone) can pan via touch.
+ */
+private class TerminalWebView(ctx: Context) : WebView(ctx) {
+    override fun overScrollBy(
+        deltaX: Int,
+        deltaY: Int,
+        scrollX: Int,
+        scrollY: Int,
+        scrollRangeX: Int,
+        scrollRangeY: Int,
+        maxOverScrollX: Int,
+        maxOverScrollY: Int,
+        isTouchEvent: Boolean,
+    ): Boolean =
+        super.overScrollBy(
+            deltaX,
+            0,
+            scrollX,
+            0,
+            scrollRangeX,
+            0,
+            maxOverScrollX,
+            0,
+            isTouchEvent,
+        )
+
+    override fun scrollTo(x: Int, y: Int) {
+        super.scrollTo(x, 0)
+    }
+
+    override fun scrollBy(x: Int, y: Int) {
+        super.scrollBy(x, 0)
+    }
+
+    override fun computeVerticalScrollRange(): Int = 0
+}
 
 /**
  * Embeds an xterm.js terminal in a WebView and pipes [events] into it. The
@@ -279,7 +334,7 @@ public fun TerminalView(
     AndroidView(
         modifier = modifier.onSizeChanged { size -> viewSize = size },
         factory = { ctx ->
-            WebView(ctx).apply {
+            TerminalWebView(ctx).apply {
                 layoutParams =
                     ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -298,6 +353,18 @@ public fun TerminalView(
                 settings.setSupportZoom(true)
                 settings.builtInZoomControls = true
                 settings.displayZoomControls = false
+                // xterm.js owns all gesture handling for its content (its own
+                // scrollback, copy/paste, search). The Android WebView's
+                // default behaviour intercepts vertical drags as "scroll the
+                // webpage" and translates them into scrollY changes even when
+                // the document body has overflow:hidden — user observed this
+                // as "having to scroll the WebView down to find the live tail"
+                // after opening a session on the S24 (Android 16). Disabling
+                // the WebView's own vertical scroll + overscroll + scrollbar
+                // hands gesture ownership entirely to xterm.
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = WebView.OVER_SCROLL_NEVER
                 webViewClient =
                     object : WebViewClient() {
                         override fun onPageFinished(
