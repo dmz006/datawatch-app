@@ -177,7 +177,6 @@ internal fun DocsViewerSheet(
                 AndroidView(
                     factory = { ctx ->
                 WebView(ctx).apply {
-                    println("DocsViewer: loading url=$url allowSelfSigned=$allowSelfSigned")
                     // MATCH_PARENT on both axes so the WebView fills the
                     // sheet area instead of measuring as 0 inside the
                     // Material BottomSheet's Column layout.
@@ -204,7 +203,6 @@ internal fun DocsViewerSheet(
                                 if (docPath.isNotBlank()) {
                                     val origin = target.substringBefore("/docs/")
                                     val rewritten = "$origin/diagrams.html#docs/$docPath"
-                                    println("DocsViewer: rewriting .md link $target -> $rewritten")
                                     view?.loadUrl(rewritten)
                                     return true
                                 }
@@ -229,7 +227,6 @@ internal fun DocsViewerSheet(
                             request: WebResourceRequest?,
                         ): WebResourceResponse? {
                             val reqUrl = request?.url?.toString() ?: return null
-                            println("DocsViewer: intercept request url=$reqUrl method=${request.method}")
                             if (!reqUrl.startsWith("https://")) return null
                             return runCatching {
                                 val conn = (URL(reqUrl).openConnection() as HttpsURLConnection).apply {
@@ -273,7 +270,6 @@ internal fun DocsViewerSheet(
                                 } else {
                                     rawBody
                                 }
-                                println("DocsViewer: intercept ok url=$reqUrl status=$status mime=$mime bytes=${body.size}")
                                 WebResourceResponse(
                                     mime,
                                     charset,
@@ -285,7 +281,6 @@ internal fun DocsViewerSheet(
                                     ByteArrayInputStream(body),
                                 )
                             }.onFailure {
-                                println("DocsViewer: intercept failed url=$reqUrl err=$it")
                             }.getOrNull()
                         }
 
@@ -294,11 +289,9 @@ internal fun DocsViewerSheet(
                             request: WebResourceRequest?,
                             error: WebResourceError?,
                         ) {
-                            println("DocsViewer: load error url=${request?.url} code=${error?.errorCode} desc=${error?.description}")
                         }
 
                         override fun onPageFinished(view: WebView?, url: String?) {
-                            println("DocsViewer: page finished url=$url")
                             // Update the back-stack enabled state after each
                             // navigation so the title-bar arrow lights up
                             // when we've followed a cross-doc link.
@@ -312,7 +305,6 @@ internal fun DocsViewerSheet(
                     }
                     webChromeClient = object : WebChromeClient() {
                         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                            println("DocsViewer-js: ${consoleMessage.messageLevel()} ${consoleMessage.message()} (line ${consoleMessage.lineNumber()})")
                             return true
                         }
                     }

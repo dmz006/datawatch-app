@@ -264,6 +264,9 @@
                 <data android:scheme="wear" android:pathPrefix="/datawatch/council"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/error-alert"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/guardrailBlock"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/transcript"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/sessionDetail"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/voiceReply"/>
             </intent-filter>
         </service>
 

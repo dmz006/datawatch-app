@@ -338,9 +338,17 @@ public class WearSyncService(
             val profile =
                 ServiceLocator.profileRepository.observeAll().first()
                     .firstOrNull { it.id == activeId && it.enabled } ?: return
+            var sessionErrorCount = 0
+            var sessionCouncilCount = 0
             ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
                 Log.d(TAG, "fetchDashboard listSessions OK count=${list.size}")
                 ServiceLocator.sessionRepository.replaceAll(profile.id, list)
+                sessionErrorCount = list.count {
+                    it.state == SessionState.Error || it.state == SessionState.Killed
+                }
+                sessionCouncilCount = list.count {
+                    it.fullId.startsWith("council-") && it.state == SessionState.Running
+                }
             }.onFailure { err ->
                 Log.w(TAG, "fetchDashboard listSessions FAILED ${err.message}")
             }
@@ -362,6 +370,8 @@ public class WearSyncService(
                         gpuMemUsedMb = s.gpuMemUsedMb ?: 0L,
                         gpuMemTotalMb = s.gpuMemTotalMb ?: 0L,
                         gpuName = s.gpuName.orEmpty(),
+                        sessionsError = sessionErrorCount,
+                        sessionsCouncil = sessionCouncilCount,
                     ),
                 )
             }
