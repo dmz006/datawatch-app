@@ -359,18 +359,21 @@ public fun SessionDetailScreen(
                 // Stop, Timeline, chips) still lives in SessionInfoBar
                 // below the tabs.
                 actions = {
-                    // Docs link + Alerts bell — same pattern as the
-                    // Sessions-list TopAppBar (user request 2026-05-25: each
-                    // screen's header should expose these actions).
                     com.dmzs.datawatchclient.ui.common.DocsLinkAction(
-                        "datawatch-definitions.md#session-detail",
+                        // Use the "Sessions" parent anchor (known-good
+                        // slug — verified working via the sessions-list
+                        // header). H3 anchors with em-dashes don't round-
+                        // trip cleanly through the docs viewer's slugifier.
+                        "datawatch-definitions.md#sessions",
                     )
                     val alertsVm: com.dmzs.datawatchclient.ui.alerts.AlertsViewModel =
                         viewModel()
                     val alertsState by alertsVm.state.collectAsState()
-                    com.dmzs.datawatchclient.ui.common.AlertsBellAction(
-                        alertsBadge = alertsState.watchedAlertCount,
-                    )
+                    Box(modifier = Modifier.padding(end = 10.dp)) {
+                        com.dmzs.datawatchclient.ui.common.AlertsBellAction(
+                            alertsBadge = alertsState.watchedAlertCount,
+                        )
+                    }
                     Box(
                         modifier =
                             Modifier
