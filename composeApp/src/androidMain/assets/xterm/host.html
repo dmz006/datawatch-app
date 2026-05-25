@@ -19,6 +19,13 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      /* touch-action:none on the document prevents Android WebView from
+         intercepting vertical drags as a "scroll the whole webpage" gesture.
+         Without this, the WebView scrolls its own content (revealing rows
+         that should be clipped) even though body has overflow:hidden — the
+         user reported "having to scroll down to find the live tail" because
+         the WebView was at the top while xterm rendered tall content. */
+      touch-action: none;
       font-family: "Roboto Mono", "Droid Sans Mono", monospace;
     }
     /* Outer scroll container. Horizontal scroll lets a 120-col Claude
@@ -189,23 +196,27 @@
       safeFit();
     };
 
-    // Pure measurement + fit. No CSS writes here — `dwExplicitSize`
-    // (called from Compose's onSizeChanged) is the sole owner of
-    // container width/height. Under Compose+imePadding the WebView
-    // never actually resizes itself so visualViewport-driven CSS
-    // tweaks fired here would race with Compose's resize callback.
+    // Atomic "is xterm at the bottom of its scrollback?" check. PWA pattern
+    // (internal/server/web/app.js line ~651). Reads xterm's buffer state
+    // directly — no race with onScroll events that fire during resize/fit
+    // and would otherwise false-positive a flag-based check. Use this at
+    // the moment of each decision (write, scroll-restore) rather than
+    // caching it in a long-lived variable.
+    function atBottom() {
+      try {
+        var buf = term.buffer && term.buffer.active;
+        return buf ? (buf.viewportY >= buf.baseY) : true;
+      } catch (e) { return true; }
+    }
+
     function safeFit() {
       if (!fit) return;
       try {
-        // Check if the container has been laid out. Only bail on width since
-        // height can legitimately be small when the IME is open (don't skip fit).
         var r = container.getBoundingClientRect();
         if (r.width < 40) {
           log('skip fit: container width too small ' + r.width + 'x' + r.height);
           return;
         }
-        // Allow fit even with small height (when keyboard is up) — xterm will
-        // render whatever rows fit in the available space.
         fit.fit();
         // Enforce minimum cols when the backend requires it (e.g.
         // claude-code 120). Matches PWA's initXterm resize logic.
@@ -214,6 +225,17 @@
         }
         if (_configRows > 0 && term.rows < _configRows) {
           term.resize(term.cols, _configRows);
+        }
+        // Always snap to live tail after any fit, except when the toolbar
+        // scroll-mode is active. Mirrors PWA's `_fitAndScroll` (app.js
+        // ~line 3208). The wasAtBottom snapshot pattern races with
+        // pane_capture writes that complete mid-fit and false-negatives,
+        // stranding the viewport mid-buffer (root cause of the b252-b254
+        // "have to scroll down to find live tail" reports). On mobile,
+        // touch scrollback isn't a thing (touch-action:none + custom
+        // WebView), so `_scrollMode` is the only signal to skip.
+        if (!_scrollMode) {
+          try { term.scrollToBottom(); } catch (e) {}
         }
         log('fit ok: ' + term.cols + 'x' + term.rows + ' (px ' + r.width + 'x' + r.height + ')');
         // Notify Kotlin so it can send a `resize_term` WS frame to
@@ -405,8 +427,6 @@
     // Pause pane_capture writes while the user is in tmux scroll/copy-mode.
     // The ESC[2J ESC[3J wipe would reset their scroll position.
     var _scrollMode = false;
-    // True when the user has manually scrolled away from the live tail.
-    var _userScrolled = false;
 
     window.dwSetFrozen = function (frozen) { _frozen = !!frozen; };
 
@@ -416,18 +436,9 @@
     window.dwSetScrollMode = function (on) {
       _scrollMode = !!on;
       if (!on) {
-        _userScrolled = false;
         try { term.scrollToBottom(); } catch (e) {}
       }
     };
-
-    // Detect user-initiated scroll (they scrolled away from live tail).
-    term.onScroll(function () {
-      var vp = document.querySelector('.xterm-viewport');
-      if (!vp) return;
-      // User is "at bottom" if within 2px of scrollable end.
-      _userScrolled = vp.scrollTop < vp.scrollHeight - vp.clientHeight - 2;
-    });
 
     window.dwPaneCapture = function (linesJson, isFirst) {
       try {
@@ -448,23 +459,38 @@
         _lastPaneWrite = now;
         var joined = lines.join('\r\n');
         if (isFirst) {
-          // Fresh render — user hasn't scrolled yet. Reset the flag now so the
-          // onScroll events fired by term.write() don't falsely latch _userScrolled.
-          // Use the write callback (fires after xterm flushes the buffer) to
-          // scroll to the live tail, overriding any intermediate onScroll state.
-          _userScrolled = false;
+          // Fresh subscription — wipe any prior session's content and write
+          // the whole capture. xterm's `term.write` auto-advances the
+          // cursor (which auto-scrolls to follow it) but in WebView the
+          // initial pane_capture often races with the first `safeFit()`
+          // (triggered by onSizeChanged): fit() recomputes row count and
+          // can leave the viewport stranded mid-buffer. Force the viewport
+          // to the live tail aggressively over the first 500ms so any
+          // concurrent fit() can't strand it. User-observed on S24 Ultra:
+          // before this, opening a long-running session showed rows from
+          // ~30 % into the scrollback and required manual scroll-down.
           term.reset();
           term.write(joined, function () {
-            _userScrolled = false;
-            if (!_scrollMode) try { term.scrollToBottom(); } catch (e) {}
+            if (_scrollMode) return;
+            var snap = function () { try { term.scrollToBottom(); } catch (e) {} };
+            snap();
+            requestAnimationFrame(snap);
+            setTimeout(function () { requestAnimationFrame(snap); }, 100);
+            setTimeout(function () { requestAnimationFrame(snap); }, 500);
           });
         } else {
+          // Mobile-only logic: the user has no way to scroll xterm-viewport
+          // via touch (CSS touch-action:none, custom WebView blocks gestures
+          // — scrollback is exposed via the TerminalScrollModeStrip toolbar
+          // buttons which flip `_scrollMode`). So the ONLY legitimate "user
+          // is reading history" signal is `_scrollMode`. The PWA's atBottom-
+          // skip pattern doesn't apply here and false-positives whenever a
+          // fit() momentarily shifts the viewport: every subsequent capture
+          // is skipped and the terminal freezes mid-buffer.
+          if (_scrollMode) return;
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
-          // Scroll to tail when not in scroll mode and user hasn't manually scrolled.
-          if (!_scrollMode && !_userScrolled) {
-            try { term.scrollToBottom(); } catch (e) {}
-          }
+          try { term.scrollToBottom(); } catch (e) {}
         }
       } catch (e) {
         log('paneCapture failed: ' + e);
