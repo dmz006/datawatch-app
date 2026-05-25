@@ -8,8 +8,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -270,7 +268,6 @@ public fun SessionDetailScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0),
@@ -406,16 +403,24 @@ public fun SessionDetailScreen(
             modifier =
                 Modifier
                     .padding(padding)
-                    .navigationBarsPadding()
                     .fillMaxSize(),
         ) {
             val tabRowBorderColor = LocalDatawatchColors.current.border
 
+            // Single owner of bottom system insets: navigationBarsPadding here
+            // reserves the 3-button nav bar area when the keyboard is closed.
+            // imePadding is applied DEEPER (on the weighted terminal Column only)
+            // so the composer — which lives outside that scope as the last child
+            // of this Column — rides up naturally with the system's automatic
+            // window-resize on keyboard open. Layering imePadding here in
+            // addition to system resize doubles the bottom padding and on a
+            // dense screen (S24 Ultra @ 600dpi, 3-button nav) crushes the entire
+            // content area into a 600px strip at the top — bug fixed 2026-05-24.
             Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .imePadding(),
+                        .navigationBarsPadding(),
             ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SessionInfoBar(
@@ -481,12 +486,19 @@ public fun SessionDetailScreen(
                         }
                     }
 
-                // Terminal and banners in a scrollable container that responds to IME
+                // Terminal and banners area. imePadding ONLY here so when the
+                // keyboard opens, this column shrinks (giving xterm fewer rows)
+                // while the composer sibling below stays naturally at the
+                // bottom of the parent Column (which rides up with the
+                // system's window resize). Layering imePadding on the parent
+                // double-pads on top of system resize — see the comment on
+                // the parent Column above (bug fixed 2026-05-24).
                 Column(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .imePadding(),
                 ) {
             if (responseOpen) {
                 LastResponseSheet(
@@ -849,7 +861,6 @@ public fun SessionDetailScreen(
     // Loading overlay — rendered on top of the Scaffold; fades out when
     // the first pane_capture arrives (sessionLoaded = true).
     SessionLoadingOverlay(visible = !sessionLoaded)
-    } // end Box
 }
 
 /**
