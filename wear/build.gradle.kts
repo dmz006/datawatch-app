@@ -4,8 +4,9 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
-    alias(libs.plugins.play.publisher)
 }
+// play.publisher plugin removed: wear is distributed via the phone app's
+// AAB bundle (wearApp dependency in composeApp), not as a separate listing.
 
 val appVersion: String = providers.gradleProperty("DATAWATCH_APP_VERSION").get()
 val appVersionCode: Int =
@@ -23,7 +24,10 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.dmzs.datawatchclient.wear"
+        // applicationId MUST match the phone app so the Wearable Data Layer
+        // treats them as the same pair. The wear APK is embedded in the
+        // phone app's AAB via `wearApp(project(":wear"))` in composeApp.
+        applicationId = "com.dmzs.datawatchclient"
         minSdk = 28  // Support Wear OS 4.0+ (API 28+) for broader device compatibility
         targetSdk = 35
         versionCode = appVersionCode
@@ -40,7 +44,16 @@ android {
                 ?: error("KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file required for release signing")
         }
 
+        // Production upload key — must match composeApp publicTrack signing so
+        // Play Console accepts the wear APK upload to the same listing.
         create("release") {
+            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
+            storePassword = keystorePasswordProvider()
+            keyAlias = "datawatch-upload"
+            keyPassword = keystorePasswordProvider()
+        }
+        // Dev upload key for sideloaded dev builds.
+        create("dev") {
             storeFile = file("${System.getProperty("user.home")}/.android/datawatch-dev-upload-ring.jks")
             storePassword = keystorePasswordProvider()
             keyAlias = "datawatch-dev-upload"
@@ -57,8 +70,9 @@ android {
         debug {
             // Mirror composeApp's `.debug` suffix so side-loaded debug
             // builds on phone + watch share the same applicationId
-            // (`com.dmzs.datawatchclient.wear.debug`).
+            // (`com.dmzs.datawatchclient.debug`).
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("dev")
         }
     }
     compileOptions {
@@ -108,13 +122,7 @@ dependencies {
     testRuntimeOnly(libs.junit5.engine)
 }
 
-play {
-    // Read JSON service account key from environment or local file.
-    val keyPath = System.getenv("PLAY_PUBLISHER_KEY") ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
-    serviceAccountCredentials.set(file(keyPath))
-
-    // Internal testing track for v1.0.0 pre-release validation
-    // Wear OS apps require AAB format (no APK support on Play Console)
-    track.set("internal")
-    defaultToAppBundles.set(true)
-}
+// Wear OS apps are distributed embedded inside the phone app's AAB —
+// not as a separate Play Console listing. The composeApp module uses
+// wearApp(project(":wear")) to bundle this module; upload only the
+// phone app's AAB to the existing phone app listing.

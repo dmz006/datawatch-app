@@ -171,6 +171,13 @@ ktlint {
     ignoreFailures.set(true) // Sprint 1 report-only; see root build.gradle.kts
 }
 
+// Bundle the Wear OS APK inside the phone app's AAB so Play Console
+// distributes it to paired watches automatically from a single listing.
+// Gradle matches variants: publicTrackRelease phone → release wear.
+dependencies {
+    wearApp(project(":wear"))
+}
+
 play {
     // Read JSON service account key from environment or local file.
     // Set PLAY_PUBLISHER_KEY env var to path of the JSON key, or
