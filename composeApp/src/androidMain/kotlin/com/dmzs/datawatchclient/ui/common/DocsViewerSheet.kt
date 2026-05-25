@@ -16,22 +16,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -64,6 +74,7 @@ internal fun DocsViewerSheet(
     // only dismiss the dialog once we're back at the original page.
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var canGoBack by remember { mutableStateOf(false) }
+    var searchOpen by remember { mutableStateOf(false) }
 
     // Device back button: pop the WebView's back stack first, then dismiss.
     BackHandler(enabled = true) {
@@ -86,7 +97,13 @@ internal fun DocsViewerSheet(
         ),
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            // navigationBarsPadding keeps the bottom of the docs WebView
+            // above the Android system nav bar (gesture pill / 3-button
+            // bar) so the last lines of long doc pages aren't hidden
+            // under the system chrome.
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding(),
             color = Color(0xFF0e1013),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -123,11 +140,25 @@ internal fun DocsViewerSheet(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = "Close documentation",
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Magnifying-glass opens a search dialog. Cheaper
+                        // than asking the user to scroll back to the top
+                        // and find the page's filter input — esp. after
+                        // a cross-doc link lands them mid-page on a long
+                        // manual entry. Submit drives the page's existing
+                        // /api/docs/search box via evaluateJavascript.
+                        IconButton(onClick = { searchOpen = true }) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = "Search documentation",
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "Close documentation",
+                            )
+                        }
                     }
                 }
                 AndroidView(
@@ -283,6 +314,85 @@ internal fun DocsViewerSheet(
             }
         }
     }
+
+    if (searchOpen) {
+        DocsSearchDialog(
+            onDismiss = { searchOpen = false },
+            onSearch = { query ->
+                val esc = query
+                    .replace("\\", "\\\\")
+                    .replace("'", "\\'")
+                    .replace("\n", "\\n")
+                // Drive the page's existing /api/docs/search box:
+                //   1. un-collapse the sidebar (mobile defaults to hidden
+                //      via `aside-collapsed`; results render in the sidebar)
+                //   2. set #filter value
+                //   3. dispatch 'input' event so the debounced runSearch()
+                //      handler in diagrams.html fires the API call
+                webViewRef?.evaluateJavascript(
+                    """
+                    (function(){
+                      try {
+                        var body = document.getElementById('bodyEl');
+                        if (body) body.classList.remove('aside-collapsed');
+                        var el = document.getElementById('filter');
+                        if (!el) return 'no-filter';
+                        el.value = '$esc';
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.focus();
+                        return 'ok';
+                      } catch (e) { return 'err:' + e.message; }
+                    })();
+                    """.trimIndent(),
+                    null,
+                )
+                searchOpen = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun DocsSearchDialog(
+    onDismiss: () -> Unit,
+    onSearch: (String) -> Unit,
+) {
+    var query by remember { mutableStateOf(TextFieldValue("")) }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Search docs") },
+        text = {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                placeholder = { Text("Type a query (≥3 chars)") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onSearch = {
+                        val q = query.text.trim()
+                        if (q.isNotEmpty()) onSearch(q)
+                    },
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val q = query.text.trim()
+                if (q.isNotEmpty()) onSearch(q)
+            }) { Text("Search") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 // Trust-all SSL context for the docs WebView's sub-resource fetches.
