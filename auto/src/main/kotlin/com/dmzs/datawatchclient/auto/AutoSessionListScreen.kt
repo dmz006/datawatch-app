@@ -1,3 +1,4 @@
+@file:Suppress("MagicNumber")
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext

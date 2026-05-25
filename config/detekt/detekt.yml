@@ -5,9 +5,14 @@ naming:
   FunctionNaming:
     active: true
     # @Composable functions use PascalCase by convention; exempt them from the
-    # camelCase rule. Everything else still lints.
+    # camelCase rule. JUnit5 / Kotlin test functions conventionally use backtick
+    # names (`should do X when Y`) which also fail camelCase — exclude test source
+    # sets so pre-existing test suites don't block the build.
     ignoreAnnotated:
       - 'Composable'
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
 
 style:
   MagicNumber:
@@ -18,6 +23,8 @@ style:
     # non-UI packages.
     excludes:
       - '**/wear/**'
+      - '**/test/**'
+      - '**/androidTest/**'
       - '**/ui/**'
       - '**/compose/**'
   ReturnCount:

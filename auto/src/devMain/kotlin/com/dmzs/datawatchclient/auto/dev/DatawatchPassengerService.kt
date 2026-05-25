@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto.dev
 import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
+import com.dmzs.datawatchclient.auto.AutoServiceLocator
 import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 
 /**
@@ -13,6 +14,11 @@ import com.dmzs.datawatchclient.auto.AutoSummaryScreen
  * Sprint 4 implements the full surface (session list, terminal mirror, stats, voice).
  */
 public class DatawatchPassengerService : CarAppService() {
+    override fun onCreate() {
+        super.onCreate()
+        AutoServiceLocator.init(applicationContext)
+    }
+
     override fun createHostValidator(): HostValidator = HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
 
     override fun onCreateSession(): Session =
