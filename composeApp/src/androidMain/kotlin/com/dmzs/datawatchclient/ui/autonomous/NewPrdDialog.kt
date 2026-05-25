@@ -90,11 +90,14 @@ internal fun NewPrdDialog(
     val inheritLabel = stringResource(R.string.new_prd_inherit)
     val backendDefaultLabel = stringResource(R.string.new_prd_backend_default)
 
-    /** Models keyed by backend name; only ollama and openwebui are fetched. */
+    /** Models keyed by backend name; ollama, openwebui, and opencode are fetched. */
     var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
 
     /** Model names for the currently-selected backend (empty = hide field). */
-    val modelsForBackend: List<String> = availableModels[backend].orEmpty()
+    val modelsForBackend: List<String> = when {
+        backend.startsWith("opencode") -> availableModels["opencode"].orEmpty()
+        else -> availableModels[backend].orEmpty()
+    }
 
     LaunchedEffect(Unit) {
         runCatching {
@@ -115,6 +118,7 @@ internal fun NewPrdDialog(
                 val ollamaD = async { transport.listOllamaModels() }
                 val owuiD = async { transport.listOpenWebUiModels() }
                 val pmD = async { transport.listClaudePermissionModes() }
+                val llmsD = async { transport.listLlms() }
 
                 backendsD.await().onSuccess { view -> backendOptions = view.llm }
                 projectD.await().onSuccess { list ->
@@ -130,6 +134,14 @@ internal fun NewPrdDialog(
                 val models = mutableMapOf<String, List<String>>()
                 ollamaD.await().onSuccess { if (it.isNotEmpty()) models["ollama"] = it }
                 owuiD.await().onSuccess { if (it.isNotEmpty()) models["openwebui"] = it }
+                llmsD.await().onSuccess { llmList ->
+                    val opencodeMods = llmList
+                        .filter { it.enabled && it.kind.startsWith("opencode") }
+                        .flatMap { entry -> entry.models.map { p -> p.model } + listOf(entry.model) }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                    if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
+                }
                 availableModels = models
                 pmD.await().onSuccess { permissionModeOptions = it }
             }

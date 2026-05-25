@@ -4,14 +4,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -36,13 +41,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -63,7 +72,9 @@ public fun NewSessionScreen(
         .collectAsState(initial = null)
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current
     var task by remember { mutableStateOf("") }
+    var taskExpanded by remember { mutableStateOf(false) }
     var sessionName by remember { mutableStateOf("") }
     var selectedProfileId by remember { mutableStateOf<String?>(null) }
     var workingDir by remember { mutableStateOf("") }
@@ -73,6 +84,27 @@ public fun NewSessionScreen(
     var resumeId by remember { mutableStateOf<String?>(null) }
     var autoGitInit by remember { mutableStateOf(false) }
     var autoGitCommit by remember { mutableStateOf(true) }
+    var whisperConfigured by remember { mutableStateOf(false) }
+    var voiceRecorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
+    var showVoiceDialog by remember { mutableStateOf(false) }
+    var transcribingVoice by remember { mutableStateOf(false) }
+    val micPermissionLauncher =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                runCatching { r.start() }
+                    .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                    .onFailure { e ->
+                        android.widget.Toast.makeText(
+                            context,
+                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            }
+        }
 
     // Recent done sessions for the Resume dropdown — matches PWA's
     // populateResumeDropdown: 30 most-recent completed/failed/killed.
@@ -92,69 +124,6 @@ public fun NewSessionScreen(
         }
     }
 
-    // Available LLM backends on the selected server (from /api/backends).
-    // Refreshed whenever the user picks a different server. The picker
-    // also remembers the server's currently-active backend so we can
-    // skip the setActiveBackend call when the user keeps the default.
-    var backends by remember { mutableStateOf<List<String>>(emptyList()) }
-    var activeBackend by remember { mutableStateOf<String?>(null) }
-    var pickedBackend by remember { mutableStateOf<String?>(null) }
-    var backendsBlocked by remember { mutableStateOf(false) }
-    LaunchedEffect(selectedProfileId) {
-        backends = emptyList()
-        activeBackend = null
-        pickedBackend = null
-        backendsBlocked = false
-        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
-        val transport = ServiceLocator.transportFor(profile)
-        transport.listBackends().fold(
-            onSuccess = { v ->
-                activeBackend = v.active
-                pickedBackend = v.active
-                // Filter to backends actually enabled on the selected
-                // server. `/api/backends` returns every adapter the
-                // daemon was built with, which made the New Session
-                // picker list ghost backends (e.g. openai shown even
-                // when no api_key is configured). Cross-reference the
-                // config's per-backend enabled flag. A missing flag
-                // means "user never configured" → hide.
-                val enabledSet =
-                    transport.fetchConfig().getOrNull()?.let { cfg ->
-                        val root = kotlinx.serialization.json.JsonObject(cfg.raw.toMap())
-                        v.llm.filter { name -> backendEnabled(root, name) }
-                            .toSet()
-                    } ?: v.llm.toSet()
-                // Keep server-reported active even if the enabled flag
-                // wasn't set — otherwise the picker might drop the
-                // default and leave nothing selected.
-                backends =
-                    (enabledSet + listOfNotNull(v.active))
-                        .distinct()
-                        .filter { it.isNotBlank() }
-            },
-            onFailure = {
-                // Server doesn't expose /api/backends — picker is hidden.
-                backendsBlocked = true
-            },
-        )
-    }
-
-    // Model variants for ollama / openwebui backends. Only populated when
-    // the picked backend is one of those two; other backends don't
-    // enumerate a model list on the parent today.
-    var models by remember { mutableStateOf<List<String>>(emptyList()) }
-    var pickedModel by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(selectedProfileId, pickedBackend) {
-        models = emptyList()
-        pickedModel = null
-        val backend = pickedBackend?.lowercase() ?: return@LaunchedEffect
-        if (backend != "ollama" && backend != "openwebui") return@LaunchedEffect
-        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
-        ServiceLocator.transportFor(profile).listModels(backend).onSuccess { list ->
-            models = list
-            pickedModel = list.firstOrNull()
-        }
-    }
 
     // Claude-code advanced options — permission mode + model + effort.
     // Fetched from /api/llm/claude/{models,efforts,permission_modes} (v5.27.5+).
@@ -189,6 +158,10 @@ public fun NewSessionScreen(
     var pickedPermissionMode by remember { mutableStateOf("") }
     var pickedClaudeModel by remember { mutableStateOf("") }
     var pickedClaudeEffort by remember { mutableStateOf("") }
+    var nonClaudeModels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pickedNonClaudeModel by remember { mutableStateOf("") }
+    var pickedNonClaudeEffort by remember { mutableStateOf("") }
+    // Load claude options and whisperConfigured whenever the server profile changes.
     LaunchedEffect(selectedProfileId) {
         claudeModels = emptyList()
         claudeEfforts = emptyList()
@@ -197,6 +170,7 @@ public fun NewSessionScreen(
         pickedPermissionMode = ""
         pickedClaudeModel = ""
         pickedClaudeEffort = ""
+        whisperConfigured = false
         val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
         val transport = ServiceLocator.transportFor(profile)
         transport.listClaudePermissionModes().onSuccess { modes ->
@@ -205,6 +179,35 @@ public fun NewSessionScreen(
         }
         transport.listClaudeModels().onSuccess { claudeModels = it }
         transport.listClaudeEfforts().onSuccess { claudeEfforts = it }
+        transport.fetchConfig().onSuccess { cfg ->
+            whisperConfigured =
+                (cfg.raw["whisper"] as? kotlinx.serialization.json.JsonObject)
+                    ?.get("enabled")
+                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content == "true" }
+                    ?: false
+        }
+    }
+    // Reset picks and load models when LLM selection or server changes.
+    LaunchedEffect(pickedLlm, selectedProfileId) {
+        pickedPermissionMode = ""
+        pickedClaudeModel = ""
+        pickedClaudeEffort = ""
+        nonClaudeModels = emptyList()
+        pickedNonClaudeModel = ""
+        pickedNonClaudeEffort = ""
+        val llm = pickedLlm ?: return@LaunchedEffect
+        if (llm.kind.lowercase().contains("claude")) return@LaunchedEffect
+        val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
+        // Registry-defined models take priority (opencode and others store them here)
+        val registryModels = llm.models.map { it.model }.filter { it.isNotBlank() }
+        if (registryModels.isNotEmpty()) {
+            nonClaudeModels = registryModels
+            return@LaunchedEffect
+        }
+        // Dynamic fetch for ollama/openwebui
+        ServiceLocator.transportFor(profile).listModels(llm.kind).onSuccess { list ->
+            if (list.isNotEmpty()) nonClaudeModels = list
+        }
     }
 
     // Server-defined F10 profiles (agent profiles). Keyed by name; each
@@ -319,30 +322,108 @@ public fun NewSessionScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // Task field — collapsed by default; tap envelope to expand.
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(onClick = { taskExpanded = !taskExpanded }, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Filled.Mail,
+                        contentDescription = stringResource(R.string.new_session_task_label),
+                        tint = if (taskExpanded || task.isNotBlank()) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
                     stringResource(R.string.new_session_task_label),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
+                    color = if (taskExpanded || task.isNotBlank()) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f).padding(start = 4.dp),
                 )
-                SavedCommandLibraryDropdown(
-                    onPick = { task = it },
-                )
+                if (taskExpanded) {
+                    SavedCommandLibraryDropdown(onPick = { task = it })
+                }
             }
-            OutlinedTextField(
-                value = task,
-                onValueChange = { task = it },
-                placeholder = { Text(stringResource(R.string.new_session_task_hint)) },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp),
-                maxLines = 8,
-            )
+            if (taskExpanded) {
+                if (showVoiceDialog) {
+                    VoiceRecordingDialog(
+                        onCancel = {
+                            voiceRecorder?.cancel()
+                            voiceRecorder = null
+                            showVoiceDialog = false
+                        },
+                        onSend = {
+                            val r = voiceRecorder ?: run { showVoiceDialog = false; return@VoiceRecordingDialog }
+                            voiceRecorder = null
+                            showVoiceDialog = false
+                            val captured = r.stop() ?: return@VoiceRecordingDialog
+                            transcribingVoice = true
+                            scope.launch {
+                                val profile = profiles.firstOrNull { it.id == selectedProfileId }
+                                if (profile != null) {
+                                    ServiceLocator.transportFor(profile)
+                                        .transcribeAudio(
+                                            audio = captured.first,
+                                            audioMime = captured.second,
+                                            sessionId = null,
+                                            autoExec = false,
+                                        ).onSuccess { result ->
+                                            task = (task + " " + result.transcript.trim()).trim()
+                                        }.onFailure { err ->
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Transcribe failed: ${err.message}",
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                }
+                                transcribingVoice = false
+                            }
+                        },
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    OutlinedTextField(
+                        value = if (transcribingVoice) "Transcribing…" else task,
+                        onValueChange = { if (!transcribingVoice) task = it },
+                        placeholder = { Text(stringResource(R.string.new_session_task_hint)) },
+                        enabled = !transcribingVoice,
+                        modifier = Modifier.weight(1f).heightIn(min = 100.dp),
+                        maxLines = 8,
+                    )
+                    if (whisperConfigured) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = {
+                                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.RECORD_AUDIO,
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (granted) {
+                                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                                    runCatching { r.start() }
+                                        .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                                        .onFailure { e ->
+                                            android.widget.Toast.makeText(
+                                                context, "Recording failed: ${e.message}", android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                } else {
+                                    micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
+                            enabled = !transcribingVoice,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.Mic, contentDescription = "Voice input", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
 
             Text(
                 stringResource(R.string.new_session_server_label),
@@ -385,12 +466,13 @@ public fun NewSessionScreen(
                     noneLabel = stringResource(R.string.session_llm_none_option),
                     onSelect = { picked -> pickedLlm = picked },
                 )
-                // Compute Node sub-picker — only when an LLM is selected and it has nodes
-                if (pickedLlm != null) {
+                // Compute Node sub-picker — non-claude LLMs only, and only when nodes exist.
+                val isClaudeLlm = pickedLlm?.kind?.lowercase()?.contains("claude") == true
+                if (pickedLlm != null && !isClaudeLlm) {
                     val allNodes = buildList {
                         add(pickedLlm!!.computeNode)
                         addAll(pickedLlm!!.computeNodes.filter { it != pickedLlm!!.computeNode })
-                    }.distinct()
+                    }.distinct().filter { it.isNotBlank() }
                     if (allNodes.isNotEmpty()) {
                         Text(
                             stringResource(R.string.session_compute_node_label),
@@ -410,40 +492,29 @@ public fun NewSessionScreen(
                             onSelect = { pickedComputeNode = it },
                         )
                     }
+                    // Model picker — shown when the registry or API provides a list
+                    if (nonClaudeModels.isNotEmpty()) {
+                        SimpleDropdown(
+                            label = stringResource(R.string.new_session_model_label),
+                            options = nonClaudeModels,
+                            selected = pickedNonClaudeModel,
+                            noneLabel = stringResource(R.string.new_session_config_default),
+                            onSelect = { pickedNonClaudeModel = it },
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        )
+                    }
+                    // Effort picker — static list, always shown for non-claude LLMs
+                    SimpleDropdown(
+                        label = stringResource(R.string.new_session_effort_label),
+                        options = listOf("low", "medium", "high", "max", "quick", "normal", "thorough"),
+                        selected = pickedNonClaudeEffort,
+                        noneLabel = stringResource(R.string.new_session_config_default),
+                        onSelect = { pickedNonClaudeEffort = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = if (nonClaudeModels.isNotEmpty()) 8.dp else 12.dp),
+                    )
                 }
             }
 
-            // Backend picker — populated from /api/backends. Only renders
-            // when the server actually exposes the endpoint AND the user
-            // hasn't selected a v7 LLM (which supersedes the legacy path).
-            if (!backendsBlocked && backends.isNotEmpty() && pickedLlm == null) {
-                Text(
-                    stringResource(R.string.session_llm_legacy_notice),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 2.dp),
-                )
-                Text(
-                    stringResource(R.string.new_session_backend_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 4.dp),
-                )
-                BackendPickerDropdown(
-                    backends = backends,
-                    selected = pickedBackend,
-                    active = activeBackend,
-                    onSelect = { pickedBackend = it },
-                )
-            } else if (!backendsBlocked && backends.isNotEmpty() && pickedLlm != null) {
-                // v7 selected — show legacy section as grayed-out notice only
-                Text(
-                    stringResource(R.string.session_llm_legacy_notice),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
 
             // Profile picker — maps to /api/profiles. Optional; users
             // can start "Default (no profile)" and the parent picks its
@@ -522,38 +593,8 @@ public fun NewSessionScreen(
                 }
             }
 
-            // Model picker — only visible for ollama / openwebui. The
-            // parent's /api/sessions/start doesn't accept a `model` field
-            // (PWA sends `backend` + `profile` only); model selection is
-            // server-side backend config. Shown here as informational —
-            // the user can see what's installed before kicking off. A
-            // future patch could PUT /api/profiles to change the server's
-            // configured model for the chosen backend before /start.
-            if (models.isNotEmpty()) {
-                Text(
-                    "Model (server-configured)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
-                )
-                ModelPickerDropdown(
-                    models = models,
-                    selected = pickedModel,
-                    onSelect = { pickedModel = it },
-                )
-                Text(
-                    "Models installed on the selected backend. Changing this " +
-                        "on mobile requires a backend config update (v0.14).",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
-            // Advanced claude-code options (v5.27.5+) — only when backend
-            // is claude-code AND the server exposes /api/llm/claude/*.
-            val isClaudeCode = pickedBackend?.lowercase()?.contains("claude") == true ||
-                (pickedBackend == null && activeBackend?.lowercase()?.contains("claude") == true)
+            // Advanced claude-code options — only when a claude LLM is explicitly selected.
+            val isClaudeCode = pickedLlm?.kind?.lowercase()?.contains("claude") == true
             if (claudeOptionsAvailable && isClaudeCode) {
                 Text(
                     stringResource(R.string.new_session_advanced_claude),
@@ -729,26 +770,6 @@ public fun NewSessionScreen(
                             banner = null
                             scope.launch {
                                 val transport = ServiceLocator.transportFor(profile)
-                                // If user picked a non-active backend, switch
-                                // it server-wide first. Parent has no per-
-                                // session backend param on /api/sessions/start,
-                                // so this is the closest mobile can get today.
-                                val backendToUse = pickedBackend
-                                if (backendToUse != null && backendToUse != activeBackend) {
-                                    transport.setActiveBackend(backendToUse).onFailure { err ->
-                                        banner =
-                                            "Couldn't switch backend to $backendToUse — " +
-                                            "${err.message ?: err::class.simpleName}. " +
-                                            "Starting with server's current backend."
-                                    }
-                                }
-                                // v0.39.1 (#20) — branch the spawn
-                                // path. Project profile selected →
-                                // POST /api/agents with the F10 body.
-                                // No profile (project-directory mode)
-                                // → keep the historic POST
-                                // /api/sessions/start with workingDir
-                                // + backend.
                                 val pickedProfile = pickedServerProfile
                                 val outcome =
                                     if (pickedProfile != null) {
@@ -767,14 +788,13 @@ public fun NewSessionScreen(
                                             workingDir = workingDir.trim().ifBlank { null },
                                             profileName = null,
                                             name = sessionName.trim().ifBlank { null },
-                                            // v7 LLM path takes precedence over legacy backend
-                                            backend = if (pickedLlm == null) pickedBackend else null,
+                                            backend = null,
                                             resumeId = resumeId,
                                             autoGitInit = autoGitInit,
                                             autoGitCommit = autoGitCommit,
                                             permissionMode = pickedPermissionMode.ifBlank { null },
-                                            model = pickedClaudeModel.ifBlank { null },
-                                            claudeEffort = pickedClaudeEffort.ifBlank { null },
+                                            model = (if (isClaudeCode) pickedClaudeModel else pickedNonClaudeModel).ifBlank { null },
+                                            claudeEffort = (if (isClaudeCode) pickedClaudeEffort else pickedNonClaudeEffort).ifBlank { null },
                                             llm = pickedLlm?.name,
                                             computeNode = pickedComputeNode,
                                         )
@@ -1030,98 +1050,6 @@ private fun ProfilePickerDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModelPickerDropdown(
-    models: List<String>,
-    selected: String?,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = selected ?: models.first(),
-            onValueChange = {},
-            readOnly = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-        )
-        androidx.compose.material3.DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            models.forEach { name ->
-                DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        onSelect(name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BackendPickerDropdown(
-    backends: List<String>,
-    selected: String?,
-    active: String?,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val display = selected ?: active ?: backends.first()
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = display,
-            onValueChange = {},
-            readOnly = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-        )
-        androidx.compose.material3.DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            backends.forEach { name ->
-                DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                        ) {
-                            Text(name, modifier = Modifier.weight(1f))
-                            if (name == active) {
-                                Text(
-                                    "active",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    },
-                    onClick = {
-                        onSelect(name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1290,28 +1218,3 @@ private fun ComputeNodePickerDropdown(
  * legacy nested `{backends: {name: {enabled: true}}}` shape so
  * older servers still filter correctly.
  */
-private fun backendEnabled(
-    root: kotlinx.serialization.json.JsonObject,
-    name: String,
-): Boolean {
-    // The server stores each backend's config under a top-level
-    // section (ollama.*, openwebui.*, session.* for claude-code,
-    // shell_backend.* for shell, opencode_acp.*, etc.). Use the
-    // canonical enabled-path resolver so we stay in lockstep with
-    // the LLM card's toggle writes.
-    val key = com.dmzs.datawatchclient.ui.configfields.LlmBackendSchemas.enabledKey(name)
-    // Try the flat dot-path form first (matches saved-as-patch shape).
-    root[key]?.let { v ->
-        return (v as? kotlinx.serialization.json.JsonPrimitive)
-            ?.content?.toBooleanStrictOrNull() == true
-    }
-    // Fall back to nested { section: { enabled: bool } } which is
-    // how /api/config returns the server's in-memory tree.
-    val dotIdx = key.indexOf('.')
-    if (dotIdx <= 0) return false
-    val sec = key.substring(0, dotIdx)
-    val leaf = key.substring(dotIdx + 1)
-    val section = root[sec] as? kotlinx.serialization.json.JsonObject ?: return false
-    val v = section[leaf] as? kotlinx.serialization.json.JsonPrimitive ?: return false
-    return v.content.toBooleanStrictOrNull() == true
-}
