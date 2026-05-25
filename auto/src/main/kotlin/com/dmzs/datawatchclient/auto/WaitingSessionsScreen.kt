@@ -14,6 +14,8 @@ import com.dmzs.datawatchclient.domain.SessionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -24,7 +26,7 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
     private var sessions: List<Session> = emptyList()
     private var error: String? = null
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
         lifecycle.addObserver(
@@ -37,6 +39,10 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
                 override fun onStop(owner: LifecycleOwner) {
                     pollJob?.cancel()
                     pollJob = null
+                }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
                 }
             },
         )

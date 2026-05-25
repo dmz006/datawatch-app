@@ -329,7 +329,6 @@ public fun TerminalView(
     LaunchedEffect(viewSize, ready) {
         if (!ready || viewSize.width == 0 || viewSize.height == 0) return@LaunchedEffect
         val wv = webViewRef.value ?: return@LaunchedEffect
-        println("DwTerm-size: onSizeChanged → ${viewSize.width}x${viewSize.height}")
         wv.evaluateJavascript(
             "window.dwExplicitSize && window.dwExplicitSize(${viewSize.width}, ${viewSize.height});",
             null,

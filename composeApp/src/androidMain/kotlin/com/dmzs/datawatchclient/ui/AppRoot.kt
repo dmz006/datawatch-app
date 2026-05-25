@@ -347,7 +347,6 @@ private fun HomeShell(
     // as the user toggles autonomous in Settings.
     suspend fun probeAutonomous() {
         val id = activeId
-        android.util.Log.d("DWProbe", "probeAutonomous id=$id")
         if (id == com.dmzs.datawatchclient.prefs.ActiveServerStore.SENTINEL_ALL_SERVERS) {
             prdsSupported = true
             dashboardEnabled = true
@@ -371,7 +370,6 @@ private fun HomeShell(
                         .firstOrNull { it.id == id && it.enabled }
                 }
             }
-        android.util.Log.d("DWProbe", "profile=$profile baseUrl=${profile?.baseUrl}")
         profile ?: return
         ServiceLocator.transportFor(profile).fetchConfig()
             .onSuccess { cfg ->
@@ -379,13 +377,10 @@ private fun HomeShell(
                 val enabled =
                     (auto?.get("enabled") as? kotlinx.serialization.json.JsonPrimitive)
                         ?.content?.lowercase() == "true"
-                android.util.Log.d("DWProbe", "fetchConfig ok auto=$auto enabled=$enabled")
                 prdsSupported = enabled
                 dashboardEnabled = enabled
-                android.util.Log.d("DWProbe", "dashboard enabled=$dashboardEnabled (same as autonomous)")
             }
             .onFailure { e ->
-                android.util.Log.e("DWProbe", "fetchConfig FAILED: ${e::class.simpleName}: ${e.message}")
             }
     }
 
