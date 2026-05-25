@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
 import com.dmzs.datawatchclient.security.BiometricGate
 import com.dmzs.datawatchclient.ui.AppRoot
@@ -18,6 +19,14 @@ import com.dmzs.datawatchclient.ui.DeepLinks
 public class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Edge-to-edge: tells Android NOT to auto-resize the window for
+        // system bars or the IME. Compose handles all insets via
+        // Modifier.imePadding / Modifier.statusBarsPadding /
+        // Modifier.navigationBarsPadding. Without this the system uses
+        // adjustResize / adjustPan and Compose's WindowInsets.ime values
+        // end up double-counted (creates the keyboard-up black gap
+        // observed on the S24 Ultra across builds 277-281).
+        enableEdgeToEdge()
         consumeDeepLink(intent)
         val gate = BiometricGate(applicationContext)
         if (gate.enabled() && gate.canAuthenticate(this)) {

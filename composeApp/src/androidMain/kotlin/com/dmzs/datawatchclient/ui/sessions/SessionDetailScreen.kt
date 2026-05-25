@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -407,20 +409,20 @@ public fun SessionDetailScreen(
         ) {
             val tabRowBorderColor = LocalDatawatchColors.current.border
 
-            // Single owner of bottom system insets: navigationBarsPadding here
-            // reserves the 3-button nav bar area when the keyboard is closed.
-            // imePadding is applied DEEPER (on the weighted terminal Column only)
-            // so the composer — which lives outside that scope as the last child
-            // of this Column — rides up naturally with the system's automatic
-            // window-resize on keyboard open. Layering imePadding here in
-            // addition to system resize doubles the bottom padding and on a
-            // dense screen (S24 Ultra @ 600dpi, 3-button nav) crushes the entire
-            // content area into a 600px strip at the top — bug fixed 2026-05-24.
+            // Under enableEdgeToEdge (set in MainActivity), the system does
+            // NOT auto-resize the window for the IME or system bars. Compose
+            // is the sole owner of inset handling via these modifiers:
+            //   navigationBarsPadding — reserves nav bar area
+            //   imePadding — reserves keyboard area when open
+            // Single application here at the outermost layout level avoids
+            // the double-counting that produced the keyboard-up black gap
+            // before enableEdgeToEdge was enabled (builds 277-281).
             Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .navigationBarsPadding(),
+                        .navigationBarsPadding()
+                        .imePadding(),
             ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SessionInfoBar(
@@ -486,19 +488,6 @@ public fun SessionDetailScreen(
                         }
                     }
 
-                // Terminal and banners area. NO imePadding here either:
-                // MainActivity doesn't call enableEdgeToEdge, so the system
-                // auto-resizes the activity window when the IME opens (the
-                // default adjustResize behaviour). Compose's WindowInsets.ime
-                // still reports the keyboard height in that mode, so wrapping
-                // any modifier in `imePadding()` adds a SECOND keyboard-height
-                // padding on top of the system's already-resized window,
-                // producing a ~700-1000 px black gap between the terminal and
-                // the composer (S24 Ultra @ density 600). Confirmed via
-                // `onSizeChanged → 1440x680` while the visual terminal was
-                // smaller than that, the rest of the WebView area dark and
-                // empty. System resize alone makes the composer sit just
-                // above the keyboard, weighted child shrinks accordingly.
                 Column(
                     modifier =
                         Modifier
@@ -679,8 +668,17 @@ public fun SessionDetailScreen(
                     }
                     val resolvedCols = if (prefCols > 0) prefCols else defaultCols
                     val resolvedRows = if (prefRows > 0) prefRows else defaultRows
-                    terminalController.setMinSize(resolvedCols, resolvedRows)
-                    // Keep VM in sync so reconnect handler sends the right resize_term.
+                    // Enforce MIN COLS only (TUIs like Claude Code need 120 cols
+                    // for their layout). Rows are NOT enforced as a minimum on
+                    // mobile — when the keyboard opens, the WebView area can
+                    // shrink to far fewer rows than 40, and forcing xterm to
+                    // 40 rows would render content TALLER than the viewport,
+                    // clipping the live tail (the bottom rows) off-screen and
+                    // making it impossible to see the cursor while typing.
+                    // Pass 0 for rows so dwSetMinCols treats it as "no minimum".
+                    terminalController.setMinSize(resolvedCols, 0)
+                    // VM still tracks the configured row count for the
+                    // reconnect handler's initial resize_term frame.
                     vm.terminalCols = resolvedCols
                     vm.terminalRows = resolvedRows
                 }
