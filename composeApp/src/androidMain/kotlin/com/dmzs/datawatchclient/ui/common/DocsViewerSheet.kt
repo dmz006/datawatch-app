@@ -213,9 +213,22 @@ internal fun DocsViewerSheet(
                                 val charset =
                                     ct.substringAfter("charset=", "utf-8")
                                         .substringBefore(';').trim().ifBlank { "utf-8" }
-                                val body =
+                                val rawBody =
                                     (if (status in 200..399) conn.inputStream else conn.errorStream)
                                         ?.readBytes() ?: ByteArray(0)
+                                // Inject the docs-viewer style override BEFORE the
+                                // page paints, so the user never sees the
+                                // unstyled "← PWA" link or the wrapped
+                                // "API spec / MCP tools" header line. Doing it
+                                // in onPageFinished left a ~200–500ms flash
+                                // of the original layout. We splice a <style>
+                                // tag into <head> on the fly for any HTML
+                                // response served from the docs WebView.
+                                val body = if (mime.equals("text/html", ignoreCase = true)) {
+                                    injectDocsStyleOverride(rawBody, charset)
+                                } else {
+                                    rawBody
+                                }
                                 println("DocsViewer: intercept ok url=$reqUrl status=$status mime=$mime bytes=${body.size}")
                                 WebResourceResponse(
                                     mime,
@@ -246,27 +259,11 @@ internal fun DocsViewerSheet(
                             // navigation so the title-bar arrow lights up
                             // when we've followed a cross-doc link.
                             canGoBack = view?.canGoBack() == true
-                            // Inject mobile-only style tweaks:
-                            //   1. Hide "← PWA" link — it loads the PWA web
-                            //      interface in the WebView (not a "back"
-                            //      action), confusing on mobile.
-                            //   2. Stack the right-side links (API spec /
-                            //      MCP tools) vertically so MCP tools fits
-                            //      on a narrow phone screen instead of
-                            //      wrapping awkwardly.
-                            view?.evaluateJavascript(
-                                """
-                                (function(){
-                                  var style = document.createElement('style');
-                                  style.textContent = ''
-                                    + 'header a[href="/"] { display: none !important; }'
-                                    + 'header .links { display: flex !important; flex-direction: column !important; gap: 2px !important; align-items: flex-end !important; }'
-                                    + 'header .links a { white-space: nowrap !important; }';
-                                  document.head.appendChild(style);
-                                })();
-                                """.trimIndent(),
-                                null,
-                            )
+                            // Note: mobile-only CSS overrides are spliced
+                            // into the HTML <head> in shouldInterceptRequest
+                            // so the page paints already-styled — no JS
+                            // injection here (it caused a visible flash of
+                            // the original layout before the rules applied).
                         }
                     }
                     webChromeClient = object : WebChromeClient() {
@@ -306,4 +303,28 @@ private val trustAllSslContext: SSLContext by lazy {
 
 private object TrustAllHostnameVerifier : javax.net.ssl.HostnameVerifier {
     override fun verify(hostname: String?, session: javax.net.ssl.SSLSession?): Boolean = true
+}
+
+// Splice mobile docs-viewer CSS overrides into the HTML <head> before the
+// page paints. Hides the "← PWA" link (it's a re-entry to the PWA inside
+// the WebView, not a back action — confusing on mobile) and stacks the
+// header links vertically so "MCP tools" doesn't wrap.
+private const val DOCS_STYLE_TAG = "<style id=\"dw-mobile-docs-style\">" +
+    "header a[href=\"/\"] { display: none !important; }" +
+    "header .links { display: flex !important; flex-direction: column !important; gap: 2px !important; align-items: flex-end !important; }" +
+    "header .links a { white-space: nowrap !important; }" +
+    "</style>"
+
+private fun injectDocsStyleOverride(rawBody: ByteArray, charset: String): ByteArray {
+    val charsetObj = runCatching { java.nio.charset.Charset.forName(charset) }
+        .getOrDefault(Charsets.UTF_8)
+    val html = rawBody.toString(charsetObj)
+    val headCloseIdx = html.indexOf("</head>", ignoreCase = true)
+    val patched = if (headCloseIdx >= 0) {
+        html.substring(0, headCloseIdx) + DOCS_STYLE_TAG + html.substring(headCloseIdx)
+    } else {
+        // No <head> tag (unusual) — prepend so the rules still apply.
+        DOCS_STYLE_TAG + html
+    }
+    return patched.toByteArray(charsetObj)
 }
