@@ -287,9 +287,13 @@
      *
      * Sequence: set CSS dims → rAF (let layout commit) → fit →
      * 350 ms later → fit again (covers slow IME slide animations
-     * where the first fit measured a half-animated frame) →
-     * scrollToBottom (so the user always sees the live tail after a
-     * resize, never an arbitrary scrollback position).
+     * where the first fit measured a half-animated frame).
+     *
+     * Deliberately does NOT call term.scrollToBottom: that would yank
+     * the user out of tmux server-side copy/scroll-back mode (which
+     * isn't mirrored into _scrollMode) and out of any manual scrollback
+     * mid-IME-animation. Live-tail snap on session open is already
+     * handled by dwPaneCapture's `isFirst=true` path.
      */
     window.dwExplicitSize = function (w, h) {
       container.style.width = w + 'px';
@@ -297,12 +301,7 @@
       requestAnimationFrame(function () {
         safeFit();
         setTimeout(function () {
-          requestAnimationFrame(function () {
-            safeFit();
-            if (!_scrollMode && !_userScrolled) {
-              try { term.scrollToBottom(); } catch (e) {}
-            }
-          });
+          requestAnimationFrame(safeFit);
         }, 350);
       });
     };
