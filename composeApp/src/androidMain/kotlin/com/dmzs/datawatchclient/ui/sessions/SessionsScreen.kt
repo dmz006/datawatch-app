@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -811,8 +812,6 @@ private fun SessionRow(
     var responseOpen by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
-    var menuOpen by remember { mutableStateOf(false) }
-    var renameOpen by remember { mutableStateOf(false) }
     var restartConfirmOpen by remember { mutableStateOf(false) }
     var killConfirmOpen by remember { mutableStateOf(false) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
@@ -878,7 +877,7 @@ private fun SessionRow(
                     onClick = onClick,
                     onLongClick = onLongPress,
                 )
-                .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Header row: name/id + state pill + mute/more actions.
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -934,17 +933,6 @@ private fun SessionRow(
                 PwaMetaBadge(text = "🎭")
             }
             Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                if (session.muted) Icons.Filled.NotificationsOff else Icons.Filled.Notifications,
-                contentDescription = if (session.muted) "Muted" else "Unmuted",
-                tint =
-                    if (session.muted) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                modifier = Modifier.padding(start = 4.dp).size(18.dp),
-            )
             if (reorderMode) {
                 IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.sessions_move_up))
@@ -952,111 +940,24 @@ private fun SessionRow(
                 IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.sessions_move_down))
                 }
-            } else if (!selectionMode) {
-                Box {
-                    IconButton(
-                        onClick = { menuOpen = true },
-                        modifier = Modifier.size(32.dp),
-                    ) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.sessions_more_menu))
-                    }
-                    DropdownMenu(
-                        expanded = menuOpen,
-                        onDismissRequest = { menuOpen = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_rename)) },
-                            onClick = {
-                                menuOpen = false
-                                renameOpen = true
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                val dwColors = LocalDatawatchColors.current
-                                Text(
-                                    stringResource(
-                                        if (isWatched) R.string.session_watch_on else R.string.session_watch_off,
-                                    ),
-                                    color = if (isWatched) dwColors.success else MaterialTheme.colorScheme.onSurface,
-                                )
-                            },
-                            onClick = {
-                                menuOpen = false
-                                onWatchToggle()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_restart)) },
-                            onClick = {
-                                menuOpen = false
-                                restartConfirmOpen = true
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.action_delete),
-                                    color =
-                                        if (deleteSupported && session.state != SessionState.Running) {
-                                            MaterialTheme.colorScheme.error
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                )
-                            },
-                            enabled = deleteSupported && session.state != SessionState.Running,
-                            onClick = {
-                                menuOpen = false
-                                deleteConfirmOpen = true
-                            },
-                        )
-                    }
-                }
             }
         }
 
-        // Task / display text — row body shows taskSummary (original prompt).
-        // The user-assigned name now lives in the header row above.
-        // Truncate matches the PWA's 80-char cap.
-        val displayText = session.taskSummary
-        val taskText =
-            when {
-                displayText == null -> stringResource(R.string.sessions_no_task)
-                displayText.length > 80 -> displayText.take(80) + "…"
-                else -> displayText
-            }
-        Row(
-            modifier = Modifier.padding(top = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        // Task / display text — only when non-blank (no empty row).
+        val displayText = session.taskSummary?.takeIf { it.isNotBlank() }
+        if (displayText != null) {
+            val taskText = if (displayText.length > 80) displayText.take(80) + "…" else displayText
             Text(
                 taskText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.padding(top = 3.dp),
             )
-            // "View last response" icon — only when the server has
-            // captured a response for this session. Mirrors the PWA's
-            // 📄 icon next to the task body.
-            if (!session.lastResponse.isNullOrBlank()) {
-                IconButton(
-                    onClick = { responseOpen = true },
-                    modifier = Modifier.size(24.dp).alpha(1.0f),
-                ) {
-                    Icon(
-                        Icons.Filled.Description,
-                        contentDescription = stringResource(R.string.sessions_view_response),
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
 
-        // Meta row: hostname · time ago. Small, muted, PWA-style.
+        // Meta row: hostname on left; [📄 Response] + time on right (mirrors PWA).
         Row(
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = if (displayText != null) 2.dp else 3.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val hostname = session.hostnamePrefix
@@ -1071,6 +972,23 @@ private fun SessionRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (!session.lastResponse.isNullOrBlank()) {
+                TextButton(
+                    onClick = { responseOpen = true },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                    modifier = Modifier.height(20.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = stringResource(R.string.sessions_view_response),
+                        modifier = Modifier.size(11.dp),
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(stringResource(R.string.sessions_view_response), style = MaterialTheme.typography.labelSmall)
+                }
+                Spacer(modifier = Modifier.width(4.dp))
             }
             Text(
                 timeLabel,
@@ -1096,7 +1014,7 @@ private fun SessionRow(
             }
         if (session.state == SessionState.Waiting && ctxLines.isNotEmpty()) {
             Row(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
             ) {
                 Box(
                     modifier =
@@ -1123,10 +1041,10 @@ private fun SessionRow(
             }
         }
 
-        // Inline quick-actions — Stop for running, Restart for terminal.
+        // Inline quick-actions — Stop for running, Restart+Delete for done.
         if (!selectionMode) {
             Row(
-                modifier = Modifier.padding(top = 10.dp),
+                modifier = Modifier.padding(top = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (session.state) {
@@ -1220,16 +1138,6 @@ private fun SessionRow(
         }
     }
 
-    if (renameOpen) {
-        RenameSessionDialog(
-            initial = session.name ?: session.taskSummary ?: session.id,
-            onConfirm = { newName ->
-                renameOpen = false
-                onRename(newName)
-            },
-            onDismiss = { renameOpen = false },
-        )
-    }
     if (responseOpen) {
         LastResponseSheet(
             response = session.lastResponse.orEmpty(),
