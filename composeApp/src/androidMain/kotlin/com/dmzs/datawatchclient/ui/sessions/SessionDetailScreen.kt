@@ -360,24 +360,20 @@ public fun SessionDetailScreen(
                 // below the tabs.
                 actions = {
                     com.dmzs.datawatchclient.ui.common.DocsLinkAction(
-                        // Use the "Sessions" parent anchor (known-good
-                        // slug — verified working via the sessions-list
-                        // header). H3 anchors with em-dashes don't round-
-                        // trip cleanly through the docs viewer's slugifier.
                         "datawatch-definitions.md#sessions",
                     )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                     val alertsVm: com.dmzs.datawatchclient.ui.alerts.AlertsViewModel =
                         viewModel()
                     val alertsState by alertsVm.state.collectAsState()
-                    Box(modifier = Modifier.padding(end = 10.dp)) {
-                        com.dmzs.datawatchclient.ui.common.AlertsBellAction(
-                            alertsBadge = alertsState.watchedAlertCount,
-                        )
-                    }
+                    com.dmzs.datawatchclient.ui.common.AlertsBellAction(
+                        alertsBadge = alertsState.watchedAlertCount,
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(14.dp))
                     Box(
                         modifier =
                             Modifier
-                                .padding(end = 12.dp)
+                                .padding(end = 14.dp)
                                 .size(10.dp)
                                 .background(
                                     color =
