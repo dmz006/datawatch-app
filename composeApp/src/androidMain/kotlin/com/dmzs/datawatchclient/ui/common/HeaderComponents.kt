@@ -59,11 +59,13 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 internal fun DocsLinkAction(docsPath: String) {
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
-    val baseUrl = remember(profiles, activeId) {
+    val activeProfile = remember(profiles, activeId) {
         val enabled = profiles.filter { it.enabled }
-        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()?.baseUrl
-        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())?.baseUrl
+        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()
+        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())
     }
+    val baseUrl = activeProfile?.baseUrl
+    val allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL
     var showDocs by remember { mutableStateOf(false) }
 
     if (baseUrl != null) {
@@ -81,7 +83,11 @@ internal fun DocsLinkAction(docsPath: String) {
             )
         }
         if (showDocs) {
-            DocsViewerSheet(url = url, onDismiss = { showDocs = false })
+            DocsViewerSheet(
+                url = url,
+                onDismiss = { showDocs = false },
+                allowSelfSigned = allowSelfSigned,
+            )
         }
     }
 }
