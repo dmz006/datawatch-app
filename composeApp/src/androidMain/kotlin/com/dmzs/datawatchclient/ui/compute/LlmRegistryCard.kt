@@ -492,7 +492,7 @@ private fun LlmRegistryDialog(
     var permissionModeDropdown by remember { mutableStateOf(false) }
     var permissionMode by remember(existing) { mutableStateOf(existing?.permissionMode ?: "default") }
     var defaultEffortDropdown by remember { mutableStateOf(false) }
-    var defaultEffort by remember(existing) { mutableStateOf(existing?.defaultEffort ?: "normal") }
+    var defaultEffort by remember(existing) { mutableStateOf(existing?.defaultEffort ?: "") }
     val fallbackChain = remember(existing) { mutableStateListOf(*(existing?.fallbackChain?.toTypedArray() ?: emptyArray())) }
     var fallbackInput by remember { mutableStateOf("") }
 
@@ -733,10 +733,27 @@ private fun LlmRegistryDialog(
                     }
                 }
 
+                // Default effort — shown for node-based kinds (ollama, openwebui, opencode) and claude-code
+                if (isNodeBased || isClaudeCode) {
+                    HorizontalDivider()
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.llm_field_default_effort), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { defaultEffortDropdown = true }) {
+                                Text(defaultEffort.ifBlank { "— inherit —" })
+                            }
+                            DropdownMenu(expanded = defaultEffortDropdown, onDismissRequest = { defaultEffortDropdown = false }) {
+                                DropdownMenuItem(text = { Text("— inherit —") }, onClick = { defaultEffort = ""; defaultEffortDropdown = false })
+                                listOf("low", "medium", "normal", "high", "max", "quick", "thorough").forEach { e ->
+                                    DropdownMenuItem(text = { Text(e) }, onClick = { defaultEffort = e; defaultEffortDropdown = false })
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // alpha.41 claude-code-specific section
                 if (isClaudeCode) {
-                    HorizontalDivider()
-                    Text(stringResource(R.string.llm_section_claude), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.llm_field_skip_permissions), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                         Switch(checked = skipPermissions, onCheckedChange = { skipPermissions = it })
@@ -757,18 +774,6 @@ private fun LlmRegistryDialog(
                             DropdownMenu(expanded = permissionModeDropdown, onDismissRequest = { permissionModeDropdown = false }) {
                                 listOf("default", "acceptEdits", "bypassPermissions").forEach { m ->
                                     DropdownMenuItem(text = { Text(m) }, onClick = { permissionMode = m; permissionModeDropdown = false })
-                                }
-                            }
-                        }
-                    }
-                    // Default effort
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_default_effort), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                        Box {
-                            TextButton(onClick = { defaultEffortDropdown = true }) { Text(defaultEffort) }
-                            DropdownMenu(expanded = defaultEffortDropdown, onDismissRequest = { defaultEffortDropdown = false }) {
-                                listOf("low", "normal", "high").forEach { e ->
-                                    DropdownMenuItem(text = { Text(e) }, onClick = { defaultEffort = e; defaultEffortDropdown = false })
                                 }
                             }
                         }
@@ -812,7 +817,7 @@ private fun LlmRegistryDialog(
                             channelEnabled = if (isClaudeCode) channelEnabled else null,
                             autoAcceptDisclaimer = if (isClaudeCode) autoAcceptDisclaimer else null,
                             permissionMode = if (isClaudeCode) permissionMode.ifBlank { null } else null,
-                            defaultEffort = if (isClaudeCode) defaultEffort.ifBlank { null } else null,
+                            defaultEffort = if (isNodeBased || isClaudeCode) defaultEffort.ifBlank { null } else null,
                             fallbackChain = if (isClaudeCode) fallbackChain.toList().ifEmpty { null } else null,
                         )
                     }
