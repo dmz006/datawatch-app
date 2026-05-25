@@ -200,10 +200,13 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
                 label = "Page Up",
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    // Sprint 3 S3-3 (#63): use tmux-page-up daemon command.
-                    // Falls back to sendkey PageUp if the command returns 404
-                    // (older server builds). The WS command frame is fire-and-forget;
-                    // 404 fallback is handled server-side by the daemon command router.
+                    // Open a 700ms one-shot redraw window so the next
+                    // pane_capture (the post-scroll snapshot) writes through
+                    // even though we're in _scrollMode. Without this the
+                    // dwPaneCapture skip-on-scrollMode rejects every frame
+                    // and the user sees the same content despite the server
+                    // actually scrolling. Matches PWA app.js ~665.
+                    state.controller.scrollPendingRefresh(700)
                     com.dmzs.datawatchclient.transport.ws.WsOutbound
                         .sendCommand(sessionId, "tmux-page-up $sessionId")
                 },
@@ -212,7 +215,7 @@ public fun TerminalScrollModeStrip(state: TerminalToolbarState) {
                 label = "Page Down",
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    // Sprint 3 S3-3 (#63): use tmux-page-down daemon command.
+                    state.controller.scrollPendingRefresh(700)
                     com.dmzs.datawatchclient.transport.ws.WsOutbound
                         .sendCommand(sessionId, "tmux-page-down $sessionId")
                 },

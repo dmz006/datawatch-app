@@ -1,6 +1,6 @@
 # AI-APP-SEED.md — datawatch-app Context Loader
 
-**Last Updated:** 2026-05-22  
+**Last Updated:** 2026-05-25  
 **Version:** 1.0.0  
 **Maintainer:** dmz006  
 **Purpose:** Comprehensive AI session context for the datawatch-app mobile client
@@ -436,29 +436,48 @@ memory_remember("What works: Box(weight=1f) containing TerminalView(fillMaxWidth
 
 ## Known Issues & Workarounds
 
-### Terminal Scrolling (Active Work — 2026-05-22)
+### xterm / WebView Architecture (Settled 2026-05-25, builds 252–283)
 
-**Status:** Partially fixed. WebView scrolling works but behavior differs from expected.
+**Status:** Working. Live tail visible on session open AND when keyboard is up. ~30 builds of failed iterations until root cause was found.
 
-**Issue:** When keyboard appears (imePadding), terminal content should scroll up to show more. Current behavior: scrolling limited (~2-8 lines max).
+**The five interlocking bugs** (in the order they were exposed, not the order they were fixed):
 
-**Current Approach:** 
-- Using `Column(weight=1f) { TerminalView(fillMaxWidth) }`
-- WebView handles internal scrolling
-- Swipe gestures work (tested)
-- Behavior when keyboard appears: TBD (needs validation)
+1. **DPR scaling mismatch (root cause of "stuck above live tail")**
+   - `Modifier.onSizeChanged` reports the AndroidView size in **device pixels** (e.g. 1845 on the S24 Ultra).
+   - `container.style.height = h + 'px'` in CSS treats the value as **CSS pixels**.
+   - At DPR=3.75 (Samsung 600 dpi), 1845 CSS px = 6919 device px → xterm container 3.75× larger than the visible body area → bottom 2/3 (including cursor row and chrome footer) clipped offscreen by `body { overflow: hidden }`.
+   - Fix: `container.style.height = (h / window.devicePixelRatio) + 'px'` in `dwExplicitSize`.
+   - **Diagnose**: log `DPR`, `winW/H`, `body.W/H`. If `winW > body.offsetWidth` significantly, you're hitting this.
 
-**Why Complex:**
-- TerminalView wraps WebView
-- WebView has internal xterm.js rendering
-- Compose scroll modifiers don't apply to WebView content
-- Measurement conflicts when combining weight(1f) + verticalScroll on wrapper
+2. **xterm `term.write` is async; concurrent writes stomp each other**
+   - With 30 fps pane_capture dispatch from Kotlin and ~50 ms parse time per 15 KB write, `term.write` calls queue up. Calling `term.reset()` between calls cancels the previous in-flight write mid-process, leaving partial data in the buffer (top rows from N writes ago, cursor row from latest).
+   - Fix: serialize via the `term.write(joined, callback)` callback. Keep one `_pendingCap` and only flush after the prior `_writeInFlight` clears.
+   - **Diagnose**: log `buf.first` / `buf.last` AFTER the write callback fires; if they disagree with the just-written `pane.first` / `pane.last`, writes are racing.
 
-**Next Steps:**
-1. Verify keyboard interaction (when IME appears, check scroll behavior)
-2. Compare app display with real tmux session view
-3. If scroll range insufficient, consider constraining viewport height
-4. Document final solution in memory for future reference
+3. **`enableEdgeToEdge` is required to make `imePadding` work cleanly**
+   - Without `enableEdgeToEdge` in `MainActivity.onCreate`, Android's IME handling is inconsistent: sometimes adjustResizes the window, sometimes adjustPans, sometimes does nothing (depends on focus state, theme defaults, manifest, target SDK). `WindowInsets.ime` always reports > 0 either way, so `Modifier.imePadding()` double-counts the keyboard height on top of whatever the system did — produces a huge black gap on the S24.
+   - Even explicit `android:windowSoftInputMode="adjustResize"` in the manifest didn't reliably trigger the resize.
+   - Fix: call `enableEdgeToEdge()` in `MainActivity.onCreate`, then apply `Modifier.navigationBarsPadding().imePadding()` ONCE at the outermost Column. Compose becomes the sole owner of inset handling.
+
+4. **`DATAWATCH_COMPLETE:` filter dropped every pane_capture**
+   - Mobile had the original v0.x "break on any line containing the marker" behavior. PWA fixed this years ago at `app.js:609` to *filter* matching lines and keep the rest. Mobile never got the fix. Any session that ever ran a bash command mentioning the literal string (e.g. `grep "DATAWATCH_COMPLETE:"`) had every subsequent pane_capture silently skipped, freezing the terminal forever.
+   - Fix: `lines.filter(l => !l.includes('DATAWATCH_COMPLETE:'))` instead of `for-break`.
+   - **Diagnose**: instrument `dwPaneCapture` entry/exit counters. If exits show `dwcomplete: N` matching enter count, this is it.
+
+5. **`setMinSize(_, 40)` forces row count regardless of viewport**
+   - The claude-code 120×40 minimum was originally to keep the TUI laid out correctly. The 40-rows minimum makes sense for cols (TUIs need width), but with the keyboard open the visible WebView fits maybe 15 rows on phone; forcing 40 makes xterm render content TALLER than the viewport → live tail clipped.
+   - Fix: `setMinSize(120, 0)` — enforce cols only.
+
+**Required architecture for any future xterm/IME work:**
+
+- **Compose layout** — `Scaffold(contentWindowInsets=WindowInsets(0))` → outer `Column(.fillMaxSize().navigationBarsPadding().imePadding())`. Inside: header (natural height), `Column.weight(1f).fillMaxWidth()` containing `TerminalView.weight(1f).fillMaxWidth()`, then the composer. NO additional `imePadding`/`navigationBarsPadding` lower in the tree.
+- **MainActivity** — must call `enableEdgeToEdge()` in `onCreate`.
+- **TerminalView** — `onSizeChanged` callback dispatches `dwExplicitSize(w, h)`; do NOT cap the height (the 800 px cap was an early dead-end). The WebView is a `TerminalWebView` subclass that blocks vertical scroll via `overScrollBy`, `scrollTo`, `scrollBy`, `computeVerticalScrollRange` overrides (Android WebView synthesizes scrollY changes from touch drags even with `body { overflow: hidden }`).
+- **host.html** — `body { height: 100%; touch-action: none }` (no `100dvh`). `dwExplicitSize(w, h)` divides by `window.devicePixelRatio` before setting CSS dimensions. `safeFit()` is pure measurement + fit + unconditional `scrollToBottom` (unless `_scrollMode`); no `wasAtBottom` snapshots (racy). `dwPaneCapture` serialized via `_pendingCap` / `_writeInFlight` / write callback. Filter (don't skip-on-match) `DATAWATCH_COMPLETE:` lines. Strip trailing whitespace-only rows. Use `\x1b[2J\x1b[3J\x1b[H` for clear (not `term.reset()`, which causes a visible flash on every redraw).
+
+**Reference**: PWA's `app.js` lines ~3175-3230 (initXterm + visualViewport handler), ~609-680 (pane_capture write path with atBottom check + DATAWATCH_COMPLETE filter). Mobile mirrors the PWA's logic for input handling, scroll behavior, and protocol semantics — the only intentional divergence is mobile uses `_scrollMode` flag from the toolbar PgUp/PgDn buttons (no touch scrollback) where PWA uses `buf.viewportY >= buf.baseY` (browsers allow touch scroll of `.xterm-viewport`).
+
+**Known limitation**: the visible bottom of the WebView may briefly show 1-2 padded empty rows on session open when pane_capture has fewer rows than `term.rows`. Acceptable trade-off; live tail still visible.
 
 ### Test Infrastructure
 

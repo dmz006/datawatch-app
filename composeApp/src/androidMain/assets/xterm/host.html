@@ -437,11 +437,20 @@
     // Called by Kotlin when the user enters/exits the 📜 scroll overlay.
     // Pausing writes keeps the terminal frozen at the frame the user wants
     // to read; resuming jumps back to the live tail.
+    // _scrollPendingRefresh = expiry timestamp of a one-shot "let the
+    // next pane_capture redraw EVEN while in scroll mode" window. Set
+    // by Kotlin right before a tmux-page-up/-down WS command so that
+    // exactly the post-scroll pane_capture renders, then expires.
+    // Matches PWA app.js ~line 665.
+    var _scrollPendingRefresh = 0;
     window.dwSetScrollMode = function (on) {
       _scrollMode = !!on;
       if (!on) {
         try { term.scrollToBottom(); } catch (e) {}
       }
+    };
+    window.dwScrollPendingRefresh = function (windowMs) {
+      _scrollPendingRefresh = Date.now() + (windowMs || 700);
     };
 
     var _capEnter = 0, _capExit = {};
@@ -502,10 +511,24 @@
           lines.pop();
         }
         if (lines.length === 0) { _capExit.empty = (_capExit.empty||0)+1; return; }
-        if (_scrollMode && !isFirst) return;
-        var joined = lines.join('\r\n');
+        // Scroll mode: skip live pane_captures UNLESS we're inside the
+        // post-PgUp/PgDn refresh window (Kotlin opens it right before
+        // sending the page-scroll WS command). Mirrors PWA's
+        // _scrollPendingRefresh pattern — exactly the post-scroll frame
+        // gets through and updates the visible content.
+        if (_scrollMode && !isFirst) {
+          var inWindow = _scrollPendingRefresh && Date.now() < _scrollPendingRefresh;
+          if (!inWindow) { _capExit.scrollMode = (_capExit.scrollMode||0)+1; return; }
+        }
+        // `\x1b[2J\x1b[3J\x1b[H` = clear screen + clear scrollback +
+        // cursor home, in one atomic write. xterm processes the escape
+        // sequences in order before the content, so the buffer is fully
+        // reset by the time the new content lands. Using term.reset()
+        // (a synchronous API call) instead caused a visible flash on
+        // every redraw because the screen went blank for a frame between
+        // reset and write completion.
+        var joined = '\x1b[2J\x1b[3J\x1b[H' + lines.join('\r\n');
         _writeInFlight = true;
-        term.reset();
         term.write(joined, function () {
           if (!_scrollMode) {
             try { term.scrollToBottom(); } catch (e) {}
@@ -654,6 +677,12 @@
 
     // Surface terminal-side input back to Kotlin (Sprint 3 — no-op today).
     term.onData(function (data) {
+      // Log bytes sent to diagnose "space=enter" reports.
+      try {
+        var bytes = [];
+        for (var i = 0; i < data.length; i++) bytes.push(data.charCodeAt(i));
+        log('xterm-input: ' + JSON.stringify(bytes) + ' raw=' + JSON.stringify(data));
+      } catch (e) {}
       if (window.DwBridge && DwBridge.onInput) {
         try { DwBridge.onInput(data); } catch (e) {}
       }
