@@ -173,11 +173,13 @@ public class SessionDetailViewModel(
                     _messagingBackend.value = it
                 }
             }
-            // Fetch whisper.backend once to decide whether to show the mic button.
+            // Mirror PWA: cfg.whisper.enabled (nested object, boolean).
             ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
                 _whisperConfigured.value =
-                    (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
-                        ?.content?.isNotBlank() == true
+                    (cfg.raw["whisper"] as? kotlinx.serialization.json.JsonObject)
+                        ?.get("enabled")
+                        ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content == "true" }
+                        ?: false
             }
         }
     }
