@@ -5,11 +5,13 @@ import com.dmzs.datawatchclient.db.DatawatchDb
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.security.KeystoreManager
+import com.dmzs.datawatchclient.security.TokenVault
 import com.dmzs.datawatchclient.storage.DatabaseFactory
 import com.dmzs.datawatchclient.storage.ServerProfileRepository
 import com.dmzs.datawatchclient.storage.SessionRepository
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.createHttpClient
+import com.dmzs.datawatchclient.transport.createTrustAllHttpClient
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +36,6 @@ public object AutoServiceLocator {
     private var _db: DatawatchDb? = null
     private var _profileRepo: ServerProfileRepository? = null
     private var _sessionRepo: SessionRepository? = null
-    private var _httpClient: HttpClient? = null
     private var _activeStore: ActiveServerStore? = null
 
     public fun init(context: Context) {
@@ -60,11 +61,33 @@ public object AutoServiceLocator {
                 SessionRepository(_db!!, Dispatchers.IO).also { _sessionRepo = it }
             }
 
+    private var _tokenVault: TokenVault? = null
+    private val tokenVault: TokenVault
+        get() = _tokenVault ?: run {
+            val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
+            TokenVault(ctx).also { _tokenVault = it }
+        }
+
+    private var _httpClient: HttpClient? = null
+    private var _trustAllClient: HttpClient? = null
+
     private val httpClient: HttpClient
         get() = _httpClient ?: createHttpClient().also { _httpClient = it }
 
-    public fun transportFor(profile: ServerProfile): TransportClient =
-        RestTransport(profile = profile, client = httpClient, tokenProvider = null)
+    private val trustAllClient: HttpClient
+        get() = _trustAllClient ?: createTrustAllHttpClient().also { _trustAllClient = it }
+
+    // Must match ServiceLocator — the auto module reads the same DB and
+    // Keystore, so it must build transports the same way.
+    public val TRUST_ALL_SENTINEL: String = "ALLOW_ALL_INSECURE"
+
+    public fun transportFor(profile: ServerProfile): TransportClient {
+        val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
+        val tokenProvider: (suspend () -> String)? =
+            alias?.let { { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") } }
+        val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) trustAllClient else httpClient
+        return RestTransport(profile = profile, client = client, tokenProvider = tokenProvider)
+    }
 
     /**
      * Shared active-profile preference with the phone app. The car
