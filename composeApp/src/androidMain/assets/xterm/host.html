@@ -307,19 +307,23 @@
      * layout gives the WebView a new pixel size — keyboard open/close,
      * rotation, foldable hinge change, etc.
      *
-     * Sequence: set CSS dims → rAF (let layout commit) → fit →
-     * 350 ms later → fit again (covers slow IME slide animations
-     * where the first fit measured a half-animated frame).
+     * IMPORTANT: w/h come from Compose in DEVICE pixels. CSS uses CSS
+     * pixels, which are 1/DPR of device pixels (on a 3x density phone,
+     * 1 CSS px = 3 device px). Setting container.style.height = '1845px'
+     * on a DPR=3.75 device creates a container that's 1845 CSS px = 6919
+     * device px tall — WAY more than the body's 492 CSS px / 1845 device
+     * px area, causing the bottom 2/3 of the rendered xterm content to
+     * be clipped (root cause of "stuck above live tail" across all of
+     * builds 252-274 on the S24 Ultra).
      *
-     * Deliberately does NOT call term.scrollToBottom: that would yank
-     * the user out of tmux server-side copy/scroll-back mode (which
-     * isn't mirrored into _scrollMode) and out of any manual scrollback
-     * mid-IME-animation. Live-tail snap on session open is already
-     * handled by dwPaneCapture's `isFirst=true` path.
+     * Divide by devicePixelRatio so the container's CSS dimensions match
+     * the WebView's physical area, and xterm's fit-addon computes the
+     * correct row count for what's actually visible.
      */
     window.dwExplicitSize = function (w, h) {
-      container.style.width = w + 'px';
-      container.style.height = h + 'px';
+      var dpr = window.devicePixelRatio || 1;
+      container.style.width = (w / dpr) + 'px';
+      container.style.height = (h / dpr) + 'px';
       requestAnimationFrame(function () {
         safeFit();
         setTimeout(function () {
@@ -441,45 +445,56 @@
     };
 
     var _capEnter = 0, _capExit = {};
+    // xterm's term.write is async — successive writes queue up internally and
+    // the buffer only reflects each write after a render tick. With 30 fps
+    // pane_captures arriving and the throttle letting one through every
+    // 200 ms, multiple writes can be in flight at once. Each one term.reset()s
+    // (or \x1b[2J\x1b[3J\x1b[H wipes) the buffer mid-process of the previous
+    // write — net result: nothing ever finishes, the visible buffer keeps a
+    // bizarre mix of partial pane_captures from different points in time
+    // (cursor row from the latest, top rows from N writes ago).
+    //
+    // Serialize: keep a single "pending" capture (replaced on each new arrival)
+    // and only flush after the previous term.write completes its callback.
+    // Drops intermediate captures but always shows the LATEST.
+    var _pendingCap = null;
+    var _writeInFlight = false;
     window.dwPaneCapture = function (linesJson, isFirst) {
       _capEnter++;
+      // Replace any not-yet-flushed pending capture with this newer one.
+      _pendingCap = { linesJson: linesJson, isFirst: isFirst };
+      if (_writeInFlight) { _capExit.coalesced = (_capExit.coalesced||0)+1; return; }
+      _flushPendingCap();
+    };
+
+    function _flushPendingCap() {
+      if (!_pendingCap || _writeInFlight) return;
+      var cap = _pendingCap;
+      _pendingCap = null;
+      _doPaneCapture(cap.linesJson, cap.isFirst);
+    }
+
+    function _doPaneCapture(linesJson, isFirst) {
       try {
         if (_frozen) { _capExit.frozen = (_capExit.frozen||0)+1; return; }
-        var now = (performance && performance.now) ? performance.now() : Date.now();
-        // 200ms throttle (5 fps) — xterm.js's ANSI parser + render loop
-        // can't keep up with the 30 fps pane_capture rate Kotlin pushes
-        // when the session is active, and the queue grows unboundedly
-        // (each full pane_capture is ~15-20 KB of styled text). 5 fps is
-        // still snappier than human perception threshold for streaming
-        // text; matches the practical ceiling we measured on S24 (Android
-        // 16 WebView) before render latency builds up "phone is X minutes
-        // behind live tail" reports.
-        if (_lastPaneWrite && (now - _lastPaneWrite) < 200) { _capExit.throttle = (_capExit.throttle||0)+1; return; }
         var lines;
         try { lines = JSON.parse(String(linesJson || '[]')); }
         catch (e) { lines = []; }
         if (!Array.isArray(lines) || lines.length === 0) { _capExit.empty = (_capExit.empty||0)+1; return; }
         // PWA pattern (app.js ~line 609): FILTER lines containing the
         // DATAWATCH_COMPLETE marker rather than dropping the whole
-        // pane_capture. Previous "break on any match" was the source of
-        // the worst-of-the-week regression: ALL 6603 pane_captures got
-        // skipped because one line of visible bash command text
-        // contained the literal "DATAWATCH_COMPLETE:" substring (e.g.
-        // a grep call), freezing the terminal at the first paint.
+        // pane_capture (mobile had the original v0.x "break on any match"
+        // which froze the terminal on any session that ever had a bash
+        // command containing the literal marker substring).
         if (!_scrollMode) {
           lines = lines.filter(function (l) {
             return String(l).indexOf('DATAWATCH_COMPLETE:') === -1;
           });
           if (lines.length === 0) { _capExit.dwcomplete = (_capExit.dwcomplete||0)+1; return; }
         }
-        // Strip trailing whitespace-only rows. Server pane_capture often
-        // includes 1-3 blank rows at the bottom of the snapshot (cursor
-        // sits a few rows above the pane bottom in Claude Code's TUI).
-        // If we write them, xterm renders blank rows at the bottom of the
-        // viewport and the user perceives the previous content row as
-        // "the bottom" — i.e. that the terminal is stuck a few rows above
-        // the live tail. Strip them so the actual cursor row (or chrome
-        // footer) lands at the visible bottom.
+        // Strip trailing whitespace-only rows so the actual cursor row /
+        // chrome footer lands at the visible bottom of the viewport.
+        var preStripN = lines.length;
         while (lines.length > 0 &&
                String(lines[lines.length - 1])
                  .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
@@ -487,61 +502,39 @@
           lines.pop();
         }
         if (lines.length === 0) { _capExit.empty = (_capExit.empty||0)+1; return; }
-        _lastPaneWrite = now;
+        if (_scrollMode && !isFirst) return;
         var joined = lines.join('\r\n');
-        if (isFirst) {
-          // Fresh subscription — wipe any prior session's content and write
-          // the whole capture. xterm's `term.write` auto-advances the
-          // cursor (which auto-scrolls to follow it) but in WebView the
-          // initial pane_capture often races with the first `safeFit()`
-          // (triggered by onSizeChanged): fit() recomputes row count and
-          // can leave the viewport stranded mid-buffer. Force the viewport
-          // to the live tail aggressively over the first 500ms so any
-          // concurrent fit() can't strand it. User-observed on S24 Ultra:
-          // before this, opening a long-running session showed rows from
-          // ~30 % into the scrollback and required manual scroll-down.
-          term.reset();
-          term.write(joined, function () {
-            if (_scrollMode) return;
-            var snap = function () { try { term.scrollToBottom(); } catch (e) {} };
-            snap();
-            requestAnimationFrame(snap);
-            setTimeout(function () { requestAnimationFrame(snap); }, 100);
-            setTimeout(function () { requestAnimationFrame(snap); }, 500);
-          });
-        } else {
-          // Mobile-only logic: the user has no way to scroll xterm-viewport
-          // via touch (CSS touch-action:none, custom WebView blocks gestures
-          // — scrollback is exposed via the TerminalScrollModeStrip toolbar
-          // buttons which flip `_scrollMode`). So the ONLY legitimate "user
-          // is reading history" signal is `_scrollMode`. The PWA's atBottom-
-          // skip pattern doesn't apply here and false-positives whenever a
-          // fit() momentarily shifts the viewport: every subsequent capture
-          // is skipped and the terminal freezes mid-buffer.
-          if (_scrollMode) return;
-          // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
-          term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
-          try { term.scrollToBottom(); } catch (e) {}
-          // Diag: last 4 lines of pane + xterm buffer/viewport state so we
-          // can correlate "what server sent" vs "what user sees".
+        _writeInFlight = true;
+        term.reset();
+        term.write(joined, function () {
+          if (!_scrollMode) {
+            try { term.scrollToBottom(); } catch (e) {}
+          }
+          // Diagnostic: buffer state AFTER the write actually completes.
           try {
             var strip = function (s) { return String(s || '').replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\s+$/, '').slice(-50); };
-            var n = lines.length;
-            var t1 = strip(lines[n - 4] || '');
-            var t2 = strip(lines[n - 3] || '');
-            var t3 = strip(lines[n - 2] || '');
-            var t4 = strip(lines[n - 1] || '');
-            var buf = term.buffer && term.buffer.active;
-            var rows = term.rows, baseY = buf ? buf.baseY : -1, viewportY = buf ? buf.viewportY : -1;
-            log('cap-redraw: n=' + n + ' last4=[|' + t1 + '|,|' + t2 + '|,|' + t3 + '|,|' + t4 + '|] rows=' + rows + ' baseY=' + baseY + ' viewportY=' + viewportY);
+            var bf = term.buffer && term.buffer.active;
+            var bufFirstLine = bf ? bf.getLine(0) : null;
+            var bufLastLine = bf ? bf.getLine(bf.length - 1) : null;
+            var bufFirst = bufFirstLine ? String(bufFirstLine.translateToString(true)).replace(/\s+$/, '').slice(-50) : '?';
+            var bufLast = bufLastLine ? String(bufLastLine.translateToString(true)).replace(/\s+$/, '').slice(-50) : '?';
+            log('cap-redraw: n=' + lines.length +
+                ' pane.first="' + strip(lines[0]) + '"' +
+                ' pane.last="' + strip(lines[lines.length - 1]) + '"' +
+                ' buf.first="' + bufFirst + '"' +
+                ' buf.last="' + bufLast + '"' +
+                ' rows=' + term.rows + ' baseY=' + (bf ? bf.baseY : '?') + ' viewportY=' + (bf ? bf.viewportY : '?'));
           } catch (e) {
-            log('cap-redraw: ' + lines.length + ' rows (state-log failed: ' + e + ')');
+            log('cap-redraw post-write log failed: ' + e);
           }
-        }
+          _writeInFlight = false;
+          _flushPendingCap();
+        });
       } catch (e) {
         log('paneCapture failed: ' + e);
+        _writeInFlight = false;
       }
-    };
+    }
 
     /**
      * v0.11 search + copy bridge.
@@ -615,7 +608,48 @@
     setInterval(function () {
       try {
         log('cap-stats: enter=' + _capEnter + ' exits=' + JSON.stringify(_capExit));
-      } catch (e) {}
+        // Also dump the actual DOM scroll state — WebView's outer scroll,
+        // .xterm-viewport's inner scroll, and the rendered xterm-rows height
+        // vs container height. Should give the answer for "why is xterm
+        // claiming it's at the bottom while user sees older content".
+        var vp = document.querySelector('.xterm-viewport');
+        var rows = document.querySelector('.xterm-rows');
+        // xterm buffer API: getLine(absoluteY). Buffer indexed 0..length-1.
+        // Viewport shows rows [viewportY .. viewportY + term.rows - 1].
+        var buf = term.buffer && term.buffer.active;
+        var content = {};
+        if (buf) {
+          try {
+            content.length = buf.length;
+            content.viewportY = buf.viewportY;
+            content.baseY = buf.baseY;
+            content.cursorY = buf.cursorY;
+            // Sample first, last visible, and absolute last buffer row.
+            var sample = function (y) {
+              var l = buf.getLine(y);
+              return l ? String(l.translateToString(true)).replace(/\s+$/, '').slice(-40) : null;
+            };
+            content.top = sample(buf.viewportY);
+            content.botVisible = sample(buf.viewportY + term.rows - 1);
+            content.lastBuf = sample(buf.length - 1);
+            content.cursor = sample(buf.viewportY + buf.cursorY);
+          } catch (e) { content.error = String(e); }
+        }
+        // Also count actual xterm-rows DOM children to see what's rendered.
+        var renderedRowCount = rows ? rows.children.length : 0;
+        var firstRenderText = '';
+        var lastRenderText = '';
+        if (rows && rows.children.length > 0) {
+          firstRenderText = (rows.children[0].textContent || '').replace(/\s+$/, '').slice(-40);
+          lastRenderText = (rows.children[rows.children.length - 1].textContent || '').replace(/\s+$/, '').slice(-40);
+        }
+        log('buf: ' + JSON.stringify(content));
+        log('render: count=' + renderedRowCount + ' first="' + firstRenderText + '" last="' + lastRenderText + '"');
+        var vv = window.visualViewport || {};
+        log('scale: DPR=' + window.devicePixelRatio + ' winW=' + window.innerWidth + ' winH=' + window.innerHeight + ' #term.W=' + container.offsetWidth + ' .H=' + container.offsetHeight + ' rows.H=' + (rows ? rows.offsetHeight : '?') + ' vv.scale=' + vv.scale + ' vv.w=' + vv.width + ' vv.h=' + vv.height + ' bodyW=' + document.body.offsetWidth + ' bodyH=' + document.body.offsetHeight);
+      } catch (e) {
+        log('dom-state failed: ' + e);
+      }
     }, 3000);
 
     // Surface terminal-side input back to Kotlin (Sprint 3 — no-op today).
