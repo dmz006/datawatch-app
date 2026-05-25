@@ -96,9 +96,7 @@ import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import android.content.Intent
 import android.os.Bundle
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
+import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -1819,21 +1817,13 @@ private fun ReplyComposer(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var recorder by remember { mutableStateOf<com.dmzs.datawatchclient.voice.VoiceRecorder?>(null) }
+    var showRecordingDialog by remember { mutableStateOf(false) }
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
 
-    val speechAvailable = remember { SpeechRecognizer.isRecognitionAvailable(context) }
-    var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
-    var recognizing by remember { mutableStateOf(false) }
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        onDispose { recognizer?.destroy(); recognizer = null }
-    }
-
-    // RECORD_AUDIO is a runtime permission on Android 6+; without it
-    // MediaRecorder.start() throws and the tap appears to do nothing
-    // (2026-04-22 user report). Request at first use, start recording
-    // once granted — denial surfaces as a toast so the button never
-    // silently no-ops.
+    // RECORD_AUDIO is a runtime permission on Android 6+. Request at first
+    // tap — on grant start recording and show the PWA-style recording dialog;
+    // on denial surface a toast so the button never silently no-ops.
     val micPermissionLauncher =
         androidx.activity.compose.rememberLauncherForActivityResult(
             contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
@@ -1841,7 +1831,7 @@ private fun ReplyComposer(
             if (granted) {
                 val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
                 runCatching { r.start() }
-                    .onSuccess { recorder = r }
+                    .onSuccess { recorder = r; showRecordingDialog = true }
                     .onFailure { e ->
                         android.widget.Toast.makeText(
                             context,
@@ -1857,6 +1847,98 @@ private fun ReplyComposer(
                 ).show()
             }
         }
+
+    // PWA-style recording dialog: shown while mic is active.
+    if (showRecordingDialog) {
+        VoiceRecordingDialog(
+            onCancel = {
+                recorder?.cancel()
+                recorder = null
+                showRecordingDialog = false
+            },
+            onSend = {
+                val r = recorder ?: run { showRecordingDialog = false; return@VoiceRecordingDialog }
+                recorder = null
+                showRecordingDialog = false
+                val captured = r.stop() ?: return@VoiceRecordingDialog
+                transcribing = true
+                scope.launch {
+                    val sessionRow =
+                        com.dmzs.datawatchclient.di.ServiceLocator
+                            .sessionRepository
+                            .observeForProfileAny(sessionId)
+                            .first()
+                    val profiles =
+                        com.dmzs.datawatchclient.di.ServiceLocator
+                            .profileRepository.observeAll().first()
+                    val profile =
+                        sessionRow?.serverProfileId
+                            ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                            ?: run {
+                                val activeId =
+                                    com.dmzs.datawatchclient.di.ServiceLocator
+                                        .activeServerStore.get()
+                                profiles.firstOrNull { it.id == activeId && it.enabled }
+                                    ?: profiles.firstOrNull { it.enabled }
+                            }
+                    if (profile != null) {
+                        com.dmzs.datawatchclient.di.ServiceLocator
+                            .transportFor(profile)
+                            .transcribeAudio(
+                                audio = captured.first,
+                                audioMime = captured.second,
+                                sessionId = sessionId,
+                                autoExec = false,
+                            ).fold(
+                                onSuccess = { result ->
+                                    val text = result.transcript.trim()
+                                    val newPrefix =
+                                        Regex("^new[:\\s]+(.+)", RegexOption.IGNORE_CASE)
+                                            .matchEntire(text)?.groupValues?.get(1)?.trim()
+                                    if (!newPrefix.isNullOrEmpty()) {
+                                        com.dmzs.datawatchclient.di.ServiceLocator
+                                            .transportFor(profile)
+                                            .startSession(task = newPrefix)
+                                            .fold(
+                                                onSuccess = {
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        "Started new session: $newPrefix",
+                                                        android.widget.Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                },
+                                                onFailure = { onTranscribed(text) },
+                                            )
+                                    } else {
+                                        onTranscribed(text)
+                                    }
+                                },
+                                onFailure = { err ->
+                                    val cause =
+                                        generateSequence(err as Throwable?) { it.cause }
+                                            .take(3)
+                                            .joinToString(" ← ") {
+                                                "${it::class.simpleName}: ${it.message?.take(120)}"
+                                            }
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Transcribe failed: $cause",
+                                        android.widget.Toast.LENGTH_LONG,
+                                    ).show()
+                                },
+                            )
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            "No enabled server profile — voice reply aborted.",
+                            android.widget.Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                    transcribing = false
+                }
+            },
+        )
+    }
 
     // v0.42.10 — quick-reply chip row removed (user direction
     // 2026-04-29). Saved Commands sheet (⌨ button below) already
@@ -1957,7 +2039,7 @@ private fun ReplyComposer(
             placeholder = {
                 Text(
                     when {
-                        recording -> "Listening…"
+                        transcribing -> "Transcribing…"
                         waitingInput -> stringResource(R.string.session_detail_reply_waiting)
                         else -> stringResource(R.string.session_detail_reply_hint)
                     },
@@ -1966,7 +2048,7 @@ private fun ReplyComposer(
             modifier = Modifier.weight(1f),
             singleLine = false,
             maxLines = 3,
-            enabled = !sending && !recording,
+            enabled = !sending && !recording && !transcribing,
             textStyle =
                 LocalTextStyle.current.copy(
                     color = MaterialTheme.colorScheme.onSurface,
@@ -2008,192 +2090,27 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        if (speechAvailable || whisperConfigured) IconButton(
+        if (whisperConfigured) IconButton(
             modifier = Modifier.size(40.dp),
             onClick = {
-                if (speechAvailable) {
-                    // Android SpeechRecognizer path (Google ASR — mirrors PWA WebSpeechAPI)
-                    if (recognizing) {
-                        recognizer?.stopListening()
-                        recognizer?.destroy()
-                        recognizer = null
-                        recognizing = false
-                    } else {
-                        val sr = SpeechRecognizer.createSpeechRecognizer(context)
-                        recognizer = sr
-                        sr.setRecognitionListener(object : RecognitionListener {
-                            override fun onResults(results: Bundle?) {
-                                val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim() ?: ""
-                                if (text.isNotEmpty()) onTranscribed(text)
-                                recognizing = false
-                                recognizer?.destroy()
-                                recognizer = null
-                            }
-                            override fun onError(error: Int) {
-                                recognizing = false
-                                recognizer?.destroy()
-                                recognizer = null
-                            }
-                            override fun onReadyForSpeech(params: Bundle?) {}
-                            override fun onBeginningOfSpeech() {}
-                            override fun onRmsChanged(rmsdB: Float) {}
-                            override fun onBufferReceived(buffer: ByteArray?) {}
-                            override fun onEndOfSpeech() {}
-                            override fun onPartialResults(partialResults: Bundle?) {}
-                            override fun onEvent(eventType: Int, params: Bundle?) {}
-                        })
-                        val grant = androidx.core.content.ContextCompat.checkSelfPermission(
-                            context, android.Manifest.permission.RECORD_AUDIO
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                        if (grant) {
-                            sr.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-                            })
-                            recognizing = true
-                        } else {
-                            sr.destroy()
-                            recognizer = null
-                            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                        }
-                    }
-                } else if (recording) {
-                    val r = recorder ?: return@IconButton
-                    recorder = null
-                    val captured = r.stop() ?: return@IconButton
-                    transcribing = true
-                    scope.launch {
-                        // v0.35.6 fix: resolve the profile from the
-                        // session the user is actually viewing, not
-                        // from ActiveServerStore. Users can view a
-                        // session on server A while the store points
-                        // at B (All Servers mode, cross-server nav),
-                        // which silently routed transcribe traffic to
-                        // B's Whisper and surfaced a 404 toast —
-                        // matching the "use to work but isn't anymore"
-                        // report 2026-04-24. Falls back to the active
-                        // store only if the session isn't cached yet.
-                        val sessionRow =
-                            com.dmzs.datawatchclient.di.ServiceLocator
-                                .sessionRepository
-                                .observeForProfileAny(sessionId)
-                                .first()
-                        val profiles =
-                            com.dmzs.datawatchclient.di.ServiceLocator
-                                .profileRepository.observeAll().first()
-                        val profile =
-                            sessionRow?.serverProfileId
-                                ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
-                                ?: run {
-                                    val activeId =
-                                        com.dmzs.datawatchclient.di.ServiceLocator
-                                            .activeServerStore.get()
-                                    profiles.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: profiles.firstOrNull { it.enabled }
-                                }
-                        android.util.Log.d(
-                            "VoiceReply",
-                            "transcribe → sid=$sessionId profile=${profile?.displayName} " +
-                                "(id=${profile?.id})",
-                        )
-                        if (profile != null) {
-                            com.dmzs.datawatchclient.di.ServiceLocator
-                                .transportFor(profile)
-                                .transcribeAudio(
-                                    audio = captured.first,
-                                    audioMime = captured.second,
-                                    sessionId = sessionId,
-                                    autoExec = false,
-                                ).fold(
-                                    onSuccess = { result ->
-                                        val text = result.transcript.trim()
-                                        // Voice-to-new-session: detect "new:" or "new "
-                                        // prefix (case-insensitive) and route through
-                                        // startSession instead of putting it in the
-                                        // reply composer. Matches PWA behaviour for
-                                        // voice commands from inside an existing
-                                        // session.
-                                        val newPrefix =
-                                            Regex("^new[:\\s]+(.+)", RegexOption.IGNORE_CASE)
-                                                .matchEntire(text)?.groupValues?.get(1)?.trim()
-                                        if (!newPrefix.isNullOrEmpty()) {
-                                            com.dmzs.datawatchclient.di.ServiceLocator
-                                                .transportFor(profile)
-                                                .startSession(task = newPrefix)
-                                                .fold(
-                                                    onSuccess = {
-                                                        android.widget.Toast.makeText(
-                                                            context,
-                                                            "Started new session: $newPrefix",
-                                                            android.widget.Toast.LENGTH_SHORT,
-                                                        ).show()
-                                                    },
-                                                    onFailure = {
-                                                        // Fall back to normal composer
-                                                        // insert so the user doesn't
-                                                        // lose their dictation.
-                                                        onTranscribed(text)
-                                                    },
-                                                )
-                                        } else {
-                                            onTranscribed(text)
-                                        }
-                                    },
-                                    onFailure = { err ->
-                                        // v0.35.6: include the root-cause chain
-                                        // so Ktor-wrapped failures (TLS, 404,
-                                        // 500, bearer missing) surface the
-                                        // actual reason instead of a generic
-                                        // CancellationException message.
-                                        val cause =
-                                            generateSequence(err as Throwable?) { it.cause }
-                                                .take(3)
-                                                .joinToString(" ← ") {
-                                                    "${it::class.simpleName}: ${it.message?.take(120)}"
-                                                }
-                                        android.util.Log.w(
-                                            "VoiceReply",
-                                            "transcribe fail on ${profile.displayName}: $cause",
-                                        )
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Transcribe failed on ${profile.displayName}: $cause",
-                                            android.widget.Toast.LENGTH_LONG,
-                                        ).show()
-                                    },
-                                )
-                        } else {
+                val granted =
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.RECORD_AUDIO,
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (granted) {
+                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                    runCatching { r.start() }
+                        .onSuccess { recorder = r; showRecordingDialog = true }
+                        .onFailure { e ->
                             android.widget.Toast.makeText(
                                 context,
-                                "No enabled server profile — voice reply aborted.",
-                                android.widget.Toast.LENGTH_LONG,
+                                "Recording failed: ${e.message ?: e::class.simpleName}",
+                                android.widget.Toast.LENGTH_SHORT,
                             ).show()
                         }
-                        transcribing = false
-                    }
                 } else {
-                    // Check runtime grant first. If already granted, start
-                    // immediately; otherwise route through the launcher,
-                    // which will start on grant or toast on deny.
-                    val granted =
-                        androidx.core.content.ContextCompat.checkSelfPermission(
-                            context,
-                            android.Manifest.permission.RECORD_AUDIO,
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    if (granted) {
-                        val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
-                        runCatching { r.start() }
-                            .onSuccess { recorder = r }
-                            .onFailure { e ->
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Recording failed: ${e.message ?: e::class.simpleName}",
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                    } else {
-                        micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                    }
+                    micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                 }
             },
             enabled = !sending && !transcribing,
@@ -2201,11 +2118,10 @@ private fun ReplyComposer(
             if (transcribing) {
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
             } else {
-                val active = recording || recognizing
                 Icon(
-                    if (active) Icons.Filled.Stop else Icons.Filled.Mic,
-                    contentDescription = if (active) "Stop" else "Voice input",
-                    tint = if (active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    Icons.Filled.Mic,
+                    contentDescription = "Voice input",
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         }

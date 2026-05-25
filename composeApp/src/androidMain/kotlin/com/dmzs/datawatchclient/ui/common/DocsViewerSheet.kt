@@ -9,6 +9,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,13 +20,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
@@ -35,11 +41,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
@@ -49,12 +57,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.voice.VoiceRecorder
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun DocsViewerSheet(
@@ -360,6 +373,84 @@ private fun DocsSearchDialog(
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var voiceRecorder by remember { mutableStateOf<VoiceRecorder?>(null) }
+    var showVoiceDialog by remember { mutableStateOf(false) }
+    var transcribingVoice by remember { mutableStateOf(false) }
+    val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
+    val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            val r = VoiceRecorder(context)
+            runCatching { r.start() }
+                .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                .onFailure { e ->
+                    android.widget.Toast.makeText(
+                        context,
+                        "Recording failed: ${e.message ?: e::class.simpleName}",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                "Microphone permission denied — enable it in Settings.",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
+
+    if (showVoiceDialog) {
+        VoiceRecordingDialog(
+            onCancel = {
+                voiceRecorder?.cancel()
+                voiceRecorder = null
+                showVoiceDialog = false
+            },
+            onSend = {
+                val r = voiceRecorder ?: run { showVoiceDialog = false; return@VoiceRecordingDialog }
+                voiceRecorder = null
+                showVoiceDialog = false
+                val captured = r.stop() ?: return@VoiceRecordingDialog
+                transcribingVoice = true
+                scope.launch {
+                    try {
+                        val enabled = profiles.filter { it.enabled }
+                        val profile = (enabled.firstOrNull { it.id == activeId }
+                            ?: enabled.firstOrNull())
+                        if (profile != null) {
+                            ServiceLocator.transportFor(profile)
+                                .transcribeAudio(
+                                    audio = captured.first,
+                                    audioMime = captured.second,
+                                    sessionId = null,
+                                    autoExec = false,
+                                )
+                                .onSuccess { result ->
+                                    val t = result.transcript.trim()
+                                    if (t.isNotEmpty()) query = TextFieldValue(t)
+                                }
+                                .onFailure { err ->
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Transcribe failed: ${err.message}",
+                                        android.widget.Toast.LENGTH_LONG,
+                                    ).show()
+                                }
+                        }
+                    } finally {
+                        transcribingVoice = false
+                    }
+                }
+            },
+        )
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Search docs") },
@@ -368,7 +459,46 @@ private fun DocsSearchDialog(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                placeholder = { Text("Type a query (≥3 chars)") },
+                placeholder = {
+                    Text(if (transcribingVoice) "Transcribing…" else "Type a query (≥3 chars)")
+                },
+                enabled = !transcribingVoice,
+                trailingIcon = {
+                    if (transcribingVoice) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        IconButton(
+                            onClick = {
+                                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.RECORD_AUDIO,
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (granted) {
+                                    val r = VoiceRecorder(context)
+                                    runCatching { r.start() }
+                                        .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                                        .onFailure { e ->
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Recording failed: ${e.message ?: e::class.simpleName}",
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                } else {
+                                    micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
+                        ) {
+                            Icon(
+                                Icons.Filled.Mic,
+                                contentDescription = "Voice search",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
