@@ -280,7 +280,7 @@ public fun SessionDetailScreen(
                     // fillMaxWidth() lets Compose apply the TopAppBar's width
                     // constraint so Ellipsis kicks in before the dot is pushed out.
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp),
                     ) {
                         val headerTitle =
                             state.session?.name?.takeIf { it.isNotBlank() }
@@ -443,8 +443,11 @@ public fun SessionDetailScreen(
                                 stateMenuOpen = false
                                 vm.overrideState(s)
                             },
-                            hasResponse = false,
-                            onResponse = {},
+                            hasResponse = hasResponse,
+                            onResponse = {
+                                vm.refreshFromServer()
+                                responseOpen = true
+                            },
                         )
 
                         // Fixed tab row - stays below SessionInfoBar while content scrolls below
@@ -727,11 +730,11 @@ public fun SessionDetailScreen(
                         onSchedule = { scheduleOpen = true },
                         waitingInput = state.session?.state == SessionState.Waiting,
                         onQuickReply = vm::sendQuickReply,
-                        onResponse = {
-                            vm.refreshFromServer()
-                            responseOpen = true
-                        },
-                        hasResponse = hasResponse,
+                        // Last Response button moved to SessionInfoBar (header)
+                        // 2026-05-25 per user request — no longer duplicated
+                        // in the composer toolbar.
+                        onResponse = {},
+                        hasResponse = false,
                         onSavedCommands = { savedCmdsOpen = true },
                         whisperConfigured = state.whisperConfigured,
                             )
@@ -929,7 +932,7 @@ private fun SessionInfoBar(
 
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
         ) {
@@ -996,14 +999,16 @@ private fun SessionInfoBar(
                     }
                 }
             }
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+            // Stop / Restart / Delete are LEFT-aligned next to the state
+            // pill (user request 2026-05-25). Spacer pushes the Timeline +
+            // Response cluster to the RIGHT side.
             if (isActive) {
                 TextButton(
                     onClick = onStop,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 2.dp,
+                            horizontal = 8.dp,
+                            vertical = 0.dp,
                         ),
                 ) {
                     Text(
@@ -1017,22 +1022,18 @@ private fun SessionInfoBar(
                     onClick = onRestart,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 2.dp,
+                            horizontal = 8.dp,
+                            vertical = 0.dp,
                         ),
                 ) {
                     Text("↻ Restart", style = MaterialTheme.typography.labelSmall)
                 }
-                // Delete is only offered after the session has reached a terminal
-                // state — same gate the PWA uses (app.js delete button only
-                // appears on non-active rows). Prevents accidental removal of
-                // live sessions from the UI.
                 TextButton(
                     onClick = onDelete,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 2.dp,
+                            horizontal = 8.dp,
+                            vertical = 0.dp,
                         ),
                 ) {
                     Text(
@@ -1042,23 +1043,28 @@ private fun SessionInfoBar(
                     )
                 }
             }
-            TextButton(
-                onClick = onTimeline,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-            ) {
-                Text("🕐", style = MaterialTheme.typography.labelSmall)
-            }
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+            // Last Response button lives in the header next to Timeline
+            // (user request 2026-05-25 — previously hidden in the composer
+            // toolbar). hasResponse comes from the call site, no longer
+            // hard-coded to false at the SessionInfoBar level.
             if (hasResponse) {
                 TextButton(
                     onClick = onResponse,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
                             horizontal = 6.dp,
-                            vertical = 2.dp,
+                            vertical = 0.dp,
                         ),
                 ) {
                     Text("💾", style = MaterialTheme.typography.labelSmall)
                 }
+            }
+            TextButton(
+                onClick = onTimeline,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+            ) {
+                Text("🕐", style = MaterialTheme.typography.labelSmall)
             }
         }
     }

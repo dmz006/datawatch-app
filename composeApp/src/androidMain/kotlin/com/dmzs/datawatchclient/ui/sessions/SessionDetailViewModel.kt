@@ -240,7 +240,16 @@ public class SessionDetailViewModel(
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         wsSessionRefreshFired = false
-        wsWasDisconnected = false
+        // Initialize to `true` so the FIRST live event after first connect
+        // triggers the resize_term + state-refresh path. Previously this was
+        // only sent on reconnect, which meant the server pane stayed at
+        // whatever size some OTHER browser client requested — the Android
+        // app would render the (wrong-size) pane_capture forever without
+        // ever announcing its own size requirements.
+        // [WsOutbound has replay=0, so a JS-fit-triggered resize_term that
+        //  fires before WS subscription is dropped — must re-send from VM
+        //  once we know the WS is up.]
+        wsWasDisconnected = true
         val transport = ServiceLocator.wsTransportFor(profile)
         // Subscribe with fullId (hostname-shortid format), not just short sessionId.
         // The server keys all pane_capture frames on fullId, so we must subscribe with it.

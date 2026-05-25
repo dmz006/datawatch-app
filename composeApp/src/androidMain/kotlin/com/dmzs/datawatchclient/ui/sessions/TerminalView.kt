@@ -247,6 +247,21 @@ public class TerminalController internal constructor() {
     }
 
     /**
+     * Open a short window in which the next pane_capture is allowed to
+     * write through even while scroll mode is active. Called by the
+     * scroll-mode toolbar's PgUp/PgDn buttons right before they send
+     * the tmux-page-up/down WS command, so the resulting (scrolled)
+     * pane_capture renders exactly once. Mirrors the PWA's
+     * `_scrollPendingRefresh` pattern (app.js ~line 665).
+     */
+    public fun scrollPendingRefresh(windowMs: Int = 700) {
+        webView?.evaluateJavascript(
+            "window.dwScrollPendingRefresh && window.dwScrollPendingRefresh($windowMs);",
+            null,
+        )
+    }
+
+    /**
      * Freeze further pane_capture writes. Called when the session
      * transitions to complete/failed/killed so the final screenshot
      * isn't overwritten by subsequent shell-prompt frames.
