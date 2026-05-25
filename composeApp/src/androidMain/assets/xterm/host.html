@@ -440,21 +440,37 @@
       }
     };
 
+    var _capEnter = 0, _capExit = {};
     window.dwPaneCapture = function (linesJson, isFirst) {
+      _capEnter++;
       try {
-        if (_frozen) return;
+        if (_frozen) { _capExit.frozen = (_capExit.frozen||0)+1; return; }
         var now = (performance && performance.now) ? performance.now() : Date.now();
-        if (_lastPaneWrite && (now - _lastPaneWrite) < 33) return;
+        // 200ms throttle (5 fps) — xterm.js's ANSI parser + render loop
+        // can't keep up with the 30 fps pane_capture rate Kotlin pushes
+        // when the session is active, and the queue grows unboundedly
+        // (each full pane_capture is ~15-20 KB of styled text). 5 fps is
+        // still snappier than human perception threshold for streaming
+        // text; matches the practical ceiling we measured on S24 (Android
+        // 16 WebView) before render latency builds up "phone is X minutes
+        // behind live tail" reports.
+        if (_lastPaneWrite && (now - _lastPaneWrite) < 200) { _capExit.throttle = (_capExit.throttle||0)+1; return; }
         var lines;
         try { lines = JSON.parse(String(linesJson || '[]')); }
         catch (e) { lines = []; }
-        if (!Array.isArray(lines) || lines.length === 0) return;
-        // In scroll mode the user is reading historical output — don't bail
-        // on DATAWATCH_COMPLETE: lines that are just part of the history.
+        if (!Array.isArray(lines) || lines.length === 0) { _capExit.empty = (_capExit.empty||0)+1; return; }
+        // PWA pattern (app.js ~line 609): FILTER lines containing the
+        // DATAWATCH_COMPLETE marker rather than dropping the whole
+        // pane_capture. Previous "break on any match" was the source of
+        // the worst-of-the-week regression: ALL 6603 pane_captures got
+        // skipped because one line of visible bash command text
+        // contained the literal "DATAWATCH_COMPLETE:" substring (e.g.
+        // a grep call), freezing the terminal at the first paint.
         if (!_scrollMode) {
-          for (var i = 0; i < lines.length; i++) {
-            if (String(lines[i]).indexOf('DATAWATCH_COMPLETE:') !== -1) return;
-          }
+          lines = lines.filter(function (l) {
+            return String(l).indexOf('DATAWATCH_COMPLETE:') === -1;
+          });
+          if (lines.length === 0) { _capExit.dwcomplete = (_capExit.dwcomplete||0)+1; return; }
         }
         _lastPaneWrite = now;
         var joined = lines.join('\r\n');
@@ -491,6 +507,7 @@
           // ESC[2J clear screen, ESC[3J clear scrollback, ESC[H cursor home
           term.write('\x1b[2J\x1b[3J\x1b[H' + joined);
           try { term.scrollToBottom(); } catch (e) {}
+          log('cap-redraw: ' + lines.length + ' rows');
         }
       } catch (e) {
         log('paneCapture failed: ' + e);
@@ -565,14 +582,12 @@
       }
     };
 
-    // Flush anything that was buffered (defensive; unreachable today).
-    function flushPending() {
-      while (pendingWrites.length > 0) {
-        var s = pendingWrites.shift();
-        try { term.write(s); } catch (e) { pendingWrites.unshift(s); break; }
-      }
-    }
-    setTimeout(flushPending, 100);
+    // Dump pane_capture stats every 3 seconds to diagnose dispatch flow.
+    setInterval(function () {
+      try {
+        log('cap-stats: enter=' + _capEnter + ' exits=' + JSON.stringify(_capExit));
+      } catch (e) {}
+    }, 3000);
 
     // Surface terminal-side input back to Kotlin (Sprint 3 — no-op today).
     term.onData(function (data) {

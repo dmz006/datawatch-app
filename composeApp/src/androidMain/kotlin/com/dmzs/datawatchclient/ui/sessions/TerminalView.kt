@@ -390,9 +390,11 @@ public fun TerminalView(
                 webChromeClient =
                     object : WebChromeClient() {
                         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                            Log.d(
-                                "DwTerm",
-                                "${consoleMessage.messageLevel()} " +
+                            // println instead of Log.d so JS console messages survive
+                            // ProGuard's release-build log stripping — load-bearing
+                            // for diagnosing xterm scroll/dispatch issues.
+                            println(
+                                "DwTerm-js: ${consoleMessage.messageLevel()} " +
                                     "${consoleMessage.message()} " +
                                     "(line ${consoleMessage.lineNumber()})",
                             )
@@ -471,6 +473,11 @@ public fun TerminalView(
         val arrayLiteral =
             pc.lines.joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
         val linesJson = JSONObject.quote(arrayLiteral)
+        // println survives ProGuard's default rules where Log.d is stripped —
+        // gives us visibility into dispatch cadence in release builds when
+        // diagnosing live-tail lag.
+        @Suppress("ForbiddenComment")
+        println("DwTerm-dispatch: pc rows=${pc.lines.size} first=${pc.isFirst} ts=${pc.ts}")
         webView.evaluateJavascript(
             "window.dwPaneCapture($linesJson, ${pc.isFirst});",
             null,
