@@ -1290,6 +1290,34 @@ public class RestTransport(
             arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
         }
 
+    override suspend fun addRemoteServer(server: com.dmzs.datawatchclient.transport.dto.RemoteServerDto): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/servers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(server)
+            }
+            Unit
+        }
+
+    override suspend fun updateRemoteServer(name: String, server: com.dmzs.datawatchclient.transport.dto.RemoteServerDto): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/servers/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(server)
+            }
+            Unit
+        }
+
+    override suspend fun deleteRemoteServer(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/servers/${name.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     override suspend fun listRemoteServerHealth(): Result<List<kotlinx.serialization.json.JsonObject>> =
         request {
             val arr: kotlinx.serialization.json.JsonArray =

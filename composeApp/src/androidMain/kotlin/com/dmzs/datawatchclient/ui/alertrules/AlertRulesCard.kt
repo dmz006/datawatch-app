@@ -213,6 +213,7 @@ private fun AddAlertRuleDialog(
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var sourceFilter by remember { mutableStateOf("") }
     var metric by remember { mutableStateOf("cpu_pct") }
     var operator by remember { mutableStateOf(">") }
     var threshold by remember { mutableStateOf("90") }
@@ -233,6 +234,11 @@ private fun AddAlertRuleDialog(
                 OutlinedTextField(
                     value = description, onValueChange = { description = it },
                     label = { Text("Description (optional)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = sourceFilter, onValueChange = { sourceFilter = it },
+                    label = { Text("Source filter (optional)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -279,6 +285,7 @@ private fun AddAlertRuleDialog(
                         AlertRuleDto(
                             name = name.trim(),
                             description = description.takeIf { it.isNotBlank() },
+                            sourceFilter = sourceFilter.takeIf { it.isNotBlank() },
                             condition = AlertConditionDto(
                                 metric = metric.trim(),
                                 operator = operator.trim(),
