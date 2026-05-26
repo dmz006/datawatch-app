@@ -102,6 +102,8 @@ public fun AutonomousScreen(
     var includeTemplates by remember { mutableStateOf(false) }
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var typeFilter by remember { mutableStateOf<String?>(null) }
+    // PWA _automataState.historyOn: false = active PRDs only; true = include terminal statuses
+    var historyOn by remember { mutableStateOf(false) }
     var openPrdId by remember { mutableStateOf<String?>(null) }
     // Retained so the slide-out animation shows the PRD instead of a blank
     var detailPrd by remember { mutableStateOf<PrdDto?>(null) }
@@ -210,36 +212,20 @@ public fun AutonomousScreen(
                         onClick = { currentTab = 1 },
                     )
                     Spacer(Modifier.weight(1f))
-                    // Filter icon inline with tabs (contextual to PRDs tab)
+                    // Action buttons matching PWA .automata-action-btn order: ☑ select, ⊞ filter, ⏱ history
                     if (currentTab == 0) {
-                        IconButton(
-                            onClick = { filterOpen = !filterOpen },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
-                                contentDescription = if (filterOpen) stringResource(R.string.autonomous_filter_close) else stringResource(R.string.autonomous_filter_open),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                        // Select mode toggle — shows ☑ button; when active shows ✕ to exit
-                        IconButton(
-                            onClick = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AutomataActionBtn("☑", active = selectMode) {
                                 selectMode = !selectMode
                                 if (!selectMode) vm.clearSelection()
-                            },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Text(
-                                if (selectMode) "✕" else "☑",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = if (selectMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            }
+                            AutomataActionBtn("⊞", active = filterOpen) { filterOpen = !filterOpen }
+                            AutomataActionBtn("⏱", active = historyOn) { historyOn = !historyOn }
                         }
                     }
                 }
                 when (currentTab) {
-                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, onOpenPrd = { if (!selectMode) openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
+                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, onOpenPrd = { if (!selectMode) openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
                     else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
                 }
             }
@@ -420,6 +406,7 @@ private fun PrdsBody(
     statusFilter: String?,
     typeFilter: String? = null,
     selectMode: Boolean = false,
+    historyOn: Boolean = false,
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
@@ -476,11 +463,15 @@ private fun PrdsBody(
     state.banner?.let { banner ->
         Text(banner, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
+    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false
+    val terminalStatuses = setOf("completed", "complete", "cancelled", "rejected", "archived")
     val visible = state.prds
         .filter { prd ->
             (includeTemplates || !prd.isTemplate) &&
                 (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
-                (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true))
+                (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
+                // History filter: override when a status filter is explicitly set
+                (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses)
         }
         .sortedWith(
             compareBy(
@@ -642,7 +633,7 @@ private fun PrdRow(
                             val ldt = java.time.LocalDateTime.ofInstant(inst, java.time.ZoneId.systemDefault())
                             "%02d/%02d/%04d, %02d:%02d:%02d".format(ldt.dayOfMonth, ldt.monthValue, ldt.year, ldt.hour, ldt.minute, ldt.second)
                         }.getOrDefault(ts.take(10))
-                        Text(" · $display", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+                        Text("  $display", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
                     }
                 }
                 // Lifecycle strip (5 steps matching PWA: Plan → Review → Approve → Run → Done)
@@ -672,10 +663,17 @@ private fun PrdRow(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (showCancel) {
-                        TextButton(
-                            onClick = onCancel,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        ) { Text("✕ ${stringResource(R.string.action_cancel)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error) }
+                        // PWA uses btn-secondary: bg3 background, border, normal text — not red
+                        val dw2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                .border(1.dp, dw2.border, RoundedCornerShape(6.dp))
+                                .clickable(onClick = onCancel)
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                        ) {
+                            Text("✕ ${stringResource(R.string.action_cancel)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                        }
                     }
                     Spacer(Modifier.weight(1f))
                     if (showApprove) {
@@ -709,7 +707,7 @@ private fun PrdRow(
                     Text(
                         "${if (storiesExpanded) "▾" else "▸"} Stories & tasks (${prd.stories.size})",
                         style = MaterialTheme.typography.labelSmall,
-                        color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 if (storiesExpanded) {
@@ -1102,6 +1100,24 @@ private fun AutonomousServerPickerTitle(
 private fun AutonomousStatusDot(enabled: Boolean) {
     val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
+}
+
+/** Action button matching PWA .automata-action-btn — border pill, accent when active. */
+@Composable
+private fun AutomataActionBtn(label: String, active: Boolean, onClick: () -> Unit) {
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val accent = MaterialTheme.colorScheme.primary
+    val tintBg = Color(0xFF60A5FA).copy(alpha = 0.1f)  // .automata-action-btn.active bg
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(width = 32.dp, height = 28.dp)
+            .background(if (active) tintBg else Color.Transparent, RoundedCornerShape(6.dp))
+            .border(1.dp, if (active) accent else dw.border, RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick),
+    ) {
+        Text(label, fontSize = 13.sp, color = if (active) accent else MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 /** Custom tab button — matches PWA .automata-tab / .automata-tab.active pill style. */
