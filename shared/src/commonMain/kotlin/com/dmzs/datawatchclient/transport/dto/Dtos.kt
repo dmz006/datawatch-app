@@ -1797,6 +1797,20 @@ public data class PluginInstallResponseDto(
 )
 
 @Serializable
+public data class TailscaleAuthKeyDto(
+    val key: String = "",
+    @SerialName("expires_at") val expiresAt: String? = null,
+    val error: String? = null,
+)
+
+@Serializable
+public data class TailscaleAclDto(
+    val policy: String = "",
+    @SerialName("generated_policy") val generatedPolicy: String? = null,
+    val error: String? = null,
+)
+
+@Serializable
 public data class RemoteServerDto(
     val name: String = "",
     val url: String = "",

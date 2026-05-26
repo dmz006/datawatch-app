@@ -2244,6 +2244,33 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun generateTailscaleAuthKey(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAuthKeyDto> =
+        request {
+            client.post("${profile.baseUrl}/api/tailscale/auth/key") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("reusable", kotlinx.serialization.json.JsonPrimitive(false))
+                    put("ephemeral", kotlinx.serialization.json.JsonPrimitive(false))
+                    put("expiry_hours", kotlinx.serialization.json.JsonPrimitive(24))
+                })
+            }.body()
+        }
+
+    override suspend fun generateTailscaleAcl(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAclDto> =
+        request {
+            client.post("${profile.baseUrl}/api/tailscale/acl/generate") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun pushTailscaleAcl(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAclDto> =
+        request {
+            client.post("${profile.baseUrl}/api/tailscale/acl/push") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- v0.81.0 Sprint 12: Pipelines + OrchestratorGraphs list ----
 
     override suspend fun getPipelines(): Result<List<com.dmzs.datawatchclient.transport.dto.PipelineListItemDto>> =
@@ -2722,6 +2749,41 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun setFileServiceRoot(path: String): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("session.file_service_root", kotlinx.serialization.json.JsonPrimitive(path))
+                })
+            }
+            Unit
+        }
+
+    override suspend fun uploadFile(bytes: ByteArray, fileName: String, destPath: String): Result<Unit> =
+        request {
+            val boundary = "dw-${kotlin.random.Random.nextLong()}"
+            client.post("${profile.baseUrl}/api/files") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    io.ktor.client.request.forms.MultiPartFormDataContent(
+                        parts = io.ktor.client.request.forms.formData {
+                            append(
+                                key = "file",
+                                filename = fileName,
+                                contentType = ContentType.Application.OctetStream,
+                                size = bytes.size.toLong(),
+                            ) { writeFully(bytes) }
+                            append("path", destPath)
+                        },
+                        boundary = boundary,
+                    ),
+                )
+            }
+            Unit
+        }
+
     // ---- T30: Discussion Scopes ----
 
     override suspend fun listDiscussions(): Result<com.dmzs.datawatchclient.transport.dto.DiscussionListDto> =
@@ -2741,6 +2803,19 @@ public class RestTransport(
                 contentType(ContentType.Application.Json)
                 setBody(com.dmzs.datawatchclient.transport.dto.DiscussionWriteRequestDto(content = content))
             }.body()
+        }
+
+    override suspend fun createDiscussionScope(id: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/discussion/${id.replace(" ", "%20")}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("content", kotlinx.serialization.json.JsonPrimitive("Discussion scope created"))
+                    put("summary", kotlinx.serialization.json.JsonPrimitive("initial entry"))
+                })
+            }
+            Unit
         }
 
     // ---- T30: Encryption Status ----
