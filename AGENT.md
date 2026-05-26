@@ -605,6 +605,23 @@ The parent is the source of truth for *which keys exist*; the mobile app is the 
 truth for *translation quality* (DE/ES/FR/JA come from Compose Multiplatform UX feedback).
 Mirror direction: parent → mobile for key requests; mobile → parent for translation values.
 
+### Iterate
+
+When asked to do something, execute it then immediately run multi-pass review until there are **zero remaining gaps** between what was asked and what was delivered.
+
+**Process:**
+
+1. **Pass 1** — Execute the task fully. On completion, compare the result against the exact wording of the request. List every gap found (things missing, wrong, or incomplete relative to what was asked).
+2. **Pass 2** — Address every gap from Pass 1. Re-compare against the original request. List any remaining gaps.
+3. **Pass N** — Repeat until a complete pass finds **no gaps**. Only then is the task done.
+
+**Rules:**
+- Label each pass explicitly (`Pass 1`, `Pass 2`, etc.) so progress is traceable.
+- The reference for "what was asked" is the user's original request verbatim — not an interpretation of it.
+- The goal is **1:1, 100% match** of what was asked. Partial completion is not done.
+- If gaps remain after Pass 2 and the user has not been informed, add a Pass 3 without asking — do not stop and report partial results.
+- Stop only when a pass finds zero differences, OR when a gap requires a design decision that must be escalated (see Decision Making rule).
+
 ---
 
 # Memory & Knowledge (datawatch)
