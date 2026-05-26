@@ -17,7 +17,7 @@
 
         <uses-library android:name="com.google.android.wearable" android:required="true"/>
 
-        <meta-data android:name="com.google.android.wearable.standalone" android:value="false"/>
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
 
         <!--
             Explicit icon on the activity too, because the Galaxy
