@@ -48,7 +48,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -113,16 +117,16 @@ public class WearMainActivity : ComponentActivity() {
 // treatment rather than stock Wear defaults.
 private fun datawatchWearColors(): Colors =
     Colors(
-        primary = Color(0xFF00E5A0),
-        secondary = Color(0xFFFFB020),
-        background = Color(0xFF0B0F14),
-        surface = Color(0xFF0F1419),
-        error = Color(0xFFFF5555),
-        onPrimary = Color(0xFF00140B),
+        primary = Color(0xFF00E5FF),
+        secondary = Color(0xFFFFB300),
+        background = Color(0xFF000000),
+        surface = Color(0xFF060A0E),
+        error = Color(0xFFFF4444),
+        onPrimary = Color(0xFF001A1F),
         onSecondary = Color(0xFF2A1B00),
-        onBackground = Color(0xFFE7EDF3),
-        onSurface = Color(0xFFE7EDF3),
-        onSurfaceVariant = Color(0xFF9AA7B3),
+        onBackground = Color(0xFFD0E8ED),
+        onSurface = Color(0xFFD0E8ED),
+        onSurfaceVariant = Color(0xFF3E6B7C),
         onError = Color(0xFF1A0000),
     )
 
@@ -328,7 +332,6 @@ private fun WearRoot(
                                 fullDetailBodies = fullDetailBodies - item.id
                                 vm.refreshSession(item.id)
                             },
-                            onStopSession = { sessionId -> vm.sendStopSession(sessionId) },
                             scrollState = sessionScrollState,
                         )
                     3 ->
@@ -486,8 +489,8 @@ private fun PageScaffold(
                     .clip(cardShape)
                     .background(MaterialTheme.colors.surface, shape = cardShape)
                     .border(
-                        width = 1.5.dp,
-                        color = MaterialTheme.colors.primary.copy(alpha = 0.45f),
+                        width = 1.dp,
+                        color = MaterialTheme.colors.primary.copy(alpha = 0.70f),
                         shape = cardShape,
                     )
                     .padding(horizontal = 28.dp, vertical = 20.dp),
@@ -501,11 +504,14 @@ private fun PageScaffold(
             ) {
                 if (title.isNotBlank()) {
                     Text(
-                        title,
+                        title.uppercase(),
                         style = MaterialTheme.typography.title3,
                         color = MaterialTheme.colors.primary,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.5.sp,
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                 }
                 content()
             }
@@ -579,73 +585,77 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly,
+            verticalArrangement = Arrangement.Center,
         ) {
-            // Server name header
+            // Server identity line — dim monospace callsign
             if (state.serverName.isNotBlank()) {
                 Text(
-                    state.serverName,
-                    style = MaterialTheme.typography.caption2,
+                    state.serverName.uppercase(),
+                    style = MaterialTheme.typography.caption3,
                     color = dimColor,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Running — always shown, 0 included
-            GlanceStat(
-                count = state.running,
-                label = "RUNNING",
-                activeColor = runColor,
-                dimColor = dimColor,
-                alwaysBright = true,
-            )
-
-            // Waiting — amber and bold when non-zero
-            GlanceStat(
-                count = state.waiting,
-                label = "WAITING",
-                activeColor = waitColor,
-                dimColor = dimColor,
-                alwaysBright = false,
-            )
-
-            // Automata running
-            GlanceStat(
-                count = runningAutomata,
-                label = "AUTOMATA",
-                activeColor = autoColor,
-                dimColor = dimColor,
-                alwaysBright = false,
-            )
-
-            // Review needed — only shown when > 0
-            if (reviewCount > 0) {
-                GlanceStat(
-                    count = reviewCount,
-                    label = "FOR REVIEW",
-                    activeColor = blockColor,
-                    dimColor = dimColor,
-                    alwaysBright = true,
+            // Central arc ring: running / total session ratio
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(88.dp)) {
+                CircularProgressIndicator(
+                    progress = if (state.total > 0) state.running.toFloat() / state.total.toFloat() else 0f,
+                    modifier = Modifier.fillMaxSize(),
+                    strokeWidth = 5.dp,
+                    indicatorColor = runColor,
+                    trackColor = runColor.copy(alpha = 0.12f),
                 )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        state.running.toString(),
+                        style = MaterialTheme.typography.title1,
+                        fontWeight = FontWeight.Bold,
+                        color = runColor,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                    Text(
+                        "RUN",
+                        style = MaterialTheme.typography.caption3,
+                        color = dimColor,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
             }
 
-            // Guardrail block summary
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Compact stat row below the ring
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                MiniStat(state.waiting, "WAIT", waitColor, dimColor)
+                MiniStat(runningAutomata, "AUTO", autoColor, dimColor)
+                if (reviewCount > 0) MiniStat(reviewCount, "REV!", blockColor, dimColor)
+            }
+
+            // Guardrail or active task context at bottom
             if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "⚠ ${state.blockSummary.take(44)}",
-                    style = MaterialTheme.typography.caption1,
+                    "⚠ ${state.blockSummary.take(40)}",
+                    style = MaterialTheme.typography.caption2,
                     color = blockColor,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
             } else if (state.currentTask.isNotBlank()) {
-                // Active task snippet at bottom
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    state.currentTask.take(52),
-                    style = MaterialTheme.typography.caption2,
+                    state.currentTask.take(44),
+                    style = MaterialTheme.typography.caption3,
                     color = dimColor,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -681,6 +691,27 @@ private fun GlanceStat(
             style = MaterialTheme.typography.caption1,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isActive) activeColor.copy(alpha = 0.85f) else dimColor,
+        )
+    }
+}
+
+@Composable
+private fun MiniStat(count: Int, label: String, activeColor: Color, dimColor: Color) {
+    val color = if (count > 0) activeColor else dimColor
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.title3,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            fontFamily = FontFamily.Monospace,
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.caption3,
+            color = color.copy(alpha = 0.8f),
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 0.5.sp,
         )
     }
 }
@@ -1231,7 +1262,6 @@ private fun SessionsPage(
     filter: SessionFilter,
     onFilterChange: (SessionFilter) -> Unit,
     onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
-    onStopSession: (String) -> Unit = {},
     scrollState: ScrollState = rememberScrollState(),
 ) {
     PageScaffold(stringResource(R.string.wear_page_sessions), scrollState = scrollState) {
@@ -1292,7 +1322,7 @@ private fun SessionsPage(
                     modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
                 )
             }
-            items.forEach { item -> SessionRow(item, onSessionTap, onStopSession = { onStopSession(item.id) }) }
+            items.forEach { item -> SessionRow(item, onSessionTap) }
         }
     }
 }
@@ -1301,7 +1331,6 @@ private fun SessionsPage(
 private fun SessionRow(
     item: WearSessionCountsViewModel.SessionItem,
     onTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
-    onStopSession: () -> Unit,
 ) {
     val badgeColor = sessionBadgeColor(item.stateName)
     val agoText = wearSessionAgo(item.lastActivity)
@@ -1334,27 +1363,9 @@ private fun SessionRow(
             }
         }
         isRunning -> {
-            val swipeState = rememberSwipeToDismissBoxState()
-            SwipeToDismissBox(
-                onDismissed = { onStopSession() },
-                state = swipeState,
-            ) { isBackground ->
-                if (isBackground) {
-                    Box(
-                        modifier = Modifier.fillMaxSize()
-                            .background(Color(0xFF3A1A1A), androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.CenterEnd,
-                    ) {
-                        Text("✕ Stop", style = MaterialTheme.typography.caption1,
-                            color = Color(0xFFEF4444),
-                            modifier = Modifier.padding(end = 12.dp))
-                    }
-                } else {
-                    val durationText = wearRunningDuration(item.startedAt)
-                    val durationColor = runningDurationColor(item.startedAt)
-                    SessionRowContent(item, badgeColor, abbrev, bColor, agoText, durationText to durationColor, onTap)
-                }
-            }
+            val durationText = wearRunningDuration(item.startedAt)
+            val durationColor = runningDurationColor(item.startedAt)
+            SessionRowContent(item, badgeColor, abbrev, bColor, agoText, durationText to durationColor, onTap)
         }
         else -> SessionRowContent(item, badgeColor, abbrev, bColor, agoText, null, onTap)
     }
@@ -1374,13 +1385,15 @@ private fun SessionRowContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 4.dp)
-            .background(badgeColor.copy(alpha = 0.18f), androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+            .drawBehind {
+                drawRect(color = badgeColor.copy(alpha = 0.06f), size = size)
+                drawRect(color = badgeColor, size = Size(3.dp.toPx(), size.height))
+            }
             .clickable { onTap(item) }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(start = 10.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("●", color = badgeColor, style = MaterialTheme.typography.caption1)
-        Column(modifier = Modifier.padding(start = 6.dp).weight(1f)) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 item.title.take(28),
                 style = MaterialTheme.typography.caption1,
@@ -1396,10 +1409,12 @@ private fun SessionRowContent(
                     style = MaterialTheme.typography.caption2,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     maxLines = 1,
+                    fontFamily = FontFamily.Monospace,
                 )
                 if (duration != null && duration.first.isNotEmpty()) {
                     Text(duration.first, style = MaterialTheme.typography.caption2,
-                        color = duration.second, fontWeight = FontWeight.Bold)
+                        color = duration.second, fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace)
                 }
             }
         }
@@ -1408,6 +1423,7 @@ private fun SessionRowContent(
                 abbrev,
                 style = MaterialTheme.typography.caption3,
                 color = backendColor,
+                fontFamily = FontFamily.Monospace,
                 modifier = Modifier
                     .background(backendColor.copy(alpha = 0.15f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
                     .padding(horizontal = 4.dp, vertical = 2.dp),
@@ -1859,33 +1875,32 @@ private fun CountTile(
     val mod = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier =
-            mod
-                .background(
-                    color =
-                        if (selected) {
-                            color.copy(alpha = 0.2f)
-                        } else {
-                            Color.Transparent
-                        },
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier = mod
+            .drawBehind {
+                if (selected) {
+                    drawRect(color = color.copy(alpha = 0.10f), size = size)
+                    val barH = 2.dp.toPx()
+                    drawRect(
+                        color = color,
+                        topLeft = Offset(0f, size.height - barH),
+                        size = Size(size.width, barH),
+                    )
+                }
+            }
+            .padding(horizontal = 6.dp, vertical = 4.dp),
     ) {
         Text(
             value.toString(),
             style = MaterialTheme.typography.display3,
-            color = color,
+            color = if (selected) color else color.copy(alpha = 0.6f),
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
         )
         Text(
             label,
             style = MaterialTheme.typography.caption3,
-            color =
-                if (selected) {
-                    color
-                } else {
-                    MaterialTheme.colors.onSurfaceVariant
-                },
+            color = if (selected) color else MaterialTheme.colors.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
         )
     }
 }
