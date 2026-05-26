@@ -343,6 +343,7 @@ public fun SettingsScreen(
                                 // T30 — Channel Routing
                                 com.dmzs.datawatchclient.ui.routing.ChannelRoutingCard()
                                 com.dmzs.datawatchclient.ui.federation.FederationPeersCard()
+                                PushNotificationsCard()
                                 com.dmzs.datawatchclient.ui.cert.CertInstallCard()
                             }
                             SettingsTab.Compute -> {
