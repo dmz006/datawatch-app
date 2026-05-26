@@ -86,7 +86,7 @@ public fun DaemonLogCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Daemon log")
+        PwaSectionTitle("Daemon log", docsAnchor = "daemon-log")
         banner?.let {
             Text(
                 it,
@@ -172,7 +172,7 @@ public fun InterfacesCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Network interfaces")
+        PwaSectionTitle("Network interfaces", docsAnchor = "network-interfaces")
         banner?.let {
             Text(
                 it,
@@ -237,7 +237,7 @@ public fun KillOrphansCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Kill orphaned tmux sessions")
+        PwaSectionTitle("Kill orphaned tmux sessions", docsAnchor = "daemon-log")
         Text(
             "Terminate tmux sessions on the server that datawatch isn't " +
                 "tracking. Useful after a crash or migration when tmux " +
@@ -337,7 +337,7 @@ public fun UpdateDaemonCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Daemon update")
+        PwaSectionTitle("Daemon update", docsAnchor = "auto-update")
         Text(
             "Check whether a new datawatch daemon version is available on " +
                 "the active server. If an update is found you can choose to " +
@@ -469,7 +469,7 @@ public fun RestartDaemonCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Daemon")
+        PwaSectionTitle("Daemon", docsAnchor = "datawatch")
         Text(
             "Restart the datawatch daemon on the active server. Every " +
                 "running session briefly loses its WebSocket connection " +
@@ -555,7 +555,7 @@ public fun SubsystemReloadCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Hot-reload subsystem")
+        PwaSectionTitle("Hot-reload subsystem", docsAnchor = "hot-reload")
         Text(
             "Reload a subsystem on the active server without restarting the daemon. " +
                 "Changes to config files, filter rules, or memory are picked up immediately.",

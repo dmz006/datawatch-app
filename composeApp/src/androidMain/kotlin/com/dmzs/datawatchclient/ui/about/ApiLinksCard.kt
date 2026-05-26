@@ -49,7 +49,7 @@ public fun ApiLinksCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("API")
+        PwaSectionTitle("API", docsAnchor = "api")
         if (base == null) {
             Text(
                 "No enabled server.",

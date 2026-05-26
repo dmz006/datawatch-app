@@ -60,7 +60,7 @@ public fun EncryptionStatusCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.encryption_status_title))
+            PwaSectionTitle(stringResource(R.string.encryption_status_title), docsAnchor = "security")
 
             when {
                 loadError != null -> Text(

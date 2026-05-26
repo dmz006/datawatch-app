@@ -50,7 +50,7 @@ public fun ToolingCard(vm: ToolingViewModel = viewModel()) {
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                PwaSectionTitle(stringResource(R.string.tooling_title), Modifier.weight(1f))
+                PwaSectionTitle(stringResource(R.string.tooling_title), Modifier.weight(1f), docsAnchor = "backend-artifact-lifecycle")
                 TextButton(onClick = { vm.load() }) {
                     Text(stringResource(R.string.tooling_refresh))
                 }

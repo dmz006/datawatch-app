@@ -177,7 +177,7 @@ public fun MemoryCard() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                PwaSectionTitle("Episodic memory")
+                PwaSectionTitle("Episodic memory", docsAnchor = "memory-browser")
             }
             IconButton(onClick = { addOpen = true }) {
                 Icon(

@@ -62,7 +62,7 @@ internal fun AutomataTypesCard() {
             .padding(12.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(stringResource(R.string.automata_type_registry_title), modifier = Modifier.weight(1f))
+            PwaSectionTitle(stringResource(R.string.automata_type_registry_title), modifier = Modifier.weight(1f), docsAnchor = "automata")
             IconButton(onClick = { createOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automata_type_create))
             }

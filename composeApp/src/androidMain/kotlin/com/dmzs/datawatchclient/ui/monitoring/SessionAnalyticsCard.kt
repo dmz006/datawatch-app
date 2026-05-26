@@ -64,7 +64,7 @@ public fun SessionAnalyticsCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle("Session Analytics", docsAnchor = "api/sessions.md")
+        PwaSectionTitle("Session Analytics", docsAnchor = "session-analytics")
 
         Row(
             verticalAlignment = Alignment.CenterVertically,

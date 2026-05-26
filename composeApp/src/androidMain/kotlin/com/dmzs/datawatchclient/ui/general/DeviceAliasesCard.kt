@@ -57,7 +57,7 @@ public fun DeviceAliasesCard(vm: DeviceAliasesViewModel = viewModel()) {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.device_aliases_title))
+            PwaSectionTitle(stringResource(R.string.device_aliases_title), docsAnchor = "device-aliases")
 
             // Add form
             OutlinedTextField(

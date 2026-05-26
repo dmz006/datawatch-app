@@ -61,7 +61,7 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.session_templates_title))
+            PwaSectionTitle(stringResource(R.string.session_templates_title), docsAnchor = "session-templates")
 
             // Add form
             OutlinedTextField(

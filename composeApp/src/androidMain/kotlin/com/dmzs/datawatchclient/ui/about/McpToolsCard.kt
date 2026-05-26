@@ -75,7 +75,7 @@ public fun McpToolsCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("MCP tools")
+        PwaSectionTitle("MCP tools", docsAnchor = "mcp-server")
         banner?.let {
             Text(
                 it,

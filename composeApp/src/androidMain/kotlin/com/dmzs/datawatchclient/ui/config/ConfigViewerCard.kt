@@ -62,7 +62,7 @@ public fun ConfigViewerCard(vm: ConfigViewerViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PwaSectionTitle("Daemon config", modifier = Modifier.weight(1f))
+                PwaSectionTitle("Daemon config", modifier = Modifier.weight(1f), docsAnchor = "datawatch")
                 IconButton(onClick = vm::refresh, enabled = state.supported) {
                     if (state.loading) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(6.dp))

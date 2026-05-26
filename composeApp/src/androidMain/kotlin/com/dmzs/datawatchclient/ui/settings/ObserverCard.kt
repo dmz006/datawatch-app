@@ -29,7 +29,7 @@ public fun ObserverCard() {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(stringResource(R.string.observer_title))
+            PwaSectionTitle(stringResource(R.string.observer_title), docsAnchor = "federated-observer")
             Text(
                 stringResource(R.string.observer_no_active),
                 style = MaterialTheme.typography.bodySmall,

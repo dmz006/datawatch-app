@@ -80,7 +80,7 @@ public fun AlertRulesCard() {
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle("Alert Rules")
+            PwaSectionTitle("Alert Rules", docsAnchor = "alert-rules")
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { showAddDialog = true }) {
                 Text("+ Add Rule", style = MaterialTheme.typography.labelSmall)
