@@ -1320,6 +1320,14 @@ public interface TransportClient {
     /** POST /api/memory/discussion/{id} — create a new discussion scope with an initial entry. */
     public suspend fun createDiscussionScope(id: String): Result<Unit>
 
+    // ---- Knowledge Graph ----
+
+    /** GET /api/memory/kg/query?entity=<entity> — query KG triples for an entity. */
+    public suspend fun queryKg(entity: String): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** POST /api/memory/kg/add — add a new KG triple. */
+    public suspend fun addKgTriple(subject: String, predicate: String, obj: String): Result<Unit>
+
     // ---- T30: Encryption Status ----
 
     /** GET /api/security/encryption/status — encryption status. */

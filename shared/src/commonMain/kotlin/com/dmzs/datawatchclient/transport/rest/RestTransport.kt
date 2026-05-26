@@ -2862,6 +2862,33 @@ public class RestTransport(
             Unit
         }
 
+    // ---- Knowledge Graph ----
+
+    override suspend fun queryKg(entity: String): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val arr: kotlinx.serialization.json.JsonArray =
+                client.get("${profile.baseUrl}/api/memory/kg/query") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("entity", entity)
+                }.body()
+            arr.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+        }
+
+    override suspend fun addKgTriple(subject: String, predicate: String, obj: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/kg/add") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("subject", kotlinx.serialization.json.JsonPrimitive(subject))
+                    put("predicate", kotlinx.serialization.json.JsonPrimitive(predicate))
+                    put("object", kotlinx.serialization.json.JsonPrimitive(obj))
+                    put("source", kotlinx.serialization.json.JsonPrimitive("mobile"))
+                })
+            }
+            Unit
+        }
+
     // ---- T30: Encryption Status ----
 
     override suspend fun getEncryptionStatus(): Result<com.dmzs.datawatchclient.transport.dto.EncryptionStatusDto> =
