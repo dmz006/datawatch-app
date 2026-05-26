@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -101,6 +100,7 @@ public fun AutonomousScreen(
     val alertsState by alertsVm.state.collectAsState()
     var newOpen by remember { mutableStateOf(false) }
     var filterOpen by remember { mutableStateOf(false) }
+    var selectMode by remember { mutableStateOf(false) }
     var includeTemplates by remember { mutableStateOf(false) }
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var typeFilter by remember { mutableStateOf<String?>(null) }
@@ -224,10 +224,24 @@ public fun AutonomousScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                         }
+                        // Select mode toggle — shows ☑ button; when active shows ✕ to exit
+                        IconButton(
+                            onClick = {
+                                selectMode = !selectMode
+                                if (!selectMode) vm.clearSelection()
+                            },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Text(
+                                if (selectMode) "✕" else "☑",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = if (selectMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
                 when (currentTab) {
-                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
+                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, onOpenPrd = { if (!selectMode) openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
                     else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
                 }
             }
@@ -407,6 +421,7 @@ private fun PrdsBody(
     includeTemplates: Boolean,
     statusFilter: String?,
     typeFilter: String? = null,
+    selectMode: Boolean = false,
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
@@ -497,6 +512,7 @@ private fun PrdsBody(
                         prd = prd,
                         selected = prd.id in state.selectedIds,
                         pinned = prd.id in pinnedIds,
+                        selectMode = selectMode,
                         serverName = state.prdProfileNames[prd.id],
                         onClick = { onOpenPrd(prd.id) },
                         onLongClick = { onToggleSelect(prd.id) },
@@ -520,6 +536,7 @@ private fun PrdRow(
     prd: PrdDto,
     selected: Boolean = false,
     pinned: Boolean = false,
+    selectMode: Boolean = false,
     serverName: String? = null,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
@@ -533,24 +550,12 @@ private fun PrdRow(
 ) {
     val statusColor = prdStatusColor(prd.status)
     val statusLower = prd.status.lowercase()
-    val decisionCount = prd.decisions?.size ?: 0
-    val metaText = buildString {
-        if (prd.stories.isNotEmpty()) {
-            append("${prd.stories.size} ${if (prd.stories.size == 1) "story" else "stories"}")
-        }
-        if (decisionCount > 0) {
-            if (isNotEmpty()) append(" · ")
-            append("$decisionCount ${if (decisionCount == 1) "decision" else "decisions"}")
-        }
-    }.ifEmpty { null }
-
+    val isTerminal = statusLower in setOf("completed", "complete", "cancelled", "rejected", "archived")
+    val showCancel = !isTerminal
+    val showApprove = isApprovalState(statusLower)
     val showPlan = statusLower in setOf("draft", "revisions_asked")
-    val showApprove = statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
-    val showRejectRevise = statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
     val showRun = statusLower == "approved"
-    val showCancel = statusLower in setOf("running", "decomposing")
-    val showEdit = statusLower != "running"
-    val showLlmBadge = prd.backend?.isNotBlank() == true || prd.effort?.isNotBlank() == true || prd.model?.isNotBlank() == true
+    val showRejectRevise = showApprove
 
     // Local dialog state for Reject / Revise input
     var rejectDialogOpen by remember { mutableStateOf(false) }
@@ -566,77 +571,77 @@ private fun PrdRow(
                 if (selected) mod.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)) else mod
             }
             .drawBehind { drawRect(color = statusColor, topLeft = Offset.Zero, size = Size(4.dp.toPx(), size.height)) }
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(
+                onClick = if (selectMode) onLongClick else onClick,
+                onLongClick = onLongClick,
+            ),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Selection indicator dot (only visible in selectMode)
+            if (selectMode) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .background(
+                            if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            CircleShape,
+                        )
+                        .border(
+                            1.5.dp,
+                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            CircleShape,
+                        ),
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
-                // Top row: id code + status pill + LLM badge + parent badge + depth badge
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // ID code (first 8 chars)
+                // Row 1: type badge(s) + title (bold, flex) + status pill (right-justified) — mirrors PWA
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
+                    if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    Text(
+                        prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "(no title)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f),
+                    )
+                    StatusPill(prd.status)
+                }
+                // Row 2: ID + server/date (right-justified, monospace) — mirrors PWA
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 6.dp))
+                    prd.parentPrdId?.takeIf { it.isNotBlank() }?.let { pid ->
+                        val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+                        Box(Modifier.background(accent2.copy(alpha = 0.16f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp).padding(end = 6.dp)) {
+                            Text("↗ ${pid.take(8)}", style = MaterialTheme.typography.labelSmall, color = accent2)
+                        }
+                    }
                     Text(
                         prd.id.take(8),
                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                     )
-                    StatusPill(prd.status)
-                    prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
-                    if (showLlmBadge) {
-                        val accent = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
-                        Box(
-                            modifier = Modifier
-                                .background(accent.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 1.dp),
-                        ) {
-                            Text(
-                                buildString {
-                                    append(prd.backend?.takeIf { it.isNotBlank() } ?: "inherit")
-                                    prd.effort?.takeIf { it.isNotBlank() }?.let { append(" / $it") }
-                                    prd.model?.takeIf { it.isNotBlank() }?.let { append(" / $it") }
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = accent,
-                            )
-                        }
-                    }
-                    if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
-                    if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    prd.parentPrdId?.takeIf { it.isNotBlank() }?.let { pid ->
-                        val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
-                        Box(
-                            modifier = Modifier
-                                .background(accent2.copy(alpha = 0.16f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 5.dp, vertical = 1.dp),
-                        ) {
-                            Text("↗ parent ${pid.take(8)}", style = MaterialTheme.typography.labelSmall, color = accent2)
-                        }
-                    }
-                }
-                // Title (bold)
-                Row(modifier = Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "(no title)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
                     serverName?.let { name ->
-                        Text(name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                        Text(" · $name", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+                    }
+                    prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                        Text(" · ${ts.take(10)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
                     }
                 }
-                // Meta: stories · decisions · backend · effort
-                metaText?.let {
-                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
-                }
-                // Project profile
-                prd.projectProfile?.takeIf { it.isNotBlank() }?.let { profile ->
-                    Text(profile, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 1.dp))
-                }
-                // Interactive lifecycle strip
+                // Lifecycle strip (5 steps matching PWA: Plan → Review → Approve → Run → Done)
                 LifecycleStrip(
                     status = prd.status,
                     onPlan = if (showPlan) onPlan else null,
@@ -646,70 +651,98 @@ private fun PrdRow(
                     onRun = if (showRun) onRun else null,
                     onCancel = if (showCancel) onCancel else null,
                 )
-                prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
-                    Text(stringResource(R.string.automata_last_activity, ts.take(10)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.padding(top = 1.dp))
-                }
-            }
-            // Pin toggle
-            IconButton(onClick = onTogglePin, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.Filled.PushPin,
-                    contentDescription = if (pinned) stringResource(R.string.automata_unpin) else stringResource(R.string.automata_pin),
-                    tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            // Selection indicated by blue background highlight (no checkbox icon)
-        }
-        // Inline action button row — scrollable LazyRow
-        LazyRow(
-            modifier = Modifier.padding(start = 12.dp, end = 4.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (showPlan) item {
-                TextButton(
-                    onClick = onPlan,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) { Text("Plan", style = MaterialTheme.typography.labelSmall) }
-            }
-            if (showApprove) item {
-                TextButton(
-                    onClick = { onApprove(); onClick() },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) { Text(stringResource(R.string.action_approve), style = MaterialTheme.typography.labelSmall) }
-            }
-            if (showRejectRevise) {
-                item {
+                // Action row: cancel left | approve+pin right — border-top separator mirrors PWA
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .drawBehind {
+                            drawLine(
+                                color = androidx.compose.ui.graphics.Color(0xFF333333),
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                strokeWidth = 0.5.dp.toPx(),
+                            )
+                        }
+                        .padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (showCancel) {
+                        TextButton(
+                            onClick = onCancel,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        ) { Text("✕ ${stringResource(R.string.action_cancel)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error) }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (showApprove) {
+                        TextButton(
+                            onClick = onApprove,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        ) { Text("✓ ${stringResource(R.string.action_approve)}", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold) }
+                    }
+                    // Pin button — 📌 when pinned (yellow), 📍 when not (dim)
                     TextButton(
-                        onClick = { inputText = ""; rejectDialogOpen = true },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                    ) { Text("✗ ${stringResource(R.string.action_reject)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error) }
+                        onClick = onTogglePin,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            if (pinned) "📌" else "📍",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (pinned) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        )
+                    }
                 }
-                item {
-                    TextButton(
-                        onClick = { inputText = ""; reviseDialogOpen = true },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                    ) { Text("↩ Revise", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary) }
+                // Stories envelope — always visible, matches PWA <details> (shows "no stories yet" when empty)
+                var storiesExpanded by remember(prd.id) { mutableStateOf(false) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .clickable { storiesExpanded = !storiesExpanded }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${if (storiesExpanded) "▾" else "▸"} Stories & tasks (${prd.stories.size})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2,
+                    )
                 }
-            }
-            if (showRun) item {
-                TextButton(
-                    onClick = onRun,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) { Text(stringResource(R.string.action_run), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary) }
-            }
-            if (showCancel) item {
-                TextButton(
-                    onClick = onCancel,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) { Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error) }
-            }
-            if (showEdit) item {
-                TextButton(
-                    onClick = onClick,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) { Text(stringResource(R.string.action_edit), style = MaterialTheme.typography.labelSmall) }
+                if (storiesExpanded) {
+                    if (prd.stories.isEmpty()) {
+                        Text("no stories yet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
+                    } else {
+                        Column(modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)) {
+                            prd.stories.forEach { story ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        story.title.ifBlank { story.id.take(8) },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                    )
+                                    val sColor = when (story.status.lowercase()) {
+                                        "complete", "completed" -> Color(0xFF10B981)
+                                        "in_progress", "running" -> Color(0xFF3B82F6)
+                                        "awaiting_approval", "needs_review" -> Color(0xFFF59E0B)
+                                        "rejected", "cancelled" -> Color(0xFFEF4444)
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .background(sColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                                    ) {
+                                        Text(story.status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = sColor)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -781,14 +814,19 @@ private fun StatusPill(status: String) {
 @Composable
 internal fun TypeBadge(type: String) {
     val color = when (type.lowercase()) {
-        "software" -> Color(0xFF3B82F6)
-        "research" -> Color(0xFFA855F7)
-        "operational" -> Color(0xFFF97316)
-        "personal" -> Color(0xFF14B8A6)
+        "software" -> Color(0xFF6366F1)
+        "research" -> Color(0xFFF59E0B)
+        "operational" -> Color(0xFF10B981)
+        "personal" -> Color(0xFFEC4899)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    Box(Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
-        Text(type, style = MaterialTheme.typography.labelSmall, color = color)
+    Box(
+        Modifier
+            .background(color.copy(alpha = 0.13f), RoundedCornerShape(8.dp))
+            .border(1.dp, color, RoundedCornerShape(8.dp))
+            .padding(horizontal = 9.dp, vertical = 2.dp),
+    ) {
+        Text(type.lowercase(), style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -812,42 +850,43 @@ internal fun LifecycleStrip(
 ) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
     val statusLower = status.lowercase()
-    val isDanger = statusLower in setOf("rejected", "cancelled", "blocked")
+    val isDanger = statusLower in setOf("rejected", "cancelled", "blocked", "archived")
 
-    // 4-step lifecycle: Plan(0) → Approve(1) → Run(2) → Done(3)
-    // draft/revisions_asked/decomposing → 0; needs_review → 1; approved/running → 2; complete → 3
+    // 5-step lifecycle matching PWA: Plan(0) → Review(1) → Approve(2) → Run(3) → Done(4)
     val currentIndex = when {
-        isDanger -> -1
-        statusLower in setOf("draft", "revisions_asked", "decomposing") -> 0
+        isDanger -> 4
+        statusLower in setOf("draft", "planning", "revisions_asked", "decomposing") -> 0
         statusLower in setOf("needs_review", "awaiting_approval") -> 1
-        statusLower in setOf("approved", "running") -> 2
-        statusLower in setOf("complete", "completed") -> 3
+        statusLower == "approved" -> 2
+        statusLower == "running" -> 3
+        statusLower in setOf("complete", "completed") -> 4
         else -> -1
     }
-    if (currentIndex == -1 && !isDanger) return
+    if (currentIndex == -1) return
 
     val hintText = when {
-        statusLower in setOf("draft", "revisions_asked") -> "Next: Plan this automaton"
-        statusLower == "decomposing" -> "Planning…"
-        statusLower in setOf("needs_review", "awaiting_approval") -> "Next: Review & Approve or Revise"
+        statusLower in setOf("draft", "revisions_asked") -> "Next: Plan — break your spec into stories + tasks"
+        statusLower == "decomposing" -> "Planning… review will become available shortly"
+        statusLower in setOf("needs_review", "awaiting_approval") -> "Next: Review the plan and Approve / Reject / Revise"
         statusLower == "approved" -> "Next: Run the approved automaton"
         statusLower == "running" -> "Running — Cancel if needed"
         statusLower in setOf("complete", "completed") -> "✓ Completed"
         statusLower == "rejected" -> "✗ Rejected"
         statusLower == "cancelled" -> "Cancelled"
+        statusLower == "archived" -> "Archived"
         else -> null
     }
 
     Column(modifier = Modifier.padding(top = 4.dp)) {
         hintText?.let {
-            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(bottom = 3.dp))
+            Text(it, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f), modifier = Modifier.padding(bottom = 3.dp))
         }
 
         data class Step(val label: String, val onClick: (() -> Unit)?)
-        // Running: approve step shows "■ Cancel" instead of "Approve"
         val isRunning = statusLower == "running"
         val steps = listOf(
             Step("plan", onPlan),
+            Step("review", null),
             Step("approve", if (!isRunning) onApprove else null),
             Step(if (isRunning) "■ cancel" else "run", if (isRunning) onCancel else onRun),
             Step("done", null),
@@ -858,58 +897,59 @@ internal fun LifecycleStrip(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             steps.forEachIndexed { idx, step ->
-                val isActive = if (isDanger) false else idx == currentIndex
+                val isActive = !isDanger && idx == currentIndex
                 val isDone = !isDanger && idx < currentIndex
                 val (bg, fg) = when {
-                    isDanger -> Color(0xFFEF4444).copy(alpha = 0.12f) to Color(0xFFEF4444)
+                    isDanger && idx == steps.size - 1 -> Color(0xFFEF4444).copy(alpha = 0.12f) to Color(0xFFEF4444)
+                    isDanger -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                     isDone -> dw.success.copy(alpha = 0.15f) to dw.success
                     isActive -> prdStatusColor(status).copy(alpha = 0.2f) to prdStatusColor(status)
                     else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 }
-                val label = if (isDone && !isDanger) "✓ ${step.label}" else step.label
+                val label = if (isDone) "✓ ${step.label}" else step.label
                 val clickHandler = step.onClick
                 if (isActive && clickHandler != null) {
                     Button(
                         onClick = clickHandler,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                        modifier = Modifier.size(height = 22.dp, width = androidx.compose.ui.unit.Dp.Unspecified),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        modifier = Modifier.size(height = 26.dp, width = androidx.compose.ui.unit.Dp.Unspecified),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = prdStatusColor(status).copy(alpha = 0.25f),
                             contentColor = prdStatusColor(status),
                         ),
                         elevation = ButtonDefaults.buttonElevation(0.dp),
                     ) {
-                        Text(step.label, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(step.label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Box(
                         modifier = Modifier
                             .background(bg, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
                         Text(
                             label,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             color = fg,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                         )
                     }
                 }
                 if (idx < steps.size - 1) {
-                    Text("›", fontSize = 8.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+                    Text("›", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
                 }
             }
             // Approve step: Reject(✗) + Revise(↩) sub-buttons
-            if (isActive(statusLower) && (onReject != null || onRevise != null)) {
+            if (isApprovalState(statusLower) && (onReject != null || onRevise != null)) {
                 onReject?.let { handler ->
                     Box(
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .background(Color(0xFFEF4444).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                             .clickable(onClick = handler)
-                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
-                        Text("✗", fontSize = 9.sp, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                        Text("✗", fontSize = 11.sp, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
                     }
                 }
                 onRevise?.let { handler ->
@@ -918,9 +958,9 @@ internal fun LifecycleStrip(
                             .padding(start = 2.dp)
                             .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                             .clickable(onClick = handler)
-                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
-                        Text("↩", fontSize = 9.sp, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
+                        Text("↩", fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -928,7 +968,7 @@ internal fun LifecycleStrip(
     }
 }
 
-private fun isActive(statusLower: String) =
+private fun isApprovalState(statusLower: String) =
     statusLower in setOf("needs_review", "awaiting_approval", "revisions_asked")
 
 /** Sort rank: action-needed statuses first, then active, then terminal. */
@@ -936,9 +976,11 @@ internal fun prdStateRank(status: String): Int =
     when (status.lowercase()) {
         "needs_review", "revisions_asked", "awaiting_approval" -> 0
         "running" -> 1
-        "decomposing" -> 2
+        "decomposing", "planning" -> 2
         "approved" -> 3
-        else -> 10
+        "draft" -> 4
+        "cancelled", "rejected", "completed", "complete", "archived" -> 10
+        else -> 5
     }
 
 internal fun prdStatusColor(status: String): Color =
