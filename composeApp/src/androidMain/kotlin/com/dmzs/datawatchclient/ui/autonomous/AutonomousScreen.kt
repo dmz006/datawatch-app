@@ -935,11 +935,11 @@ internal fun LifecycleStrip(
                                 borderColor = Color(0xFFEF4444).copy(alpha = 0.4f)
                             }
                             else -> {
-                                // cancelled / archived / blocked — dim grey, opacity 0.6 equivalent
+                                // cancelled / archived / blocked — plain dim step matching PWA opacity:0.6
                                 label = statusLower.replaceFirstChar { it.uppercase() }
                                 bgColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f)
                                 textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                borderColor = null
+                                borderColor = dw.border
                             }
                         }
                     }
@@ -958,11 +958,11 @@ internal fun LifecycleStrip(
                         borderColor = null
                     }
                     else -> {
-                        // PWA: pending step — dim, not clickable yet
+                        // PWA: pending step — dim, outlined border (border: 1px solid var(--border))
                         label = step.baseLabel
                         bgColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f)
                         textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                        borderColor = null
+                        borderColor = dw.border
                     }
                 }
 
@@ -1104,41 +1104,28 @@ private fun AutonomousStatusDot(enabled: Boolean) {
     Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
 }
 
-/** Custom tab button — matches SessionDetailScreen style so tab rows look consistent across screens. */
+/** Custom tab button — matches PWA .automata-tab / .automata-tab.active pill style. */
 @Composable
 private fun AutonomousTab(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
-    val surfaceBg = MaterialTheme.colorScheme.surface
-    val borderColor = dw.border
-    val textColor = if (selected) dw.accent2 else MaterialTheme.colorScheme.onSurfaceVariant
+    val accent = MaterialTheme.colorScheme.primary               // #7C3AED = var(--accent)
+    val activeBg = Color(0xFF60A5FA).copy(alpha = 0.12f)        // rgba(96,165,250,0.12) = active tint
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .clickable(onClick = onClick)
-            .then(
-                if (selected) {
-                    Modifier.drawBehind {
-                        val stroke = 1.dp.toPx()
-                        drawRect(surfaceBg)
-                        drawLine(borderColor, Offset(stroke / 2f, 0f), Offset(stroke / 2f, size.height), stroke)
-                        drawLine(borderColor, Offset(size.width - stroke / 2f, 0f), Offset(size.width - stroke / 2f, size.height), stroke)
-                        drawLine(borderColor, Offset(0f, stroke / 2f), Offset(size.width, stroke / 2f), stroke)
-                    }
-                } else {
-                    Modifier
-                },
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .background(if (selected) activeBg else Color.Transparent, RoundedCornerShape(6.dp))
+            .border(1.dp, if (selected) accent else Color.Transparent, RoundedCornerShape(6.dp))
+            .padding(horizontal = 14.dp, vertical = 5.dp),
     ) {
         Text(
             label,
             fontSize = 12.sp,
-            color = textColor,
-            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+            color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }
