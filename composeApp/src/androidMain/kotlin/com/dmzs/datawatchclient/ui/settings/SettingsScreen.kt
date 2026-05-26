@@ -81,6 +81,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.DocsViewerSheet
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import kotlinx.coroutines.flow.flowOf
@@ -765,6 +766,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
     var stats by remember(activeProfile?.id) {
         mutableStateOf<com.dmzs.datawatchclient.transport.dto.StatsDto?>(null)
     }
+    var docsUrl by remember { mutableStateOf<String?>(null) }
 
     // Refresh daemon info when the active profile changes. Failure is tolerated
     // — the card shows an em-dash fallback, not a banner.
@@ -883,13 +885,10 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            // S6-1 (#71): single docs link replacing any multi-row doc links.
-            val docsContext = LocalContext.current
+            // S6-1 (#71): single docs link — opens in-app DocsViewerSheet.
             TextButton(
                 onClick = {
-                    val url = "${activeProfile?.baseUrl}/diagrams.html"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    docsContext.startActivity(intent)
+                    docsUrl = "${activeProfile?.baseUrl}/diagrams.html"
                 },
             ) {
                 Text(stringResource(R.string.about_docs_link))
@@ -926,6 +925,13 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 }
             }
         }
+    }
+    docsUrl?.let { url ->
+        DocsViewerSheet(
+            url = url,
+            onDismiss = { docsUrl = null },
+            allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL,
+        )
     }
 }
 
