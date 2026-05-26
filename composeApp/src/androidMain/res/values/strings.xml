@@ -285,9 +285,9 @@
     <string name="new_prd_title">New Automaton</string>
     <string name="new_prd_name_label">Name (required)</string>
     <string name="new_prd_display_title_label">Title (optional)</string>
-    <string name="new_prd_profile_label">Profile</string>
+    <string name="new_prd_profile_label">Workspace</string>
     <string name="new_prd_decomp_profile_label">Decomposition profile</string>
-    <string name="new_prd_project_dir_label">Workspace (profile or folder)</string>
+    <string name="new_prd_project_dir_label">Directory</string>
     <string name="new_prd_backend_label">Backend</string>
     <string name="new_prd_effort_label">Effort</string>
     <string name="new_prd_model_label">Model</string>

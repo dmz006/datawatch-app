@@ -1,5 +1,7 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,13 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,75 +29,76 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
+import com.dmzs.datawatchclient.ui.files.FilePickerDialog
+import com.dmzs.datawatchclient.ui.files.PickerMode
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 
 /**
- * New PRD modal — full parity with PWA v5.26.60-62 openPRDCreateModal.
+ * New PRD / Automaton wizard — mirrors PWA openLaunchAutomatonWizard.
  *
- * Profile modes:
- *   __dir__ → project directory + backend/effort/model
- *   <profile name> → cluster dropdown; backend/effort/model hidden
- *
- * Model dropdown: only shown for `ollama` and `openwebui` backends,
- * populated from /api/ollama/models and /api/openwebui/models respectively.
- * Hidden (and value cleared) for all other backends — mirrors PWA
- * refreshLLMModelField which only fetches model lists for those two.
+ * Wizard order:
+ *   1. Template strip (Browse)
+ *   2. Intent/spec — large text, auto-detects type
+ *   3. Title (optional)
+ *   4. Workspace (profile) dropdown
+ *   5. Directory picker (only in __dir__ mode)
+ *   6. Backend, Model, Effort dropdowns (only in __dir__ mode)
+ *   7. Advanced section (collapsible): guided mode, security scan,
+ *      rules check, per-story approval, settings link
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewPrdDialog(
     onDismiss: () -> Unit,
     onCreate: (NewPrdRequestDto) -> Unit,
+    onBrowseTemplates: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
-    var name by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
+    // ── Wizard state ───────────────────────────────────────────────────────
     var spec by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf("") }
+
+    /** Auto-inferred PRD type from spec text. */
+    var prdType by remember { mutableStateOf("software") }
+    var prdTypeMenuOpen by remember { mutableStateOf(false) }
 
     /** "__dir__" sentinel = project-directory mode; else = profile name. */
     var profile by remember { mutableStateOf("__dir__") }
     var profileMenuOpen by remember { mutableStateOf(false) }
 
-    var projectDir by remember { mutableStateOf("") }
+    var selectedDir by remember { mutableStateOf("") }
+    var dirPickerOpen by remember { mutableStateOf(false) }
+
     var backend by remember { mutableStateOf("") }
     var backendMenuOpen by remember { mutableStateOf(false) }
     var effort by remember { mutableStateOf("") }
     var effortMenuOpen by remember { mutableStateOf(false) }
-    /** Model value; only used when backend has a known model list. */
     var model by remember { mutableStateOf("") }
     var modelMenuOpen by remember { mutableStateOf(false) }
 
-    var cluster by remember { mutableStateOf("") }
-    var clusterMenuOpen by remember { mutableStateOf(false) }
-
-    var decomp by remember { mutableStateOf("") }
-    var decompMenuOpen by remember { mutableStateOf(false) }
-
-    var permissionMode by remember { mutableStateOf("") }
-    var permissionModeMenuOpen by remember { mutableStateOf(false) }
-
-    var prdType by remember { mutableStateOf("") }
-    var prdTypeMenuOpen by remember { mutableStateOf(false) }
+    // Advanced section
+    var advancedOpen by remember { mutableStateOf(false) }
     var guidedMode by remember { mutableStateOf(false) }
-    var skills by remember { mutableStateOf("") }
+    var scanEnabled by remember { mutableStateOf(true) }
+    var rulesEnabled by remember { mutableStateOf(true) }
+    var storyApproval by remember { mutableStateOf(false) }
 
+    // Remote data
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
-    var clusterProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var backendOptions by remember { mutableStateOf<List<String>>(emptyList()) }
-    var permissionModeOptions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
 
     val inheritLabel = stringResource(R.string.new_prd_inherit)
     val backendDefaultLabel = stringResource(R.string.new_prd_backend_default)
-
-    /** Models keyed by backend name; ollama, openwebui, and opencode are fetched. */
-    var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
 
     /** Model names for the currently-selected backend (empty = hide field). */
     val modelsForBackend: List<String> = when {
@@ -99,6 +106,21 @@ internal fun NewPrdDialog(
         else -> availableModels[backend].orEmpty()
     }
 
+    val usingProfile = profile.isNotEmpty() && profile != "__dir__"
+
+    // Auto-infer type from spec
+    LaunchedEffect(spec) {
+        val lower = spec.lowercase()
+        prdType = when {
+            lower.containsAny("code", "test", "refactor", "build", "fix", "implement") -> "software"
+            lower.containsAny("research", "analyze", "study") -> "research"
+            lower.containsAny("deploy", "restart", "migrate", "monitor") -> "operational"
+            spec.isBlank() -> "software"
+            else -> "personal"
+        }
+    }
+
+    // Load remote data
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
@@ -114,20 +136,13 @@ internal fun NewPrdDialog(
             coroutineScope {
                 val backendsD = async { transport.listBackends() }
                 val projectD = async { transport.listKindProfiles("project") }
-                val clusterD = async { transport.listKindProfiles("cluster") }
                 val ollamaD = async { transport.listOllamaModels() }
                 val owuiD = async { transport.listOpenWebUiModels() }
-                val pmD = async { transport.listClaudePermissionModes() }
                 val llmsD = async { transport.listLlms() }
 
                 backendsD.await().onSuccess { view -> backendOptions = view.llm }
                 projectD.await().onSuccess { list ->
                     projectProfiles = list.mapNotNull { obj ->
-                        (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
-                    }
-                }
-                clusterD.await().onSuccess { list ->
-                    clusterProfiles = list.mapNotNull { obj ->
                         (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
                     }
                 }
@@ -143,7 +158,6 @@ internal fun NewPrdDialog(
                     if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
                 }
                 availableModels = models
-                pmD.await().onSuccess { permissionModeOptions = it }
             }
         }
     }
@@ -151,24 +165,76 @@ internal fun NewPrdDialog(
     // Clear model when backend changes to one with no known model list
     LaunchedEffect(backend) { if (modelsForBackend.isEmpty()) model = "" }
 
-    val usingProfile = profile.isNotEmpty() && profile != "__dir__"
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.new_prd_title)) },
+        title = { Text("Launch Automaton") },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
             ) {
+                // ── Template strip ───────────────────────────────────────────
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Start from template",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { onBrowseTemplates(); onDismiss() }) {
+                            Text("Browse")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // ── Intent / Spec ────────────────────────────────────────────
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.new_prd_name_label)) },
-                    singleLine = true,
+                    value = spec,
+                    onValueChange = { spec = it },
+                    label = { Text("What do you want to accomplish?") },
+                    placeholder = { Text("Add a CACHE column to /api/stats… or describe your goal", style = MaterialTheme.typography.bodySmall) },
+                    minLines = 4,
+                    maxLines = 8,
                     modifier = Modifier.fillMaxWidth(),
                 )
+
+                // ── Type detection row ───────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Detected: $prdType",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Box {
+                        TextButton(onClick = { prdTypeMenuOpen = !prdTypeMenuOpen }) {
+                            Text("▾", style = MaterialTheme.typography.labelSmall)
+                        }
+                        DropdownMenu(expanded = prdTypeMenuOpen, onDismissRequest = { prdTypeMenuOpen = false }) {
+                            listOf("software", "research", "operational", "personal").forEach { t ->
+                                DropdownMenuItem(
+                                    text = { Text(t) },
+                                    onClick = { prdType = t; prdTypeMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Title (optional) ─────────────────────────────────────────
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -176,16 +242,8 @@ internal fun NewPrdDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
-                OutlinedTextField(
-                    value = spec,
-                    onValueChange = { spec = it },
-                    label = { Text(stringResource(R.string.new_prd_spec_label)) },
-                    minLines = 2,
-                    maxLines = 4,
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                )
 
-                // ── Profile dropdown ──────────────────────────────────────
+                // ── Workspace (Profile) dropdown ─────────────────────────────
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     OutlinedTextField(
                         value = if (profile == "__dir__") "— project directory —" else profile,
@@ -211,43 +269,32 @@ internal fun NewPrdDialog(
                     }
                 }
 
-                // ── Decomposition profile (always shown) ──────────────────
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    OutlinedTextField(
-                        value = decomp.ifEmpty { "— inherit —" },
-                        onValueChange = {},
-                        label = { Text(stringResource(R.string.new_prd_decomp_profile_label)) },
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = {
-                            TextButton(onClick = { decompMenuOpen = !decompMenuOpen }) { Text("▾") }
-                        },
-                    )
-                    DropdownMenu(expanded = decompMenuOpen, onDismissRequest = { decompMenuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("— inherit —") },
-                            onClick = { decomp = ""; decompMenuOpen = false },
-                        )
-                        projectProfiles.forEach { p ->
-                            DropdownMenuItem(
-                                text = { Text(p) },
-                                onClick = { decomp = p; decompMenuOpen = false },
+                if (!usingProfile) {
+                    // ── Directory picker ─────────────────────────────────────
+                    val dirDisplayText = selectedDir.ifBlank { "~/" }
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+                            .clickable { dirPickerOpen = true },
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Text(
+                                stringResource(R.string.new_prd_project_dir_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                dirDisplayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
-                }
 
-                if (!usingProfile) {
-                    // ── Dir mode: project directory ───────────────────────
-                    OutlinedTextField(
-                        value = projectDir,
-                        onValueChange = { projectDir = it },
-                        label = { Text(stringResource(R.string.new_prd_project_dir_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 1.dp),
-                    )
-
-                    // ── Backend dropdown (enabled only, shell excluded) ────
+                    // ── Backend dropdown ─────────────────────────────────────
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
                             value = backend.ifEmpty { inheritLabel },
@@ -273,7 +320,7 @@ internal fun NewPrdDialog(
                         }
                     }
 
-                    // ── Effort dropdown ───────────────────────────────────
+                    // ── Effort dropdown ──────────────────────────────────────
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         OutlinedTextField(
                             value = effort.ifEmpty { inheritLabel },
@@ -296,7 +343,7 @@ internal fun NewPrdDialog(
                         }
                     }
 
-                    // ── Model dropdown: only for ollama / openwebui ───────
+                    // ── Model dropdown: only for backends with model lists ────
                     if (modelsForBackend.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                             OutlinedTextField(
@@ -320,7 +367,6 @@ internal fun NewPrdDialog(
                                         onClick = { model = m; modelMenuOpen = false },
                                     )
                                 }
-                                // Always show current value even if it's no longer in the list
                                 if (model.isNotEmpty() && model !in modelsForBackend) {
                                     DropdownMenuItem(
                                         text = {
@@ -335,133 +381,134 @@ internal fun NewPrdDialog(
                             }
                         }
                     }
-
-                    // ── Permission mode (v5.27.5+) — only when server provides the list
-                    if (permissionModeOptions.isNotEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                            OutlinedTextField(
-                                value = permissionMode.ifEmpty { inheritLabel },
-                                onValueChange = {},
-                                label = { Text(stringResource(R.string.new_prd_permission_mode_label)) },
-                                readOnly = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                trailingIcon = {
-                                    TextButton(onClick = { permissionModeMenuOpen = !permissionModeMenuOpen }) { Text("▾") }
-                                },
-                            )
-                            DropdownMenu(expanded = permissionModeMenuOpen, onDismissRequest = { permissionModeMenuOpen = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(inheritLabel) },
-                                    onClick = { permissionMode = ""; permissionModeMenuOpen = false },
-                                )
-                                permissionModeOptions.forEach { pm ->
-                                    DropdownMenuItem(
-                                        text = { Text(pm) },
-                                        onClick = { permissionMode = pm; permissionModeMenuOpen = false },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // ── Profile mode: cluster dropdown ────────────────────
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        OutlinedTextField(
-                            value = cluster.ifEmpty { "— Local service instance —" },
-                            onValueChange = {},
-                            label = { Text(stringResource(R.string.new_prd_cluster_label)) },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                TextButton(onClick = { clusterMenuOpen = !clusterMenuOpen }) { Text("▾") }
-                            },
-                        )
-                        DropdownMenu(expanded = clusterMenuOpen, onDismissRequest = { clusterMenuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("— Local service instance (daemon-side) —") },
-                                onClick = { cluster = ""; clusterMenuOpen = false },
-                            )
-                            clusterProfiles.forEach { c ->
-                                DropdownMenuItem(
-                                    text = { Text(c) },
-                                    onClick = { cluster = c; clusterMenuOpen = false },
-                                )
-                            }
-                        }
-                    }
                 }
-                // ── Type picker ────────────────────────────────────────────
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    OutlinedTextField(
-                        value = prdType.ifEmpty { "— none —" }, onValueChange = {},
-                        label = { Text(stringResource(R.string.new_prd_type_label)) },
-                        readOnly = true, modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = { TextButton(onClick = { prdTypeMenuOpen = !prdTypeMenuOpen }) { Text("▾") } },
+
+                // ── Advanced section ─────────────────────────────────────────
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { advancedOpen = !advancedOpen }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Advanced ${if (advancedOpen) "▴" else "▾"}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    DropdownMenu(expanded = prdTypeMenuOpen, onDismissRequest = { prdTypeMenuOpen = false }) {
-                        DropdownMenuItem(text = { Text("— none —") }, onClick = { prdType = ""; prdTypeMenuOpen = false })
-                        listOf("software", "research", "operational", "personal").forEach { t ->
-                            DropdownMenuItem(text = { Text(t) }, onClick = { prdType = t; prdTypeMenuOpen = false })
-                        }
+                }
+
+                if (advancedOpen) {
+                    // Guided Mode
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.new_prd_guided_mode_label),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Switch(checked = guidedMode, onCheckedChange = { guidedMode = it })
+                    }
+                    // Security Scan
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Security scan",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Switch(checked = scanEnabled, onCheckedChange = { scanEnabled = it })
+                    }
+                    // Rules Check
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Rules check",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Switch(checked = rulesEnabled, onCheckedChange = { rulesEnabled = it })
+                    }
+                    // Per-story approval
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Per-story approval",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Switch(checked = storyApproval, onCheckedChange = { storyApproval = it })
+                    }
+                    // Settings link
+                    TextButton(
+                        onClick = { onOpenSettings(); onDismiss() },
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Text(
+                            "Configure skills in Settings →",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
                 }
-
-                // ── Guided Mode toggle ─────────────────────────────────────
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Text(stringResource(R.string.new_prd_guided_mode_label), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                    androidx.compose.material3.Switch(checked = guidedMode, onCheckedChange = { guidedMode = it })
-                }
-                Spacer(Modifier.height(2.dp))
-
-                // ── Skills ─────────────────────────────────────────────────
-                OutlinedTextField(
-                    value = skills, onValueChange = { skills = it },
-                    label = { Text(stringResource(R.string.new_prd_skills_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 22.dp),
-                )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val parsedSkills = skills.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                    val req =
-                        if (!usingProfile) {
-                            NewPrdRequestDto(
-                                name = name.trim(),
-                                title = title.trim().ifBlank { null },
-                                spec = spec.trim().ifBlank { null },
-                                projectDir = projectDir.trim().ifBlank { null },
-                                backend = backend.ifBlank { null },
-                                effort = effort.ifBlank { null },
-                                model = model.ifBlank { null },
-                                decompositionProfile = decomp.ifBlank { null },
-                                permissionMode = permissionMode.ifBlank { null },
-                                type = prdType.ifBlank { null },
-                                guidedMode = if (guidedMode) true else null,
-                                skills = parsedSkills.ifEmpty { null },
-                            )
-                        } else {
-                            NewPrdRequestDto(
-                                name = name.trim(),
-                                title = title.trim().ifBlank { null },
-                                spec = spec.trim().ifBlank { null },
-                                projectProfile = profile,
-                                clusterProfile = cluster.ifBlank { null },
-                                decompositionProfile = decomp.ifBlank { null },
-                                permissionMode = permissionMode.ifBlank { null },
-                                type = prdType.ifBlank { null },
-                                guidedMode = if (guidedMode) true else null,
-                                skills = parsedSkills.ifEmpty { null },
-                            )
-                        }
-                    if (req.name.isNotBlank()) onCreate(req)
+                    val req = if (!usingProfile) {
+                        NewPrdRequestDto(
+                            name = "",
+                            title = title.trim().ifBlank { null },
+                            spec = spec.trim().ifBlank { null },
+                            projectDir = selectedDir.ifBlank { null },
+                            backend = backend.ifBlank { null },
+                            effort = effort.ifBlank { null },
+                            model = model.ifBlank { null },
+                            type = prdType.ifBlank { null },
+                            guidedMode = if (guidedMode) true else null,
+                        )
+                    } else {
+                        NewPrdRequestDto(
+                            name = "",
+                            title = title.trim().ifBlank { null },
+                            spec = spec.trim().ifBlank { null },
+                            projectProfile = profile,
+                            clusterProfile = null,
+                            type = prdType.ifBlank { null },
+                            guidedMode = if (guidedMode) true else null,
+                        )
+                    }
+                    onCreate(req)
                 },
-                enabled = name.isNotBlank(),
+                enabled = spec.isNotBlank(),
             ) { Text(stringResource(R.string.action_create)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
+
+    // ── Directory file picker ────────────────────────────────────────────
+    if (dirPickerOpen) {
+        FilePickerDialog(
+            pickerMode = PickerMode.FolderOnly,
+            onPicked = { path ->
+                if (path != null) selectedDir = path
+                dirPickerOpen = false
+            },
+        )
+    }
 }
+
+private fun String.containsAny(vararg keywords: String): Boolean =
+    keywords.any { this.contains(it, ignoreCase = true) }
