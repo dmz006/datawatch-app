@@ -602,64 +602,99 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Central arc ring: running / total session ratio
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(88.dp)) {
-                CircularProgressIndicator(
-                    progress = if (state.total > 0) state.running.toFloat() / state.total.toFloat() else 0f,
-                    modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 5.dp,
-                    indicatorColor = runColor,
-                    trackColor = runColor.copy(alpha = 0.12f),
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        state.running.toString(),
-                        style = MaterialTheme.typography.title1,
-                        fontWeight = FontWeight.Bold,
-                        color = runColor,
-                        fontFamily = FontFamily.Monospace,
+            if (state.pairedServer.isEmpty()) {
+                // NODE OFFLINE — dramatic full-ring state
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(88.dp)) {
+                    CircularProgressIndicator(
+                        progress = 1f,
+                        modifier = Modifier.fillMaxSize(),
+                        strokeWidth = 5.dp,
+                        indicatorColor = blockColor.copy(alpha = 0.35f),
+                        trackColor = blockColor.copy(alpha = 0.08f),
                     )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("NODE", style = MaterialTheme.typography.caption2,
+                            fontWeight = FontWeight.Bold, color = blockColor,
+                            fontFamily = FontFamily.Monospace)
+                        Text("OFFLINE", style = MaterialTheme.typography.caption3,
+                            color = blockColor.copy(alpha = 0.7f), fontFamily = FontFamily.Monospace)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Open phone app to connect", style = MaterialTheme.typography.caption3,
+                    color = dimColor, textAlign = TextAlign.Center, fontFamily = FontFamily.Monospace)
+            } else {
+                // Central arc ring: running / total session ratio
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(88.dp)) {
+                    CircularProgressIndicator(
+                        progress = if (state.total > 0) state.running.toFloat() / state.total.toFloat() else 0f,
+                        modifier = Modifier.fillMaxSize(),
+                        strokeWidth = 5.dp,
+                        indicatorColor = runColor,
+                        trackColor = runColor.copy(alpha = 0.12f),
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            state.running.toString(),
+                            style = MaterialTheme.typography.title1,
+                            fontWeight = FontWeight.Bold,
+                            color = runColor,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                        Text(
+                            "RUN",
+                            style = MaterialTheme.typography.caption3,
+                            color = dimColor,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Compact stat row below the ring
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    MiniStat(state.waiting, "WAIT", waitColor, dimColor)
+                    MiniStat(runningAutomata, "AUTO", autoColor, dimColor)
+                    if (reviewCount > 0) MiniStat(reviewCount, "REV!", blockColor, dimColor)
+                }
+
+                // Uptime — monospace dim line below stats
+                if (state.uptimeSeconds > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "RUN",
+                        "UP ${state.uptimeText()}",
                         style = MaterialTheme.typography.caption3,
                         color = dimColor,
                         fontFamily = FontFamily.Monospace,
+                        letterSpacing = 0.5.sp,
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Compact stat row below the ring
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                MiniStat(state.waiting, "WAIT", waitColor, dimColor)
-                MiniStat(runningAutomata, "AUTO", autoColor, dimColor)
-                if (reviewCount > 0) MiniStat(reviewCount, "REV!", blockColor, dimColor)
-            }
-
-            // Guardrail or active task context at bottom
-            if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "⚠ ${state.blockSummary.take(40)}",
-                    style = MaterialTheme.typography.caption2,
-                    color = blockColor,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                )
-            } else if (state.currentTask.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    state.currentTask.take(44),
-                    style = MaterialTheme.typography.caption3,
-                    color = dimColor,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                )
+                // Guardrail or active task context
+                if (state.guardrailBlock && state.blockSummary.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "⚠ ${state.blockSummary.take(40)}",
+                        style = MaterialTheme.typography.caption2,
+                        color = blockColor,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                    )
+                } else if (state.currentTask.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        state.currentTask.take(44),
+                        style = MaterialTheme.typography.caption3,
+                        color = dimColor,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                    )
+                }
             }
         }
     }
@@ -780,10 +815,12 @@ private fun AutomataPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 3.dp)
-                            .background(statusColor.copy(alpha = 0.12f),
-                                androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                            .drawBehind {
+                                drawRect(color = statusColor.copy(alpha = 0.07f), size = size)
+                                drawRect(color = statusColor, size = Size(3.dp.toPx(), size.height))
+                            }
                             .clickable { selectedPrd = prd }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                            .padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -796,23 +833,26 @@ private fun AutomataPage(
                                 trackColor = statusColor.copy(alpha = 0.18f),
                             )
                             Text("${(prd.progress * 100).toInt()}",
-                                style = MaterialTheme.typography.caption3, color = dimColor)
+                                style = MaterialTheme.typography.caption3, color = dimColor,
+                                fontFamily = FontFamily.Monospace)
                         }
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(prd.title, style = MaterialTheme.typography.caption1,
                                 color = MaterialTheme.colors.onSurface, maxLines = 1)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(prd.status.replace("_", " "), style = MaterialTheme.typography.caption3,
-                                    color = statusColor)
+                                Text(prd.status.replace("_", " ").uppercase(),
+                                    style = MaterialTheme.typography.caption3,
+                                    color = statusColor, fontFamily = FontFamily.Monospace)
                                 if (prd.blockedCount > 0)
                                     Text("${prd.blockedCount}⚠", style = MaterialTheme.typography.caption3,
-                                        color = blockColor)
+                                        color = blockColor, fontFamily = FontFamily.Monospace)
                                 if (prd.runningHours > 0f)
                                     Text("%.1fh".format(prd.runningHours),
-                                        style = MaterialTheme.typography.caption3, color = dimColor)
+                                        style = MaterialTheme.typography.caption3, color = dimColor,
+                                        fontFamily = FontFamily.Monospace)
                             }
                         }
-                        // Quick action glyph for actionable states
+                        // Quick action chevron for actionable states
                         when (prd.status.lowercase()) {
                             "needs_review", "revisions_asked" ->
                                 Text("›", style = MaterialTheme.typography.title3, color = reviewColor)
@@ -868,7 +908,7 @@ private fun AutomataDetailOverlay(
             modifier = Modifier.fillMaxSize().padding(6.dp)
                 .clip(androidx.compose.foundation.shape.CircleShape)
                 .background(MaterialTheme.colors.surface, androidx.compose.foundation.shape.CircleShape)
-                .border(1.5.dp, statusColor.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape)
+                .border(1.dp, statusColor.copy(alpha = 0.80f), androidx.compose.foundation.shape.CircleShape)
                 .padding(horizontal = 18.dp, vertical = 16.dp)
                 .clickable { /* consume click to prevent dismiss */ },
         ) {
@@ -895,8 +935,9 @@ private fun AutomataDetailOverlay(
                     textAlign = TextAlign.Center, maxLines = 2,
                     modifier = Modifier.padding(bottom = 2.dp))
 
-                Text(prd.status.replace("_", " "), style = MaterialTheme.typography.caption2,
-                    color = statusColor, modifier = Modifier.padding(bottom = 2.dp))
+                Text(prd.status.replace("_", " ").uppercase(), style = MaterialTheme.typography.caption2,
+                    color = statusColor, fontFamily = FontFamily.Monospace,
+                    letterSpacing = 0.5.sp, modifier = Modifier.padding(bottom = 2.dp))
 
                 if (prd.sprintName.isNotBlank()) {
                     Text(prd.sprintName, style = MaterialTheme.typography.caption3,
@@ -946,12 +987,19 @@ private fun ActionChip(label: String, color: Color, onClick: () -> Unit) {
         label,
         style = MaterialTheme.typography.button,
         color = color,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
+        fontFamily = FontFamily.Monospace,
         modifier = Modifier
             .fillMaxWidth(0.85f)
-            .background(color.copy(alpha = 0.18f), androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+            .drawBehind {
+                drawRect(color = color.copy(alpha = 0.12f), size = size)
+                val barH = 1.5.dp.toPx()
+                drawRect(color = color.copy(alpha = 0.5f),
+                    topLeft = Offset(0f, size.height - barH),
+                    size = Size(size.width, barH))
+            }
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         textAlign = TextAlign.Center,
     )
 }
@@ -1025,20 +1073,22 @@ private fun MonitorMultiServerSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)
-                .background(
-                    color = if (isActive) MaterialTheme.colors.surface else Color.Transparent,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                )
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+                .drawBehind {
+                    drawRect(color = nameColor.copy(alpha = if (isActive) 0.08f else 0.03f), size = size)
+                    drawRect(color = nameColor.copy(alpha = if (isActive) 1f else 0.4f),
+                        size = Size(3.dp.toPx(), size.height))
+                }
+                .padding(start = 8.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "$prefix ${s.name}",
+                "${if (isActive) "✓ " else ""}${s.name}",
                 modifier = Modifier
                     .weight(1f)
                     .clickable(enabled = profileId != null && !isActive) { onSelectServer(profileId!!) },
                 style = MaterialTheme.typography.caption2,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                fontFamily = FontFamily.Monospace,
                 color = nameColor,
             )
             if (s.online) {
@@ -1067,9 +1117,12 @@ private fun MonitorSingleServerSection(
         online = state.pairedServer.isNotEmpty(),
     )
     Text(
-        "● ${state.serverName}",
+        "● ${state.serverName.uppercase()}",
         modifier = Modifier.padding(top = 2.dp),
         style = MaterialTheme.typography.caption1,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
         color = MaterialTheme.colors.primary,
     )
     Box(modifier = Modifier.clickable { onShowDetail(activeStat) }) {
@@ -1077,16 +1130,18 @@ private fun MonitorSingleServerSection(
     }
     if (state.uptimeSeconds > 0) {
         Text(
-            "up ${state.uptimeText()}",
+            "UP ${state.uptimeText()}",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.caption2,
+            fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colors.onSurfaceVariant,
         )
     }
     if (state.hasGpu() && state.gpuMemTotalMb > 0) {
         Text(
-            "vram ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
+            "VRAM ${state.gpuMemUsedMb}/${state.gpuMemTotalMb}M",
             style = MaterialTheme.typography.caption3,
+            fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colors.onSurfaceVariant,
         )
     }
@@ -1109,24 +1164,29 @@ private fun ServerDetailOverlay(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "● ${stat.name}",
+                "● ${stat.name.uppercase()}",
                 style = MaterialTheme.typography.caption1,
                 color = MaterialTheme.colors.primary,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
             )
             if (isActive) {
                 MonitorGaugeGrid(activeState)
                 if (activeState.uptimeSeconds > 0) {
                     Text(
-                        "up ${activeState.uptimeText()}",
+                        "UP ${activeState.uptimeText()}",
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.caption2,
+                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colors.onSurfaceVariant,
                     )
                 }
                 if (activeState.hasGpu() && activeState.gpuMemTotalMb > 0) {
                     Text(
-                        "vram ${activeState.gpuMemUsedMb}/${activeState.gpuMemTotalMb}M",
+                        "VRAM ${activeState.gpuMemUsedMb}/${activeState.gpuMemTotalMb}M",
                         style = MaterialTheme.typography.caption3,
+                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colors.onSurfaceVariant,
                     )
                 }
@@ -1140,17 +1200,19 @@ private fun ServerDetailOverlay(
                 }
                 if (stat.sessionsTotal > 0) {
                     Text(
-                        "${stat.sessionsTotal} sessions",
+                        "${stat.sessionsTotal} SESS",
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.caption2,
+                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colors.onSurfaceVariant,
                     )
                 }
             }
             Text(
-                "✕ tap to close",
+                "✕ TAP TO CLOSE",
                 modifier = Modifier.padding(top = 8.dp),
                 style = MaterialTheme.typography.caption3,
+                fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colors.onSurfaceVariant,
             )
         }
@@ -1240,6 +1302,8 @@ private fun GaugeRing(
             label,
             style = MaterialTheme.typography.caption3,
             color = MaterialTheme.colors.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 0.5.sp,
         )
     }
 }
@@ -1700,8 +1764,8 @@ private fun SessionDetailPopup(
                         androidx.compose.foundation.shape.CircleShape,
                     )
                     .border(
-                        1.5.dp,
-                        MaterialTheme.colors.primary.copy(alpha = 0.55f),
+                        1.dp,
+                        MaterialTheme.colors.primary.copy(alpha = 0.70f),
                         androidx.compose.foundation.shape.CircleShape,
                     )
                     .padding(horizontal = 16.dp, vertical = 18.dp),
@@ -1794,11 +1858,19 @@ private fun SessionPopupCentre(
             session.title,
             style = MaterialTheme.typography.title3,
             color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             maxLines = 2,
+            textAlign = TextAlign.Center,
         )
-        Text(session.stateName.lowercase(), style = MaterialTheme.typography.caption2,
-            color = sessionBadgeColor(session.stateName))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(session.stateName.uppercase(), style = MaterialTheme.typography.caption2,
+                color = sessionBadgeColor(session.stateName), fontFamily = FontFamily.Monospace)
+            Text(session.shortId, style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant, fontFamily = FontFamily.Monospace)
+        }
         // B34: always show "Loading…" until fresh /datawatch/sessionDetail arrives;
         // never fall back to stale DataLayer preview.
         if (fullBody == null) {
