@@ -271,8 +271,8 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(kotlinx.serialization.json.buildJsonObject {
-                    put("registry", registry)
-                    put("name", name)
+                    put("registry", kotlinx.serialization.json.JsonPrimitive(registry))
+                    put("name", kotlinx.serialization.json.JsonPrimitive(name))
                 })
             }.body()
         }
