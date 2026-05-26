@@ -1819,3 +1819,14 @@ public data class RemoteServerDto(
     val federated: Boolean = false,
     val capabilities: List<String> = emptyList(),
 )
+
+@Serializable
+public data class WebPushRegistrationDto(
+    val id: String = "",
+    val endpoint: String = "",
+)
+
+@Serializable
+public data class WebPushRegistrationsDto(
+    val registrations: List<WebPushRegistrationDto> = emptyList(),
+)

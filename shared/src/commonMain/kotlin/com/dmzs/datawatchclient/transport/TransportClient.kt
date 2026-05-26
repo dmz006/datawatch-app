@@ -1223,6 +1223,12 @@ public interface TransportClient {
     public suspend fun registerPush(registration: com.dmzs.datawatchclient.transport.dto.PushRegistrationDto): Result<Unit>
     public fun subscribePushAlerts(): Flow<com.dmzs.datawatchclient.transport.dto.PushEventDto>
 
+    // Web push (browser-style endpoint registration, Settings → Comms)
+    public suspend fun listWebPushRegistrations(): Result<com.dmzs.datawatchclient.transport.dto.WebPushRegistrationsDto>
+    public suspend fun addWebPushRegistration(endpoint: String): Result<Unit>
+    public suspend fun removeWebPushRegistration(id: String): Result<Unit>
+    public suspend fun sendTestWebPushNotification(): Result<Unit>
+
     // Sprint 30 — LLM multi-node + session management
     public suspend fun getLlmSessions(name: String, page: Int = 1, size: Int = 10): Result<com.dmzs.datawatchclient.transport.dto.LlmSessionsDto>
     public suspend fun reassignLlmSessions(fromName: String, toName: String, force: Boolean = false): Result<Unit>

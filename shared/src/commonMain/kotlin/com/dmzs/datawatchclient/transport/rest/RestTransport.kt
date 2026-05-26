@@ -2558,6 +2558,50 @@ public class RestTransport(
         }
     }
 
+    override suspend fun listWebPushRegistrations(): Result<com.dmzs.datawatchclient.transport.dto.WebPushRegistrationsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/push/register") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun addWebPushRegistration(endpoint: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/push/register") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("endpoint", kotlinx.serialization.json.JsonPrimitive(endpoint))
+                })
+            }
+            Unit
+        }
+
+    override suspend fun removeWebPushRegistration(id: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/push/unregister") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("id", kotlinx.serialization.json.JsonPrimitive(id))
+                })
+            }
+            Unit
+        }
+
+    override suspend fun sendTestWebPushNotification(): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/push/notify") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("title", kotlinx.serialization.json.JsonPrimitive("Datawatch test"))
+                    put("message", kotlinx.serialization.json.JsonPrimitive("Push notification test from Settings"))
+                })
+            }
+            Unit
+        }
+
     // Sprint 30 — LLM multi-node + session management
     override suspend fun getLlmSessions(
         name: String,
