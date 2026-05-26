@@ -1768,3 +1768,30 @@ public data class AlertRuleFiringDto(
 public data class AlertRuleFiringsDto(
     val firings: List<AlertRuleFiringDto> = emptyList(),
 )
+
+@Serializable
+public data class CommunityPluginManifestDto(
+    val name: String = "",
+    val version: String = "",
+    val description: String = "",
+)
+
+@Serializable
+public data class CommunityPluginDto(
+    val name: String = "",
+    val path: String = "",
+    val manifest: CommunityPluginManifestDto = CommunityPluginManifestDto(),
+)
+
+@Serializable
+public data class CommunityPluginsBrowseDto(
+    val registry: String = "",
+    val plugins: List<CommunityPluginDto> = emptyList(),
+)
+
+@Serializable
+public data class PluginInstallResponseDto(
+    val status: String = "",
+    val installed: String = "",
+    @SerialName("from_registry") val fromRegistry: String = "",
+)
