@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,16 +58,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
+import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
+import androidx.wear.compose.material.SwipeToDismissBox
 import androidx.wear.compose.material.Text
-import com.dmzs.datawatchclient.Version
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -139,10 +137,11 @@ private fun WearRoot(
         ),
 ) {
     val state by vm.state.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0) { 6 }
+    val pagerState = rememberPagerState(initialPage = 0) { 4 }
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val sessionScrollState = rememberScrollState()
+    val automataScrollState = rememberScrollState()
 
     // Show splash on every launch — even warm restarts where the ViewModel
     // is already loaded. 800ms on warm restart (ViewModel pre-loaded),
@@ -300,12 +299,11 @@ private fun WearRoot(
                         val delta = if (event.verticalScrollPixels != 0f) event.verticalScrollPixels
                                     else event.horizontalScrollPixels
                         coroutineScope.launch {
-                            if (pagerState.currentPage == 2) {
-                                sessionScrollState.scrollBy(delta)
-                            } else if (delta > 0) {
-                                pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(5))
-                            } else if (delta < 0) {
-                                pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
+                            when (pagerState.currentPage) {
+                                2 -> sessionScrollState.scrollBy(delta)
+                                3 -> automataScrollState.scrollBy(delta)
+                                else -> if (delta > 0) pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(3))
+                                        else if (delta < 0) pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
                             }
                         }
                         true
@@ -314,13 +312,12 @@ private fun WearRoot(
                     .focusable(),
             ) { page ->
                 when (page) {
-                    0 -> GlancePage(state)
+                    0 -> StatusPage(state)
                     1 -> MonitorPage(
                         state,
                         onSelectServer = { id -> vm.requestActiveServer(id) },
                         onVoiceQuery = { vm.sendVoiceQuery("status") },
                     )
-                    // Note: page 2 is SessionsPage, page 3 is AutomataCarouselPage
                     2 ->
                         SessionsPage(
                             state = state,
@@ -331,24 +328,19 @@ private fun WearRoot(
                                 fullDetailBodies = fullDetailBodies - item.id
                                 vm.refreshSession(item.id)
                             },
+                            onStopSession = { sessionId -> vm.sendStopSession(sessionId) },
                             scrollState = sessionScrollState,
                         )
                     3 ->
-                        AutomataCarouselPage(
+                        AutomataPage(
                             state = state,
-                            onMemorySweep = { vm.sendMemorySweep() },
+                            scrollState = automataScrollState,
+                            onPrdAction = { id, action, reason -> vm.sendPrdAction(id, action, reason) },
                         )
-                    4 ->
-                        PrdsPage(
-                            state = state,
-                            onApprove = { id -> vm.sendPrdAction(id, "approve") },
-                            onReject = { id -> vm.sendPrdAction(id, "reject", "rejected on watch") },
-                        )
-                    5 -> AboutPage(state)
-                    else -> GlancePage(state)
+                    else -> StatusPage(state)
                 }
             }
-            PagerDots(pagerState.currentPage, 6, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            PagerDots(pagerState.currentPage, 4, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
             // v0.42.3 — re-resolve the open session against the
             // latest published list so the popup shows the freshest
             // lastResponse body the moment the phone republishes (in
@@ -552,11 +544,11 @@ private fun WearSplash() {
 }
 
 /**
- * BL303-W2 — Primary glance screen. Progress ring + current task +
+ * BL303-W2 — Primary status screen. Progress ring + current task +
  * sprint breadcrumb + health dots. First page in the pager.
  */
 @Composable
-private fun GlancePage(state: WearSessionCountsViewModel.UiState) {
+private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
     val runColor   = Color(0xFF10B981)
     val waitColor  = Color(0xFFF59E0B)
     val autoColor  = Color(0xFFA855F7)
@@ -694,217 +686,243 @@ private fun GlanceStat(
 }
 
 @Composable
-private fun AutomataCarouselPage(
+private fun AutomataPage(
     state: WearSessionCountsViewModel.UiState,
-    onMemorySweep: () -> Unit = {},
+    scrollState: ScrollState,
+    onPrdAction: (String, String, String) -> Unit,
 ) {
     val blockColor = Color(0xFFEF4444)
     val runColor = Color(0xFF10B981)
+    val reviewColor = Color(0xFFF59E0B)
+    val revisionColor = Color(0xFFA855F7)
     val dimColor = MaterialTheme.colors.onSurfaceVariant
-    val listState = rememberScalingLazyListState()
 
-    // Gravitational sort: (blockedCount × 3) + runningHours descending
-    val automata = state.prds
-        .filter { it.status.lowercase() == "running" }
-        .sortedByDescending { it.gravityScore() }
+    var selectedPrd by remember { mutableStateOf<WearSessionCountsViewModel.PrdItem?>(null) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colors.background),
-        contentAlignment = Alignment.Center,
-    ) {
-        ScalingLazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = 12.dp,
-                vertical = 24.dp,
-            ),
-        ) {
-            item {
-                Text(
-                    stringResource(R.string.wear_automata_page_title),
-                    style = MaterialTheme.typography.title3,
-                    color = MaterialTheme.colors.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+    // Sort: needs_review first (urgent), then running by gravity, then others
+    val sorted = state.prds.sortedWith(
+        compareByDescending<WearSessionCountsViewModel.PrdItem> {
+            when (it.status.lowercase()) {
+                "needs_review", "revisions_asked" -> 2
+                "running" -> 1
+                else -> 0
+            }
+        }.thenByDescending { it.gravityScore() }
+    )
+
+    val runningCount = state.prds.count { it.status.lowercase() == "running" }
+    val reviewCount = state.prds.count { it.status.lowercase() in setOf("needs_review", "revisions_asked") }
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
+        PageScaffold(title = "", scrollState = scrollState) {
+            // Header row
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("AUTOMATA", style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (runningCount > 0) Text("${runningCount}R", style = MaterialTheme.typography.caption2,
+                        color = runColor, fontWeight = FontWeight.Bold)
+                    if (reviewCount > 0) Text("${reviewCount}✓", style = MaterialTheme.typography.caption2,
+                        color = reviewColor, fontWeight = FontWeight.Bold)
+                }
             }
 
-            if (automata.isEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.wear_automata_empty),
-                        style = MaterialTheme.typography.body2,
-                        color = dimColor,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    )
-                }
+            if (sorted.isEmpty()) {
+                Text("No active automata", style = MaterialTheme.typography.body2,
+                    color = dimColor, textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             } else {
-                automata.forEachIndexed { idx, prd ->
-                    item {
-                        AutomataCard(
-                            prd = prd,
-                            blockColor = blockColor,
-                            runColor = runColor,
-                            dimColor = dimColor,
-                        )
+                sorted.forEach { prd ->
+                    val statusColor = when (prd.status.lowercase()) {
+                        "running" -> if (prd.blockedCount > 0) blockColor else runColor
+                        "needs_review" -> reviewColor
+                        "revisions_asked" -> revisionColor
+                        "approved" -> Color(0xFF3B82F6) // blue
+                        else -> dimColor
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp)
+                            .background(statusColor.copy(alpha = 0.12f),
+                                androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                            .clickable { selectedPrd = prd }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        // Mini progress arc
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
+                            CircularProgressIndicator(
+                                progress = prd.progress.coerceIn(0f, 1f),
+                                modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
+                                indicatorColor = statusColor,
+                                trackColor = statusColor.copy(alpha = 0.18f),
+                            )
+                            Text("${(prd.progress * 100).toInt()}",
+                                style = MaterialTheme.typography.caption3, color = dimColor)
+                        }
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(prd.title, style = MaterialTheme.typography.caption1,
+                                color = MaterialTheme.colors.onSurface, maxLines = 1)
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(prd.status.replace("_", " "), style = MaterialTheme.typography.caption3,
+                                    color = statusColor)
+                                if (prd.blockedCount > 0)
+                                    Text("${prd.blockedCount}⚠", style = MaterialTheme.typography.caption3,
+                                        color = blockColor)
+                                if (prd.runningHours > 0f)
+                                    Text("%.1fh".format(prd.runningHours),
+                                        style = MaterialTheme.typography.caption3, color = dimColor)
+                            }
+                        }
+                        // Quick action glyph for actionable states
+                        when (prd.status.lowercase()) {
+                            "needs_review", "revisions_asked" ->
+                                Text("›", style = MaterialTheme.typography.title3, color = reviewColor)
+                            "running" ->
+                                Text("›", style = MaterialTheme.typography.title3, color = runColor)
+                        }
                     }
                 }
             }
-
-            // Memory sweep quick action at end of carousel
-            item {
-                Spacer(Modifier.height(4.dp))
-                Button(
-                    onClick = onMemorySweep,
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.surface,
-                        contentColor = MaterialTheme.colors.primary,
-                    ),
-                ) {
-                    Text(
-                        stringResource(R.string.wear_automata_memory_sweep),
-                        style = MaterialTheme.typography.caption2,
-                    )
-                }
-            }
-
-            // Weekly health heatmap stub
-            item {
-                WeeklyHealthHeatmap(dimColor = dimColor)
-            }
         }
-    }
-}
 
-@Composable
-private fun AutomataCard(
-    prd: WearSessionCountsViewModel.PrdItem,
-    blockColor: Color,
-    runColor: Color,
-    dimColor: Color,
-) {
-    val progressColor = if (prd.blockedCount > 0) blockColor else runColor
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colors.surface,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        // PRD detail overlay
+        selectedPrd?.let { prd ->
+            AutomataDetailOverlay(
+                prd = prd,
+                onDismiss = { selectedPrd = null },
+                onAction = { action, reason ->
+                    onPrdAction(prd.id, action, reason)
+                    selectedPrd = null
+                },
             )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            // Mini progress arc
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp)) {
-                CircularProgressIndicator(
-                    progress = prd.progress.coerceIn(0f, 1f),
-                    modifier = Modifier.size(36.dp),
-                    strokeWidth = 3.dp,
-                    indicatorColor = progressColor,
-                    trackColor = progressColor.copy(alpha = 0.18f),
-                )
-                Text(
-                    "${(prd.progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.caption2,
-                    color = dimColor,
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
-                Text(
-                    prd.title,
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.onSurface,
-                    maxLines = 1,
-                )
-                // Miniature gantt bar
-                AutomataGanttBar(prd = prd, blockColor = blockColor, runColor = runColor)
-                if (prd.blockedCount > 0) {
-                    Text(
-                        stringResource(R.string.wear_automata_blocked, prd.blockedCount),
-                        style = MaterialTheme.typography.caption2,
-                        color = blockColor,
-                    )
-                } else if (prd.sprintName.isNotBlank()) {
-                    Text(
-                        prd.sprintName,
-                        style = MaterialTheme.typography.caption2,
-                        color = dimColor,
-                        maxLines = 1,
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun AutomataGanttBar(
+private fun AutomataDetailOverlay(
     prd: WearSessionCountsViewModel.PrdItem,
-    blockColor: Color,
-    runColor: Color,
+    onDismiss: () -> Unit,
+    onAction: (action: String, reason: String) -> Unit,
 ) {
-    val doneColor = Color(0xFF00E5A0)
-    val waitColor = Color(0xFFF59E0B)
-    val doneW = prd.progress.coerceIn(0f, 1f)
-    val blockW = if (prd.blockedCount > 0) 0.12f else 0f
-    val waitW = ((1f - doneW - blockW) * 0.4f).coerceAtLeast(0f)
+    val blockColor = Color(0xFFEF4444)
+    val runColor = Color(0xFF10B981)
+    val reviewColor = Color(0xFFF59E0B)
+    val revisionColor = Color(0xFFA855F7)
+    val dimColor = MaterialTheme.colors.onSurfaceVariant
+
+    val statusColor = when (prd.status.lowercase()) {
+        "running" -> if (prd.blockedCount > 0) blockColor else runColor
+        "needs_review" -> reviewColor
+        "revisions_asked" -> revisionColor
+        "approved" -> Color(0xFF3B82F6)
+        else -> dimColor
+    }
+
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(4.dp)
-            .background(Color.White.copy(alpha = 0.08f), shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+        modifier = Modifier.fillMaxSize()
+            .background(Color(0xF0000000))
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center,
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            if (doneW > 0f) Box(Modifier.weight(doneW).fillMaxHeight().background(doneColor))
-            if (waitW > 0f) Box(Modifier.weight(waitW).fillMaxHeight().background(waitColor))
-            if (blockW > 0f) Box(Modifier.weight(blockW).fillMaxHeight().background(blockColor))
+        Box(
+            modifier = Modifier.fillMaxSize().padding(6.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(MaterialTheme.colors.surface, androidx.compose.foundation.shape.CircleShape)
+                .border(1.5.dp, statusColor.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape)
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+                .clickable { /* consume click to prevent dismiss */ },
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Dismiss X
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Text("✕", style = MaterialTheme.typography.caption1, color = dimColor,
+                        modifier = Modifier.clickable { onDismiss() }.padding(2.dp))
+                }
+
+                // Progress arc + title
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp).padding(bottom = 4.dp)) {
+                    CircularProgressIndicator(progress = prd.progress.coerceIn(0f, 1f),
+                        modifier = Modifier.size(48.dp), strokeWidth = 4.dp,
+                        indicatorColor = statusColor, trackColor = statusColor.copy(alpha = 0.18f))
+                    Text("${(prd.progress * 100).toInt()}%", style = MaterialTheme.typography.caption2, color = dimColor)
+                }
+
+                Text(prd.title, style = MaterialTheme.typography.caption1,
+                    color = MaterialTheme.colors.onSurface, fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, maxLines = 2,
+                    modifier = Modifier.padding(bottom = 2.dp))
+
+                Text(prd.status.replace("_", " "), style = MaterialTheme.typography.caption2,
+                    color = statusColor, modifier = Modifier.padding(bottom = 2.dp))
+
+                if (prd.sprintName.isNotBlank()) {
+                    Text(prd.sprintName, style = MaterialTheme.typography.caption3,
+                        color = dimColor, modifier = Modifier.padding(bottom = 2.dp))
+                }
+
+                if (prd.blockedCount > 0) {
+                    Text("${prd.blockedCount} blocked", style = MaterialTheme.typography.caption2,
+                        color = blockColor, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 4.dp))
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                // Action buttons based on status gate
+                when (prd.status.lowercase()) {
+                    "needs_review", "revisions_asked" -> {
+                        // Approve
+                        ActionChip("✓ Approve", Color(0xFF22C55E)) { onAction("approve", "") }
+                        Spacer(Modifier.height(4.dp))
+                        // Reject
+                        ActionChip("✕ Reject", blockColor) { onAction("reject", "rejected on watch") }
+                        Spacer(Modifier.height(4.dp))
+                        // Request Revision
+                        ActionChip("↩ Revise", revisionColor) { onAction("request_revision", "revision requested on watch") }
+                    }
+                    "running" -> {
+                        ActionChip("✕ Cancel", blockColor) { onAction("cancel", "") }
+                    }
+                    "approved" -> {
+                        ActionChip("▶ Instantiate", Color(0xFF3B82F6)) { onAction("instantiate", "") }
+                        Spacer(Modifier.height(4.dp))
+                        ActionChip("✕ Cancel", blockColor) { onAction("cancel", "") }
+                    }
+                    "decomposing", "planning" -> {
+                        Text("Decomposing…", style = MaterialTheme.typography.caption3, color = dimColor)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun WeeklyHealthHeatmap(dimColor: Color) {
-    // 7-day heatmap — placeholder until /api/audit DataLayer path is implemented in W6
-    val days = listOf("M", "T", "W", "T", "F", "S", "S")
-    val dotColor = Color(0xFF00E5A0)
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-    ) {
-        Text(
-            stringResource(R.string.wear_automata_heatmap_title),
-            style = MaterialTheme.typography.caption2,
-            color = dimColor,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            days.forEachIndexed { i, day ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(
-                                if (i < 5) dotColor else dimColor.copy(alpha = 0.3f),
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                            ),
-                    )
-                    Text(day, style = MaterialTheme.typography.caption2, color = dimColor)
-                }
-            }
-        }
-    }
+private fun ActionChip(label: String, color: Color, onClick: () -> Unit) {
+    Text(
+        label,
+        style = MaterialTheme.typography.button,
+        color = color,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .background(color.copy(alpha = 0.18f), androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable
@@ -1213,6 +1231,7 @@ private fun SessionsPage(
     filter: SessionFilter,
     onFilterChange: (SessionFilter) -> Unit,
     onSessionTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
+    onStopSession: (String) -> Unit = {},
     scrollState: ScrollState = rememberScrollState(),
 ) {
     PageScaffold(stringResource(R.string.wear_page_sessions), scrollState = scrollState) {
@@ -1246,45 +1265,153 @@ private fun SessionsPage(
             )
             return@PageScaffold
         }
-        // Per-session rows — Sprint 32: shortId + state badge + task text + last-activity.
-        filtered.forEach { item ->
-            val badgeColor = sessionBadgeColor(item.stateName)
-            val agoText = wearSessionAgo(item.lastActivity)
+        // When showing all sessions, split into named groups so the list is scannable.
+        val groups: List<Pair<String?, List<WearSessionCountsViewModel.SessionItem>>> =
+            if (filter == SessionFilter.Total) {
+                val running = filtered.filter { it.stateName.equals("running", ignoreCase = true) }
+                val waiting = filtered.filter {
+                    it.stateName.equals("waiting", ignoreCase = true) ||
+                        it.stateName.equals("waiting_input", ignoreCase = true)
+                }
+                val other = filtered - running.toSet() - waiting.toSet()
+                buildList {
+                    if (running.isNotEmpty()) add("RUNNING (${running.size})" to running)
+                    if (waiting.isNotEmpty()) add("WAITING (${waiting.size})" to waiting)
+                    if (other.isNotEmpty()) add("OTHER (${other.size})" to other)
+                }
+            } else {
+                listOf(null to filtered)
+            }
+
+        groups.forEach { (header, items) ->
+            if (header != null) {
+                Text(
+                    header,
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                )
+            }
+            items.forEach { item -> SessionRow(item, onSessionTap, onStopSession = { onStopSession(item.id) }) }
+        }
+    }
+}
+
+@Composable
+private fun SessionRow(
+    item: WearSessionCountsViewModel.SessionItem,
+    onTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
+    onStopSession: () -> Unit,
+) {
+    val badgeColor = sessionBadgeColor(item.stateName)
+    val agoText = wearSessionAgo(item.lastActivity)
+    val abbrev = backendAbbrev(item.backend)
+    val bColor = backendColor(item.backend)
+    val isWaiting = item.stateName.equals("waiting", ignoreCase = true) ||
+        item.stateName.equals("waiting_input", ignoreCase = true)
+    val isRunning = item.stateName.equals("running", ignoreCase = true)
+
+    when {
+        isWaiting -> {
+            val swipeState = rememberSwipeToDismissBoxState()
+            SwipeToDismissBox(
+                onDismissed = { onTap(item) },
+                state = swipeState,
+            ) { isBackground ->
+                if (isBackground) {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(Color(0xFF1A3A1A), androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        Text("🎤 Reply", style = MaterialTheme.typography.caption1,
+                            color = Color(0xFF00E5A0),
+                            modifier = Modifier.padding(end = 12.dp))
+                    }
+                } else {
+                    SessionRowContent(item, badgeColor, abbrev, bColor, agoText, null, onTap)
+                }
+            }
+        }
+        isRunning -> {
+            val swipeState = rememberSwipeToDismissBoxState()
+            SwipeToDismissBox(
+                onDismissed = { onStopSession() },
+                state = swipeState,
+            ) { isBackground ->
+                if (isBackground) {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(Color(0xFF3A1A1A), androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        Text("✕ Stop", style = MaterialTheme.typography.caption1,
+                            color = Color(0xFFEF4444),
+                            modifier = Modifier.padding(end = 12.dp))
+                    }
+                } else {
+                    val durationText = wearRunningDuration(item.startedAt)
+                    val durationColor = runningDurationColor(item.startedAt)
+                    SessionRowContent(item, badgeColor, abbrev, bColor, agoText, durationText to durationColor, onTap)
+                }
+            }
+        }
+        else -> SessionRowContent(item, badgeColor, abbrev, bColor, agoText, null, onTap)
+    }
+}
+
+@Composable
+private fun SessionRowContent(
+    item: WearSessionCountsViewModel.SessionItem,
+    badgeColor: Color,
+    abbrev: String,
+    backendColor: Color,
+    agoText: String,
+    duration: Pair<String, Color>?,
+    onTap: (WearSessionCountsViewModel.SessionItem) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp)
+            .background(badgeColor.copy(alpha = 0.18f), androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+            .clickable { onTap(item) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("●", color = badgeColor, style = MaterialTheme.typography.caption1)
+        Column(modifier = Modifier.padding(start = 6.dp).weight(1f)) {
+            Text(
+                item.title.take(28),
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurface,
+                maxLines = 1,
+            )
             Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                        .background(
-                            color = badgeColor.copy(alpha = 0.18f),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                        )
-                        .clickable { onSessionTap(item) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "●",
-                    color = badgeColor,
-                    style = MaterialTheme.typography.caption1,
+                    "${item.shortId}  $agoText",
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    maxLines = 1,
                 )
-                Column(
-                    modifier = Modifier.padding(start = 6.dp).weight(1f),
-                ) {
-                    Text(
-                        item.title.take(30),
-                        style = MaterialTheme.typography.caption1,
-                        color = MaterialTheme.colors.onSurface,
-                        maxLines = 1,
-                    )
-                    Text(
-                        "${item.shortId}  $agoText",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurfaceVariant,
-                        maxLines = 1,
-                    )
+                if (duration != null && duration.first.isNotEmpty()) {
+                    Text(duration.first, style = MaterialTheme.typography.caption2,
+                        color = duration.second, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+        if (abbrev.isNotEmpty()) {
+            Text(
+                abbrev,
+                style = MaterialTheme.typography.caption3,
+                color = backendColor,
+                modifier = Modifier
+                    .background(backendColor.copy(alpha = 0.15f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            )
         }
     }
 }
@@ -1351,6 +1478,56 @@ private fun wearSessionAgo(epochMs: Long): String {
         delta < 86_400_000L -> "${delta / 3_600_000L}h ago"
         else -> "${delta / 86_400_000L}d ago"
     }
+}
+
+/** Elapsed time since session started; "" when zero. "1h23m", "47m", "<1m". */
+private fun wearRunningDuration(startedAtMs: Long): String {
+    if (startedAtMs <= 0L) return ""
+    val delta = System.currentTimeMillis() - startedAtMs
+    val hours = delta / 3_600_000L
+    val minutes = (delta % 3_600_000L) / 60_000L
+    return when {
+        hours > 0 -> "${hours}h${minutes}m"
+        minutes > 0 -> "${minutes}m"
+        else -> "<1m"
+    }
+}
+
+/** Color for running duration badge — amber >1h, red >2h. */
+private fun runningDurationColor(startedAtMs: Long): Color {
+    if (startedAtMs <= 0L) return Color(0xFF94A3B8)
+    val delta = System.currentTimeMillis() - startedAtMs
+    return when {
+        delta >= 7_200_000L -> Color(0xFFEF4444)
+        delta >= 3_600_000L -> Color(0xFFF59E0B)
+        else -> Color(0xFF94A3B8)
+    }
+}
+
+/** Shortened backend label for session rows — keeps abbreviation to ≤6 chars. */
+private fun backendAbbrev(backend: String): String = when {
+    backend.isBlank() -> ""
+    backend.startsWith("claude") -> "claude"
+    backend.startsWith("gpt-4o") -> "gpt4o"
+    backend.startsWith("gpt-4") -> "gpt4"
+    backend.startsWith("gpt-3") -> "gpt3"
+    backend.startsWith("gemini") -> "gemni"
+    backend.startsWith("llama") -> "llama"
+    backend.startsWith("deepseek") -> "deep"
+    backend.startsWith("mistral") -> "mstrl"
+    backend.startsWith("qwen") -> "qwen"
+    else -> backend.take(6)
+}
+
+/** Color accent for a backend label — gives each major model family a distinct hue. */
+private fun backendColor(backend: String): Color = when {
+    backend.startsWith("claude") -> Color(0xFFD97706)
+    backend.startsWith("gpt") -> Color(0xFF10B981)
+    backend.startsWith("gemini") -> Color(0xFF3B82F6)
+    backend.startsWith("llama") -> Color(0xFFA855F7)
+    backend.startsWith("deepseek") -> Color(0xFF06B6D4)
+    backend.startsWith("mistral") -> Color(0xFFEC4899)
+    else -> Color(0xFF94A3B8)
 }
 
 /**
@@ -1671,163 +1848,6 @@ private fun SessionWaitingButtons(onQuickReply: (String) -> Unit, onStop: () -> 
     }
 }
 
-/**
- * v0.40.0 — Automata review page. Renders needs_review / running automata
- * the phone publishes on `/datawatch/prds`. Tap the green ✓ to
- * approve or the red ✕ to reject (with an automatic "rejected on
- * watch" reason — full rejection-with-reason flow stays on the
- * phone). Hides itself entirely when the list is empty so the
- * page count stays at 4 on minimal setups.
- */
-@Composable
-private fun PrdsPage(
-    state: WearSessionCountsViewModel.UiState,
-    onApprove: (String) -> Unit,
-    onReject: (String) -> Unit,
-) {
-    PageScaffold(stringResource(R.string.wear_page_autonomous)) {
-        if (state.prds.isEmpty()) {
-            Text(
-                stringResource(R.string.wear_prds_empty),
-                modifier = Modifier.padding(top = 10.dp),
-                style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
-            return@PageScaffold
-        }
-        Text(
-            stringResource(R.string.wear_prds_pending, state.prds.size),
-            modifier = Modifier.padding(top = 2.dp),
-            style = MaterialTheme.typography.caption1,
-            color = MaterialTheme.colors.primary,
-        )
-        state.prds.forEach { prd ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                        .background(
-                            prdStatusColor(prd.status).copy(alpha = 0.18f),
-                            androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                        )
-                        .padding(horizontal = 6.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    prd.title,
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.onSurface,
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .padding(end = 4.dp),
-                    maxLines = 2,
-                )
-                if (prd.status.lowercase() == "needs_review" ||
-                    prd.status.lowercase() == "revisions_asked"
-                ) {
-                    Text(
-                        "✓",
-                        modifier =
-                            Modifier
-                                .clickable { onApprove(prd.id) }
-                                .padding(horizontal = 4.dp),
-                        style = MaterialTheme.typography.title3,
-                        color = Color(0xFF22C55E),
-                    )
-                    Text(
-                        "✕",
-                        modifier =
-                            Modifier
-                                .clickable { onReject(prd.id) }
-                                .padding(horizontal = 4.dp),
-                        style = MaterialTheme.typography.title3,
-                        color = Color(0xFFEF4444),
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun prdStatusColor(status: String): Color =
-    when (status.lowercase()) {
-        "running" -> Color(0xFF22C55E)
-        "needs_review" -> Color(0xFFF59E0B)
-        "revisions_asked" -> Color(0xFFA855F7)
-        else -> Color(0xFF94A3B8)
-    }
-
-/**
- * v0.42.11 — About page rewritten to mirror the phone's About card
- * (which itself mirrors the PWA's About surface). User direction
- * 2026-04-29: drop the "About" page header; the body already opens
- * with the datawatch logotype and name. The bezel circle clipping
- * comes from PageScaffold v0.42.11.
- */
-@Composable
-private fun AboutPage(state: WearSessionCountsViewModel.UiState) {
-    PageScaffold(title = "") {
-        Text(
-            "datawatch",
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.title2,
-            color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            stringResource(R.string.wear_about_tagline),
-            modifier = Modifier.padding(top = 2.dp),
-            style = MaterialTheme.typography.caption3,
-            color = MaterialTheme.colors.onSurfaceVariant,
-        )
-        Text(
-            "v${Version.VERSION} (${Version.VERSION_CODE})",
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.caption1,
-            color = MaterialTheme.colors.onSurface,
-            fontFamily = FontFamily.Monospace,
-        )
-        if (state.pairedServer.isNotEmpty() && state.serverName.isNotEmpty()) {
-            Text(
-                "● ${state.serverName}",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.primary,
-            )
-        }
-        if (state.total > 0) {
-            Text(
-                "${state.total} sessions · ${state.running} run · ${state.waiting} wait",
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.caption3,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
-        }
-        if (state.uptimeSeconds > 0) {
-            Text(
-                "up ${state.uptimeText()}",
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.caption3,
-                color = MaterialTheme.colors.onSurfaceVariant,
-            )
-        }
-        Text(
-            stringResource(R.string.wear_about_license),
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.caption3,
-            color = MaterialTheme.colors.onSurfaceVariant,
-        )
-        Text(
-            stringResource(R.string.wear_about_github),
-            modifier = Modifier.padding(top = 2.dp),
-            style = MaterialTheme.typography.caption3,
-            color = MaterialTheme.colors.primary,
-        )
-    }
-}
-
 @Composable
 private fun CountTile(
     value: Int,
@@ -1968,6 +1988,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val stateName: String,
         val lastLine: String,
         val lastActivity: Long = 0L,
+        val startedAt: Long = 0L,
     )
 
     public data class PrdItem(
@@ -2138,6 +2159,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
         val states = map.getStringArray("states") ?: emptyArray()
         val lastLines = map.getStringArray("lastLines") ?: emptyArray()
         val lastActivities = map.getLongArray("lastActivities") ?: LongArray(0)
+        val startedAts = map.getLongArray("startedAts") ?: LongArray(0)
         val items =
             ids.indices.map { i ->
                 SessionItem(
@@ -2148,6 +2170,7 @@ public class WearSessionCountsViewModel(app: Application) : AndroidViewModel(app
                     stateName = states.getOrNull(i).orEmpty(),
                     lastLine = lastLines.getOrNull(i).orEmpty(),
                     lastActivity = lastActivities.getOrElse(i) { 0L },
+                    startedAt = startedAts.getOrElse(i) { 0L },
                 )
             }
         Log.d("WearMain", "applySessions n=${items.size}")

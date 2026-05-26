@@ -125,6 +125,25 @@
     <string name="wear_voice_ask_status">Ask Status</string>
     <string name="wear_voice_reply_default">No reply from phone</string>
 
+    <!-- AutomataPage (first-class PRD controller) -->
+    <string name="wear_page_status">Status</string>
+    <string name="wear_automata_all_title">AUTOMATA</string>
+    <string name="wear_automata_no_active">No active automata</string>
+    <string name="wear_automata_action_approve">✓ Approve</string>
+    <string name="wear_automata_action_reject">✕ Reject</string>
+    <string name="wear_automata_action_revise">↩ Revise</string>
+    <string name="wear_automata_action_cancel">✕ Cancel</string>
+    <string name="wear_automata_action_instantiate">▶ Instantiate</string>
+
+    <!-- PRD review notifications -->
+    <string name="wear_notification_prd_review_channel">PRD Review</string>
+    <string name="wear_notification_prd_review_title">PRD Needs Review</string>
+    <string name="wear_notification_prd_action_approve">Approve</string>
+    <string name="wear_notification_prd_action_reject">Reject</string>
+
+    <!-- Health ring complication -->
+    <string name="complication_health_ring_label">datawatch Health Ring</string>
+
     <!-- BL303-W3: Guardrail block notification + approve screen -->
     <string name="wear_notification_guardrail_channel">Guardrail Blocks</string>
     <string name="wear_notification_guardrail_title">Guardrail Blocked</string>

@@ -260,6 +260,7 @@ public class WearSyncService(
                                                         .trim()
                                                         .take(SESSION_LAST_LINE_MAX),
                                                 lastActivity = s.lastActivityAt.toEpochMilliseconds(),
+                                                startedAt = s.createdAt.toEpochMilliseconds(),
                                             )
                                         }
                                         .toList(),
@@ -909,6 +910,7 @@ public class WearSyncService(
         val stateName: String,
         val lastLine: String,
         val lastActivity: Long,
+        val startedAt: Long,
     )
 
     private data class SessionsListSnapshot(
@@ -1057,6 +1059,7 @@ public class WearSyncService(
                     dataMap.putStringArray("states", snap.items.map { it.stateName }.toTypedArray())
                     dataMap.putStringArray("lastLines", snap.items.map { it.lastLine }.toTypedArray())
                     dataMap.putLongArray("lastActivities", snap.items.map { it.lastActivity }.toLongArray())
+                    dataMap.putLongArray("startedAts", snap.items.map { it.startedAt }.toLongArray())
                     dataMap.putLong("ts", System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
