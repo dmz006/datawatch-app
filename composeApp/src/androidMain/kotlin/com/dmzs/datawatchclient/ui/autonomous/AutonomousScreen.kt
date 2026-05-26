@@ -32,8 +32,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -637,8 +635,14 @@ private fun PrdRow(
                     serverName?.let { name ->
                         Text(" · $name", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
                     }
-                    prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
-                        Text(" · ${ts.take(10)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+                    // PWA uses updated_at formatted as "DD/MM/YYYY, HH:MM:SS" (en-GB locale)
+                    (prd.updatedAt ?: prd.createdAt)?.takeIf { it.isNotBlank() }?.let { ts ->
+                        val display = runCatching {
+                            val inst = java.time.Instant.parse(ts)
+                            val ldt = java.time.LocalDateTime.ofInstant(inst, java.time.ZoneId.systemDefault())
+                            "%02d/%02d/%04d, %02d:%02d:%02d".format(ldt.dayOfMonth, ldt.monthValue, ldt.year, ldt.hour, ldt.minute, ldt.second)
+                        }.getOrDefault(ts.take(10))
+                        Text(" · $display", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
                     }
                 }
                 // Lifecycle strip (5 steps matching PWA: Plan → Review → Approve → Run → Done)
@@ -830,14 +834,7 @@ internal fun TypeBadge(type: String) {
     }
 }
 
-/**
- * Horizontal lifecycle progress strip — mirrors PWA's step-pill row on
- * each PRD card. Shows steps: Plan → Review → Approve → Run → Done.
- * Steps before the current one are shown as "done" (green tint), the current
- * step is highlighted with the status color, future steps are dim.
- * Danger states (rejected/cancelled) show all pills in red.
- * When action callbacks are provided the corresponding pill becomes a clickable button.
- */
+/** Horizontal lifecycle strip — mirrors PWA renderLifecycleStrip exactly. */
 @Composable
 internal fun LifecycleStrip(
     status: String,
@@ -849,8 +846,11 @@ internal fun LifecycleStrip(
     onCancel: (() -> Unit)? = null,
 ) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val accent = MaterialTheme.colorScheme.primary   // #7C3AED = var(--accent)
+    val success = dw.success                          // #10B981 = var(--success)
     val statusLower = status.lowercase()
     val isDanger = statusLower in setOf("rejected", "cancelled", "blocked", "archived")
+    val isRunning = statusLower == "running"
 
     // 5-step lifecycle matching PWA: Plan(0) → Review(1) → Approve(2) → Run(3) → Done(4)
     val currentIndex = when {
@@ -878,19 +878,29 @@ internal fun LifecycleStrip(
     }
 
     Column(modifier = Modifier.padding(top = 4.dp)) {
+        // Hint text: uppercase + accent color, matching PWA .lifecycle-strip-current
         hintText?.let {
-            Text(it, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f), modifier = Modifier.padding(bottom = 3.dp))
+            Text(
+                it.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.4.sp,
+                ),
+                color = accent,
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
         }
 
-        data class Step(val label: String, val onClick: (() -> Unit)?)
-        val isRunning = statusLower == "running"
+        data class Step(val baseLabel: String, val activeLabel: String, val onClick: (() -> Unit)?)
+        val planLabel = if (statusLower == "revisions_asked") "Re-plan" else "Plan"
         val steps = listOf(
-            Step("plan", onPlan),
-            Step("review", null),
-            Step("approve", if (!isRunning) onApprove else null),
-            Step(if (isRunning) "■ cancel" else "run", if (isRunning) onCancel else onRun),
-            Step("done", null),
+            Step("Plan", "▶ $planLabel", onPlan),
+            Step("Review", "Review", null),
+            Step("Approve", "Approve", if (!isRunning) onApprove else null),
+            Step("Run", if (isRunning) "■ Cancel" else "▶ Run", if (isRunning) onCancel else onRun),
+            Step("Done", "Done", null),
         )
+        val shape = RoundedCornerShape(6.dp)
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -898,48 +908,87 @@ internal fun LifecycleStrip(
         ) {
             steps.forEachIndexed { idx, step ->
                 val isActive = !isDanger && idx == currentIndex
-                val isDone = !isDanger && idx < currentIndex
-                val (bg, fg) = when {
-                    isDanger && idx == steps.size - 1 -> Color(0xFFEF4444).copy(alpha = 0.12f) to Color(0xFFEF4444)
-                    isDanger -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    isDone -> dw.success.copy(alpha = 0.15f) to dw.success
-                    isActive -> prdStatusColor(status).copy(alpha = 0.2f) to prdStatusColor(status)
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f) to MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                }
-                val label = if (isDone) "✓ ${step.label}" else step.label
-                val clickHandler = step.onClick
-                if (isActive && clickHandler != null) {
-                    Button(
-                        onClick = clickHandler,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        modifier = Modifier.size(height = 26.dp, width = androidx.compose.ui.unit.Dp.Unspecified),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = prdStatusColor(status).copy(alpha = 0.25f),
-                            contentColor = prdStatusColor(status),
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(0.dp),
-                    ) {
-                        Text(step.label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                val isPast = !isDanger && idx < currentIndex
+                // For danger (cancelled/rejected/archived): all steps before "done" show as green done
+                val isDangerPast = isDanger && idx < steps.size - 1
+
+                val label: String
+                val bgColor: Color
+                val textColor: Color
+                val borderColor: Color?
+
+                when {
+                    isDangerPast -> {
+                        // PWA: .lifecycle-step-btn.done — solid green, white text, ✓ prefix
+                        label = "✓ ${step.baseLabel}"
+                        bgColor = success
+                        textColor = Color.White
+                        borderColor = null
                     }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .background(bg, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    ) {
-                        Text(
-                            label,
-                            fontSize = 11.sp,
-                            color = fg,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                        )
+                    isDanger && idx == steps.size - 1 -> {
+                        // Done step for danger status — matches PWA per-status styling
+                        when (statusLower) {
+                            "rejected" -> {
+                                label = "✗ Rejected"
+                                bgColor = Color.Transparent
+                                textColor = Color(0xFFEF4444)
+                                borderColor = Color(0xFFEF4444).copy(alpha = 0.4f)
+                            }
+                            else -> {
+                                // cancelled / archived / blocked — dim grey, opacity 0.6 equivalent
+                                label = statusLower.replaceFirstChar { it.uppercase() }
+                                bgColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f)
+                                textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                borderColor = null
+                            }
+                        }
+                    }
+                    isPast -> {
+                        // PWA: .lifecycle-step-btn.done — solid green, white text, ✓ prefix
+                        label = "✓ ${step.baseLabel}"
+                        bgColor = success
+                        textColor = Color.White
+                        borderColor = null
+                    }
+                    isActive -> {
+                        // PWA: .lifecycle-step-btn.current — solid accent fill, white text
+                        label = step.activeLabel
+                        bgColor = accent
+                        textColor = Color.White
+                        borderColor = null
+                    }
+                    else -> {
+                        // PWA: pending step — dim, not clickable yet
+                        label = step.baseLabel
+                        bgColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.06f)
+                        textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        borderColor = null
                     }
                 }
+
+                val clickHandler = if (isActive) step.onClick else null
+
+                Box(
+                    modifier = Modifier
+                        .background(bgColor, shape)
+                        .then(if (borderColor != null) Modifier.border(1.dp, borderColor, shape) else Modifier)
+                        .then(if (clickHandler != null) Modifier.clickable(onClick = clickHandler) else Modifier)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        label,
+                        fontSize = 11.sp,
+                        color = textColor,
+                        fontWeight = if (isActive || isPast || isDangerPast) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                }
+
                 if (idx < steps.size - 1) {
-                    Text("›", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+                    Text("›", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                 }
             }
-            // Approve step: Reject(✗) + Revise(↩) sub-buttons
+
+            // Approve step: Reject(✗) + Revise(↩) sub-buttons — matches PWA inline sub-actions
             if (isApprovalState(statusLower) && (onReject != null || onRevise != null)) {
                 onReject?.let { handler ->
                     Box(
