@@ -263,8 +263,8 @@ internal fun PrdDetailDialog(
                                 onClick = { onCancel(); onDismiss() },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
-                                    contentColor = MaterialTheme.colorScheme.error,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
                                 ),
                             ) { Text(stringResource(R.string.action_cancel)) }
                         }
