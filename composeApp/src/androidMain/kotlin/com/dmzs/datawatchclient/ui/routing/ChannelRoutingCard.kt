@@ -74,7 +74,7 @@ public fun ChannelRoutingCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.channel_routing_title))
+            PwaSectionTitle(stringResource(R.string.channel_routing_title), docsAnchor = "routing-rules")
 
             // Add rule form
             Text(

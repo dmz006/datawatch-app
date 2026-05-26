@@ -67,7 +67,7 @@ public fun SchedulesCard(vm: SchedulesViewModel = viewModel()) {
                 // v0.33.13 (B16): title matches PWA "Scheduled Events".
                 // Explicit Refresh button dropped — VM polls every 15 s
                 // and re-fetches on active-profile change.
-                PwaSectionTitle("Scheduled Events", modifier = Modifier.weight(1f))
+                PwaSectionTitle("Scheduled Events", modifier = Modifier.weight(1f), docsAnchor = "scheduled-events")
                 if (state.refreshing) {
                     androidx.compose.material3.CircularProgressIndicator(
                         strokeWidth = 2.dp,

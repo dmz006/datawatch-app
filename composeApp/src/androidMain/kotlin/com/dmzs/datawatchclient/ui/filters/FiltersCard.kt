@@ -82,7 +82,7 @@ public fun FiltersCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Output filters")
+        PwaSectionTitle("Output filters", docsAnchor = "output-filters")
         banner?.let {
             Text(
                 it,

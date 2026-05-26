@@ -741,7 +741,7 @@ private fun SecurityCard() {
 
 @Composable
 private fun CommsCard() {
-    Section(title = "Comms") {
+    Section(title = "Comms", docsAnchor = "communication-configuration") {
         Text(
             "Messaging channel configuration will land in Sprint 3 (see " +
                 "docs/plans/README.md F3). This card will mirror the PWA's " +
@@ -782,7 +782,7 @@ private fun AboutCard(activeProfile: ServerProfile?) {
         transport.stats().onSuccess { stats = it }
     }
 
-    Section(title = "About") {
+    Section(title = "About", docsAnchor = "api") {
         // S6-6 (#87): normalized to 12dp horizontal / 8dp vertical per pwaCard standard.
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             // Live animated logo (matrix rain + eye + arcs + tablet frame).

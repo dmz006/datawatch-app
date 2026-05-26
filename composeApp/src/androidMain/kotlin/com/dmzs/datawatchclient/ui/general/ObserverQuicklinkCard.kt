@@ -26,7 +26,7 @@ public fun ObserverQuicklinkCard(onNavigateToMonitor: () -> Unit) {
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.observer_quicklink_title))
+            PwaSectionTitle(stringResource(R.string.observer_quicklink_title), docsAnchor = "federated-observer")
             OutlinedButton(
                 onClick = onNavigateToMonitor,
                 modifier = Modifier.padding(top = 4.dp),

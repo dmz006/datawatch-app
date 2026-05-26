@@ -53,6 +53,7 @@ import com.dmzs.datawatchclient.transport.dto.DashboardCardDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
@@ -119,6 +120,7 @@ public fun DashboardScreen(
                     )
                 },
                 actions = {
+                    DocsLinkAction("datawatch-definitions.md#dashboard")
                     IconButton(onClick = { editSheetOpen = true }) {
                         Icon(
                             Icons.Filled.Edit,

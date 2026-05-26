@@ -68,7 +68,7 @@ public fun AuditLogCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle("Audit Log", docsAnchor = "architecture.md")
+        PwaSectionTitle("Audit Log", docsAnchor = "audit-log")
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(

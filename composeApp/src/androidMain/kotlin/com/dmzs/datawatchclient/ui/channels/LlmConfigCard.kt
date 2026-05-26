@@ -116,7 +116,7 @@ public fun LlmConfigCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("LLM Configuration")
+        PwaSectionTitle("LLM Configuration", docsAnchor = "llms")
         banner?.let {
             Text(
                 it,

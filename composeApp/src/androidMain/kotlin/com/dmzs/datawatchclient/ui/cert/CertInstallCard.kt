@@ -53,7 +53,7 @@ public fun CertInstallCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("CA certificate")
+        PwaSectionTitle("CA certificate", docsAnchor = "security")
         if (base == null) {
             Text(
                 "No enabled server.",

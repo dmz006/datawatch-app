@@ -70,7 +70,7 @@ public fun CooldownCard() {
             .pwaCard()
             .padding(12.dp),
     ) {
-        PwaSectionTitle("Global Cooldown", docsAnchor = "api/sessions.md")
+        PwaSectionTitle("Global Cooldown", docsAnchor = "global-cooldown")
 
         banner?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)

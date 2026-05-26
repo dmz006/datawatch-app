@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
@@ -282,6 +283,9 @@ public fun NewSessionScreen(
                     IconButton(onClick = onCancel) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
+                },
+                actions = {
+                    DocsLinkAction("howto/new-session.md")
                 },
             )
         },

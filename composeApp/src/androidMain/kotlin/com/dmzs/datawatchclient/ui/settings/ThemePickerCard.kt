@@ -53,6 +53,7 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
             PwaSectionTitle(
                 stringResource(R.string.settings_theme_title),
                 modifier = Modifier.weight(1f),
+                docsAnchor = "settings",
             )
             ExposedDropdownMenuBox(
                 expanded = expanded,

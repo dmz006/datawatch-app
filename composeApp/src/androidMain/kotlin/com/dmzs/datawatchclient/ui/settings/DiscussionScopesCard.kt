@@ -134,7 +134,7 @@ public fun DiscussionScopesCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.discussion_scopes_title))
+            PwaSectionTitle(stringResource(R.string.discussion_scopes_title), docsAnchor = "discussion-scopes")
 
             Spacer(Modifier.height(8.dp))
 

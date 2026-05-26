@@ -71,7 +71,7 @@ internal fun LanguagePickerCard() {
             .pwaCard()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        PwaSectionTitle("Language / Whisper Language")
+        PwaSectionTitle("Language / Whisper Language", docsAnchor = "language")
         Row(
             modifier = Modifier
                 .fillMaxWidth()

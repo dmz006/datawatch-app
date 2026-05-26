@@ -77,7 +77,7 @@ public fun RoutingRulesCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.routing_rules_title))
+            PwaSectionTitle(stringResource(R.string.routing_rules_title), docsAnchor = "routing-rules")
 
             // Add rule form
             Text(

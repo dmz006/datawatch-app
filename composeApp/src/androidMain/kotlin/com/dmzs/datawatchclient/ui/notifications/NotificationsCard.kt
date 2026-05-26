@@ -42,7 +42,7 @@ public fun NotificationsCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("Notifications")
+        PwaSectionTitle("Notifications", docsAnchor = "notifications")
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,

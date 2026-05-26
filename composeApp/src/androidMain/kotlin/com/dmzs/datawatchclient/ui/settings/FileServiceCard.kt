@@ -52,7 +52,7 @@ public fun FileServiceCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.file_service_title))
+            PwaSectionTitle(stringResource(R.string.file_service_title), docsAnchor = "file-service")
 
             when {
                 loadError != null -> Text(

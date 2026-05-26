@@ -76,7 +76,7 @@ public fun McpChannelCard() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
     ) {
-        PwaSectionTitle("MCP Channel Bridge")
+        PwaSectionTitle("MCP Channel Bridge", docsAnchor = "mcp-server")
         banner?.let {
             Text(
                 it,

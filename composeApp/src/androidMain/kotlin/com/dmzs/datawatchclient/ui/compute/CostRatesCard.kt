@@ -71,7 +71,7 @@ public fun CostRatesCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.cost_rates_title))
+            PwaSectionTitle(stringResource(R.string.cost_rates_title), docsAnchor = "cost-rates")
             if (error != null || rates.isEmpty()) {
                 Text(
                     stringResource(R.string.cost_rates_none),
