@@ -9,6 +9,7 @@ import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.MatrixStatusDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.flow.Flow
 
@@ -1309,6 +1310,9 @@ public interface TransportClient {
         action: String? = null,
         limit: Int = 20,
     ): Result<com.dmzs.datawatchclient.transport.dto.AuditListDto>
+
+    /** GET /api/matrix/status — Matrix backend connection state. */
+    public suspend fun fetchMatrixStatus(): Result<MatrixStatusDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */

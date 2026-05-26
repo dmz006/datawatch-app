@@ -99,6 +99,7 @@ public fun ObserverScreen(
                 com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
                 com.dmzs.datawatchclient.ui.settings.ObserverCard()
+                MatrixStatusCard()
             }
         }
     }
