@@ -2747,6 +2747,13 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun listAlertRuleFirings(): Result<com.dmzs.datawatchclient.transport.dto.AlertRuleFiringsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/alert-rules/firings") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- Observer cards: Cooldown, Analytics, Audit ----
 
     override suspend fun getCooldownStatus(): Result<com.dmzs.datawatchclient.transport.dto.CooldownStatusDto> =

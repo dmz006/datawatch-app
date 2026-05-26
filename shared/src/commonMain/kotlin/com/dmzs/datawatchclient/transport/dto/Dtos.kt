@@ -1754,3 +1754,17 @@ public data class OpenCodeModelsResponseDto(
     val models: List<OpenCodeModelDto> = emptyList(),
     @SerialName("default_model") val defaultModel: String = "",
 )
+
+@Serializable
+public data class AlertRuleFiringDto(
+    @SerialName("rule_name") val ruleName: String = "",
+    @SerialName("fired_at") val firedAt: String = "",
+    val value: Double = 0.0,
+    val threshold: Double = 0.0,
+    val pod: String? = null,
+)
+
+@Serializable
+public data class AlertRuleFiringsDto(
+    val firings: List<AlertRuleFiringDto> = emptyList(),
+)
