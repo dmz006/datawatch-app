@@ -91,15 +91,17 @@ public fun ObserverScreen(
                 com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
                 com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
                 com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
+                com.dmzs.datawatchclient.ui.about.McpChannelCard()
+                CommBackendsCard()
+                MatrixStatusCard()
                 com.dmzs.datawatchclient.ui.memory.MemoryCard()
                 com.dmzs.datawatchclient.ui.memory.MempalaceActionsCard()
                 com.dmzs.datawatchclient.ui.schedules.SchedulesCard()
                 com.dmzs.datawatchclient.ui.monitoring.CooldownCard()
                 com.dmzs.datawatchclient.ui.monitoring.SessionAnalyticsCard()
                 com.dmzs.datawatchclient.ui.monitoring.AuditLogCard()
+                KnowledgeGraphCard()
                 com.dmzs.datawatchclient.ui.ops.DaemonLogCard()
-                com.dmzs.datawatchclient.ui.settings.ObserverCard()
-                MatrixStatusCard()
             }
         }
     }
