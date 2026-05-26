@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.alerts
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -19,34 +20,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +55,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,11 +87,6 @@ public fun AlertsScreen(
     val state by vm.state.collectAsState()
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
-    val schedulesVm: com.dmzs.datawatchclient.ui.schedules.SchedulesViewModel =
-        androidx.lifecycle.viewmodel.compose.viewModel()
-    var scheduleFor by remember { mutableStateOf<Session?>(null) }
-    var sessionFilter by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(state.selectedTab) { sessionFilter = null }
 
     Scaffold(
         topBar = {
@@ -104,16 +95,6 @@ public fun AlertsScreen(
                 reachable = reachable,
                 lastProbeEpochMs = lastProbeEpochMs,
                 onRetry = vm::refresh,
-                onToggleSort = {
-                    vm.setSortMode(
-                        if (state.sortMode == AlertsViewModel.SortMode.BySession) {
-                            AlertsViewModel.SortMode.Chronological
-                        } else {
-                            AlertsViewModel.SortMode.BySession
-                        },
-                    )
-                },
-                onDismissAll = vm::dismissAll,
                 onSelectProfile = vm::selectProfile,
                 onSelectAll = vm::selectAllServers,
             )
@@ -179,44 +160,94 @@ public fun AlertsScreen(
                 )
             }
 
-            // Per-tab chip filters + search bar (PWA secondary nav inside each tab).
+            // PWA-style filter bar: 🔔 count + controls + chips + search.
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 3.dp,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    // Row 1: 🔔 N alerts + sort + ✕ + 🔕 + ↻
+                    val totalCount = state.chipCounts[AlertsViewModel.ChipFilter.All] ?: 0
+                    val sortLabel = if (state.sortMode == AlertsViewModel.SortMode.BySession) {
+                        "⏷ ${stringResource(R.string.alert_sort_session)}"
+                    } else {
+                        "🕒 ${stringResource(R.string.alert_sort_chrono)}"
+                    }
+                    val dwBorder = Color(0xFF2D3148)
+                    val controlShape = RoundedCornerShape(6.dp)
+                    @Composable
+                    fun ControlBtn(label: String, onClick: () -> Unit) {
+                        Box(
+                            modifier = Modifier
+                                .border(1.dp, dwBorder, controlShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, controlShape)
+                                .clickable(onClick = onClick)
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                        ) {
+                            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        AlertsViewModel.ChipFilter.entries.forEach { chip ->
-                            val label = when (chip) {
-                                AlertsViewModel.ChipFilter.All -> stringResource(R.string.alert_chip_all)
-                                AlertsViewModel.ChipFilter.Prompt -> stringResource(R.string.alert_chip_prompt)
-                                AlertsViewModel.ChipFilter.Error -> stringResource(R.string.alert_chip_error)
-                                AlertsViewModel.ChipFilter.Warn -> stringResource(R.string.alert_chip_warn)
-                                AlertsViewModel.ChipFilter.Info -> stringResource(R.string.alert_chip_info)
-                            }
-                            val chipColor = when (chip) {
-                                AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
-                                AlertsViewModel.ChipFilter.Prompt -> Color(0xFFF59E0B)
-                                AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
-                                else -> null
-                            }
-                            FilterChip(
-                                selected = state.chipFilter == chip,
-                                onClick = { vm.setChipFilter(chip) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                                colors = if (chipColor != null) androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = chipColor.copy(alpha = 0.18f),
-                                    selectedLabelColor = chipColor,
-                                ) else androidx.compose.material3.FilterChipDefaults.filterChipColors(),
+                        Text(
+                            "🔔 $totalCount ${if (totalCount == 1) "alert" else "alerts"}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        ControlBtn(sortLabel) {
+                            vm.setSortMode(
+                                if (state.sortMode == AlertsViewModel.SortMode.BySession)
+                                    AlertsViewModel.SortMode.Chronological
+                                else AlertsViewModel.SortMode.BySession,
                             )
                         }
+                        ControlBtn("✕", vm::dismissAll)
+                        ControlBtn("🔕") { vm.dismissAll() }
+                        ControlBtn("↻", vm::refresh)
                     }
+                    HorizontalDivider(color = dwBorder.copy(alpha = 0.5f))
+                    // Row 2: chips with emoji + ×N counts
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        AlertsViewModel.ChipFilter.entries.forEach { chip ->
+                            val count = state.chipCounts[chip] ?: 0
+                            val chipLabel = when (chip) {
+                                AlertsViewModel.ChipFilter.All -> "${stringResource(R.string.alert_chip_all)} ×$count"
+                                AlertsViewModel.ChipFilter.Prompt -> "🟡 ${stringResource(R.string.alert_chip_prompt)} ×$count"
+                                AlertsViewModel.ChipFilter.Error -> "🔴 ${stringResource(R.string.alert_chip_error)} ×$count"
+                                AlertsViewModel.ChipFilter.Warn -> "🟠 ${stringResource(R.string.alert_chip_warn)} ×$count"
+                                AlertsViewModel.ChipFilter.Info -> "⚪ ${stringResource(R.string.alert_chip_info)} ×$count"
+                            }
+                            val chipBorderColor = when (chip) {
+                                AlertsViewModel.ChipFilter.Prompt, AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
+                                AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                            val isSelected = state.chipFilter == chip
+                            val chipBg = if (isSelected) chipBorderColor else MaterialTheme.colorScheme.surfaceVariant
+                            val chipFg = if (isSelected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface
+                            Box(
+                                modifier = Modifier
+                                    .border(1.dp, chipBorderColor, RoundedCornerShape(10.dp))
+                                    .background(chipBg, RoundedCornerShape(10.dp))
+                                    .clickable { vm.setChipFilter(chip) }
+                                    .padding(horizontal = 10.dp, vertical = 3.dp),
+                            ) {
+                                Text(chipLabel, fontSize = 12.sp, color = chipFg)
+                            }
+                        }
+                    }
+                    // Row 3: search
                     OutlinedTextField(
                         value = state.searchQuery,
                         onValueChange = vm::setSearch,
@@ -231,57 +262,7 @@ public fun AlertsScreen(
                 }
             }
 
-            // Session sub-tabs when Active tab has 2+ groups (per-session quick filter).
-            if (state.selectedTab == AlertsViewModel.Tab.Active && state.active.size >= 2) {
-                val activeGroups = state.active
-                val filterIdx = if (sessionFilter == null) 0 else
-                    activeGroups.indexOfFirst { it.sessionId == sessionFilter }
-                        .let { if (it < 0) 0 else it + 1 }
-                ScrollableTabRow(
-                    selectedTabIndex = filterIdx,
-                    edgePadding = 8.dp,
-                    containerColor = MaterialTheme.colorScheme.background,
-                ) {
-                    Tab(
-                        selected = sessionFilter == null,
-                        onClick = { sessionFilter = null },
-                        text = {
-                            Text(
-                                stringResource(R.string.alerts_filter_all),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        },
-                    )
-                    activeGroups.forEach { group ->
-                        val serverName = state.groupProfileNames[group.sessionId]
-                        val shortLabel = if (serverName != null) {
-                            val shortId = group.sessionId.substringAfterLast('-').take(5)
-                            "${serverName.take(7)}/$shortId"
-                        } else {
-                            group.session?.name
-                                ?.takeIf { it.isNotBlank() }
-                                ?.take(10)
-                                ?: group.sessionId.substringAfterLast('-').take(8)
-                        }
-                        Tab(
-                            selected = sessionFilter == group.sessionId,
-                            onClick = { sessionFilter = group.sessionId },
-                            text = {
-                                Text(
-                                    shortLabel,
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            },
-                        )
-                    }
-                }
-            }
-
-            val groups = if (sessionFilter != null && state.selectedTab == AlertsViewModel.Tab.Active) {
-                state.active.filter { it.sessionId == sessionFilter }
-            } else {
-                state.visibleGroups
-            }
+            val groups = state.visibleGroups
 
             if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
                 // Flat chronological view scoped to the current tab's groups.
@@ -295,17 +276,16 @@ public fun AlertsScreen(
                         )
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
                         items(flatChrono, key = { it.id }) { alert ->
                             AlertCard(
                                 alert = alert,
                                 showQuickReply = false,
                                 onQuickReply = { alert.sessionId?.let { onOpenSession(it) } },
-                                onSchedule = { /* no session in flat view */ },
-                                onOpenSession = { alert.sessionId?.let { onOpenSession(it) } },
                                 onMarkRead = { vm.markAlertRead(alert.id) },
                             )
-                            HorizontalDivider()
                         }
                     }
                 }
@@ -346,7 +326,6 @@ public fun AlertsScreen(
                                     group.session?.let { onOpenSession(it.id) }
                                 },
                                 onDismiss = { vm.dismissSession(group.sessionId) },
-                                onSchedule = { scheduleFor = group.session },
                                 onMarkRead = vm::markAlertRead,
                             )
                         }
@@ -356,18 +335,6 @@ public fun AlertsScreen(
         }
     }
 
-    scheduleFor?.let { s ->
-        val seed = s.lastPrompt?.take(200) ?: s.taskSummary ?: s.id
-        com.dmzs.datawatchclient.ui.schedules.ScheduleDialog(
-            initialTask = seed,
-            title = "Schedule reply to ${s.name ?: s.id}",
-            onConfirm = { task, cron, enabled ->
-                schedulesVm.create(task, cron, enabled, sessionId = s.id)
-                scheduleFor = null
-            },
-            onDismiss = { scheduleFor = null },
-        )
-    }
 }
 
 /**
@@ -382,8 +349,6 @@ private fun AlertsTopBar(
     reachable: Boolean? = null,
     lastProbeEpochMs: Long? = null,
     onRetry: () -> Unit = {},
-    onToggleSort: () -> Unit,
-    onDismissAll: () -> Unit,
     onSelectProfile: (String) -> Unit,
     onSelectAll: () -> Unit,
 ) {
@@ -441,24 +406,6 @@ private fun AlertsTopBar(
             }
         },
         actions = {
-            IconButton(onClick = onToggleSort) {
-                Icon(
-                    Icons.Filled.SortByAlpha,
-                    contentDescription = stringResource(R.string.alert_sort_tip),
-                    tint = if (state.sortMode == AlertsViewModel.SortMode.Chronological) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-            }
-            IconButton(onClick = onDismissAll) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.alert_dismiss_all_tip),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
             if (!state.allServersMode && state.activeProfile != null) {
                 ReachabilityDot(
                     reachable = reachable,
@@ -487,86 +434,83 @@ private fun AlertGroupCard(
     onToggleExpand: () -> Unit,
     onOpenSession: () -> Unit,
     onDismiss: () -> Unit,
-    onSchedule: () -> Unit,
     onMarkRead: (String) -> Unit,
 ) {
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 80.dp.toPx() }
     val stateColor = stateAccentColor(group.state)
+    val dwBorder = Color(0xFF2D3148)
+    val cardShape = RoundedCornerShape(6.dp)
+    // PWA session card: border:1px solid var(--border); border-radius:6px; margin-bottom:10px
     Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .pointerInput(group.sessionId) {
-                    if (group.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET) return@pointerInput
-                    var dx = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { dx = 0f },
-                        onDragEnd = {
-                            if (dx < -swipeThresholdPx) onDismiss()
-                        },
-                        onDragCancel = { dx = 0f },
-                    ) { _, delta -> dx += delta }
-                },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .border(1.dp, dwBorder, cardShape)
+            .background(MaterialTheme.colorScheme.surface, cardShape)
+            .pointerInput(group.sessionId) {
+                if (group.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET) return@pointerInput
+                var dx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dx = 0f },
+                    onDragEnd = { if (dx < -swipeThresholdPx) onDismiss() },
+                    onDragCancel = { dx = 0f },
+                ) { _, delta -> dx += delta }
+            },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            // Session header: ▼/▶ | name | state | [auto] count · last HH:MM:SS
             Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onToggleExpand)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpand)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     if (expanded) "▼" else "▶",
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Text(
+                    group.label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable(onClick = onOpenSession),
+                )
+                if (group.state != null) {
                     Text(
-                        group.label,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        stateLabel(group.state),
+                        fontSize = 11.sp,
+                        color = stateColor,
+                        maxLines = 1,
+                    )
+                }
+                serverName?.let { name ->
+                    Text(
+                        name,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clickable(onClick = onOpenSession),
                     )
-                    if (group.state != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(stateColor, CircleShape),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            stateLabel(group.state),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = stateColor,
-                            maxLines = 1,
-                        )
-                    }
-                    serverName?.let { name ->
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            name,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
+                // right-aligned: count · last HH:MM:SS (matches PWA margin-left:auto)
+                Spacer(modifier = Modifier.weight(1f))
+                val lastTs = group.alerts.firstOrNull()?.createdAt
+                val countText = "${group.alerts.size} alert${if (group.alerts.size == 1) "" else "s"}"
+                val lastText = if (lastTs != null) " · last ${formatAlertTime(lastTs)}" else ""
                 Text(
-                    "${group.alerts.size} alert${if (group.alerts.size == 1) "" else "s"}",
-                    style = MaterialTheme.typography.labelSmall,
+                    "$countText$lastText",
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = if (lastTs != null) FontFamily.Monospace else FontFamily.Default,
+                    maxLines = 1,
                 )
             }
 
@@ -574,144 +518,153 @@ private fun AlertGroupCard(
                 val canQuickReply =
                     group.session?.state == SessionState.Waiting &&
                         group.sessionId != AlertsViewModel.AlertGroup.SYSTEM_BUCKET
-                group.alerts.forEachIndexed { idx, alert ->
-                    AlertCard(
-                        alert = alert,
-                        showQuickReply = canQuickReply && idx == 0,
-                        onQuickReply = { onOpenSession() },
-                        onSchedule = onSchedule,
-                        onOpenSession = onOpenSession,
-                        onMarkRead = { onMarkRead(alert.id) },
-                    )
-                    HorizontalDivider()
+                // PWA uses padding:6px 10px on the content div, no dividers between alerts
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    group.alerts.forEachIndexed { idx, alert ->
+                        AlertCard(
+                            alert = alert,
+                            showQuickReply = canQuickReply && idx == 0,
+                            onQuickReply = { onOpenSession() },
+                            onMarkRead = { onMarkRead(alert.id) },
+                            sessionState = group.state,
+                        )
+                    }
                 }
-            } else {
-                HorizontalDivider()
             }
         }
     }
 }
 
 /**
- * Per-alert card. Left border is level-colored; title sits bold above
- * the body. PWA mirror: app.js:5583-5591.
+ * Per-alert card. Matches PWA renderRow: left border + badge + time + title in one Row,
+ * body below, quick-reply select for waiting sessions (first alert only).
  */
 @Composable
 private fun AlertCard(
     alert: Alert,
     showQuickReply: Boolean,
     onQuickReply: () -> Unit,
-    onSchedule: () -> Unit,
-    onOpenSession: () -> Unit,
     onMarkRead: () -> Unit,
+    sessionState: SessionState? = null,
 ) {
-    val isPromptType = alert.type.contains("input", ignoreCase = true)
-    val levelColor = when {
-        isPromptType -> Color(0xFFF59E0B)
-        else -> severityColor(alert.severity)
+    // Prompt: waiting_input session OR type contains "input" OR title matches PWA regex.
+    val isPromptType = sessionState == SessionState.Waiting ||
+        alert.type.contains("input", ignoreCase = true) ||
+        alert.type == "needs_input" || alert.type == "input_needed" ||
+        Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(alert.title)
+    val isError = alert.severity == AlertSeverity.Error
+
+    // Badge text, bg, text color — matches PWA kindBadge logic
+    val badgeText: String
+    val badgeBg: Color
+    val badgeFg: Color
+    val borderColor: Color
+    val bgColor: Color
+    when {
+        isPromptType -> {
+            badgeText = "🟡 PROMPT"
+            badgeBg = Color(0xFFF59E0B)
+            badgeFg = Color(0xFF0F1117) // var(--bg) = dark background
+            borderColor = Color(0xFFF59E0B)
+            bgColor = Color(0xFFF59E0B).copy(alpha = 0.08f)
+        }
+        isError -> {
+            badgeText = "🔴 ERROR"
+            badgeBg = Color(0xFFEF4444)
+            badgeFg = Color.White
+            borderColor = Color(0xFFEF4444)
+            bgColor = Color(0xFFEF4444).copy(alpha = 0.06f)
+        }
+        else -> {
+            badgeText = "⚪ ${alert.severity.name.lowercase()}"
+            badgeBg = MaterialTheme.colorScheme.surfaceVariant
+            badgeFg = MaterialTheme.colorScheme.onSurfaceVariant
+            borderColor = Color(0xFF2D3148) // var(--border)
+            bgColor = Color.Transparent
+        }
     }
-    val bgColor = when {
-        isPromptType -> Color(0xFFF59E0B).copy(alpha = 0.08f)
-        alert.severity == AlertSeverity.Error -> Color(0xFFEF4444).copy(alpha = 0.08f)
-        else -> MaterialTheme.colorScheme.surface
-    }
+
+    // PWA: margin:4px 0; border-radius:0 4px 4px 0 (left flat, right rounded)
+    val alertCardShape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .background(bgColor, alertCardShape),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .width(3.dp)
-                    .background(levelColor),
-        ) {
+        // Left border — 3dp colored (no radius on left side)
+        Box(modifier = Modifier.width(3.dp).background(borderColor)) {
             Spacer(modifier = Modifier.fillMaxSize())
         }
         Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .background(bgColor)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Badge + time + title in one Row (matches PWA flex row)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(badgeBg, RoundedCornerShape(3.dp))
+                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                ) {
+                    Text(
+                        badgeText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = badgeFg,
+                    )
+                }
                 Text(
-                    alert.severity.name.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = levelColor,
-                    fontWeight = FontWeight.Bold,
+                    formatAlertTime(alert.createdAt),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    timeAgo(alert.createdAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (alert.title.isNotBlank()) {
-                Text(
-                    alert.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                if (alert.title.isNotBlank()) {
+                    Text(
+                        alert.title,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (alert.message.isNotBlank()) {
                 Text(
                     alert.message.take(500),
-                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                if (showQuickReply) {
-                    OutlinedButton(
-                        onClick = onQuickReply,
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 10.dp,
-                                vertical = 4.dp,
-                            ),
-                    ) {
-                        Text(stringResource(R.string.alerts_action_reply), style = MaterialTheme.typography.labelSmall)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
+            // Quick reply — for waiting sessions, first alert only
+            if (showQuickReply) {
                 OutlinedButton(
-                    onClick = onSchedule,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
+                    onClick = onQuickReply,
+                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 10.dp, vertical = 2.dp,
+                    ),
                 ) {
-                    Text(stringResource(R.string.alerts_action_schedule), style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.alerts_quick_reply_ph), fontSize = 11.sp)
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                OutlinedButton(
-                    onClick = onOpenSession,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 10.dp,
-                            vertical = 4.dp,
-                        ),
-                ) {
-                    Text(stringResource(R.string.action_open), style = MaterialTheme.typography.labelSmall)
-                }
-                if (!alert.read) {
-                    Spacer(modifier = Modifier.width(4.dp))
+            }
+            // ✓ mark-read — subtle; not in PWA but needed for Android UX
+            if (!alert.read) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(
                         onClick = onMarkRead,
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 10.dp,
-                                vertical = 4.dp,
-                            ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 6.dp, vertical = 2.dp,
+                        ),
                     ) {
-                        Text("✓", style = MaterialTheme.typography.labelSmall)
+                        Text("✓", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -730,12 +683,9 @@ private fun severityColor(s: AlertSeverity): Color =
 @Composable
 private fun stateAccentColor(s: SessionState?): Color =
     when (s) {
-        SessionState.Running -> Color(0xFF10B981)
-        SessionState.Waiting -> Color(0xFF3B82F6)
-        SessionState.RateLimited -> Color(0xFFF59E0B)
-        SessionState.Error, SessionState.Killed, SessionState.Completed ->
-            MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        SessionState.Running -> Color(0xFF10B981) // var(--success)
+        SessionState.Waiting -> Color(0xFFF59E0B) // var(--warning) — matches PWA waiting_input
+        else -> MaterialTheme.colorScheme.onSurfaceVariant // var(--text2)
     }
 
 private fun stateLabel(s: SessionState?): String =
@@ -745,15 +695,11 @@ private fun stateLabel(s: SessionState?): String =
         else -> s.name.lowercase()
     }
 
-private fun timeAgo(ts: kotlinx.datetime.Instant): String {
-    val now = kotlinx.datetime.Clock.System.now()
-    val deltaSec = (now - ts).inWholeSeconds
-    return when {
-        deltaSec < 60 -> "just now"
-        deltaSec < 3_600 -> "${deltaSec / 60}m ago"
-        deltaSec < 86_400 -> "${deltaSec / 3_600}h ago"
-        else -> "${deltaSec / 86_400}d ago"
-    }
+/** Formats alert timestamp as HH:MM:SS — matches PWA toLocaleTimeString('en-GB', {hour12:false}). */
+private fun formatAlertTime(ts: kotlinx.datetime.Instant): String {
+    val inst = java.time.Instant.ofEpochMilli(ts.toEpochMilliseconds())
+    val ldt = java.time.LocalDateTime.ofInstant(inst, java.time.ZoneId.systemDefault())
+    return "%02d:%02d:%02d".format(ldt.hour, ldt.minute, ldt.second)
 }
 
 @Composable

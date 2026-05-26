@@ -106,6 +106,8 @@ public class AlertsViewModel : ViewModel() {
          * (backward-compat: all alerts contribute to the badge).
          */
         val watchedAlertCount: Int = 0,
+        /** Per-chip counts computed from the current tab's alerts (search-filtered, not chip-filtered). */
+        val chipCounts: Map<ChipFilter, Int> = emptyMap(),
         /** All enabled profiles for the server picker. */
         val allProfiles: List<ServerProfile> = emptyList(),
         /** True when the user has selected "All servers" mode. */
@@ -341,13 +343,21 @@ public class AlertsViewModel : ViewModel() {
             _sortMode,
             _search,
         ) { inner, chip, sort, search ->
-            fun matchesChip(alert: Alert): Boolean =
+            fun matchesSearch(alert: Alert): Boolean =
+                search.isBlank() ||
+                    alert.title.contains(search, ignoreCase = true) ||
+                    alert.message.contains(search, ignoreCase = true)
+
+            val promptRegex = Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE)
+            fun matchesChip(alert: Alert, sessState: SessionState?): Boolean =
                 when (chip) {
                     ChipFilter.All -> true
                     ChipFilter.Prompt ->
-                        alert.type.contains("input", ignoreCase = true) ||
+                        sessState == SessionState.Waiting ||
+                            alert.type.contains("input", ignoreCase = true) ||
                             alert.type == "needs_input" ||
-                            alert.type == "input_needed"
+                            alert.type == "input_needed" ||
+                            promptRegex.containsMatchIn(alert.title)
                     ChipFilter.Error ->
                         alert.severity == AlertSeverity.Error ||
                             alert.type.contains("error", ignoreCase = true)
@@ -357,19 +367,39 @@ public class AlertsViewModel : ViewModel() {
                         alert.severity == AlertSeverity.Info
                 }
 
-            fun matchesSearch(alert: Alert): Boolean =
-                search.isBlank() ||
-                    alert.title.contains(search, ignoreCase = true) ||
-                    alert.message.contains(search, ignoreCase = true)
-
             fun filterGroup(group: AlertGroup): AlertGroup? {
-                val filtered = group.alerts.filter { matchesChip(it) && matchesSearch(it) }
+                val filtered = group.alerts.filter { matchesChip(it, group.state) && matchesSearch(it) }
                 return if (filtered.isEmpty()) null else group.copy(alerts = filtered)
             }
 
             val filteredActive = inner.active.mapNotNull { filterGroup(it) }
             val filteredHistorical = inner.historical.mapNotNull { filterGroup(it) }
             val filteredSystem = inner.system.mapNotNull { filterGroup(it) }
+
+            // Chip counts: count from current tab's alerts filtered by search only (not chip).
+            // Matches PWA catOf() which also considers sessState === 'waiting_input'.
+            val rawTabGroups = when (inner.selectedTab) {
+                Tab.Active -> inner.active
+                Tab.Historical -> inner.historical
+                Tab.System -> inner.system
+            }
+            val rawTabGroupedAlerts = rawTabGroups.flatMap { group ->
+                group.alerts.filter { matchesSearch(it) }.map { Pair(it, group.state) }
+            }
+            fun isPromptAlert(alert: Alert, sessState: SessionState?): Boolean =
+                sessState == SessionState.Waiting ||
+                    alert.type.contains("input", ignoreCase = true) ||
+                    alert.type == "needs_input" || alert.type == "input_needed" ||
+                    promptRegex.containsMatchIn(alert.title)
+            val chipCounts = mapOf(
+                ChipFilter.All to rawTabGroupedAlerts.size,
+                ChipFilter.Prompt to rawTabGroupedAlerts.count { (a, s) -> isPromptAlert(a, s) },
+                ChipFilter.Error to rawTabGroupedAlerts.count { (a, _) ->
+                    a.severity == AlertSeverity.Error || a.type.contains("error", ignoreCase = true)
+                },
+                ChipFilter.Warn to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Warning },
+                ChipFilter.Info to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Info },
+            )
 
             val flatChrono: List<Alert> =
                 if (sort == SortMode.Chronological) {
@@ -388,6 +418,7 @@ public class AlertsViewModel : ViewModel() {
                 sortMode = sort,
                 searchQuery = search,
                 flatChronoAlerts = flatChrono,
+                chipCounts = chipCounts,
             )
         }
 
