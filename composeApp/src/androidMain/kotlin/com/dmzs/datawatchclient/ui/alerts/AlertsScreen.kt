@@ -133,7 +133,7 @@ public fun AlertsScreen(
                     onClick = { vm.selectTab(AlertsViewModel.Tab.Active) },
                     text = {
                         Text(
-                            "${stringResource(R.string.alerts_active_tab_label)} (${state.active.sumOf { it.alerts.size }})",
+                            "${stringResource(R.string.alerts_active_tab_label)} (${state.active.size})",
                             style = MaterialTheme.typography.labelMedium,
                         )
                     },
@@ -143,7 +143,7 @@ public fun AlertsScreen(
                     onClick = { vm.selectTab(AlertsViewModel.Tab.Historical) },
                     text = {
                         Text(
-                            "${stringResource(R.string.alerts_historical_tab_label)} (${state.historical.sumOf { it.alerts.size }})",
+                            "${stringResource(R.string.alerts_historical_tab_label)} (${state.historical.size})",
                             style = MaterialTheme.typography.labelMedium,
                         )
                     },
@@ -500,13 +500,20 @@ private fun AlertGroupCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                // right-aligned: count · last HH:MM:SS (matches PWA margin-left:auto)
+                // right-aligned: count [· 🟡 N] · last HH:MM:SS (matches PWA margin-left:auto)
                 Spacer(modifier = Modifier.weight(1f))
                 val lastTs = group.alerts.firstOrNull()?.createdAt
+                val promptCount = group.alerts.count { a ->
+                    group.state == SessionState.Waiting ||
+                        a.type.contains("input", ignoreCase = true) ||
+                        a.type == "needs_input" || a.type == "input_needed" ||
+                        Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(a.title)
+                }
                 val countText = "${group.alerts.size} alert${if (group.alerts.size == 1) "" else "s"}"
+                val promptHint = if (promptCount > 0) " · 🟡 $promptCount" else ""
                 val lastText = if (lastTs != null) " · last ${formatAlertTime(lastTs)}" else ""
                 Text(
-                    "$countText$lastText",
+                    "$countText$promptHint$lastText",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = if (lastTs != null) FontFamily.Monospace else FontFamily.Default,
@@ -691,8 +698,9 @@ private fun stateAccentColor(s: SessionState?): Color =
 private fun stateLabel(s: SessionState?): String =
     when (s) {
         null -> ""
-        SessionState.Waiting -> "waiting input"
-        else -> s.name.lowercase()
+        SessionState.Waiting -> "🟠 waiting input"
+        SessionState.Running -> "🟢 running"
+        else -> "✅ ${s.name.lowercase()}"
     }
 
 /** Formats alert timestamp as HH:MM:SS — matches PWA toLocaleTimeString('en-GB', {hour12:false}). */
