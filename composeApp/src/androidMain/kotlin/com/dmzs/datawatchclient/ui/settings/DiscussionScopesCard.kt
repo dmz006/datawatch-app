@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,9 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -49,6 +54,8 @@ public fun DiscussionScopesCard() {
     var dialogMessage by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var sendResult by remember { mutableStateOf<String?>(null) }
+    var newDiscussionId by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
     val sendOkLabel = stringResource(R.string.discussion_send_ok)
 
     suspend fun transport(): TransportClient? {
@@ -59,11 +66,13 @@ public fun DiscussionScopesCard() {
         return if (p != null) ServiceLocator.transportFor(p) else null
     }
 
-    LaunchedEffect(Unit) {
+    suspend fun reload() {
         transport()?.listDiscussions()
             ?.onSuccess { discussions = it.discussions; loadError = null }
             ?.onFailure { loadError = it.message }
     }
+
+    LaunchedEffect(Unit) { reload() }
 
     // Write-message dialog
     selectedDiscussion?.let { discId ->
@@ -134,7 +143,12 @@ public fun DiscussionScopesCard() {
             .pwaCard(),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.discussion_scopes_title), docsAnchor = "discussion-scopes")
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PwaSectionTitle(stringResource(R.string.discussion_scopes_title), docsAnchor = "discussion-scopes", modifier = Modifier.weight(1f))
+                IconButton(onClick = { scope.launch { reload() } }) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
 
@@ -189,6 +203,34 @@ public fun DiscussionScopesCard() {
                         if (idx < discussions.lastIndex) HorizontalDivider()
                     }
                 }
+            }
+
+            // New Discussion create form
+            HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = newDiscussionId,
+                    onValueChange = { newDiscussionId = it },
+                    label = { Text("Discussion ID") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = {
+                        scope.launch {
+                            creating = true
+                            transport()?.createDiscussionScope(newDiscussionId.trim())
+                                ?.onSuccess { newDiscussionId = ""; reload() }
+                                ?.onFailure { loadError = it.message }
+                            creating = false
+                        }
+                    },
+                    enabled = !creating && newDiscussionId.isNotBlank(),
+                ) { Text("New Discussion") }
             }
         }
     }

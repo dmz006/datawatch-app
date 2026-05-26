@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.tailscale
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +8,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +49,16 @@ public fun TailscaleMeshCard() {
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<TailscaleStatusDto?>(null) }
     var loadError by remember { mutableStateOf<String?>(null) }
+    var actionResult by remember { mutableStateOf<String?>(null) }
+    var actionTitle by remember { mutableStateOf("") }
+    var actionBusy by remember { mutableStateOf(false) }
+
+    suspend fun activeTransport() = run {
+        val profiles = ServiceLocator.profileRepository.observeAll().first()
+        val activeId = ServiceLocator.activeServerStore.get()
+        profiles.firstOrNull { it.id == activeId && it.enabled }
+            ?.let { ServiceLocator.transportFor(it) }
+    }
 
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
@@ -180,6 +198,89 @@ public fun TailscaleMeshCard() {
                     }
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            actionBusy = true
+                            actionTitle = "Auth Key"
+                            activeTransport()?.generateTailscaleAuthKey()?.fold(
+                                onSuccess = { dto ->
+                                    actionResult = if (dto.error != null) "Error: ${dto.error}"
+                                    else buildString {
+                                        appendLine("Key:")
+                                        appendLine(dto.key)
+                                        dto.expiresAt?.let { appendLine("Expires: $it") }
+                                    }
+                                },
+                                onFailure = { actionResult = "Error: ${it.message}" },
+                            )
+                            actionBusy = false
+                        }
+                    },
+                    enabled = !actionBusy,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Auth Key", style = MaterialTheme.typography.labelSmall) }
+
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            actionBusy = true
+                            actionTitle = "Generate ACL"
+                            activeTransport()?.generateTailscaleAcl()?.fold(
+                                onSuccess = { dto ->
+                                    actionResult = dto.error ?: (dto.policy.ifBlank { "Done" })
+                                },
+                                onFailure = { actionResult = "Error: ${it.message}" },
+                            )
+                            actionBusy = false
+                        }
+                    },
+                    enabled = !actionBusy,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Gen ACL", style = MaterialTheme.typography.labelSmall) }
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            actionBusy = true
+                            actionTitle = "Push ACL"
+                            activeTransport()?.pushTailscaleAcl()?.fold(
+                                onSuccess = { dto ->
+                                    actionResult = dto.error ?: "ACL pushed successfully"
+                                },
+                                onFailure = { actionResult = "Error: ${it.message}" },
+                            )
+                            actionBusy = false
+                        }
+                    },
+                    enabled = !actionBusy,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Push ACL", style = MaterialTheme.typography.labelSmall) }
+            }
         }
+    }
+
+    actionResult?.let { result ->
+        AlertDialog(
+            onDismissRequest = { actionResult = null },
+            title = { Text(actionTitle) },
+            text = {
+                Text(
+                    result,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { actionResult = null }) { Text("Close") }
+            },
+        )
     }
 }

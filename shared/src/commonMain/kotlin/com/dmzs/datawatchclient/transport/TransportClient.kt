@@ -1122,6 +1122,15 @@ public interface TransportClient {
     /** GET /api/tailscale/status — Tailscale mesh status. */
     public suspend fun getTailscaleStatus(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleStatusDto>
 
+    /** POST /api/tailscale/auth/key — generate a Tailscale pre-auth key. */
+    public suspend fun generateTailscaleAuthKey(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAuthKeyDto>
+
+    /** POST /api/tailscale/acl/generate — generate a Tailscale ACL policy. */
+    public suspend fun generateTailscaleAcl(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAclDto>
+
+    /** POST /api/tailscale/acl/push — generate and push ACL policy to coordinator. */
+    public suspend fun pushTailscaleAcl(): Result<com.dmzs.datawatchclient.transport.dto.TailscaleAclDto>
+
     // ---- v0.81.0 Sprint 12: Pipelines + OrchestratorGraphs list ----
 
     /** GET /api/pipelines — list active pipelines. */
@@ -1288,6 +1297,12 @@ public interface TransportClient {
     /** GET /api/files/meta — file service metadata. */
     public suspend fun getFileServiceMeta(): Result<com.dmzs.datawatchclient.transport.dto.FileServiceMetaDto>
 
+    /** PUT /api/config — set the file service root path. */
+    public suspend fun setFileServiceRoot(path: String): Result<Unit>
+
+    /** POST /api/files — upload a file to the file service. */
+    public suspend fun uploadFile(bytes: ByteArray, fileName: String, destPath: String): Result<Unit>
+
     // ---- T30: Discussion Scopes ----
 
     /** GET /api/memory/discussion — list discussion scope IDs. */
@@ -1295,6 +1310,9 @@ public interface TransportClient {
 
     /** POST /api/memory/discussion/{id} — write a message to a discussion WAL. */
     public suspend fun writeDiscussionMessage(id: String, content: String): Result<com.dmzs.datawatchclient.transport.dto.DiscussionWriteResponseDto>
+
+    /** POST /api/memory/discussion/{id} — create a new discussion scope with an initial entry. */
+    public suspend fun createDiscussionScope(id: String): Result<Unit>
 
     // ---- T30: Encryption Status ----
 
