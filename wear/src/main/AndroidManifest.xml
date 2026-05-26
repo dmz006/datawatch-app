@@ -253,6 +253,34 @@
             android:name=".complication.ServerSwitchReceiver"
             android:exported="false"/>
 
+        <!-- PRD inline notification actions receiver -->
+        <receiver
+            android:name=".PrdActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.dmzs.datawatchclient.wear.ACTION_PRD_APPROVE"/>
+                <action android:name="com.dmzs.datawatchclient.wear.ACTION_PRD_REJECT"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Health ring complication — CPU + memory dual ring -->
+        <service
+            android:name=".complication.HealthRingComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="datawatch Health Ring"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.complications.datasource.ACTION_COMPLICATION_UPDATE_REQUEST"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT,RANGED_VALUE"/>
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300"/>
+        </service>
+
         <!-- WearableListenerService for session alerts (BL27, W-#107, BL303-W3). -->
         <service
             android:name=".WearAlertListenerService"
@@ -267,6 +295,7 @@
                 <data android:scheme="wear" android:pathPrefix="/datawatch/transcript"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/sessionDetail"/>
                 <data android:scheme="wear" android:pathPrefix="/datawatch/voiceReply"/>
+                <data android:scheme="wear" android:pathPrefix="/datawatch/prd-needs-review"/>
             </intent-filter>
         </service>
 

@@ -36,6 +36,12 @@ public class WearAlertListenerService : WearableListenerService() {
                 val summary = parts.getOrNull(1).orEmpty()
                 postGuardrailBlockNotification(sessionId, summary)
             }
+            PRD_REVIEW_PATH -> {
+                val parts = payload.split("\n", limit = 2)
+                val prdId = parts.getOrNull(0).orEmpty()
+                val prdTitle = parts.getOrNull(1).orEmpty()
+                postPrdReviewNotification(prdId, prdTitle)
+            }
         }
     }
 
@@ -48,6 +54,19 @@ public class WearAlertListenerService : WearableListenerService() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    /**
+     * Two short pulses — attention signal for waiting/error notifications.
+     * Distinct from the triple-buzz used for guardrail blocks.
+     * Pattern: delay 0, buzz 200ms, pause 100ms, buzz 200ms.
+     */
+    private fun doubleBuzz() {
+        runCatching {
+            val vib = getSystemService(Vibrator::class.java) ?: return
+            val pattern = longArrayOf(0, 200, 100, 200)
+            vib.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        }
+    }
 
     /**
      * BL303-W3 — triple-buzz haptic (long+pause+long+pause+long) to signal
@@ -145,6 +164,7 @@ public class WearAlertListenerService : WearableListenerService() {
             .setAutoCancel(true)
             .extend(wearExtender)
             .build()
+        doubleBuzz()
         nm.notify(NOTIFICATION_ID, notif)
     }
 
@@ -191,7 +211,81 @@ public class WearAlertListenerService : WearableListenerService() {
             .setAutoCancel(true)
             .extend(wearExtender)
             .build()
+        doubleBuzz()
         nm.notify(ERROR_NOTIFICATION_ID, notif)
+    }
+
+    private fun postPrdReviewNotification(prdId: String, prdTitle: String) {
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(
+                PRD_REVIEW_CHANNEL_ID,
+                "PRD Review",
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+        )
+
+        val approveIntent = PendingIntent.getBroadcast(
+            this,
+            PRD_APPROVE_REQ,
+            android.content.Intent("com.dmzs.datawatchclient.wear.ACTION_PRD_APPROVE").apply {
+                setPackage(packageName)
+                putExtra("prd_id", prdId)
+                putExtra("prd_action", "approve")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val rejectIntent = PendingIntent.getBroadcast(
+            this,
+            PRD_REJECT_REQ,
+            android.content.Intent("com.dmzs.datawatchclient.wear.ACTION_PRD_REJECT").apply {
+                setPackage(packageName)
+                putExtra("prd_id", prdId)
+                putExtra("prd_action", "reject")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val wearExtender = NotificationCompat.WearableExtender()
+            .setHintShowBackgroundOnly(false)
+            .addAction(
+                NotificationCompat.Action.Builder(
+                    android.R.drawable.ic_menu_send,
+                    "Approve",
+                    approveIntent,
+                ).build(),
+            )
+            .addAction(
+                NotificationCompat.Action.Builder(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Reject",
+                    rejectIntent,
+                ).build(),
+            )
+
+        val notif = NotificationCompat.Builder(this, PRD_REVIEW_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_dw_eye)
+            .setContentTitle("PRD Needs Review")
+            .setContentText(prdTitle.take(60))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(openAppIntent())
+            .setAutoCancel(true)
+            .addAction(
+                android.R.drawable.ic_menu_send,
+                "Approve",
+                approveIntent,
+            )
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "Reject",
+                rejectIntent,
+            )
+            .extend(wearExtender)
+            .build()
+
+        doubleBuzz()
+        nm.notify(PRD_REVIEW_NOTIFICATION_ID, notif)
     }
 
     public companion object {
@@ -202,6 +296,7 @@ public class WearAlertListenerService : WearableListenerService() {
         public const val GUARDRAIL_BLOCK_PATH: String = "/datawatch/guardrailBlock"
         public const val GUARDRAIL_DISMISS_ACTION: String =
             "com.dmzs.datawatchclient.wear.ACTION_GUARDRAIL_DISMISS"
+        public const val PRD_REVIEW_PATH: String = "/datawatch/prd-needs-review"
         private const val CHANNEL_ID: String = "dw_alerts"
         private const val NOTIFICATION_ID: Int = 1
         private const val COUNCIL_CHANNEL_ID: String = "dw_council"
@@ -212,5 +307,9 @@ public class WearAlertListenerService : WearableListenerService() {
         private const val GUARDRAIL_NOTIFICATION_ID: Int = 4
         private const val GUARDRAIL_APPROVE_REQ: Int = 40
         private const val GUARDRAIL_DISMISS_REQ: Int = 41
+        private const val PRD_REVIEW_CHANNEL_ID: String = "dw_prd_review"
+        private const val PRD_REVIEW_NOTIFICATION_ID: Int = 5
+        private const val PRD_APPROVE_REQ: Int = 50
+        private const val PRD_REJECT_REQ: Int = 51
     }
 }
