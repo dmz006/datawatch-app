@@ -257,6 +257,26 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun browsePlugins(registry: String): Result<com.dmzs.datawatchclient.transport.dto.CommunityPluginsBrowseDto> =
+        request {
+            client.get("${profile.baseUrl}/api/plugins/browse") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("registry", registry)
+            }.body()
+        }
+
+    override suspend fun installPlugin(registry: String, name: String): Result<com.dmzs.datawatchclient.transport.dto.PluginInstallResponseDto> =
+        request {
+            client.post("${profile.baseUrl}/api/plugins/install") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("registry", registry)
+                    put("name", name)
+                })
+            }.body()
+        }
+
     override suspend fun listBackends(): Result<com.dmzs.datawatchclient.transport.BackendsView> =
         request {
             // PWA ships `{llm: [{name, enabled, ...}, ...], active}`; older servers

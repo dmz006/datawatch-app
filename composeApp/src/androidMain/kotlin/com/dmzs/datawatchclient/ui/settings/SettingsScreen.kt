@@ -412,6 +412,8 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Plugins,
                                 )
+                                // v8.1.0 issue #134 — community registry browse + install
+                                com.dmzs.datawatchclient.ui.plugins.CommunityPluginsCard()
                             }
                             SettingsTab.About -> {
                                 AboutCard(activeProfile = activeProfile)

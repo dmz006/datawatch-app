@@ -96,6 +96,18 @@ public interface TransportClient {
     public suspend fun listPlugins(): Result<com.dmzs.datawatchclient.transport.dto.PluginsDto>
 
     /**
+     * GET /api/plugins/browse?registry=<name> — browse plugins from a registry.
+     * Defaults to "community" (the pre-seeded community registry).
+     */
+    public suspend fun browsePlugins(registry: String = "community"): Result<com.dmzs.datawatchclient.transport.dto.CommunityPluginsBrowseDto>
+
+    /**
+     * POST /api/plugins/install — install a plugin from a registry.
+     * body: `{"registry":"community","name":"<name>"}`
+     */
+    public suspend fun installPlugin(registry: String, name: String): Result<com.dmzs.datawatchclient.transport.dto.PluginInstallResponseDto>
+
+    /**
      * GET /api/backends — list of registered LLM backends + which is active.
      * Only returns backends where `enabled != false` (mirrors PWA renderBackendSelect
      * filter). The `shell` non-LLM backend is also excluded.
