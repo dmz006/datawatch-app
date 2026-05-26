@@ -1730,3 +1730,11 @@ public data class AuditEntryDto(
 public data class AuditListDto(
     val entries: List<AuditEntryDto> = emptyList(),
 )
+
+@Serializable
+public data class MatrixStatusDto(
+    val connected: Boolean = false,
+    val homeserver: String = "",
+    @SerialName("room_id") val roomId: String = "",
+    val error: String? = null,
+)

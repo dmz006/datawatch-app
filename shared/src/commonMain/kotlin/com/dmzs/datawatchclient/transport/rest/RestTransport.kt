@@ -88,6 +88,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto
+import com.dmzs.datawatchclient.transport.dto.MatrixStatusDto
 import com.dmzs.datawatchclient.transport.dto.SignalLinkStatusDto
 import com.dmzs.datawatchclient.transport.QuickCommandItem
 import kotlinx.serialization.json.Json
@@ -2797,6 +2798,13 @@ public class RestTransport(
                     action?.let { add("action=${it.replace(" ", "%20")}") }
                 }.joinToString("&")
             client.get("${profile.baseUrl}/api/audit?$params") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchMatrixStatus(): Result<MatrixStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/matrix/status") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
