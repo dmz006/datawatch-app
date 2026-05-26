@@ -1738,3 +1738,19 @@ public data class MatrixStatusDto(
     @SerialName("room_id") val roomId: String = "",
     val error: String? = null,
 )
+
+@Serializable
+public data class OpenCodeModelDto(
+    val id: String,
+    val label: String = "",
+    val provider: String = "",
+    @SerialName("provider_label") val providerLabel: String = "",
+    val kind: String = "",
+    val default: Boolean = false,
+)
+
+@Serializable
+public data class OpenCodeModelsResponseDto(
+    val models: List<OpenCodeModelDto> = emptyList(),
+    @SerialName("default_model") val defaultModel: String = "",
+)

@@ -162,6 +162,8 @@ public fun NewSessionScreen(
     var nonClaudeModels by remember { mutableStateOf<List<String>>(emptyList()) }
     var pickedNonClaudeModel by remember { mutableStateOf("") }
     var pickedNonClaudeEffort by remember { mutableStateOf("") }
+    // OpenCode grouped model list — Map of providerLabel → model ids.
+    var openCodeModelGroups by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     // Load claude options and whisperConfigured whenever the server profile changes.
     LaunchedEffect(selectedProfileId) {
         claudeModels = emptyList()
@@ -194,19 +196,35 @@ public fun NewSessionScreen(
         pickedClaudeModel = ""
         pickedClaudeEffort = ""
         nonClaudeModels = emptyList()
+        openCodeModelGroups = emptyMap()
         pickedNonClaudeModel = ""
         pickedNonClaudeEffort = ""
         val llm = pickedLlm ?: return@LaunchedEffect
         if (llm.kind.lowercase().contains("claude")) return@LaunchedEffect
         val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
-        // Registry-defined models take priority (opencode and others store them here)
+        val transport = ServiceLocator.transportFor(profile)
+        if (llm.kind.startsWith("opencode", ignoreCase = true)) {
+            transport.fetchOpenCodeModels().onSuccess { resp ->
+                val groups = resp.models
+                    .groupBy { it.providerLabel.ifBlank { it.provider } }
+                    .mapValues { (_, list) -> list.map { it.id } }
+                openCodeModelGroups = groups
+                // Pre-select the server-declared default if nothing chosen yet.
+                if (pickedNonClaudeModel.isBlank() && resp.defaultModel.isNotBlank()) {
+                    pickedNonClaudeModel = resp.defaultModel
+                }
+                nonClaudeModels = resp.models.map { it.id }
+            }
+            return@LaunchedEffect
+        }
+        // Registry-defined models take priority (other non-opencode backends store them here)
         val registryModels = llm.models.map { it.model }.filter { it.isNotBlank() }
         if (registryModels.isNotEmpty()) {
             nonClaudeModels = registryModels
             return@LaunchedEffect
         }
         // Dynamic fetch for ollama/openwebui
-        ServiceLocator.transportFor(profile).listModels(llm.kind).onSuccess { list ->
+        transport.listModels(llm.kind).onSuccess { list ->
             if (list.isNotEmpty()) nonClaudeModels = list
         }
     }
@@ -496,8 +514,17 @@ public fun NewSessionScreen(
                             onSelect = { pickedComputeNode = it },
                         )
                     }
-                    // Model picker — shown when the registry or API provides a list
-                    if (nonClaudeModels.isNotEmpty()) {
+                    // Model picker — grouped for opencode, flat for others
+                    if (openCodeModelGroups.isNotEmpty()) {
+                        GroupedModelDropdown(
+                            label = stringResource(R.string.new_session_model_label),
+                            groups = openCodeModelGroups,
+                            selected = pickedNonClaudeModel,
+                            noneLabel = stringResource(R.string.new_session_config_default),
+                            onSelect = { pickedNonClaudeModel = it },
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        )
+                    } else if (nonClaudeModels.isNotEmpty()) {
                         SimpleDropdown(
                             label = stringResource(R.string.new_session_model_label),
                             options = nonClaudeModels,
@@ -925,6 +952,66 @@ private fun SimpleDropdown(
                     text = { Text(opt) },
                     onClick = { onSelect(opt); expanded = false },
                 )
+            }
+        }
+    }
+}
+
+/** Model picker that renders provider group labels as non-selectable headers. */
+@Composable
+private fun GroupedModelDropdown(
+    label: String,
+    groups: Map<String, List<String>>,
+    selected: String,
+    noneLabel: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = selected.ifEmpty { noneLabel },
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                androidx.compose.material3.TextButton(
+                    onClick = { expanded = !expanded },
+                ) { Text("▾") }
+            },
+        )
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(noneLabel) },
+                onClick = { onSelect(""); expanded = false },
+            )
+            groups.forEach { (groupLabel, models) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            groupLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                    onClick = {},
+                    enabled = false,
+                )
+                models.forEach { model ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "  $model",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        onClick = { onSelect(model); expanded = false },
+                    )
+                }
             }
         }
     }

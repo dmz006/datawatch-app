@@ -1313,6 +1313,13 @@ public interface TransportClient {
 
     /** GET /api/matrix/status — Matrix backend connection state. */
     public suspend fun fetchMatrixStatus(): Result<MatrixStatusDto>
+
+    /**
+     * GET /api/opencode/models — live model list from the opencode binary.
+     * Returns grouped models with human-friendly [providerLabel] headers
+     * and a [defaultModel] id to pre-select.
+     */
+    public suspend fun fetchOpenCodeModels(): Result<com.dmzs.datawatchclient.transport.dto.OpenCodeModelsResponseDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
