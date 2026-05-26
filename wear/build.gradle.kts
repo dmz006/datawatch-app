@@ -2,11 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.play.publisher)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
-// play.publisher plugin removed: wear is distributed via the phone app's
-// AAB bundle (wearApp dependency in composeApp), not as a separate listing.
 
 val appVersion: String = providers.gradleProperty("DATAWATCH_APP_VERSION").get()
 val appVersionCode: Int =
@@ -30,7 +29,9 @@ android {
         applicationId = "com.dmzs.datawatchclient"
         minSdk = 28  // Support Wear OS 4.0+ (API 28+) for broader device compatibility
         targetSdk = 35
-        versionCode = appVersionCode
+        // Wear version codes are offset by 100_000 so phone (305) and wear (100305)
+        // occupy the same listing without version code collision in Play Console.
+        versionCode = appVersionCode + 100_000
         versionName = appVersion
     }
 
@@ -122,7 +123,14 @@ dependencies {
     testRuntimeOnly(libs.junit5.engine)
 }
 
-// Wear OS apps are distributed embedded inside the phone app's AAB —
-// not as a separate Play Console listing. The composeApp module uses
-// wearApp(project(":wear")) to bundle this module; upload only the
-// phone app's AAB to the existing phone app listing.
+play {
+    // Same service account and track as the phone app — both upload to the
+    // same Play Console listing (com.dmzs.datawatchclient). Play Console
+    // detects the android.hardware.type.watch required-feature in the wear
+    // manifest and serves this AAB only to Wear OS devices.
+    val keyPath = System.getenv("PLAY_PUBLISHER_KEY")
+        ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
+    serviceAccountCredentials.set(file(keyPath))
+    track.set("internal")
+    defaultToAppBundles.set(true)
+}
