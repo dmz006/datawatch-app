@@ -660,7 +660,7 @@ public data class PrdStoryDto(
  */
 @Serializable
 public data class NewPrdRequestDto(
-    val name: String,
+    val name: String = "",
     val title: String? = null,
     @SerialName("project_dir") val projectDir: String? = null,
     @SerialName("project_profile") val projectProfile: String? = null,

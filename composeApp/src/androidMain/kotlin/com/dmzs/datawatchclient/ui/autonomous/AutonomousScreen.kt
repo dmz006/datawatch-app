@@ -1,6 +1,8 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,8 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
@@ -106,12 +106,19 @@ public fun AutonomousScreen(
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var typeFilter by remember { mutableStateOf<String?>(null) }
     var openPrdId by remember { mutableStateOf<String?>(null) }
+    // Retained so the slide-out animation shows the PRD instead of a blank
+    var detailPrd by remember { mutableStateOf<PrdDto?>(null) }
     var currentTab by remember { mutableIntStateOf(0) }
     var tmplCreateOpen by remember { mutableStateOf(false) }
     var identityWizardOpen by remember { mutableStateOf(false) }
     var identity by remember { mutableStateOf(IdentityDto()) }
     var pickerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Keep detailPrd alive through exit animation so slide-out doesn't flash blank
+    LaunchedEffect(openPrdId, state.prds) {
+        if (openPrdId != null) detailPrd = state.prds.firstOrNull { it.id == openPrdId }
+    }
 
     LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
     LaunchedEffect(identityWizardOpen) {
@@ -239,7 +246,11 @@ public fun AutonomousScreen(
     }
 
     if (newOpen) {
-        NewPrdDialog(onDismiss = { newOpen = false }, onCreate = { req -> vm.create(req); newOpen = false })
+        NewPrdDialog(
+            onDismiss = { newOpen = false },
+            onCreate = { req -> vm.create(req); newOpen = false },
+            onBrowseTemplates = { currentTab = 1; newOpen = false },
+        )
     }
 
     // Confirm-cancel dialog (Sprint 24 BL293)
@@ -299,15 +310,21 @@ public fun AutonomousScreen(
         )
     }
 
-    openPrdId?.let { id ->
-        LaunchedEffect(id) { vm.loadScanResult(id) }
-        val prd = state.prds.firstOrNull { it.id == id }
-        if (prd != null) {
+    // Full-screen detail — slides in from right when a PRD is opened
+    // detailPrd is kept non-null through the exit animation so the slide-out isn't blank
+    AnimatedVisibility(
+        visible = openPrdId != null,
+        modifier = Modifier.fillMaxSize(),
+        enter = slideInHorizontally(initialOffsetX = { it }),
+        exit = slideOutHorizontally(targetOffsetX = { it }),
+    ) {
+        detailPrd?.let { prd ->
+            val id = prd.id
             PrdDetailDialog(
                 prd = prd,
                 backends = state.backends,
                 permissionModes = state.permissionModes,
-                onDismiss = { openPrdId = null; vm.clearScan() },
+                onDismiss = { openPrdId = null },
                 onApprove = { vm.approve(id); openPrdId = null },
                 onReject = { reason -> vm.reject(id, reason); openPrdId = null },
                 onDecompose = { vm.decompose(id) },
@@ -319,13 +336,6 @@ public fun AutonomousScreen(
                 onDelete = { vm.hardDeletePrd(id) },
                 onEditStory = { storyId, newTitle, newDescription -> vm.editStory(id, storyId, newTitle, newDescription) },
                 onEditFiles = { storyId, files -> vm.editFiles(id, storyId, files) },
-                scanResult = state.scanResult,
-                scanLoading = state.scanLoading,
-                onTriggerScan = { vm.triggerScan(id) },
-                onCreateFixPrd = { vm.createFixPrd(id) { newId -> openPrdId = newId } },
-                onProposeRules = { vm.proposeRules(id) },
-                proposedRules = state.proposedRules,
-                onDismissProposedRules = { vm.clearProposedRules() },
                 automataTypes = state.automataTypes,
                 onSetType = { type -> vm.setPrdType(id, type) },
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },
@@ -620,13 +630,7 @@ private fun PrdRow(
                     modifier = Modifier.size(18.dp),
                 )
             }
-            // Selection checkbox
-            Icon(
-                imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
-                contentDescription = if (selected) "Selected" else "Not selected",
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                modifier = Modifier.size(20.dp),
-            )
+            // Selection indicated by blue background highlight (no checkbox icon)
         }
         // Inline action button row — scrollable LazyRow
         LazyRow(
@@ -746,7 +750,7 @@ private fun StatusPill(status: String) {
 }
 
 @Composable
-private fun TypeBadge(type: String) {
+internal fun TypeBadge(type: String) {
     val color = when (type.lowercase()) {
         "software" -> Color(0xFF3B82F6)
         "research" -> Color(0xFFA855F7)

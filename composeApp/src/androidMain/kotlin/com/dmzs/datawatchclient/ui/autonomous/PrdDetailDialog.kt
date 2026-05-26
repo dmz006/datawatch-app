@@ -1,6 +1,9 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,15 +11,17 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -29,11 +34,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,27 +48,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
-import com.dmzs.datawatchclient.transport.dto.DecisionDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
-import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
-import com.dmzs.datawatchclient.transport.dto.ScanResultDto
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
 
 /**
- * PRD detail / review dialog — full CRUD parity with PWA v5.19.0+.
- *
- * Actions available per status (mirrors renderPRDActions in app.js):
- *   draft / revisions_asked  → Decompose, LLM, Edit, Delete
- *   needs_review / revisions_asked → Approve, Reject, Revise, LLM, Edit, Delete
- *   approved                 → Run, LLM, Edit, Delete
- *   running                  → Cancel
- *   completed/rejected/cancelled → Delete
+ * PRD detail — full-screen Scaffold with 3 tabs: Overview, Stories, Decisions.
+ * Replaces the AlertDialog to give the content room to breathe.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -81,19 +83,14 @@ internal fun PrdDetailDialog(
     onDelete: () -> Unit,
     onEditStory: (storyId: String, newTitle: String?, newDescription: String?) -> Unit,
     onEditFiles: (storyId: String, files: List<String>) -> Unit,
-    scanResult: ScanResultDto? = null,
-    scanLoading: Boolean = false,
-    onTriggerScan: (() -> Unit)? = null,
-    onCreateFixPrd: (() -> Unit)? = null,
-    onProposeRules: (() -> Unit)? = null,
-    proposedRules: RuleProposalDto? = null,
-    onDismissProposedRules: (() -> Unit)? = null,
     automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
     onSetSkills: ((List<String>) -> Unit)? = null,
     onCloneTemplate: (() -> Unit)? = null,
 ) {
+    BackHandler(enabled = true, onBack = onDismiss)
+
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
     val canEdit = status != "running"
@@ -106,44 +103,119 @@ internal fun PrdDetailDialog(
     var reviseNote by remember { mutableStateOf("") }
     var llmOpen by remember { mutableStateOf(false) }
     var editPrdOpen by remember { mutableStateOf(false) }
-    var prdPermissionModeOptions by remember { mutableStateOf<List<String>>(emptyList()) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var editingStory: PrdStoryDto? by remember { mutableStateOf(null) }
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
     var graphOpen by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(prd.title?.takeIf { it.isNotBlank() } ?: prd.name) },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // Status + graph row
+    val tabs = listOf(
+        stringResource(R.string.prd_tab_overview),
+        stringResource(R.string.prd_tab_stories),
+        stringResource(R.string.prd_tab_decisions),
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "(no title)",
+                        maxLines = 1,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_close))
+                    }
+                },
+                actions = {
+                    if (canEdit) {
+                        IconButton(onClick = { editPrdOpen = true }) {
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
+                        }
+                    }
+                    IconButton(onClick = { deleteConfirmOpen = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.error)
+                    }
+                },
+            )
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            // ── Header section ────────────────────────────────────────────
+            Column(modifier = Modifier.padding(12.dp)) {
+                // Row 1: type badge + template badge + spacer + status pill
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    PrdStatusBadge(status)
-                    if (prd.stories.isNotEmpty()) {
+                    prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
+                    if (prd.isTemplate) {
                         Text(
-                            "${prd.stories.size} stories",
+                            stringResource(R.string.autonomous_template_label),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { graphOpen = true }) {
-                        Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
+                    PrdStatusBadge(status)
+                }
+
+                // Row 2: id code + created date
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        prd.id,
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    )
+                    prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                        Text(
+                            ts.take(10),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        )
                     }
                 }
 
-                // Lifecycle strip — mirrors PWA step-pill row in the PRD detail panel
+                // Spec snippet
+                prd.spec?.takeIf { it.isNotBlank() }?.let { fullSpec ->
+                    val snippet = if (fullSpec.length > 280) fullSpec.take(280) + "…" else fullSpec
+                    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                            .drawBehind {
+                                drawRect(
+                                    color = accent2,
+                                    topLeft = Offset.Zero,
+                                    size = Size(3.dp.toPx(), size.height),
+                                )
+                            }
+                            .padding(start = 8.dp),
+                    ) {
+                        Text(
+                            snippet,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                // Lifecycle strip
                 LifecycleStrip(status)
 
-                // Terminal-state hint (v0.76.0)
+                // Terminal-state hint
                 if (status in listOf("done", "aborted", "failed", "archived")) {
                     Spacer(Modifier.height(8.dp))
                     Surface(
@@ -160,11 +232,11 @@ internal fun PrdDetailDialog(
                     }
                 }
 
-                // Primary action — always visible
+                // Primary action buttons
                 val hasPrimaryAction = canReview || status == "approved" || isCancellable
                 if (hasPrimaryAction) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (canReview) {
@@ -206,7 +278,7 @@ internal fun PrdDetailDialog(
                     }
                 }
 
-                // Secondary / management actions — always visible
+                // Secondary actions
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
@@ -224,13 +296,8 @@ internal fun PrdDetailDialog(
                             Text(stringResource(R.string.prd_detail_llm), style = MaterialTheme.typography.labelSmall)
                         }
                     }
-                    if (canEdit) {
-                        TextButton(onClick = { editPrdOpen = true }) {
-                            Text(stringResource(R.string.action_edit), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    TextButton(onClick = { deleteConfirmOpen = true }) {
-                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                    TextButton(onClick = { graphOpen = true }) {
+                        Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
                     }
                     if (onCloneTemplate != null && status in setOf("completed", "done", "approved", "cancelled", "failed")) {
                         TextButton(onClick = { onCloneTemplate(); onDismiss() }) {
@@ -238,117 +305,107 @@ internal fun PrdDetailDialog(
                         }
                     }
                 }
+            }
 
-                HorizontalDivider()
+            HorizontalDivider()
 
-                // G21: 4-tab content area (Overview | Stories | Decisions | Scan)
-                TabRow(selectedTabIndex = selectedTab) {
-                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.prd_tab_overview), style = MaterialTheme.typography.labelSmall) })
-                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.prd_tab_stories), style = MaterialTheme.typography.labelSmall) })
-                    Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(stringResource(R.string.prd_tab_decisions), style = MaterialTheme.typography.labelSmall) })
-                    Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text(stringResource(R.string.prd_tab_scan), style = MaterialTheme.typography.labelSmall) })
+            // ── Tab strip ──────────────────────────────────────────────────
+            TabRow(selectedTabIndex = selectedTab) {
+                tabs.forEachIndexed { index, label ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    )
                 }
+            }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    when (selectedTab) {
-                        0 -> {
-                            PrdTypeRow(prd, automataTypes, onSetType)
-                            PrdGuidedModeRow(prd, onSetGuidedMode)
-                            PrdSkillsRow(prd, onSetSkills)
-                            prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                                Text(
-                                    spec.take(240),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 4,
-                                )
-                            }
-                        }
-                        1 -> {
-                            val conflicts = buildMap<String, List<String>> {
-                                val byPath = mutableMapOf<String, MutableList<String>>()
-                                prd.stories
-                                    .filter {
-                                        it.status.lowercase() != "complete" &&
-                                            it.status.lowercase() != "rejected"
-                                    }
-                                    .forEach { story ->
-                                        story.files.forEach { f ->
-                                            byPath.getOrPut(f) { mutableListOf() }.add(story.id)
-                                        }
-                                    }
-                                byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
-                                    put(path, ids)
-                                }
-                            }
-                            if (prd.stories.isEmpty()) {
-                                Text(
-                                    stringResource(R.string.prd_detail_no_stories),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            } else {
-                                Text(
-                                    stringResource(R.string.prd_detail_stories_header, prd.stories.size),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                prd.stories.forEach { story ->
-                                    StoryRow(
-                                        story = story,
-                                        canEdit = canEdit,
-                                        onEdit = { editingStory = story },
-                                        onEditFiles = { editingFilesFor = story },
-                                        conflicts = conflicts,
-                                    )
-                                }
-                            }
-                        }
-                        2 -> {
-                            val decisions = prd.decisions
-                            if (decisions.isNullOrEmpty()) {
-                                Text(
-                                    stringResource(R.string.prd_tab_decisions_empty),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            } else {
-                                decisions.forEach { decision ->
-                                    val label = buildString {
-                                        decision.kind?.let { append("[$it] ") }
-                                        append(decision.note ?: "")
-                                        decision.actor?.let { append(" ($it)") }
-                                    }
-                                    Text("• $label", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                                }
-                            }
-                        }
-                        3 -> {
-                            ScanResultCard(
-                                scanResult = scanResult,
-                                scanLoading = scanLoading,
-                                onTriggerScan = onTriggerScan,
-                                onCreateFixPrd = onCreateFixPrd,
-                                onProposeRules = onProposeRules,
-                                proposedRules = proposedRules,
-                                onDismissProposedRules = onDismissProposedRules,
+            // ── Tab content ────────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                when (selectedTab) {
+                    0 -> {
+                        PrdTypeRow(prd, automataTypes, onSetType)
+                        PrdGuidedModeRow(prd, onSetGuidedMode)
+                        PrdSkillsRow(prd, onSetSkills)
+                        prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
+                            Text(
+                                spec.take(240),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 4,
                             )
+                        }
+                    }
+                    1 -> {
+                        val conflicts = buildMap<String, List<String>> {
+                            val byPath = mutableMapOf<String, MutableList<String>>()
+                            prd.stories
+                                .filter {
+                                    it.status.lowercase() != "complete" &&
+                                        it.status.lowercase() != "rejected"
+                                }
+                                .forEach { story ->
+                                    story.files.forEach { f ->
+                                        byPath.getOrPut(f) { mutableListOf() }.add(story.id)
+                                    }
+                                }
+                            byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
+                                put(path, ids)
+                            }
+                        }
+                        if (prd.stories.isEmpty()) {
+                            Text(
+                                stringResource(R.string.prd_detail_no_stories),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            Text(
+                                stringResource(R.string.prd_detail_stories_header, prd.stories.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            prd.stories.forEach { story ->
+                                StoryRow(
+                                    story = story,
+                                    canEdit = canEdit,
+                                    onEdit = { editingStory = story },
+                                    onEditFiles = { editingFilesFor = story },
+                                    conflicts = conflicts,
+                                )
+                            }
+                        }
+                    }
+                    2 -> {
+                        val decisions = prd.decisions
+                        if (decisions.isNullOrEmpty()) {
+                            Text(
+                                stringResource(R.string.prd_tab_decisions_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            decisions.forEach { decision ->
+                                val label = buildString {
+                                    decision.kind?.let { append("[$it] ") }
+                                    append(decision.note ?: "")
+                                    decision.actor?.let { append(" ($it)") }
+                                }
+                                Text("• $label", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                            }
                         }
                     }
                 }
             }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
-        dismissButton = null,
-    )
+        }
+    }
 
-    // ── Sub-dialogs ───────────────────────────────────────────────────────
+    // ── Sub-dialogs ────────────────────────────────────────────────────────
 
     if (rejectOpen) {
         AlertDialog(
@@ -653,38 +710,66 @@ private fun StoryRow(
     onEditFiles: () -> Unit,
     conflicts: Map<String, List<String>> = emptyMap(),
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+            .clickable { expanded = !expanded }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        // Always-visible header row: title + chevron + status pill
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 story.title.ifBlank { story.id },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.weight(1f),
             )
-            Spacer(Modifier.weight(1f))
+            Text(
+                if (expanded) "▴" else "▾",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 6.dp),
+            )
             StoryStatusPill(story.status)
-            if (canEdit) {
-                IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.prd_detail_edit_story_title), tint = MaterialTheme.colorScheme.primary)
-                }
-            }
         }
-        story.description?.takeIf { it.isNotBlank() }?.let { d ->
-            Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
-        }
-        if (story.files.isNotEmpty() || story.filesTouched.isNotEmpty() || canEdit) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                story.files.forEach { f ->
-                    val others = conflicts[f]?.filter { it != story.id }.orEmpty()
-                    FilePill(name = f, color = Color(0xFF3B82F6), conflict = others.isNotEmpty(), conflictNote = if (others.isNotEmpty()) "also in ${others.joinToString(", ")}" else null)
+
+        // Expandable body: description + files + edit buttons
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.padding(top = 6.dp)) {
+                story.description?.takeIf { it.isNotBlank() }?.let { d ->
+                    Text(
+                        d,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
                 }
-                story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
-                if (canEdit) {
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onEditFiles) { Text(stringResource(R.string.prd_detail_edit_files), style = MaterialTheme.typography.labelSmall) }
+                if (story.files.isNotEmpty() || story.filesTouched.isNotEmpty() || canEdit) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        story.files.forEach { f ->
+                            val others = conflicts[f]?.filter { it != story.id }.orEmpty()
+                            FilePill(name = f, color = Color(0xFF3B82F6), conflict = others.isNotEmpty(), conflictNote = if (others.isNotEmpty()) "also in ${others.joinToString(", ")}" else null)
+                        }
+                        story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
+                    }
+                    if (canEdit) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = onEdit) {
+                                Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Text(" ${stringResource(R.string.action_edit)}", style = MaterialTheme.typography.labelSmall)
+                            }
+                            TextButton(onClick = onEditFiles) {
+                                Text(stringResource(R.string.prd_detail_edit_files), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -710,7 +795,7 @@ private fun FilePill(name: String, color: Color, conflict: Boolean = false, conf
     val pillColor = if (conflict) Color(0xFFEF4444) else color
     Column {
         Box(modifier = Modifier.background(pillColor.copy(alpha = 0.18f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)) {
-            Text(if (conflict) "⚠ 📝 $name" else "📝 $name", style = MaterialTheme.typography.labelSmall, color = pillColor, maxLines = 1)
+            Text(if (conflict) "⚠ $name" else "📝 $name", style = MaterialTheme.typography.labelSmall, color = pillColor, maxLines = 1)
         }
         conflictNote?.let { note -> Text(note, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), maxLines = 1) }
     }
