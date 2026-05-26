@@ -144,10 +144,9 @@ internal fun PrdDetailDialog(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .padding(paddingValues),
         ) {
-            // ── Header section ────────────────────────────────────────────
+            // ── Header section — intrinsic height, stays fixed at top ─────
             Column(modifier = Modifier.padding(12.dp)) {
                 // Row 1: type badge + template badge + spacer + status pill
                 Row(
@@ -320,10 +319,11 @@ internal fun PrdDetailDialog(
                 }
             }
 
-            // ── Tab content ────────────────────────────────────────────────
+            // ── Tab content — fills remaining space, scrolls independently ─
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

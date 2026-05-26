@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -47,8 +48,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -157,14 +156,6 @@ public fun AutonomousScreen(
                         Text("🤖", style = MaterialTheme.typography.titleMedium)
                     }
                     DocsLinkAction("datawatch-definitions.md#automata")
-                    if (currentTab == 0) {
-                        IconButton(onClick = { filterOpen = !filterOpen }) {
-                            Icon(
-                                if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
-                                contentDescription = if (filterOpen) stringResource(R.string.autonomous_filter_close) else stringResource(R.string.autonomous_filter_open),
-                            )
-                        }
-                    }
                     AlertsBellAction(alertsBadge = alertsState.watchedAlertCount)
                     if (!state.allServersMode && state.activeProfile != null) {
                         ReachabilityDot(
@@ -193,9 +184,47 @@ public fun AutonomousScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                TabRow(selectedTabIndex = currentTab) {
-                    Tab(selected = currentTab == 0, onClick = { currentTab = 0 }, text = { Text(stringResource(R.string.autonomous_tab_prds)) })
-                    Tab(selected = currentTab == 1, onClick = { currentTab = 1 }, text = { Text(stringResource(R.string.autonomous_tab_templates)) })
+                // Custom tab row — matches SessionDetailScreen style with icons on right
+                val tabBorderColor = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .drawBehind {
+                            drawLine(
+                                color = tabBorderColor,
+                                start = Offset(0f, size.height),
+                                end = Offset(size.width, size.height),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        }
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AutonomousTab(
+                        label = stringResource(R.string.autonomous_tab_prds),
+                        selected = currentTab == 0,
+                        onClick = { currentTab = 0 },
+                    )
+                    AutonomousTab(
+                        label = stringResource(R.string.autonomous_tab_templates),
+                        selected = currentTab == 1,
+                        onClick = { currentTab = 1 },
+                    )
+                    Spacer(Modifier.weight(1f))
+                    // Filter icon inline with tabs (contextual to PRDs tab)
+                    if (currentTab == 0) {
+                        IconButton(
+                            onClick = { filterOpen = !filterOpen },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                if (filterOpen) Icons.Filled.Close else Icons.Filled.Search,
+                                contentDescription = if (filterOpen) stringResource(R.string.autonomous_filter_close) else stringResource(R.string.autonomous_filter_open),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                 }
                 when (currentTab) {
                     0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, onOpenPrd = { openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
@@ -982,4 +1011,43 @@ private fun AutonomousServerPickerTitle(
 private fun AutonomousStatusDot(enabled: Boolean) {
     val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     Surface(color = color, modifier = Modifier.size(8.dp), shape = CircleShape) {}
+}
+
+/** Custom tab button — matches SessionDetailScreen style so tab rows look consistent across screens. */
+@Composable
+private fun AutonomousTab(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
+    val surfaceBg = MaterialTheme.colorScheme.surface
+    val borderColor = dw.border
+    val textColor = if (selected) dw.accent2 else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .then(
+                if (selected) {
+                    Modifier.drawBehind {
+                        val stroke = 1.dp.toPx()
+                        drawRect(surfaceBg)
+                        drawLine(borderColor, Offset(stroke / 2f, 0f), Offset(stroke / 2f, size.height), stroke)
+                        drawLine(borderColor, Offset(size.width - stroke / 2f, 0f), Offset(size.width - stroke / 2f, size.height), stroke)
+                        drawLine(borderColor, Offset(0f, stroke / 2f), Offset(size.width, stroke / 2f), stroke)
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = textColor,
+            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+        )
+    }
 }
