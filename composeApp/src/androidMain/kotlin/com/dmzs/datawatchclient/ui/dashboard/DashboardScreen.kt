@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,9 +53,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.AnalyticsDto
 import com.dmzs.datawatchclient.transport.dto.DashboardCardDto
+import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.transport.dto.SmokeProgressDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
@@ -59,12 +69,18 @@ import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.math.min
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 private val DEFAULT_CARDS = listOf("tree", "ekg", "smoke")
-private const val MB = 1_000_000L
 
 /**
  * Dashboard Mission Control tab — parity with PWA alpha.71's ⊞ tab.
@@ -172,24 +188,23 @@ public fun DashboardScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // Deduplicate: tree and orbital both map to constellation view;
-            // ekg and sparklines both map to pulse view.
+            // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()
             cardIds.forEach { id ->
                 val group = when (id) {
                     "tree", "orbital" -> "constellation"
-                    "ekg", "sparklines" -> "pulse"
                     else -> id
                 }
                 if (rendered.add(group)) {
                     when (group) {
-                        "constellation" -> ConstellationCard(state.sessions, onOpenSession)
-                        "pulse" -> PulseCard(state.sessions, state.stats)
+                        "constellation" -> ConstellationCard(state.sessions, state.prds, onOpenSession)
+                        "ekg" -> PulseCard(state.sessions, state.stats)
+                        "sparklines" -> SparklineCard(state.analytics)
                         "events" -> RecentEventsCard(state.sessions, onOpenSession)
                         "gantt" -> PipelineCard(state.sessions)
-                        "heatmap" -> HeatmapCard(state.sessions)
+                        "heatmap" -> HeatmapCard(state.analytics)
                         "guardrails" -> GuardrailsOverviewCard(state.sessions, onOpenSession)
-                        "smoke" -> SystemHealthCard(state.stats, state.sessions)
+                        "smoke" -> SmokeProgressCard(state.smokeProgress)
                     }
                 }
             }
@@ -201,7 +216,7 @@ public fun DashboardScreen(
 // ---- Constellation card (tree / orbital) ----------------------------------------
 
 @Composable
-private fun ConstellationCard(sessions: List<Session>, onOpenSession: (String) -> Unit) {
+private fun ConstellationCard(sessions: List<Session>, prds: List<PrdDto>, onOpenSession: (String) -> Unit) {
     val dw = LocalDatawatchColors.current
     val running = sessions.filter { it.state == SessionState.Running }
     val waiting = sessions.filter { it.state == SessionState.Waiting }
@@ -239,6 +254,50 @@ private fun ConstellationCard(sessions: List<Session>, onOpenSession: (String) -
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+
+        // Active PRDs
+        if (prds.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+            Text(
+                "PRDs",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 2.dp),
+            )
+            prds.take(4).forEach { prd ->
+                val prdColor = when (prd.status) {
+                    "running" -> dw.success
+                    "decomposing", "planning" -> dw.warning
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(prdColor))
+                    Text(
+                        prd.title ?: prd.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                    )
+                    Text(
+                        prd.status,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = prdColor,
+                    )
+                }
+            }
+            if (prds.size > 4) {
+                Text(
+                    "+${prds.size - 4} more PRDs",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -460,59 +519,126 @@ private fun PipelineRow(
     }
 }
 
-// ---- Heatmap card ----------------------------------------------------------------
+// ---- Sparklines card (distinct from ekg) ----------------------------------------
 
 @Composable
-private fun HeatmapCard(sessions: List<Session>) {
+private fun SparklineCard(analytics: AnalyticsDto?) {
     val dw = LocalDatawatchColors.current
-    val byState = SessionState.entries
-        .associateWith { state -> sessions.count { it.state == state } }
-        .filter { it.value > 0 }
-
-    CardWrapper(title = stringResource(R.string.dash_card_heatmap)) {
-        if (byState.isEmpty()) {
+    CardWrapper(title = "Sparklines") {
+        if (analytics == null || analytics.buckets.isEmpty()) {
             Text(
-                stringResource(R.string.dash_no_sessions),
+                "No historical data",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
-            val maxCount = byState.values.maxOrNull()?.coerceAtLeast(1) ?: 1
-            byState.forEach { (state, count) ->
-                val stateColor = when (state) {
-                    SessionState.Running -> dw.success
-                    SessionState.Waiting -> dw.warning
-                    SessionState.Error -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+            return@CardWrapper
+        }
+        val recent = analytics.buckets.takeLast(7)
+        val maxSessions = recent.maxOfOrNull { it.sessionCount }?.coerceAtLeast(1) ?: 1
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            recent.forEach { bucket ->
+                val heightFraction = bucket.sessionCount.toFloat() / maxSessions
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        state.name.lowercase().replaceFirstChar { it.uppercaseChar() },
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.width(72.dp),
-                    )
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(count.toFloat() / maxCount)
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(stateColor),
-                        )
-                    }
-                    Text(count.toString(), style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(24.dp))
+                            .fillMaxWidth()
+                            .height((40 * heightFraction.coerceAtLeast(0.04f)).dp)
+                            .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                            .background(if (bucket.failed > 0) dw.warning else dw.success),
+                    )
+                    Text(
+                        bucket.date.takeLast(5).replace("-", "/"),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(top = 2.dp),
+                        maxLines = 1,
+                    )
                 }
             }
+        }
+        analytics.successRate?.let { rate ->
+            Text(
+                "7-day success: ${"%.0f".format(rate * 100)}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+    }
+}
+
+// ---- Heatmap card (30-day calendar) ----------------------------------------------
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HeatmapCard(analytics: AnalyticsDto?) {
+    val dw = LocalDatawatchColors.current
+    CardWrapper(title = stringResource(R.string.dash_card_heatmap)) {
+        if (analytics == null) {
+            Text(
+                stringResource(R.string.dash_loading),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@CardWrapper
+        }
+
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val bucketMap = analytics.buckets.associateBy { it.date }
+        val maxCount = analytics.buckets.maxOfOrNull { it.sessionCount }?.coerceAtLeast(1) ?: 1
+
+        val cellSize = 14.dp
+        val cellGap = 2.dp
+
+        // 30 days grid — 5 weeks × 7 days but we only fill the last 30 days
+        val days30 = (29 downTo 0).map { offset ->
+            val date = (Clock.System.now() - offset.days).toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val key = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}"
+            Pair(date, bucketMap[key]?.sessionCount ?: 0)
+        }
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            maxItemsInEachRow = 7,
+            horizontalArrangement = Arrangement.spacedBy(cellGap),
+            verticalArrangement = Arrangement.spacedBy(cellGap),
+        ) {
+            days30.forEach { (date, count) ->
+                val intensity = count.toFloat() / maxCount
+                val cellColor = when {
+                    count == 0 -> MaterialTheme.colorScheme.surfaceVariant
+                    intensity < 0.25f -> dw.success.copy(alpha = 0.3f)
+                    intensity < 0.5f -> dw.success.copy(alpha = 0.55f)
+                    intensity < 0.75f -> dw.success.copy(alpha = 0.78f)
+                    else -> dw.success
+                }
+                val isToday = date == today
+                Box(
+                    modifier = Modifier
+                        .size(cellSize)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(cellColor)
+                        .then(if (isToday) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) else Modifier),
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("30 days", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "${analytics.buckets.sumOf { it.sessionCount }} sessions",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -568,43 +694,95 @@ private fun GuardrailsOverviewCard(sessions: List<Session>, onOpenSession: (Stri
     }
 }
 
-// ---- System Health / Smoke card --------------------------------------------------
+// ---- Smoke progress card ---------------------------------------------------------
 
 @Composable
-private fun SystemHealthCard(stats: StatsDto?, sessions: List<Session>) {
+private fun SmokeProgressCard(smoke: SmokeProgressDto?) {
     val dw = LocalDatawatchColors.current
-    CardWrapper(title = stringResource(R.string.dash_card_smoke)) {
-        if (stats == null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                Text(stringResource(R.string.dash_loading), style = MaterialTheme.typography.bodySmall)
-            }
-        } else {
-            val cpuPct = stats.cpuLoad1?.let { load ->
-                stats.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null }
-            } ?: stats.cpuPct?.toInt()
-            val memText = stats.memUsed?.let { used ->
-                stats.memTotal?.let { total ->
-                    if (total > 0) "${used / MB}/${total / MB} MB" else null
-                }
-            } ?: stats.memPct?.let { "%.0f%%".format(it) }
+    val scope = rememberCoroutineScope()
 
-            val healthy = (cpuPct ?: 0) < 90
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(if (healthy) dw.success else dw.warning))
+    CardWrapper(title = stringResource(R.string.dash_card_smoke)) {
+        if (smoke == null) {
+            Text(
+                "No smoke run active",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@CardWrapper
+        }
+
+        val statusColor = when (smoke.status) {
+            "complete", "passed" -> dw.success
+            "failed" -> MaterialTheme.colorScheme.error
+            "running" -> dw.warning
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(statusColor))
+            Text(
+                smoke.status.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = statusColor,
+                modifier = Modifier.weight(1f),
+            )
+            if (smoke.completedAt == null) {
                 Text(
-                    if (healthy) stringResource(R.string.dash_health_ok) else stringResource(R.string.dash_health_warn),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (healthy) dw.success else dw.warning,
+                    "${(smoke.progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(6.dp))
-            listOfNotNull(
-                cpuPct?.let { "CPU: $it%" },
-                memText?.let { "Mem: $it" },
-                "Sessions: ${sessions.size}",
-            ).forEach { line ->
-                Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        LinearProgressIndicator(
+            progress = { smoke.progress.coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).padding(bottom = 6.dp),
+            color = statusColor,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                "${smoke.passed} passed",
+                style = MaterialTheme.typography.labelSmall,
+                color = dw.success,
+            )
+            Text(
+                "${smoke.failed} failed",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (smoke.failed > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "${smoke.total} total",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (smoke.completedAt != null) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        runCatching {
+                            val id = ServiceLocator.activeServerStore.get()
+                            val profiles = ServiceLocator.profileRepository.observeAll().first()
+                            val p = profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
+                            p?.let { ServiceLocator.transportFor(it).clearSmokeProgress() }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("Clear run", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
