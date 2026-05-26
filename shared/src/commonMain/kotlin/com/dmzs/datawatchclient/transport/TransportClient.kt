@@ -648,11 +648,17 @@ public interface TransportClient {
     /**
      * GET /api/servers — list of remote datawatch server
      * connections (federation peers) this server knows about.
-     * Mobile uses this to render a read-only "Federated peers"
-     * list under Settings → Comms; adding a peer is done via the
-     * PWA config UI today.
      */
     public suspend fun listRemoteServers(): Result<List<kotlinx.serialization.json.JsonObject>>
+
+    /** POST /api/servers — create a new remote server entry. */
+    public suspend fun addRemoteServer(server: com.dmzs.datawatchclient.transport.dto.RemoteServerDto): Result<Unit>
+
+    /** PUT /api/servers/{name} — update an existing remote server entry. */
+    public suspend fun updateRemoteServer(name: String, server: com.dmzs.datawatchclient.transport.dto.RemoteServerDto): Result<Unit>
+
+    /** DELETE /api/servers/{name} — remove a remote server entry. */
+    public suspend fun deleteRemoteServer(name: String): Result<Unit>
 
     /**
      * GET /api/servers/health — per-peer health snapshot. Shape

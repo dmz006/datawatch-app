@@ -1795,3 +1795,13 @@ public data class PluginInstallResponseDto(
     val installed: String = "",
     @SerialName("from_registry") val fromRegistry: String = "",
 )
+
+@Serializable
+public data class RemoteServerDto(
+    val name: String = "",
+    val url: String = "",
+    val token: String? = null,
+    val enabled: Boolean = true,
+    val federated: Boolean = false,
+    val capabilities: List<String> = emptyList(),
+)

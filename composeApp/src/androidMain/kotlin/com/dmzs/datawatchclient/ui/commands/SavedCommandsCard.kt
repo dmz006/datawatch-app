@@ -58,7 +58,7 @@ public fun SavedCommandsCard(vm: SavedCommandsViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PwaSectionTitle("Saved commands", modifier = Modifier.weight(1f), docsAnchor = "saved-commands")
+                PwaSectionTitle("Saved Commands", modifier = Modifier.weight(1f), docsAnchor = "saved-commands")
                 IconButton(onClick = vm::refresh, enabled = state.supported) {
                     Icon(
                         Icons.Filled.Refresh,
