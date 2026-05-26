@@ -226,6 +226,17 @@
         if (_configRows > 0 && term.rows < _configRows) {
           term.resize(term.cols, _configRows);
         }
+        // Snap container height to the exact rendered terminal height so the
+        // Math.floor remainder (containerHeight % cellHeight pixels) doesn't
+        // appear as a blank strip below the last row of text. .xterm-rows is
+        // the text-row stack sized to rows*cellHeight by xterm; .xterm-screen
+        // fills 100% of the container so its offsetHeight always equals the
+        // container and the condition would never fire. Next dwExplicitSize
+        // resets the height then safeFit snaps again — stable, no loop.
+        var xtermRows = container.querySelector('.xterm-rows');
+        if (xtermRows && xtermRows.offsetHeight > 0 && xtermRows.offsetHeight < parseInt(container.style.height || '0')) {
+          container.style.height = xtermRows.offsetHeight + 'px';
+        }
         // Always snap to live tail after any fit, except when the toolbar
         // scroll-mode is active. Mirrors PWA's `_fitAndScroll` (app.js
         // ~line 3208). The wasAtBottom snapshot pattern races with
