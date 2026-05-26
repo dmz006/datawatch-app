@@ -96,6 +96,9 @@ internal fun NewPrdDialog(
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
     var backendOptions by remember { mutableStateOf<List<String>>(emptyList()) }
     var availableModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    // OpenCode grouped model list for the PRD model picker (providerLabel → model ids).
+    var openCodeModelGroups by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    var openCodeDefaultModel by remember { mutableStateOf("") }
 
     val inheritLabel = stringResource(R.string.new_prd_inherit)
     val backendDefaultLabel = stringResource(R.string.new_prd_backend_default)
@@ -149,13 +152,26 @@ internal fun NewPrdDialog(
                 val models = mutableMapOf<String, List<String>>()
                 ollamaD.await().onSuccess { if (it.isNotEmpty()) models["ollama"] = it }
                 owuiD.await().onSuccess { if (it.isNotEmpty()) models["openwebui"] = it }
-                llmsD.await().onSuccess { llmList ->
-                    val opencodeMods = llmList
-                        .filter { it.enabled && it.kind.startsWith("opencode") }
-                        .flatMap { entry -> entry.models.map { p -> p.model } + listOf(entry.model) }
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                    if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
+                // Fetch opencode models from the live API for grouped display + default pre-select.
+                val openCodeResp = transport.fetchOpenCodeModels()
+                openCodeResp.onSuccess { resp ->
+                    val groups = resp.models
+                        .groupBy { it.providerLabel.ifBlank { it.provider } }
+                        .mapValues { (_, list) -> list.map { it.id } }
+                    openCodeModelGroups = groups
+                    openCodeDefaultModel = resp.defaultModel
+                    val allIds = resp.models.map { it.id }.filter { it.isNotBlank() }
+                    if (allIds.isNotEmpty()) models["opencode"] = allIds
+                }.onFailure {
+                    // Fall back to LLM-registry models if /api/opencode/models is unavailable.
+                    llmsD.await().onSuccess { llmList ->
+                        val opencodeMods = llmList
+                            .filter { it.enabled && it.kind.startsWith("opencode") }
+                            .flatMap { entry -> entry.models.map { p -> p.model } + listOf(entry.model) }
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                        if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
+                    }
                 }
                 availableModels = models
             }
@@ -345,6 +361,14 @@ internal fun NewPrdDialog(
 
                     // ── Model dropdown: only for backends with model lists ────
                     if (modelsForBackend.isNotEmpty()) {
+                        val isOpenCode = backend.startsWith("opencode", ignoreCase = true)
+                        val showGroups = isOpenCode && openCodeModelGroups.isNotEmpty()
+                        // Pre-select default when the opencode backend is chosen and no model set.
+                        LaunchedEffect(isOpenCode, openCodeDefaultModel) {
+                            if (isOpenCode && model.isBlank() && openCodeDefaultModel.isNotBlank()) {
+                                model = openCodeDefaultModel
+                            }
+                        }
                         Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                             OutlinedTextField(
                                 value = model.ifEmpty { backendDefaultLabel },
@@ -361,11 +385,33 @@ internal fun NewPrdDialog(
                                     text = { Text(backendDefaultLabel) },
                                     onClick = { model = ""; modelMenuOpen = false },
                                 )
-                                modelsForBackend.forEach { m ->
-                                    DropdownMenuItem(
-                                        text = { Text(m) },
-                                        onClick = { model = m; modelMenuOpen = false },
-                                    )
+                                if (showGroups) {
+                                    openCodeModelGroups.forEach { (groupLabel, models) ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    groupLabel,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                            },
+                                            onClick = {},
+                                            enabled = false,
+                                        )
+                                        models.forEach { m ->
+                                            DropdownMenuItem(
+                                                text = { Text("  $m") },
+                                                onClick = { model = m; modelMenuOpen = false },
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    modelsForBackend.forEach { m ->
+                                        DropdownMenuItem(
+                                            text = { Text(m) },
+                                            onClick = { model = m; modelMenuOpen = false },
+                                        )
+                                    }
                                 }
                                 if (model.isNotEmpty() && model !in modelsForBackend) {
                                     DropdownMenuItem(

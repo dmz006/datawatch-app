@@ -89,6 +89,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import com.dmzs.datawatchclient.transport.dto.LinkQrFrameDto
 import com.dmzs.datawatchclient.transport.dto.MatrixStatusDto
+import com.dmzs.datawatchclient.transport.dto.OpenCodeModelsResponseDto
 import com.dmzs.datawatchclient.transport.dto.SignalLinkStatusDto
 import com.dmzs.datawatchclient.transport.QuickCommandItem
 import kotlinx.serialization.json.Json
@@ -2805,6 +2806,13 @@ public class RestTransport(
     override suspend fun fetchMatrixStatus(): Result<MatrixStatusDto> =
         request {
             client.get("${profile.baseUrl}/api/matrix/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchOpenCodeModels(): Result<OpenCodeModelsResponseDto> =
+        request {
+            client.get("${profile.baseUrl}/api/opencode/models") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
             }.body()
         }
