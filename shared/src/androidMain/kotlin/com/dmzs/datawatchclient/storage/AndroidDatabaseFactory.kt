@@ -54,9 +54,16 @@ public actual class DatabaseFactory(
                 factory = factory,
             )
         }.recoverCatching { exception ->
-            if (exception is Exception && exception.message?.contains("Signature/MAC verification failed") == true
-                || exception.cause?.message?.contains("Signature/MAC verification failed") == true) {
-                // Keystore decryption failed — database is corrupted. Delete it and try again with fresh key.
+            val msg = exception.message.orEmpty()
+            val causeMsg = exception.cause?.message.orEmpty()
+            val isKeystoreFailure = "Signature/MAC verification failed" in msg
+                || "Signature/MAC verification failed" in causeMsg
+            // SQLCipher SQLITE_NOTADB (26): existing DB is plain SQLite or was encrypted with a
+            // different key (e.g. pre-SQLCipher build). Treat the same as key failure — delete
+            // and recreate so the app can always open.
+            val isNotADb = "file is not a database" in msg || "file is not a database" in causeMsg
+                || "not a database" in msg
+            if (isKeystoreFailure || isNotADb) {
                 context.deleteDatabase(DB_NAME)
                 keystore.renewMasterKey()
                 val newPassphrase = keystore.deriveDatabasePassphrase()
