@@ -1285,6 +1285,9 @@ public interface TransportClient {
 
     // ---- S14b: Alert Rules ----
     public suspend fun listAlertRules(): Result<com.dmzs.datawatchclient.transport.dto.AlertRulesListDto>
+
+    /** GET /api/alert-rules/firings — last 100 alert rule firings. */
+    public suspend fun listAlertRuleFirings(): Result<com.dmzs.datawatchclient.transport.dto.AlertRuleFiringsDto>
     public suspend fun createAlertRule(rule: com.dmzs.datawatchclient.transport.dto.AlertRuleDto): Result<Unit>
     public suspend fun deleteAlertRule(name: String): Result<Unit>
     public suspend fun enableAlertRule(name: String): Result<Unit>

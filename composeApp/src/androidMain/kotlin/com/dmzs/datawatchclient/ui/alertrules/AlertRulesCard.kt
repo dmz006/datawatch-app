@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.ui.alertrules
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.AlertActionDto
 import com.dmzs.datawatchclient.transport.dto.AlertConditionDto
 import com.dmzs.datawatchclient.transport.dto.AlertRuleDto
+import com.dmzs.datawatchclient.transport.dto.AlertRuleFiringDto
 import com.dmzs.datawatchclient.transport.dto.AlertRulesListDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -51,6 +53,8 @@ import kotlinx.coroutines.launch
 public fun AlertRulesCard() {
     val scope = rememberCoroutineScope()
     var rules by remember { mutableStateOf<List<AlertRuleDto>>(emptyList()) }
+    var firings by remember { mutableStateOf<List<AlertRuleFiringDto>>(emptyList()) }
+    var firingsExpanded by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -68,6 +72,7 @@ public fun AlertRulesCard() {
     suspend fun reload() {
         val t = transport() ?: return
         t.listAlertRules().onSuccess { rules = it.rules }.onFailure { banner = it.message }
+        t.listAlertRuleFirings().onSuccess { firings = it.firings }
     }
 
     LaunchedEffect(Unit) { reload() }
@@ -120,6 +125,38 @@ public fun AlertRulesCard() {
                     }
                 },
             )
+        }
+
+        if (firings.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { firingsExpanded = !firingsExpanded }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Recent Firings (${firings.size})",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(if (firingsExpanded) "▲" else "▼", style = MaterialTheme.typography.labelSmall)
+            }
+            if (firingsExpanded) {
+                firings.take(20).forEach { f ->
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        Text(f.ruleName, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "${f.firedAt} · ${f.value} ≥ ${f.threshold}${if (!f.pod.isNullOrBlank()) " · ${f.pod}" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    HorizontalDivider()
+                }
+            }
         }
     }
 
