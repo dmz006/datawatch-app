@@ -159,6 +159,7 @@ public class RestTransport(
         claudeEffort: String?,
         llm: String?,
         computeNode: String?,
+        chrome: Boolean?,
     ): Result<String> =
         request {
             val res: StartSessionResponseDto =
@@ -181,6 +182,7 @@ public class RestTransport(
                             claudeEffort = claudeEffort,
                             llm = llm,
                             computeNodeOverride = computeNode,
+                            chrome = chrome,
                         ),
                     )
                 }.body()

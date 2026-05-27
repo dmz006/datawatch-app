@@ -162,6 +162,8 @@ public fun NewSessionScreen(
     var nonClaudeModels by remember { mutableStateOf<List<String>>(emptyList()) }
     var pickedNonClaudeModel by remember { mutableStateOf("") }
     var pickedNonClaudeEffort by remember { mutableStateOf("") }
+    // datawatch v8.8.3 — opt-in Chrome DevTools Protocol integration.
+    var chromeIntegration by remember { mutableStateOf(false) }
     // OpenCode grouped model list — Map of providerLabel → model ids.
     var openCodeModelGroups by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     // Load claude options and whisperConfigured whenever the server profile changes.
@@ -663,6 +665,20 @@ public fun NewSessionScreen(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    androidx.compose.material3.Switch(
+                        checked = chromeIntegration,
+                        onCheckedChange = { chromeIntegration = it },
+                    )
+                    Text(
+                        stringResource(R.string.session_chrome),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
 
             Text(
@@ -828,6 +844,7 @@ public fun NewSessionScreen(
                                             claudeEffort = (if (isClaudeCode) pickedClaudeEffort else pickedNonClaudeEffort).ifBlank { null },
                                             llm = pickedLlm?.name,
                                             computeNode = pickedComputeNode,
+                                            chrome = chromeIntegration.takeIf { it },
                                         )
                                     }
                                 outcome.fold(

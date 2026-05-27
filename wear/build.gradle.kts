@@ -131,6 +131,11 @@ play {
     val keyPath = System.getenv("PLAY_PUBLISHER_KEY")
         ?: "${System.getProperty("user.home")}/.android/datawatch-play-key.json"
     serviceAccountCredentials.set(file(keyPath))
-    track.set("internal")
+    // Wear OS form factor has its own track namespace in the Play Developer
+    // API — uploads must target `wear:<track>` rather than the bare phone-
+    // form-factor `<track>`. Using the unprefixed name routes the wear AAB to
+    // the phone track, which Play rejects because the AAB requires
+    // android.hardware.type.watch.
+    track.set("wear:internal")
     defaultToAppBundles.set(true)
 }

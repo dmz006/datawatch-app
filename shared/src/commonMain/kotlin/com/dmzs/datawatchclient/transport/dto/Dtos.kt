@@ -82,6 +82,8 @@ public data class SessionDto(
      * read-only sessions. PWA reads at app.js:1685.
      */
     @SerialName("input_mode") val inputMode: String? = null,
+    /** datawatch v8.8.3 — session was started with `--chrome` (CDP integration). */
+    val chrome: Boolean? = null,
 )
 
 @Serializable
@@ -119,6 +121,12 @@ public data class StartSessionDto(
     val llm: String? = null,
     /** v7 Compute Node override. Must be in LLM's compute_nodes list when provided. */
     @SerialName("compute_node") val computeNodeOverride: String? = null,
+    /**
+     * datawatch v8.8.3 — opt-in Chrome DevTools Protocol integration for
+     * claude-code sessions. `true` adds `--chrome` to the launch; omitted
+     * or `false` leaves the operator default unchanged.
+     */
+    val chrome: Boolean? = null,
 )
 
 @Serializable

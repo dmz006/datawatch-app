@@ -321,6 +321,17 @@ public fun SessionDetailScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                            if (state.session?.chrome == true) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "· " + stringResource(R.string.session_chrome),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
                             state.messagingBackend?.takeIf { it.isNotBlank() }?.let { ch ->
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(

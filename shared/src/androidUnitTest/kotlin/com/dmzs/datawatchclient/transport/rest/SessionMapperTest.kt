@@ -39,6 +39,16 @@ class SessionMapperTest {
     }
 
     @Test
+    fun `chrome flag is propagated from dto`() {
+        val on = SessionDto(id = "c1", state = "running", chrome = true).toDomain("srv-1")
+        assertEquals(true, on.chrome)
+        val off = SessionDto(id = "c2", state = "running", chrome = false).toDomain("srv-1")
+        assertEquals(false, off.chrome)
+        val absent = SessionDto(id = "c3", state = "running").toDomain("srv-1")
+        assertEquals(false, absent.chrome)
+    }
+
+    @Test
     fun `outputMode and inputMode are propagated`() {
         val dto = SessionDto(
             id = "m1",

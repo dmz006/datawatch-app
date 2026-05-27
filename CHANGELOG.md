@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-05-26
+
+### Added
+- New Session: opt-in **Chrome integration** toggle in Advanced (claude options) — sends `chrome: true` on `POST /api/sessions/start`, enabling the parent datawatch v8.8.3 Chrome DevTools Protocol launch. Default off; no behaviour change for existing sessions.
+- Session Detail: chip surfaces when the session was started with Chrome integration.
+- Locale strings `session_chrome` translated across all 5 bundles (EN/DE/ES/FR/JA).
+- Wear: `wearable.standalone=true` (Samsung companion compatibility) — first shipped in 100307 build, carried forward.
+
+### Server compatibility
+- Pairs with datawatch v8.8.3+ for Chrome integration; older servers ignore the unknown `chrome` field.
+
 ## [1.0.0] — 2026-05-21 (General Availability)
 
 🚀 **v1.0.0 marks the first production-ready release of the datawatch Android companion suite.**
