@@ -8,6 +8,32 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-05-27
+
+### Added — iOS client (Stories 1–15)
+- **iOS app** — full SwiftUI client targeting iOS 16.0+; first-class platform alongside Android.
+- **Build environment** (Story 1): `.github/workflows/ios-build.yml` macOS-15 CI; `xcodegen` project generation; KMP `XCFramework` DSL; version parity with `gradle.properties`; `scripts/build-ios-framework.sh`.
+- **Shared module iOS hardening** (Story 2): `IosDatabaseFactory` with `NSFileProtectionComplete` (Apple Secure Enclave AES-256); `IosTokenStore` via CoreFoundation SecItem* Keychain API; Darwin Ktor trust-all challenge handler for self-signed certs.
+- **Design system** (Story 3): `DatawatchColors`, `DatawatchFonts`, `HeaderView`, `ConnectionStatusBanner`, `SessionCountChip`, `LoadingIndicator`, `ErrorCard`; 6-tab `RootView`; `AppRouter` deep-link handling; `FlowAdapter` Kotlin→Swift async stream bridge.
+- **Auth & Server Connection** (Story 4): `IosServiceLocator` Kotlin DI singleton with CoroutineScope + callback bridge; `ServerProfileStore` ObservableObject; `AddServerView`/`EditServerView` with connection probe; `ServerProfileListView`; `BiometricGate` (Face ID/Touch ID); `SettingsView`.
+- **Sessions** (Story 5): `SessionsViewModel` with 10 s polling, `SessionsView` with state dots + backend chips, pull-to-refresh.
+- **Terminal** (Story 6): `TerminalView` — WKWebView + CDN xterm.js, WebSocket to `/api/terminal/<id>?token=…`; `SessionDetailView` with Kill action.
+- **Automata** (Story 7): placeholder cards per server with "View in web UI" link; full CRUD deferred to v1.1.
+- **Alerts** (Story 8): `AlertsViewModel` polling, severity icons (teal/amber/red), unread badge, swipe-to-dismiss.
+- **Observer** (Story 9): 5 s polling metrics grid (CPU/memory/disk/VRAM); color-coded bars; uptime display.
+- **Dashboard** (Story 10): parallel multi-server cards with concurrent sessions + stats fetch; mini resource bars.
+- **Push Notifications stub** (Story 12): `NotificationService` APNs authorization + device token registration (blocked on datawatch#107 server support); `AppDelegate` wired via `@UIApplicationDelegateAdaptor`.
+- **iPad layout** (Story 13): `NavigationSplitView` on `.regular` horizontal size class.
+- **App Store prep** (Story 15): `ios-build.yml` TestFlight upload job (commented, ready to enable after enrollment); `ExportOptions.plist`; `fastlane/Fastfile` + `Matchfile` stubs.
+- **Android Auto black-screen fix** (v1.0.2 patch): `hosts_allowlist.xml` was excluded from the build because `auto/build.gradle.kts` `sourceSets` only added `java.srcDirs`/`manifest` from `publicMain`, not `res.srcDirs`. At runtime `getIdentifier()` returned 0; `addAllowedHosts(0)` threw `Resources.NotFoundException`, crashing the CarAppService before any screen rendered. Fixed by adding `res.srcDirs("src/main/res", "src/publicMain/res")` and switching to compile-time `R.array.hosts_allowlist`.
+
+### iOS v1.1 known gaps (planned)
+- Automata CRUD (requires `listAutomataTypes` server API)
+- Push notifications (requires datawatch#107 server-side APNs endpoint)
+- Session start from app (model/profile picker)
+- Terminal IME keyboard-overlap fix (Android pattern: `onSizeChanged → dwExplicitSize`)
+- Alert server-side dismiss
+
 ## [1.0.1] — 2026-05-26
 
 ### Added
