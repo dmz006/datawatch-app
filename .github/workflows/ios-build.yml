@@ -1,0 +1,77 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-simulator:
+    name: Build (iOS Simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # Builds all three iOS slices (iosX64, iosArm64, iosSimulatorArm64) and
+      # packages them into shared/build/XCFrameworks/debug/DatawatchShared.xcframework.
+      # project.yml FRAMEWORK_SEARCH_PATHS points to this directory.
+      - name: Assemble KMP XCFramework (debug)
+        run: ./gradlew :shared:assembleDebugXCFramework --no-daemon --stacktrace
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate --spec project.yml
+
+      # Simulator builds need no signing. ONLY_ACTIVE_ARCH=NO ensures all
+      # simulator slices build (catches arm64/x64 portability issues).
+      - name: Build for iOS Simulator
+        working-directory: iosApp
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project DatawatchClient.xcodeproj \
+            -scheme DatawatchClient \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            | tee xcodebuild.log | grep -E '^(Build|CompileSwift|error:|warning:|note:)' || cat xcodebuild.log
+
+      # Cache derived data between runs to speed up incremental Xcode builds.
+      - name: Cache Xcode derived data
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('iosApp/project.yml', 'shared/src/**') }}
+          restore-keys: xcode-deriveddata-${{ runner.os }}-
+
+  # Placeholder — wired up in Story 15 once Apple Developer enrollment is complete
+  # and signing certificates are in GitHub Secrets.
+  #
+  # testflight-upload:
+  #   name: Upload to TestFlight
+  #   runs-on: macos-15
+  #   needs: build-simulator
+  #   if: startsWith(github.ref, 'refs/tags/v')
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     # ... fastlane match + pilot upload

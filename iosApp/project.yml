@@ -18,8 +18,14 @@ targets:
           UIColorName: ""
     settings:
       base:
+        # Bundle ID must match Android phone app so the same Apple Developer
+        # account can publish both as a universal cross-platform brand.
+        PRODUCT_BUNDLE_IDENTIFIER: com.dmzs.datawatchclient
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
         OTHER_LDFLAGS: $(inherited) -framework DatawatchShared
+      configs:
+        Release:
+          FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/release
     dependencies:
       - framework: ../shared/build/XCFrameworks/debug/DatawatchShared.xcframework
         embed: true
