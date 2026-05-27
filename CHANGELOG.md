@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-05-27
+
+### Changed
+- Tagline updated from "AI Session Monitor" to "AI Orchestration" across splash screen and Wear OS about screen (all locales)
+
+### Fixed
+- iOS Automata tab: full CRUD screens replacing placeholder cards
+- iOS terminal: keyboard no longer covers bottom rows (DwWKWebView layoutSubviews → dwExplicitSize)
+- CI: Wear OS signing config made conditional; iOS XCFramework task name corrected; detekt Composable exemptions added
+
 ## [1.0.3] — 2026-05-27
 
 ### Fixed
