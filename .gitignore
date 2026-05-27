@@ -48,6 +48,9 @@ Thumbs.db
 .swp
 
 # Xcode / iOS
+# .xcodeproj is generated on demand by `xcodegen generate --spec iosApp/project.yml`.
+# Do not commit; regenerate locally or let CI generate it fresh each run.
+iosApp/*.xcodeproj/
 iosApp/Pods/
 iosApp/build/
 iosApp/**/xcuserdata/

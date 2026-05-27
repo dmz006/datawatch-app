@@ -30,6 +30,20 @@ jobs:
             exit 1
           fi
 
+      # iOS Info.plist now uses $(MARKETING_VERSION)/$(CURRENT_PROJECT_VERSION) build
+      # settings (injected from gradle.properties by CI and build-ios-framework.sh).
+      # Verify the plist no longer contains a hardcoded version that could drift.
+      - name: Verify iOS Info.plist uses build-setting variables (not hardcoded version)
+        run: |
+          set -euo pipefail
+          plist="iosApp/iosApp/Info.plist"
+          if grep -q 'MARKETING_VERSION\|CURRENT_PROJECT_VERSION' "$plist"; then
+            echo "✓ iOS Info.plist correctly delegates version to build settings."
+          else
+            echo "::error::$plist does not use MARKETING_VERSION / CURRENT_PROJECT_VERSION. Hardcoded version will drift from gradle.properties."
+            exit 1
+          fi
+
   build-and-test:
     name: Build + test
     runs-on: ubuntu-latest

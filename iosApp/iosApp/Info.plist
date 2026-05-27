@@ -10,9 +10,26 @@
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
+    <!-- Version synced from gradle.properties via CI / build-ios-framework.sh -->
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0-pre</string>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- Push notifications: APNs background delivery -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+    </array>
+
+    <!-- Biometrics: Face ID / Touch ID for token-protected profiles -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>datawatch uses Face ID to protect access to your server profiles.</string>
+
+    <!-- Microphone: voice reply in terminal sessions (future parity with Android) -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>datawatch may use the microphone for voice input in terminal sessions.</string>
 </dict>
 </plist>

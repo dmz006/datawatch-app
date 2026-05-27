@@ -1,10 +1,13 @@
 # datawatch-app
 
-**datawatch** — the Android / Wear OS / Android Auto companion for
+[![CI](https://github.com/dmz006/datawatch-app/actions/workflows/ci.yml/badge.svg)](https://github.com/dmz006/datawatch-app/actions/workflows/ci.yml)
+[![iOS Build](https://github.com/dmz006/datawatch-app/actions/workflows/ios-build.yml/badge.svg)](https://github.com/dmz006/datawatch-app/actions/workflows/ios-build.yml)
+
+**datawatch** — the Android / Wear OS / Android Auto / iOS companion for
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Current release: v1.0.1 (2026-05-26).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.6.1+` (`v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, and Android Automotive OS with comprehensive testing and Play Store integration.
+**Current release: v1.0.1 (2026-05-26).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.6.1+` (`v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, and Android Automotive OS with comprehensive testing and Play Store integration. iOS client in active development.
 
 ---
 
