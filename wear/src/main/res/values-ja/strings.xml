@@ -36,7 +36,7 @@
 
     <string name="wear_servers_empty">有効なサーバーなし</string>
 
-    <string name="wear_about_tagline">AIセッションモニター＆ブリッジ</string>
+    <string name="wear_about_tagline">AIオーケストレーション＆ブリッジ</string>
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 
