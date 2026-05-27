@@ -11,5 +11,5 @@ package com.dmzs.datawatchclient
  */
 public object Version {
     public const val VERSION: String = "1.0.1"
-    public const val VERSION_CODE: Int = 308
+    public const val VERSION_CODE: Int = 310
 }
