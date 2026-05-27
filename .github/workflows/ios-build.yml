@@ -28,6 +28,15 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      # Cache Kotlin/Native compiler and prebuilt stdlib (~1 GB).
+      # Key on Kotlin version (from libs.versions.toml) to bust when upgrading.
+      - name: Cache Kotlin/Native artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
       # Builds all three iOS slices (iosX64, iosArm64, iosSimulatorArm64) and
       # packages them into shared/build/XCFrameworks/debug/DatawatchShared.xcframework.
       # project.yml FRAMEWORK_SEARCH_PATHS points to this directory.
@@ -36,6 +45,13 @@ jobs:
 
       - name: Install xcodegen
         run: brew install xcodegen
+
+      # Export version env vars so project.yml can substitute them into
+      # MARKETING_VERSION and CURRENT_PROJECT_VERSION build settings.
+      - name: Export version env vars
+        run: |
+          echo "DATAWATCH_APP_VERSION=$(grep -oP '^DATAWATCH_APP_VERSION=\K.+' gradle.properties)" >> "$GITHUB_ENV"
+          echo "DATAWATCH_APP_VERSION_CODE=$(grep -oP '^DATAWATCH_APP_VERSION_CODE=\K.+' gradle.properties)" >> "$GITHUB_ENV"
 
       - name: Generate Xcode project
         working-directory: iosApp

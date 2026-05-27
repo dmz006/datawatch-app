@@ -21,6 +21,10 @@ targets:
         # Bundle ID must match Android phone app so the same Apple Developer
         # account can publish both as a universal cross-platform brand.
         PRODUCT_BUNDLE_IDENTIFIER: com.dmzs.datawatchclient
+        # Version values injected from gradle.properties by CI and build-ios-framework.sh.
+        # See docs/setup.md §iOS and .github/workflows/ios-build.yml for how these are set.
+        MARKETING_VERSION: ${DATAWATCH_APP_VERSION}
+        CURRENT_PROJECT_VERSION: ${DATAWATCH_APP_VERSION_CODE}
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
         OTHER_LDFLAGS: $(inherited) -framework DatawatchShared
       configs:

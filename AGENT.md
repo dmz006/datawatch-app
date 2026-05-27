@@ -149,12 +149,14 @@ bumps inside 0.x still follow the rules below.
 - **Breaking changes** (user must explicitly request) = **major** — but in this project,
   major (1.0.0) is gated on PWA parity per ADR-0043, not on breakage alone.
 
-**Version string lives in THREE places — update together in every release commit:**
-- `composeApp/build.gradle.kts` — `versionName = "X.Y.Z"` and `versionCode` monotonic
-- `wear/build.gradle.kts` — same `versionName`, matching `versionCode`
+**Version string lives in FOUR places — update together in every release commit:**
+- `gradle.properties` — `DATAWATCH_APP_VERSION` + `DATAWATCH_APP_VERSION_CODE` (source of truth)
+- `composeApp/build.gradle.kts` — reads from `gradle.properties` (no manual edit needed)
+- `wear/build.gradle.kts` — reads from `gradle.properties` (no manual edit needed)
 - `shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt` — `const val VERSION = "X.Y.Z"`
+- iOS `iosApp/iosApp/Info.plist` — uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` build settings injected from `gradle.properties` by CI and `scripts/build-ios-framework.sh`; no manual edit needed, but CI verifies the plist has not been hardcoded.
 
-**Pre-release version check**: a CI step greps all three and fails if mismatched.
+**Pre-release version check**: a CI step greps all sources and fails if any diverges.
 **Never reuse a versionCode.** Play Store rejects re-uploads with the same code.
 **Never manually edit `versionCode`** to a lower number — it must monotonically increase
 across all tracks for the same applicationId.
@@ -438,11 +440,15 @@ When filing a cross-repo gap: verify the PWA source first — `openapi.yaml` has
 - Always use `adb install -r <apk>`. Only consider uninstall if `install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, and warn the user first.
 - **Sideload both flavors** on every release-install: `composeApp-publicTrack-debug.apk` (holds user's live server configs) **and** `composeApp-dev-debug.apk` (sandbox for devPassenger Auto surface). When user says "install" without specifying, install both.
 
-### Version Sync (2026-04-21)
+### Version Sync (2026-04-21, updated 2026-05-27)
 
 When bumping app version, update **both** files in the same commit:
 1. `gradle.properties` — `DATAWATCH_APP_VERSION` + `DATAWATCH_APP_VERSION_CODE`
 2. `shared/src/commonMain/kotlin/com/dmzs/datawatchclient/Version.kt` — `Version.VERSION` + `Version.VERSION_CODE`
+
+iOS `iosApp/iosApp/Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` build
+settings that CI and `scripts/build-ios-framework.sh` inject from `gradle.properties`
+automatically — no manual plist edit is needed or correct.
 
 CI `check-version` job rejects any mismatch. Sanity check:
 ```bash
@@ -605,7 +611,11 @@ The parent is the source of truth for *which keys exist*; the mobile app is the 
 truth for *translation quality* (DE/ES/FR/JA come from Compose Multiplatform UX feedback).
 Mirror direction: parent → mobile for key requests; mobile → parent for translation values.
 
-### iOS Native Parity (SwiftUI — ADR-pending Q2 decision 2026-05-27)
+### iOS Native Parity (SwiftUI — decisions locked 2026-05-27)
+
+**Build toolchain:** GitHub Actions `macos-15` runner → `./gradlew :shared:assembleDebugXCFramework` → `xcodegen generate --spec iosApp/project.yml` → `xcodebuild`. Locally: `./scripts/build-ios-framework.sh --xcodegen`.
+
+**Decisions locked (Q1–Q7):** GitHub Actions CI + cloud Mac for interactive Simulator; SwiftUI native UI; iOS 16.0 minimum; Individual Apple Developer account; direct APNs from datawatch server; Apple Secure Enclave (NSFileProtectionComplete) encryption; `com.dmzs.datawatchclient` bundle ID.
 
 The iOS client is built in **SwiftUI** (native). The parity standard is:
 
