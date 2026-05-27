@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-05-27
+
+### Fixed
+- **Android Auto item-list overflow**: `AutoMonitorScreen` single-server mode added a profile header row plus up to 6 detail rows (CPU + Memory + Disk + GPU + Sessions + Uptime), reaching 7 items against the Car App Library's 6-item `ItemList` cap — resulting in `IllegalArgumentException` at `items.build()`. Removed the redundant profile header row; the template title now shows the server's display name in single-server mode.
+
 ## [1.0.2] — 2026-05-27
 
 ### Added — iOS client (Stories 1–15)

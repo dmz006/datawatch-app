@@ -110,14 +110,9 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     .build(),
             )
         } else if (rows.size == 1) {
-            // Single-server: show full detail rows (original layout).
+            // Single-server: full detail rows, no profile header row (Car App Library
+            // caps ItemList at 6; detail rows alone can reach 6: CPU+Mem+Disk+GPU+Sessions+Uptime).
             val row = rows[0]
-            items.addItem(
-                Row.Builder()
-                    .setTitle(colored("● ${row.profile.displayName}", CarColor.GREEN))
-                    .addText(row.profile.baseUrl)
-                    .build(),
-            )
             val s = row.stats
             if (s != null) {
                 addDetailRows(items, s)
@@ -185,7 +180,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
                 .build()
-        val title = "datawatch ${Version.VERSION}"
+        val title = if (rows.size == 1) rows[0].profile.displayName else "datawatch ${Version.VERSION}"
         return ListTemplate.Builder()
             .setTitle(title)
             .setHeaderAction(Action.APP_ICON)
