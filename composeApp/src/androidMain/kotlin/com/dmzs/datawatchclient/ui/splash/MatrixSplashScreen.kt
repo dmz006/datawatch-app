@@ -99,7 +99,7 @@ public fun MatrixSplashScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "AI Session Monitor",
+                "AI Orchestration",
                 style = MaterialTheme.typography.labelMedium,
                 color = Color(0xFF94A3B8),
                 modifier = Modifier.padding(top = 2.dp),

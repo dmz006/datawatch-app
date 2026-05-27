@@ -36,7 +36,7 @@
 
     <string name="wear_servers_empty">Aucun serveur activé</string>
 
-    <string name="wear_about_tagline">Moniteur IA &amp; Passerelle</string>
+    <string name="wear_about_tagline">Orchestration IA &amp; Passerelle</string>
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 
