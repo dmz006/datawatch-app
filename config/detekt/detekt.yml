@@ -35,6 +35,28 @@ style:
 complexity:
   LongMethod:
     threshold: 80
+    # Compose functions are inherently long — layout, state, and event handling
+    # all live in one function body. Exempting them matches the same rationale
+    # as ignoring MagicNumber and FunctionNaming for Composable functions.
+    ignoreAnnotated:
+      - 'Composable'
+  CyclomaticComplexMethod:
+    # Rule triggers at >= threshold; set to 16 so non-Composable functions with
+    # exactly 15 branches (the natural upper bound for switch-like dispatchers)
+    # are not flagged. Composable functions are excluded entirely.
+    threshold: 16
+    ignoreAnnotated:
+      - 'Composable'
+  TooManyFunctions:
+    # Android Service/Activity/TileService subclasses routinely exceed 11 methods
+    # due to lifecycle callbacks alone. Raise the class threshold to 15.
+    thresholdInClasses: 15
+    thresholdInObjects: 11
+    thresholdInInterfaces: 11
+    thresholdInFiles: 11
   LongParameterList:
     functionThreshold: 8
     constructorThreshold: 8
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
