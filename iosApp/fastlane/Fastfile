@@ -1,0 +1,38 @@
+# Fastlane for datawatch iOS (Story 15)
+# See: https://docs.fastlane.tools
+#
+# Prerequisites before running:
+#   - Apple Developer enrollment at developer.apple.com (Individual, $99/year)
+#   - App Store Connect API key in GitHub Secrets
+#   - fastlane match repo configured (see Matchfile)
+
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Sync development certificates"
+  lane :certs_dev do
+    match(type: "development", readonly: true)
+  end
+
+  desc "Sync App Store distribution certificates"
+  lane :certs_appstore do
+    match(type: "appstore", readonly: true)
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    match(type: "appstore", readonly: true)
+    build_app(
+      project: "DatawatchClient.xcodeproj",
+      scheme: "DatawatchClient",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: "ExportOptions.plist"
+    )
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+end
