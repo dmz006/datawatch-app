@@ -601,8 +601,8 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 
 | Q# | Asked | Answered | Decision |
 |----|-------|----------|----------|
-| Q1 | 2026-05-27 | Pending | Build & test environment on Linux |
-| Q2 | – | Pending | SwiftUI vs Compose Multiplatform |
+| Q1 | 2026-05-27 | **Hybrid E** — GitHub Actions macOS CI now; cloud Mac tonight/tomorrow for interactive Simulator | Build & test environment |
+| Q2 | 2026-05-27 | **SwiftUI (native iOS)** | Users get native iOS UX; parity standard is capability not implementation |
 | Q3 | – | Pending | Minimum iOS version (proposed: 16.0) |
 | Q4 | – | Pending | Apple Developer Account type |
 | Q5 | – | Pending | APNs strategy |

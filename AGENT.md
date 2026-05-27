@@ -605,6 +605,47 @@ The parent is the source of truth for *which keys exist*; the mobile app is the 
 truth for *translation quality* (DE/ES/FR/JA come from Compose Multiplatform UX feedback).
 Mirror direction: parent → mobile for key requests; mobile → parent for translation values.
 
+### iOS Native Parity (SwiftUI — ADR-pending Q2 decision 2026-05-27)
+
+The iOS client is built in **SwiftUI** (native). The parity standard is:
+
+> **PWA == Android == iOS** — what a user can do and see, not how it is implemented.
+
+Native iOS patterns are the *correct* implementation when they are the platform-idiomatic
+equivalent of an Android or PWA pattern. They do **not** require an ADR:
+
+| iOS pattern | Android / PWA equivalent |
+|-------------|--------------------------|
+| `NavigationSplitView` | Two-pane tablet layout |
+| `NavigationStack` | `NavHost` back-stack |
+| `UNUserNotificationCenter` + APNs | FCM + `NotificationManager` |
+| iOS Keychain | `EncryptedSharedPreferences` |
+| `LAContext` Face ID / Touch ID | `BiometricPrompt` |
+| Share Sheet | Android share intent |
+| `WKWebView` + `WKScriptMessageHandler` | Android `WebView` + `addJavascriptInterface`-free bridge |
+
+An ADR **is** required when:
+- A capability exists in the PWA or Android but is absent from iOS (feature gap).
+- iOS introduces a mobile-only protocol extension not present in the PWA API.
+- A screen's data model or interaction flow materially differs across platforms.
+
+**Code organisation:**
+- Swift/SwiftUI lives exclusively in `iosApp/`.
+- All data, transport, ViewModels, and domain types live in `shared/` (KMP).
+- No Swift code in `shared/`; no Kotlin UI code in `iosApp/`.
+- iOS screens consume `DatawatchShared.xcframework`; they do not reach into Gradle modules.
+
+**Style:**
+- Dark-only; no light-mode variant. Same PWA palette as Android: background `#000000`,
+  surface `#060A0E`, primary `#00E5FF`, secondary `#FFB300`, error `#FF4444`.
+- SF Mono for terminal text; SF Pro for UI text.
+- Every screen must have a `PreviewProvider` for Xcode Canvas.
+
+**Parity tracking:**
+- `docs/parity-status.md` has an iOS column alongside Android.
+- `docs/testing-tracker.md` has a separate iOS row for every surface.
+- Cross-repo parity gaps are tracked in `dmz006/datawatch` (see GitHub issue filed 2026-05-27).
+
 ### Iterate
 
 When asked to do something, execute it then immediately run multi-pass review until there are **zero remaining gaps** between what was asked and what was delivered.
