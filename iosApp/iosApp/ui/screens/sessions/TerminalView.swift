@@ -99,13 +99,16 @@ private struct TerminalWebView: UIViewRepresentable {
         config.userContentController = contentController
         config.allowsInlineMediaPlayback = true
 
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = DwWKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .black
         webView.scrollView.backgroundColor = .black
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
+        webView.onLayout = { [weak coordinator = context.coordinator] size in
+            coordinator?.onFrameChanged(size: size)
+        }
 
         let html = Self.buildHTML(session: session, profile: profile)
         webView.loadHTMLString(html, baseURL: nil)
@@ -187,6 +190,22 @@ private struct TerminalWebView: UIViewRepresentable {
         fitAddon.fit();
         window.addEventListener('resize', function() { fitAddon.fit(); });
 
+        // Called from native when the WKWebView frame changes size (keyboard, rotation).
+        // Takes pixel dimensions of the WKWebView frame, computes char cell size from
+        // the terminal's current font metrics, and resizes xterm to fit exactly.
+        window.dwExplicitSize = function(w, h) {
+          var core = term._core;
+          var cw = core._renderService.dimensions.css.cell.width;
+          var ch = core._renderService.dimensions.css.cell.height;
+          if (!cw || !ch) { fitAddon.fit(); return; }
+          var cols = Math.max(2, Math.floor(w / cw));
+          var rows = Math.max(1, Math.floor(h / ch));
+          if (cols !== term.cols || rows !== term.rows) {
+            term.resize(cols, rows);
+          }
+          fitAddon.fit();
+        };
+
         var wsUrl = '__WS_URL__';
         var ws;
 
@@ -250,6 +269,19 @@ private struct TerminalWebView: UIViewRepresentable {
     """
 }
 
+// MARK: - DwWKWebView
+
+/// WKWebView subclass that calls `onLayout` whenever its bounds change.
+/// This fires after SwiftUI's keyboard-avoidance shrinks the view, giving
+/// the terminal a chance to re-fit its rows/cols to the new visible area.
+private final class DwWKWebView: WKWebView {
+    var onLayout: ((CGSize) -> Void)?
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        onLayout?(bounds.size)
+    }
+}
+
 // MARK: - Coordinator
 
 extension TerminalWebView {
@@ -294,6 +326,19 @@ extension TerminalWebView {
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
             decisionHandler(.allow)
+        }
+
+        /// Called by `DwWKWebView.onLayout` whenever the WebView frame changes
+        /// (keyboard show/hide, rotation, split-view resize). Passes the new
+        /// pixel dimensions into JS so xterm can recalculate cols/rows exactly.
+        func onFrameChanged(size: CGSize) {
+            let w = Int(size.width)
+            let h = Int(size.height)
+            guard w > 0, h > 0 else { return }
+            webView?.evaluateJavaScript(
+                "window.dwExplicitSize && window.dwExplicitSize(\(w), \(h));",
+                completionHandler: nil
+            )
         }
 
         /// Triggers a JS-level WebSocket reconnect without reloading the page.
