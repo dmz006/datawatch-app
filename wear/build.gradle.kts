@@ -53,13 +53,6 @@ android {
             keyAlias = "datawatch-upload"
             keyPassword = keystorePasswordProvider()
         }
-        // Dev upload key for sideloaded dev builds.
-        create("dev") {
-            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-dev-upload-ring.jks")
-            storePassword = keystorePasswordProvider()
-            keyAlias = "datawatch-dev-upload"
-            keyPassword = keystorePasswordProvider()
-        }
     }
 
     buildTypes {
@@ -69,11 +62,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
         debug {
-            // Mirror composeApp's `.debug` suffix so side-loaded debug
-            // builds on phone + watch share the same applicationId
-            // (`com.dmzs.datawatchclient.debug`).
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("dev")
         }
     }
     compileOptions {

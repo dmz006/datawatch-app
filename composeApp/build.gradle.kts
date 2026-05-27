@@ -87,12 +87,6 @@ android {
             keyAlias = "datawatch-upload"
             keyPassword = keystorePasswordProvider()
         }
-        create("dev") {
-            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-dev-upload-ring.jks")
-            storePassword = keystorePasswordProvider()
-            keyAlias = "datawatch-dev-upload"
-            keyPassword = keystorePasswordProvider()
-        }
     }
 
     defaultConfig {
@@ -118,22 +112,7 @@ android {
     productFlavors {
         create("publicTrack") {
             dimension = "track"
-            applicationIdSuffix = ""
-            versionNameSuffix = ""
-            manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
-            // Auto module has its own flavor dimension `surface`;
-            // pair publicTrack → publicMessaging so the
-            // CarAppService + manifest merge into the release APK.
-            missingDimensionStrategy("surface", "publicMessaging")
             signingConfig = signingConfigs.getByName("publicTrack")
-        }
-        create("dev") {
-            dimension = "track"
-            applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
-            manifestPlaceholders["autoCategory"] = "androidx.car.app.category.MESSAGING"
-            missingDimensionStrategy("surface", "devPassenger")
-            signingConfig = signingConfigs.getByName("dev")
         }
     }
 

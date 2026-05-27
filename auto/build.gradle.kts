@@ -13,24 +13,10 @@ android {
         minSdk = 29
     }
 
-    flavorDimensions += "surface"
-    productFlavors {
-        create("publicMessaging") {
-            dimension = "surface"
-        }
-        create("devPassenger") {
-            dimension = "surface"
-        }
-    }
-
     sourceSets {
-        getByName("publicMessaging") {
-            java.srcDirs("src/publicMain/kotlin")
+        getByName("main") {
+            java.srcDirs("src/main/kotlin", "src/publicMain/kotlin")
             manifest.srcFile("src/publicMain/AndroidManifest.xml")
-        }
-        getByName("devPassenger") {
-            java.srcDirs("src/devMain/kotlin")
-            manifest.srcFile("src/devMain/AndroidManifest.xml")
         }
     }
 
