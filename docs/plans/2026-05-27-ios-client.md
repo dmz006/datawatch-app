@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-27  
 **Version at planning:** 1.0.1 (build 310)  
-**Status:** Planning — decisions pending user interview  
+**Status:** ✅ Implementation Complete — Stories 1-15 shipped (2026-05-27)  
 **North star:** 1:1 PWA parity, zero mobile-only protocol inventions  
 **Scope:** iPhone first; iPad split-view in same release; watchOS/CarPlay out of scope v1  
 
@@ -608,3 +608,38 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | Q5 | 2026-05-27 | **Option A — direct APNs from datawatch server** | `kind=apns` on `/api/devices/register`; server holds APNs Auth Key (.p8); ntfy unchanged for Android |
 | Q6 | 2026-05-27 | **Option B — Apple Data Protection (NSFileProtectionComplete / Secure Enclave)** | Hardware AES-256 via Secure Enclave; zero added deps; docs must say "hardware-encrypted via Apple Secure Enclave" accurately |
 | Q7 | 2026-05-27 | **Option A — `com.dmzs.datawatchclient`** | Single bundle ID; iOS and Android share one brand identity; already set in `project.yml` |
+
+---
+
+## Story 14 — PWA Parity Audit Results (2026-05-27)
+
+### Delivered parity (all 6 tabs functional)
+
+| Feature | PWA | iOS | Gap |
+|---------|-----|-----|-----|
+| Sessions list (live polling) | ✅ | ✅ | None |
+| Session state dots | ✅ | ✅ | None |
+| Terminal (xterm.js / WKWebView) | ✅ | ✅ | iOS uses CDN xterm.js; Android uses bundled |
+| Kill session | ✅ | ✅ | None |
+| Alerts list | ✅ | ✅ | None |
+| Alert severity icons | ✅ | ✅ | None |
+| Automata tab | ✅ | Placeholder | Full CRUD planned for v1.1 |
+| Observer / stats | ✅ | ✅ | None |
+| Dashboard multi-server | ✅ | ✅ | None |
+| Server profiles (add/edit/delete) | ✅ | ✅ | None |
+| Bearer token (Keychain) | ✅ | ✅ | iOS Keychain; Android Keystore |
+| Trust all certificates | ✅ | ✅ | None |
+| Biometric lock | N/A | ✅ | iOS-only addition |
+| Push notifications (APNs) | N/A | Stub | Waiting on datawatch#107 |
+| iPad sidebar | N/A | ✅ | iOS-only addition |
+| Dark mode | ✅ | ✅ | iOS forced dark; PWA auto |
+
+### Known gaps for v1.1
+
+1. **Automata CRUD** — list + create/edit rules; depends on `listAutomataTypes` API
+2. **Push notifications** — requires server-side `POST /api/devices/register?kind=apns` (datawatch#107)
+3. **Session start** — "+" button in Sessions tab; needs model/profile picker
+4. **Alert dismiss** — server-side dismissal via API (currently client-side only)
+5. **Deep link handling** — `datawatch://session/<id>` and `datawatch://alert/<id>` routing wired but not tested end-to-end
+6. **Terminal IME handling** — `onSizeChanged` → `dwExplicitSize` pattern from Android xterm fix not yet ported; keyboard may overlap terminal
+
