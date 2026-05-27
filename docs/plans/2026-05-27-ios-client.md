@@ -383,6 +383,14 @@ The iOS content phase (UI, push, auth, all screens) begins now. Android is produ
 - **Task 11.3.2** "Export logs" → redacted log file via Share Sheet (tokens never appear).
 - **Task 11.3.3** "Reset app data" → confirm dialog → wipe DB + Keychain entries.
 
+#### Epic 11.4 — Device Registration & Lost-Device Revocation
+
+- **Task 11.4.1** "Registered Devices" section in Settings → list all devices registered against the active server profile (calls `GET /api/devices`); show device name, platform (iOS/Android), registration date.
+- **Task 11.4.2** "Remove this device" button per device row → calls `DELETE /api/devices/{id}` → removes APNs/ntfy registration; device stops receiving push.
+- **Task 11.4.3** Self-remove: "Remove current device" shortcut at top of section so a user can deregister the device they are holding before wiping or selling it.
+- **Task 11.4.4** Lost-device documentation in `docs/security-model.md` iOS section: "If you lose an iOS device, open Settings on another device and remove it from Registered Devices. If you no longer have access to any device, rotate the server's bearer token — this invalidates all registered devices immediately. Future user-account releases will replace token rotation with password rotation."
+- **Task 11.4.5** Accurate encryption documentation in `docs/security-model.md`: "The local database on iOS is hardware-encrypted by Apple's Secure Enclave using NSFileProtectionComplete (AES-256). The database file is inaccessible while the device is locked, enforced at the hardware level without a user-facing passphrase. Bearer tokens are stored separately in the iOS Keychain." Do not say SQLCipher.
+
 ---
 
 ### Story 12 — Push Notifications (APNs)
@@ -606,5 +614,5 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | Q3 | 2026-05-27 | **iOS 16.0** | NavigationSplitView + Swift Charts; ~91% active device coverage |
 | Q4 | 2026-05-27 | **Individual — enrolling now** | No D-U-N-S needed; unblocks signing secrets in CI |
 | Q5 | 2026-05-27 | **Option A — direct APNs from datawatch server** | `kind=apns` on `/api/devices/register`; server holds APNs Auth Key (.p8); ntfy unchanged for Android |
-| Q6 | – | Pending | Database encryption on iOS |
+| Q6 | 2026-05-27 | **Option B — Apple Data Protection (NSFileProtectionComplete / Secure Enclave)** | Hardware AES-256 via Secure Enclave; zero added deps; docs must say "hardware-encrypted via Apple Secure Enclave" accurately |
 | Q7 | – | Pending | App Store listing ID strategy |
