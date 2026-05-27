@@ -33,3 +33,6 @@ targets:
     dependencies:
       - framework: ../shared/build/XCFrameworks/debug/DatawatchShared.xcframework
         embed: true
+      - sdk: LocalAuthentication.framework
+      - sdk: UserNotifications.framework
+      - sdk: WebKit.framework
