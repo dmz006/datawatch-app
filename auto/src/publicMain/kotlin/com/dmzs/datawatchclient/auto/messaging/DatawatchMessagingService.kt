@@ -7,6 +7,7 @@ import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
 import com.dmzs.datawatchclient.auto.AutoMonitorScreen
 import com.dmzs.datawatchclient.auto.AutoServiceLocator
+import com.dmzs.datawatchclient.auto.R
 
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
@@ -31,15 +32,14 @@ public class DatawatchMessagingService : CarAppService() {
         } else {
             // Release builds: strict allowlist per ADR-0031 +
             // Google's Auto host-validation rules. The
-            // hosts_allowlist array ships in publicMain/res.
+            // hosts_allowlist array is in publicMain/res and is
+            // included via res.srcDirs in auto/build.gradle.kts.
+            //
+            // Using R.array.hosts_allowlist directly (not getIdentifier)
+            // so the reference is verified at compile time and can never
+            // silently return 0 if the resource is missing.
             HostValidator.Builder(this)
-                .addAllowedHosts(
-                    resources.getIdentifier(
-                        "hosts_allowlist",
-                        "array",
-                        packageName,
-                    ),
-                )
+                .addAllowedHosts(R.array.hosts_allowlist)
                 .build()
         }
 

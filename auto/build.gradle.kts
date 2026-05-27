@@ -17,6 +17,12 @@ android {
         getByName("main") {
             java.srcDirs("src/main/kotlin", "src/publicMain/kotlin")
             manifest.srcFile("src/publicMain/AndroidManifest.xml")
+            // publicMain/res must be listed explicitly — the AGP default only
+            // adds src/main/res. Without this, hosts_allowlist.xml was silently
+            // excluded, causing getIdentifier() to return 0 at runtime and
+            // addAllowedHosts(0) to throw Resources.NotFoundException inside
+            // createHostValidator(), crashing the CarAppService on launch.
+            res.srcDirs("src/main/res", "src/publicMain/res")
         }
     }
 
