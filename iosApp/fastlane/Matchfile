@@ -1,0 +1,9 @@
+# fastlane match certificate/profile management
+# Replace git_url with your private certs repo before running.
+#
+# Setup: fastlane match init
+# Usage: fastlane match appstore --readonly
+
+# git_url("https://github.com/your-org/datawatch-ios-certs")
+app_identifier(["com.dmzs.datawatchclient"])
+username("davidzendzian@gmail.com")

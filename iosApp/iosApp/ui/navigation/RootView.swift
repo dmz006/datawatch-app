@@ -5,10 +5,25 @@ import SwiftUI
 /// Tab order: Sessions | Alerts | Automata | Observer | Dashboard | Settings
 /// Matches composeApp's BottomNavItem ordering so deep links resolve to the
 /// same conceptual surface regardless of platform.
+///
+/// Story 13: On iPad (regular horizontal size class) uses NavigationSplitView
+/// for a sidebar+detail layout. On iPhone uses TabView.
 struct RootView: View {
+    @EnvironmentObject private var profileStore: ServerProfileStore
     @State private var selectedTab: AppTab = .sessions
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
+        if horizontalSizeClass == .regular {
+            iPadLayout
+        } else {
+            iPhoneLayout
+        }
+    }
+
+    // ── iPhone: TabView ───────────────────────────────────────────────────
+
+    private var iPhoneLayout: some View {
         TabView(selection: $selectedTab) {
             ForEach(AppTab.allCases) { tab in
                 NavigationStack {
@@ -27,11 +42,37 @@ struct RootView: View {
             AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
         }
     }
+
+    // ── iPad: NavigationSplitView ─────────────────────────────────────────
+
+    private var iPadLayout: some View {
+        NavigationSplitView {
+            List(AppTab.allCases, selection: $selectedTab) { tab in
+                NavigationLink(value: tab) {
+                    Label(tab.title, systemImage: tab.iconName)
+                        .foregroundStyle(DatawatchColors.onSurface)
+                }
+            }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.surface)
+            .navigationTitle("datawatch")
+        } detail: {
+            NavigationStack {
+                selectedTab.rootView
+            }
+        }
+        .tint(DatawatchColors.primary)
+        .preferredColorScheme(.dark)
+        .onOpenURL { url in
+            AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
+        }
+    }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
-enum AppTab: String, CaseIterable, Identifiable {
+enum AppTab: String, CaseIterable, Identifiable, Hashable {
     case sessions  = "sessions"
     case alerts    = "alerts"
     case automata  = "automata"
@@ -63,7 +104,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Badge value — wired to ViewModel state in Story 5 (Sessions) and Story 6 (Alerts).
+    /// Badge value — wired to live data in the view models.
     var badge: Int { 0 }
 
     @ViewBuilder
@@ -82,5 +123,6 @@ enum AppTab: String, CaseIterable, Identifiable {
 #if DEBUG
 #Preview {
     RootView()
+        .environmentObject(ServerProfileStore())
 }
 #endif
