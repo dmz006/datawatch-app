@@ -233,3 +233,27 @@ Deliberately skipped, matched against the parent's own PWA non-goals:
 - Raw YAML config editing (ADR-0019).
 - Direct Signal / Telegram channel-app embedding (Intent handoff only).
 - Creating / editing LLM-backend Go plugins from mobile.
+
+---
+
+## iOS Parity (added 2026-05-27)
+
+iOS client shipped in v1.0.2. The parity standard is **capability match** (what the user can do), not implementation match. See `docs/plans/2026-05-27-ios-client.md` §Story 14 for the full audit table.
+
+### iOS v1.0.2 summary
+
+| Section | iOS status | Gap vs Android/PWA |
+|---------|-----------|-------------------|
+| Sessions list | ✅ | No multi-server picker, no all-servers fan-out yet |
+| Terminal (xterm.js) | ✅ | IME keyboard-overlap not yet fixed |
+| Kill / session actions | ✅ (kill only) | No rename, restart, state override in v1.0.2 |
+| Alerts | ✅ | Server-side dismiss not wired |
+| Automata | ⏳ | Placeholder only — full CRUD in v1.1 |
+| Observer / stats | ✅ | |
+| Dashboard | ✅ | |
+| Server profiles | ✅ | |
+| Biometric lock | ✅ (iOS-only) | |
+| Push notifications | ⏳ | APNs stub exists; blocked on datawatch#107 |
+| iPad split-view | ✅ (iOS-only) | |
+
+iOS rows will be added to the per-feature tables above as each gap closes.

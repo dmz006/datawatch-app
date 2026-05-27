@@ -48,7 +48,21 @@ gets two levels of validation:
 | Auto public | Messaging template TTS readout | No | No | 4 | | |
 | Auto public | Voice reply via Car App | No | No | 4 | | |
 | Auto dev | Full passenger UI | No | No | 4 | | `.dev` flavor only |
-| iOS-skel | `:shared` framework link | No | No | 1 | | skeleton only |
+| iOS | `IosTokenStore` Keychain round-trip | No | No | iOS-4 | Requires macOS/XCTest runner | CoreFoundation SecItem* put/get/remove |
+| iOS | `IosDatabaseFactory` NSFileProtectionComplete | No | No | iOS-4 | Requires real iOS device + XCTest | Verify file attr after driver init |
+| iOS | `IosServiceLocator` callback bridge (saveProfile) | No | No | iOS-4 | Requires macOS/XCTest + MockWebServer | Probe → persist → verify DB |
+| iOS | Sessions list (live polling 10 s) | No | No | iOS-5 | Requires real iPhone + running datawatch | SessionsView with real session data |
+| iOS | Terminal WKWebView + xterm.js WS | No | No | iOS-6 | Requires real iPhone + running datawatch | Connect, type input, receive output |
+| iOS | Kill session from SessionDetailView | No | No | iOS-6 | Requires real iPhone + running datawatch | Confirm kill via server session list |
+| iOS | Alerts list (polling, severity icons) | No | No | iOS-8 | Requires real iPhone + running datawatch | AlertsView with real alert data |
+| iOS | Observer metrics grid (5 s polling) | No | No | iOS-9 | Requires real iPhone + running datawatch | CPU/mem/disk values match server |
+| iOS | Dashboard multi-server cards | No | No | iOS-10 | Requires real iPhone + ≥2 datawatch servers | Parallel fetch, both cards show stats |
+| iOS | Server profile add/edit/delete + probe | No | No | iOS-4 | Requires real iPhone + running datawatch | Round-trip add → probe → persist → delete |
+| iOS | Bearer token Keychain storage | No | No | iOS-4 | Requires real iPhone | Add server with token; verify token survives app restart |
+| iOS | Face ID / Touch ID lock | No | No | iOS-4 | Requires real iPhone with Face ID or Touch ID | Enable in Settings; relaunch; verify gate appears |
+| iOS | iPad NavigationSplitView | No | No | iOS-13 | Requires real iPad or iPad Simulator (macOS) | Sidebar + detail layout on regular size class |
+| iOS | APNs device token registration stub | No | No | iOS-12 | Requires real iPhone (APNs not available on Simulator) | Token printed to console; registration to server pending datawatch#107 |
+| iOS | xcodebuild simulator build (CI) | No | No | iOS-1 | GitHub Actions macos-15 — check CI run | Build succeeds; no compilation errors |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.
