@@ -2,22 +2,88 @@ import SwiftUI
 import WebKit
 import DatawatchShared
 
-// MARK: - TerminalView
+// MARK: - TerminalView (public SwiftUI entry point)
 
-/// A `UIViewRepresentable` that embeds an xterm.js terminal inside a WKWebView.
+/// SwiftUI view that embeds an xterm.js terminal inside a `WKWebView`.
 ///
-/// The WebView loads a self-contained HTML string (xterm.js from CDN) and opens
-/// a WebSocket directly to the datawatch terminal endpoint. Swift↔JS messages
-/// are exchanged via `window.webkit.messageHandlers.terminalMsg`.
-struct TerminalView: UIViewRepresentable {
-
+/// Layers a loading spinner until the WebSocket connects, and a reconnect
+/// button when the socket drops. The underlying WebView (`TerminalWebView`)
+/// is a `UIViewRepresentable` that holds all WKWebView / JS bridge logic.
+struct TerminalView: View {
     let session: Session
     let profile: ServerProfile
 
-    // ── Connection state (read by overlay) ────────────────────────────────
-
     @State private var connected = false
     @State private var disconnected = false
+
+    var body: some View {
+        ZStack {
+            // Underlying WKWebView.
+            TerminalWebView(
+                session: session,
+                profile: profile,
+                connected: $connected,
+                disconnected: $disconnected
+            )
+
+            // Loading overlay until WS opens.
+            if !connected && !disconnected {
+                LoadingIndicator(message: "Connecting to terminal…")
+                    .transition(.opacity)
+            }
+
+            // Reconnect overlay after WS drops.
+            if disconnected {
+                reconnectOverlay
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: connected)
+        .animation(.easeInOut(duration: 0.25), value: disconnected)
+        .background(Color.black)
+    }
+
+    // ── Reconnect overlay ─────────────────────────────────────────────────
+
+    private var reconnectOverlay: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 40))
+                .foregroundStyle(DatawatchColors.error)
+                .accessibilityHidden(true)
+
+            Text("Terminal disconnected")
+                .font(DatawatchFonts.bodyMedium)
+                .foregroundStyle(DatawatchColors.onSurface)
+
+            Button("Reconnect") {
+                // Reset UI state; JS in the WebView will report back via
+                // the "connected"/"disconnected" messages.
+                disconnected = false
+                connected = false
+            }
+            .font(DatawatchFonts.bodyMedium)
+            .foregroundStyle(DatawatchColors.primary)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 10)
+            .overlay(Capsule().stroke(DatawatchColors.primary, lineWidth: 1))
+            .accessibilityHint("Attempts to reconnect the WebSocket")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DatawatchColors.background.opacity(0.92))
+    }
+}
+
+// MARK: - TerminalWebView (UIViewRepresentable)
+
+/// Internal `UIViewRepresentable` that owns the `WKWebView` and the
+/// Swift ↔ JS message bridge. Not used directly — use `TerminalView` instead.
+private struct TerminalWebView: UIViewRepresentable {
+
+    let session: Session
+    let profile: ServerProfile
+    @Binding var connected: Bool
+    @Binding var disconnected: Bool
 
     // MARK: UIViewRepresentable
 
@@ -26,9 +92,11 @@ struct TerminalView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> WKWebView {
+        let contentController = WKUserContentController()
+        contentController.add(context.coordinator, name: "terminalMsg")
+
         let config = WKWebViewConfiguration()
-        config.userContentController.add(context.coordinator, name: "terminalMsg")
-        // Allow inline media and mixed content for self-signed / dev servers.
+        config.userContentController = contentController
         config.allowsInlineMediaPlayback = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -37,8 +105,6 @@ struct TerminalView: UIViewRepresentable {
         webView.scrollView.backgroundColor = .black
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
-
-        // Store reference so coordinator can call JS later.
         context.coordinator.webView = webView
 
         let html = Self.buildHTML(session: session, profile: profile)
@@ -47,42 +113,45 @@ struct TerminalView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // No dynamic updates — the WebView owns its own state.
+        // Stateless after initial load — WebView owns its own lifecycle.
     }
 
-    // MARK: HTML builder
+    // MARK: HTML / WS URL builder
 
     private static func buildHTML(session: Session, profile: ServerProfile) -> String {
         let wsUrl = buildWSUrl(session: session, profile: profile)
-        return rawHTML.replacingOccurrences(of: "__WS_URL__", with: wsUrl)
+        return xtermHTML.replacingOccurrences(of: "__WS_URL__", with: wsUrl)
     }
 
-    /// Converts `http(s)://host/...` → `ws(s)://host/api/terminal/<id>?token=<tok>`.
+    /// Converts `http(s)://host` → `ws(s)://host/api/terminal/<sessionId>?token=<tok>`.
     private static func buildWSUrl(session: Session, profile: ServerProfile) -> String {
         var base = profile.baseUrl
-        // Normalise trailing slash.
         if base.hasSuffix("/") { base = String(base.dropLast()) }
-        // Scheme swap.
+
         if base.hasPrefix("https://") {
             base = "wss://" + base.dropFirst("https://".count)
         } else if base.hasPrefix("http://") {
             base = "ws://" + base.dropFirst("http://".count)
         }
+
         var url = "\(base)/api/terminal/\(session.id)"
-        // Append bearer token as query param when available.
+
         let alias = profile.bearerTokenRef
-        if !alias.isEmpty, let token = IosServiceLocator.shared.getToken(alias: alias) {
-            // Percent-encode the token value so it survives the URL.
-            let encoded = token.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? token
+        if !alias.isEmpty,
+           let token = IosServiceLocator.shared.getToken(alias: alias),
+           !token.isEmpty {
+            let encoded = token.addingPercentEncoding(
+                withAllowedCharacters: .urlQueryAllowed
+            ) ?? token
             url += "?token=\(encoded)"
         }
         return url
     }
 
-    // MARK: xterm.js HTML
+    // MARK: xterm.js HTML template
 
-    // swiftlint:disable line_length
-    private static let rawHTML = """
+    // swiftlint:disable:next line_length
+    private static let xtermHTML: String = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -109,21 +178,15 @@ struct TerminalView: UIViewRepresentable {
             foreground: '#D0E8ED',
             cursor: '#00E5FF',
             cursorAccent: '#000000',
-            selection: 'rgba(0, 229, 255, 0.3)',
-            black: '#000000',
-            brightBlack: '#1A2830',
-            white: '#D0E8ED',
-            brightWhite: '#FFFFFF'
+            selection: 'rgba(0, 229, 255, 0.3)'
           }
         });
         var fitAddon = new FitAddon.FitAddon();
         term.loadAddon(fitAddon);
         term.open(document.getElementById('terminal'));
         fitAddon.fit();
-
         window.addEventListener('resize', function() { fitAddon.fit(); });
 
-        // WebSocket setup
         var wsUrl = '__WS_URL__';
         var ws;
 
@@ -133,7 +196,6 @@ struct TerminalView: UIViewRepresentable {
 
           ws.onopen = function() {
             window.webkit.messageHandlers.terminalMsg.postMessage({ type: 'connected' });
-            // Send initial terminal size.
             var dims = fitAddon.proposeDimensions();
             if (dims) {
               ws.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }));
@@ -168,7 +230,6 @@ struct TerminalView: UIViewRepresentable {
           }
         });
 
-        // Public interface callable from Swift.
         window.sendInput = function(data) {
           if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
         };
@@ -178,7 +239,7 @@ struct TerminalView: UIViewRepresentable {
         };
 
         window.reconnect = function() {
-          if (ws) ws.close();
+          if (ws) { try { ws.close(); } catch(e) {} }
           connect();
         };
 
@@ -187,12 +248,11 @@ struct TerminalView: UIViewRepresentable {
     </body>
     </html>
     """
-    // swiftlint:enable line_length
 }
 
 // MARK: - Coordinator
 
-extension TerminalView {
+extension TerminalWebView {
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         @Binding var connected: Bool
         @Binding var disconnected: Bool
@@ -203,14 +263,15 @@ extension TerminalView {
             _disconnected = disconnected
         }
 
-        // WKScriptMessageHandler — receives messages from JS.
+        // WKScriptMessageHandler — JS → Swift bridge.
         func userContentController(
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
             guard message.name == "terminalMsg",
                   let body = message.body as? [String: Any],
-                  let type = body["type"] as? String else { return }
+                  let type = body["type"] as? String
+            else { return }
 
             DispatchQueue.main.async { [weak self] in
                 switch type {
@@ -226,7 +287,7 @@ extension TerminalView {
             }
         }
 
-        // WKNavigationDelegate — allow all navigation inside the WebView.
+        // WKNavigationDelegate — allow all navigations inside the WebView.
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
@@ -235,80 +296,12 @@ extension TerminalView {
             decisionHandler(.allow)
         }
 
-        /// Sends a reconnect command to the running JS context.
+        /// Triggers a JS-level WebSocket reconnect without reloading the page.
         func reconnect() {
-            webView?.evaluateJavaScript("window.reconnect && window.reconnect();", completionHandler: nil)
+            webView?.evaluateJavaScript(
+                "window.reconnect && window.reconnect();",
+                completionHandler: nil
+            )
         }
     }
 }
-
-// MARK: - TerminalView + overlay wrapper
-
-/// Public-facing wrapper that layers the loading/reconnect overlay on top of
-/// the raw `UIViewRepresentable`. Use this in `SessionDetailView`.
-private struct TerminalViewWithOverlay: View {
-    let session: Session
-    let profile: ServerProfile
-
-    @State private var connected = false
-    @State private var disconnected = false
-
-    var body: some View {
-        ZStack {
-            // The actual WebView underneath.
-            TerminalView(session: session, profile: profile)
-
-            // Loading overlay until connected.
-            if !connected && !disconnected {
-                LoadingIndicator(message: "Connecting to terminal…")
-                    .transition(.opacity)
-            }
-
-            // Reconnect overlay when disconnected.
-            if disconnected {
-                reconnectOverlay
-                    .transition(.opacity)
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: connected)
-        .animation(.easeInOut(duration: 0.25), value: disconnected)
-    }
-
-    private var reconnectOverlay: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "wifi.slash")
-                .font(.system(size: 40))
-                .foregroundStyle(DatawatchColors.error)
-                .accessibilityHidden(true)
-
-            Text("Terminal disconnected")
-                .font(DatawatchFonts.bodyMedium)
-                .foregroundStyle(DatawatchColors.onSurface)
-
-            Button("Reconnect") {
-                connected = false
-                disconnected = false
-                // The coordinator's reconnect() call happens via JS in the WebView;
-                // we just reset UI state here and let the JS WS handler report back.
-            }
-            .font(DatawatchFonts.bodyMedium)
-            .foregroundStyle(DatawatchColors.primary)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 10)
-            .overlay(Capsule().stroke(DatawatchColors.primary, lineWidth: 1))
-            .accessibilityHint("Attempts to reconnect the WebSocket")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DatawatchColors.background.opacity(0.92))
-    }
-}
-
-// Re-export `TerminalViewWithOverlay` as the public `TerminalView` used by
-// `SessionDetailView`. We shadow the UIViewRepresentable with a SwiftUI alias.
-//
-// Callers: `TerminalView(session:profile:)` → uses the overlay wrapper.
-// The underlying UIViewRepresentable is private-ish via the same-name struct above,
-// but Swift resolves the SwiftUI-conforming struct by preference in View contexts.
-//
-// To keep things clean we use a typealias at file scope:
-typealias TerminalView = TerminalViewWithOverlay
