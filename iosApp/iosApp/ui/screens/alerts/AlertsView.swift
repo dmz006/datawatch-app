@@ -13,9 +13,16 @@ final class AlertsViewModel: ObservableObject {
     private var profile: ServerProfile?
 
     func load(from profiles: [ServerProfile]) {
-        guard let first = profiles.first else { return }
-        profile = first
-        refresh()
+        let newActive = profiles.first
+        guard newActive?.id != profile?.id else { return }
+        profile = newActive
+        if newActive != nil {
+            refresh()
+        } else {
+            alerts = []
+            unreadCount = 0
+            error = nil
+        }
     }
 
     func refresh() {
