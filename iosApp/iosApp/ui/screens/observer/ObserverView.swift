@@ -5,67 +5,67 @@ import DatawatchShared
 
 @MainActor
 final class ObserverViewModel: ObservableObject {
-    @Published var stats: StatsDto? = nil
-    @Published var isLoading: Bool = false
-    @Published var error: String? = nil
-    @Published var lastUpdated: Date? = nil
+    @Published private(set) var stats: StatsDto? = nil
+    @Published private(set) var isLoading: Bool = false
+    @Published private(set) var error: String? = nil
+    @Published private(set) var lastUpdated: Date? = nil
 
     private var profile: ServerProfile?
-    private var pollingTask: Task<Void, Never>?
+    private var pollingTimer: Timer?
+    private static let pollInterval: TimeInterval = 5
 
-    func configure(profile: ServerProfile) {
-        let isSame = self.profile?.id == profile.id
-        self.profile = profile
-        if !isSame {
-            stopPolling()
+    func update(profiles: [ServerProfile]) {
+        let newActive = profiles.first
+        guard newActive?.id != profile?.id else { return }
+        profile = newActive
+        if newActive != nil {
             startPolling()
+        } else {
+            stopPolling()
+            stats = nil
+            error = nil
         }
     }
 
     func startPolling() {
         guard profile != nil else { return }
         stopPolling()
-        pollingTask = Task { [weak self] in
-            while !Task.isCancelled {
-                await self?.fetchOnce()
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
+        fetchOnce()
+        pollingTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.pollInterval,
+            repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.fetchOnce()
             }
         }
     }
 
     func stopPolling() {
-        pollingTask?.cancel()
-        pollingTask = nil
+        pollingTimer?.invalidate()
+        pollingTimer = nil
     }
 
-    private func fetchOnce() async {
+    private func fetchOnce() {
         guard let profile else { return }
         if stats == nil { isLoading = true }
         error = nil
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            IosServiceLocator.shared.getStats(
-                profile: profile,
-                onSuccess: { [weak self] dto in
-                    DispatchQueue.main.async {
-                        self?.stats = dto
-                        self?.isLoading = false
-                        self?.lastUpdated = Date()
-                        cont.resume()
-                    }
-                },
-                onError: { [weak self] msg in
-                    DispatchQueue.main.async {
-                        self?.error = msg
-                        self?.isLoading = false
-                        cont.resume()
-                    }
+        IosServiceLocator.shared.getStats(
+            profile: profile,
+            onSuccess: { [weak self] dto in
+                DispatchQueue.main.async {
+                    self?.stats = dto
+                    self?.isLoading = false
+                    self?.lastUpdated = Date()
                 }
-            )
-        }
-    }
-
-    deinit {
-        pollingTask?.cancel()
+            },
+            onError: { [weak self] msg in
+                DispatchQueue.main.async {
+                    self?.error = msg
+                    self?.isLoading = false
+                }
+            }
+        )
     }
 }
 
@@ -101,19 +101,13 @@ struct ObserverView: View {
             }
         }
         .onAppear {
-            if let profile = activeProfile {
-                vm.configure(profile: profile)
-            }
+            vm.update(profiles: store.profiles)
         }
         .onDisappear {
             vm.stopPolling()
         }
         .onChange(of: store.profiles) { newProfiles in
-            if let profile = newProfiles.first {
-                vm.configure(profile: profile)
-            } else {
-                vm.stopPolling()
-            }
+            vm.update(profiles: newProfiles)
         }
     }
 
@@ -183,7 +177,7 @@ struct ObserverView: View {
             )
             MetricCard(
                 label: "VRAM",
-                icon: "gpu",
+                icon: "memorychip.fill",
                 value: stats?.gpuPct,
                 formatAsPercent: true
             )
