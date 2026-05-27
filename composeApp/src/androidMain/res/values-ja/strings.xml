@@ -153,6 +153,7 @@
     <string name="new_session_auto_git_init">自動 git init</string>
     <string name="new_session_auto_git_commit">自動 git commit</string>
     <string name="new_session_advanced_claude">詳細（claude オプション）</string>
+    <string name="session_chrome">Chrome 連携</string>
     <string name="new_session_permission_mode_label">権限モード</string>
     <string name="new_session_effort_label">努力レベル</string>
     <string name="new_session_error_empty_task">タスクを入力してください。</string>

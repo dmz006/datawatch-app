@@ -54,6 +54,8 @@ public interface TransportClient {
         llm: String? = null,
         /** v7 Compute Node override. */
         computeNode: String? = null,
+        /** datawatch v8.8.3 — opt-in Chrome DevTools Protocol integration. */
+        chrome: Boolean? = null,
     ): Result<String>
 
     /** POST /api/sessions/reply. */

@@ -43,6 +43,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         agentId = agentId,
         llmRef = llmRef,
         computeNodeRef = computeNodeRef,
+        chrome = chrome == true,
     )
 
 private fun SessionDto.extractHostnamePrefix(): String? {

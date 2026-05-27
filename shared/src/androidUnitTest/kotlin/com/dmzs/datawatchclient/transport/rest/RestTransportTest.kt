@@ -190,6 +190,26 @@ class RestTransportTest {
         }
 
     @Test
+    fun startSessionWithChromeIncludesFlag() =
+        runTest {
+            server.enqueue(jsonResponse("""{"session_id":"c7d8","state":"new"}"""))
+            val res = transport.startSession(task = "browse logs", chrome = true)
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(body.contains("\"chrome\":true"), "expected chrome flag in body: $body")
+        }
+
+    @Test
+    fun startSessionWithoutChromeOmitsFlag() =
+        runTest {
+            server.enqueue(jsonResponse("""{"session_id":"c7d9","state":"new"}"""))
+            val res = transport.startSession(task = "no chrome")
+            assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(!body.contains("\"chrome\""), "expected no chrome key when omitted: $body")
+        }
+
+    @Test
     fun registerDeviceSendsCorrectPayloadAndParsesId() =
         runTest {
             server.enqueue(jsonResponse("""{"device_id":"dev-9f2"}"""))

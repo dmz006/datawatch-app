@@ -153,6 +153,7 @@
     <string name="new_session_auto_git_init">Auto git init</string>
     <string name="new_session_auto_git_commit">Auto git commit</string>
     <string name="new_session_advanced_claude">Avanzado (opciones claude)</string>
+    <string name="session_chrome">Integración con Chrome</string>
     <string name="new_session_permission_mode_label">Modo de permisos</string>
     <string name="new_session_effort_label">Esfuerzo</string>
     <string name="new_session_error_empty_task">La tarea no puede estar vacía.</string>

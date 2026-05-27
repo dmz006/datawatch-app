@@ -75,6 +75,13 @@ public data class Session(
      * v7 Compute Node this session was dispatched to. Null for legacy sessions.
      */
     val computeNodeRef: String? = null,
+    /**
+     * datawatch v8.8.3 — session was started with Chrome DevTools Protocol
+     * integration (`--chrome`). When true, SessionDetailScreen surfaces a
+     * "Chrome" chip so the operator knows the session has a live browser
+     * peer. Null/false otherwise.
+     */
+    val chrome: Boolean = false,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =
