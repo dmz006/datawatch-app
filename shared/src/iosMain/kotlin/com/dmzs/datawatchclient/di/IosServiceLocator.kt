@@ -9,6 +9,8 @@ import com.dmzs.datawatchclient.storage.SessionRepository
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.createHttpClient
 import com.dmzs.datawatchclient.transport.createHttpClientWithWebSockets
+import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
+import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
@@ -284,4 +286,50 @@ public object IosServiceLocator {
      */
     public fun getToken(alias: String): String? =
         alias.takeIf { it.isNotBlank() }?.let { tokenStore.get(it) }
+
+    // ── Automata type callbacks ────────────────────────────────────────────
+
+    /** Fetch all registered automata types for [profile]. */
+    public fun listAutomataTypes(
+        profile: ServerProfile,
+        onSuccess: (List<AutomataTypeDto>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).listAutomataTypes().fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError(it.message ?: "error") },
+            )
+        }
+    }
+
+    /** Register a new automata type for [profile]. */
+    public fun registerAutomataType(
+        profile: ServerProfile,
+        req: AutomataTypeRequestDto,
+        onSuccess: (AutomataTypeDto) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).registerAutomataType(req).fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError(it.message ?: "error") },
+            )
+        }
+    }
+
+    /** Delete an automata type by [id] for [profile]. */
+    public fun deleteAutomataType(
+        profile: ServerProfile,
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).deleteAutomataType(id).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "error") },
+            )
+        }
+    }
 }
