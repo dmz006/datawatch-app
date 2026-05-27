@@ -605,6 +605,6 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | Q2 | 2026-05-27 | **SwiftUI (native iOS)** | Users get native iOS UX; parity standard is capability not implementation |
 | Q3 | 2026-05-27 | **iOS 16.0** | NavigationSplitView + Swift Charts; ~91% active device coverage |
 | Q4 | 2026-05-27 | **Individual — enrolling now** | No D-U-N-S needed; unblocks signing secrets in CI |
-| Q5 | – | Pending | APNs strategy |
+| Q5 | 2026-05-27 | **Option A — direct APNs from datawatch server** | `kind=apns` on `/api/devices/register`; server holds APNs Auth Key (.p8); ntfy unchanged for Android |
 | Q6 | – | Pending | Database encryption on iOS |
 | Q7 | – | Pending | App Store listing ID strategy |
