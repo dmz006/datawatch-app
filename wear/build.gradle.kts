@@ -38,27 +38,25 @@ android {
     buildFeatures { compose = true }
 
     signingConfigs {
-        // Read keystore password from KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file
-        val keystorePasswordProvider = {
+        val keystorePasswordRaw: String? =
             System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
-                ?: file("${System.getProperty("user.home")}/.android/.keystore-env").takeIf { it.exists() }?.readText()?.trim()
-                ?: error("KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file required for release signing")
-        }
+                ?: file("${System.getProperty("user.home")}/.android/.keystore-env")
+                    .takeIf { it.exists() }?.readText()?.trim()
 
-        // Production upload key — must match composeApp publicTrack signing so
-        // Play Console accepts the wear APK upload to the same listing.
-        create("release") {
-            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
-            storePassword = keystorePasswordProvider()
-            keyAlias = "datawatch-upload"
-            keyPassword = keystorePasswordProvider()
+        if (keystorePasswordRaw != null) {
+            create("release") {
+                storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
+                storePassword = keystorePasswordRaw
+                keyAlias = "datawatch-upload"
+                keyPassword = keystorePasswordRaw
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
         debug {
