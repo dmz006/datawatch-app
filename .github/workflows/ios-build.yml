@@ -41,7 +41,7 @@ jobs:
       # packages them into shared/build/XCFrameworks/debug/DatawatchShared.xcframework.
       # project.yml FRAMEWORK_SEARCH_PATHS points to this directory.
       - name: Assemble KMP XCFramework (debug)
-        run: ./gradlew :shared:assembleDebugXCFramework --no-daemon --stacktrace
+        run: ./gradlew :shared:assembleDatawatchSharedDebugXCFramework --no-daemon --stacktrace
 
       - name: Install xcodegen
         run: brew install xcodegen

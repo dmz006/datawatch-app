@@ -701,36 +701,6 @@ private fun StatusPage(state: WearSessionCountsViewModel.UiState) {
 }
 
 @Composable
-private fun GlanceStat(
-    count: Int,
-    label: String,
-    activeColor: Color,
-    dimColor: Color,
-    alwaysBright: Boolean,
-) {
-    val isActive = alwaysBright || count > 0
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            count.toString(),
-            style = MaterialTheme.typography.title1,
-            fontWeight = FontWeight.Bold,
-            color = if (isActive) activeColor else dimColor,
-        )
-        Spacer(modifier = Modifier.size(8.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.caption1,
-            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isActive) activeColor.copy(alpha = 0.85f) else dimColor,
-        )
-    }
-}
-
-@Composable
 private fun MiniStat(count: Int, label: String, activeColor: Color, dimColor: Color) {
     val color = if (count > 0) activeColor else dimColor
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1063,7 +1033,6 @@ private fun MonitorMultiServerSection(
     state.allServerStats.forEach { s ->
         val isActive = s.name == state.serverName
         val profileId = state.profiles.firstOrNull { it.second == s.name }?.first
-        val prefix = if (isActive) "✓" else if (s.online) "●" else "○"
         val nameColor = when {
             isActive -> MaterialTheme.colors.primary
             s.online -> MaterialTheme.colors.onSurface
