@@ -74,18 +74,22 @@ android {
     buildFeatures { buildConfig = true }
 
     signingConfigs {
-        // Read keystore password from KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file
-        val keystorePasswordProvider = {
+        // Only configure Android release signing when the keystore password is available.
+        // The iOS CI configures all Gradle projects (including this one) but never builds
+        // Android release variants, so it must not fail here. Android CI and local dev
+        // supply KEYSTORE_PASSWORD via env var or ~/.android/.keystore-env.
+        val keystorePasswordRaw: String? =
             System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
-                ?: file("${System.getProperty("user.home")}/.android/.keystore-env").takeIf { it.exists() }?.readText()?.trim()
-                ?: error("KEYSTORE_PASSWORD env var or ~/.android/.keystore-env file required for release signing")
-        }
+                ?: file("${System.getProperty("user.home")}/.android/.keystore-env")
+                    .takeIf { it.exists() }?.readText()?.trim()
 
-        create("publicTrack") {
-            storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
-            storePassword = keystorePasswordProvider()
-            keyAlias = "datawatch-upload"
-            keyPassword = keystorePasswordProvider()
+        if (keystorePasswordRaw != null) {
+            create("publicTrack") {
+                storeFile = file("${System.getProperty("user.home")}/.android/datawatch-upload-ring.jks")
+                storePassword = keystorePasswordRaw
+                keyAlias = "datawatch-upload"
+                keyPassword = keystorePasswordRaw
+            }
         }
     }
 
@@ -112,7 +116,8 @@ android {
     productFlavors {
         create("publicTrack") {
             dimension = "track"
-            signingConfig = signingConfigs.getByName("publicTrack")
+            // Signing config is optional — only present when KEYSTORE_PASSWORD is set.
+            signingConfigs.findByName("publicTrack")?.let { signingConfig = it }
         }
     }
 
