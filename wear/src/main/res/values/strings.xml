@@ -46,7 +46,7 @@
     <string name="wear_servers_empty">No enabled servers</string>
 
     <!-- About page -->
-    <string name="wear_about_tagline">AI Orchestration &amp; Bridge</string>
+    <string name="wear_about_tagline">AI Orchestration</string>
     <string name="wear_about_license">Polyform Noncommercial 1.0.0</string>
     <string name="wear_about_github">github.com/dmz006/datawatch-app</string>
 
