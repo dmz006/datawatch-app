@@ -25,15 +25,7 @@ The iOS content phase (UI, push, auth, all screens) begins now. Android is produ
 
 ## Decisions Pending (Interview Queue)
 
-| # | Question | Blocks |
-|---|----------|--------|
-| Q1 | Build & test environment on Linux — how do we compile and run the iOS Simulator? | All stories |
-| Q2 | UI framework: SwiftUI (native) vs Compose Multiplatform (shared UI with Android) | Story 3 |
-| Q3 | Minimum iOS version | Story 2, App Store |
-| Q4 | Apple Developer Account — do you have one? Personal or Organization? | Story 15 |
-| Q5 | Push: APNs only, or unified APNs + FCM bridge via the server? | Story 12 |
-| Q6 | Database encryption on iOS: SQLCipher-ObjC wrapper, Apple CryptoKit + file protection, or unencrypted v1? | Story 2 |
-| Q7 | App Store listing: same `com.dmzs.datawatchclient` listing (universal iOS/Android) or separate iOS app? | Story 15 |
+All Q1–Q7 decisions locked. See Decision Log at the bottom of this document.
 
 ---
 
@@ -615,4 +607,4 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | Q4 | 2026-05-27 | **Individual — enrolling now** | No D-U-N-S needed; unblocks signing secrets in CI |
 | Q5 | 2026-05-27 | **Option A — direct APNs from datawatch server** | `kind=apns` on `/api/devices/register`; server holds APNs Auth Key (.p8); ntfy unchanged for Android |
 | Q6 | 2026-05-27 | **Option B — Apple Data Protection (NSFileProtectionComplete / Secure Enclave)** | Hardware AES-256 via Secure Enclave; zero added deps; docs must say "hardware-encrypted via Apple Secure Enclave" accurately |
-| Q7 | – | Pending | App Store listing ID strategy |
+| Q7 | 2026-05-27 | **Option A — `com.dmzs.datawatchclient`** | Single bundle ID; iOS and Android share one brand identity; already set in `project.yml` |
