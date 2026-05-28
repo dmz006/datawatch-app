@@ -1,7 +1,7 @@
-# AI-APP-SEED.md — datawatch-app Context Loader
+# DATAWATCH-APP-CONTEXT.md — datawatch-app Context Loader
 
-**Last Updated:** 2026-05-25  
-**Version:** 1.0.0  
+**Last Updated:** 2026-05-28  
+**Version:** 1.0.6  
 **Maintainer:** dmz006  
 **Purpose:** Comprehensive AI session context for the datawatch-app mobile client
 
@@ -215,6 +215,16 @@ gh release create vX.Y.Z *.aab *.apk mapping.txt SHA256SUMS
 - `datawatch-client-X.Y.Z-release.apk` (sideload + GitHub)
 - `mapping.txt` (ProGuard symbol table)
 - `SHA256SUMS` (integrity verification)
+
+### ⚠️ Critical: Signing Cert + Storage Encryption Rule
+
+**NEVER ADB-install a build signed with a different certificate over a Play Store release.**
+
+The SQLCipher database is encrypted with a key derived from the Android Keystore. Keystore entries are scoped to the app's signing identity. If you uninstall a Play-Store-distributed app (signed by Google's Play App Signing key) and reinstall an ADB-sideloaded APK (signed with the upload key), the app has a different UID/identity — the old Keystore entries are gone and the new app starts with a completely empty database. All server profiles, tokens, and session history are permanently lost.
+
+**Android Auto additionally requires Play Store distribution.** Gearhead (com.google.android.projection.gearhead) will refuse to bind to a CarAppService in a sideloaded APK on production devices. Always distribute via Play Store for real Auto testing.
+
+**Rule:** For any production device test involving storage or Android Auto, always publish to the Play Store internal track and install from there. Use the CI pipeline (`v*` tag push) to build and auto-publish. Never use `adb install` on a device that has a Play Store version installed.
 
 ### RTK Integration (Token Optimization)
 
@@ -558,7 +568,7 @@ This seed file provides complete context for AI coding sessions on datawatch-app
 4. Check AGENT.md rules for the specific task
 5. Update memories when done (what worked, what didn't)
 
-**Next Step:** Integrate AI-APP-SEED.md loading into pre-execution hooks and memory queries.
+**Next Step:** Integrate DATAWATCH-APP-CONTEXT.md loading into pre-execution hooks and memory queries.
 
 ---
 

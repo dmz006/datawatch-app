@@ -22,9 +22,9 @@ decisions belong here in `AGENT.md`.
 
 Before executing any user prompt that involves code changes, new features, or bug fixes:
 
-1. **Load AI-APP-SEED.md context** (this directory)
+1. **Load DATAWATCH-APP-CONTEXT.md context** (this directory)
    ```bash
-   rtk head -50 AI-APP-SEED.md  # Quick read to understand project identity
+   rtk head -50 DATAWATCH-APP-CONTEXT.md  # Quick read to understand project identity
    ```
    This file contains: project purpose, critical rules, module structure, build/release procedures, testing strategy, datawatch MCP tooling, memory system, and known issues.
 
