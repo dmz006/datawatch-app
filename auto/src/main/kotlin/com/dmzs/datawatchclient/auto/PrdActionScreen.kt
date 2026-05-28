@@ -4,7 +4,6 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -72,35 +71,36 @@ public class PrdActionScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val actionStrip =
-            if (status.lowercase() == "running") {
-                val stop =
-                    Action.Builder()
-                        .setTitle("Stop")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fire("cancel") }
-                        .build()
-                ActionStrip.Builder().addAction(stop).build()
-            } else {
-                val approve =
-                    Action.Builder()
-                        .setTitle("Approve")
-                        .setBackgroundColor(CarColor.GREEN)
-                        .setOnClickListener { fire("approve") }
-                        .build()
-                val reject =
-                    Action.Builder()
-                        .setTitle("Reject")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fire("reject", "rejected from car") }
-                        .build()
-                ActionStrip.Builder().addAction(approve).addAction(reject).build()
-            }
+        // MessageTemplate.addAction() renders as full-width buttons — correct pattern for
+        // confirm/cancel dialogs. ActionStrip only allows 1 custom-title action (Car App Library).
         val prompt = if (status.lowercase() == "running") "Stop plan?" else "Review $title"
-        return MessageTemplate.Builder(prompt)
+        val builder = MessageTemplate.Builder(prompt)
             .setTitle("Autonomous plan")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(actionStrip)
-            .build()
+        if (status.lowercase() == "running") {
+            builder.addAction(
+                Action.Builder()
+                    .setTitle("Stop")
+                    .setBackgroundColor(CarColor.RED)
+                    .setOnClickListener { fire("cancel") }
+                    .build(),
+            )
+        } else {
+            builder.addAction(
+                Action.Builder()
+                    .setTitle("Approve")
+                    .setBackgroundColor(CarColor.GREEN)
+                    .setOnClickListener { fire("approve") }
+                    .build(),
+            )
+            builder.addAction(
+                Action.Builder()
+                    .setTitle("Reject")
+                    .setBackgroundColor(CarColor.RED)
+                    .setOnClickListener { fire("reject", "rejected from car") }
+                    .build(),
+            )
+        }
+        return builder.build()
     }
 }
