@@ -15,8 +15,8 @@
 
 - **Type:** Kotlin Multiplatform (KMP) + Jetpack Compose + WebView
 - **Platforms:** Android phone, Wear OS (smartwatch), Android Auto (in-vehicle)
-- **Current Version:** 1.0.0 (Production/GA release)
-- **Release Date:** 2026-05-21
+- **Current Version:** 1.0.4 (Production/GA release)
+- **Release Date:** 2026-05-27
 - **License:** Polyform Noncommercial 1.0.0
 - **Repository:** `github.com/dmz006/datawatch-app`
 - **Parent:** `github.com/dmz006/datawatch` (the daemon/server)
@@ -80,7 +80,7 @@ datawatch-app/
 │   │   ├── kotlin/.../vm/           # ViewModels (SharedFlow state)
 │   │   └── kotlin/.../db/           # SQLDelight schemas
 │   ├── src/androidMain/             # Android-specific code
-│   └── src/iosMain/                 # iOS-specific code (not active in v1.0.0)
+│   └── src/iosMain/                 # iOS-specific code (IosServiceLocator, IosTokenStore, IosDatabaseFactory)
 │
 ├── composeApp/                      # Android phone + tablet
 │   ├── src/androidMain/kotlin/.../ui/
@@ -128,7 +128,7 @@ datawatch-app/
 | `composeApp` | Android phone/tablet | Main UI, terminal WebView | ✅ Feature-complete |
 | `wear` | Wear OS | Watch client | ✅ Feature-complete |
 | `auto` | Android Auto (AAOS) | In-vehicle UI | ✅ Feature-complete |
-| `iosApp` | iOS | Not active in v1.0.0 | ⏸️ Deferred |
+| `iosApp` | iOS 16.0+ | SwiftUI native client; all 6 tabs functional | ✅ Shipped v1.0.4 |
 
 ---
 

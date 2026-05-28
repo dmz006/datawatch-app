@@ -37,6 +37,45 @@ Per ADR-0007 (closed-loop telemetry), no crash data leaves the device. Users can
 - Export encrypted logs: `Settings → Diagnostics → Export logs` (tokens redacted).
 - Share logs with us via a **user-initiated** attach-to-issue flow on GitHub.
 
+## iOS build pipeline
+
+### CI (GitHub Actions — `ios-build.yml`)
+
+Triggered on every push to `main` and all PRs. Runs on `macos-15`.
+
+Steps:
+1. Checkout + cache Gradle
+2. Build KMP XCFramework: `./gradlew :shared:assembleDatawatchSharedDebugXCFramework`
+3. Resolve Swift packages: `xcodebuild -resolvePackageDependencies`
+4. Build Simulator target: `xcodebuild build -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16'`
+
+The XCFramework task name is **`assembleDatawatchSharedDebugXCFramework`** — the short form `assembleDebugXCFramework` is ambiguous and must not be used.
+
+### Release signing
+
+iOS App Store distribution requires:
+- **Apple Developer Program enrollment** (paid — pending)
+- **Distribution certificate** (`.p12`) stored as GitHub secret `IOS_DISTRIBUTION_CERT_P12` (base64-encoded)
+- **Provisioning profile** stored as GitHub secret `IOS_PROVISION_PROFILE` (base64-encoded)
+- **App Store Connect API key** for Fastlane/altool upload
+
+None of these are currently active (no Apple enrollment as of v1.0.4). The `ios-build.yml` CI job validates compilation only; archive + upload to App Store is a manual step until enrollment completes.
+
+### Re-signing procedure (future)
+
+1. Rotate the distribution cert in Apple Developer Portal.
+2. Export new `.p12`, base64-encode (`base64 -i new.p12`), update `IOS_DISTRIBUTION_CERT_P12` secret in GitHub repo settings.
+3. Download new provisioning profile from portal, base64-encode, update `IOS_PROVISION_PROFILE` secret.
+4. Re-run the release workflow or archive manually via Xcode → Product → Archive.
+
+### APNs configuration
+
+APNs push is blocked on server support (datawatch#107). When the server ships:
+1. Generate APNs auth key (`.p8`) in Apple Developer Portal.
+2. Record Team ID, Key ID, Bundle ID.
+3. Store credentials in the datawatch daemon config (not in this app's repo).
+4. Update `AppDelegate.swift` to call the registration endpoint instead of logging only.
+
 ## Incident response
 
 - Security: see [SECURITY.md](../SECURITY.md).

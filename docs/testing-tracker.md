@@ -63,6 +63,8 @@ gets two levels of validation:
 | iOS | iPad NavigationSplitView | No | No | iOS-13 | Requires real iPad or iPad Simulator (macOS) | Sidebar + detail layout on regular size class |
 | iOS | APNs device token registration stub | No | No | iOS-12 | Requires real iPhone (APNs not available on Simulator) | Token printed to console; registration to server pending datawatch#107 |
 | iOS | xcodebuild simulator build (CI) | No | No | iOS-1 | GitHub Actions macos-15 — check CI run | Build succeeds; no compilation errors |
+| iOS | Automata CRUD (list / add / delete types) | No | No | iOS-16 | Requires real iPhone + running datawatch with autonomous.enabled=true | AutomataView: list types, add via sheet, swipe-to-delete |
+| iOS | Terminal IME keyboard resize (DwWKWebView) | No | No | iOS-17 | Requires real iPhone (keyboard on Simulator may differ) | Open session terminal; raise/dismiss keyboard; verify xterm cols/rows adjust via dwExplicitSize |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.

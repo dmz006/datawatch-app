@@ -656,7 +656,7 @@ An ADR **is** required when:
 - `docs/testing-tracker.md` has a separate iOS row for every surface.
 - Cross-repo parity gaps are tracked in `dmz006/datawatch` (see GitHub issue filed 2026-05-27).
 
-**iOS v1.0.2 status:** All 15 stories implemented. Pending (v1.1): Automata CRUD, APNs (datawatch#107), terminal IME fix, session start, alert server-dismiss. Apple Developer enrollment required before TestFlight upload.
+**iOS v1.0.4 status:** All 6 tabs functional. Automata CRUD and terminal IME keyboard fix shipped. Pending (v1.1 — external blockers): APNs (datawatch#107), session start, alert server-dismiss. Apple Developer enrollment required before TestFlight upload.
 
 ### Iterate
 
