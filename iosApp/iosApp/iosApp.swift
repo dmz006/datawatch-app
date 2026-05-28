@@ -52,6 +52,13 @@ struct DatawatchClientApp: App {
                 .task {
                     await NotificationService.shared.requestAuthorization()
                 }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+                ) { _ in
+                    // Re-register all profiles on foreground in case a new profile was
+                    // added on another device or the APNs token rotated.
+                    IosServiceLocator.shared.reregisterAllProfiles(onComplete: nil)
+                }
         }
     }
 }

@@ -1,11 +1,15 @@
 package com.dmzs.datawatchclient.di
 
+import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.db.DatawatchDb
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.push.ApnsPushStore
 import com.dmzs.datawatchclient.security.IosTokenStore
 import com.dmzs.datawatchclient.storage.DatabaseFactory
 import com.dmzs.datawatchclient.storage.ServerProfileRepository
 import com.dmzs.datawatchclient.storage.SessionRepository
+import com.dmzs.datawatchclient.transport.DeviceKind
+import com.dmzs.datawatchclient.transport.DevicePlatform
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.createHttpClient
 import com.dmzs.datawatchclient.transport.createHttpClientWithWebSockets
@@ -19,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import platform.Foundation.NSUUID
@@ -46,6 +51,8 @@ public object IosServiceLocator {
     }
 
     public val tokenStore: IosTokenStore by lazy { IosTokenStore() }
+
+    public val pushStore: ApnsPushStore by lazy { ApnsPushStore() }
 
     public val profileRepository: ServerProfileRepository by lazy {
         ServerProfileRepository(_db, Dispatchers.IO)
@@ -142,7 +149,7 @@ public object IosServiceLocator {
         }
     }
 
-    /** Delete a profile and its Keychain token. */
+    /** Delete a profile and its Keychain token. Deregisters the APNs device on the server (best-effort). */
     public fun deleteProfile(
         profile: ServerProfile,
         onSuccess: () -> Unit,
@@ -150,6 +157,13 @@ public object IosServiceLocator {
     ) {
         ioScope.launch {
             try {
+                // Best-effort APNs deregistration — swallow errors so profile delete
+                // always succeeds even if the server is unreachable.
+                val deviceId = pushStore.deviceIdFor(profile.id)
+                if (deviceId != null) {
+                    runCatching { transportFor(profile).unregisterDevice(deviceId) }
+                    pushStore.clearProfile(profile.id)
+                }
                 if (profile.bearerTokenRef.isNotBlank()) tokenStore.remove(profile.bearerTokenRef)
                 profileRepository.delete(profile.id)
                 onSuccess()
@@ -330,6 +344,59 @@ public object IosServiceLocator {
                 onSuccess = { onSuccess() },
                 onFailure = { onError(it.message ?: "error") },
             )
+        }
+    }
+
+    // ── APNs push registration ────────────────────────────────────────────
+
+    /**
+     * Called when APNs returns a device token. Stores the token locally, then
+     * registers it with every enabled profile's server. Idempotent: profiles
+     * that already have a device_id are skipped unless the token changed.
+     *
+     * Errors are swallowed per profile — push failure never blocks the user.
+     */
+    public fun registerApnsToken(token: String) {
+        val previous = pushStore.apnsToken()
+        pushStore.setApnsToken(token)
+        val tokenChanged = previous != token
+        ioScope.launch {
+            val profiles = profileRepository.observeAll().first()
+                .filter { it.enabled }
+            for (profile in profiles) {
+                if (!tokenChanged && pushStore.deviceIdFor(profile.id) != null) continue
+                registerApnsForProfile(profile, token)
+            }
+        }
+    }
+
+    /**
+     * Re-register all enabled profiles with the current APNs token.
+     * Call from app foreground / profile-added events.
+     */
+    public fun reregisterAllProfiles(onComplete: (() -> Unit)? = null) {
+        ioScope.launch {
+            val token = pushStore.apnsToken() ?: return@launch
+            val profiles = profileRepository.observeAll().first()
+                .filter { it.enabled }
+            for (profile in profiles) {
+                registerApnsForProfile(profile, token)
+            }
+            onComplete?.invoke()
+        }
+    }
+
+    private suspend fun registerApnsForProfile(profile: ServerProfile, token: String) {
+        runCatching {
+            transportFor(profile).registerDevice(
+                deviceToken = token,
+                kind = DeviceKind.Apns,
+                appVersion = Version.VERSION,
+                platform = DevicePlatform.Ios,
+                profileHint = profile.displayName,
+            ).onSuccess { deviceId ->
+                pushStore.setDeviceIdFor(profile.id, deviceId)
+            }
         }
     }
 }
