@@ -2,10 +2,14 @@
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -15,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -36,6 +41,7 @@ public class AutoSessionDetailScreen(
     private var killPending: Boolean = false
     private var killFeedback: String? = null
     private var error: String? = null
+    private var replyMode: Boolean = false
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
@@ -84,6 +90,11 @@ public class AutoSessionDetailScreen(
     }
 
     override fun onGetTemplate(): Template {
+        // Screen stack depth guard: this screen may be at depth 5 (via AutoAutomataScreen →
+        // AutoSessionListScreen path). Pushing SessionReplyScreen would exceed the 5-screen
+        // stack limit. Use inline reply mode (template invalidation) instead of a new push.
+        if (replyMode) return buildReplyTemplate()
+
         val telem = telemetry
         val hasBlock = telem?.guardrailVerdicts?.any { it.outcome == "block" } == true
         val isActive = sessionState == SessionState.Running || sessionState == SessionState.Waiting
@@ -124,14 +135,14 @@ public class AutoSessionDetailScreen(
                     )
                 }
             } else {
-                // Not blocked: Reply (if waiting) + Kill (if active) — max 2 buttons
+                // Not blocked: Reply (if waiting) + Kill (if active) — max 2 buttons.
+                // Reply uses inline mode (replyMode=true) — no new screen push, avoids
+                // exceeding the 5-screen stack limit on deep navigation paths.
                 if (sessionState == SessionState.Waiting) {
                     templateBuilder.addAction(
                         Action.Builder()
                             .setTitle("Reply")
-                            .setOnClickListener {
-                                screenManager.push(SessionReplyScreen(carContext, sessionId))
-                            }
+                            .setOnClickListener { replyMode = true; invalidate() }
                             .build(),
                     )
                 }
@@ -157,6 +168,42 @@ public class AutoSessionDetailScreen(
         }
 
         return templateBuilder.build()
+    }
+
+    private fun buildReplyTemplate(): Template {
+        fun sendReply(text: String) {
+            scope.launch {
+                val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                val profile = profiles.firstOrNull { it.enabled } ?: return@launch
+                AutoServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Sent: $text", CarToast.LENGTH_SHORT).show()
+                        replyMode = false
+                        screenManager.pop()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Reply failed — ${err.message ?: err::class.simpleName}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                        replyMode = false
+                        invalidate()
+                    },
+                )
+            }
+        }
+        val items = ItemList.Builder()
+            .addItem(Row.Builder().setTitle(colored("Yes", CarColor.GREEN)).addText("Send affirmative reply").setOnClickListener { sendReply("yes") }.build())
+            .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Send negative reply").setOnClickListener { sendReply("no") }.build())
+            .addItem(Row.Builder().setTitle("Continue").addText("Resume the session").setOnClickListener { sendReply("continue") }.build())
+            .addItem(Row.Builder().setTitle(colored("Stop", CarColor.RED)).addText("Stop the session").setOnClickListener { sendReply("stop") }.build())
+            .build()
+        return ListTemplate.Builder()
+            .setTitle("Quick Reply")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items)
+            .build()
     }
 
     // BL303-A5.2: ambient body — cached summary only, no live telemetry, no actions
