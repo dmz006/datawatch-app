@@ -17,11 +17,11 @@ AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
 1. **Read [`AGENT.md`](AGENT.md)** — Canonical rules and guardrails for all work on this codebase
    - Non-negotiable project invariants
-   - Pre-execution checklist (load AI-APP-SEED.md + query memory)
+   - Pre-execution checklist (load DATAWATCH-APP-CONTEXT.md + query memory)
    - Code quality, testing, versioning, and release discipline
    - Security, documentation, and dependency rules
 
-2. **Read [`AI-APP-SEED.md`](AI-APP-SEED.md)** — Comprehensive context loader covering:
+2. **Read [`DATAWATCH-APP-CONTEXT.md`](DATAWATCH-APP-CONTEXT.md)** — Comprehensive context loader covering:
    - Project identity, platforms, and architecture
    - Module structure and build system with RTK token optimization
    - Testing strategy (JVM unit tests + live device validation)

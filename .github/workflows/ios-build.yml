@@ -3,8 +3,22 @@ name: iOS Build
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'iosApp/**'
+      - 'shared/src/iosMain/**'
+      - 'shared/src/commonMain/**'
+      - 'shared/build.gradle.kts'
+      - 'gradle/libs.versions.toml'
+      - '.github/workflows/ios-build.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'iosApp/**'
+      - 'shared/src/iosMain/**'
+      - 'shared/src/commonMain/**'
+      - 'shared/build.gradle.kts'
+      - 'gradle/libs.versions.toml'
+      - '.github/workflows/ios-build.yml'
 
 concurrency:
   group: ios-${{ github.ref }}
