@@ -16,6 +16,7 @@ import platform.Foundation.NSURLSessionAuthChallengeCancelAuthenticationChalleng
 import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
 import platform.Foundation.NSURLSessionAuthChallengeUseCredential
 import platform.Foundation.credentialForTrust
+import platform.Security.SecTrustRef
 
 /**
  * iOS Ktor HttpClient with WebSockets installed. Mirrors [AndroidWsHttpClient].
@@ -42,9 +43,8 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
                     if (challenge.protectionSpace.authenticationMethod ==
                         NSURLAuthenticationMethodServerTrust
                     ) {
-                        val credential = challenge.protectionSpace.serverTrust?.let {
-                            NSURLCredential.credentialForTrust(it)
-                        }
+                        val trust: SecTrustRef? = challenge.protectionSpace.serverTrust
+                        val credential = trust?.let { NSURLCredential.credentialForTrust(it) }
                         if (credential != null) {
                             completionHandler(NSURLSessionAuthChallengeUseCredential, credential)
                         } else {
