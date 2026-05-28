@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package com.dmzs.datawatchclient.transport
 
 import com.dmzs.datawatchclient.transport.rest.RestTransport
