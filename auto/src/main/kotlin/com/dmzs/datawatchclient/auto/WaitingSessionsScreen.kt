@@ -89,7 +89,7 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
                     .build(),
             )
         } else {
-            sessions.forEach { s ->
+            sessions.take(MAX_ROWS).forEach { s ->
                 val body =
                     s.promptContext
                         ?.lineSequence()
@@ -110,6 +110,14 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
                         .build(),
                 )
             }
+            if (sessions.size > MAX_ROWS) {
+                builder.addItem(
+                    Row.Builder()
+                        .setTitle("… and ${sessions.size - MAX_ROWS} more")
+                        .addText("Showing top $MAX_ROWS by activity")
+                        .build(),
+                )
+            }
         }
         return ListTemplate.Builder()
             .setTitle("Waiting input")
@@ -121,5 +129,6 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val PREVIEW_CHARS: Int = 80
+        const val MAX_ROWS: Int = 5
     }
 }
