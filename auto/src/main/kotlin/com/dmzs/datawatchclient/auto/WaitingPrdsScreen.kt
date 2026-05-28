@@ -93,7 +93,7 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
                     .build(),
             )
         } else {
-            prds.forEach { p ->
+            prds.take(MAX_ROWS).forEach { p ->
                 val body =
                     p.title?.takeIf { it.isNotBlank() }
                         ?: p.name.takeIf { it.isNotBlank() }
@@ -113,6 +113,14 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
+            if (prds.size > MAX_ROWS) {
+                builder.addItem(
+                    Row.Builder()
+                        .setTitle("… and ${prds.size - MAX_ROWS} more")
+                        .addText("Showing top $MAX_ROWS by status")
+                        .build(),
+                )
+            }
         }
         return ListTemplate.Builder()
             .setTitle("Autonomous plans")
@@ -123,5 +131,6 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val POLL_MS: Long = 15_000L
+        const val MAX_ROWS: Int = 5
     }
 }
