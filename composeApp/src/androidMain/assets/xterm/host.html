@@ -181,6 +181,21 @@
     var container = document.getElementById('term');
     term.open(container);
 
+    // Belt-and-braces autocorrect disable on xterm's hidden helper textarea.
+    // The native onCreateInputConnection() override in TerminalWebView is the
+    // primary fix; these DOM attributes guard against future xterm.js versions
+    // that may reset InputType, and handle the case where the IME reads the
+    // element attributes directly (iOS Safari, some Android IMEs).
+    (function() {
+      var ta = container.querySelector('.xterm-helper-textarea');
+      if (ta) {
+        ta.setAttribute('autocomplete', 'off');
+        ta.setAttribute('autocorrect', 'off');
+        ta.setAttribute('autocapitalize', 'none');
+        ta.setAttribute('spellcheck', 'false');
+      }
+    })();
+
     // configCols — minimum terminal width required by the active
     // backend (120 for claude-code per parent v0.14.1). When the
     // container is narrower, we still force `term.resize(configCols,
