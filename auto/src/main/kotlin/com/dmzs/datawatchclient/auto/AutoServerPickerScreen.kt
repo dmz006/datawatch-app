@@ -62,7 +62,7 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                     .build(),
             )
         } else {
-            profiles.forEach { p ->
+            profiles.take(MAX_ROWS).forEach { p ->
                 val marker = if (p.id == activeId) "● " else "○ "
                 val titleColor = if (p.id == activeId) CarColor.GREEN else CarColor.DEFAULT
                 items.addItem(
@@ -77,11 +77,23 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                         .build(),
                 )
             }
+            if (profiles.size > MAX_ROWS) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… and ${profiles.size - MAX_ROWS} more")
+                        .addText("Manage servers on the paired phone")
+                        .build(),
+                )
+            }
         }
         return ListTemplate.Builder()
             .setTitle("Active server")
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
             .build()
+    }
+
+    private companion object {
+        const val MAX_ROWS: Int = 5
     }
 }
