@@ -15,6 +15,9 @@ permissions:
 #   KEYSTORE_PASSWORD     keystore + key password (same value for both)
 #   PLAY_PUBLISHER_KEY_JSON  raw JSON content of the Play service account key
 #                         `cat ~/.android/datawatch-play-key.json`
+#
+# Variable (Settings → Secrets and variables → Actions → Variables):
+#   PLAY_PUBLISHER_KEY_CONFIGURED   set to 'true' when PLAY_PUBLISHER_KEY_JSON is present
 
 jobs:
   build-bundles:
@@ -32,19 +35,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Write signing keystore
-        if: hashFiles('gradlew') != '' && secrets.KEYSTORE_BASE64 != ''
+        if: hashFiles('gradlew') != ''
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p ~/.android
-          echo "$KEYSTORE_BASE64" | base64 -d > ~/.android/datawatch-upload-ring.jks
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > ~/.android/datawatch-upload-ring.jks
+          fi
 
       - name: Build release bundles
         if: hashFiles('gradlew') != ''
         env:
-          # Gradle reads KEYSTORE_PASSWORD to configure the publicTrack signingConfig.
-          # When absent, signing is skipped (debug builds are still valid; release
-          # bundles uploaded to Play must be signed).
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
@@ -83,9 +85,10 @@ jobs:
     name: Publish to Play Store internal track
     runs-on: ubuntu-latest
     needs: build-bundles
-    # Only publish when the Play key secret is present. Tags without the secret
-    # still create a GitHub release; Play upload is just skipped.
-    if: ${{ secrets.PLAY_PUBLISHER_KEY_JSON != '' }}
+    # Gate on a repo variable (not a secret — secrets aren't available in job-level
+    # if conditions). Set PLAY_PUBLISHER_KEY_CONFIGURED=true in repo Settings →
+    # Secrets and variables → Actions → Variables when the Play key is configured.
+    if: ${{ vars.PLAY_PUBLISHER_KEY_CONFIGURED == 'true' && needs.build-bundles.result == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
