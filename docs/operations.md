@@ -70,11 +70,110 @@ None of these are currently active (no Apple enrollment as of v1.0.4). The `ios-
 
 ### APNs configuration
 
-APNs push is blocked on server support (datawatch#107). When the server ships:
-1. Generate APNs auth key (`.p8`) in Apple Developer Portal.
-2. Record Team ID, Key ID, Bundle ID.
-3. Store credentials in the datawatch daemon config (not in this app's repo).
-4. Update `AppDelegate.swift` to call the registration endpoint instead of logging only.
+APNs push requires the datawatch server to hold an APNs Auth Key and send to Apple's
+push gateway. The iOS client sends `kind=apns` to `/api/devices/register` (see
+`DeviceRegisterDto` in `shared/.../transport/dto/DeviceDtos.kt`).
+
+Setup steps (run once, then stored in datawatch daemon config — not in this repo):
+
+1. In Apple Developer Portal → Certificates, Identifiers & Profiles → Keys → (+):
+   - Name: `datawatch APNs Auth Key`
+   - Enable **Apple Push Notifications service (APNs)**
+   - Download the `.p8` file **once** — it cannot be re-downloaded; store offline
+   - Record: **Key ID** (10-char), **Team ID** (from top-right of portal)
+2. Provide the server with: `.p8` contents, Key ID, Team ID, Bundle ID (`com.dmzs.datawatchclient`)
+3. Update the datawatch daemon config per its APNs setup doc
+4. In `iosApp/iosApp/notifications/NotificationService.swift` `didRegister(tokenData:)`:
+   - Replace the `// TODO` stub with a call to `IosServiceLocator.registerDevice(token:kind:.apns)`
+   - Mirror the Android `PushRegistrationCoordinator` pattern (per-profile, idempotent)
+
+---
+
+## Apple Developer Program enrollment
+
+**Cost:** $99 USD/year (Individual account — no D-U-N-S number required).
+
+### Enrollment steps
+
+1. Go to `developer.apple.com/programs/enroll/`
+2. Sign in with the Apple ID tied to `davidzendzian@gmail.com` (or create a dedicated one)
+3. Choose **Individual / Sole Proprietor** — sufficient for TestFlight + App Store
+4. Pay the $99 annual fee via credit card
+5. Enrollment is usually approved within minutes for individuals; may take up to 48 h
+
+### After enrollment — one-time setup
+
+1. **Create App ID** in Developer Portal → Identifiers:
+   - Bundle ID: `com.dmzs.datawatchclient` (Explicit)
+   - Capabilities to enable: **Push Notifications**, **Associated Domains** (if needed)
+2. **Create Distribution Certificate**:
+   - Certificates → (+) → Apple Distribution
+   - Generate a CSR on your Mac (Keychain Access → Certificate Assistant → Request a
+     Certificate from a Certificate Authority — save to disk)
+   - Upload CSR, download `.cer`, double-click to install in Keychain
+   - Export as `.p12` with a passphrase; base64-encode for CI:
+     ```
+     base64 -i Distribution.p12 | pbcopy
+     ```
+   - Add to GitHub secret: `IOS_DISTRIBUTION_CERT_P12` (base64), `IOS_DISTRIBUTION_CERT_PASSWORD`
+3. **Create App Store Provisioning Profile**:
+   - Profiles → (+) → App Store Connect
+   - Select the `com.dmzs.datawatchclient` App ID + the Distribution cert
+   - Download `.mobileprovision`; base64-encode for CI:
+     ```
+     base64 -i datawatch.mobileprovision | pbcopy
+     ```
+   - Add to GitHub secret: `IOS_PROVISION_PROFILE`
+4. **Create App Store Connect App**:
+   - `appstoreconnect.apple.com` → Apps → (+) → New App
+   - Platform: iOS, Bundle ID: `com.dmzs.datawatchclient`, SKU: `datawatchclient`
+5. **Create App Store Connect API Key** (for CI upload without 2FA):
+   - App Store Connect → Users and Access → Integrations → App Store Connect API → (+)
+   - Role: **Developer** (sufficient for TestFlight upload)
+   - Download the `.p8` key file **once** — record Issuer ID and Key ID
+   - Add to GitHub secret: `APP_STORE_CONNECT_API_KEY` (base64 of `.p8`),
+     `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`
+6. Once secrets are set, update `ios-build.yml` to enable the archive + `xcrun altool` upload step
+
+---
+
+## Mac development environment (for interactive Simulator testing)
+
+GitHub Actions `macos-15` handles CI builds but provides no interactive session.
+For Simulator testing, Xcode UI work, or TestFlight device runs you need a Mac.
+
+### Option A — MacStadium (recommended for sustained use)
+
+- **URL:** `macstadium.com`
+- **What:** Dedicated Mac Mini or Mac Pro hosted in a data centre; full SSH + VNC access
+- **Pricing (2026):** ~$99–149/mo for Mac Mini M2; hourly orka.io plans available for
+  short bursts (~$0.75–1.50/h)
+- **Good for:** extended dev sprints, always-on CI agent, running Simulator 24/7
+- **Setup:** provision via web portal, SSH in, install Xcode from App Store (use `xcodes`
+  CLI to manage versions), `git clone` the repo, run `./gradlew` as normal
+
+### Option B — MacInCloud (recommended for occasional/hourly use)
+
+- **URL:** `macincloud.com`
+- **What:** Shared or dedicated macOS instances, billed by the hour
+- **Pricing (2026):** from ~$1/h (shared M1) to ~$3/h (dedicated M2)
+- **Good for:** one-off builds, TestFlight archive, occasional Simulator smoke-tests
+- **Setup:** browser-based remote desktop or SSH; Xcode pre-installed on most plans
+
+### Option C — GitHub Actions (already in use — no extra cost)
+
+`macos-15` runners are already used by `ios-build.yml`. Xcode 16 is pre-installed.
+Use this path when you only need a build/test result and not an interactive session.
+To add Simulator UI automation, add `xcrun simctl` steps to the existing workflow.
+
+### Choosing between options
+
+| Need | Use |
+|------|-----|
+| Quick smoke build / CI parity check | GitHub Actions (free) |
+| One-off Simulator run, TestFlight archive | MacInCloud hourly |
+| Weekly iOS dev, persistent environment | MacStadium monthly |
+| Interactive Xcode + Simulator while developing | MacInCloud or MacStadium |
 
 ## Incident response
 
