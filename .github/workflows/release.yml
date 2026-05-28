@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Secret requirements (set in repo Settings → Secrets and variables → Actions):
 #
 #   KEYSTORE_BASE64       base64 of datawatch-upload-ring.jks
