@@ -238,17 +238,17 @@ Deliberately skipped, matched against the parent's own PWA non-goals:
 
 ## iOS Parity (added 2026-05-27)
 
-iOS client shipped in v1.0.2. The parity standard is **capability match** (what the user can do), not implementation match. See `docs/plans/2026-05-27-ios-client.md` §Story 14 for the full audit table.
+iOS client shipped in v1.0.4. The parity standard is **capability match** (what the user can do), not implementation match. See `docs/plans/2026-05-27-ios-client.md` §Story 14 for the full audit table.
 
-### iOS v1.0.2 summary
+### iOS v1.0.4 summary
 
 | Section | iOS status | Gap vs Android/PWA |
 |---------|-----------|-------------------|
 | Sessions list | ✅ | No multi-server picker, no all-servers fan-out yet |
-| Terminal (xterm.js) | ✅ | IME keyboard-overlap not yet fixed |
-| Kill / session actions | ✅ (kill only) | No rename, restart, state override in v1.0.2 |
+| Terminal (xterm.js) | ✅ | IME keyboard-overlap fixed in v1.0.4 (Story 17) |
+| Kill / session actions | ✅ (kill only) | No rename, restart, state override |
 | Alerts | ✅ | Server-side dismiss not wired |
-| Automata | ⏳ | Placeholder only — full CRUD in v1.1 |
+| Automata | ✅ | Full CRUD shipped in v1.0.4 (Story 16) |
 | Observer / stats | ✅ | |
 | Dashboard | ✅ | |
 | Server profiles | ✅ | |

@@ -623,7 +623,7 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | Kill session | ✅ | ✅ | None |
 | Alerts list | ✅ | ✅ | None |
 | Alert severity icons | ✅ | ✅ | None |
-| Automata tab | ✅ | Placeholder | Full CRUD planned for v1.1 |
+| Automata tab | ✅ | ✅ | Full CRUD shipped v1.0.4 |
 | Observer / stats | ✅ | ✅ | None |
 | Dashboard multi-server | ✅ | ✅ | None |
 | Server profiles (add/edit/delete) | ✅ | ✅ | None |
@@ -634,12 +634,16 @@ Estimates are after Q1–Q7 decisions. UI framework choice (Q2) has the largest 
 | iPad sidebar | N/A | ✅ | iOS-only addition |
 | Dark mode | ✅ | ✅ | iOS forced dark; PWA auto |
 
-### Known gaps for v1.1
+### Known gaps for v1.1 (external blockers only)
 
-1. **Automata CRUD** — list + create/edit rules; depends on `listAutomataTypes` API
-2. **Push notifications** — requires server-side `POST /api/devices/register?kind=apns` (datawatch#107)
-3. **Session start** — "+" button in Sessions tab; needs model/profile picker
-4. **Alert dismiss** — server-side dismissal via API (currently client-side only)
-5. **Deep link handling** — `datawatch://session/<id>` and `datawatch://alert/<id>` routing wired but not tested end-to-end
-6. **Terminal IME handling** — `onSizeChanged` → `dwExplicitSize` pattern from Android xterm fix not yet ported; keyboard may overlap terminal
+1. **Push notifications** — requires server-side `POST /api/devices/register?kind=apns` (datawatch#107)
+2. **Session start** — "+" button in Sessions tab; needs model/profile picker
+3. **Alert dismiss** — server-side dismissal via API (currently client-side only)
+4. **Deep link handling** — `datawatch://session/<id>` and `datawatch://alert/<id>` routing wired but not tested end-to-end
+5. **TestFlight upload** — CI job ready; requires Apple Developer enrollment ($99/year)
+
+### Shipped in v1.0.4 (originally v1.1 scope)
+
+- **Automata CRUD** — `listAutomataTypes`, `registerAutomataType`, `deleteAutomataType` via `IosServiceLocator`; full SwiftUI list + add sheet + swipe-to-delete
+- **Terminal IME fix** — `DwWKWebView.layoutSubviews` → `onFrameChanged` → `window.dwExplicitSize`; keyboard no longer covers bottom terminal rows
 

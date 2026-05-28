@@ -350,3 +350,44 @@ extension TerminalWebView {
         }
     }
 }
+
+#if DEBUG
+#Preview("Terminal — connecting") {
+    let profile = ServerProfile(
+        id: "preview-server",
+        displayName: "Local dev",
+        baseUrl: "http://localhost:8080",
+        bearerTokenRef: "",
+        trustAnchorSha256: nil,
+        reachabilityProfileId: nil,
+        enabled: true,
+        createdTs: 0,
+        lastSeenTs: 0,
+        signalLinked: false
+    )
+    let now = Kotlinx_datetimeInstant.companion.fromEpochMilliseconds(epochMilliseconds: 0)
+    let session = Session(
+        id: "abc123",
+        serverProfileId: "preview-server",
+        hostnamePrefix: "ring",
+        state: SessionState.running,
+        taskSummary: "Preview session",
+        createdAt: now,
+        lastActivityAt: now,
+        muted: false,
+        lastPrompt: nil,
+        name: nil,
+        promptContext: nil,
+        lastResponse: nil,
+        backend: "claude-code",
+        outputMode: "terminal",
+        inputMode: "tmux",
+        agentId: nil,
+        llmRef: nil,
+        computeNodeRef: nil,
+        chrome: false
+    )
+    TerminalView(session: session, profile: profile)
+        .preferredColorScheme(.dark)
+}
+#endif

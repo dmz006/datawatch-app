@@ -120,3 +120,14 @@ private struct ProfileRow: View {
 
 // ServerProfile must be Identifiable for sheet(item:)
 extension ServerProfile: Identifiable {}
+
+#Preview {
+    let store = ServerProfileStore()
+    NavigationStack {
+        ServerProfileListView()
+            .environmentObject(store)
+            .navigationTitle("Servers")
+            .navigationBarTitleDisplayMode(.large)
+    }
+    .preferredColorScheme(.dark)
+}

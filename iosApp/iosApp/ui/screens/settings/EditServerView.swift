@@ -146,3 +146,24 @@ struct EditServerView: View {
         }
     }
 }
+
+#Preview {
+    let store = ServerProfileStore()
+    let profile = ServerProfile(
+        id: "preview-1",
+        displayName: "Local dev",
+        baseUrl: "http://localhost:8080",
+        bearerTokenRef: "tok-preview",
+        trustAnchorSha256: nil,
+        reachabilityProfileId: nil,
+        enabled: true,
+        createdTs: 0,
+        lastSeenTs: 0,
+        signalLinked: false
+    )
+    NavigationStack {
+        EditServerView(profile: profile)
+            .environmentObject(store)
+    }
+    .preferredColorScheme(.dark)
+}
