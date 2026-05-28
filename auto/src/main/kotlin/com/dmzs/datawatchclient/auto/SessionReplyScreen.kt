@@ -4,9 +4,10 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
-import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,8 +15,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Driver-safe reply with Yes / No / Continue / Stop quick
- * actions. Tap → POSTs `/api/sessions/reply` via
+ * Driver-safe reply with Yes / No / Continue / Stop quick actions.
+ * Uses a ListTemplate with tappable rows (no ActionStrip) so all four
+ * options are available without violating Car App Library's 1-custom-title
+ * ActionStrip constraint. Tap → POSTs `/api/sessions/reply` via
  * [AutoServiceLocator].
  */
 public class SessionReplyScreen(
@@ -45,39 +48,40 @@ public class SessionReplyScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val actions =
-            ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Yes")
-                        .setBackgroundColor(CarColor.GREEN)
-                        .setOnClickListener { reply("yes") }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("No")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { reply("no") }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Continue")
-                        .setOnClickListener { reply("continue") }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Stop")
-                        .setOnClickListener { reply("stop") }
-                        .build(),
-                )
-                .build()
-        return MessageTemplate.Builder("Quick reply for $sessionId")
-            .setTitle("Reply")
+        val items = ItemList.Builder()
+            .addItem(
+                Row.Builder()
+                    .setTitle(colored("Yes", CarColor.GREEN))
+                    .addText("Send affirmative reply")
+                    .setOnClickListener { reply("yes") }
+                    .build(),
+            )
+            .addItem(
+                Row.Builder()
+                    .setTitle(colored("No", CarColor.RED))
+                    .addText("Send negative reply")
+                    .setOnClickListener { reply("no") }
+                    .build(),
+            )
+            .addItem(
+                Row.Builder()
+                    .setTitle("Continue")
+                    .addText("Resume the session")
+                    .setOnClickListener { reply("continue") }
+                    .build(),
+            )
+            .addItem(
+                Row.Builder()
+                    .setTitle(colored("Stop", CarColor.RED))
+                    .addText("Stop the session")
+                    .setOnClickListener { reply("stop") }
+                    .build(),
+            )
+            .build()
+        return ListTemplate.Builder()
+            .setTitle("Quick Reply")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(actions)
+            .setSingleList(items)
             .build()
     }
 }
