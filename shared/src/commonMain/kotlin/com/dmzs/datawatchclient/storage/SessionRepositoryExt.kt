@@ -16,7 +16,7 @@ import kotlinx.datetime.Instant
  */
 public fun SessionRepository.observeForProfileAny(
     sessionId: String,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ): Flow<Session?> =
     db.sessionQueries.selectSessionById(sessionId)
         .asFlow()

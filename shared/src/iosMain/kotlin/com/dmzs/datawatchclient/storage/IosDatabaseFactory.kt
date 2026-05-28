@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.storage
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.dmzs.datawatchclient.db.DatawatchDb
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
@@ -32,6 +33,7 @@ public actual class DatabaseFactory {
         return driver
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     private fun applyDataProtection() {
         val attrs = mapOf<Any?, Any?>(NSFileProtectionKey to NSFileProtectionComplete)
         for (dir in candidateDirectories()) {

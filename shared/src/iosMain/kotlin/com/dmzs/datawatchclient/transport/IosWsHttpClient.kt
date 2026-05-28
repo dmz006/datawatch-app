@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.transport
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
+import kotlinx.cinterop.ExperimentalForeignApi
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
@@ -25,6 +26,7 @@ import platform.Foundation.credentialForTrust
  * App Transport Security note: for HTTP (non-TLS) servers the Info.plist
  * NSExceptionDomains entry is required; see docs/transports.md § iOS ATS.
  */
+@OptIn(ExperimentalForeignApi::class)
 public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
     HttpClient(Darwin) {
         engine {

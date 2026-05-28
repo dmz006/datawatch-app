@@ -3,7 +3,9 @@ package com.dmzs.datawatchclient.security
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
@@ -111,7 +113,7 @@ public class IosTokenStore {
             resultDataRef = resultRef.value as? CFDataRef ?: return@memScoped null
             val length = CFDataGetLength(resultDataRef).toInt()
             val ptr = CFDataGetBytePtr(resultDataRef) ?: return@memScoped null
-            ByteArray(length) { ptr.reinterpret<ByteVar>()[it] }.decodeToString()
+            ByteArray(length) { ptr[it].toByte() }.decodeToString()
         } finally {
             resultDataRef?.let { CFRelease(it) }
             CFRelease(dict)
