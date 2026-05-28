@@ -12,12 +12,12 @@
 -->
 <resources>
     <array name="hosts_allowlist">
-        <!-- Google Automotive OS host -->
+        <!-- Google Automotive OS host / Desktop Head Unit (DHU) -->
         <item>70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771,com.google.android.projection.gearhead</item>
-        <!-- Android Auto companion app -->
+        <!-- Android Auto phone companion app (Play-distributed cert) -->
         <item>1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00,com.google.android.projection.gearhead</item>
-        <!-- Google Desktop Head Unit (DHU) -->
-        <item>70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771,com.google.android.projection.gearhead</item>
+        <!-- Android Auto phone companion app (Samsung S24 Ultra gearhead 16.9 cert) -->
+        <item>1ca8dcc0bed3cbd872d2cb791200c0292ca9975768a82d676b8b424fb65b5295,com.google.android.projection.gearhead</item>
         <!-- Automotive OS emulator -->
         <item>8fe19858fcc4c98a73b41b9e9b58f55e1fe7cf2e6f77c4d9b6dc66a11f4d7fb0,com.google.android.embedded.projection</item>
     </array>

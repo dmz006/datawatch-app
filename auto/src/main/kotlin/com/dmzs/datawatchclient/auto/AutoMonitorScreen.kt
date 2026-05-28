@@ -62,6 +62,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val POLL_MS: Long = 15_000L
+        const val MAX_ROWS: Int = 5
     }
 
     private suspend fun pollLoop() {
@@ -126,7 +127,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
             }
         } else {
             // Multi-server (B28): one compact summary row per server.
-            rows.forEach { row ->
+            rows.take(MAX_ROWS).forEach { row ->
                 val s = row.stats
                 val summary =
                     when {
@@ -139,6 +140,14 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     Row.Builder()
                         .setTitle(colored("● ${row.profile.displayName}", titleColor))
                         .addText(summary)
+                        .build(),
+                )
+            }
+            if (rows.size > MAX_ROWS) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… and ${rows.size - MAX_ROWS} more servers")
+                        .addText("Manage servers on the paired phone")
                         .build(),
                 )
             }
