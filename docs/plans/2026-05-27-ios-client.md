@@ -51,7 +51,7 @@ All Q1–Q7 decisions locked. See Decision Log at the bottom of this document.
 - **Task 1.2.2** Configure `project.yml` with correct bundle ID (`com.dmzs.datawatchclient`), deployment target, capabilities (Push Notifications, Face ID, Background Modes).
 - **Task 1.2.3** Add `Info.plist` keys: `NSFaceIDUsageDescription`, `NSMicrophoneUsageDescription` (voice reply), `NSCameraUsageDescription` (if needed), `UIBackgroundModes: [remote-notification]`.
 - **Task 1.2.4** Configure Xcode scheme for Debug and Release; Release uses distribution signing.
-- **Task 1.2.5** Add `iosApp` to AGENT.md module table and update AI-APP-SEED.md project structure diagram.
+- **Task 1.2.5** Add `iosApp` to AGENT.md module table and update DATAWATCH-APP-CONTEXT.md project structure diagram.
 
 #### Epic 1.3 — KMP Framework Integration
 
@@ -225,7 +225,7 @@ All Q1–Q7 decisions locked. See Decision Log at the bottom of this document.
 
 - **Task 6.1.1** Create `TerminalWebView.swift`: `WKWebView` subclass configured with `WKWebViewConfiguration`, JavaScript enabled, `allowsContentJavaScript`, no navigation allowed outside the host HTML.
 - **Task 6.1.2** Vendor the same `xterm.js` + `xterm-addon-fit.js` already used in Android (`composeApp/src/androidMain/assets/`); copy to `iosApp/Resources/`. Single source of truth for vendored JS.
-- **Task 6.1.3** Port `host.html` to iOS: DPR-corrected `dwExplicitSize`, write serialiser (`_pendingCap` / `_writeInFlight`), `DATAWATCH_COMPLETE:` line filter, `setMinSize(120, 0)` — same logic as Android (ref: AI-APP-SEED.md §xterm).
+- **Task 6.1.3** Port `host.html` to iOS: DPR-corrected `dwExplicitSize`, write serialiser (`_pendingCap` / `_writeInFlight`), `DATAWATCH_COMPLETE:` line filter, `setMinSize(120, 0)` — same logic as Android (ref: DATAWATCH-APP-CONTEXT.md §xterm).
 - **Task 6.1.4** `WKScriptMessageHandler` bridge replacing Android's `addJavascriptInterface`; receive pane_capture data from Swift, post to JS via `evaluateJavaScript`.
 - **Task 6.1.5** Disable WKWebView scroll (`scrollView.isScrollEnabled = false`, `bounces = false`) — xterm owns its own scroll, same as Android `TerminalWebView` overrides.
 - **Task 6.1.6** Verify terminal renders correct on iPhone SE (small), iPhone 15 Pro (standard), iPhone 15 Pro Max (large) — column count changes with viewport.
@@ -235,7 +235,7 @@ All Q1–Q7 decisions locked. See Decision Log at the bottom of this document.
 - **Task 6.2.1** Subscribe to `UIResponder.keyboardWillShowNotification` / `keyboardWillHideNotification`; dispatch `dwExplicitSize(w, newH)` with keyboard-adjusted height.
 - **Task 6.2.2** Confirm DPR correction works on all iPhone models — log `UIScreen.main.scale` alongside `dwExplicitSize` values in Debug builds.
 - **Task 6.2.3** `safeAreaInsets.bottom` excluded from terminal height calculation when keyboard is visible (iOS equivalent of Android `imePadding`).
-- **Task 6.2.4** No double-inset: only one layer handles safe-area padding. Document the chosen layout in code, same discipline as Android AI-APP-SEED.md §xterm.
+- **Task 6.2.4** No double-inset: only one layer handles safe-area padding. Document the chosen layout in code, same discipline as Android DATAWATCH-APP-CONTEXT.md §xterm.
 - **Task 6.2.5** Scroll-to-bottom on every pane_capture (`safeFit` → `term.scrollToBottom()`), matching PWA and Android.
 
 #### Epic 6.3 — Terminal Data Pipeline
