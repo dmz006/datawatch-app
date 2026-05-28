@@ -1,13 +1,13 @@
 import Foundation
 import UserNotifications
 import UIKit
+import DatawatchShared
 
 /// Handles APNs registration and push notification routing.
 ///
-/// Story 12: Device token is registered with each configured server profile
-/// via POST /api/devices/register (datawatch#107 — server-side APNs support).
-/// Until the server endpoint ships, we store the token locally and register
-/// when the server support becomes available.
+/// On token receipt, calls IosServiceLocator.registerApnsToken() which
+/// POSTs /api/devices/register (kind=apns) for every enabled profile.
+/// On profile delete, IosServiceLocator.deleteProfile() handles unregistration.
 @MainActor
 final class NotificationService: NSObject, ObservableObject {
     static let shared = NotificationService()
@@ -37,11 +37,12 @@ final class NotificationService: NSObject, ObservableObject {
         }
     }
 
-    /// Called from AppDelegate/SwiftUI scene when APNs returns a device token.
+    /// Called from AppDelegate when APNs returns a device token.
+    /// Stores the token and registers it with all enabled server profiles.
     func didRegister(tokenData: Data) {
         let token = tokenData.map { String(format: "%02.2hhx", $0) }.joined()
         deviceToken = token
-        // TODO: register token with each profile's server when datawatch#107 ships.
+        IosServiceLocator.shared.registerApnsToken(token: token)
     }
 
     /// Handle incoming push notification payload.

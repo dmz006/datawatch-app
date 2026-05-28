@@ -1419,6 +1419,6 @@ public data class LogsView(
     val total: Int,
 )
 
-public enum class DeviceKind(public val wire: String) { Fcm("fcm"), Ntfy("ntfy") }
+public enum class DeviceKind(public val wire: String) { Fcm("fcm"), Ntfy("ntfy"), Apns("apns") }
 
 public enum class DevicePlatform(public val wire: String) { Android("android"), Ios("ios") }
