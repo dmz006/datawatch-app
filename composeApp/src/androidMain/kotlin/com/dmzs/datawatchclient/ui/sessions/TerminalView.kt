@@ -2,8 +2,12 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.text.InputType
 import android.util.Log
+import android.view.KeyEvent
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -76,6 +80,58 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
     }
 
     override fun computeVerticalScrollRange(): Int = 0
+
+    /**
+     * Disable IME autocorrect and spell-check for the xterm textarea.
+     * Default WebView behavior treats the hidden xterm helper textarea as a
+     * normal text field: Android's IME buffers words and applies autocorrect,
+     * so pressing Space commits "hello<CR>" instead of the literal space
+     * character. TYPE_TEXT_VARIATION_VISIBLE_PASSWORD suppresses word
+     * suggestions without hiding the keyboard; NO_SUGGESTIONS opts out of
+     * the dictionary lookup entirely.
+     */
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
+        val ic = super.onCreateInputConnection(outAttrs)
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT or
+            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
+            InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or
+            EditorInfo.IME_FLAG_NO_EXTRACT_UI or
+            EditorInfo.IME_ACTION_NONE
+        return ic
+    }
+
+    /**
+     * Intercept D-pad navigation keys before they reach the DOM.
+     * Android delivers navigation keys both as native KeyEvents (which WebView
+     * converts to DOM keyboard events that xterm.js handles) AND sometimes
+     * as a second pass through the IME pipeline, causing each press to fire
+     * xterm's onData handler twice. Consuming ACTION_DOWN here and sending the
+     * ANSI sequence directly via DwBridge bypasses the DOM path entirely.
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val isDpad = event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+            event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+            event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+            event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        if (isDpad) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                val jsAnsi = when (event.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_UP    -> "\\x1b[A"
+                    KeyEvent.KEYCODE_DPAD_DOWN  -> "\\x1b[B"
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> "\\x1b[C"
+                    KeyEvent.KEYCODE_DPAD_LEFT  -> "\\x1b[D"
+                    else -> return super.dispatchKeyEvent(event)
+                }
+                evaluateJavascript(
+                    "window.DwBridge && DwBridge.onInput('$jsAnsi');",
+                    null,
+                )
+            }
+            return true // consume both ACTION_DOWN and ACTION_UP
+        }
+        return super.dispatchKeyEvent(event)
+    }
 }
 
 /**
