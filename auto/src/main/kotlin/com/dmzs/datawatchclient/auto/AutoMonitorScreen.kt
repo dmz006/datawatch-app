@@ -5,10 +5,12 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
@@ -152,6 +154,10 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
             }
         }
+        // ActionStrip: max 1 action with a custom title (Car App Library constraint).
+        // "Sessions" keeps its title as the primary CTA; the rest use icons only.
+        fun iconOf(resId: Int) =
+            CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
             ActionStrip.Builder()
                 .addAction(
@@ -164,7 +170,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .addAction(
                     Action.Builder()
-                        .setTitle("Server")
+                        .setIcon(iconOf(R.drawable.ic_auto_server))
                         .setOnClickListener {
                             screenManager.push(AutoServerPickerScreen(carContext))
                         }
@@ -172,7 +178,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .addAction(
                     Action.Builder()
-                        .setTitle("Status")
+                        .setIcon(iconOf(R.drawable.ic_auto_voice))
                         .setOnClickListener {
                             screenManager.push(
                                 com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext),
@@ -182,7 +188,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .addAction(
                     Action.Builder()
-                        .setTitle("About")
+                        .setIcon(iconOf(R.drawable.ic_auto_info))
                         .setOnClickListener {
                             screenManager.push(AutoAboutScreen(carContext))
                         }
