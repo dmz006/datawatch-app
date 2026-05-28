@@ -1,61 +1,26 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-
 package com.dmzs.datawatchclient.transport
 
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
-import kotlinx.cinterop.ExperimentalForeignApi
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-import platform.Foundation.NSURLAuthenticationMethodServerTrust
-import platform.Foundation.NSURLCredential
-import platform.Foundation.NSURLSessionAuthChallengeCancelAuthenticationChallenge
-import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
-import platform.Foundation.NSURLSessionAuthChallengeUseCredential
-import platform.Foundation.credentialForTrust
-import platform.Security.SecTrustRef
 
 /**
  * iOS Ktor HttpClient with WebSockets installed. Mirrors [AndroidWsHttpClient].
  *
- * @param trustAll when true, installs a Darwin challenge handler that accepts
- *   any SSL certificate. Only used when the server profile has
- *   trustAnchorSha256 == TRUST_ALL_SENTINEL (user explicitly opted in for a
- *   self-signed or private-CA server). See ADR note in AndroidWsHttpClient.
+ * @param trustAll reserved for future use — iOS currently uses ATS for certificate
+ *   policy. For self-signed / private-CA servers configure NSExceptionDomains in
+ *   Info.plist, or use a certificate issued by a public CA (Let's Encrypt).
+ *   Per-profile SHA-256 pinning via SecTrustEvaluateWithError is tracked for v1.1.
  *
- * App Transport Security note: for HTTP (non-TLS) servers the Info.plist
- * NSExceptionDomains entry is required; see docs/transports.md § iOS ATS.
+ * App Transport Security note: for HTTP (non-TLS) servers add the server's host
+ * to NSExceptionDomains with NSExceptionAllowsInsecureHTTPLoads = true.
  */
-@OptIn(ExperimentalForeignApi::class)
 public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
     HttpClient(Darwin) {
-        engine {
-            if (trustAll) {
-                // Accept any server certificate. Mirror of Android's blanket
-                // X509TrustManager bypass — used only for user-owned servers where
-                // the user has explicitly trusted the certificate in Settings.
-                // Per-profile SHA-256 pinning (Task 2.3.1 future refinement) will
-                // replace this once the iOS Settings UI is built in Story 7.
-                handleChallenge { session, task, challenge, completionHandler ->
-                    if (challenge.protectionSpace.authenticationMethod ==
-                        NSURLAuthenticationMethodServerTrust
-                    ) {
-                        val trust: SecTrustRef? = challenge.protectionSpace.serverTrust
-                        val credential = trust?.let { NSURLCredential.credentialForTrust(it) }
-                        if (credential != null) {
-                            completionHandler(NSURLSessionAuthChallengeUseCredential, credential)
-                        } else {
-                            completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, null)
-                        }
-                    } else {
-                        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, null)
-                    }
-                }
-            }
-        }
         install(WebSockets) {
             pingInterval = 30_000
         }
