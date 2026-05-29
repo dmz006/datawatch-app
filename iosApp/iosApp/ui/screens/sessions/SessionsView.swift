@@ -378,6 +378,15 @@ struct SessionsView: View {
                             .clipShape(Capsule())
                             .accessibilityLabel("Worker \(agentId)")
                     }
+                    if session.backend == "council-virtual" {
+                        Text("🎭")
+                            .font(DatawatchFonts.badge)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.secondary.opacity(0.12))
+                            .clipShape(Capsule())
+                            .accessibilityLabel("Council session")
+                    }
                     if let hostname = session.hostnamePrefix, !hostname.isEmpty {
                         Text(hostname)
                             .font(DatawatchFonts.badge)
