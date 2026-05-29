@@ -123,10 +123,14 @@ struct DashboardView: View {
                 HeaderView(title: "Dashboard")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                DocsLinkButton(
-                    profile: store.profiles.first,
-                    anchor: "dashboard"
-                )
+                HStack(spacing: 4) {
+                    DocsLinkButton(
+                        profile: store.profiles.first,
+                        anchor: "dashboard"
+                    )
+                    AlertsBellButton()
+                    ReachabilityDotView(profile: store.profiles.first)
+                }
             }
         }
         .onAppear {

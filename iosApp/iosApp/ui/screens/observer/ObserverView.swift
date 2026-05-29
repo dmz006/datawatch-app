@@ -100,7 +100,11 @@ struct ObserverView: View {
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                DocsLinkButton(profile: activeProfile, anchor: "observer")
+                HStack(spacing: 4) {
+                    DocsLinkButton(profile: activeProfile, anchor: "observer")
+                    AlertsBellButton()
+                    ReachabilityDotView(profile: activeProfile)
+                }
             }
         }
         .onAppear {

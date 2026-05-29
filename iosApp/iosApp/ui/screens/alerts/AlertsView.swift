@@ -137,10 +137,13 @@ struct AlertsView: View {
                 headerTitle
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                DocsLinkButton(
-                    profile: store.profiles.first,
-                    anchor: "alerts"
-                )
+                HStack(spacing: 4) {
+                    DocsLinkButton(
+                        profile: store.profiles.first,
+                        anchor: "alerts"
+                    )
+                    ReachabilityDotView(profile: store.profiles.first)
+                }
             }
         }
         .onAppear {
@@ -333,7 +336,7 @@ private struct AlertRow: View {
                 // Top: badge + timestamp
                 HStack(spacing: 8) {
                     badgeView
-                    Text(relativeTime(from: alert.createdAt))
+                    Text(alertTime(from: alert.createdAt))
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
                     Spacer()
@@ -413,16 +416,14 @@ private struct AlertRow: View {
             .clipShape(Capsule())
     }
 
-    private func relativeTime(from instant: Kotlinx_datetimeInstant) -> String {
+    private func alertTime(from instant: Kotlinx_datetimeInstant) -> String {
         let epochMs = instant.toEpochMilliseconds()
         let date = Date(timeIntervalSince1970: Double(epochMs) / 1000.0)
-        let delta = Date().timeIntervalSince(date)
-        switch delta {
-        case ..<60: return "just now"
-        case 60..<3600: return "\(Int(delta / 60))m ago"
-        case 3600..<86400: return "\(Int(delta / 3600))h ago"
-        default: return "\(Int(delta / 86400))d ago"
-        }
+        let cal = Calendar.current
+        let h = cal.component(.hour, from: date)
+        let m = cal.component(.minute, from: date)
+        let s = cal.component(.second, from: date)
+        return String(format: "%02d:%02d:%02d", h, m, s)
     }
 }
 

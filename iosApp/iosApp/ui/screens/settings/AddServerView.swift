@@ -25,10 +25,17 @@ struct AddServerView: View {
                 Section("Server") {
                     TextField("Display name", text: $displayName)
                         .autocorrectionDisabled()
-                    TextField("Base URL  (https://…)", text: $baseUrl)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Base URL  (https://…)", text: $baseUrl)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        if !baseUrl.isEmpty && !baseUrl.hasPrefix("http://") && !baseUrl.hasPrefix("https://") {
+                            Text("URL must start with https:// or http://")
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.error)
+                        }
+                    }
                 }
 
                 Section("Authentication") {

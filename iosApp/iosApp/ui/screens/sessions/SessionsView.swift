@@ -9,6 +9,7 @@ struct SessionsView: View {
     @State private var filterText: String = ""
     @State private var showFilter: Bool = false
     @State private var stateFilter: SessionStateFilter = .all
+    @State private var sortOrder: SortOrder = .recentActivity
 
     enum SessionStateFilter: String, CaseIterable {
         case all       = "All"
@@ -16,6 +17,12 @@ struct SessionsView: View {
         case running   = "Running"
         case waiting   = "Waiting"
         case done      = "Done"
+    }
+
+    enum SortOrder: String, CaseIterable {
+        case recentActivity = "Recent activity"
+        case startedAt      = "Started"
+        case name           = "Name"
     }
 
     var body: some View {
@@ -54,6 +61,9 @@ struct SessionsView: View {
                             .foregroundStyle(DatawatchColors.primary)
                     }
                     .accessibilityLabel("Start new session")
+
+                    AlertsBellButton()
+                    ReachabilityDotView(profile: viewModel.activeProfile)
                 }
             }
         }
@@ -122,14 +132,43 @@ struct SessionsView: View {
 
     private var filterBar: some View {
         VStack(spacing: 0) {
-            // Row 1: state filter chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(SessionStateFilter.allCases, id: \.self) { filter in
-                        stateChip(filter)
+            // Row 1: state filter chips + sort menu
+            HStack(spacing: 0) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(SessionStateFilter.allCases, id: \.self) { filter in
+                            stateChip(filter)
+                        }
                     }
+                    .padding(.horizontal, 12)
                 }
-                .padding(.horizontal, 12)
+
+                Menu {
+                    ForEach(SortOrder.allCases, id: \.self) { order in
+                        Button {
+                            sortOrder = order
+                        } label: {
+                            if sortOrder == order {
+                                Label(order.rawValue, systemImage: "checkmark")
+                            } else {
+                                Text(order.rawValue)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.up.arrow.down")
+                        Text(sortOrder.rawValue)
+                            .lineLimit(1)
+                    }
+                    .font(DatawatchFonts.badge)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(DatawatchColors.chipBackground)
+                    .clipShape(Capsule())
+                }
+                .padding(.trailing, 12)
             }
             .padding(.vertical, 6)
             .background(DatawatchColors.background)
@@ -169,8 +208,9 @@ struct SessionsView: View {
             case .done:    return DatawatchColors.onSurfaceMuted
             }
         }()
+        let count = chipCount(for: filter)
         Button { stateFilter = filter } label: {
-            Text(filter.rawValue)
+            Text(count > 0 ? "\(filter.rawValue) (\(count))" : filter.rawValue)
                 .font(DatawatchFonts.badge)
                 .foregroundStyle(selected ? DatawatchColors.background : color)
                 .padding(.horizontal, 10)
@@ -201,7 +241,32 @@ struct SessionsView: View {
                 (s.backend?.lowercased().contains(q) ?? false)
             }
         }
+
+        switch sortOrder {
+        case .recentActivity:
+            result.sort { $0.lastActivityAt.toEpochMilliseconds() > $1.lastActivityAt.toEpochMilliseconds() }
+        case .startedAt:
+            result.sort { $0.createdAt.toEpochMilliseconds() > $1.createdAt.toEpochMilliseconds() }
+        case .name:
+            result.sort {
+                let a = $0.name ?? $0.taskSummary ?? $0.id
+                let b = $1.name ?? $1.taskSummary ?? $1.id
+                return a < b
+            }
+        }
+
         return result
+    }
+
+    private func chipCount(for filter: SessionStateFilter) -> Int {
+        let all = viewModel.sessions
+        switch filter {
+        case .all:     return all.count
+        case .active:  return all.filter { $0.state == .running || $0.state == .waiting }.count
+        case .running: return all.filter { $0.state == .running }.count
+        case .waiting: return all.filter { $0.state == .waiting }.count
+        case .done:    return all.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }.count
+        }
     }
 
     // ── Empty states ──────────────────────────────────────────────────────
@@ -293,6 +358,18 @@ struct SessionsView: View {
                             .background(DatawatchColors.waiting.opacity(0.15))
                             .clipShape(Capsule())
                     }
+                    if session.agentId != nil {
+                        Image(systemName: "hexagon.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DatawatchColors.secondary)
+                            .accessibilityLabel("Worker agent")
+                    }
+                    if session.lastResponse != nil {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            .accessibilityLabel("Has response")
+                    }
                     if session.muted {
                         Image(systemName: "bell.slash.fill")
                             .font(.system(size: 10))
@@ -301,9 +378,24 @@ struct SessionsView: View {
                     }
                     Spacer()
                 }
+
+                // Row 4: prompt context for waiting sessions
+                if session.state == .waiting, let ctx = session.promptContext ?? session.lastPrompt, !ctx.isEmpty {
+                    Text(ctx)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        .lineLimit(2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(DatawatchColors.waiting.opacity(0.08))
+                        .overlay(Rectangle().fill(DatawatchColors.waiting).frame(width: 2), alignment: .leading)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
+            .opacity(isDoneState(session.state) ? 0.6 : 1.0)
         }
         .listRowBackground(DatawatchColors.surface)
         .listRowSeparatorTint(DatawatchColors.border)
@@ -348,6 +440,10 @@ struct SessionsView: View {
         case .error:     return "ERROR"
         default:         return "UNKNOWN"
         }
+    }
+
+    private func isDoneState(_ state: SessionState) -> Bool {
+        state == .completed || state == .killed || state == .error
     }
 
     private func accessibilityLabel(for session: Session) -> String {

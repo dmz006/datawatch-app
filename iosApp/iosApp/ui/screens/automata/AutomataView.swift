@@ -93,6 +93,8 @@ struct AutomataView: View {
                         }
                         .accessibilityLabel("Add automata type")
                     }
+                    AlertsBellButton()
+                    ReachabilityDotView(profile: selectedProfile)
                 }
             }
         }
