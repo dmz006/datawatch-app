@@ -154,8 +154,9 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                 )
             }
         }
-        // ActionStrip: max 1 action with a custom title (Car App Library constraint).
-        // "Sessions" keeps its title as the primary CTA; the rest use icons only.
+        // ActionStrip: Car App Library hard-limits ListTemplate to 2 actions.
+        // "Sessions" is the primary CTA (titled); server picker is secondary (icon only).
+        // Voice and About are reachable via voice commands and are omitted here.
         fun iconOf(resId: Int) =
             CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
@@ -173,24 +174,6 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                         .setIcon(iconOf(R.drawable.ic_auto_server))
                         .setOnClickListener {
                             screenManager.push(AutoServerPickerScreen(carContext))
-                        }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_voice))
-                        .setOnClickListener {
-                            screenManager.push(
-                                com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext),
-                            )
-                        }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_info))
-                        .setOnClickListener {
-                            screenManager.push(AutoAboutScreen(carContext))
                         }
                         .build(),
                 )
