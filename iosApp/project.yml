@@ -27,6 +27,7 @@ targets:
         CURRENT_PROJECT_VERSION: ${DATAWATCH_APP_VERSION_CODE}
         FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/debug
         OTHER_LDFLAGS: $(inherited) -framework DatawatchShared
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Release:
           FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../shared/build/XCFrameworks/release
