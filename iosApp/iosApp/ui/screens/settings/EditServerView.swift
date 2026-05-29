@@ -68,6 +68,11 @@ struct EditServerView: View {
             Section("Security") {
                 Toggle("Trust all certificates", isOn: $selfSigned)
                     .tint(DatawatchColors.secondary)
+                if selfSigned {
+                    Text("Allows self-signed TLS. Do not enable for production servers.")
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
             }
 
             if let msg = errorMessage {

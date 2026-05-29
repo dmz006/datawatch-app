@@ -27,6 +27,14 @@ final class ObserverViewModel: ObservableObject {
         }
     }
 
+    func selectProfile(_ newProfile: ServerProfile) {
+        guard newProfile.id != profile?.id else { return }
+        profile = newProfile
+        stats = nil
+        error = nil
+        startPolling()
+    }
+
     func startPolling() {
         guard profile != nil else { return }
         stopPolling()
@@ -74,19 +82,21 @@ final class ObserverViewModel: ObservableObject {
 struct ObserverView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var vm = ObserverViewModel()
+    @State private var selectedProfileId: String? = nil
 
-    private var activeProfile: ServerProfile? { store.profiles.first }
+    private var selectedProfile: ServerProfile? {
+        if let id = selectedProfileId {
+            return store.profiles.first(where: { $0.id == id })
+        }
+        return store.profiles.first
+    }
 
     var body: some View {
         Group {
             if store.profiles.isEmpty {
                 emptyStateView
-            } else if vm.isLoading && vm.stats == nil {
-                LoadingIndicator(message: "Loading stats…")
-            } else if let err = vm.error, vm.stats == nil {
-                ErrorCard(message: err) { vm.startPolling() }
             } else {
-                observerContent
+                profileContent
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -96,14 +106,14 @@ struct ObserverView: View {
             ToolbarItem(.principal) {
                 HeaderView(
                     title: "Observer",
-                    serverName: activeProfile?.displayName
+                    serverName: selectedProfile?.displayName
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
-                    DocsLinkButton(profile: activeProfile, anchor: "observer")
+                    DocsLinkButton(profile: selectedProfile, anchor: "observer")
                     AlertsBellButton()
-                    ReachabilityDotView(profile: activeProfile)
+                    ReachabilityDotView(profile: selectedProfile)
                 }
             }
         }
@@ -114,8 +124,52 @@ struct ObserverView: View {
             vm.stopPolling()
         }
         .onChange(of: store.profiles) { newProfiles in
-            vm.update(profiles: newProfiles)
+            if let id = selectedProfileId, !newProfiles.contains(where: { $0.id == id }) {
+                selectedProfileId = nil
+            }
+            if let profile = selectedProfile {
+                vm.selectProfile(profile)
+            }
         }
+    }
+
+    // ── Profile content ───────────────────────────────────────────────────
+
+    @ViewBuilder
+    private var profileContent: some View {
+        VStack(spacing: 0) {
+            if store.profiles.count > 1 {
+                profilePicker
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(DatawatchColors.surface)
+            }
+            if vm.isLoading && vm.stats == nil {
+                LoadingIndicator(message: "Loading stats…")
+            } else if let err = vm.error, vm.stats == nil {
+                ErrorCard(message: err) { vm.startPolling() }
+            } else {
+                observerContent
+            }
+        }
+        .task(id: selectedProfile?.id ?? "") {
+            if let profile = selectedProfile {
+                vm.selectProfile(profile)
+            }
+        }
+    }
+
+    private var profilePicker: some View {
+        Picker("Server", selection: Binding(
+            get: { selectedProfileId ?? store.profiles.first?.id ?? "" },
+            set: { selectedProfileId = $0 }
+        )) {
+            ForEach(store.profiles, id: \.id) { profile in
+                Text(profile.displayName).tag(profile.id)
+            }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Select server profile")
     }
 
     // ── Empty state ───────────────────────────────────────────────────────
