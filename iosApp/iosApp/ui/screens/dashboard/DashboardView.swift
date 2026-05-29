@@ -122,6 +122,12 @@ struct DashboardView: View {
             ToolbarItem(.principal) {
                 HeaderView(title: "Dashboard")
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                DocsLinkButton(
+                    profile: store.profiles.first,
+                    anchor: "dashboard"
+                )
+            }
         }
         .onAppear {
             viewModel.refresh(profiles: store.profiles)

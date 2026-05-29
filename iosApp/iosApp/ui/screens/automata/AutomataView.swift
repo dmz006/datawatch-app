@@ -81,15 +81,18 @@ struct AutomataView: View {
                     serverName: selectedProfile?.displayName
                 )
             }
-            if !store.profiles.isEmpty {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showAddSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(DatawatchColors.primary)
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 4) {
+                    DocsLinkButton(profile: selectedProfile, anchor: "automata")
+                    if !store.profiles.isEmpty {
+                        Button {
+                            showAddSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(DatawatchColors.primary)
+                        }
+                        .accessibilityLabel("Add automata type")
                     }
-                    .accessibilityLabel("Add automata type")
                 }
             }
         }

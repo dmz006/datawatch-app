@@ -110,6 +110,12 @@ struct SettingsView: View {
                 ToolbarItem(.principal) {
                     HeaderView(title: "Settings")
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    DocsLinkButton(
+                        profile: store.profiles.first,
+                        anchor: "settings"
+                    )
+                }
             }
         }
     }

@@ -25,6 +25,10 @@ struct SessionsView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
+                    DocsLinkButton(
+                        profile: viewModel.activeProfile,
+                        anchor: "sessions-list"
+                    )
                     Button {
                         withAnimation { showFilter.toggle() }
                         if !showFilter { filterText = "" }
