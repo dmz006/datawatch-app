@@ -78,12 +78,19 @@ final class AlertsViewModel: ObservableObject {
         )
     }
 
-    /// Remove an alert locally (swipe-to-dismiss placeholder).
+    /// Mark an alert as read on server and remove it locally.
     func dismiss(alert: Alert) {
         alerts.removeAll { $0.id == alert.id }
         if !alert.read, unreadCount > 0 {
             unreadCount -= 1
         }
+        guard let profile else { return }
+        IosServiceLocator.shared.markAlertRead(
+            profile: profile,
+            alertId: alert.id,
+            onSuccess: {},
+            onError: { _ in }
+        )
     }
 
     /// Dismiss all alerts (clear locally and on server).
