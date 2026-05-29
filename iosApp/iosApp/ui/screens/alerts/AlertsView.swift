@@ -6,7 +6,9 @@ import DatawatchShared
 @MainActor
 final class AlertsViewModel: ObservableObject {
     @Published var alerts: [Alert] = []
-    @Published var unreadCount: Int = 0
+    @Published var unreadCount: Int = 0 {
+        didSet { UserDefaults.standard.set(unreadCount, forKey: "dw.alert.badge") }
+    }
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
     @Published var filterText: String = ""

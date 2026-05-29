@@ -40,7 +40,7 @@ struct TerminalView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: connected)
         .animation(.easeInOut(duration: 0.25), value: disconnected)
-        .background(Color.black)
+        .background(DatawatchColors.background)
     }
 
     // ── Reconnect overlay ─────────────────────────────────────────────────

@@ -12,6 +12,7 @@ struct RootView: View {
     @EnvironmentObject private var profileStore: ServerProfileStore
     @State private var selectedTab: AppTab = .sessions
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("dw.alert.badge") private var alertBadgeCount: Int = 0
 
     var body: some View {
         if horizontalSizeClass == .regular {
@@ -33,7 +34,7 @@ struct RootView: View {
                     Label(tab.title, systemImage: tab.iconName)
                 }
                 .tag(tab)
-                .badge(tab.badge)
+                .badge(tab == .alerts ? alertBadgeCount : 0)
             }
         }
         .tint(DatawatchColors.primary)
@@ -103,9 +104,6 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
         case .settings:  "gearshape"
         }
     }
-
-    /// Badge value — wired to live data in the view models.
-    var badge: Int { 0 }
 
     @ViewBuilder
     var rootView: some View {
