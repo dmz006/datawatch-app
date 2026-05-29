@@ -6,6 +6,9 @@ struct SessionsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var viewModel = SessionsViewModel()
 
+    @State private var filterText: String = ""
+    @State private var showFilter: Bool = false
+
     var body: some View {
         ZStack {
             DatawatchColors.background.ignoresSafeArea()
@@ -21,13 +24,24 @@ struct SessionsView: View {
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    // Story 9: Start session placeholder
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(DatawatchColors.primary)
+                HStack(spacing: 4) {
+                    Button {
+                        withAnimation { showFilter.toggle() }
+                        if !showFilter { filterText = "" }
+                    } label: {
+                        Image(systemName: showFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                            .foregroundStyle(DatawatchColors.primary)
+                    }
+                    .accessibilityLabel(showFilter ? "Hide filter" : "Filter sessions")
+
+                    Button {
+                        // Story 9: Start session placeholder
+                    } label: {
+                        Image(systemName: "plus")
+                            .foregroundStyle(DatawatchColors.primary)
+                    }
+                    .accessibilityLabel("Start new session")
                 }
-                .accessibilityLabel("Start new session")
             }
         }
         // React to profile changes.
@@ -65,20 +79,66 @@ struct SessionsView: View {
     }
 
     private var sessionList: some View {
-        List {
-            if viewModel.sessions.isEmpty {
-                emptySessionsRow
-            } else {
-                ForEach(viewModel.sessions, id: \.id) { session in
-                    sessionRow(session)
+        VStack(spacing: 0) {
+            if showFilter {
+                filterBar
+            }
+            List {
+                if filteredSessions.isEmpty && !filterText.isEmpty {
+                    Text("No sessions match \"\(filterText)\"")
+                        .font(DatawatchFonts.bodyMedium)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                } else if viewModel.sessions.isEmpty {
+                    emptySessionsRow
+                } else {
+                    ForEach(filteredSessions, id: \.id) { session in
+                        sessionRow(session)
+                    }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .refreshable {
+                viewModel.refresh()
+            }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(DatawatchColors.background)
-        .refreshable {
-            viewModel.refresh()
+    }
+
+    private var filterBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                TextField("Filter by name / task / id / backend", text: $filterText)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                if !filterText.isEmpty {
+                    Button { filterText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(DatawatchColors.surface)
+            Divider().background(DatawatchColors.border)
+        }
+    }
+
+    private var filteredSessions: [Session] {
+        guard !filterText.isEmpty else { return viewModel.sessions }
+        let q = filterText.lowercased()
+        return viewModel.sessions.filter { s in
+            s.id.lowercased().contains(q) ||
+            (s.name?.lowercased().contains(q) ?? false) ||
+            (s.taskSummary?.lowercased().contains(q) ?? false) ||
+            (s.backend?.lowercased().contains(q) ?? false)
         }
     }
 
@@ -131,51 +191,48 @@ struct SessionsView: View {
                 SessionDetailView(session: session, profile: profile)
             }
         } label: {
-            HStack(spacing: 12) {
-                // State indicator dot
-                Circle()
-                    .fill(dotColor(for: session.state))
-                    .frame(width: 10, height: 10)
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    // Session name/task
+            VStack(alignment: .leading, spacing: 6) {
+                // Row 1: name + state pill
+                HStack(spacing: 8) {
                     Text(sessionDisplayName(session))
                         .font(DatawatchFonts.bodyMedium)
                         .foregroundStyle(DatawatchColors.onSurface)
                         .lineLimit(1)
-
-                    HStack(spacing: 6) {
-                        // State label
-                        Text(stateLabel(for: session.state))
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(dotColor(for: session.state))
-
-                        // Backend chip
-                        if let backend = session.backend, !backend.isEmpty {
-                            Text(backend)
-                                .font(DatawatchFonts.badge)
-                                .foregroundStyle(DatawatchColors.primary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(DatawatchColors.chipBackground)
-                                .clipShape(Capsule())
-                        }
-
-                        // Needs-input badge
-                        if session.needsInput {
-                            Text("INPUT")
-                                .font(DatawatchFonts.badge)
-                                .foregroundStyle(DatawatchColors.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(DatawatchColors.secondary.opacity(0.15))
-                                .clipShape(Capsule())
-                        }
-                    }
+                    Spacer()
+                    statePill(for: session.state)
                 }
 
-                Spacer()
+                // Row 2: task text (if different from name)
+                if let task = session.taskSummary, !task.isEmpty,
+                   task != session.name {
+                    Text(task)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        .lineLimit(2)
+                }
+
+                // Row 3: badges
+                HStack(spacing: 6) {
+                    if let backend = session.backend, !backend.isEmpty {
+                        Text(backend.uppercased())
+                            .font(DatawatchFonts.badge)
+                            .foregroundStyle(DatawatchColors.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.secondary.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                    if session.state == .waiting {
+                        Text("WAITING INPUT")
+                            .font(DatawatchFonts.badge)
+                            .foregroundStyle(DatawatchColors.waiting)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.waiting.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    Spacer()
+                }
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -183,6 +240,18 @@ struct SessionsView: View {
         .listRowBackground(DatawatchColors.surface)
         .listRowSeparatorTint(DatawatchColors.border)
         .accessibilityLabel(accessibilityLabel(for: session))
+    }
+
+    @ViewBuilder
+    private func statePill(for state: SessionState) -> some View {
+        let color = dotColor(for: state)
+        Text(stateLabel(for: state))
+            .font(DatawatchFonts.badge)
+            .foregroundStyle(color)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.15))
+            .clipShape(Capsule())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -195,20 +264,21 @@ struct SessionsView: View {
 
     private func dotColor(for state: SessionState) -> Color {
         switch state {
-        case .running:   return DatawatchColors.primary
-        case .waiting:   return DatawatchColors.secondary
+        case .running:   return DatawatchColors.success
+        case .waiting:   return DatawatchColors.waiting
+        case .error:     return DatawatchColors.error
         default:         return DatawatchColors.onSurfaceMuted
         }
     }
 
     private func stateLabel(for state: SessionState) -> String {
         switch state {
-        case .running:   return "Running"
-        case .waiting:   return "Waiting"
-        case .completed: return "Completed"
-        case .killed:    return "Killed"
-        case .error:     return "Error"
-        default:         return "Unknown"
+        case .running:   return "RUNNING"
+        case .waiting:   return "WAITING INPUT"
+        case .completed: return "COMPLETED"
+        case .killed:    return "KILLED"
+        case .error:     return "ERROR"
+        default:         return "UNKNOWN"
         }
     }
 

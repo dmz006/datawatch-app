@@ -9,14 +9,21 @@ struct SessionDetailView: View {
     @State private var isKilling = false
     @State private var killError: String? = nil
     @State private var showKillConfirm = false
+    @State private var replyText: String = ""
+    @State private var isSendingReply: Bool = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
             DatawatchColors.background.ignoresSafeArea()
 
-            TerminalView(session: session, profile: profile)
-                .ignoresSafeArea(edges: .bottom)
+            VStack(spacing: 0) {
+                TerminalView(session: session, profile: profile)
+                    .ignoresSafeArea(edges: .bottom)
+                if !isTerminalState {
+                    composerBar
+                }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -30,11 +37,11 @@ struct SessionDetailView: View {
                 killButton
             }
         }
-        .alert("Kill session?", isPresented: $showKillConfirm) {
-            Button("Kill", role: .destructive) { performKill() }
+        .alert("Stop this session?", isPresented: $showKillConfirm) {
+            Button("Stop", role: .destructive) { performKill() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will terminate \"\(sessionTitle)\" immediately.")
+            Text("Stop \"\(sessionTitle)\"?")
         }
         .overlay(alignment: .top) {
             if let errorMsg = killError {
@@ -53,15 +60,65 @@ struct SessionDetailView: View {
         .animation(.easeInOut, value: killError)
     }
 
+    // ── Terminal state ────────────────────────────────────────────────────
+
+    private var isTerminalState: Bool {
+        session.state == .completed || session.state == .killed || session.state == .error
+    }
+
+    // ── Composer bar ──────────────────────────────────────────────────────
+
+    private var composerBar: some View {
+        VStack(spacing: 0) {
+            Divider().background(DatawatchColors.border)
+            HStack(spacing: 8) {
+                TextField("Reply or press Enter", text: $replyText)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(DatawatchColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Button {
+                    sendReply()
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                        .foregroundStyle(replyText.isEmpty ? DatawatchColors.onSurfaceMuted : DatawatchColors.primary)
+                }
+                .disabled(replyText.isEmpty || isSendingReply)
+                .accessibilityLabel("Send reply")
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(DatawatchColors.background)
+        }
+    }
+
+    private func sendReply() {
+        let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        replyText = ""
+        isSendingReply = true
+        IosServiceLocator.shared.replyToSession(
+            profile: profile,
+            sessionId: session.id,
+            text: text,
+            onSuccess: {
+                DispatchQueue.main.async { self.isSendingReply = false }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.isSendingReply = false }
+            }
+        )
+    }
+
     // ── Kill button ───────────────────────────────────────────────────────
 
     @ViewBuilder
     private var killButton: some View {
-        let isTerminal = session.state == .completed
-            || session.state == .killed
-            || session.state == .error
-
-        if !isTerminal {
+        if !isTerminalState {
             if isKilling {
                 ProgressView()
                     .tint(DatawatchColors.error)
@@ -73,7 +130,7 @@ struct SessionDetailView: View {
                     Image(systemName: "stop.circle")
                         .foregroundStyle(DatawatchColors.error)
                 }
-                .accessibilityLabel("Kill session")
+                .accessibilityLabel("Stop session")
             }
         }
     }
