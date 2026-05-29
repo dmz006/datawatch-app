@@ -8,6 +8,15 @@ struct SessionsView: View {
 
     @State private var filterText: String = ""
     @State private var showFilter: Bool = false
+    @State private var stateFilter: SessionStateFilter = .all
+
+    enum SessionStateFilter: String, CaseIterable {
+        case all       = "All"
+        case active    = "Active"
+        case running   = "Running"
+        case waiting   = "Waiting"
+        case done      = "Done"
+    }
 
     var body: some View {
         ZStack {
@@ -31,7 +40,7 @@ struct SessionsView: View {
                     )
                     Button {
                         withAnimation { showFilter.toggle() }
-                        if !showFilter { filterText = "" }
+                        if !showFilter { filterText = ""; stateFilter = .all }
                     } label: {
                         Image(systemName: showFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                             .foregroundStyle(DatawatchColors.primary)
@@ -88,8 +97,8 @@ struct SessionsView: View {
                 filterBar
             }
             List {
-                if filteredSessions.isEmpty && !filterText.isEmpty {
-                    Text("No sessions match \"\(filterText)\"")
+                if filteredSessions.isEmpty && (!filterText.isEmpty || stateFilter != .all) {
+                    Text(filterText.isEmpty ? "No \(stateFilter.rawValue.lowercased()) sessions" : "No sessions match \"\(filterText)\"")
                         .font(DatawatchFonts.bodyMedium)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         .listRowBackground(Color.clear)
@@ -113,6 +122,19 @@ struct SessionsView: View {
 
     private var filterBar: some View {
         VStack(spacing: 0) {
+            // Row 1: state filter chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(SessionStateFilter.allCases, id: \.self) { filter in
+                        stateChip(filter)
+                    }
+                }
+                .padding(.horizontal, 12)
+            }
+            .padding(.vertical, 6)
+            .background(DatawatchColors.background)
+
+            // Row 2: text search
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -135,15 +157,51 @@ struct SessionsView: View {
         }
     }
 
-    private var filteredSessions: [Session] {
-        guard !filterText.isEmpty else { return viewModel.sessions }
-        let q = filterText.lowercased()
-        return viewModel.sessions.filter { s in
-            s.id.lowercased().contains(q) ||
-            (s.name?.lowercased().contains(q) ?? false) ||
-            (s.taskSummary?.lowercased().contains(q) ?? false) ||
-            (s.backend?.lowercased().contains(q) ?? false)
+    @ViewBuilder
+    private func stateChip(_ filter: SessionStateFilter) -> some View {
+        let selected = stateFilter == filter
+        let color: Color = {
+            switch filter {
+            case .all:     return DatawatchColors.onSurfaceMuted
+            case .active:  return DatawatchColors.primary
+            case .running: return DatawatchColors.success
+            case .waiting: return DatawatchColors.waiting
+            case .done:    return DatawatchColors.onSurfaceMuted
+            }
+        }()
+        Button { stateFilter = filter } label: {
+            Text(filter.rawValue)
+                .font(DatawatchFonts.badge)
+                .foregroundStyle(selected ? DatawatchColors.background : color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(selected ? color : color.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(color.opacity(0.4), lineWidth: 1))
         }
+    }
+
+    private var filteredSessions: [Session] {
+        var result = viewModel.sessions
+
+        switch stateFilter {
+        case .all:     break
+        case .active:  result = result.filter { $0.state == .running || $0.state == .waiting }
+        case .running: result = result.filter { $0.state == .running }
+        case .waiting: result = result.filter { $0.state == .waiting }
+        case .done:    result = result.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }
+        }
+
+        if !filterText.isEmpty {
+            let q = filterText.lowercased()
+            result = result.filter { s in
+                s.id.lowercased().contains(q) ||
+                (s.name?.lowercased().contains(q) ?? false) ||
+                (s.taskSummary?.lowercased().contains(q) ?? false) ||
+                (s.backend?.lowercased().contains(q) ?? false)
+            }
+        }
+        return result
     }
 
     // ── Empty states ──────────────────────────────────────────────────────
@@ -234,6 +292,12 @@ struct SessionsView: View {
                             .padding(.vertical, 2)
                             .background(DatawatchColors.waiting.opacity(0.15))
                             .clipShape(Capsule())
+                    }
+                    if session.muted {
+                        Image(systemName: "bell.slash.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            .accessibilityLabel("Muted")
                     }
                     Spacer()
                 }
