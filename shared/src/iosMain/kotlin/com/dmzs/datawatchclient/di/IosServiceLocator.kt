@@ -286,6 +286,21 @@ public object IosServiceLocator {
         }
     }
 
+    /** Mark a single alert as read on the server. */
+    public fun markAlertRead(
+        profile: ServerProfile,
+        alertId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).markAlertRead(alertId = alertId, all = false).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to mark alert read.") },
+            )
+        }
+    }
+
     // ── Server stats callbacks ────────────────────────────────────────────
 
     /** Fetch server stats (CPU, memory, disk, VRAM, uptime). */
