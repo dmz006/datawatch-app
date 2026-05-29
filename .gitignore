@@ -72,8 +72,8 @@ fastlane/test_output
 *.mapping.txt
 mapping.txt
 
-# Ignore pre-scaffold design staging (moved to docs/)
-design/
+# Ignore pre-scaffold design staging at repo root (moved to docs/)
+/design/
 
 # Session-local Claude state (not part of the published repo)
 CLAUDE.md

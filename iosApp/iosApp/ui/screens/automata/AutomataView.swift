@@ -316,6 +316,7 @@ struct AddAutomataTypeSheet: View {
     @State private var label = ""
     @State private var description = ""
     @State private var customId = ""
+    @State private var selectedColor: Color = DatawatchColors.primary
     @State private var isSaving = false
     @State private var errorMessage: String? = nil
 
@@ -340,6 +341,9 @@ struct AddAutomataTypeSheet: View {
                 Section("Details") {
                     TextField("Description (optional)", text: $description, axis: .vertical)
                         .lineLimit(3, reservesSpace: false)
+
+                    ColorPicker("Color", selection: $selectedColor, supportsOpacity: false)
+                        .foregroundStyle(DatawatchColors.onSurface)
                 }
 
                 if let err = errorMessage {
@@ -385,7 +389,7 @@ struct AddAutomataTypeSheet: View {
             description: description.trimmingCharacters(in: .whitespaces).isEmpty
                 ? nil
                 : description.trimmingCharacters(in: .whitespaces),
-            color: nil
+            color: selectedColor.hexString
         )
 
         isSaving = true
