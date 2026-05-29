@@ -13,6 +13,13 @@ final class AlertsViewModel: ObservableObject {
     @Published var error: String? = nil
     @Published var filterText: String = ""
     @Published var severityFilter: AlertSeverityFilter = .all
+    @Published var selectedTab: AlertTab = .active
+
+    enum AlertTab: String, CaseIterable {
+        case active    = "Active"
+        case historical = "Historical"
+        case system    = "System"
+    }
 
     enum AlertSeverityFilter: String, CaseIterable {
         case all = "All"
@@ -22,8 +29,17 @@ final class AlertsViewModel: ObservableObject {
         case info = "Info"
     }
 
+    /// Alerts for the currently selected tab (before severity/text filtering).
+    var tabAlerts: [Alert] {
+        switch selectedTab {
+        case .active:     return alerts.filter { !$0.read && $0.sessionId != nil }
+        case .historical: return alerts.filter { $0.read && $0.sessionId != nil }
+        case .system:     return alerts.filter { $0.sessionId == nil }
+        }
+    }
+
     var filteredAlerts: [Alert] {
-        var result = alerts
+        var result = tabAlerts
         if !filterText.isEmpty {
             let q = filterText.lowercased()
             result = result.filter {
@@ -33,12 +49,31 @@ final class AlertsViewModel: ObservableObject {
         }
         switch severityFilter {
         case .all: break
-        case .prompt: result = result.filter { $0.type.contains("input") || $0.type.contains("prompt") }
-        case .error: result = result.filter { $0.severity == .error }
+        case .prompt:  result = result.filter { $0.type.contains("input") || $0.type.contains("prompt") }
+        case .error:   result = result.filter { $0.severity == .error }
         case .warning: result = result.filter { $0.severity == .warning }
-        case .info: result = result.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }
+        case .info:    result = result.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }
         }
         return result
+    }
+
+    func tabCount(for tab: AlertTab) -> Int {
+        switch tab {
+        case .active:     return alerts.filter { !$0.read && $0.sessionId != nil }.count
+        case .historical: return alerts.filter { $0.read && $0.sessionId != nil }.count
+        case .system:     return alerts.filter { $0.sessionId == nil }.count
+        }
+    }
+
+    func chipCount(for filter: AlertSeverityFilter) -> Int {
+        let base = tabAlerts
+        switch filter {
+        case .all:     return base.count
+        case .prompt:  return base.filter { $0.type.contains("input") || $0.type.contains("prompt") }.count
+        case .error:   return base.filter { $0.severity == .error }.count
+        case .warning: return base.filter { $0.severity == .warning }.count
+        case .info:    return base.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }.count
+        }
     }
 
     private var profile: ServerProfile?
@@ -206,40 +241,64 @@ struct AlertsView: View {
         }
     }
 
+    // ── Tab row ───────────────────────────────────────────────────────────
+
+    private var tabRow: some View {
+        HStack(spacing: 0) {
+            ForEach(AlertsViewModel.AlertTab.allCases, id: \.self) { tab in
+                let count = vm.tabCount(for: tab)
+                let isSelected = vm.selectedTab == tab
+                Button { vm.selectedTab = tab } label: {
+                    VStack(spacing: 4) {
+                        Text(count > 0 ? "\(tab.rawValue) (\(count))" : tab.rawValue)
+                            .font(DatawatchFonts.badge)
+                            .foregroundStyle(isSelected ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                            .lineLimit(1)
+                        Rectangle()
+                            .fill(isSelected ? DatawatchColors.primary : Color.clear)
+                            .frame(height: 2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+        .background(DatawatchColors.surface)
+        Divider().background(DatawatchColors.border)
+    }
+
     // ── Filter bar ────────────────────────────────────────────────────────
 
     private var filterBar: some View {
         VStack(spacing: 0) {
-            // Row 1: count + dismiss-all + refresh
-            HStack(spacing: 12) {
-                Text(vm.unreadCount > 0 ? "\(vm.unreadCount) unread" : "\(vm.alerts.count) alerts")
+            // Row 1: 🔔 count + ✕ dismiss-all + 🔕 mute + ↻ refresh
+            HStack(spacing: 8) {
+                Text("🔔 \(vm.tabAlerts.count) \(vm.tabAlerts.count == 1 ? "alert" : "alerts")")
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                 Spacer()
-                Button { vm.dismissAll() } label: {
-                    Image(systemName: "xmark.circle")
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                }
-                .accessibilityLabel("Dismiss all")
-                Button { vm.refresh() } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundStyle(DatawatchColors.primary)
-                }
-                .accessibilityLabel("Refresh")
+                controlBtn("✕") { vm.dismissAll() }
+                    .accessibilityLabel("Dismiss all")
+                controlBtn("🔕") { vm.dismissAll() }
+                    .accessibilityLabel("Mute all")
+                controlBtn("↻") { vm.refresh() }
+                    .accessibilityLabel("Refresh")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
 
-            // Row 2: severity chips
+            Divider().background(DatawatchColors.border.opacity(0.5))
+
+            // Row 2: severity chips with emoji + ×N counts
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(AlertsViewModel.AlertSeverityFilter.allCases, id: \.self) { filter in
                         severityChip(filter)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 12)
             }
-            .padding(.bottom, 6)
+            .padding(.vertical, 6)
 
             // Row 3: search
             HStack(spacing: 8) {
@@ -260,34 +319,48 @@ struct AlertsView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(DatawatchColors.surface)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
 
             Divider().background(DatawatchColors.border)
         }
         .background(DatawatchColors.background)
     }
 
+    private func controlBtn(_ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(DatawatchFonts.badge)
+                .foregroundStyle(DatawatchColors.onSurface)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(DatawatchColors.surface2)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(DatawatchColors.border, lineWidth: 1))
+        }
+    }
+
     @ViewBuilder
     private func severityChip(_ filter: AlertsViewModel.AlertSeverityFilter) -> some View {
         let selected = vm.severityFilter == filter
-        let color: Color = {
+        let count = vm.chipCount(for: filter)
+        let (emoji, color): (String, Color) = {
             switch filter {
-            case .all: return DatawatchColors.onSurfaceMuted
-            case .prompt, .warning: return DatawatchColors.warning
-            case .error: return DatawatchColors.error
-            case .info: return DatawatchColors.onSurfaceMuted
+            case .all:     return ("", DatawatchColors.onSurfaceMuted)
+            case .prompt:  return ("🟡 ", DatawatchColors.warning)
+            case .error:   return ("🔴 ", DatawatchColors.error)
+            case .warning: return ("🟠 ", DatawatchColors.warning)
+            case .info:    return ("⚪ ", DatawatchColors.onSurfaceMuted)
             }
         }()
+        let label = "\(emoji)\(filter.rawValue) ×\(count)"
         Button { vm.severityFilter = filter } label: {
-            Text(filter.rawValue)
+            Text(label)
                 .font(DatawatchFonts.badge)
                 .foregroundStyle(selected ? DatawatchColors.background : color)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(selected ? color : color.opacity(0.15))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(color.opacity(0.4), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.4), lineWidth: 1))
         }
     }
 
@@ -295,21 +368,41 @@ struct AlertsView: View {
 
     private var alertListView: some View {
         VStack(spacing: 0) {
+            tabRow
             filterBar
             List {
-                ForEach(vm.filteredAlerts, id: \.id) { alert in
-                    AlertRow(alert: alert)
-                        .listRowBackground(DatawatchColors.surface)
-                        .listRowSeparatorTint(DatawatchColors.border)
-                        .listRowInsets(EdgeInsets())
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                vm.dismiss(alert: alert)
-                            } label: {
-                                Label("Dismiss", systemImage: "xmark.circle")
-                            }
-                            .tint(DatawatchColors.error)
+                if vm.filteredAlerts.isEmpty {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "bell.slash")
+                                .font(.system(size: 32))
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                .accessibilityHidden(true)
+                            Text("No \(vm.selectedTab.rawValue.lowercased()) alerts")
+                                .font(DatawatchFonts.bodyMedium)
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
                         }
+                        .padding(.top, 48)
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else {
+                    ForEach(vm.filteredAlerts, id: \.id) { alert in
+                        AlertRow(alert: alert)
+                            .listRowBackground(DatawatchColors.surface)
+                            .listRowSeparatorTint(DatawatchColors.border)
+                            .listRowInsets(EdgeInsets())
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    vm.dismiss(alert: alert)
+                                } label: {
+                                    Label("Dismiss", systemImage: "xmark.circle")
+                                }
+                                .tint(DatawatchColors.error)
+                            }
+                    }
                 }
             }
             .listStyle(.plain)
