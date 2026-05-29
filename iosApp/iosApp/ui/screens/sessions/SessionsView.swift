@@ -59,14 +59,6 @@ struct SessionsView: View {
                     }
                     .accessibilityLabel(showFilter ? "Hide filter" : "Filter sessions")
 
-                    Button {
-                        // Story 9: Start session placeholder
-                    } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(DatawatchColors.primary)
-                    }
-                    .accessibilityLabel("Start new session")
-
                     AlertsBellButton()
                     ReachabilityDotView(profile: viewModel.activeProfile)
                 }

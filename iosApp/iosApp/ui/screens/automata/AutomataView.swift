@@ -380,6 +380,7 @@ struct AddAutomataTypeSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private func save() {
