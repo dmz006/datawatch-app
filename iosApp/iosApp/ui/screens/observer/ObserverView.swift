@@ -118,7 +118,11 @@ struct ObserverView: View {
             }
         }
         .onAppear {
-            vm.update(profiles: store.profiles)
+            if let profile = selectedProfile {
+                vm.selectProfile(profile)
+            } else {
+                vm.update(profiles: store.profiles)
+            }
         }
         .onDisappear {
             vm.stopPolling()
