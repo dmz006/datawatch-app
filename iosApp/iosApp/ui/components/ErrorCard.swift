@@ -9,7 +9,8 @@ struct ErrorCard: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.error)
                 .accessibilityHidden(true)
 

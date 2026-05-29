@@ -229,7 +229,8 @@ struct AlertsView: View {
     private var noProfilesView: some View {
         VStack(spacing: 20) {
             Image(systemName: "bell.slash")
-                .font(.system(size: 56))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
             Text("No server connected")
@@ -380,7 +381,7 @@ struct AlertsView: View {
                         Spacer()
                         VStack(spacing: 12) {
                             Image(systemName: "bell.slash")
-                                .font(.system(size: 32))
+                                .font(.system(.title))
                                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                                 .accessibilityHidden(true)
                             Text("No \(vm.selectedTab.rawValue.lowercased()) alerts")

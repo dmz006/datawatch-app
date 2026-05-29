@@ -50,6 +50,7 @@ struct ServerProfileListView: View {
                     Image(systemName: "plus")
                         .foregroundStyle(DatawatchColors.primary)
                 }
+                .accessibilityLabel("Add server")
             }
         }
     }
@@ -57,7 +58,8 @@ struct ServerProfileListView: View {
     private var emptyState: some View {
         VStack(spacing: 20) {
             Image(systemName: "server.rack")
-                .font(.system(size: 56))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
             Text("No servers configured")
                 .font(DatawatchFonts.titleMedium)
@@ -85,6 +87,7 @@ struct ServerProfileListView: View {
                     Image(systemName: "plus")
                         .foregroundStyle(DatawatchColors.primary)
                 }
+                .accessibilityLabel("Add server")
             }
         }
     }

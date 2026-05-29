@@ -28,8 +28,19 @@
     <key>NSFaceIDUsageDescription</key>
     <string>datawatch uses Face ID to protect access to your server profiles.</string>
 
-    <!-- Microphone: voice reply in terminal sessions (future parity with Android) -->
-    <key>NSMicrophoneUsageDescription</key>
-    <string>datawatch may use the microphone for voice input in terminal sessions.</string>
+    <!-- Local network: user-configured servers may be on the LAN -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>datawatch connects to server addresses you configure, which may be on your local network.</string>
+
+    <!--
+      App Transport Security: the app supports user-configured servers that
+      may use HTTP (not HTTPS) or self-signed TLS certificates. HTTP is
+      explicitly warned about in the UI and is the user's deliberate choice.
+    -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

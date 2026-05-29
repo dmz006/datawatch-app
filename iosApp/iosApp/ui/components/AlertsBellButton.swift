@@ -20,7 +20,7 @@ struct AlertsBellButton: View {
 
                 if unreadCount > 0 {
                     Text(unreadCount < 100 ? "\(unreadCount)" : "99+")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DatawatchFonts.badge)
                         .foregroundStyle(DatawatchColors.background)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)

@@ -54,7 +54,8 @@ struct BiometricLockModifier: ViewModifier {
             if isLocked {
                 VStack(spacing: 24) {
                     Image(systemName: biometricIcon)
-                        .font(.system(size: 60))
+                        .font(.system(.largeTitle))
+                        .imageScale(.large)
                         .foregroundStyle(DatawatchColors.primary)
                     Text("datawatch is locked")
                         .font(DatawatchFonts.titleMedium)

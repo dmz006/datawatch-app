@@ -378,7 +378,7 @@ struct SessionsView: View {
             Spacer()
             VStack(spacing: 12) {
                 Image(systemName: "terminal")
-                    .font(.system(size: 40))
+                    .font(.system(.largeTitle))
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .accessibilityHidden(true)
                 Text("No sessions — start one in the web UI")
@@ -396,7 +396,7 @@ struct SessionsView: View {
     private var emptyNoProfile: some View {
         VStack(spacing: 16) {
             Image(systemName: "server.rack")
-                .font(.system(size: 40))
+                .font(.system(.largeTitle))
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
             Text("No server configured")
@@ -490,13 +490,15 @@ struct SessionsView: View {
                     }
                     if session.lastResponse != nil {
                         Image(systemName: "doc.text")
-                            .font(.system(size: 10))
+                            .font(DatawatchFonts.labelSmall)
+                            .imageScale(.small)
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                             .accessibilityLabel("Has response")
                     }
                     if session.muted {
                         Image(systemName: "bell.slash.fill")
-                            .font(.system(size: 10))
+                            .font(DatawatchFonts.labelSmall)
+                            .imageScale(.small)
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                             .accessibilityLabel("Muted")
                     }
