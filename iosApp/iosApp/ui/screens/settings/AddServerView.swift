@@ -57,7 +57,7 @@ struct AddServerView: View {
                     if selfSigned {
                         Text("Allows self-signed TLS. Do not enable for production servers.")
                             .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            .foregroundStyle(DatawatchColors.error)
                     }
                 }
 
