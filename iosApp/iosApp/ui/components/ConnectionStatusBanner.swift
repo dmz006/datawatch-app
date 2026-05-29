@@ -50,7 +50,7 @@ enum ConnectionState: Equatable {
         switch self {
         case .connected:    .clear
         case .connecting:   DatawatchColors.primary
-        case .reconnecting: DatawatchColors.secondary
+        case .reconnecting: DatawatchColors.warning
         case .disconnected: DatawatchColors.error
         }
     }

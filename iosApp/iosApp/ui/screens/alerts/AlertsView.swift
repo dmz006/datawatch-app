@@ -488,15 +488,15 @@ private struct AlertRow: View {
     @ViewBuilder
     private var badgeView: some View {
         if isPrompt {
-            badgeLabel("PROMPT", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
+            badgeLabel("🟡 PROMPT", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
         } else {
             switch alert.severity {
             case .error:
-                badgeLabel("ERROR", fg: .white, bg: DatawatchColors.error)
+                badgeLabel("🔴 ERROR", fg: .white, bg: DatawatchColors.error)
             case .warning:
-                badgeLabel("WARN", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
+                badgeLabel("⚪ warning", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
             default:
-                badgeLabel("INFO", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
+                badgeLabel("⚪ info", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
             }
         }
     }
@@ -505,10 +505,10 @@ private struct AlertRow: View {
         Text(text)
             .font(DatawatchFonts.badge)
             .foregroundStyle(fg)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
             .background(bg)
-            .clipShape(Capsule())
+            .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 
     private func alertTime(from instant: Kotlinx_datetimeInstant) -> String {
