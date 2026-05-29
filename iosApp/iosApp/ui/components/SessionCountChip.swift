@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Count chip showing Wait / Run / Total — matches Android's `SessionCountChip.kt`.
-/// Teal on chip-background, arranged horizontally.
+/// Primary accent on chip-background, arranged horizontally.
 struct SessionCountChip: View {
     let waiting: Int
     let running: Int
