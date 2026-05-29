@@ -276,7 +276,7 @@ private struct StatusDot: View {
                     .frame(width: 10, height: 10)
             } else {
                 Circle()
-                    .fill(DatawatchColors.primary)
+                    .fill(DatawatchColors.success)
                     .frame(width: 10, height: 10)
             }
         }
@@ -290,7 +290,7 @@ private struct SessionsRow: View {
     let card: DashboardServerCard
 
     private var running: Int {
-        card.sessions.filter { $0.state == .running }.count
+        card.sessions.filter { $0.state == .running || $0.state == .rateLimited }.count
     }
     private var waiting: Int {
         card.sessions.filter { $0.state == .waiting }.count

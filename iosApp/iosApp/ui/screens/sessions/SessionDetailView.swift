@@ -154,24 +154,32 @@ struct SessionDetailView: View {
 
     // ── Composer bar (active sessions) ───────────────────────────────────
 
+    private var isWaiting: Bool { session.state == .waiting }
+
     private var composerBar: some View {
         VStack(spacing: 0) {
-            Divider().background(DatawatchColors.border)
+            if isWaiting {
+                Rectangle()
+                    .fill(DatawatchColors.waiting)
+                    .frame(height: 2)
+            } else {
+                Divider().background(DatawatchColors.border)
+            }
             HStack(spacing: 8) {
-                TextField("Reply or press Enter", text: $replyText)
+                TextField(isWaiting ? "Type a reply…" : "Reply or press Enter", text: $replyText)
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(DatawatchColors.surface)
+                    .background(isWaiting ? DatawatchColors.waiting.opacity(0.08) : DatawatchColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 Button {
                     sendReply()
                 } label: {
                     Image(systemName: "paperplane.fill")
-                        .foregroundStyle(replyText.isEmpty ? DatawatchColors.onSurfaceMuted : DatawatchColors.primary)
+                        .foregroundStyle(replyText.isEmpty ? DatawatchColors.onSurfaceMuted : (isWaiting ? DatawatchColors.waiting : DatawatchColors.primary))
                 }
                 .disabled(replyText.isEmpty || isSendingReply)
                 .accessibilityLabel("Send reply")
