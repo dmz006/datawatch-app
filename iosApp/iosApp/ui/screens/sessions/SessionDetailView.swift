@@ -121,8 +121,8 @@ struct SessionDetailView: View {
                     if let node = session.computeNodeRef, !node.isEmpty {
                         metaBadge("⚙ \(node)", color: DatawatchColors.onSurfaceMuted)
                     }
-                    if session.agentId != nil {
-                        metaBadge("⬡ Worker", color: DatawatchColors.secondary)
+                    if let agentId = session.agentId {
+                        metaBadge("⬡ \(agentId.prefix(8))", color: DatawatchColors.secondary)
                     }
                     if session.chrome {
                         metaBadge("Chrome", color: DatawatchColors.primary)
