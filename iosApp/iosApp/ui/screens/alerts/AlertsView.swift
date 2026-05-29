@@ -319,6 +319,7 @@ struct AlertsView: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     }
+                    .accessibilityLabel("Clear search")
                 }
             }
             .padding(.horizontal, 12)

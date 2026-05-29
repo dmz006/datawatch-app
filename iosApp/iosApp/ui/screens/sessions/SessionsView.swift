@@ -276,6 +276,7 @@ struct SessionsView: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     }
+                    .accessibilityLabel("Clear filter")
                 }
             }
             .padding(.horizontal, 12)
