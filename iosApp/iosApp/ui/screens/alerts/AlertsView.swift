@@ -9,6 +9,35 @@ final class AlertsViewModel: ObservableObject {
     @Published var unreadCount: Int = 0
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
+    @Published var filterText: String = ""
+    @Published var severityFilter: AlertSeverityFilter = .all
+
+    enum AlertSeverityFilter: String, CaseIterable {
+        case all = "All"
+        case prompt = "Prompt"
+        case error = "Error"
+        case warning = "Warn"
+        case info = "Info"
+    }
+
+    var filteredAlerts: [Alert] {
+        var result = alerts
+        if !filterText.isEmpty {
+            let q = filterText.lowercased()
+            result = result.filter {
+                $0.title.lowercased().contains(q) ||
+                $0.message.lowercased().contains(q)
+            }
+        }
+        switch severityFilter {
+        case .all: break
+        case .prompt: result = result.filter { $0.type.contains("input") || $0.type.contains("prompt") }
+        case .error: result = result.filter { $0.severity == .error }
+        case .warning: result = result.filter { $0.severity == .warning }
+        case .info: result = result.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }
+        }
+        return result
+    }
 
     private var profile: ServerProfile?
 
@@ -53,6 +82,21 @@ final class AlertsViewModel: ObservableObject {
         if !alert.read, unreadCount > 0 {
             unreadCount -= 1
         }
+    }
+
+    /// Dismiss all alerts (clear locally and on server).
+    func dismissAll() {
+        guard let profile else { return }
+        IosServiceLocator.shared.markAllAlertsRead(
+            profile: profile,
+            onSuccess: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.unreadCount = 0
+                    self?.alerts = []
+                }
+            },
+            onError: { _ in }
+        )
     }
 }
 
@@ -144,29 +188,116 @@ struct AlertsView: View {
         }
     }
 
+    // ── Filter bar ────────────────────────────────────────────────────────
+
+    private var filterBar: some View {
+        VStack(spacing: 0) {
+            // Row 1: count + dismiss-all + refresh
+            HStack(spacing: 12) {
+                Text(vm.unreadCount > 0 ? "\(vm.unreadCount) unread" : "\(vm.alerts.count) alerts")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                Spacer()
+                Button { vm.dismissAll() } label: {
+                    Image(systemName: "xmark.circle")
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                }
+                .accessibilityLabel("Dismiss all")
+                Button { vm.refresh() } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundStyle(DatawatchColors.primary)
+                }
+                .accessibilityLabel("Refresh")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+            // Row 2: severity chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(AlertsViewModel.AlertSeverityFilter.allCases, id: \.self) { filter in
+                        severityChip(filter)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.bottom, 6)
+
+            // Row 3: search
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                TextField("Search alerts…", text: $vm.filterText)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                if !vm.filterText.isEmpty {
+                    Button { vm.filterText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(DatawatchColors.surface)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+
+            Divider().background(DatawatchColors.border)
+        }
+        .background(DatawatchColors.background)
+    }
+
+    @ViewBuilder
+    private func severityChip(_ filter: AlertsViewModel.AlertSeverityFilter) -> some View {
+        let selected = vm.severityFilter == filter
+        let color: Color = {
+            switch filter {
+            case .all: return DatawatchColors.onSurfaceMuted
+            case .prompt, .warning: return DatawatchColors.warning
+            case .error: return DatawatchColors.error
+            case .info: return DatawatchColors.onSurfaceMuted
+            }
+        }()
+        Button { vm.severityFilter = filter } label: {
+            Text(filter.rawValue)
+                .font(DatawatchFonts.badge)
+                .foregroundStyle(selected ? DatawatchColors.background : color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(selected ? color : color.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(color.opacity(0.4), lineWidth: 1))
+        }
+    }
+
     // ── Alert list ────────────────────────────────────────────────────────
 
     private var alertListView: some View {
-        List {
-            ForEach(vm.alerts, id: \.id) { alert in
-                AlertRow(alert: alert)
-                    .listRowBackground(DatawatchColors.surface)
-                    .listRowSeparatorTint(DatawatchColors.border)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            vm.dismiss(alert: alert)
-                        } label: {
-                            Label("Dismiss", systemImage: "xmark.circle")
+        VStack(spacing: 0) {
+            filterBar
+            List {
+                ForEach(vm.filteredAlerts, id: \.id) { alert in
+                    AlertRow(alert: alert)
+                        .listRowBackground(DatawatchColors.surface)
+                        .listRowSeparatorTint(DatawatchColors.border)
+                        .listRowInsets(EdgeInsets())
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                vm.dismiss(alert: alert)
+                            } label: {
+                                Label("Dismiss", systemImage: "xmark.circle")
+                            }
+                            .tint(DatawatchColors.error)
                         }
-                        .tint(DatawatchColors.error)
-                    }
+                }
             }
-        }
-        .listStyle(.plain)
-        .background(DatawatchColors.background)
-        .scrollContentBackground(.hidden)
-        .refreshable {
-            vm.refresh()
+            .listStyle(.plain)
+            .background(DatawatchColors.background)
+            .scrollContentBackground(.hidden)
+            .refreshable { vm.refresh() }
         }
     }
 }
@@ -177,48 +308,94 @@ private struct AlertRow: View {
     let alert: Alert
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            severityIcon
-                .font(.system(size: 22))
-                .frame(width: 28)
-                .padding(.top, 2)
+        HStack(alignment: .top, spacing: 0) {
+            // Left colored border (3px)
+            Rectangle()
+                .fill(borderColor)
+                .frame(width: 3)
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(alert.title.isEmpty ? alert.type : alert.title)
-                        .font(DatawatchFonts.titleMedium)
-                        .foregroundStyle(alert.read ? DatawatchColors.onSurfaceMuted : DatawatchColors.onSurface)
-                        .lineLimit(1)
-                    Spacer()
+            VStack(alignment: .leading, spacing: 6) {
+                // Top: badge + timestamp
+                HStack(spacing: 8) {
+                    badgeView
                     Text(relativeTime(from: alert.createdAt))
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.7))
+                    Spacer()
+                    if !alert.read {
+                        Circle()
+                            .fill(DatawatchColors.primary)
+                            .frame(width: 7, height: 7)
+                            .accessibilityLabel("Unread")
+                    }
                 }
 
-                Text(alert.message)
+                // Title
+                Text(alert.title.isEmpty ? alert.type : alert.title)
                     .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .lineLimit(1)
+                    .foregroundStyle(alert.read ? DatawatchColors.onSurfaceMuted : DatawatchColors.onSurface)
+                    .lineLimit(2)
+
+                // Message
+                if !alert.message.isEmpty {
+                    Text(String(alert.message.prefix(500)))
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        .lineLimit(3)
+                }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(alertBackground)
         }
-        .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
     }
 
-    private var severityIcon: some View {
-        Group {
+    private var isPrompt: Bool {
+        alert.type.contains("input") || alert.type.contains("prompt") || alert.type.contains("waiting")
+    }
+
+    private var borderColor: Color {
+        if isPrompt { return DatawatchColors.warning }
+        switch alert.severity {
+        case .error: return DatawatchColors.error
+        case .warning: return DatawatchColors.warning
+        default: return DatawatchColors.border
+        }
+    }
+
+    private var alertBackground: Color {
+        if isPrompt { return DatawatchColors.warning.opacity(0.06) }
+        switch alert.severity {
+        case .error: return DatawatchColors.error.opacity(0.05)
+        default: return Color.clear
+        }
+    }
+
+    @ViewBuilder
+    private var badgeView: some View {
+        if isPrompt {
+            badgeLabel("PROMPT", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
+        } else {
             switch alert.severity {
-            case .warning:
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(DatawatchColors.secondary)
             case .error:
-                Image(systemName: "xmark.octagon.fill")
-                    .foregroundStyle(DatawatchColors.error)
+                badgeLabel("ERROR", fg: .white, bg: DatawatchColors.error)
+            case .warning:
+                badgeLabel("WARN", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
             default:
-                Image(systemName: "info.circle.fill")
-                    .foregroundStyle(DatawatchColors.primary)
+                badgeLabel("INFO", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
             }
         }
+    }
+
+    private func badgeLabel(_ text: String, fg: Color, bg: Color) -> some View {
+        Text(text)
+            .font(DatawatchFonts.badge)
+            .foregroundStyle(fg)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(bg)
+            .clipShape(Capsule())
     }
 
     private func relativeTime(from instant: Kotlinx_datetimeInstant) -> String {
@@ -226,17 +403,10 @@ private struct AlertRow: View {
         let date = Date(timeIntervalSince1970: Double(epochMs) / 1000.0)
         let delta = Date().timeIntervalSince(date)
         switch delta {
-        case ..<60:
-            return "just now"
-        case 60..<3600:
-            let mins = Int(delta / 60)
-            return "\(mins)m ago"
-        case 3600..<86400:
-            let hrs = Int(delta / 3600)
-            return "\(hrs)h ago"
-        default:
-            let days = Int(delta / 86400)
-            return "\(days)d ago"
+        case ..<60: return "just now"
+        case 60..<3600: return "\(Int(delta / 60))m ago"
+        case 3600..<86400: return "\(Int(delta / 3600))h ago"
+        default: return "\(Int(delta / 86400))d ago"
         }
     }
 }

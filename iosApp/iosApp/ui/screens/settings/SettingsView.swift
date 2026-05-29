@@ -68,6 +68,38 @@ struct SettingsView: View {
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     }
                     .listRowBackground(DatawatchColors.surface)
+
+                    Button {
+                        if let url = URL(string: "https://github.com/dmz006/datawatch") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Label("Project (server)", systemImage: "link")
+                                .foregroundStyle(DatawatchColors.onSurface)
+                            Spacer()
+                            Text("github.com/dmz006/datawatch")
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.primary)
+                        }
+                    }
+                    .listRowBackground(DatawatchColors.surface)
+
+                    Button {
+                        if let url = URL(string: "https://github.com/dmz006/datawatch-app") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Label("Mobile app", systemImage: "link")
+                                .foregroundStyle(DatawatchColors.onSurface)
+                            Spacer()
+                            Text("github.com/dmz006/datawatch-app")
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.primary)
+                        }
+                    }
+                    .listRowBackground(DatawatchColors.surface)
                 }
             }
             .listStyle(.insetGrouped)

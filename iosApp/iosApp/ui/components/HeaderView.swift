@@ -29,7 +29,7 @@ struct HeaderView: View {
                     .foregroundStyle(DatawatchColors.primary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(DatawatchColors.chipBackground)
+                    .background(DatawatchColors.surface2)
                     .clipShape(Capsule())
                     .accessibilityLabel("Server: \(serverName)")
             }

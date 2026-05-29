@@ -240,6 +240,22 @@ public object IosServiceLocator {
         }
     }
 
+    /** Reply to a waiting session with a text response. */
+    public fun replyToSession(
+        profile: ServerProfile,
+        sessionId: String,
+        text: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).replyToSession(sessionId, text).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Reply failed.") },
+            )
+        }
+    }
+
     // ── Alert callbacks ───────────────────────────────────────────────────
 
     /** Fetch alerts from the server. Returns unreadCount + alert list. */
@@ -252,6 +268,20 @@ public object IosServiceLocator {
             transportFor(profile).listAlerts().fold(
                 onSuccess = { onSuccess(it) },
                 onFailure = { onError(it.message ?: "Failed to load alerts.") },
+            )
+        }
+    }
+
+    /** Mark all alerts as read on the server (dismiss all). */
+    public fun markAllAlertsRead(
+        profile: ServerProfile,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).markAlertRead(all = true).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to dismiss alerts.") },
             )
         }
     }
