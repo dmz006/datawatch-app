@@ -224,21 +224,6 @@ struct AlertsView: View {
         }
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "bell.slash")
-                .font(.system(size: 56))
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .accessibilityHidden(true)
-            Text("No alerts")
-                .font(DatawatchFonts.titleMedium)
-                .foregroundStyle(DatawatchColors.onSurface)
-            Text("You're all caught up.")
-                .font(DatawatchFonts.bodyMedium)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-        }
-    }
-
     // ── Tab row ───────────────────────────────────────────────────────────
 
     private var tabRow: some View {

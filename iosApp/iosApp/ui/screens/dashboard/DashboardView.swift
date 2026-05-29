@@ -250,7 +250,7 @@ private struct ServerCard: View {
         } else if let _ = card.error {
             parts.append("Unreachable")
         } else {
-            let running = card.sessions.filter { $0.state == .running }.count
+            let running = card.sessions.filter { $0.state == .running || $0.state == .rateLimited }.count
             let waiting = card.sessions.filter { $0.state == .waiting }.count
             parts.append("\(running) running, \(waiting) waiting")
         }
