@@ -27,9 +27,7 @@ struct SessionDetailView: View {
 
             VStack(spacing: 0) {
                 metadataBar
-                if !isTerminalState {
-                    terminalFontBar
-                }
+                terminalFontBar
                 TerminalView(session: session, profile: profile, fontSize: $termFontSize)
                     .ignoresSafeArea(edges: .bottom)
                 if isTerminalState {

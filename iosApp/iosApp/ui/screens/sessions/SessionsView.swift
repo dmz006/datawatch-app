@@ -11,6 +11,12 @@ struct SessionsView: View {
     @State private var stateFilter: SessionStateFilter = .all
     @State private var sortOrder: SortOrder = .recentActivity
 
+    // Confirmation state for per-row actions.
+    @State private var sessionToKill: Session? = nil
+    @State private var sessionToRestart: Session? = nil
+    @State private var sessionToDelete: Session? = nil
+    @State private var actionInProgress: String? = nil
+
     enum SessionStateFilter: String, CaseIterable {
         case all     = "All"
         case active  = "Active"
@@ -75,6 +81,92 @@ struct SessionsView: View {
         .onDisappear {
             viewModel.stopPolling()
         }
+        .alert("Kill session?", isPresented: Binding(
+            get: { sessionToKill != nil },
+            set: { if !$0 { sessionToKill = nil } }
+        )) {
+            Button("Kill", role: .destructive) { performKill() }
+            Button("Cancel", role: .cancel) { sessionToKill = nil }
+        } message: {
+            Text("This stops the session on the server and cannot be undone.")
+        }
+        .alert("Restart session?", isPresented: Binding(
+            get: { sessionToRestart != nil },
+            set: { if !$0 { sessionToRestart = nil } }
+        )) {
+            Button("Restart") { performRestart() }
+            Button("Cancel", role: .cancel) { sessionToRestart = nil }
+        }
+        .alert("Delete session?", isPresented: Binding(
+            get: { sessionToDelete != nil },
+            set: { if !$0 { sessionToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) { performDelete() }
+            Button("Cancel", role: .cancel) { sessionToDelete = nil }
+        } message: {
+            if let s = sessionToDelete {
+                Text("Permanently delete \"\(s.name ?? s.taskSummary ?? s.id)\"?")
+            }
+        }
+    }
+
+    // ── Row actions ───────────────────────────────────────────────────────
+
+    private func performKill() {
+        guard let session = sessionToKill, let profile = viewModel.activeProfile else { return }
+        sessionToKill = nil
+        actionInProgress = session.id
+        IosServiceLocator.shared.killSession(
+            profile: profile,
+            sessionId: session.id,
+            onSuccess: {
+                DispatchQueue.main.async {
+                    self.actionInProgress = nil
+                    self.viewModel.refresh()
+                }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.actionInProgress = nil }
+            }
+        )
+    }
+
+    private func performRestart() {
+        guard let session = sessionToRestart, let profile = viewModel.activeProfile else { return }
+        sessionToRestart = nil
+        actionInProgress = session.id
+        IosServiceLocator.shared.restartSession(
+            profile: profile,
+            sessionId: session.id,
+            onSuccess: {
+                DispatchQueue.main.async {
+                    self.actionInProgress = nil
+                    self.viewModel.refresh()
+                }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.actionInProgress = nil }
+            }
+        )
+    }
+
+    private func performDelete() {
+        guard let session = sessionToDelete, let profile = viewModel.activeProfile else { return }
+        sessionToDelete = nil
+        actionInProgress = session.id
+        IosServiceLocator.shared.deleteSession(
+            profile: profile,
+            sessionId: session.id,
+            onSuccess: {
+                DispatchQueue.main.async {
+                    self.actionInProgress = nil
+                    self.viewModel.refresh()
+                }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.actionInProgress = nil }
+            }
+        )
     }
 
     // ── Body states ───────────────────────────────────────────────────────
@@ -409,6 +501,9 @@ struct SessionsView: View {
                             .accessibilityLabel("Muted")
                     }
                     Spacer()
+                    Text(relativeTime(session.lastActivityAt))
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 }
 
                 // Row 4: prompt context for waiting sessions
@@ -432,6 +527,32 @@ struct SessionsView: View {
         .listRowBackground(DatawatchColors.surface)
         .listRowSeparatorTint(DatawatchColors.border)
         .accessibilityLabel(accessibilityLabel(for: session))
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if session.state == .running || session.state == .waiting || session.state == .rateLimited {
+                Button(role: .destructive) {
+                    sessionToKill = session
+                } label: {
+                    Label("Stop", systemImage: "stop.circle")
+                }
+            }
+            if isDoneState(session.state) {
+                Button(role: .destructive) {
+                    sessionToDelete = session
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            if isDoneState(session.state) {
+                Button {
+                    sessionToRestart = session
+                } label: {
+                    Label("Restart", systemImage: "arrow.counterclockwise")
+                }
+                .tint(DatawatchColors.primary)
+            }
+        }
     }
 
     @ViewBuilder
@@ -478,6 +599,15 @@ struct SessionsView: View {
 
     private func isDoneState(_ state: SessionState) -> Bool {
         state == .completed || state == .killed || state == .error
+    }
+
+    private func relativeTime(_ instant: Kotlinx_datetimeInstant) -> String {
+        let seconds = Int((Date().timeIntervalSince1970 * 1000 - Double(instant.toEpochMilliseconds())) / 1000)
+        if seconds < 5   { return "just now" }
+        if seconds < 60  { return "\(seconds)s ago" }
+        if seconds < 3600 { return "\(seconds / 60)m ago" }
+        if seconds < 86400 { return "\(seconds / 3600)h ago" }
+        return "\(seconds / 86400)d ago"
     }
 
     private func accessibilityLabel(for session: Session) -> String {
