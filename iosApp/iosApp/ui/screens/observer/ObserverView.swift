@@ -99,6 +99,9 @@ struct ObserverView: View {
                     serverName: activeProfile?.displayName
                 )
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                DocsLinkButton(profile: activeProfile, anchor: "observer")
+            }
         }
         .onAppear {
             vm.update(profiles: store.profiles)

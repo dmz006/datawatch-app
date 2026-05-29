@@ -129,6 +129,12 @@ struct AlertsView: View {
             ToolbarItem(.principal) {
                 headerTitle
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                DocsLinkButton(
+                    profile: store.profiles.first,
+                    anchor: "alerts"
+                )
+            }
         }
         .onAppear {
             vm.load(from: store.profiles)

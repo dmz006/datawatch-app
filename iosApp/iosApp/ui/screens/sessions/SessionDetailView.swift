@@ -34,7 +34,10 @@ struct SessionDetailView: View {
                     .lineLimit(1)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                killButton
+                HStack(spacing: 4) {
+                    DocsLinkButton(profile: profile, anchor: "sessions")
+                    killButton
+                }
             }
         }
         .alert("Stop this session?", isPresented: $showKillConfirm) {
