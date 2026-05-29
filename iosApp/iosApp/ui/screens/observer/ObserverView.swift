@@ -184,12 +184,14 @@ struct ObserverView: View {
             SessionMetricCard(
                 label: "Running",
                 icon: "play.circle",
-                count: Int(stats?.sessionsRunning ?? 0)
+                count: Int(stats?.sessionsRunning ?? 0),
+                color: DatawatchColors.success
             )
             SessionMetricCard(
                 label: "Waiting",
                 icon: "clock.circle",
-                count: Int(stats?.sessionsWaiting ?? 0)
+                count: Int(stats?.sessionsWaiting ?? 0),
+                color: DatawatchColors.waiting
             )
         }
     }
@@ -310,12 +312,13 @@ private struct SessionMetricCard: View {
     let label: String
     let icon: String
     let count: Int
+    var color: Color = DatawatchColors.primary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(DatawatchColors.primary)
+                    .foregroundStyle(color)
                     .font(.system(size: 16))
                 Text(label)
                     .font(DatawatchFonts.labelSmall)
@@ -325,7 +328,7 @@ private struct SessionMetricCard: View {
 
             Text("\(count)")
                 .font(DatawatchFonts.titleLarge)
-                .foregroundStyle(DatawatchColors.primary)
+                .foregroundStyle(color)
         }
         .padding()
         .frame(maxWidth: .infinity)

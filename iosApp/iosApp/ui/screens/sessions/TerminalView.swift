@@ -101,8 +101,8 @@ private struct TerminalWebView: UIViewRepresentable {
 
         let webView = DwWKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
-        webView.backgroundColor = .black
-        webView.scrollView.backgroundColor = .black
+        webView.backgroundColor = UIColor(red: 0x0f/255, green: 0x11/255, blue: 0x17/255, alpha: 1)
+        webView.scrollView.backgroundColor = UIColor(red: 0x0f/255, green: 0x11/255, blue: 0x17/255, alpha: 1)
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
@@ -161,7 +161,7 @@ private struct TerminalWebView: UIViewRepresentable {
       <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
       <style>
         * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; background: #000000; height: 100%; overflow: hidden; }
+        html, body { margin: 0; padding: 0; background: #0f1117; height: 100%; overflow: hidden; }
         #terminal { height: 100vh; width: 100vw; }
         .xterm-viewport { overflow: hidden !important; }
       </style>
@@ -177,11 +177,11 @@ private struct TerminalWebView: UIViewRepresentable {
           allowTransparency: false,
           scrollback: 5000,
           theme: {
-            background: '#000000',
-            foreground: '#D0E8ED',
-            cursor: '#00E5FF',
-            cursorAccent: '#000000',
-            selection: 'rgba(0, 229, 255, 0.3)'
+            background: '#0f1117',
+            foreground: '#e2e8f0',
+            cursor: '#a855f7',
+            cursorAccent: '#0f1117',
+            selection: 'rgba(168, 85, 247, 0.3)'
           }
         });
         var fitAddon = new FitAddon.FitAddon();
