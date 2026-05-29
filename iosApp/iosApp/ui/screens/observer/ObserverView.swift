@@ -259,7 +259,7 @@ private struct MetricCard: View {
         guard let v = value else { return DatawatchColors.onSurfaceMuted }
         switch v {
         case 90...: return DatawatchColors.error
-        case 70..<90: return DatawatchColors.secondary
+        case 70..<90: return DatawatchColors.warning
         default: return DatawatchColors.primary
         }
     }

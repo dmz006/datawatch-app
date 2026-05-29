@@ -331,7 +331,7 @@ private struct MiniBar: View {
     private var barColor: Color {
         switch value {
         case ..<0.70: DatawatchColors.primary
-        case ..<0.90: DatawatchColors.secondary
+        case ..<0.90: DatawatchColors.warning
         default:      DatawatchColors.error
         }
     }
