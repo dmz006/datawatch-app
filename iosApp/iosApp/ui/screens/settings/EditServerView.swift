@@ -67,7 +67,7 @@ struct EditServerView: View {
 
             Section("Security") {
                 Toggle("Trust all certificates", isOn: $selfSigned)
-                    .tint(DatawatchColors.secondary)
+                    .tint(DatawatchColors.error)
                 if selfSigned {
                     Text("Allows self-signed TLS. Do not enable for production servers.")
                         .font(DatawatchFonts.labelSmall)

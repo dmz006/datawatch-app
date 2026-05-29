@@ -105,6 +105,7 @@ private struct ProfileRow: View {
             Circle()
                 .fill(profile.enabled ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
                 .frame(width: 8, height: 8)
+                .accessibilityLabel(profile.enabled ? "Server enabled" : "Server disabled")
             VStack(alignment: .leading, spacing: 4) {
                 Text(profile.displayName)
                     .font(DatawatchFonts.bodyLarge)
@@ -128,6 +129,7 @@ private struct ProfileRow: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 4)
     }

@@ -35,11 +35,18 @@ struct SessionsView: View {
             ToolbarItem(.principal) {
                 HeaderView(
                     title: "Sessions",
+                    subtitle: sessionsSubtitle,
                     serverName: viewModel.activeProfile?.displayName
                 )
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
+                    if viewModel.isLoading && !viewModel.sessions.isEmpty {
+                        ProgressView()
+                            .tint(DatawatchColors.onSurfaceMuted)
+                            .controlSize(.mini)
+                            .accessibilityLabel("Refreshing")
+                    }
                     DocsLinkButton(
                         profile: viewModel.activeProfile,
                         anchor: "sessions-list"
@@ -474,6 +481,20 @@ struct SessionsView: View {
 
     private func accessibilityLabel(for session: Session) -> String {
         "\(sessionDisplayName(session)), \(stateLabel(for: session.state))"
+    }
+
+    private var sessionsSubtitle: String? {
+        guard !viewModel.sessions.isEmpty else { return nil }
+        let running = viewModel.sessions.filter { $0.state == .running || $0.state == .rateLimited }.count
+        let waiting = viewModel.sessions.filter { $0.state == .waiting }.count
+        if running > 0 && waiting > 0 {
+            return "\(running) running · \(waiting) waiting"
+        } else if running > 0 {
+            return "\(running) running"
+        } else if waiting > 0 {
+            return "\(waiting) waiting"
+        }
+        return nil
     }
 
     private var connectionState: ConnectionState {

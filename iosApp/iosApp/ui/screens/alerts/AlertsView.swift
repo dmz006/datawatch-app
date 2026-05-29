@@ -158,8 +158,6 @@ struct AlertsView: View {
                 LoadingIndicator(message: "Loading alerts…")
             } else if let err = vm.error, vm.alerts.isEmpty {
                 ErrorCard(message: err) { vm.refresh() }
-            } else if vm.alerts.isEmpty {
-                emptyStateView
             } else {
                 alertListView
             }
@@ -200,7 +198,7 @@ struct AlertsView: View {
                     .foregroundStyle(DatawatchColors.background)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(DatawatchColors.secondary)
+                    .background(DatawatchColors.error)
                     .clipShape(Capsule())
                     .accessibilityLabel("\(vm.unreadCount) unread alerts")
             }
@@ -480,8 +478,9 @@ private struct AlertRow: View {
     private var alertBackground: Color {
         if isPrompt { return DatawatchColors.warning.opacity(0.06) }
         switch alert.severity {
-        case .error: return DatawatchColors.error.opacity(0.05)
-        default: return Color.clear
+        case .error:   return DatawatchColors.error.opacity(0.05)
+        case .warning: return DatawatchColors.warning.opacity(0.04)
+        default:       return Color.clear
         }
     }
 
@@ -494,7 +493,7 @@ private struct AlertRow: View {
             case .error:
                 badgeLabel("🔴 ERROR", fg: .white, bg: DatawatchColors.error)
             case .warning:
-                badgeLabel("⚪ warning", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
+                badgeLabel("🟠 WARNING", fg: Color(hex: 0x0F1117), bg: DatawatchColors.warning)
             default:
                 badgeLabel("⚪ info", fg: DatawatchColors.onSurfaceMuted, bg: DatawatchColors.surface2)
             }
