@@ -240,6 +240,52 @@ public object IosServiceLocator {
         }
     }
 
+    /** Restart a completed/killed/error session on the server. */
+    public fun restartSession(
+        profile: ServerProfile,
+        sessionId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).restartSession(sessionId).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Restart failed.") },
+            )
+        }
+    }
+
+    /** Delete a session from the server. */
+    public fun deleteSession(
+        profile: ServerProfile,
+        sessionId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).deleteSession(sessionId).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Delete failed.") },
+            )
+        }
+    }
+
+    /** Rename a session. */
+    public fun renameSession(
+        profile: ServerProfile,
+        sessionId: String,
+        name: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).renameSession(sessionId = sessionId, name = name).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Rename failed.") },
+            )
+        }
+    }
+
     /** Reply to a waiting session with a text response. */
     public fun replyToSession(
         profile: ServerProfile,
