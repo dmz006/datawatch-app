@@ -62,11 +62,11 @@ struct SessionDetailView: View {
                 }
             }
         }
-        .alert("Stop this session?", isPresented: $showKillConfirm) {
-            Button("Stop", role: .destructive) { performKill() }
+        .alert("Kill session?", isPresented: $showKillConfirm) {
+            Button("Kill", role: .destructive) { performKill() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Stop \"\(sessionTitle)\"?")
+            Text("This stops the tmux session on the server. The session cannot be resumed (a new session would need to be started).")
         }
         .alert("Delete this session?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) { performDelete() }
@@ -270,7 +270,7 @@ struct SessionDetailView: View {
                     Image(systemName: "stop.circle")
                         .foregroundStyle(DatawatchColors.error)
                 }
-                .accessibilityLabel("Stop session")
+                .accessibilityLabel("Kill session")
             }
         }
     }

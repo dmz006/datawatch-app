@@ -26,7 +26,7 @@ struct AddServerView: View {
                     TextField("Display name", text: $displayName)
                         .autocorrectionDisabled()
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Base URL  (https://…)", text: $baseUrl)
+                        TextField("Base URL (https://…)", text: $baseUrl)
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -84,6 +84,7 @@ struct AddServerView: View {
                         Button("Add") { submit() }
                             .disabled(!canSubmit)
                             .fontWeight(.semibold)
+                            .foregroundStyle(canSubmit ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
                     }
                 }
             }

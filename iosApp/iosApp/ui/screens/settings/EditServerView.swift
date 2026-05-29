@@ -104,6 +104,7 @@ struct EditServerView: View {
                     Button("Save") { save() }
                         .disabled(!canSubmit || deleting)
                         .fontWeight(.semibold)
+                        .foregroundStyle(canSubmit && !deleting ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
                 }
             }
         }
