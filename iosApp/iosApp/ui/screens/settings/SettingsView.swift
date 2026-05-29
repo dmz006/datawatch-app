@@ -111,10 +111,14 @@ struct SettingsView: View {
                     HeaderView(title: "Settings")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    DocsLinkButton(
-                        profile: store.profiles.first,
-                        anchor: "settings"
-                    )
+                    HStack(spacing: 4) {
+                        DocsLinkButton(
+                            profile: store.profiles.first,
+                            anchor: "settings"
+                        )
+                        AlertsBellButton()
+                        ReachabilityDotView(profile: store.profiles.first)
+                    }
                 }
             }
         }

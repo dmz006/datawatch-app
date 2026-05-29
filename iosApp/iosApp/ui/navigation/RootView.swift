@@ -42,6 +42,9 @@ struct RootView: View {
         .onOpenURL { url in
             AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToAlerts)) { _ in
+            selectedTab = .alerts
+        }
     }
 
     // ── iPad: NavigationSplitView ─────────────────────────────────────────
@@ -67,6 +70,9 @@ struct RootView: View {
         .preferredColorScheme(.dark)
         .onOpenURL { url in
             AppRouter.shared.handle(url: url, selectedTab: $selectedTab)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dwNavigateToAlerts)) { _ in
+            selectedTab = .alerts
         }
     }
 }
