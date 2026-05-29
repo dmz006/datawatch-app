@@ -369,14 +369,14 @@ struct SessionsView: View {
                             .clipShape(Capsule())
                     }
                     if let agentId = session.agentId {
-                        Text("⬡ \(agentId.prefix(8))")
+                        Text("⬡ \(agentId)")
                             .font(DatawatchFonts.badge)
                             .foregroundStyle(DatawatchColors.secondary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(DatawatchColors.secondary.opacity(0.12))
                             .clipShape(Capsule())
-                            .accessibilityLabel("Worker agent \(agentId.prefix(8))")
+                            .accessibilityLabel("Worker \(agentId)")
                     }
                     if let hostname = session.hostnamePrefix, !hostname.isEmpty {
                         Text(hostname)

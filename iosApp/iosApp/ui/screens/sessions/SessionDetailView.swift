@@ -17,6 +17,7 @@ struct SessionDetailView: View {
     @State private var showLastResponse = false
     @State private var replyText: String = ""
     @State private var isSendingReply: Bool = false
+    @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -25,7 +26,10 @@ struct SessionDetailView: View {
 
             VStack(spacing: 0) {
                 metadataBar
-                TerminalView(session: session, profile: profile)
+                if !isTerminalState {
+                    terminalFontBar
+                }
+                TerminalView(session: session, profile: profile, fontSize: $termFontSize)
                     .ignoresSafeArea(edges: .bottom)
                 if isTerminalState {
                     terminalActionBar
@@ -116,13 +120,13 @@ struct SessionDetailView: View {
                         metaBadge(backend.uppercased(), color: DatawatchColors.secondary)
                     }
                     if let llm = session.llmRef, !llm.isEmpty {
-                        metaBadge("⚡ \(llm)", color: DatawatchColors.warning)
+                        metaBadge("⚡ \(llm)", color: DatawatchColors.success)
                     }
                     if let node = session.computeNodeRef, !node.isEmpty {
-                        metaBadge("⚙ \(node)", color: DatawatchColors.onSurfaceMuted)
+                        metaBadge("⚙ \(node)", color: DatawatchColors.secondary)
                     }
                     if let agentId = session.agentId {
-                        metaBadge("⬡ \(agentId.prefix(8))", color: DatawatchColors.secondary)
+                        metaBadge("⬡ \(agentId)", color: DatawatchColors.secondary)
                     }
                     if session.chrome {
                         metaBadge("Chrome", color: DatawatchColors.primary)
@@ -150,6 +154,50 @@ struct SessionDetailView: View {
 
     private var isTerminalState: Bool {
         session.state == .completed || session.state == .killed || session.state == .error
+    }
+
+    // ── Terminal font-size toolbar (PWA Aa▾ parity) ───────────────────────
+
+    private var terminalFontBar: some View {
+        HStack(spacing: 0) {
+            Spacer()
+            Button {
+                if termFontSize > 5 {
+                    termFontSize -= 1
+                    UserDefaults.standard.set(termFontSize, forKey: "dw.terminal.font_size_px")
+                }
+            } label: {
+                Text("A−")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(termFontSize > 5 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+            }
+            .disabled(termFontSize <= 5)
+            .accessibilityLabel("Decrease font size")
+
+            Text("\(termFontSize)px")
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .padding(.horizontal, 4)
+
+            Button {
+                if termFontSize < 20 {
+                    termFontSize += 1
+                    UserDefaults.standard.set(termFontSize, forKey: "dw.terminal.font_size_px")
+                }
+            } label: {
+                Text("A+")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(termFontSize < 20 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+            }
+            .disabled(termFontSize >= 20)
+            .accessibilityLabel("Increase font size")
+        }
+        .background(DatawatchColors.surface)
+        .overlay(Divider().background(DatawatchColors.border), alignment: .bottom)
     }
 
     // ── Composer bar (active sessions) ───────────────────────────────────
@@ -346,6 +394,12 @@ struct SessionDetailView: View {
             onError: { _ in }
         )
     }
+}
+
+// ── Int helper ───────────────────────────────────────────────────────────────
+
+private extension Int {
+    var nonZero: Int? { self == 0 ? nil : self }
 }
 
 // ── Last response sheet ───────────────────────────────────────────────────────
