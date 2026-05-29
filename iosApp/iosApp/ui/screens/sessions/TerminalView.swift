@@ -12,6 +12,7 @@ import DatawatchShared
 struct TerminalView: View {
     let session: Session
     let profile: ServerProfile
+    @Binding var fontSize: Int
 
     @State private var connected = false
     @State private var disconnected = false
@@ -22,6 +23,7 @@ struct TerminalView: View {
             TerminalWebView(
                 session: session,
                 profile: profile,
+                fontSize: fontSize,
                 connected: $connected,
                 disconnected: $disconnected
             )
@@ -82,6 +84,7 @@ private struct TerminalWebView: UIViewRepresentable {
 
     let session: Session
     let profile: ServerProfile
+    let fontSize: Int
     @Binding var connected: Bool
     @Binding var disconnected: Bool
 
@@ -110,20 +113,26 @@ private struct TerminalWebView: UIViewRepresentable {
             coordinator?.onFrameChanged(size: size)
         }
 
-        let html = Self.buildHTML(session: session, profile: profile)
+        let html = Self.buildHTML(session: session, profile: profile, fontSize: fontSize)
         webView.loadHTMLString(html, baseURL: nil)
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Stateless after initial load — WebView owns its own lifecycle.
+        // Propagate font-size changes from the toolbar without reloading the page.
+        webView.evaluateJavaScript(
+            "window.dwChangeFontSize && window.dwChangeFontSize(\(fontSize));",
+            completionHandler: nil
+        )
     }
 
     // MARK: HTML / WS URL builder
 
-    private static func buildHTML(session: Session, profile: ServerProfile) -> String {
+    private static func buildHTML(session: Session, profile: ServerProfile, fontSize: Int) -> String {
         let wsUrl = buildWSUrl(session: session, profile: profile)
-        return xtermHTML.replacingOccurrences(of: "__WS_URL__", with: wsUrl)
+        return xtermHTML
+            .replacingOccurrences(of: "__WS_URL__", with: wsUrl)
+            .replacingOccurrences(of: "__FONT_SIZE__", with: "\(fontSize)")
     }
 
     /// Converts `http(s)://host` → `ws(s)://host/api/terminal/<sessionId>?token=<tok>`.
@@ -175,6 +184,7 @@ private struct TerminalWebView: UIViewRepresentable {
         var term = new Terminal({
           cursorBlink: true,
           allowTransparency: false,
+          fontSize: __FONT_SIZE__,
           scrollback: 5000,
           theme: {
             background: '#0f1117',
@@ -189,6 +199,12 @@ private struct TerminalWebView: UIViewRepresentable {
         term.open(document.getElementById('terminal'));
         fitAddon.fit();
         window.addEventListener('resize', function() { fitAddon.fit(); });
+
+        // Called from native (TerminalToolbar A−/A+) to change font size.
+        window.dwChangeFontSize = function(size) {
+          term.options.fontSize = size;
+          fitAddon.fit();
+        };
 
         // Called from native when the WKWebView frame changes size (keyboard, rotation).
         // Takes pixel dimensions of the WKWebView frame, computes char cell size from
@@ -387,7 +403,7 @@ extension TerminalWebView {
         computeNodeRef: nil,
         chrome: false
     )
-    TerminalView(session: session, profile: profile)
+    TerminalView(session: session, profile: profile, fontSize: .constant(9))
         .preferredColorScheme(.dark)
 }
 #endif
