@@ -18,6 +18,7 @@ struct SessionDetailView: View {
     @State private var replyText: String = ""
     @State private var isSendingReply: Bool = false
     @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
+    @State private var messagingBackend: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -102,6 +103,23 @@ struct SessionDetailView: View {
             }
         }
         .animation(.easeInOut, value: killError)
+        .onAppear { fetchMessagingBackend() }
+    }
+
+    private func fetchMessagingBackend() {
+        IosServiceLocator.shared.fetchServerInfo(
+            profile: profile,
+            onSuccess: { info in
+                DispatchQueue.main.async {
+                    let mb = info.messagingBackend ?? "tmux"
+                    let normalized = mb.lowercased()
+                    if !["tmux", "", "none"].contains(normalized) {
+                        self.messagingBackend = normalized
+                    }
+                }
+            },
+            onError: { _ in }
+        )
     }
 
     // ── Metadata bar ──────────────────────────────────────────────────────
@@ -112,18 +130,22 @@ struct SessionDetailView: View {
             session.llmRef != nil ||
             session.computeNodeRef != nil ||
             session.agentId != nil ||
-            session.chrome
+            session.chrome ||
+            messagingBackend != nil
         if hasMetadata {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     if let backend = session.backend, !backend.isEmpty {
-                        metaBadge(backend.uppercased(), color: DatawatchColors.secondary)
+                        metaBadge(backend.lowercased(), color: DatawatchColors.primary)
                     }
                     if let llm = session.llmRef, !llm.isEmpty {
                         metaBadge("⚡ \(llm)", color: DatawatchColors.success)
                     }
                     if let node = session.computeNodeRef, !node.isEmpty {
                         metaBadge("⚙ \(node)", color: DatawatchColors.secondary)
+                    }
+                    if let mb = messagingBackend {
+                        metaBadge(mb, color: DatawatchColors.secondary)
                     }
                     if let agentId = session.agentId {
                         metaBadge("⬡ \(agentId)", color: DatawatchColors.secondary)
