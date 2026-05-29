@@ -200,7 +200,8 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
             )
         }
         val title = "datawatch ${Version.VERSION}"
-        // ActionStrip: max 1 action with a custom title (Car App Library constraint).
+        // ActionStrip: Car App Library hard-limits ListTemplate to 2 actions.
+        // Server (titled, primary) + Monitor icon (secondary). About omitted.
         fun iconOf(resId: Int) =
             CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
@@ -218,14 +219,6 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                         .setIcon(iconOf(R.drawable.ic_auto_monitor))
                         .setOnClickListener {
                             screenManager.push(AutoMonitorScreen(carContext))
-                        }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_info))
-                        .setOnClickListener {
-                            screenManager.push(AutoAboutScreen(carContext))
                         }
                         .build(),
                 )
