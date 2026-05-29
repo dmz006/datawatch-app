@@ -290,11 +290,11 @@ private struct SessionsRow: View {
         HStack(spacing: 16) {
             Label("\(running) running", systemImage: "play.fill")
                 .font(DatawatchFonts.labelSmall)
-                .foregroundStyle(DatawatchColors.primary)
+                .foregroundStyle(DatawatchColors.success)
 
             Label("\(waiting) waiting", systemImage: "hourglass")
                 .font(DatawatchFonts.labelSmall)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .foregroundStyle(DatawatchColors.waiting)
         }
     }
 }
