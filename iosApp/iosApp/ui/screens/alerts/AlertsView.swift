@@ -244,27 +244,29 @@ struct AlertsView: View {
     // ── Tab row ───────────────────────────────────────────────────────────
 
     private var tabRow: some View {
-        HStack(spacing: 0) {
-            ForEach(AlertsViewModel.AlertTab.allCases, id: \.self) { tab in
-                let count = vm.tabCount(for: tab)
-                let isSelected = vm.selectedTab == tab
-                Button { vm.selectedTab = tab } label: {
-                    VStack(spacing: 4) {
-                        Text(count > 0 ? "\(tab.rawValue) (\(count))" : tab.rawValue)
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(isSelected ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
-                            .lineLimit(1)
-                        Rectangle()
-                            .fill(isSelected ? DatawatchColors.primary : Color.clear)
-                            .frame(height: 2)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(AlertsViewModel.AlertTab.allCases, id: \.self) { tab in
+                    let count = vm.tabCount(for: tab)
+                    let isSelected = vm.selectedTab == tab
+                    Button { vm.selectedTab = tab } label: {
+                        VStack(spacing: 4) {
+                            Text(count > 0 ? "\(tab.rawValue) (\(count))" : tab.rawValue)
+                                .font(DatawatchFonts.badge)
+                                .foregroundStyle(isSelected ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
+                                .lineLimit(1)
+                            Rectangle()
+                                .fill(isSelected ? DatawatchColors.primary : Color.clear)
+                                .frame(height: 2)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
                 }
             }
+            .background(DatawatchColors.surface)
+            Divider().background(DatawatchColors.border)
         }
-        .background(DatawatchColors.surface)
-        Divider().background(DatawatchColors.border)
     }
 
     // ── Filter bar ────────────────────────────────────────────────────────

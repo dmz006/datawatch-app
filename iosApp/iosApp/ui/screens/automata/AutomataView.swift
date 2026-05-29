@@ -282,25 +282,29 @@ private struct AutomataTypeRow: View {
         return parts.joined(separator: ", ")
     }
 
-    /// Map common CSS color names to SwiftUI colors; fall back to primary.
+    /// Parse hex string (#RRGGBB) or CSS color name → SwiftUI Color.
     private func swatchColor(for color: String?) -> Color {
         guard let color, !color.isEmpty else { return DatawatchColors.primary }
+        if color.hasPrefix("#"), color.count == 7,
+           let hex = UInt32(color.dropFirst(), radix: 16) {
+            return Color(hex: hex)
+        }
         switch color.lowercased() {
-        case "red":     return Color.red
-        case "green":   return Color.green
-        case "blue":    return Color.blue
-        case "yellow":  return Color.yellow
-        case "orange":  return Color.orange
-        case "purple":  return Color.purple
-        case "pink":    return Color.pink
+        case "red":          return Color.red
+        case "green":        return Color.green
+        case "blue":         return Color.blue
+        case "yellow":       return Color.yellow
+        case "orange":       return Color.orange
+        case "purple":       return Color.purple
+        case "pink":         return Color.pink
         case "cyan", "teal": return Color.cyan
-        case "white":   return Color.white
+        case "white":        return Color.white
         case "gray", "grey": return Color.gray
-        case "black":   return Color.black
-        case "indigo":  return Color.indigo
-        case "mint":    return Color.mint
-        case "brown":   return Color.brown
-        default:        return DatawatchColors.primary
+        case "black":        return Color.black
+        case "indigo":       return Color.indigo
+        case "mint":         return Color.mint
+        case "brown":        return Color.brown
+        default:             return DatawatchColors.primary
         }
     }
 }
