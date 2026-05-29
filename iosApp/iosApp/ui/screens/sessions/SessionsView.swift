@@ -12,11 +12,10 @@ struct SessionsView: View {
     @State private var sortOrder: SortOrder = .recentActivity
 
     enum SessionStateFilter: String, CaseIterable {
-        case all       = "All"
-        case active    = "Active"
-        case running   = "Running"
-        case waiting   = "Waiting"
-        case done      = "Done"
+        case all     = "All"
+        case active  = "Active"
+        case waiting = "Waiting"
+        case done    = "Done"
     }
 
     enum SortOrder: String, CaseIterable {
@@ -47,7 +46,6 @@ struct SessionsView: View {
                     )
                     Button {
                         withAnimation { showFilter.toggle() }
-                        if !showFilter { filterText = ""; stateFilter = .all }
                     } label: {
                         Image(systemName: showFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                             .foregroundStyle(DatawatchColors.primary)
@@ -203,7 +201,6 @@ struct SessionsView: View {
             switch filter {
             case .all:     return DatawatchColors.onSurfaceMuted
             case .active:  return DatawatchColors.primary
-            case .running: return DatawatchColors.success
             case .waiting: return DatawatchColors.waiting
             case .done:    return DatawatchColors.onSurfaceMuted
             }
@@ -226,8 +223,7 @@ struct SessionsView: View {
 
         switch stateFilter {
         case .all:     break
-        case .active:  result = result.filter { $0.state == .running || $0.state == .waiting }
-        case .running: result = result.filter { $0.state == .running }
+        case .active:  result = result.filter { $0.state == .running || $0.state == .waiting || $0.state == .rateLimited }
         case .waiting: result = result.filter { $0.state == .waiting }
         case .done:    result = result.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }
         }
@@ -238,19 +234,26 @@ struct SessionsView: View {
                 s.id.lowercased().contains(q) ||
                 (s.name?.lowercased().contains(q) ?? false) ||
                 (s.taskSummary?.lowercased().contains(q) ?? false) ||
-                (s.backend?.lowercased().contains(q) ?? false)
+                (s.backend?.lowercased().contains(q) ?? false) ||
+                (s.llmRef?.lowercased().contains(q) ?? false) ||
+                (s.computeNodeRef?.lowercased().contains(q) ?? false) ||
+                (s.hostnamePrefix?.lowercased().contains(q) ?? false)
             }
         }
 
-        switch sortOrder {
-        case .recentActivity:
-            result.sort { $0.lastActivityAt.toEpochMilliseconds() > $1.lastActivityAt.toEpochMilliseconds() }
-        case .startedAt:
-            result.sort { $0.createdAt.toEpochMilliseconds() > $1.createdAt.toEpochMilliseconds() }
-        case .name:
-            result.sort {
-                let a = $0.name ?? $0.taskSummary ?? $0.id
-                let b = $1.name ?? $1.taskSummary ?? $1.id
+        // State-bucket always wins (Waiting → Running → RateLimited → Done),
+        // within each bucket apply user sort order.
+        result.sort { lhs, rhs in
+            let lb = stateBucket(lhs.state), rb = stateBucket(rhs.state)
+            if lb != rb { return lb < rb }
+            switch sortOrder {
+            case .recentActivity:
+                return lhs.lastActivityAt.toEpochMilliseconds() > rhs.lastActivityAt.toEpochMilliseconds()
+            case .startedAt:
+                return lhs.createdAt.toEpochMilliseconds() > rhs.createdAt.toEpochMilliseconds()
+            case .name:
+                let a = (lhs.name ?? lhs.taskSummary ?? lhs.id).lowercased()
+                let b = (rhs.name ?? rhs.taskSummary ?? rhs.id).lowercased()
                 return a < b
             }
         }
@@ -262,10 +265,18 @@ struct SessionsView: View {
         let all = viewModel.sessions
         switch filter {
         case .all:     return all.count
-        case .active:  return all.filter { $0.state == .running || $0.state == .waiting }.count
-        case .running: return all.filter { $0.state == .running }.count
+        case .active:  return all.filter { $0.state == .running || $0.state == .waiting || $0.state == .rateLimited }.count
         case .waiting: return all.filter { $0.state == .waiting }.count
         case .done:    return all.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }.count
+        }
+    }
+
+    private func stateBucket(_ state: SessionState) -> Int {
+        switch state {
+        case .waiting:     return 0
+        case .running:     return 1
+        case .rateLimited: return 2
+        default:           return 3
         }
     }
 
@@ -358,11 +369,24 @@ struct SessionsView: View {
                             .background(DatawatchColors.waiting.opacity(0.15))
                             .clipShape(Capsule())
                     }
-                    if session.agentId != nil {
-                        Image(systemName: "hexagon.fill")
-                            .font(.system(size: 10))
+                    if let agentId = session.agentId {
+                        Text("⬡ \(agentId.prefix(8))")
+                            .font(DatawatchFonts.badge)
                             .foregroundStyle(DatawatchColors.secondary)
-                            .accessibilityLabel("Worker agent")
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.secondary.opacity(0.12))
+                            .clipShape(Capsule())
+                            .accessibilityLabel("Worker agent \(agentId.prefix(8))")
+                    }
+                    if let hostname = session.hostnamePrefix, !hostname.isEmpty {
+                        Text(hostname)
+                            .font(DatawatchFonts.badge)
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DatawatchColors.onSurfaceMuted.opacity(0.10))
+                            .clipShape(Capsule())
                     }
                     if session.lastResponse != nil {
                         Image(systemName: "doc.text")
@@ -424,21 +448,23 @@ struct SessionsView: View {
 
     private func dotColor(for state: SessionState) -> Color {
         switch state {
-        case .running:   return DatawatchColors.success
-        case .waiting:   return DatawatchColors.waiting
-        case .error:     return DatawatchColors.error
-        default:         return DatawatchColors.onSurfaceMuted
+        case .running:     return DatawatchColors.success
+        case .waiting:     return DatawatchColors.waiting
+        case .rateLimited: return DatawatchColors.warning
+        case .error:       return DatawatchColors.error
+        default:           return DatawatchColors.onSurfaceMuted
         }
     }
 
     private func stateLabel(for state: SessionState) -> String {
         switch state {
-        case .running:   return "RUNNING"
-        case .waiting:   return "WAITING INPUT"
-        case .completed: return "COMPLETED"
-        case .killed:    return "KILLED"
-        case .error:     return "ERROR"
-        default:         return "UNKNOWN"
+        case .running:     return "RUNNING"
+        case .waiting:     return "WAITING INPUT"
+        case .rateLimited: return "RATE LIMITED"
+        case .completed:   return "COMPLETED"
+        case .killed:      return "KILLED"
+        case .error:       return "ERROR"
+        default:           return "UNKNOWN"
         }
     }
 

@@ -27,7 +27,9 @@ struct SessionDetailView: View {
                 metadataBar
                 TerminalView(session: session, profile: profile)
                     .ignoresSafeArea(edges: .bottom)
-                if !isTerminalState {
+                if isTerminalState {
+                    terminalActionBar
+                } else {
                     composerBar
                 }
             }
@@ -150,7 +152,7 @@ struct SessionDetailView: View {
         session.state == .completed || session.state == .killed || session.state == .error
     }
 
-    // ── Composer bar ──────────────────────────────────────────────────────
+    // ── Composer bar (active sessions) ───────────────────────────────────
 
     private var composerBar: some View {
         VStack(spacing: 0) {
@@ -177,49 +179,52 @@ struct SessionDetailView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(DatawatchColors.background)
+        }
+    }
 
-            // Done-state action bar
-            if isTerminalState {
-                Divider().background(DatawatchColors.border)
-                HStack(spacing: 12) {
-                    Button {
-                        performRestart()
-                    } label: {
-                        HStack(spacing: 4) {
-                            if isRestarting {
-                                ProgressView().controlSize(.small).tint(DatawatchColors.primary)
-                            } else {
-                                Image(systemName: "arrow.counterclockwise")
-                            }
-                            Text("Restart")
+    // ── Terminal action bar (completed / killed / error sessions) ─────────
+
+    private var terminalActionBar: some View {
+        VStack(spacing: 0) {
+            Divider().background(DatawatchColors.border)
+            HStack(spacing: 12) {
+                Button {
+                    performRestart()
+                } label: {
+                    HStack(spacing: 4) {
+                        if isRestarting {
+                            ProgressView().controlSize(.small).tint(DatawatchColors.primary)
+                        } else {
+                            Image(systemName: "arrow.counterclockwise")
                         }
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.primary)
+                        Text("Restart")
                     }
-                    .disabled(isRestarting || isDeleting)
-
-                    Spacer()
-
-                    Button {
-                        showDeleteConfirm = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            if isDeleting {
-                                ProgressView().controlSize(.small).tint(DatawatchColors.error)
-                            } else {
-                                Image(systemName: "trash")
-                            }
-                            Text("Delete")
-                        }
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.error)
-                    }
-                    .disabled(isRestarting || isDeleting)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.primary)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(DatawatchColors.background)
+                .disabled(isRestarting || isDeleting)
+
+                Spacer()
+
+                Button {
+                    showDeleteConfirm = true
+                } label: {
+                    HStack(spacing: 4) {
+                        if isDeleting {
+                            ProgressView().controlSize(.small).tint(DatawatchColors.error)
+                        } else {
+                            Image(systemName: "trash")
+                        }
+                        Text("Delete")
+                    }
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.error)
+                }
+                .disabled(isRestarting || isDeleting)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(DatawatchColors.background)
         }
     }
 

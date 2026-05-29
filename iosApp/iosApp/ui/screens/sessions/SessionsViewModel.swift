@@ -19,7 +19,7 @@ final class SessionsViewModel: ObservableObject {
     // ── Private ───────────────────────────────────────────────────────────
 
     private var pollingTimer: Timer? = nil
-    private static let pollInterval: TimeInterval = 10
+    private static let pollInterval: TimeInterval = 5
 
     // ── Init ──────────────────────────────────────────────────────────────
 
