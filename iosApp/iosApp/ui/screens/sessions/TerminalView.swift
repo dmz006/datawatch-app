@@ -50,7 +50,7 @@ struct TerminalView: View {
     private var reconnectOverlay: some View {
         VStack(spacing: 20) {
             Image(systemName: "wifi.slash")
-                .font(.system(size: 40))
+                .font(.system(.largeTitle))
                 .foregroundStyle(DatawatchColors.error)
                 .accessibilityHidden(true)
 

@@ -148,7 +148,8 @@ private struct DashboardEmptyState: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "server.rack")
-                .font(.system(size: 48))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
 

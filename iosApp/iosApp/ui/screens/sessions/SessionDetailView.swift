@@ -188,16 +188,16 @@ struct SessionDetailView: View {
                 }
             } label: {
                 Text("A−")
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
                     .foregroundStyle(termFontSize > 5 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(termFontSize <= 5)
             .accessibilityLabel("Decrease font size")
 
             Text("\(termFontSize)px")
-                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .font(.system(.caption2, design: .monospaced))
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .padding(.horizontal, 4)
 
@@ -208,10 +208,10 @@ struct SessionDetailView: View {
                 }
             } label: {
                 Text("A+")
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
                     .foregroundStyle(termFontSize < 20 ? DatawatchColors.onSurface : DatawatchColors.onSurfaceMuted)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(termFontSize >= 20)
             .accessibilityLabel("Increase font size")

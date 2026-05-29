@@ -181,7 +181,8 @@ struct ObserverView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Image(systemName: "eye.slash")
-                .font(.system(size: 56))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
             Text("No server connected")
@@ -331,7 +332,7 @@ private struct MetricCard: View {
             HStack {
                 Image(systemName: icon)
                     .foregroundStyle(accentColor)
-                    .font(.system(size: 16))
+                    .font(DatawatchFonts.bodyMedium)
                 Text(label)
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
@@ -384,7 +385,7 @@ private struct SessionMetricCard: View {
             HStack {
                 Image(systemName: icon)
                     .foregroundStyle(color)
-                    .font(.system(size: 16))
+                    .font(DatawatchFonts.bodyMedium)
                 Text(label)
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)

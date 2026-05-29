@@ -202,7 +202,8 @@ struct AutomataView: View {
     private var noProfilesView: some View {
         VStack(spacing: 20) {
             Image(systemName: "arrow.trianglehead.2.counterclockwise")
-                .font(.system(size: 56))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
             Text("No server connected")
@@ -220,7 +221,8 @@ struct AutomataView: View {
     private var emptyTypesView: some View {
         VStack(spacing: 20) {
             Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 56))
+                .font(.system(.largeTitle))
+                .imageScale(.large)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .accessibilityHidden(true)
             Text("No automata types")

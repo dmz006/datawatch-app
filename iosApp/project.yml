@@ -16,6 +16,8 @@ targets:
         CFBundleDisplayName: datawatch
         UILaunchScreen:
           UIColorName: ""
+    entitlements:
+      path: iosApp/DatawatchClient.entitlements
     settings:
       base:
         # Bundle ID must match Android phone app so the same Apple Developer

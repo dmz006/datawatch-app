@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Privacy Manifest — required for App Store submission since May 2024.
+      See: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
+
+      This app:
+        • Does NOT collect or transmit user data to Apple or third parties.
+        • Does NOT use tracking.
+        • DOES use NSUserDefaults (UserDefaults) for persisting UI preferences
+          (terminal font size, biometric lock toggle, alert badge count).
+    -->
+
+    <!-- ── Data collected ─────────────────────────────────────────────────── -->
+    <!--
+      No data types collected: the app stores bearer tokens in the iOS Keychain
+      (device-local only) and preferences in UserDefaults (device-local only).
+      Nothing is sent to Anthropic or any third party by the client app itself.
+    -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <!-- ── Tracking ───────────────────────────────────────────────────────── -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <!-- ── Tracking domains ───────────────────────────────────────────────── -->
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!-- ── Required-reason APIs ───────────────────────────────────────────── -->
+    <!--
+      UserDefaults is accessed to store:
+        • dw.terminal.font_size_px  — terminal font size preference
+        • biometricLockEnabled      — biometric lock toggle state
+        • dw.alert.badge            — unread alert badge count
+      Reason: CA92.1 — Storing data on device for app functionality.
+    -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
