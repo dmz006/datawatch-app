@@ -95,12 +95,17 @@ struct ServerProfileListView: View {
 private struct ProfileRow: View {
     let profile: ServerProfile
 
+    private var noAuth: Bool { profile.bearerTokenRef.isEmpty }
+    private var trustAll: Bool {
+        profile.trustAnchorSha256 == IosServiceLocator.shared.TRUST_ALL_SENTINEL
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             Circle()
                 .fill(profile.enabled ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted)
                 .frame(width: 8, height: 8)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(profile.displayName)
                     .font(DatawatchFonts.bodyLarge)
                     .foregroundStyle(DatawatchColors.onSurface)
@@ -108,6 +113,16 @@ private struct ProfileRow: View {
                     .font(DatawatchFonts.labelSmall)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .lineLimit(1)
+                if noAuth || trustAll {
+                    HStack(spacing: 4) {
+                        if noAuth {
+                            securityBadge("NO AUTH")
+                        }
+                        if trustAll {
+                            securityBadge("TRUST ALL TLS")
+                        }
+                    }
+                }
             }
             Spacer()
             Image(systemName: "chevron.right")
@@ -115,6 +130,16 @@ private struct ProfileRow: View {
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
         }
         .padding(.vertical, 4)
+    }
+
+    private func securityBadge(_ text: String) -> some View {
+        Text(text)
+            .font(DatawatchFonts.badge)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(DatawatchColors.error)
+            .clipShape(Capsule())
     }
 }
 
