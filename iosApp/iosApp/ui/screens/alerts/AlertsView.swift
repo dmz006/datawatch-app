@@ -77,6 +77,8 @@ final class AlertsViewModel: ObservableObject {
     }
 
     private var profile: ServerProfile?
+    private var pollingTimer: Timer?
+    private static let pollInterval: TimeInterval = 5
 
     func load(from profiles: [ServerProfile]) {
         let newActive = profiles.first
@@ -84,11 +86,25 @@ final class AlertsViewModel: ObservableObject {
         profile = newActive
         if newActive != nil {
             refresh()
+            startPolling()
         } else {
+            stopPolling()
             alerts = []
             unreadCount = 0
             error = nil
         }
+    }
+
+    func startPolling() {
+        stopPolling()
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.refresh() }
+        }
+    }
+
+    func stopPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
     }
 
     func refresh() {
@@ -181,6 +197,9 @@ struct AlertsView: View {
         }
         .onAppear {
             vm.load(from: store.profiles)
+        }
+        .onDisappear {
+            vm.stopPolling()
         }
         .onChange(of: store.profiles) { newProfiles in
             vm.load(from: newProfiles)
