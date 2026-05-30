@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import DatawatchShared
 
 /// Detail screen for a single session — shows the live terminal plus metadata bar.
@@ -19,6 +20,10 @@ struct SessionDetailView: View {
     @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
     @State private var messagingBackend: String? = nil
     @State private var terminalInput: String? = nil
+    @State private var whisperEnabled = false
+    @State private var voiceRecorder: VoiceRecorder? = nil
+    @State private var isTranscribing = false
+    @State private var recordingPulse = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -101,7 +106,18 @@ struct SessionDetailView: View {
             }
         }
         .animation(.easeInOut, value: killError)
-        .onAppear { fetchMessagingBackend() }
+        .onAppear {
+            fetchMessagingBackend()
+            IosServiceLocator.shared.fetchWhisperEnabled(profile: profile) { enabled in
+                DispatchQueue.main.async { self.whisperEnabled = enabled }
+            }
+        }
+        // Recording overlay — shown while mic is active.
+        .overlay {
+            if voiceRecorder != nil {
+                recordingOverlay
+            }
+        }
     }
 
     private func fetchMessagingBackend() {
@@ -243,6 +259,21 @@ struct SessionDetailView: View {
                     .padding(.vertical, 10)
                     .background(isWaiting ? DatawatchColors.waiting.opacity(0.08) : DatawatchColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                if whisperEnabled {
+                    if isTranscribing {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(DatawatchColors.onSurfaceMuted)
+                    } else {
+                        Button {
+                            startRecording()
+                        } label: {
+                            Image(systemName: "mic")
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                        }
+                        .accessibilityLabel("Record voice message")
+                    }
+                }
                 Button {
                     sendReply()
                 } label: {
@@ -404,6 +435,92 @@ struct SessionDetailView: View {
             name: name,
             onSuccess: {},
             onError: { _ in }
+        )
+    }
+
+    // ── Voice recording ───────────────────────────────────────────────────
+
+    @ViewBuilder
+    private var recordingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(DatawatchColors.error)
+                    .opacity(recordingPulse ? 1.0 : 0.45)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                            recordingPulse = true
+                        }
+                    }
+                    .onDisappear { recordingPulse = false }
+                Text("Recording…")
+                    .font(DatawatchFonts.titleMedium)
+                    .foregroundStyle(.white)
+                HStack(spacing: 16) {
+                    Button("Cancel") {
+                        voiceRecorder?.cancel()
+                        voiceRecorder = nil
+                    }
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    Button("Send") {
+                        stopAndTranscribe()
+                    }
+                    .font(DatawatchFonts.bodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(DatawatchColors.error)
+                    .clipShape(Capsule())
+                }
+            }
+            .padding(32)
+            .background(DatawatchColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(24)
+        }
+    }
+
+    private func startRecording() {
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                guard granted else { return }
+                let rec = VoiceRecorder()
+                do {
+                    try rec.start()
+                    self.voiceRecorder = rec
+                } catch {
+                    // hardware error after permission granted — silently drop
+                }
+            }
+        }
+    }
+
+    private func stopAndTranscribe() {
+        guard let rec = voiceRecorder else { return }
+        voiceRecorder = nil
+        isTranscribing = true
+        guard let audioData = rec.stop() else {
+            isTranscribing = false
+            return
+        }
+        IosServiceLocator.shared.transcribeAudioData(
+            audioData: audioData as NSData,
+            audioMime: VoiceRecorder.mimeType,
+            sessionId: session.id,
+            profile: profile,
+            onSuccess: { transcript in
+                DispatchQueue.main.async {
+                    self.replyText = transcript
+                    self.isTranscribing = false
+                }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.isTranscribing = false }
+            }
         )
     }
 }
