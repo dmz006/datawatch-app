@@ -65,28 +65,28 @@ public class SessionReplyScreen(
                 Row.Builder()
                     .setTitle(colored("Yes", CarColor.GREEN))
                     .addText("Send affirmative reply")
-                    .setOnClickListener { reply("yes") }
+                    .setOnClickListener { reply("yes\r") }
                     .build(),
             )
             .addItem(
                 Row.Builder()
                     .setTitle(colored("No", CarColor.RED))
                     .addText("Send negative reply")
-                    .setOnClickListener { reply("no") }
+                    .setOnClickListener { reply("no\r") }
                     .build(),
             )
             .addItem(
                 Row.Builder()
                     .setTitle("Continue")
                     .addText("Resume the session")
-                    .setOnClickListener { reply("continue") }
+                    .setOnClickListener { reply("continue\r") }
                     .build(),
             )
             .addItem(
                 Row.Builder()
                     .setTitle(colored("Stop", CarColor.RED))
                     .addText("Stop the session")
-                    .setOnClickListener { reply("stop") }
+                    .setOnClickListener { reply("stop\r") }
                     .build(),
             )
             .build()
