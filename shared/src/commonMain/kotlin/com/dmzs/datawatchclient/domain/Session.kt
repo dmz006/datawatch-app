@@ -82,6 +82,12 @@ public data class Session(
      * peer. Null/false otherwise.
      */
     val chrome: Boolean = false,
+    /**
+     * datawatch v8.9.5 — UTC timestamp when the AI session summary was last
+     * generated. Null for unsummarized sessions or servers pre-v8.9.5.
+     * Used to render an "AI Xm ago" age badge on the session card.
+     */
+    val summaryGeneratedAt: Instant? = null,
 ) {
     public val needsInput: Boolean get() = state == SessionState.Waiting
     public val isTerminal: Boolean get() =

@@ -44,6 +44,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         llmRef = llmRef,
         computeNodeRef = computeNodeRef,
         chrome = chrome == true,
+        summaryGeneratedAt = summaryGeneratedAt.toInstantOrNull(),
     )
 
 private fun SessionDto.extractHostnamePrefix(): String? {
@@ -139,3 +140,6 @@ private fun String?.toAlertSeverity(): AlertSeverity =
 private fun String?.toInstantOrEpoch(): Instant =
     this?.let { runCatching { Instant.parse(it) }.getOrNull() }
         ?: Instant.DISTANT_PAST
+
+private fun String?.toInstantOrNull(): Instant? =
+    this?.let { runCatching { Instant.parse(it) }.getOrNull() }
