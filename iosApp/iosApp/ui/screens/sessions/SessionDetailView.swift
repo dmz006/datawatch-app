@@ -16,7 +16,6 @@ struct SessionDetailView: View {
     @State private var renameText: String = ""
     @State private var showLastResponse = false
     @State private var replyText: String = ""
-    @State private var isSendingReply: Bool = false
     @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
     @State private var messagingBackend: String? = nil
     @State private var terminalInput: String? = nil
@@ -250,7 +249,7 @@ struct SessionDetailView: View {
                     Image(systemName: "paperplane.fill")
                         .foregroundStyle(replyText.isEmpty ? DatawatchColors.onSurfaceMuted : (isWaiting ? DatawatchColors.waiting : DatawatchColors.primary))
                 }
-                .disabled(replyText.isEmpty || isSendingReply)
+                .disabled(replyText.isEmpty)
                 .accessibilityLabel("Send reply")
             }
             .padding(.horizontal, 12)
