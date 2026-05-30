@@ -142,4 +142,7 @@ private fun String?.toInstantOrEpoch(): Instant =
         ?: Instant.DISTANT_PAST
 
 private fun String?.toInstantOrNull(): Instant? =
-    this?.let { runCatching { Instant.parse(it) }.getOrNull() }
+    this?.let {
+        if (it.startsWith("0001-")) return null  // Go zero time — treat as unset
+        runCatching { Instant.parse(it) }.getOrNull()
+    }
