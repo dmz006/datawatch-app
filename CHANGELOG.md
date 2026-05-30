@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.25] — 2026-05-30
+
+### Added
+- iOS: Whisper voice transcription in session detail — mic button in composer bar (shown only when server has `whisper.enabled`); recording overlay with pulsing mic icon, Cancel / Send; full AVAudioSession permission → VoiceRecorder (16 kHz mono AAC M4A) → POST /api/voice/transcribe → populate reply text flow; `NSMicrophoneUsageDescription` added to Info.plist
+- Android + iOS: Session cards show "AI Xm ago" age badge in primary colour when server returns `summary_generated_at` (v8.9.5 field); badge positioned left of activity timestamp
+- Android + iOS: Settings → Session Summarizer — "Test" button calls POST /api/summarizer/test (v8.9.5); shows `✓ ok · Xms` on success or `✗ <error>` on failure; `SummarizerTestResultDto` + `testSummarizer()` in transport layer
+
+### Fixed
+- Android + iOS + Auto: Reply/Enter submission broken end-to-end — `\r` added to all send paths (`sendReply`, `sendQuickReply`, quick-reply chips, saved commands); REST endpoint changed from defunct `/api/sessions/reply` (404) to `/api/sessions/{id}/input` with `SessionInputDto`; Samsung spurious Enter suppressed in `InputConnectionWrapper` via `recentCommit` flag; iOS routes reply text through `terminalInput` binding → xterm WebSocket `window.sendInput`
+- iOS: `SessionReplyScreen` quick-reply rows were missing `\r` suffix; orphaned `isSendingReply` state variable removed (would have permanently disabled Send button after first use)
+
 ## [1.0.19] — 2026-05-30
 
 ### Changed

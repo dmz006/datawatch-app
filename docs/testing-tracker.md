@@ -65,6 +65,10 @@ gets two levels of validation:
 | iOS | xcodebuild simulator build (CI) | No | No | iOS-1 | GitHub Actions macos-15 — check CI run | Build succeeds; no compilation errors |
 | iOS | Automata CRUD (list / add / delete types) | No | No | iOS-16 | Requires real iPhone + running datawatch with autonomous.enabled=true | AutomataView: list types, add via sheet, swipe-to-delete |
 | iOS | Terminal IME keyboard resize (DwWKWebView) | No | No | iOS-17 | Requires real iPhone (keyboard on Simulator may differ) | Open session terminal; raise/dismiss keyboard; verify xterm cols/rows adjust via dwExplicitSize |
+| iOS | Whisper voice transcription (VoiceRecorder → /api/voice/transcribe) | No | No | iOS-18 | Requires real iPhone + datawatch server with whisper.backend configured | Tap mic; grant permission; speak; tap Send; verify transcript populates reply field |
+| Android + iOS | Reply/Enter submission (\r fix, /api/sessions/{id}/input) | No | No | v1.0.25 | Requires real device + running session in waiting_input state | Send reply via composer bar; verify shell executes (not just inputs without running) |
+| Android + iOS | summary_generated_at "AI Xm ago" badge on session cards | No | No | v1.0.25 | Requires datawatch v8.9.5+ with summarizer enabled | Check session card shows "AI Xm ago" badge left of activity timestamp after summarization |
+| Android + iOS | Settings → Session Summarizer "Test" button (POST /api/summarizer/test) | No | No | v1.0.25 | Requires datawatch v8.9.5+ with summarizer configured | Tap Test; verify "✓ ok · Xms" shown; disable summarizer LLM; verify error shown |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.
