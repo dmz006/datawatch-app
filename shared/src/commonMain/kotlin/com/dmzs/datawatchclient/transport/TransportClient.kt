@@ -1381,6 +1381,9 @@ public interface TransportClient {
      * and a [defaultModel] id to pre-select.
      */
     public suspend fun fetchOpenCodeModels(): Result<com.dmzs.datawatchclient.transport.dto.OpenCodeModelsResponseDto>
+
+    /** POST /api/summarizer/test — v8.9.5 inline summarizer validation. Returns latency and ok status. */
+    public suspend fun testSummarizer(): Result<com.dmzs.datawatchclient.transport.dto.SummarizerTestResultDto>
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
