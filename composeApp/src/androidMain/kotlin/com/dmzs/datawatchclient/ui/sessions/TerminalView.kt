@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputConnectionWrapper
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -87,25 +88,47 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
     override fun computeVerticalScrollRange(): Int = 0
 
     /**
-     * Disable IME autocorrect and spell-check for the xterm textarea.
-     * Default WebView behavior treats the hidden xterm helper textarea as a
-     * normal text field: Android's IME buffers words and applies autocorrect,
-     * so pressing Space commits "hello<CR>" instead of the literal space
-     * character. TYPE_TEXT_VARIATION_VISIBLE_PASSWORD suppresses word
-     * suggestions without hiding the keyboard; NO_SUGGESTIONS opts out of
-     * the dictionary lookup entirely.
+     * Disable IME autocorrect and suppress Samsung keyboard's spurious Enter
+     * injections. Samsung's "Smart Typing" feature commits a predicted word on
+     * space and then fires performEditorAction / sendKeyEvent(ENTER) through
+     * the InputConnection — which the WebView converts to a DOM Enter event
+     * that xterm sends to the shell as \r (the "space sends the command" bug).
+     *
+     * Three-layer defence:
+     *  1. TYPE_TEXT_VARIATION_VISIBLE_PASSWORD + NO_SUGGESTIONS: tells the IME
+     *     to disable word prediction in the first place.
+     *  2. IME_ACTION_NONE: no action button, so no IME_ACTION_DONE event.
+     *  3. InputConnectionWrapper: intercepts the back-door Samsung paths that
+     *     bypass the inputType flags (performEditorAction, sendKeyEvent(ENTER),
+     *     and commitText with a trailing newline).
      */
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
-        val ic = super.onCreateInputConnection(outAttrs)
+        val ic = super.onCreateInputConnection(outAttrs) ?: return null
         outAttrs.inputType = InputType.TYPE_CLASS_TEXT or
             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
             InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-        // IME_ACTION_NONE: no action button so Samsung keyboard doesn't treat
-        // space-bar as "commit word + action" and inject a trailing newline.
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or
             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
-        return ic
+        return object : InputConnectionWrapper(ic, true) {
+            override fun performEditorAction(editorAction: Int): Boolean {
+                // Samsung fires this when confirming a word from the
+                // autocomplete bar. Returning true consumes it without
+                // letting the WebView synthesise a DOM Enter event.
+                return true
+            }
+            override fun sendKeyEvent(event: KeyEvent?): Boolean {
+                if (event?.keyCode == KeyEvent.KEYCODE_ENTER) return true
+                return super.sendKeyEvent(event)
+            }
+            override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+                // Strip any trailing \r / \n Samsung appends when committing
+                // a word (observed in some Samsung Keyboard versions where the
+                // committed string is "word\n" rather than just "word").
+                val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
+                return super.commitText(cleaned, newCursorPosition)
+            }
+        }
     }
 
     /**
@@ -138,10 +161,16 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             }
             return true // consume both ACTION_DOWN and ACTION_UP
         }
+        // Samsung also fires DPAD_CENTER after space-bar in autocomplete mode.
+        // Update the timestamp on space so the gate below catches it too.
+        if (event.keyCode == KeyEvent.KEYCODE_SPACE && event.action == KeyEvent.ACTION_DOWN) {
+            lastDpadDirectionMs = System.currentTimeMillis()
+        }
         if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
             // Samsung D-pad fires CENTER automatically within ~5 ms after each
-            // directional press. Suppress it in that window; honour explicit
-            // centre-button presses (>100 ms after last direction) as Enter.
+            // directional press AND after space in autocomplete mode. Suppress it
+            // in that window; honour explicit centre-button presses (>100 ms
+            // after last direction or space) as Enter.
             val sinceDirection = System.currentTimeMillis() - lastDpadDirectionMs
             if (sinceDirection < 100L) return true
             if (event.action == KeyEvent.ACTION_DOWN) {
