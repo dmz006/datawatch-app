@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.17] — 2026-05-30
+
+### Added
+- Android: Settings → General → Session Summarizer card — toggle `session.summarizer.enabled` and pick `session.summarizer.llm_ref` (Ollama LLMs only) via PUT /api/config (closes #147)
+- iOS: Settings → Session screen — same toggle + LLM picker; new IosServiceLocator callbacks: `fetchSummarizerConfig`, `writeConfigBool`, `writeConfigString`, `listOllamaLlmNames` (closes #147)
+
 ## [1.0.16] — 2026-05-29
 
 ### Changed

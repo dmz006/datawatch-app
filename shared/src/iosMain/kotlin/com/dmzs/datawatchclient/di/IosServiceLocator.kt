@@ -477,6 +477,93 @@ public object IosServiceLocator {
         }
     }
 
+    // ── Config + LLM callbacks (used by Settings → Session) ───────────────
+
+    /**
+     * Fetch session summarizer settings from GET /api/config.
+     * Parses session.summarizer.enabled and session.summarizer.llm_ref
+     * in Kotlin (avoids JsonElement bridge complexity in Swift).
+     */
+    public fun fetchSummarizerConfig(
+        profile: ServerProfile,
+        onSuccess: (enabled: Boolean, llmRef: String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).fetchConfig().fold(
+                onSuccess = { cfg ->
+                    val enabled = cfg.raw["session.summarizer.enabled"]
+                        ?.let { runCatching { (it as? kotlinx.serialization.json.JsonPrimitive)?.booleanOrNull }.getOrNull() }
+                        ?: false
+                    val llmRef = cfg.raw["session.summarizer.llm_ref"]
+                        ?.let { runCatching { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }.getOrNull() }
+                        ?: ""
+                    onSuccess(enabled, llmRef)
+                },
+                onFailure = { onError(it.message ?: "Failed to load config.") },
+            )
+        }
+    }
+
+    /** PUT /api/config with a single boolean key/value pair. */
+    public fun writeConfigBool(
+        profile: ServerProfile,
+        key: String,
+        value: Boolean,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).writeConfig(
+                kotlinx.serialization.json.buildJsonObject {
+                    put(key, kotlinx.serialization.json.JsonPrimitive(value))
+                },
+            ).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to save config.") },
+            )
+        }
+    }
+
+    /** PUT /api/config with a single string key/value pair. */
+    public fun writeConfigString(
+        profile: ServerProfile,
+        key: String,
+        value: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).writeConfig(
+                kotlinx.serialization.json.buildJsonObject {
+                    put(key, kotlinx.serialization.json.JsonPrimitive(value))
+                },
+            ).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Failed to save config.") },
+            )
+        }
+    }
+
+    /**
+     * GET /api/llms filtered to kind == "ollama".
+     * Returns only the names (Strings) — sufficient for the LLM picker.
+     */
+    public fun listOllamaLlmNames(
+        profile: ServerProfile,
+        onSuccess: (List<String>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).listLlms().fold(
+                onSuccess = { list ->
+                    onSuccess(list.filter { it.kind == "ollama" }.map { it.name })
+                },
+                onFailure = { onError(it.message ?: "Failed to load LLMs.") },
+            )
+        }
+    }
+
     private suspend fun registerApnsForProfile(profile: ServerProfile, token: String) {
         runCatching {
             transportFor(profile).registerDevice(

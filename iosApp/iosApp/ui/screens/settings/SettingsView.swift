@@ -35,6 +35,28 @@ struct SettingsView: View {
                     .listRowBackground(DatawatchColors.surface)
                 }
 
+                // ── Session ──────────────────────────────────────────────
+                Section {
+                    NavigationLink {
+                        SettingsSessionView()
+                            .environmentObject(store)
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Session")
+                                    .foregroundStyle(DatawatchColors.onSurface)
+                                Text("Summarizer, LLM selector")
+                                    .font(DatawatchFonts.labelSmall)
+                                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            }
+                        } icon: {
+                            Image(systemName: "brain")
+                                .foregroundStyle(DatawatchColors.primary)
+                        }
+                    }
+                    .listRowBackground(DatawatchColors.surface)
+                }
+
                 // ── Security ─────────────────────────────────────────────
                 if biometricAvailable {
                     Section("Security") {
