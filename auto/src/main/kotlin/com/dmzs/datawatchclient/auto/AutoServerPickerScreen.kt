@@ -14,6 +14,8 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -28,7 +30,7 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
     private var profiles: List<ServerProfile> = emptyList()
     private var activeId: String? = null
     private var loadJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
         lifecycle.addObserver(
@@ -47,6 +49,10 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
 
                 override fun onStop(owner: LifecycleOwner) {
                     loadJob?.cancel()
+                }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
                 }
             },
         )

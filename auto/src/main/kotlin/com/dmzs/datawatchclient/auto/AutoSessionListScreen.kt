@@ -17,8 +17,10 @@ import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -51,7 +53,7 @@ public class AutoSessionListScreen(
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // BL303-A5.1: ambient mode — after STALE_THRESHOLD polls with no change, slow down to AMBIENT_POLL_MS
     private var staleCount: Int = 0
     private var lastRowsKey: Int = -1
@@ -67,13 +69,22 @@ public class AutoSessionListScreen(
                 pollJob?.cancel()
                 pollJob = null
             }
+
+            override fun onDestroy(owner: LifecycleOwner) {
+                scope.cancel()
+            }
         })
     }
 
     private suspend fun pollLoop() {
         while (scope.isActive) {
+            val prevKey = lastRowsKey
             refresh()
-            invalidate()
+            // §15: only invalidate when data changed. staleCount/lastRowsKey are updated in
+            // refresh(); if lastRowsKey changed the list changed.
+            if (lastRowsKey != prevKey || prevKey == -1) {
+                invalidate()
+            }
             val poll = if (staleCount >= STALE_THRESHOLD) AMBIENT_POLL_MS else POLL_MS
             delay(poll)
         }

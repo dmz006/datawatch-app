@@ -23,6 +23,8 @@ import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -49,7 +51,9 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private var activeProfile: ServerProfile? = null
     private var error: String? = null
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // §15: track snapshot hash to skip redundant invalidate() calls.
+    private var lastSnapshotHash: Int = -1
 
     init {
         lifecycle.addObserver(
@@ -63,6 +67,10 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     pollJob?.cancel()
                     pollJob = null
                 }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
             },
         )
     }
@@ -70,7 +78,12 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            invalidate()
+            // §15: only invalidate when observable state actually changed.
+            val newHash = listOf(running, waiting, blocked, total, unreadAlerts, error, lastCompletedTask, serverStats?.sessionsTotal).hashCode()
+            if (newHash != lastSnapshotHash) {
+                lastSnapshotHash = newHash
+                invalidate()
+            }
             delay(POLL_MS)
         }
     }
@@ -217,7 +230,9 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     Action.Builder()
                         .setIcon(iconOf(R.drawable.ic_auto_monitor))
                         .setOnClickListener {
-                            screenManager.push(AutoMonitorScreen(carContext))
+                            // AutoMonitorScreen is the root — pop back to it instead of
+                            // pushing a duplicate which would create Monitor→Summary→Monitor.
+                            screenManager.popToRoot()
                         }
                         .build(),
                 )
