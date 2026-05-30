@@ -635,13 +635,22 @@ public class SessionsViewModel : ViewModel() {
     }
 
     /** Fetch the LLM-generated current-status summary for a running session. */
-    public suspend fun fetchCurrentStatus(sessionId: String): String? {
+    public suspend fun fetchCurrentStatus(sessionId: String): com.dmzs.datawatchclient.transport.dto.CurrentStatusDto? {
         val profile = profileForSession(sessionId) ?: return null
         return ServiceLocator.transportFor(profile)
             .getSessionCurrentStatus(fullIdFor(sessionId))
             .getOrNull()
-            ?.currentStatus
-            ?.takeIf { it.isNotBlank() }
+            ?.takeIf { it.currentStatus.isNotBlank() }
+    }
+
+    /** Trigger a manual re-summarize and return the result wrapped as a [CurrentStatusDto] for display. */
+    public suspend fun resummmarizeSession(sessionId: String): com.dmzs.datawatchclient.transport.dto.CurrentStatusDto? {
+        val profile = profileForSession(sessionId) ?: return null
+        val result = ServiceLocator.transportFor(profile)
+            .summarizeSession(fullIdFor(sessionId))
+            .getOrNull() ?: return null
+        // summarize returns a flat "summary" field — wrap it as a CurrentStatusDto for display
+        return com.dmzs.datawatchclient.transport.dto.CurrentStatusDto(currentStatus = result.summary)
     }
 
     /** Fetch server-configured system quick-commands (datawatch#28). Empty list = use client fallback. */

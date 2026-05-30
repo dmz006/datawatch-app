@@ -19,7 +19,9 @@ struct SessionsView: View {
     @State private var actionInProgress: String? = nil
 
     // Current-status sheet state.
-    @State private var currentStatusText: String? = nil
+    @State private var currentStatusShort: String? = nil
+    @State private var currentStatusLong: String? = nil
+    @State private var currentStatusSession: Session? = nil
     @State private var currentStatusLoadingId: String? = nil
 
     enum SessionStateFilter: String, CaseIterable {
@@ -114,10 +116,25 @@ struct SessionsView: View {
             }
         }
         .sheet(isPresented: Binding(
-            get: { currentStatusText != nil },
-            set: { if !$0 { currentStatusText = nil } }
+            get: { currentStatusShort != nil },
+            set: { if !$0 { currentStatusShort = nil; currentStatusLong = nil; currentStatusSession = nil } }
         )) {
-            CurrentStatusSheetView(text: currentStatusText ?? "")
+            CurrentStatusSheetView(
+                short: currentStatusShort ?? "",
+                long: currentStatusLong,
+                onResummarize: {
+                    guard let session = currentStatusSession,
+                          let profile = viewModel.activeProfile else { return }
+                    IosServiceLocator.shared.resummarizeSession(
+                        sessionId: session.id,
+                        profile: profile,
+                        onSuccess: { text in
+                            DispatchQueue.main.async { self.currentStatusShort = text }
+                        },
+                        onError: { _ in }
+                    )
+                }
+            )
         }
     }
 
@@ -129,10 +146,12 @@ struct SessionsView: View {
         IosServiceLocator.shared.fetchSessionCurrentStatus(
             sessionId: session.id,
             profile: profile,
-            onSuccess: { text in
+            onSuccess: { short, long in
                 DispatchQueue.main.async {
                     self.currentStatusLoadingId = nil
-                    self.currentStatusText = text
+                    self.currentStatusShort = short
+                    self.currentStatusLong = long.isEmpty ? nil : long
+                    self.currentStatusSession = session
                 }
             },
             onError: { _ in
@@ -694,36 +713,77 @@ struct SessionsView: View {
 // MARK: - Current Status Sheet
 
 private struct CurrentStatusSheetView: View {
-    let text: String
+    let short: String
+    let long: String?
+    let onResummarize: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var expanded = false
     @State private var isSpeaking = false
+    @State private var isResummarizing = false
     private let synthesizer = AVSpeechSynthesizer()
+
+    var displayText: String { expanded && long != nil ? long! : short }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                Text(text)
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(short)
+                        .font(DatawatchFonts.bodyMedium)
+                        .foregroundStyle(DatawatchColors.onSurface)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let longText = long {
+                        Button {
+                            withAnimation { expanded.toggle() }
+                        } label: {
+                            Label(expanded ? "▲ Less" : "▼ More detail",
+                                  systemImage: expanded ? "chevron.up" : "chevron.down")
+                                .font(DatawatchFonts.labelSmall)
+                        }
+                        .buttonStyle(.borderless)
+
+                        if expanded {
+                            Text(longText)
+                                .font(DatawatchFonts.labelSmall)
+                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .padding()
             }
             .navigationTitle("Current status")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        if isSpeaking {
-                            synthesizer.stopSpeaking(at: .immediate)
-                            isSpeaking = false
+                    HStack(spacing: 8) {
+                        if isResummarizing {
+                            ProgressView().controlSize(.mini)
                         } else {
-                            let utterance = AVSpeechUtterance(string: text)
-                            utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.identifier)
-                            synthesizer.speak(utterance)
-                            isSpeaking = true
+                            Button {
+                                isResummarizing = true
+                                onResummarize()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    isResummarizing = false
+                                }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                            }
                         }
-                    } label: {
-                        Image(systemName: isSpeaking ? "stop.circle" : "play.circle")
+                        Button {
+                            if isSpeaking {
+                                synthesizer.stopSpeaking(at: .immediate)
+                                isSpeaking = false
+                            } else {
+                                let utterance = AVSpeechUtterance(string: displayText)
+                                utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.identifier)
+                                synthesizer.speak(utterance)
+                                isSpeaking = true
+                            }
+                        } label: {
+                            Image(systemName: isSpeaking ? "stop.circle" : "play.circle")
+                        }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {

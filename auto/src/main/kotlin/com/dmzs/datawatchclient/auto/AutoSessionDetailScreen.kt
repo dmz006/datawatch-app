@@ -44,6 +44,7 @@ public class AutoSessionDetailScreen(
     private var sessionState: SessionState = SessionState.New
     private var lastResponse: String? = null
     private var currentStatus: String? = null
+    private var currentStatusLong: String? = null
     private var killPending: Boolean = false
     private var killFeedback: String? = null
     private var error: String? = null
@@ -80,7 +81,7 @@ public class AutoSessionDetailScreen(
         while (scope.isActive) {
             refresh()
             // §15: only invalidate when telemetry/state actually changed.
-            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse, currentStatus).hashCode()
+            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse, currentStatus, currentStatusLong).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
                 invalidate()
@@ -110,11 +111,13 @@ public class AutoSessionDetailScreen(
                     lastResponse = item.lastResponse?.takeIf { it.isNotBlank() }
                 }
             if (sessionState == SessionState.Running) {
-                transport.getSessionCurrentStatus(sessionId).getOrNull()
-                    ?.currentStatus?.takeIf { it.isNotBlank() }
-                    ?.let { currentStatus = it }
+                transport.getSessionCurrentStatus(sessionId).getOrNull()?.let { dto ->
+                    currentStatus = dto.currentStatus.takeIf { it.isNotBlank() }
+                    currentStatusLong = dto.currentStatusLong.takeIf { it.isNotBlank() }
+                }
             } else {
                 currentStatus = null
+                currentStatusLong = null
             }
         } catch (e: Throwable) {
             error = e.message ?: e::class.simpleName
@@ -314,7 +317,8 @@ public class AutoSessionDetailScreen(
     }.trim().ifEmpty { sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() } }.take(BODY_CHAR_LIMIT)
 
     private fun speakStatus() {
-        val text = currentStatus ?: lastResponse ?: "No status available"
+        // Prefer long narrative for listening; fall back to short → last response
+        val text = currentStatusLong ?: currentStatus ?: lastResponse ?: "No status available"
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "status")
         replyMode = false
         invalidate()
