@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.14] — 2026-05-29
+
+### Fixed
+- xterm: unconditionally suppress KEYCODE_DPAD_CENTER in both dispatchKeyEvent and InputConnectionWrapper.sendKeyEvent — timing-gate approach was unreliable when Samsung's spurious CENTER arrived >100 ms after the triggering key; added DPAD_CENTER to IC wrapper to also block the IME-side path
+- xterm: add sendInput logging at the Java bridge layer to capture all bytes sent to server (both xterm onData path and direct evaluateJavascript path)
+
 ## [1.0.13] — 2026-05-29
 
 ### Fixed
