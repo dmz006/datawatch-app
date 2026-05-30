@@ -221,7 +221,9 @@ private fun addDetailRows(items: ItemList.Builder, s: StatsDto) {
     val cpuText =
         when {
             cpuPct != null && load1 != null && cores != null && cores > 0 ->
-                "${progressBar(cpuPct)}  load %.2f · %d cores".format(load1, cores)
+                // Avoid .format() on a string containing the progress bar's literal '%' —
+                // java.util.Formatter would parse it as a duplicate flag specifier and crash.
+                "${progressBar(cpuPct)}  load ${"%.2f".format(load1)} · $cores cores"
             cpuPct != null -> progressBar(cpuPct)
             else -> "—"
         }
