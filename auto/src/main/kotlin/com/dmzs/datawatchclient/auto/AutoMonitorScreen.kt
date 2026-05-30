@@ -178,7 +178,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     Action.Builder()
                         .setTitle("Sessions")
                         .setOnClickListener {
-                            screenManager.push(AutoSummaryScreen(carContext))
+                            screenManager.push(AutoSessionListScreen(carContext))
                         }
                         .build(),
                 )
@@ -194,32 +194,52 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
         val title = if (rows.size == 1) rows[0].profile.displayName else "datawatch ${Version.VERSION}"
         return ListTemplate.Builder()
             .setTitle(title)
-            .setHeaderAction(Action.APP_ICON)
+            .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setSingleList(items.build())
             .build()
     }
 }
 
+/** Renders a compact progress bar: "▓▓▓░░░░░░░ 28%" (10 wide). */
+private fun progressBar(pct: Int, width: Int = 10): String {
+    val clamped = pct.coerceIn(0, 100)
+    val filled = (clamped * width / 100).coerceIn(0, width)
+    return "▓".repeat(filled) + "░".repeat(width - filled) + " $clamped%"
+}
+
 /** Adds the full detail rows for a single server (single-server mode). */
 private fun addDetailRows(items: ItemList.Builder, s: StatsDto) {
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
+    val cpuPct =
+        when {
+            load1 != null && cores != null && cores > 0 -> (load1 / cores * PCT_MULTIPLIER).toInt()
+            s.cpuPct != null -> s.cpuPct!!.toInt()
+            else -> null
+        }
     val cpuText =
         when {
-            load1 != null && cores != null && cores > 0 ->
-                "%.2f load · %d cores".format(load1, cores)
-            s.cpuPct != null -> "%.1f%%".format(s.cpuPct)
+            cpuPct != null && load1 != null && cores != null && cores > 0 ->
+                "${progressBar(cpuPct)}  load %.2f · %d cores".format(load1, cores)
+            cpuPct != null -> progressBar(cpuPct)
             else -> "—"
         }
     items.addItem(Row.Builder().setTitle("CPU").addText(cpuText).build())
     val memUsed = s.memUsed
     val memTotal = s.memTotal
-    val memText =
+    val memPct =
         when {
             memUsed != null && memTotal != null && memTotal > 0 ->
-                "${fmt(memUsed)} / ${fmt(memTotal)}"
-            s.memPct != null -> "%.1f%%".format(s.memPct)
+                (memUsed * PCT_MULTIPLIER / memTotal).toInt()
+            s.memPct != null -> s.memPct!!.toInt()
+            else -> null
+        }
+    val memText =
+        when {
+            memPct != null && memUsed != null && memTotal != null && memTotal > 0 ->
+                "${progressBar(memPct)}  ${fmt(memUsed)} / ${fmt(memTotal)}"
+            memPct != null -> progressBar(memPct)
             else -> "—"
         }
     items.addItem(Row.Builder().setTitle("Memory").addText(memText).build())

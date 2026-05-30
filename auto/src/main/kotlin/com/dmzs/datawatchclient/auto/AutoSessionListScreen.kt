@@ -5,10 +5,12 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.Session
@@ -154,6 +156,17 @@ public class AutoSessionListScreen(
     }
 
     override fun onGetTemplate(): Template {
+        fun dotIcon(row: SessionRow): CarIcon {
+            val resId = when {
+                row.hasGuardrailBlock || row.session.state == SessionState.Error -> R.drawable.ic_dot_red
+                row.session.state == SessionState.Waiting ||
+                    row.session.state == SessionState.RateLimited -> R.drawable.ic_dot_amber
+                row.session.state == SessionState.Running -> R.drawable.ic_dot_green
+                else -> R.drawable.ic_dot_gray
+            }
+            return CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+        }
+
         val builder = ItemList.Builder()
         if (rows.isEmpty()) {
             builder.addItem(
@@ -169,6 +182,7 @@ public class AutoSessionListScreen(
                 builder.addItem(
                     Row.Builder()
                         .setTitle(colored(s.name ?: s.taskSummary ?: s.id, stateColor(row)))
+                        .setImage(dotIcon(row))
                         .addText(subtitle)
                         .setOnClickListener {
                             screenManager.push(
@@ -214,16 +228,21 @@ public class AutoSessionListScreen(
 
         fun buildSubtitle(row: SessionRow): String = buildString {
             when {
-                row.hasGuardrailBlock -> append("⚠ guardrail blocked")
-                row.session.state == SessionState.Error -> append("✗ error")
-                row.session.state == SessionState.Waiting -> append("● waiting input")
-                row.session.state == SessionState.RateLimited -> append("● rate limited")
-                row.session.state == SessionState.Running -> append("● running")
+                row.hasGuardrailBlock -> append("⊗ guardrail blocked")
+                row.session.state == SessionState.Error -> append("⊗ error")
+                row.session.state == SessionState.Waiting -> append("⊙ waiting input")
+                row.session.state == SessionState.RateLimited -> append("⊙ rate limited")
+                row.session.state == SessionState.Running -> append("◉ running")
                 row.session.state == SessionState.Completed -> append("✓ completed")
                 row.session.state == SessionState.Killed -> append("✗ killed")
                 else -> append(row.session.state.name.lowercase())
             }
-            row.progress?.let { p -> append(" · ${(p * 100).toInt()}%") }
+            row.progress?.let { p ->
+                val pct = (p * 100).toInt()
+                val filled = (p * 8).toInt().coerceIn(0, 8)
+                val bar = "▓".repeat(filled) + "░".repeat(8 - filled)
+                append("  $bar $pct%")
+            }
         }
     }
 }
