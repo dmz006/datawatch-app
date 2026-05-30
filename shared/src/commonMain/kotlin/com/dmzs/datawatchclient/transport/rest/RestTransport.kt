@@ -2706,6 +2706,15 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun testSummarizer(): Result<com.dmzs.datawatchclient.transport.dto.SummarizerTestResultDto> =
+        request {
+            client.post("${profile.baseUrl}/api/summarizer/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody("{}")
+            }.body()
+        }
+
     override suspend fun listGuardrailLibrary(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto>> =
         request {
             client.get("${profile.baseUrl}/api/autonomous/guardrails") {

@@ -621,6 +621,20 @@ public object IosServiceLocator {
         }
     }
 
+    /** POST /api/summarizer/test — validates the summarizer LLM is reachable; returns latency in ms. */
+    public fun testSummarizer(
+        profile: ServerProfile,
+        onSuccess: (latencyMs: Long) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).testSummarizer().fold(
+                onSuccess = { result -> onSuccess(result.latencyMs) },
+                onFailure = { onError(it.message ?: "Summarizer test failed.") },
+            )
+        }
+    }
+
     /** PUT /api/config with a single string key/value pair. */
     public fun writeConfigString(
         profile: ServerProfile,

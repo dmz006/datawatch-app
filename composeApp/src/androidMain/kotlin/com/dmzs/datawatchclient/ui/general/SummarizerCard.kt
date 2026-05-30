@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +50,8 @@ public fun SummarizerCard() {
     var ollamaLlms by remember { mutableStateOf<List<String>>(emptyList()) }
     var llmPickerExpanded by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
+    var isTesting by remember { mutableStateOf(false) }
+    var testResult by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
@@ -174,6 +179,56 @@ public fun SummarizerCard() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
+
+            // Test row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (testResult != null) {
+                    val isOk = testResult!!.startsWith("✓")
+                    Text(
+                        testResult!!,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isOk) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                if (isTesting) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    TextButton(
+                        onClick = {
+                            isTesting = true
+                            testResult = null
+                            scope.launch {
+                                val profiles = ServiceLocator.profileRepository.observeAll().first()
+                                val activeId = ServiceLocator.activeServerStore.get()
+                                val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
+                                    ?: profiles.firstOrNull { it.enabled }
+                                if (profile == null) {
+                                    testResult = "No active server"
+                                    isTesting = false
+                                    return@launch
+                                }
+                                ServiceLocator.transportFor(profile).testSummarizer().fold(
+                                    onSuccess = { res ->
+                                        testResult = if (res.ok) "✓ ok · ${res.latencyMs}ms" else "✗ server returned ok=false"
+                                    },
+                                    onFailure = { err ->
+                                        testResult = "✗ ${err.message ?: "failed"}"
+                                    },
+                                )
+                                isTesting = false
+                            }
+                        },
+                    ) {
+                        Text("Test", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
         }
     }
 }

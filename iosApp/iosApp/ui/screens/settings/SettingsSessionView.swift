@@ -14,6 +14,8 @@ struct SettingsSessionView: View {
     @State private var ollamaLlms: [String] = []
     @State private var isLoading = true
     @State private var error: String?
+    @State private var isTesting = false
+    @State private var testResult: String?
 
     private var activeProfile: ServerProfile? {
         store.profiles.first { $0.enabled == true }
@@ -81,6 +83,25 @@ struct SettingsSessionView: View {
                     } footer: {
                         Text("Only Ollama LLMs are listed here.")
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+
+                    Section {
+                        HStack {
+                            if let result = testResult {
+                                Text(result)
+                                    .font(DatawatchFonts.labelSmall)
+                                    .foregroundStyle(result.hasPrefix("✓") ? DatawatchColors.primary : DatawatchColors.error)
+                            }
+                            Spacer()
+                            if isTesting {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Button("Test Summarizer") { runTest() }
+                                    .font(DatawatchFonts.labelSmall)
+                                    .foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
                     }
                 }
             }
@@ -161,6 +182,27 @@ struct SettingsSessionView: View {
             value: value,
             onSuccess: {},
             onError: { msg in error = msg }
+        )
+    }
+
+    private func runTest() {
+        guard let profile = activeProfile else { return }
+        isTesting = true
+        testResult = nil
+        IosServiceLocator.shared.testSummarizer(
+            profile: profile,
+            onSuccess: { latencyMs in
+                DispatchQueue.main.async {
+                    self.testResult = "✓ ok · \(latencyMs)ms"
+                    self.isTesting = false
+                }
+            },
+            onError: { msg in
+                DispatchQueue.main.async {
+                    self.testResult = "✗ \(msg)"
+                    self.isTesting = false
+                }
+            }
         )
     }
 }

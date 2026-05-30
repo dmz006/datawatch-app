@@ -1405,6 +1405,13 @@ public data class RoutingTestRequestDto(val task: String)
 @Serializable
 public data class RoutingTestResultDto(val matched: Boolean, val backend: String = "")
 
+/** POST /api/summarizer/test — v8.9.5 inline summarizer validation. */
+@Serializable
+public data class SummarizerTestResultDto(
+    val ok: Boolean = false,
+    @SerialName("latency_ms") val latencyMs: Long = 0,
+)
+
 /** GET /api/tailscale/status — Tailscale mesh status. */
 @Serializable
 public data class TailscaleStatusDto(
