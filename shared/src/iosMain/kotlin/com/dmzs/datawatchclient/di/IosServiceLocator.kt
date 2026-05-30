@@ -527,10 +527,11 @@ public object IosServiceLocator {
         ioScope.launch {
             transportFor(profile).fetchConfig().fold(
                 onSuccess = { cfg ->
-                    val enabled = (cfg.raw["session.summarizer.enabled"]
+                    val sess = (cfg.raw["session"] as? kotlinx.serialization.json.JsonObject)
+                    val enabled = (sess?.get("summarizer.enabled")
                         as? kotlinx.serialization.json.JsonPrimitive)
                         ?.content?.toBooleanStrictOrNull() ?: false
-                    val llmRef = (cfg.raw["session.summarizer.llm_ref"]
+                    val llmRef = (sess?.get("summarizer.llm_ref")
                         as? kotlinx.serialization.json.JsonPrimitive)
                         ?.content ?: ""
                     onSuccess(enabled, llmRef)

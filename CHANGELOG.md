@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.26] — 2026-05-30
+
+### Fixed
+- Android + iOS: Session Summarizer settings panel was always hidden — config read used wrong path `cfg.raw["session.summarizer.enabled"]` (flat top-level key) instead of the correct `cfg.raw["session"]["summarizer.enabled"]` (nested under the `session` object); summarizer is now visible when `session.summarizer.enabled = true` on the server
+- Android + iOS: "AI Xm ago" badge never appeared — server returns Go zero time `0001-01-01T00:00:00Z` when no summary has run yet, which parsed as a valid `Instant` (year 0001); mapper now filters zero-time values as `null` so the badge only shows after the summarizer has actually produced output
+
 ## [1.0.25] — 2026-05-30
 
 ### Added

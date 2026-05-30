@@ -31,6 +31,7 @@ import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -63,8 +64,9 @@ public fun SummarizerCard() {
             ?: return@LaunchedEffect
         val transport = ServiceLocator.transportFor(profile)
         transport.fetchConfig().onSuccess { cfg ->
-            enabled = cfg.raw["session.summarizer.enabled"]?.jsonPrimitive?.content == "true"
-            llmRef = cfg.raw["session.summarizer.llm_ref"]?.jsonPrimitive?.content ?: ""
+            val sess = cfg.raw["session"] as? JsonObject
+            enabled = (sess?.get("summarizer.enabled") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() == true
+            llmRef = (sess?.get("summarizer.llm_ref") as? JsonPrimitive)?.content ?: ""
         }
         transport.listLlms().onSuccess { list ->
             ollamaLlms = list.filter { it.kind == "ollama" }.map { it.name }
