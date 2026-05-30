@@ -48,6 +48,11 @@ import org.json.JSONObject
  * phone) can pan via touch.
  */
 private class TerminalWebView(ctx: Context) : WebView(ctx) {
+    // Timestamp of the last directional D-pad press. Used to suppress the
+    // spurious KEYCODE_DPAD_CENTER that Samsung firmware fires automatically
+    // after every directional press (observed on S24 Ultra, Android 16):
+    // direction + center arrive within ~5 ms, so 100 ms is a safe threshold.
+    private var lastDpadDirectionMs = 0L
     override fun overScrollBy(
         deltaX: Int,
         deltaY: Int,
@@ -95,6 +100,8 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
         outAttrs.inputType = InputType.TYPE_CLASS_TEXT or
             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
             InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        // IME_ACTION_NONE: no action button so Samsung keyboard doesn't treat
+        // space-bar as "commit word + action" and inject a trailing newline.
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or
             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
@@ -116,6 +123,7 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
         if (isDpad) {
             if (event.action == KeyEvent.ACTION_DOWN) {
+                lastDpadDirectionMs = System.currentTimeMillis()
                 val jsAnsi = when (event.keyCode) {
                     KeyEvent.KEYCODE_DPAD_UP    -> "\\x1b[A"
                     KeyEvent.KEYCODE_DPAD_DOWN  -> "\\x1b[B"
@@ -129,6 +137,17 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
                 )
             }
             return true // consume both ACTION_DOWN and ACTION_UP
+        }
+        if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            // Samsung D-pad fires CENTER automatically within ~5 ms after each
+            // directional press. Suppress it in that window; honour explicit
+            // centre-button presses (>100 ms after last direction) as Enter.
+            val sinceDirection = System.currentTimeMillis() - lastDpadDirectionMs
+            if (sinceDirection < 100L) return true
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                evaluateJavascript("window.DwBridge && DwBridge.onInput('\\r');", null)
+            }
+            return true
         }
         return super.dispatchKeyEvent(event)
     }
