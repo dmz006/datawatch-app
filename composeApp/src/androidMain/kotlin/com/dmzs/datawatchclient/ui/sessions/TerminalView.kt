@@ -49,11 +49,11 @@ import org.json.JSONObject
  * phone) can pan via touch.
  */
 private class TerminalWebView(ctx: Context) : WebView(ctx) {
-    // Timestamp of the last directional D-pad press. Used to suppress the
-    // spurious KEYCODE_DPAD_CENTER that Samsung firmware fires automatically
-    // after every directional press (observed on S24 Ultra, Android 16):
-    // direction + center arrive within ~5 ms, so 100 ms is a safe threshold.
-    private var lastDpadDirectionMs = 0L
+    // Timestamp of the last key ACTION_DOWN. Used to suppress the spurious
+    // KEYCODE_DPAD_CENTER that Samsung firmware fires automatically after
+    // every keypress (observed on S24 Ultra, Android 16): the companion
+    // CENTER arrives within ~5 ms of any key, so 100 ms is a safe gate.
+    private var lastKeyMs = 0L
     override fun overScrollBy(
         deltaX: Int,
         deltaY: Int,
@@ -146,7 +146,7 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
         if (isDpad) {
             if (event.action == KeyEvent.ACTION_DOWN) {
-                lastDpadDirectionMs = System.currentTimeMillis()
+                lastKeyMs = System.currentTimeMillis()
                 val jsAnsi = when (event.keyCode) {
                     KeyEvent.KEYCODE_DPAD_UP    -> "\\x1b[A"
                     KeyEvent.KEYCODE_DPAD_DOWN  -> "\\x1b[B"
@@ -161,22 +161,22 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             }
             return true // consume both ACTION_DOWN and ACTION_UP
         }
-        // Samsung also fires DPAD_CENTER after space-bar in autocomplete mode.
-        // Update the timestamp on space so the gate below catches it too.
-        if (event.keyCode == KeyEvent.KEYCODE_SPACE && event.action == KeyEvent.ACTION_DOWN) {
-            lastDpadDirectionMs = System.currentTimeMillis()
-        }
         if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
-            // Samsung D-pad fires CENTER automatically within ~5 ms after each
-            // directional press AND after space in autocomplete mode. Suppress it
-            // in that window; honour explicit centre-button presses (>100 ms
-            // after last direction or space) as Enter.
-            val sinceDirection = System.currentTimeMillis() - lastDpadDirectionMs
-            if (sinceDirection < 100L) return true
+            // Samsung fires DPAD_CENTER automatically within ~5 ms after
+            // every keypress (letters, space, directional — all of them).
+            // Suppress it when it arrives within 100 ms of any key; treat
+            // an isolated DPAD_CENTER (>100 ms gap) as an intentional Enter.
+            val sinceKey = System.currentTimeMillis() - lastKeyMs
+            if (sinceKey < 100L) return true
             if (event.action == KeyEvent.ACTION_DOWN) {
                 evaluateJavascript("window.DwBridge && DwBridge.onInput('\\r');", null)
             }
             return true
+        }
+        // Track every non-CENTER key so the gate above sees a fresh timestamp
+        // for whatever key Samsung pairs with its next spurious DPAD_CENTER.
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            lastKeyMs = System.currentTimeMillis()
         }
         return super.dispatchKeyEvent(event)
     }

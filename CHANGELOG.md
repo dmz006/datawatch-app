@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.13] — 2026-05-29
+
+### Fixed
+- xterm: Samsung S24 Ultra fires KEYCODE_DPAD_CENTER after **every** keypress (not just directional keys); widened timing gate to track all key ACTION_DOWN events so every spurious DPAD_CENTER within 100 ms is suppressed
+
 ## [1.0.12] — 2026-05-29
 
 ### Fixed
