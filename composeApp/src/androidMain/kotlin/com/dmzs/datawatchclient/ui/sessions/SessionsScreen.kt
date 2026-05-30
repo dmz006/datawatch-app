@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -813,6 +815,9 @@ private fun SessionRow(
 ) {
     var quickCmdsOpen by remember { mutableStateOf(false) }
     var responseOpen by remember { mutableStateOf(false) }
+    var currentStatusOpen by remember { mutableStateOf(false) }
+    var currentStatusText by remember { mutableStateOf<String?>(null) }
+    val currentStatusScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var restartConfirmOpen by remember { mutableStateOf(false) }
@@ -1070,12 +1075,9 @@ private fun SessionRow(
                             Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
                         }
                         Spacer(modifier = Modifier.width(4.dp))
-                        var currentStatusOpen by remember { mutableStateOf(false) }
-                        var currentStatusText by remember { mutableStateOf<String?>(null) }
-                        val scope = rememberCoroutineScope()
                         OutlinedButton(
                             onClick = {
-                                scope.launch {
+                                currentStatusScope.launch {
                                     currentStatusText = fetchCurrentStatus()
                                     if (currentStatusText != null) currentStatusOpen = true
                                 }
@@ -1523,7 +1525,20 @@ internal fun LastResponseSheet(
     val cleaned =
         com.dmzs.datawatchclient.util.ResponseNoiseFilter.strip(response)
             .ifBlank { response }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var isSpeaking by remember { mutableStateOf(false) }
+    val tts = remember {
+        var instance: android.speech.tts.TextToSpeech? = null
+        instance = android.speech.tts.TextToSpeech(context) { status ->
+            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                instance?.language = java.util.Locale.getDefault()
+            }
+        }
+        instance
+    }
+    DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
+
+    ModalBottomSheet(onDismissRequest = { tts?.stop(); onDismiss() }, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier
@@ -1531,7 +1546,27 @@ internal fun LastResponseSheet(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
         ) {
-            Text(stringResource(R.string.sessions_last_response_sheet), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.sessions_last_response_sheet),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = {
+                    if (isSpeaking) {
+                        tts?.stop()
+                        isSpeaking = false
+                    } else {
+                        isSpeaking = true
+                        tts?.speak(cleaned, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "lr")
+                    }
+                }) {
+                    Icon(
+                        if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
+                        contentDescription = if (isSpeaking) "Stop" else "Play",
+                    )
+                }
+            }
             Text(
                 cleaned,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1546,16 +1581,45 @@ internal fun LastResponseSheet(
 @Composable
 internal fun CurrentStatusSheet(status: String, onDismiss: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var isSpeaking by remember { mutableStateOf(false) }
+    val tts = remember {
+        var instance: android.speech.tts.TextToSpeech? = null
+        instance = android.speech.tts.TextToSpeech(context) { status ->
+            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                instance?.language = java.util.Locale.getDefault()
+            }
+        }
+        instance
+    }
+    DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
+
+    ModalBottomSheet(onDismissRequest = { tts?.stop(); onDismiss() }, sheetState = sheetState) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
         ) {
-            Text(stringResource(R.string.sessions_current_status_sheet), style = MaterialTheme.typography.titleMedium)
-            Text(
-                status,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 12.dp),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.sessions_current_status_sheet),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = {
+                    if (isSpeaking) {
+                        tts?.stop()
+                        isSpeaking = false
+                    } else {
+                        isSpeaking = true
+                        tts?.speak(status, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs")
+                    }
+                }) {
+                    Icon(
+                        if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
+                        contentDescription = if (isSpeaking) "Stop" else "Play",
+                    )
+                }
+            }
+            Text(status, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
         }
     }
 }

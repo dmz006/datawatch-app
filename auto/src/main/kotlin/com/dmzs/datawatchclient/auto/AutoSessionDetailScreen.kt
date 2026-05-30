@@ -1,6 +1,7 @@
 @file:Suppress("MagicNumber")
 package com.dmzs.datawatchclient.auto
 
+import android.speech.tts.TextToSpeech
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
@@ -51,6 +52,9 @@ public class AutoSessionDetailScreen(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastDetailHash: Int = -1
+    private val tts: TextToSpeech = TextToSpeech(carContext) { status ->
+        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
+    }
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -65,6 +69,8 @@ public class AutoSessionDetailScreen(
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
+                tts.stop()
+                tts.shutdown()
                 scope.cancel()
             }
         })
@@ -235,7 +241,7 @@ public class AutoSessionDetailScreen(
             .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Negative reply / decline").setOnClickListener { sendReply("no") }.build())
             .addItem(Row.Builder().setTitle("Continue").addText("Resume or proceed").setOnClickListener { sendReply("continue") }.build())
             .addItem(Row.Builder().setTitle("Skip").addText("Skip current step").setOnClickListener { sendReply("skip") }.build())
-            .addItem(Row.Builder().setTitle("Status").addText("Request status update").setOnClickListener { sendReply("status") }.build())
+            .addItem(Row.Builder().setTitle("▶ Play").addText("Hear current status aloud").setOnClickListener { speakStatus() }.build())
             .addItem(Row.Builder().setTitle(colored("Stop", CarColor.RED)).addText("Stop the session").setOnClickListener { sendReply("stop") }.build())
             .build()
         return ListTemplate.Builder()
@@ -306,6 +312,13 @@ public class AutoSessionDetailScreen(
             }
         }
     }.trim().ifEmpty { sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() } }.take(BODY_CHAR_LIMIT)
+
+    private fun speakStatus() {
+        val text = currentStatus ?: lastResponse ?: "No status available"
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "status")
+        replyMode = false
+        invalidate()
+    }
 
     private fun onKillTap() {
         killPending = true

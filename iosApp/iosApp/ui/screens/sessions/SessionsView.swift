@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import DatawatchShared
 
@@ -695,6 +696,8 @@ struct SessionsView: View {
 private struct CurrentStatusSheetView: View {
     let text: String
     @Environment(\.dismiss) private var dismiss
+    @State private var isSpeaking = false
+    private let synthesizer = AVSpeechSynthesizer()
 
     var body: some View {
         NavigationStack {
@@ -708,8 +711,26 @@ private struct CurrentStatusSheetView: View {
             .navigationTitle("Current status")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        if isSpeaking {
+                            synthesizer.stopSpeaking(at: .immediate)
+                            isSpeaking = false
+                        } else {
+                            let utterance = AVSpeechUtterance(string: text)
+                            utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.identifier)
+                            synthesizer.speak(utterance)
+                            isSpeaking = true
+                        }
+                    } label: {
+                        Image(systemName: isSpeaking ? "stop.circle" : "play.circle")
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        synthesizer.stopSpeaking(at: .immediate)
+                        dismiss()
+                    }
                 }
             }
         }
