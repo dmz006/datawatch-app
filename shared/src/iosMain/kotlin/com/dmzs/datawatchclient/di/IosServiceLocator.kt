@@ -18,6 +18,9 @@ import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import platform.Foundation.NSData
 import platform.Foundation.NSUUID
 
 /**
@@ -551,6 +555,68 @@ public object IosServiceLocator {
             ).fold(
                 onSuccess = { onSuccess() },
                 onFailure = { onError(it.message ?: "Failed to save config.") },
+            )
+        }
+    }
+
+    /** POST /api/voice/transcribe — sends audio bytes, returns transcript string. */
+    public fun transcribeAudio(
+        audio: ByteArray,
+        audioMime: String,
+        sessionId: String?,
+        profile: ServerProfile,
+        onSuccess: (transcript: String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).transcribeAudio(
+                audio = audio,
+                audioMime = audioMime,
+                sessionId = sessionId,
+                autoExec = false,
+            ).fold(
+                onSuccess = { result -> onSuccess(result.transcript.trim()) },
+                onFailure = { onError(it.message ?: "Transcription failed.") },
+            )
+        }
+    }
+
+    /** POST /api/voice/transcribe — NSData overload for Swift callers (avoids KotlinByteArray in Swift). */
+    @OptIn(ExperimentalForeignApi::class)
+    public fun transcribeAudioData(
+        audioData: NSData,
+        audioMime: String,
+        sessionId: String?,
+        profile: ServerProfile,
+        onSuccess: (transcript: String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val length = audioData.length.toInt()
+        val bytes = if (length == 0) ByteArray(0) else {
+            ByteArray(length).also { dst ->
+                audioData.bytes?.reinterpret<ByteVar>()?.let { ptr ->
+                    for (i in 0 until length) dst[i] = ptr[i]
+                }
+            }
+        }
+        transcribeAudio(bytes, audioMime, sessionId, profile, onSuccess, onError)
+    }
+
+    /** Returns true if whisper.enabled is set in server config. */
+    public fun fetchWhisperEnabled(
+        profile: ServerProfile,
+        onResult: (Boolean) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).fetchConfig().fold(
+                onSuccess = { cfg ->
+                    val enabled = (cfg.raw["whisper"] as? kotlinx.serialization.json.JsonObject)
+                        ?.get("enabled")
+                        ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content == "true" }
+                        ?: false
+                    onResult(enabled)
+                },
+                onFailure = { onResult(false) },
             )
         }
     }

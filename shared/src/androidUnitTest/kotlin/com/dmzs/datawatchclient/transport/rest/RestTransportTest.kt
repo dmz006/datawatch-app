@@ -169,14 +169,13 @@ class RestTransportTest {
     @Test
     fun replyPostsExpectedBody() =
         runTest {
-            server.enqueue(jsonResponse("""{"ok":true}"""))
+            server.enqueue(jsonResponse("""{"sent":true,"session_id":"a3f2"}"""))
             val res = transport.replyToSession("a3f2", "continue")
             assertTrue(res.isSuccess, "expected success, got ${res.exceptionOrNull()}")
             val sent = server.takeRequest()
             assertEquals("POST", sent.method)
-            assertEquals("/api/sessions/reply", sent.path)
+            assertEquals("/api/sessions/a3f2/input", sent.path)
             val body = sent.body.readUtf8()
-            assertTrue(body.contains("\"session_id\":\"a3f2\""), body)
             assertTrue(body.contains("\"text\":\"continue\""), body)
         }
 
