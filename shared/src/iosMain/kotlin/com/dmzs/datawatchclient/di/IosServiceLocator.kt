@@ -484,6 +484,21 @@ public object IosServiceLocator {
      * Parses session.summarizer.enabled and session.summarizer.llm_ref
      * in Kotlin (avoids JsonElement bridge complexity in Swift).
      */
+    /** GET /api/sessions/{id}/current-status — AI summary of the live tmux pane. */
+    public fun fetchSessionCurrentStatus(
+        sessionId: String,
+        profile: ServerProfile,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).getSessionCurrentStatus(sessionId).fold(
+                onSuccess = { dto -> onSuccess(dto.currentStatus) },
+                onFailure = { onError(it.message ?: "Failed to fetch current status.") },
+            )
+        }
+    }
+
     public fun fetchSummarizerConfig(
         profile: ServerProfile,
         onSuccess: (enabled: Boolean, llmRef: String) -> Unit,

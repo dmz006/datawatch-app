@@ -1257,6 +1257,9 @@ public interface TransportClient {
     /** GET /api/sessions/{id}/telemetry — live task tree + sprint ancestry + guardrail verdicts. */
     public suspend fun getSessionTelemetry(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto>
 
+    /** GET /api/sessions/{id}/current-status — LLM-generated summary of what the session is doing right now. */
+    public suspend fun getSessionCurrentStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.CurrentStatusDto>
+
     // ---- Guardrail Library + Profiles (BL303 S2, issue #128) ----
 
     /** GET /api/autonomous/guardrails — browse available guardrail checks. */

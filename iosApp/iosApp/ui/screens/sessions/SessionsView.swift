@@ -17,6 +17,10 @@ struct SessionsView: View {
     @State private var sessionToDelete: Session? = nil
     @State private var actionInProgress: String? = nil
 
+    // Current-status sheet state.
+    @State private var currentStatusText: String? = nil
+    @State private var currentStatusLoadingId: String? = nil
+
     enum SessionStateFilter: String, CaseIterable {
         case all     = "All"
         case active  = "Active"
@@ -108,9 +112,33 @@ struct SessionsView: View {
                 Text("Permanently delete \"\(s.name ?? s.taskSummary ?? s.id)\"?")
             }
         }
+        .sheet(isPresented: Binding(
+            get: { currentStatusText != nil },
+            set: { if !$0 { currentStatusText = nil } }
+        )) {
+            CurrentStatusSheetView(text: currentStatusText ?? "")
+        }
     }
 
     // ── Row actions ───────────────────────────────────────────────────────
+
+    private func fetchCurrentStatus(for session: Session) {
+        guard let profile = viewModel.activeProfile else { return }
+        currentStatusLoadingId = session.id
+        IosServiceLocator.shared.fetchSessionCurrentStatus(
+            sessionId: session.id,
+            profile: profile,
+            onSuccess: { text in
+                DispatchQueue.main.async {
+                    self.currentStatusLoadingId = nil
+                    self.currentStatusText = text
+                }
+            },
+            onError: { _ in
+                DispatchQueue.main.async { self.currentStatusLoadingId = nil }
+            }
+        )
+    }
 
     private func performKill() {
         guard let session = sessionToKill, let profile = viewModel.activeProfile else { return }
@@ -522,6 +550,26 @@ struct SessionsView: View {
                         .overlay(Rectangle().fill(DatawatchColors.waiting).frame(width: 2), alignment: .leading)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
+
+                // Row 5: "What's it doing?" quick-action for running sessions
+                if session.state == .running {
+                    Button {
+                        fetchCurrentStatus(for: session)
+                    } label: {
+                        HStack(spacing: 4) {
+                            if currentStatusLoadingId == session.id {
+                                ProgressView().controlSize(.mini)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .imageScale(.small)
+                            }
+                            Text("What's it doing?")
+                                .font(DatawatchFonts.labelSmall)
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .padding(.top, 2)
+                }
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -639,6 +687,33 @@ struct SessionsView: View {
             return .connecting
         }
         return .connected
+    }
+}
+
+// MARK: - Current Status Sheet
+
+private struct CurrentStatusSheetView: View {
+    let text: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Text(text)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+            .navigationTitle("Current status")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .background(DatawatchColors.background)
     }
 }
 

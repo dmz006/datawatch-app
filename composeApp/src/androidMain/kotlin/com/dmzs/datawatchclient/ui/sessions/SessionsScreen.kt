@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
@@ -366,6 +367,7 @@ public fun SessionsScreen(
                                 onQuickReply = { text -> vm.quickReply(session.id, text) },
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
+                                fetchCurrentStatus = { vm.fetchCurrentStatus(session.id) },
                                 whisperConfigured = state.whisperConfigured,
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
@@ -796,6 +798,7 @@ private fun SessionRow(
     onWatchToggle: () -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
+    fetchCurrentStatus: suspend () -> String? = { null },
     whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
     onMoveUp: () -> Unit = {},
@@ -1048,7 +1051,46 @@ private fun SessionRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (session.state) {
-                    SessionState.Running, SessionState.Waiting -> {
+                    SessionState.Running -> {
+                        OutlinedButton(
+                            onClick = { killConfirmOpen = true },
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
+                        ) {
+                            Icon(
+                                Icons.Filled.Stop,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.action_stop), color = MaterialTheme.colorScheme.error)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        var currentStatusOpen by remember { mutableStateOf(false) }
+                        var currentStatusText by remember { mutableStateOf<String?>(null) }
+                        val scope = rememberCoroutineScope()
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    currentStatusText = fetchCurrentStatus()
+                                    if (currentStatusText != null) currentStatusOpen = true
+                                }
+                            },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.sessions_current_status_btn))
+                        }
+                        if (currentStatusOpen && currentStatusText != null) {
+                            CurrentStatusSheet(status = currentStatusText!!, onDismiss = { currentStatusOpen = false })
+                        }
+                    }
+                    SessionState.Waiting -> {
                         OutlinedButton(
                             onClick = { killConfirmOpen = true },
                             contentPadding =
@@ -1069,24 +1111,22 @@ private fun SessionRow(
                         // Quick commands — only visible on waiting_input
                         // rows (PWA shows the ▶ triangle only when a
                         // prompt is actually blocking).
-                        if (session.state == SessionState.Waiting) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        OutlinedButton(
+                            onClick = { quickCmdsOpen = true },
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
+                        ) {
+                            Icon(
+                                Icons.Filled.Keyboard,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                            )
                             Spacer(modifier = Modifier.width(4.dp))
-                            OutlinedButton(
-                                onClick = { quickCmdsOpen = true },
-                                contentPadding =
-                                    androidx.compose.foundation.layout.PaddingValues(
-                                        horizontal = 10.dp,
-                                        vertical = 4.dp,
-                                    ),
-                            ) {
-                                Icon(
-                                    Icons.Filled.Keyboard,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.sessions_quick_commands))
-                            }
+                            Text(stringResource(R.string.sessions_quick_commands))
                         }
                     }
                     SessionState.Completed,
@@ -1496,6 +1536,24 @@ internal fun LastResponseSheet(
                 cleaned,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CurrentStatusSheet(status: String, onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
+        ) {
+            Text(stringResource(R.string.sessions_current_status_sheet), style = MaterialTheme.typography.titleMedium)
+            Text(
+                status,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 12.dp),
             )
         }

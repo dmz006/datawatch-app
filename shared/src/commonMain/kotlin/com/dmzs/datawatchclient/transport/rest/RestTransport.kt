@@ -2688,6 +2688,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun getSessionCurrentStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.CurrentStatusDto> =
+        request {
+            client.get("${profile.baseUrl}/api/sessions/$sessionId/current-status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listGuardrailLibrary(): Result<List<com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto>> =
         request {
             client.get("${profile.baseUrl}/api/autonomous/guardrails") {

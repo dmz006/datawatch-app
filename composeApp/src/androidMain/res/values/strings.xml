@@ -82,6 +82,8 @@
     <string name="sessions_view_response">View last response</string>
     <string name="sessions_quick_commands">Commands</string>
     <string name="sessions_last_response_sheet">Last response</string>
+    <string name="sessions_current_status_btn">What\'s it doing?</string>
+    <string name="sessions_current_status_sheet">Current status</string>
     <string name="sessions_quick_commands_sheet">Quick commands</string>
     <string name="sessions_cmd_system">System</string>
     <string name="sessions_cmd_saved">Saved</string>
