@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.12] — 2026-05-29
+
+### Fixed
+- Android Auto: comprehensive standards audit — 6 violations fixed across 9 screens: CoroutineScope leaks (missing SupervisorJob + onDestroy cancel), unconditional invalidate() burning host template quota, VoiceStatusScreen push exceeding max stack depth (5), Monitor ActionStrip creating duplicate stack entry (popToRoot instead of push), reply-mode BACK action incorrectly popping the whole screen (replaced with Cancel in ActionStrip)
+- xterm: Samsung D-pad sends spurious KEYCODE_DPAD_CENTER after every directional press; timing gate (100 ms) suppresses the phantom Enter while honouring intentional centre presses
+
 ## [1.0.11] — 2026-05-29
 
 ### Fixed
