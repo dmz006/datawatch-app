@@ -15,6 +15,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.dmzs.datawatchclient.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -225,7 +227,7 @@ public fun SummarizerCard() {
                             }
                         },
                     ) {
-                        Text("Test", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.routing_test_btn), style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
