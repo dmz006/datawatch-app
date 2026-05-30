@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.18] — 2026-05-30
+
+### Fixed
+- Android Auto: Monitor screen crashed with DuplicateFormatFlagsException when CPU load was available — progress bar's literal "%" character was being parsed as a format flag when interpolated into a .format() call; changed to "${"%.2f".format(load1)}" to keep formatting scoped to the number only
+
 ## [1.0.17] — 2026-05-30
 
 ### Added
