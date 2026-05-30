@@ -150,6 +150,17 @@ public data class ReplyResponseDto(
 )
 
 @Serializable
+public data class SessionInputDto(
+    val text: String,
+)
+
+@Serializable
+public data class SessionInputResponseDto(
+    val sent: Boolean,
+    @SerialName("session_id") val sessionId: String = "",
+)
+
+@Serializable
 public data class HealthDto(
     val ok: Boolean = true,
     val version: String? = null,

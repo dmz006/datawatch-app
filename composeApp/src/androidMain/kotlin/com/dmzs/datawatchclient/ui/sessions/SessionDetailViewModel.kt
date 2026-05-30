@@ -340,9 +340,10 @@ public class SessionDetailViewModel(
         // the open hub socket — fire-and-forget since the server
         // doesn't ack replies; success is observed via the next
         // pane_capture frame showing the input landing.
+        // Append \r so the shell executes the command (PTY requires CR).
         val ok =
             com.dmzs.datawatchclient.transport.ws.WsOutbound
-                .sendInput(sessionId, text)
+                .sendInput(sessionId, text + "\r")
         if (ok) {
             _replyText.value = ""
             _replying.value = false
@@ -357,17 +358,19 @@ public class SessionDetailViewModel(
      * chat-mode prompt quick-buttons ("Yes" / "No" / "Stop") so users
      * can answer a `waiting_input` prompt without typing. Does not
      * touch [_replyText] so any in-flight composer draft is preserved.
+     * Callers must include \r if they want shell execution (e.g. "yes\r").
+     * Whitespace-only strings like "\r" are intentional terminal input and
+     * are NOT trimmed — only truly empty strings are rejected.
      */
     public fun sendQuickReply(text: String) {
-        val trimmed = text.trim()
         val profile = profileCache ?: return
-        if (trimmed.isEmpty() || _replying.value) return
+        if (text.isEmpty() || _replying.value) return
         _replying.value = true
         _banner.value = null
         viewModelScope.launch {
             val ok =
                 com.dmzs.datawatchclient.transport.ws.WsOutbound
-                    .sendInput(sessionId, trimmed)
+                    .sendInput(sessionId, text)
             _replying.value = false
             if (!ok) {
                 _banner.value = "Quick reply failed: WS not connected."

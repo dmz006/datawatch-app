@@ -762,7 +762,7 @@ public fun SessionDetailScreen(
                                 QuickCommandsSheet(
                                     fetchSavedCommands = { vm.fetchSavedCommands() },
                                     onSend = { cmd ->
-                                        vm.sendQuickReply(cmd)
+                                        vm.sendQuickReply(cmd + "\r")
                                         savedCmdsOpen = false
                                     },
                                     onDismiss = { savedCmdsOpen = false },
@@ -1677,9 +1677,9 @@ private fun QuickReplyButtons(onQuickReply: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_yes), onClick = { onQuickReply("yes") })
-        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_no), onClick = { onQuickReply("no") })
-        QuickReplyChip("Stop", onClick = { onQuickReply("stop") })
+        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_yes), onClick = { onQuickReply("yes\r") })
+        QuickReplyChip(stringResource(R.string.session_detail_quick_reply_no), onClick = { onQuickReply("no\r") })
+        QuickReplyChip("Stop", onClick = { onQuickReply("stop\r") })
     }
 }
 

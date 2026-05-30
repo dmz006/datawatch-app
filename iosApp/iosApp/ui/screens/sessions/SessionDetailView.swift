@@ -19,6 +19,7 @@ struct SessionDetailView: View {
     @State private var isSendingReply: Bool = false
     @State private var termFontSize: Int = UserDefaults.standard.integer(forKey: "dw.terminal.font_size_px").nonZero ?? 9
     @State private var messagingBackend: String? = nil
+    @State private var terminalInput: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -28,7 +29,7 @@ struct SessionDetailView: View {
             VStack(spacing: 0) {
                 metadataBar
                 terminalFontBar
-                TerminalView(session: session, profile: profile, fontSize: $termFontSize)
+                TerminalView(session: session, profile: profile, fontSize: $termFontSize, terminalInput: $terminalInput)
                     .ignoresSafeArea(edges: .bottom)
                 if isTerminalState {
                     terminalActionBar
@@ -308,18 +309,10 @@ struct SessionDetailView: View {
         let text = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         replyText = ""
-        isSendingReply = true
-        IosServiceLocator.shared.replyToSession(
-            profile: profile,
-            sessionId: session.id,
-            text: text,
-            onSuccess: {
-                DispatchQueue.main.async { self.isSendingReply = false }
-            },
-            onError: { _ in
-                DispatchQueue.main.async { self.isSendingReply = false }
-            }
-        )
+        // Route through the terminal WebSocket (window.sendInput) so input lands
+        // in the PTY exactly as if typed — REST /api/sessions/reply returns 404.
+        // Append \r so the shell executes the command.
+        terminalInput = text + "\r"
     }
 
     // ── Kill button ───────────────────────────────────────────────────────
