@@ -86,6 +86,8 @@ public data class SessionDto(
     val chrome: Boolean? = null,
     /** datawatch v8.9.0 — long-form summary of the session's current status. Forward-compat field. */
     @SerialName("last_summary_long") val lastSummaryLong: String? = null,
+    /** datawatch v8.9.5 — UTC timestamp of the most-recent AI summary generation (RFC3339). Null if never summarized. */
+    @SerialName("summary_generated_at") val summaryGeneratedAt: String? = null,
 )
 
 @Serializable

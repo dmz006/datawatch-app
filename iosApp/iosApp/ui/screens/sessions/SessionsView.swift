@@ -552,6 +552,14 @@ struct SessionsView: View {
                             .accessibilityLabel("Muted")
                     }
                     Spacer()
+                    if let summaryAt = session.summaryGeneratedAt {
+                        Text("AI " + relativeTime(summaryAt))
+                            .font(DatawatchFonts.labelSmall)
+                            .foregroundStyle(DatawatchColors.primary.opacity(0.7))
+                        Text("·")
+                            .font(DatawatchFonts.labelSmall)
+                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
                     Text(relativeTime(session.lastActivityAt))
                         .font(DatawatchFonts.labelSmall)
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)

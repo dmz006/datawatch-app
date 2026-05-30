@@ -1003,6 +1003,15 @@ private fun SessionRow(
                 }
                 Spacer(modifier = Modifier.width(4.dp))
             }
+            val summaryAt = session.summaryGeneratedAt
+            if (summaryAt != null) {
+                Text(
+                    "AI " + relativeTimeLabel(summaryAt.toEpochMilliseconds()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
             Text(
                 timeLabel,
                 style = MaterialTheme.typography.labelSmall,
