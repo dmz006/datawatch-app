@@ -111,7 +111,9 @@ public class AutoSessionDetailScreen(
 
         val telem = telemetry
         val hasBlock = telem?.guardrailVerdicts?.any { it.outcome == "block" } == true
-        val isActive = sessionState == SessionState.Running || sessionState == SessionState.Waiting
+        val isActive = sessionState == SessionState.Running ||
+            sessionState == SessionState.Waiting ||
+            sessionState == SessionState.RateLimited
         // BL303-A5.2: ambient mode — terminal sessions use simplified read-only body, no actions
         val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
         val body = if (isTerminal) buildAmbientBody() else buildDetailBody(telem)
@@ -149,13 +151,13 @@ public class AutoSessionDetailScreen(
                     )
                 }
             } else {
-                // Not blocked: Reply (if waiting) + Kill (if active) — max 2 buttons.
-                // Reply uses inline mode (replyMode=true) — no new screen push, avoids
-                // exceeding the 5-screen stack limit on deep navigation paths.
-                if (sessionState == SessionState.Waiting) {
+                // Not blocked: Send (all non-terminal) + Kill (if active) — max 2 buttons.
+                // Send uses inline mode (replyMode=true) so we can inject commands into any
+                // session state — Running, Waiting, RateLimited — not just Waiting.
+                if (!killPending) {
                     templateBuilder.addAction(
                         Action.Builder()
-                            .setTitle("Reply")
+                            .setTitle("Send")
                             .setOnClickListener { replyMode = true; invalidate() }
                             .build(),
                     )
@@ -215,14 +217,17 @@ public class AutoSessionDetailScreen(
             .setTitle("Cancel")
             .setOnClickListener { replyMode = false; invalidate() }
             .build()
+        // Drive compliance: max 6 rows per ListTemplate.
         val items = ItemList.Builder()
-            .addItem(Row.Builder().setTitle(colored("Yes", CarColor.GREEN)).addText("Send affirmative reply").setOnClickListener { sendReply("yes") }.build())
-            .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Send negative reply").setOnClickListener { sendReply("no") }.build())
-            .addItem(Row.Builder().setTitle("Continue").addText("Resume the session").setOnClickListener { sendReply("continue") }.build())
+            .addItem(Row.Builder().setTitle(colored("Yes", CarColor.GREEN)).addText("Affirmative reply / confirm").setOnClickListener { sendReply("yes") }.build())
+            .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Negative reply / decline").setOnClickListener { sendReply("no") }.build())
+            .addItem(Row.Builder().setTitle("Continue").addText("Resume or proceed").setOnClickListener { sendReply("continue") }.build())
+            .addItem(Row.Builder().setTitle("Skip").addText("Skip current step").setOnClickListener { sendReply("skip") }.build())
+            .addItem(Row.Builder().setTitle("Status").addText("Request status update").setOnClickListener { sendReply("status") }.build())
             .addItem(Row.Builder().setTitle(colored("Stop", CarColor.RED)).addText("Stop the session").setOnClickListener { sendReply("stop") }.build())
             .build()
         return ListTemplate.Builder()
-            .setTitle("Quick Reply")
+            .setTitle("Send Command")
             // No Action.BACK here: this template is returned from a screen already on the stack.
             // Action.BACK would call screenManager.pop() and remove the session detail screen.
             // The Cancel action in the ActionStrip is the driver-safe way to exit reply mode.
