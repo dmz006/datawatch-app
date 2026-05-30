@@ -19,6 +19,7 @@ import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
