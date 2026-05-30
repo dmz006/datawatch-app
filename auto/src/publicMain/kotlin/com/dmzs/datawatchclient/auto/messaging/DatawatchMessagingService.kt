@@ -5,18 +5,17 @@ import androidx.car.app.Screen
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
-import com.dmzs.datawatchclient.auto.AutoMonitorScreen
 import com.dmzs.datawatchclient.auto.AutoServiceLocator
+import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 import com.dmzs.datawatchclient.auto.R
 
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
  * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
  *
- * Opens [AutoMonitorScreen] — default Monitor tab per user request
- * 2026-04-22, showing live server vitals (CPU, memory, disk, VRAM,
- * sessions, uptime). ActionStrip on that screen exposes Sessions,
- * Server picker and About as secondary screens.
+ * Opens [AutoSummaryScreen] as the root hub — shows session counts,
+ * server vitals inline, and last completed task. ActionStrip exposes
+ * About (info icon) and Monitor. Sessions and Automata are in the list.
  */
 public class DatawatchMessagingService : CarAppService() {
     override fun onCreate() {
@@ -45,7 +44,7 @@ public class DatawatchMessagingService : CarAppService() {
 
     override fun onCreateSession(): Session =
         object : Session() {
-            override fun onCreateScreen(intent: android.content.Intent) = AutoMonitorScreen(carContext)
+            override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
 
             override fun onNewIntent(intent: android.content.Intent) {
                 // Handle voice actions — Google Assistant sends the spoken text via
@@ -57,7 +56,7 @@ public class DatawatchMessagingService : CarAppService() {
                 // §8: Car App Library enforces a max screen stack depth of 5. Voice commands
                 // arrive independently of the user's navigation state, so pop to root first to
                 // guarantee we are at depth 1 before pushing VoiceStatusScreen (depth 2).
-                // Without this, a deep path (Monitor→Summary→Automata→SessionList→SessionDetail)
+                // Without this, a deep path (Summary→Monitor→SessionList→SessionDetail)
                 // would push to depth 6 and trigger an IllegalStateException from the host.
                 screenManager.popToRoot()
                 screenManager.push(

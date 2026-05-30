@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.16] — 2026-05-29
+
+### Changed
+- Android Auto: Summary is now the root screen (was Monitor); Monitor is accessed via the icon in the ActionStrip
+- Android Auto: Summary server row merges CPU/mem progress bars inline ("cpu ▓▓░░░░░░ 22%  mem ▓▓▓░░░░░ 38%") — eliminates the separate System row
+- Android Auto: Session rows now show colored state-dot icons (green=running, amber=waiting, red=blocked/error, gray=done/killed) and unicode glyphs (◉ ⊙ ⊗ ✓ ✗) with block-char progress bars
+- Android Auto: Monitor detail rows show block-character progress bars for CPU and Memory
+- Android Auto: About screen upgraded to MessageTemplate with ASCII art header and Reboot/Update action buttons (calls restartDaemon / updateDaemon on the active server)
+- Android Auto: Summary ActionStrip changed from Server+Monitor to Info(About)+Monitor; server picker accessible via server header row tap
+- Android Auto: Summary removes alerts row and separate Waiting sessions row (access waiting sessions via Sessions list)
+
 ## [1.0.15] — 2026-05-29
 
 ### Fixed

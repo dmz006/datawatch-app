@@ -18,7 +18,6 @@ import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionState
-import com.dmzs.datawatchclient.transport.AlertsView
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,33 +25,30 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Driver-safe session summary for Android Auto. Reads live session
- * counts from the active [AutoServiceLocator] profile every 15 s.
- * Tapping "Waiting input" opens [WaitingSessionsScreen]. The action
- * strip exposes server picker, monitor and about screens — drivers
- * get a consistent datawatch entry point without leaving the car UI.
+ * Mission control hub for Android Auto — root screen.
  *
- * ADR-0031 Play-compliance: static ListTemplate only, no free-form
- * text input from the driver surface.
+ * Reads live session counts and server vitals every 15s from the active
+ * [AutoServiceLocator] profile. Server header shows CPU/mem inline.
+ * ActionStrip: Info → About, Monitor icon → Monitor screen.
+ *
+ * ADR-0031 Play-compliance: static ListTemplate only, no free-form text input.
  */
 public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private var running: Int = 0
     private var waiting: Int = 0
     private var blocked: Int = 0
     private var total: Int = 0
-    private var unreadAlerts: Int = 0
     private var serverStats: StatsDto? = null
     private var lastCompletedTask: String? = null
     private var activeProfile: ServerProfile? = null
     private var error: String? = null
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastSnapshotHash: Int = -1
 
     init {
@@ -78,8 +74,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            // §15: only invalidate when observable state actually changed.
-            val newHash = listOf(running, waiting, blocked, total, unreadAlerts, error, lastCompletedTask, serverStats?.sessionsTotal).hashCode()
+            val newHash = listOf(running, waiting, blocked, total, error, lastCompletedTask, serverStats?.sessionsTotal).hashCode()
             if (newHash != lastSnapshotHash) {
                 lastSnapshotHash = newHash
                 invalidate()
@@ -90,7 +85,13 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val POLL_MS: Long = 15_000L
-        const val MB: Long = 1_000_000L
+
+        /** Renders a compact progress bar: "▓▓▓░░░ 45%" (6 wide). */
+        fun bar(pct: Int, width: Int = 6): String {
+            val clamped = pct.coerceIn(0, 100)
+            val filled = (clamped * width / 100).coerceIn(0, width)
+            return "▓".repeat(filled) + "░".repeat(width - filled) + " $clamped%"
+        }
     }
 
     private suspend fun refresh() {
@@ -112,148 +113,109 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     running = list.count { it.state == SessionState.Running }
                     waiting = list.count { it.state == SessionState.Waiting }
                     total = list.size
-                    // BL303-A6.2: blocked = sessions with Error state (guardrail blocks resolved in telemetry)
                     blocked = list.count { it.state == SessionState.Error }
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
                 },
             )
-            // BL303-A6.3: CPU/Mem stats (best-effort)
             serverStats = transport.stats().getOrNull()
-            // BL303-A6.4: last completed task (best-effort — first completed session's telemetry)
             transport.listSessions().getOrNull()
                 ?.firstOrNull { it.state == SessionState.Completed }
                 ?.let { s -> transport.getSessionTelemetry(s.id).getOrNull()?.currentTask?.takeIf { it.isNotBlank() } }
                 ?.also { lastCompletedTask = it }
-            // BL303-A5.3: load unread alert count (best-effort — does not block main data)
-            transport.listAlerts().getOrNull()?.let { unreadAlerts = it.unreadCount }
         } catch (e: Throwable) {
             error = "Error: ${e.message ?: e::class.simpleName}"
         }
     }
 
     override fun onGetTemplate(): Template {
-        val builder = ItemList.Builder()
-        // BL303-A6.1: Mission Control layout — server header + status strip rows
+        fun iconOf(resId: Int) =
+            CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+
+        val listBuilder = ItemList.Builder()
         val profile = activeProfile
+
         if (profile != null) {
-            // Row 1: Server header — tap to switch server (A6.5)
-            builder.addItem(
+            // Row 1: Server — shows CPU/mem inline; tap to switch
+            val statsLine = serverStats?.let { s ->
+                val cpuPct = s.cpuLoad1?.let { load ->
+                    s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null }
+                } ?: s.cpuPct?.toInt()
+                val memPct = s.memUsed?.let { used ->
+                    s.memTotal?.let { total -> if (total > 0) (used * 100 / total).toInt() else null }
+                } ?: s.memPct?.toInt()
+                listOfNotNull(
+                    cpuPct?.let { "cpu ${bar(it)}" },
+                    memPct?.let { "mem ${bar(it)}" },
+                ).joinToString("  ").takeIf { it.isNotBlank() }
+            }
+            listBuilder.addItem(
                 Row.Builder()
-                    .setTitle(colored("● ${profile.displayName}", CarColor.GREEN))
-                    .addText("Tap to switch server")
+                    .setTitle("⬡ ${profile.displayName}")
+                    .addText(statsLine ?: "Tap to switch server")
                     .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }
                     .build(),
             )
         }
-        // Row 2: Running / Waiting / Blocked counts (A6.2)
-        val statusColor = when {
-            blocked > 0 -> CarColor.RED
-            waiting > 0 -> CarColor.YELLOW
-            else -> CarColor.GREEN
-        }
-        val statusText = buildString {
-            append("$running run")
-            if (waiting > 0) append(" · $waiting wait")
-            if (blocked > 0) append(" · $blocked blocked")
-        }
-        builder.addItem(
+
+        // Row 2: Session counts — cyber glyph state summary
+        val statusTitle = buildString {
+            append("◉ $running")
+            if (waiting > 0) append("  ⊙ $waiting")
+            if (blocked > 0) append("  ⊗ $blocked")
+        }.ifBlank { "◉ 0" }
+        listBuilder.addItem(
             Row.Builder()
-                .setTitle(colored(statusText, statusColor))
-                .addText("$total sessions total")
+                .setTitle(statusTitle)
+                .addText("$total sessions total · tap to view")
                 .setOnClickListener { screenManager.push(AutoSessionListScreen(carContext)) }
                 .build(),
         )
-        // Row 3: CPU / Mem (A6.3) — conditional on data availability (Drive: max 6 rows total)
-        val sysLine: String? = serverStats?.let { s ->
-            val cpuPct = s.cpuLoad1?.let { load -> s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null } }
-                ?: s.cpuPct?.toInt()
-            val memText = s.memUsed?.let { used -> s.memTotal?.let { total -> if (total > 0) "${used / MB}/${total / MB} MB" else null } }
-                ?: s.memPct?.let { "%.0f%% mem".format(it) }
-            listOfNotNull(cpuPct?.let { "CPU $it%" }, memText).joinToString(" · ").takeIf { it.isNotBlank() }
-        }
-        sysLine?.let { line ->
-            builder.addItem(Row.Builder().setTitle("System").addText(line).build())
-        }
-        // Row 4: Last completed task (A6.4) — conditional (Drive: max 6 rows total)
+
+        // Row 3: Last completed task (conditional)
         lastCompletedTask?.let { task ->
-            builder.addItem(
-                Row.Builder().setTitle("Last completed").addText("✓ ${task.take(60)}").build(),
-            )
-        }
-        // Row 5: Waiting input — only when sessions are waiting (tap → reply queue)
-        if (waiting > 0) {
-            builder.addItem(
+            listBuilder.addItem(
                 Row.Builder()
-                    .setTitle(colored("Waiting input", CarColor.YELLOW))
-                    .addText("$waiting sessions — tap for reply queue")
-                    .setOnClickListener { screenManager.push(WaitingSessionsScreen(carContext)) }
+                    .setTitle("✓ Last completed")
+                    .addText(task.take(72))
                     .build(),
             )
         }
-        // Row 6 (Drive max reached): Automata OR Alert dismiss — alerts take priority
-        // BL303-A5.3: alert dismiss; BL303-A7.1: Drive compliance — max 6 rows per page
-        if (unreadAlerts > 0) {
-            builder.addItem(
-                Row.Builder()
-                    .setTitle(colored("⚠ $unreadAlerts Alert${if (unreadAlerts > 1) "s" else ""}", CarColor.RED))
-                    .addText("Tap to dismiss all")
-                    .setOnClickListener { onDismissAlerts() }
-                    .build(),
-            )
-        } else {
-            builder.addItem(
-                Row.Builder()
-                    .setTitle(colored("Automata", CarColor.YELLOW))
-                    .addText("Running plans overview")
-                    .setOnClickListener { screenManager.push(AutoAutomataScreen(carContext)) }
-                    .build(),
-            )
-        }
+
+        // Row 4: Automata
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("⟫ Automata")
+                .addText("Running plans overview")
+                .setOnClickListener { screenManager.push(AutoAutomataScreen(carContext)) }
+                .build(),
+        )
+
         val title = "datawatch ${Version.VERSION}"
-        // ActionStrip: Car App Library hard-limits ListTemplate to 2 actions.
-        // Server (titled, primary) + Monitor icon (secondary). About omitted.
-        fun iconOf(resId: Int) =
-            CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+        // ActionStrip: Info → About, Monitor icon → Monitor (2 actions max)
         val actionStrip =
             ActionStrip.Builder()
                 .addAction(
                     Action.Builder()
-                        .setTitle("Server")
-                        .setOnClickListener {
-                            screenManager.push(AutoServerPickerScreen(carContext))
-                        }
+                        .setIcon(iconOf(R.drawable.ic_auto_info))
+                        .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
                         .build(),
                 )
                 .addAction(
                     Action.Builder()
                         .setIcon(iconOf(R.drawable.ic_auto_monitor))
-                        .setOnClickListener {
-                            // AutoMonitorScreen is the root — pop back to it instead of
-                            // pushing a duplicate which would create Monitor→Summary→Monitor.
-                            screenManager.popToRoot()
-                        }
+                        .setOnClickListener { screenManager.push(AutoMonitorScreen(carContext)) }
                         .build(),
                 )
                 .build()
+
         return ListTemplate.Builder()
             .setTitle(error?.let { "$title · $it" } ?: title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(actionStrip)
-            .setSingleList(builder.build())
+            .setSingleList(listBuilder.build())
             .build()
-    }
-
-    private fun onDismissAlerts() {
-        scope.launch {
-            runCatching {
-                val profile = resolveActiveProfile() ?: return@runCatching
-                AutoServiceLocator.transportFor(profile).markAlertRead(all = true)
-                unreadAlerts = 0
-            }
-            invalidate()
-        }
     }
 }
 
