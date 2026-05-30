@@ -18,9 +18,8 @@ import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
-import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -594,8 +593,8 @@ public object IosServiceLocator {
         val length = audioData.length.toInt()
         val bytes = if (length == 0) ByteArray(0) else {
             ByteArray(length).also { dst ->
-                audioData.bytes?.reinterpret<ByteVar>()?.let { ptr ->
-                    for (i in 0 until length) dst[i] = ptr[i.toLong()].value
+                dst.usePinned { pinned ->
+                    audioData.getBytes(pinned.addressOf(0), length.toULong())
                 }
             }
         }
