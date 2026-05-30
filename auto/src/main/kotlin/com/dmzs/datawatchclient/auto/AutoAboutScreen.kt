@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
  * About screen for Android Auto. Shows version, ASCII eye art, and
  * driver-safe daemon controls: Reboot (restartDaemon) + Update (updateDaemon).
  */
+private const val ERROR_MSG_CHARS: Int = 40
+
 public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -76,7 +78,7 @@ fleet observability · driver surface
                     onFailure = { err ->
                         CarToast.makeText(
                             carContext,
-                            "Reboot failed: ${err.message?.take(40) ?: "unknown"}",
+                            "Reboot failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
                             CarToast.LENGTH_LONG,
                         ).show()
                     },
@@ -99,7 +101,7 @@ fleet observability · driver surface
                     onFailure = { err ->
                         CarToast.makeText(
                             carContext,
-                            "Update failed: ${err.message?.take(40) ?: "unknown"}",
+                            "Update failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
                             CarToast.LENGTH_LONG,
                         ).show()
                     },
