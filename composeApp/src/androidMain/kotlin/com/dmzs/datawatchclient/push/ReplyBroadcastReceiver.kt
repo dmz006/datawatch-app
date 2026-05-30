@@ -37,7 +37,7 @@ public class ReplyBroadcastReceiver : BroadcastReceiver() {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
             val active = profiles.firstOrNull { it.enabled } ?: return@launch
             val transport = ServiceLocator.transportFor(active)
-            transport.replyToSession(sessionId, text).fold(
+            transport.replyToSession(sessionId, "$text\r").fold(
                 onSuccess = {
                     NotificationManagerCompat.from(context)
                         .cancel(NotificationPoster.notificationIdFor(sessionId))

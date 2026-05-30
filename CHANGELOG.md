@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.27] — 2026-05-30
+
+### Fixed
+- Android: Inline notification reply (RemoteInput from the notification shade) was missing `\r`; typed text was sent to the session but never committed — now appends `\r` so the input actually runs in tmux
+
 ## [1.0.26] — 2026-05-30
 
 ### Fixed
