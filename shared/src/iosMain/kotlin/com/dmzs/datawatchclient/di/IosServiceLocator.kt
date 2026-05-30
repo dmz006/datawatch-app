@@ -488,13 +488,28 @@ public object IosServiceLocator {
     public fun fetchSessionCurrentStatus(
         sessionId: String,
         profile: ServerProfile,
-        onSuccess: (String) -> Unit,
+        onSuccess: (short: String, long: String) -> Unit,
         onError: (String) -> Unit,
     ) {
         ioScope.launch {
             transportFor(profile).getSessionCurrentStatus(sessionId).fold(
-                onSuccess = { dto -> onSuccess(dto.currentStatus) },
+                onSuccess = { dto -> onSuccess(dto.currentStatus, dto.currentStatusLong) },
                 onFailure = { onError(it.message ?: "Failed to fetch current status.") },
+            )
+        }
+    }
+
+    /** POST /api/sessions/{id}/summarize — manually trigger re-summarization. */
+    public fun resummarizeSession(
+        sessionId: String,
+        profile: ServerProfile,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ioScope.launch {
+            transportFor(profile).summarizeSession(sessionId).fold(
+                onSuccess = { dto -> onSuccess(dto.summary) },
+                onFailure = { onError(it.message ?: "Failed to re-summarize.") },
             )
         }
     }

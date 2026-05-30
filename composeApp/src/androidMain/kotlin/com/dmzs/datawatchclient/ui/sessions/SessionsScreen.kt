@@ -49,8 +49,10 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
+import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -370,6 +372,7 @@ public fun SessionsScreen(
                                 fetchSavedCommands = { vm.fetchSavedCommands(session.id) },
                                 fetchSystemCommands = { vm.fetchSystemQuickCommands(session.id) },
                                 fetchCurrentStatus = { vm.fetchCurrentStatus(session.id) },
+                                onResummarize = { vm.resummmarizeSession(session.id) },
                                 whisperConfigured = state.whisperConfigured,
                                 deleteSupported = state.deleteSupported,
                                 selectionMode = selectionMode,
@@ -800,7 +803,8 @@ private fun SessionRow(
     onWatchToggle: () -> Unit = {},
     fetchSavedCommands: suspend () -> List<Pair<String, String>> = { emptyList() },
     fetchSystemCommands: suspend () -> List<com.dmzs.datawatchclient.transport.QuickCommandItem> = { emptyList() },
-    fetchCurrentStatus: suspend () -> String? = { null },
+    fetchCurrentStatus: suspend () -> CurrentStatusDto? = { null },
+    onResummarize: suspend () -> CurrentStatusDto? = { null },
     whisperConfigured: Boolean = false,
     reorderMode: Boolean = false,
     onMoveUp: () -> Unit = {},
@@ -817,6 +821,7 @@ private fun SessionRow(
     var responseOpen by remember { mutableStateOf(false) }
     var currentStatusOpen by remember { mutableStateOf(false) }
     var currentStatusText by remember { mutableStateOf<String?>(null) }
+    var currentStatusLongText by remember { mutableStateOf<String?>(null) }
     val currentStatusScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
@@ -1078,8 +1083,12 @@ private fun SessionRow(
                         OutlinedButton(
                             onClick = {
                                 currentStatusScope.launch {
-                                    currentStatusText = fetchCurrentStatus()
-                                    if (currentStatusText != null) currentStatusOpen = true
+                                    val dto = fetchCurrentStatus()
+                                    if (dto != null) {
+                                        currentStatusText = dto.currentStatus
+                                        currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
+                                        currentStatusOpen = true
+                                    }
                                 }
                             },
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
@@ -1089,7 +1098,12 @@ private fun SessionRow(
                             Text(stringResource(R.string.sessions_current_status_btn))
                         }
                         if (currentStatusOpen && currentStatusText != null) {
-                            CurrentStatusSheet(status = currentStatusText!!, onDismiss = { currentStatusOpen = false })
+                            CurrentStatusSheet(
+                                status = currentStatusText!!,
+                                statusLong = currentStatusLongText,
+                                onDismiss = { currentStatusOpen = false; currentStatusLongText = null },
+                                onResummarize = onResummarize,
+                            )
                         }
                     }
                     SessionState.Waiting -> {
@@ -1579,39 +1593,58 @@ internal fun LastResponseSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CurrentStatusSheet(status: String, onDismiss: () -> Unit) {
+internal fun CurrentStatusSheet(
+    status: String,
+    statusLong: String? = null,
+    onDismiss: () -> Unit,
+    onResummarize: suspend () -> CurrentStatusDto? = { null },
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = androidx.compose.ui.platform.LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
     var isSpeaking by remember { mutableStateOf(false) }
+    var isResummarizing by remember { mutableStateOf(false) }
+    var displayStatus by remember { mutableStateOf(status) }
+    var displayLong by remember { mutableStateOf(statusLong) }
+    val scope = rememberCoroutineScope()
     val tts = remember {
         var instance: android.speech.tts.TextToSpeech? = null
-        instance = android.speech.tts.TextToSpeech(context) { status ->
-            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
-                instance?.language = java.util.Locale.getDefault()
-            }
+        instance = android.speech.tts.TextToSpeech(context) { s ->
+            if (s == android.speech.tts.TextToSpeech.SUCCESS) instance?.language = java.util.Locale.getDefault()
         }
         instance
     }
     DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
 
     ModalBottomSheet(onDismissRequest = { tts?.stop(); onDismiss() }, sheetState = sheetState) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.sessions_current_status_sheet),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = {
-                    if (isSpeaking) {
-                        tts?.stop()
-                        isSpeaking = false
-                    } else {
-                        isSpeaking = true
-                        tts?.speak(status, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs")
+                if (isResummarizing) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    IconButton(onClick = {
+                        scope.launch {
+                            isResummarizing = true
+                            val dto = onResummarize()
+                            if (dto != null) {
+                                displayStatus = dto.currentStatus
+                                displayLong = dto.currentStatusLong.takeIf { it.isNotBlank() }
+                            }
+                            isResummarizing = false
+                        }
+                    }) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Re-summarize")
                     }
+                }
+                IconButton(onClick = {
+                    val text = if (expanded && displayLong != null) displayLong!! else displayStatus
+                    if (isSpeaking) { tts?.stop(); isSpeaking = false }
+                    else { isSpeaking = true; tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs") }
                 }) {
                     Icon(
                         if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
@@ -1619,7 +1652,20 @@ internal fun CurrentStatusSheet(status: String, onDismiss: () -> Unit) {
                     )
                 }
             }
-            Text(status, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+            Text(displayStatus, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+            if (displayLong != null) {
+                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(top = 4.dp)) {
+                    Text(if (expanded) "▲ Less" else "▼ More detail")
+                }
+                if (expanded) {
+                    Text(
+                        displayLong!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
         }
     }
 }

@@ -84,6 +84,8 @@ public data class SessionDto(
     @SerialName("input_mode") val inputMode: String? = null,
     /** datawatch v8.8.3 — session was started with `--chrome` (CDP integration). */
     val chrome: Boolean? = null,
+    /** datawatch v8.9.0 — long-form summary of the session's current status. Forward-compat field. */
+    @SerialName("last_summary_long") val lastSummaryLong: String? = null,
 )
 
 @Serializable
@@ -1566,6 +1568,14 @@ public data class SessionTelemetryDto(
 @Serializable
 public data class CurrentStatusDto(
     @SerialName("current_status") val currentStatus: String = "",
+    @SerialName("current_status_long") val currentStatusLong: String = "",
+    @SerialName("generated_at") val generatedAt: String = "",
+)
+
+@Serializable
+public data class SummarizeResultDto(
+    @SerialName("session_id") val sessionId: String = "",
+    val summary: String = "",
     @SerialName("generated_at") val generatedAt: String = "",
 )
 

@@ -1260,6 +1260,9 @@ public interface TransportClient {
     /** GET /api/sessions/{id}/current-status — LLM-generated summary of what the session is doing right now. */
     public suspend fun getSessionCurrentStatus(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.CurrentStatusDto>
 
+    /** POST /api/sessions/{id}/summarize — trigger a manual re-summarize and return the result. */
+    public suspend fun summarizeSession(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.SummarizeResultDto>
+
     // ---- Guardrail Library + Profiles (BL303 S2, issue #128) ----
 
     /** GET /api/autonomous/guardrails — browse available guardrail checks. */
