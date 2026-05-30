@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.15] — 2026-05-29
+
+### Fixed
+- Android Auto: session detail screen crashed with "Message cannot be empty" when a session had no current task, no sprint, zero progress, no ETA, and no guardrail verdicts — body string was empty; fallback to state name
+
 ## [1.0.14] — 2026-05-29
 
 ### Fixed
