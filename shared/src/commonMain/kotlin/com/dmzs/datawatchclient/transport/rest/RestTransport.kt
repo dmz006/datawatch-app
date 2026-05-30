@@ -25,6 +25,8 @@ import com.dmzs.datawatchclient.transport.dto.MarkAlertReadDto
 import com.dmzs.datawatchclient.transport.dto.RenameSessionDto
 import com.dmzs.datawatchclient.transport.dto.ReplyDto
 import com.dmzs.datawatchclient.transport.dto.ReplyResponseDto
+import com.dmzs.datawatchclient.transport.dto.SessionInputDto
+import com.dmzs.datawatchclient.transport.dto.SessionInputResponseDto
 import com.dmzs.datawatchclient.transport.dto.RestartSessionDto
 import com.dmzs.datawatchclient.transport.dto.SaveCommandDto
 import com.dmzs.datawatchclient.transport.dto.SavedCommandDto
@@ -194,13 +196,13 @@ public class RestTransport(
         text: String,
     ): Result<Unit> =
         request {
-            val res: ReplyResponseDto =
-                client.post("${profile.baseUrl}/api/sessions/reply") {
+            val res: SessionInputResponseDto =
+                client.post("${profile.baseUrl}/api/sessions/$sessionId/input") {
                     bearer()?.let { header(HttpHeaders.Authorization, it) }
                     contentType(ContentType.Application.Json)
-                    setBody(ReplyDto(sessionId = sessionId, text = text))
+                    setBody(SessionInputDto(text = text))
                 }.body()
-            if (!res.ok) throw TransportError.ServerError(200, "server rejected reply")
+            if (!res.sent) throw TransportError.ServerError(200, "server rejected input")
         }
 
     override suspend fun killSession(sessionId: String): Result<Unit> =

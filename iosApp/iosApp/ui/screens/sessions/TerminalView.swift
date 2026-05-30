@@ -13,6 +13,9 @@ struct TerminalView: View {
     let session: Session
     let profile: ServerProfile
     @Binding var fontSize: Int
+    /// Set to a non-nil string to inject input into the terminal's WebSocket.
+    /// The view clears it back to nil after the JS call so callers can watch for completion.
+    @Binding var terminalInput: String?
 
     @State private var connected = false
     @State private var disconnected = false
@@ -25,7 +28,8 @@ struct TerminalView: View {
                 profile: profile,
                 fontSize: fontSize,
                 connected: $connected,
-                disconnected: $disconnected
+                disconnected: $disconnected,
+                terminalInput: $terminalInput
             )
 
             // Loading overlay until WS opens.
@@ -87,11 +91,12 @@ private struct TerminalWebView: UIViewRepresentable {
     let fontSize: Int
     @Binding var connected: Bool
     @Binding var disconnected: Bool
+    @Binding var terminalInput: String?
 
     // MARK: UIViewRepresentable
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(connected: $connected, disconnected: $disconnected)
+        Coordinator(connected: $connected, disconnected: $disconnected, terminalInput: $terminalInput)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -124,6 +129,11 @@ private struct TerminalWebView: UIViewRepresentable {
             "window.dwChangeFontSize && window.dwChangeFontSize(\(fontSize));",
             completionHandler: nil
         )
+        // Inject pending terminal input (reply text, quick commands) via the
+        // live WebSocket — same path as keyboard keystrokes through xterm.js.
+        if terminalInput != nil {
+            context.coordinator.flushPendingInput()
+        }
     }
 
     // MARK: HTML / WS URL builder
@@ -304,11 +314,30 @@ extension TerminalWebView {
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         @Binding var connected: Bool
         @Binding var disconnected: Bool
+        @Binding var terminalInput: String?
         weak var webView: WKWebView?
 
-        init(connected: Binding<Bool>, disconnected: Binding<Bool>) {
+        init(connected: Binding<Bool>, disconnected: Binding<Bool>, terminalInput: Binding<String?>) {
             _connected = connected
             _disconnected = disconnected
+            _terminalInput = terminalInput
+        }
+
+        /// Injects `terminalInput` into the xterm WebSocket via `window.sendInput` and
+        /// clears the binding so the caller can detect completion.
+        func flushPendingInput() {
+            guard let text = terminalInput else { return }
+            // Escape for JS single-quoted string literal.
+            let escaped = text
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\r", with: "\\r")
+                .replacingOccurrences(of: "\n", with: "\\n")
+            webView?.evaluateJavaScript(
+                "window.sendInput && window.sendInput('\(escaped)');",
+                completionHandler: nil
+            )
+            terminalInput = nil
         }
 
         // WKScriptMessageHandler — JS → Swift bridge.
@@ -403,7 +432,7 @@ extension TerminalWebView {
         computeNodeRef: nil,
         chrome: false
     )
-    TerminalView(session: session, profile: profile, fontSize: .constant(9))
+    TerminalView(session: session, profile: profile, fontSize: .constant(9), terminalInput: .constant(nil))
         .preferredColorScheme(.dark)
 }
 #endif

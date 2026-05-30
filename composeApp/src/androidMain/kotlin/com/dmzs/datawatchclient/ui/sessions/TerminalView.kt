@@ -96,6 +96,11 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
      *  3. InputConnectionWrapper: intercepts the back-door Samsung paths that
      *     bypass the inputType flags (performEditorAction, sendKeyEvent(ENTER),
      *     and commitText with a trailing newline).
+     *
+     * Intentional Enter from the soft keyboard is distinguished from Samsung's
+     * spurious autocomplete Enter by tracking whether a commitText call just
+     * landed: Samsung always fires commitText("word") → sendKeyEvent(ENTER) in
+     * sequence. A deliberate Enter tap has no preceding commitText.
      */
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null
@@ -106,29 +111,51 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
         return object : InputConnectionWrapper(ic, true) {
+            // True from the moment commitText commits non-empty text until the next
+            // sendKeyEvent or performEditorAction — flags the Samsung spurious-Enter window.
+            private var recentCommit = false
+
             override fun performEditorAction(editorAction: Int): Boolean {
-                // Samsung fires this when confirming a word from the
-                // autocomplete bar. Returning true consumes it without
-                // letting the WebView synthesise a DOM Enter event.
+                if (!recentCommit) {
+                    // Intentional soft-keyboard Enter (no autocomplete commit just fired).
+                    // Inject \r directly so xterm processes it without a DOM round-trip.
+                    this@TerminalWebView.evaluateJavascript(
+                        "window.DwBridge && DwBridge.onInput('\r');",
+                        null,
+                    )
+                }
+                recentCommit = false
                 return true
             }
+
             override fun sendKeyEvent(event: KeyEvent?): Boolean {
                 val kc = event?.keyCode
-                // Block IME-injected Enter and DPAD_CENTER — Samsung sends these
-                // via the InputConnection after autocomplete word commits, bypassing
-                // dispatchKeyEvent. The WebView converts them to DOM Enter events
-                // which xterm then sends to the shell as \r.
-                if (kc == KeyEvent.KEYCODE_ENTER || kc == KeyEvent.KEYCODE_DPAD_CENTER) {
-                    Log.d("DwTerm", "IC.sendKeyEvent SUPPRESSED keyCode=$kc")
-                    return true
+                if (kc == KeyEvent.KEYCODE_DPAD_CENTER) {
+                    recentCommit = false
+                    return true // DPAD_CENTER never has a terminal role on touchscreen
                 }
+                if (kc == KeyEvent.KEYCODE_ENTER) {
+                    if (recentCommit) {
+                        // Samsung spurious Enter following autocomplete commit — suppress.
+                        Log.d("DwTerm", "IC.sendKeyEvent SUPPRESSED (post-commit) kc=$kc")
+                        recentCommit = false
+                        return true
+                    }
+                    // Intentional soft-keyboard Enter — let it reach the WebView DOM so
+                    // xterm.js fires onData("\r") → DwBridge.onInput → WsOutbound.sendInput.
+                    recentCommit = false
+                    return super.sendKeyEvent(event)
+                }
+                recentCommit = false
                 return super.sendKeyEvent(event)
             }
+
             override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
-                // Strip any trailing \r / \n Samsung appends when committing
-                // a word (observed in some Samsung Keyboard versions where the
-                // committed string is "word\n" rather than just "word").
+                // Strip any trailing \r / \n Samsung appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
+                // Mark that a word commit just happened so the next Enter event is treated
+                // as Samsung's spurious post-autocomplete Enter, not an intentional keystroke.
+                recentCommit = cleaned.isNotEmpty()
                 return super.commitText(cleaned, newCursorPosition)
             }
         }
