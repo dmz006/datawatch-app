@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.11] — 2026-05-29
+
+### Fixed
+- Android Auto: second crash fixed — ForegroundCarColorSpan is not allowed in MESSAGING category templates; replaced with plain CarText across all Auto screens (AutoSummaryScreen, AutoMonitorScreen, AutoSessionListScreen, AutoServerPickerScreen, AutoAutomataScreen, AutoAboutScreen, SessionReplyScreen, AutoSessionDetailScreen)
+
 ## [1.0.10] — 2026-05-29
 
 ### Fixed

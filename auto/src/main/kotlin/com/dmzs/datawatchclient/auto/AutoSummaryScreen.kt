@@ -8,7 +8,6 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
-import androidx.car.app.model.ForegroundCarColorSpan
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
@@ -256,23 +255,14 @@ internal suspend fun resolveActiveProfile(): ServerProfile? {
 }
 
 /**
- * Apply a datawatch accent colour to a car row's title. The Car App
- * Library allows a narrow subset of [CarColor] spans; GREEN / YELLOW
- * mirror the PWA's "running / waiting" palette exactly.
+ * ForegroundCarColorSpan is not allowed in MESSAGING category templates —
+ * crashes with IllegalArgumentException on render. Return plain CarText;
+ * status is conveyed via emoji/symbols already present in the text.
  */
 internal fun colored(
     text: String,
-    color: CarColor,
-): CarText {
-    val spannable = android.text.SpannableString(text)
-    spannable.setSpan(
-        ForegroundCarColorSpan.create(color),
-        0,
-        text.length,
-        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-    )
-    return CarText.create(spannable)
-}
+    @Suppress("UNUSED_PARAMETER") color: CarColor,
+): CarText = CarText.create(text)
 
 /** Reusable datawatch-brand icon for template headers. */
 internal fun brandIcon(carContext: CarContext): CarIcon? =
