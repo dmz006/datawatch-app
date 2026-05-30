@@ -41,6 +41,7 @@ public class AutoSessionDetailScreen(
 
     private var telemetry: SessionTelemetryDto? = null
     private var sessionState: SessionState = SessionState.New
+    private var lastResponse: String? = null
     private var killPending: Boolean = false
     private var killFeedback: String? = null
     private var error: String? = null
@@ -72,7 +73,7 @@ public class AutoSessionDetailScreen(
         while (scope.isActive) {
             refresh()
             // §15: only invalidate when telemetry/state actually changed.
-            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending).hashCode()
+            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
                 invalidate()
@@ -97,7 +98,10 @@ public class AutoSessionDetailScreen(
             )
             transport.listSessions().getOrNull()
                 ?.firstOrNull { it.id == sessionId }
-                ?.let { sessionState = it.state }
+                ?.let { item ->
+                    sessionState = item.state
+                    lastResponse = item.lastResponse?.takeIf { it.isNotBlank() }
+                }
         } catch (e: Throwable) {
             error = e.message ?: e::class.simpleName
         }
@@ -271,6 +275,8 @@ public class AutoSessionDetailScreen(
                 }
                 // ETA
                 computeEtaMinutes(telem)?.let { eta -> appendLine("ETA: ~$eta min") }
+                // Last response — shown when session is waiting for input
+                lastResponse?.let { appendLine("◀ $it") }
                 // Guardrail verdicts — blocks first, then warns
                 val blocks = telem.guardrailVerdicts.filter { it.outcome == "block" }
                 val warns = telem.guardrailVerdicts.filter { it.outcome == "warn" }
