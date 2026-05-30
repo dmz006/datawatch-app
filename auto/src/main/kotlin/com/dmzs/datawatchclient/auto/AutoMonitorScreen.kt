@@ -19,8 +19,10 @@ import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -38,7 +40,9 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
     /** Snapshot per server: (profile, stats?, error?) */
     private var serverRows: List<ServerRow> = emptyList()
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // Track last snapshot hash to skip redundant invalidate() calls (standard §15).
+    private var lastRowsHash: Int = -1
 
     private data class ServerRow(
         val profile: ServerProfile,
@@ -58,6 +62,10 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     pollJob?.cancel()
                     pollJob = null
                 }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
             },
         )
     }
@@ -70,7 +78,12 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            invalidate()
+            // §15: only call invalidate() when data actually changed.
+            val newHash = serverRows.hashCode()
+            if (newHash != lastRowsHash) {
+                lastRowsHash = newHash
+                invalidate()
+            }
             delay(POLL_MS)
         }
     }

@@ -18,6 +18,8 @@ import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -43,7 +45,7 @@ public class AutoSessionDetailScreen(
     private var error: String? = null
     private var replyMode: Boolean = false
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -55,6 +57,10 @@ public class AutoSessionDetailScreen(
             override fun onStop(owner: LifecycleOwner) {
                 pollJob?.cancel()
                 pollJob = null
+            }
+
+            override fun onDestroy(owner: LifecycleOwner) {
+                scope.cancel()
             }
         })
     }
@@ -179,7 +185,8 @@ public class AutoSessionDetailScreen(
                     onSuccess = {
                         CarToast.makeText(carContext, "Sent: $text", CarToast.LENGTH_SHORT).show()
                         replyMode = false
-                        screenManager.pop()
+                        // Return to the session detail view (same screen, not a pop).
+                        invalidate()
                     },
                     onFailure = { err ->
                         CarToast.makeText(
@@ -193,6 +200,13 @@ public class AutoSessionDetailScreen(
                 )
             }
         }
+        // Back action cancels reply mode and returns to the detail view rather than popping
+        // the session detail screen off the stack. Action.BACK on a ListTemplate would call
+        // screenManager.pop() which removes this screen entirely; we need a custom cancel action.
+        val cancelAction = Action.Builder()
+            .setTitle("Cancel")
+            .setOnClickListener { replyMode = false; invalidate() }
+            .build()
         val items = ItemList.Builder()
             .addItem(Row.Builder().setTitle(colored("Yes", CarColor.GREEN)).addText("Send affirmative reply").setOnClickListener { sendReply("yes") }.build())
             .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Send negative reply").setOnClickListener { sendReply("no") }.build())
@@ -201,7 +215,14 @@ public class AutoSessionDetailScreen(
             .build()
         return ListTemplate.Builder()
             .setTitle("Quick Reply")
-            .setHeaderAction(Action.BACK)
+            // No Action.BACK here: this template is returned from a screen already on the stack.
+            // Action.BACK would call screenManager.pop() and remove the session detail screen.
+            // The Cancel action in the ActionStrip is the driver-safe way to exit reply mode.
+            .setActionStrip(
+                androidx.car.app.model.ActionStrip.Builder()
+                    .addAction(cancelAction)
+                    .build(),
+            )
             .setSingleList(items)
             .build()
     }

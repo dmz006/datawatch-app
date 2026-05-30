@@ -53,7 +53,14 @@ public class DatawatchMessagingService : CarAppService() {
                 val voiceResults = intent.getStringArrayListExtra("android.speech.extra.RESULTS")
                 val spokenText = voiceResults?.firstOrNull() ?: return
                 val cmd = com.dmzs.datawatchclient.auto.voice.parseVoiceCommand(spokenText)
-                carContext.getCarService(ScreenManager::class.java).push(
+                val screenManager = carContext.getCarService(ScreenManager::class.java)
+                // §8: Car App Library enforces a max screen stack depth of 5. Voice commands
+                // arrive independently of the user's navigation state, so pop to root first to
+                // guarantee we are at depth 1 before pushing VoiceStatusScreen (depth 2).
+                // Without this, a deep path (Monitor→Summary→Automata→SessionList→SessionDetail)
+                // would push to depth 6 and trigger an IllegalStateException from the host.
+                screenManager.popToRoot()
+                screenManager.push(
                     com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext, cmd),
                 )
             }

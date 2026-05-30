@@ -27,6 +27,8 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
     private var error: String? = null
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // §15: track snapshot hash to skip redundant invalidate() calls.
+    private var lastHash: Int = -1
 
     init {
         lifecycle.addObserver(
@@ -51,7 +53,12 @@ public class WaitingSessionsScreen(carContext: CarContext) : Screen(carContext) 
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            invalidate()
+            // §15: only invalidate when the session list actually changed.
+            val newHash = sessions.hashCode() xor (error?.hashCode() ?: 0)
+            if (newHash != lastHash) {
+                lastHash = newHash
+                invalidate()
+            }
             delay(POLL_MS)
         }
     }

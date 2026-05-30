@@ -5,10 +5,14 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.auto.AutoServiceLocator
 import com.dmzs.datawatchclient.auto.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -23,9 +27,14 @@ public class VoiceStatusScreen(
 ) : Screen(carContext) {
 
     private var statusText: String = carContext.getString(R.string.auto_voice_loading)
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                scope.cancel()
+            }
+        })
         scope.launch {
             statusText = when (command) {
                 VoiceCommand.STATUS, VoiceCommand.UNKNOWN -> {

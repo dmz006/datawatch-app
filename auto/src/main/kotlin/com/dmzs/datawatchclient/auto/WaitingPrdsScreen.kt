@@ -13,6 +13,8 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -30,7 +32,9 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
     private var prds: List<PrdDto> = emptyList()
     private var error: String? = null
     private var pollJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // §15: track snapshot hash to skip redundant invalidate() calls.
+    private var lastHash: Int = -1
 
     init {
         lifecycle.addObserver(
@@ -44,6 +48,10 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
                     pollJob?.cancel()
                     pollJob = null
                 }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
             },
         )
     }
@@ -51,7 +59,12 @@ public class WaitingPrdsScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            invalidate()
+            // §15: only invalidate when the PRD list actually changed.
+            val newHash = prds.hashCode() xor (error?.hashCode() ?: 0)
+            if (newHash != lastHash) {
+                lastHash = newHash
+                invalidate()
+            }
             delay(POLL_MS)
         }
     }
