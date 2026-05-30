@@ -242,7 +242,7 @@ public class AutoSessionDetailScreen(
             if (t.currentTask.isNotBlank()) appendLine("Last task: ${t.currentTask.take(80)}")
             if (t.progress > 0f) appendLine("Progress: ${(t.progress * 100).toInt()}%")
         }
-    }.trim().take(BODY_CHAR_LIMIT)
+    }.trim().ifEmpty { sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() } }.take(BODY_CHAR_LIMIT)
 
     private fun buildDetailBody(telem: SessionTelemetryDto?): String = buildString {
         killFeedback?.let { appendLine("ℹ $it"); appendLine() }
@@ -282,7 +282,7 @@ public class AutoSessionDetailScreen(
                 if (killPending) appendLine("\nTap Confirm Kill to proceed")
             }
         }
-    }.trim().take(BODY_CHAR_LIMIT)
+    }.trim().ifEmpty { sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() } }.take(BODY_CHAR_LIMIT)
 
     private fun onKillTap() {
         killPending = true
