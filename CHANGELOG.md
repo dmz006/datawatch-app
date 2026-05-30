@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.19] — 2026-05-30
+
+### Changed
+- Android Auto: session detail "Send" button now available for all non-terminal sessions (Running, Waiting, RateLimited) — not just Waiting — enabling command injection into any active session
+- Android Auto: "Quick Reply" renamed to "Send Command"; expanded from 4 to 6 options (max): Yes, No, Continue, Skip, Status, Stop
+
 ## [1.0.18] — 2026-05-30
 
 ### Fixed
