@@ -201,10 +201,12 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
     }
 }
 
+private const val PROGRESS_BAR_WIDTH: Int = 10
+
 /** Renders a compact progress bar: "▓▓▓░░░░░░░ 28%" (10 wide). */
-private fun progressBar(pct: Int, width: Int = 10): String {
-    val clamped = pct.coerceIn(0, 100)
-    val filled = (clamped * width / 100).coerceIn(0, width)
+private fun progressBar(pct: Int, width: Int = PROGRESS_BAR_WIDTH): String {
+    val clamped = pct.coerceIn(0, PCT_MULTIPLIER)
+    val filled = (clamped * width / PCT_MULTIPLIER).coerceIn(0, width)
     return "▓".repeat(filled) + "░".repeat(width - filled) + " $clamped%"
 }
 
