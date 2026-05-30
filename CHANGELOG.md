@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.10] — 2026-05-29
+
+### Fixed
+- Android Auto: crash on connect fixed — ActionStrip was exceeding the Car App Library hard limit of 2 actions (AutoMonitorScreen had 4, AutoSummaryScreen had 3); reduced to 2 on each screen
+
 ## [1.0.4] — 2026-05-27
 
 ### Changed
