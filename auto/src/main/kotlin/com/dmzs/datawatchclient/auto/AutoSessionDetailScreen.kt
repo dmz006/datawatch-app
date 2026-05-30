@@ -42,6 +42,7 @@ public class AutoSessionDetailScreen(
     private var telemetry: SessionTelemetryDto? = null
     private var sessionState: SessionState = SessionState.New
     private var lastResponse: String? = null
+    private var currentStatus: String? = null
     private var killPending: Boolean = false
     private var killFeedback: String? = null
     private var error: String? = null
@@ -73,7 +74,7 @@ public class AutoSessionDetailScreen(
         while (scope.isActive) {
             refresh()
             // §15: only invalidate when telemetry/state actually changed.
-            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse).hashCode()
+            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse, currentStatus).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
                 invalidate()
@@ -102,6 +103,13 @@ public class AutoSessionDetailScreen(
                     sessionState = item.state
                     lastResponse = item.lastResponse?.takeIf { it.isNotBlank() }
                 }
+            if (sessionState == SessionState.Running) {
+                transport.getSessionCurrentStatus(sessionId).getOrNull()
+                    ?.currentStatus?.takeIf { it.isNotBlank() }
+                    ?.let { currentStatus = it }
+            } else {
+                currentStatus = null
+            }
         } catch (e: Throwable) {
             error = e.message ?: e::class.simpleName
         }
@@ -275,8 +283,12 @@ public class AutoSessionDetailScreen(
                 }
                 // ETA
                 computeEtaMinutes(telem)?.let { eta -> appendLine("ETA: ~$eta min") }
-                // Last response — shown when session is waiting for input
-                lastResponse?.let { appendLine("◀ $it") }
+                // Running → AI current-status summary; waiting → last LLM response
+                if (sessionState == SessionState.Running) {
+                    currentStatus?.let { appendLine("◈ $it") }
+                } else {
+                    lastResponse?.let { appendLine("◀ $it") }
+                }
                 // Guardrail verdicts — blocks first, then warns
                 val blocks = telem.guardrailVerdicts.filter { it.outcome == "block" }
                 val warns = telem.guardrailVerdicts.filter { it.outcome == "warn" }

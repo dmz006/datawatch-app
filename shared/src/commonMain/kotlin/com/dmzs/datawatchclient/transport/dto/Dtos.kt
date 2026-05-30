@@ -1563,6 +1563,12 @@ public data class SessionTelemetryDto(
     @SerialName("parent_session_id") val parentSessionId: String = "",
 )
 
+@Serializable
+public data class CurrentStatusDto(
+    @SerialName("current_status") val currentStatus: String = "",
+    @SerialName("generated_at") val generatedAt: String = "",
+)
+
 // ---- Guardrail Library + Profiles (alpha.75 BL303 S2, issue #128) ----
 @Serializable
 public data class GuardrailLibraryItemDto(

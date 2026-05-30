@@ -634,6 +634,16 @@ public class SessionsViewModel : ViewModel() {
         )
     }
 
+    /** Fetch the LLM-generated current-status summary for a running session. */
+    public suspend fun fetchCurrentStatus(sessionId: String): String? {
+        val profile = profileForSession(sessionId) ?: return null
+        return ServiceLocator.transportFor(profile)
+            .getSessionCurrentStatus(fullIdFor(sessionId))
+            .getOrNull()
+            ?.currentStatus
+            ?.takeIf { it.isNotBlank() }
+    }
+
     /** Fetch server-configured system quick-commands (datawatch#28). Empty list = use client fallback. */
     public suspend fun fetchSystemQuickCommands(sessionId: String): List<QuickCommandItem> {
         val profile = profileForSession(sessionId) ?: return emptyList()
