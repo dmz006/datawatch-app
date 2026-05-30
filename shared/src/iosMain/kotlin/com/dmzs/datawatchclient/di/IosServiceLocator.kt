@@ -18,9 +18,10 @@ import com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import com.dmzs.datawatchclient.transport.ws.WebSocketTransport
 import io.ktor.client.HttpClient
+import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.readBytes
+import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -592,13 +593,7 @@ public object IosServiceLocator {
         onError: (String) -> Unit,
     ) {
         val length = audioData.length.toInt()
-        val bytes = if (length == 0) ByteArray(0) else {
-            ByteArray(length).also { dst ->
-                dst.usePinned { pinned ->
-                    audioData.getBytes(pinned.addressOf(0), length.toULong())
-                }
-            }
-        }
+        val bytes = audioData.bytes?.reinterpret<ByteVar>()?.readBytes(length) ?: ByteArray(0)
         transcribeAudio(bytes, audioMime, sessionId, profile, onSuccess, onError)
     }
 
