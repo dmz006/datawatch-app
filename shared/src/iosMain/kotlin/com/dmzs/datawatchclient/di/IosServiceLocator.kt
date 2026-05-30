@@ -526,12 +526,12 @@ public object IosServiceLocator {
         ioScope.launch {
             transportFor(profile).fetchConfig().fold(
                 onSuccess = { cfg ->
-                    val enabled = cfg.raw["session.summarizer.enabled"]
-                        ?.let { runCatching { (it as? kotlinx.serialization.json.JsonPrimitive)?.booleanOrNull }.getOrNull() }
-                        ?: false
-                    val llmRef = cfg.raw["session.summarizer.llm_ref"]
-                        ?.let { runCatching { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }.getOrNull() }
-                        ?: ""
+                    val enabled = (cfg.raw["session.summarizer.enabled"]
+                        as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content?.toBooleanStrictOrNull() ?: false
+                    val llmRef = (cfg.raw["session.summarizer.llm_ref"]
+                        as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content ?: ""
                     onSuccess(enabled, llmRef)
                 },
                 onFailure = { onError(it.message ?: "Failed to load config.") },
@@ -595,7 +595,7 @@ public object IosServiceLocator {
         val bytes = if (length == 0) ByteArray(0) else {
             ByteArray(length).also { dst ->
                 audioData.bytes?.reinterpret<ByteVar>()?.let { ptr ->
-                    for (i in 0 until length) dst[i] = ptr[i]
+                    for (i in 0 until length) dst[i] = ptr[i.toLong()].value
                 }
             }
         }
