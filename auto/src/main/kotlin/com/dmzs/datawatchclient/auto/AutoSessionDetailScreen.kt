@@ -5,6 +5,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
@@ -46,6 +47,8 @@ public class AutoSessionDetailScreen(
     private var replyMode: Boolean = false
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // §15: track snapshot hash to skip redundant invalidate() calls.
+    private var lastDetailHash: Int = -1
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -68,7 +71,12 @@ public class AutoSessionDetailScreen(
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            invalidate()
+            // §15: only invalidate when telemetry/state actually changed.
+            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending).hashCode()
+            if (newHash != lastDetailHash) {
+                lastDetailHash = newHash
+                invalidate()
+            }
             // BL303-A5.2: terminal sessions use cached state — slow poll, no more network calls
             val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
             delay(if (isTerminal) AMBIENT_POLL_MS else POLL_MS)
@@ -219,7 +227,7 @@ public class AutoSessionDetailScreen(
             // Action.BACK would call screenManager.pop() and remove the session detail screen.
             // The Cancel action in the ActionStrip is the driver-safe way to exit reply mode.
             .setActionStrip(
-                androidx.car.app.model.ActionStrip.Builder()
+                ActionStrip.Builder()
                     .addAction(cancelAction)
                     .build(),
             )
