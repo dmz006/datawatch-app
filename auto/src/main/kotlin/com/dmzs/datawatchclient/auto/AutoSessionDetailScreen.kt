@@ -266,6 +266,22 @@ public class AutoSessionDetailScreen(
             }
             else -> Unit
         }
+        // Always offer a TTS "play" slot so the user can hear the most relevant text
+        // regardless of session state — no tap-into-detail required while driving.
+        val speakText = currentStatusLong ?: currentStatus ?: lastResponse ?: lastPrompt
+        if (!speakText.isNullOrBlank()) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(
+                        CarIcon.Builder(
+                            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
+                        ).build()
+                    )
+                    .setOnClickListener { speakStatus() }
+                    .build()
+            )
+            actionStripActions++
+        }
         if (actionStripActions > 0) {
             templateBuilder.setActionStrip(actionStripBuilder.build())
         }
@@ -379,7 +395,14 @@ public class AutoSessionDetailScreen(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setTitle("Continue").setOnClickListener { sendReply("continue\r") }.build())
                     .addAction(Action.Builder().setTitle("Skip").setOnClickListener { sendReply("skip\r") }.build())
-                    .addAction(Action.Builder().setTitle("▶").setOnClickListener { speakStatus(); replyMode = false; invalidate() }.build())
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
+                            .setOnClickListener {
+                                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            }
+                            .build()
+                    )
                     .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { replyMode = false; invalidate() }.build())
                     .build(),
             )
@@ -494,7 +517,7 @@ public class AutoSessionDetailScreen(
         const val SUMMARY_CHARS: Int = 60
         const val MS_PER_MIN: Long = 60_000L
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
-        const val MAX_STRIP_ACTIONS: Int = 2
+        const val MAX_STRIP_ACTIONS: Int = 2  // max ℹ info slots; TTS slot is additive
 
         fun computeEtaMinutes(telem: SessionTelemetryDto): Int? {
             val completed = telem.tasks.filter { it.status == "completed" }

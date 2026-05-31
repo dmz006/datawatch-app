@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.34] — 2026-05-31
+
+### Fixed
+- Android Auto: voice recording now uses Android's built-in `SpeechRecognizer` (Google ASR) instead of `CarAudioRecord` + Whisper — works while driving without hitting the host's audio recording restriction; Whisper transcription is still used in the phone app
+- Android Auto: voice command button restored to the reply strip (mic icon in ActionStrip) for all non-terminal sessions including running ones, not just waiting ones
+- Android Auto: TTS "play" (speaker icon) now always visible in the session detail ActionStrip so you can hear the current status, last response, or prompt at any time without going into reply mode
+
 ## [1.0.33] — 2026-05-31
 
 ### Fixed
