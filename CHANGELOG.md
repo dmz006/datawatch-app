@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.41] — 2026-05-31
+
+### Fixed
+- Android Auto: session detail crash hardened further — `setTitle()` now uses `sessionId` as fallback when session name is blank (defensive guard against empty-name edge case); `refresh()` no longer swallows `CancellationException` (re-throws so cooperative cancellation works correctly on screen pop)
+
+### Changed
+- Android Auto: About screen now shows `v${version}` in the screen title (immediately visible at top) and `v${version}  (build ${code})` as the first line of the body; removed ASCII art that pushed version off-screen on some head units
+
 ## [1.0.40] — 2026-05-31
 
 ### Fixed

@@ -88,11 +88,7 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         val body = """
-◈━━━━━━━━━━━━━━━━━━━━━◈
-   ◉  d a t a w a t c h  ◉
-◈━━━━━━━━━━━━━━━━━━━━━◈
-
-v${Version.VERSION}  ·  build ${Version.VERSION_CODE}
+v${Version.VERSION}  (build ${Version.VERSION_CODE})
 fleet observability · driver surface
 
 ⟫ Reboot — restart the daemon process
@@ -100,7 +96,7 @@ fleet observability · driver surface
         """.trimIndent()
 
         val templateBuilder = MessageTemplate.Builder(body)
-            .setTitle("datawatch")
+            .setTitle("datawatch  v${Version.VERSION}")
             .setHeaderAction(Action.BACK)
             .addAction(
                 Action.Builder()

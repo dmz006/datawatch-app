@@ -128,6 +128,7 @@ public class AutoSessionDetailScreen(
                 currentStatusLong = null
             }
         } catch (e: Throwable) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             error = e.message ?: e::class.simpleName
         }
     }
@@ -144,7 +145,7 @@ public class AutoSessionDetailScreen(
         val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
 
         val templateBuilder = MessageTemplate.Builder(buildBody())
-            .setTitle(sessionTitle)
+            .setTitle(sessionTitle.ifBlank { sessionId })
             .setHeaderAction(Action.BACK)
 
         // ActionStrip — labeled text for discoverability while driving.
