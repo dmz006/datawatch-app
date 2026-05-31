@@ -970,6 +970,7 @@ private fun SimpleDropdown(
 }
 
 /** Model picker that renders provider group labels as non-selectable headers. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupedModelDropdown(
     label: String,
@@ -980,18 +981,18 @@ private fun GroupedModelDropdown(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier,
+    ) {
         OutlinedTextField(
             value = selected.ifEmpty { noneLabel },
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                androidx.compose.material3.TextButton(
-                    onClick = { expanded = !expanded },
-                ) { Text("▾") }
-            },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         )
         androidx.compose.material3.DropdownMenu(
             expanded = expanded,

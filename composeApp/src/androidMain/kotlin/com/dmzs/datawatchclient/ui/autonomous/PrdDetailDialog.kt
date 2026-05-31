@@ -28,6 +28,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -573,16 +575,17 @@ private fun LlmOverrideDialog(
         title = { Text(stringResource(R.string.prd_detail_set_llm_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.fillMaxWidth()) {
+                ExposedDropdownMenuBox(
+                    expanded = backendMenuOpen,
+                    onExpandedChange = { backendMenuOpen = it },
+                ) {
                     OutlinedTextField(
                         value = backend.ifEmpty { inheritLabel },
                         onValueChange = {},
                         label = { Text(stringResource(R.string.new_prd_backend_label)) },
                         readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = {
-                            TextButton(onClick = { backendMenuOpen = !backendMenuOpen }) { Text("▾") }
-                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = backendMenuOpen) },
                     )
                     DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
                         DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { backend = ""; backendMenuOpen = false })
@@ -591,16 +594,18 @@ private fun LlmOverrideDialog(
                         }
                     }
                 }
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = effortMenuOpen,
+                    onExpandedChange = { effortMenuOpen = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
                     OutlinedTextField(
                         value = effort.ifEmpty { inheritLabel },
                         onValueChange = {},
                         label = { Text(stringResource(R.string.new_prd_effort_label)) },
                         readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = {
-                            TextButton(onClick = { effortMenuOpen = !effortMenuOpen }) { Text("▾") }
-                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = effortMenuOpen) },
                     )
                     DropdownMenu(expanded = effortMenuOpen, onDismissRequest = { effortMenuOpen = false }) {
                         EFFORT_OPTIONS.forEach { e ->
@@ -660,16 +665,18 @@ private fun EditPrdDialog(
                     maxLines = 8,
                 )
                 if (permissionModes.isNotEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    ExposedDropdownMenuBox(
+                        expanded = pmMenuOpen,
+                        onExpandedChange = { pmMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
                         OutlinedTextField(
                             value = permissionMode.ifEmpty { inheritLabel },
                             onValueChange = {},
                             label = { Text(stringResource(R.string.new_prd_permission_mode_label)) },
                             readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                TextButton(onClick = { pmMenuOpen = !pmMenuOpen }) { Text("▾") }
-                            },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pmMenuOpen) },
                         )
                         DropdownMenu(expanded = pmMenuOpen, onDismissRequest = { pmMenuOpen = false }) {
                             DropdownMenuItem(

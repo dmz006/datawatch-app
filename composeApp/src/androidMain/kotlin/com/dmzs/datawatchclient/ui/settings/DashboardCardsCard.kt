@@ -11,6 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,6 +50,7 @@ private val VALID_CARD_IDS = listOf(
     "tree", "orbital", "events", "sparklines", "gantt", "heatmap", "guardrails", "ekg", "smoke",
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DashboardCardsCard() {
     var cards by remember { mutableStateOf<List<DashboardCardDto>>(emptyList()) }
@@ -187,19 +191,18 @@ internal fun DashboardCardsCard() {
         )
 
         // Card ID dropdown for add section
-        Box {
+        ExposedDropdownMenuBox(
+            expanded = addIdExpanded,
+            onExpandedChange = { addIdExpanded = it },
+        ) {
             OutlinedTextField(
                 value = addId,
-                onValueChange = { addId = it },
+                onValueChange = {},
                 label = { Text(stringResource(R.string.dash_card_id)) },
                 placeholder = { Text(stringResource(R.string.dash_card_id_hint)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { addIdExpanded = true },
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
                 readOnly = true,
-                trailingIcon = {
-                    TextButton(onClick = { addIdExpanded = true }) { Text("▾") }
-                },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = addIdExpanded) },
             )
             DropdownMenu(expanded = addIdExpanded, onDismissRequest = { addIdExpanded = false }) {
                 VALID_CARD_IDS.forEach { opt ->
@@ -278,6 +281,7 @@ internal fun DashboardCardsCard() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DashboardCardRow(
     card: DashboardCardDto,
@@ -331,18 +335,17 @@ private fun DashboardCardRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // Card ID picker
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = idDropdownExpanded,
+                    onExpandedChange = { idDropdownExpanded = it },
+                ) {
                     OutlinedTextField(
                         value = editId,
-                        onValueChange = { editId = it },
+                        onValueChange = {},
                         label = { Text(stringResource(R.string.dash_card_id)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { idDropdownExpanded = true },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
                         readOnly = true,
-                        trailingIcon = {
-                            TextButton(onClick = { idDropdownExpanded = true }) { Text("▾") }
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = idDropdownExpanded) },
                     )
                     DropdownMenu(
                         expanded = idDropdownExpanded,
