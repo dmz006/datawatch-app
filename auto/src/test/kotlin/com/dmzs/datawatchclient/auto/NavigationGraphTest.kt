@@ -43,8 +43,23 @@ class NavigationGraphTest {
         assertNotNull(cls)
     }
 
-    @Test fun `VoiceStatusScreen class exists`() {
-        val cls = Class.forName("com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen")
+    @Test fun `VoiceRecordingScreen class exists`() {
+        val cls = Class.forName("com.dmzs.datawatchclient.auto.VoiceRecordingScreen")
+        assertNotNull(cls)
+    }
+
+    @Test fun `TranscriptionConfirmScreen class exists`() {
+        val cls = Class.forName("com.dmzs.datawatchclient.auto.TranscriptionConfirmScreen")
+        assertNotNull(cls)
+    }
+
+    @Test fun `LastOutputDetailScreen class exists`() {
+        val cls = Class.forName("com.dmzs.datawatchclient.auto.LastOutputDetailScreen")
+        assertNotNull(cls)
+    }
+
+    @Test fun `BlockDetailsScreen class exists`() {
+        val cls = Class.forName("com.dmzs.datawatchclient.auto.BlockDetailsScreen")
         assertNotNull(cls)
     }
 

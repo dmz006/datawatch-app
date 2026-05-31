@@ -71,7 +71,10 @@ public class BlockDetailsScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Kill Session")
-                    .setOnClickListener { screenManager.pop() /* kill from session detail */ }
+                    .setOnClickListener {
+                        CarToast.makeText(carContext, "Kill — use session detail", CarToast.LENGTH_SHORT).show()
+                        screenManager.pop()
+                    }
                     .build()
             )
             .build()
@@ -83,7 +86,7 @@ public class BlockDetailsScreen(
             .filter { it.outcome == "block" }
             .ifEmpty { verdicts }
             .joinToString("\n\n") { verdict ->
-                "${verdict.guardrail}: ${verdict.summary.take(SUMMARY_CHARS)}"
+                "⚠ ${verdict.guardrail}\n${verdict.summary.take(SUMMARY_CHARS)}"
             }
             .take(BODY_CHAR_LIMIT)
     }
