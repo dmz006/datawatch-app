@@ -59,11 +59,18 @@ Bearer tokens never appear in the SQLite database; `ServerProfile.bearerTokenRef
 contains only the alias string ("dw.profile.<id>") that the transport layer's
 `tokenProvider` lambda resolves through `TokenVault.get()`.
 
-## Settings (to be populated Sprint 1 Phase 3)
+## Settings
 
-_None exposed yet._ Each setting added to `config/Settings.kt` must also appear here
-with its type, default, and the five access methods per AGENT.md
-"Configuration Accessibility Rule".
+Each setting added must appear here with its key, type, default, and owning store.
+
+### Android Auto preferences (`auto_prefs` SharedPreferences)
+
+| Key | Type | Default | Purpose |
+|-----|------|---------|---------|
+| `auto_play_last_response` | Boolean | `false` | Auto-play TTS on open of `LastOutputDetailScreen` |
+| `auto_play_transcription` | Boolean | `true` | Auto-play TTS read-back of Whisper transcription on `TranscriptionConfirmScreen` |
+
+These are stored in `Context.MODE_PRIVATE` SharedPreferences file `"auto_prefs"`. Accessed directly in the Car App Library screen classes (no ViewModel layer — Auto screens are stateful `Screen` objects, not Composables).
 
 ## Permissions
 

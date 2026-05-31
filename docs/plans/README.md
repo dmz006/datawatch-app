@@ -299,6 +299,7 @@ or retracted rather than scheduled.
 
 | ID | Title | Shipped in | Notes |
 |----|-------|-----------|-------|
+| BL303 | Android Auto UX overhaul | v1.0.28 | BL303-A1–A8: ConstraintManager list limits, AutoSummaryScreen live automata counts + Last Output row, LastOutputDetailScreen, BlockDetailsScreen, VoiceRecordingScreen (CarAudioRecord), TranscriptionConfirmScreen, context-sensitive ActionStrip on session detail, update check in About screen. Plan: `docs/plans/2026-05-31-auto-ux-overhaul.md`. |
 | BL2 | Biometric unlock | v0.9.0 | Promoted per ADR-0042. Passphrase-bound variant now tracked as BL16. |
 | BL4 | Wear Tile | v0.5.0 | Data Layer pipe lives under v0.33.12 WearSyncService. |
 | BL6 | Home-screen widget | v0.4.0 | |
