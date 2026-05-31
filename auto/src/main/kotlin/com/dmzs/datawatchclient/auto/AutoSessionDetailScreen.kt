@@ -9,10 +9,7 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
-import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -339,9 +336,8 @@ public class AutoSessionDetailScreen(
                 val profile = profiles.firstOrNull { it.enabled } ?: return@launch
                 AutoServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
                     onSuccess = {
-                        CarToast.makeText(carContext, "Sent: $text", CarToast.LENGTH_SHORT).show()
+                        CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()
                         replyMode = false
-                        // Return to the session detail view (same screen, not a pop).
                         invalidate()
                     },
                     onFailure = { err ->
@@ -356,35 +352,37 @@ public class AutoSessionDetailScreen(
                 )
             }
         }
-        // Back action cancels reply mode and returns to the detail view rather than popping
-        // the session detail screen off the stack. Action.BACK on a ListTemplate would call
-        // screenManager.pop() which removes this screen entirely; we need a custom cancel action.
-        val cancelAction = Action.Builder()
-            .setTitle("Cancel")
-            .setOnClickListener { replyMode = false; invalidate() }
-            .build()
-        // Drive compliance: max 6 rows per ListTemplate.
-        val items = ItemList.Builder()
-            .addItem(Row.Builder().setTitle(colored("Yes", CarColor.GREEN)).addText("Affirmative reply / confirm").setOnClickListener { sendReply("yes\r") }.build())
-            .addItem(Row.Builder().setTitle(colored("No", CarColor.RED)).addText("Negative reply / decline").setOnClickListener { sendReply("no\r") }.build())
-            .addItem(Row.Builder().setTitle("Continue").addText("Resume or proceed").setOnClickListener { sendReply("continue\r") }.build())
-            .addItem(Row.Builder().setTitle("Skip").addText("Skip current step").setOnClickListener { sendReply("skip\r") }.build())
-            .addItem(Row.Builder().setTitle("▶ Play").addText("Hear current status aloud").setOnClickListener { speakStatus() }.build())
-            .addItem(Row.Builder().setTitle("🎤 Voice").addText("Speak a custom command").setOnClickListener {
-                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
-            }.build())
-            .build()
-        return ListTemplate.Builder()
-            .setTitle("Send Command")
-            // No Action.BACK here: this template is returned from a screen already on the stack.
-            // Action.BACK would call screenManager.pop() and remove the session detail screen.
-            // The Cancel action in the ActionStrip is the driver-safe way to exit reply mode.
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(cancelAction)
+        // Stay on MessageTemplate so the host never has to handle a MessageTemplate →
+        // ListTemplate type switch mid-session. Template-type changes in the Messaging
+        // category are blocked while driving; keeping the same type lets all actions fire.
+        //
+        // No Action.BACK: BACK would pop the session detail screen off the stack.
+        // Cancel is in the ActionStrip instead — that is the driver-safe exit.
+        val bodyText = (promptContext ?: lastPrompt ?: currentStatus ?: "")
+            .replace("\n", " ").trim().take(REPLY_BODY_CHARS)
+            .ifEmpty { "Select a reply" }
+        return MessageTemplate.Builder(bodyText)
+            .setTitle("Quick Reply")
+            .addAction(
+                Action.Builder()
+                    .setTitle("Yes")
+                    .setOnClickListener { sendReply("yes\r") }
                     .build(),
             )
-            .setSingleList(items)
+            .addAction(
+                Action.Builder()
+                    .setTitle("No")
+                    .setOnClickListener { sendReply("no\r") }
+                    .build(),
+            )
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setTitle("Continue").setOnClickListener { sendReply("continue\r") }.build())
+                    .addAction(Action.Builder().setTitle("Skip").setOnClickListener { sendReply("skip\r") }.build())
+                    .addAction(Action.Builder().setTitle("▶").setOnClickListener { speakStatus(); replyMode = false; invalidate() }.build())
+                    .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { replyMode = false; invalidate() }.build())
+                    .build(),
+            )
             .build()
     }
 
@@ -492,6 +490,7 @@ public class AutoSessionDetailScreen(
         const val POLL_MS: Long = 10_000L
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val BODY_CHAR_LIMIT: Int = 500
+        const val REPLY_BODY_CHARS: Int = 200
         const val SUMMARY_CHARS: Int = 60
         const val MS_PER_MIN: Long = 60_000L
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L

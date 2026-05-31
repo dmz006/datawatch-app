@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.33] — 2026-05-31
+
+### Fixed
+- Android Auto: quick-reply actions (Yes / No / Continue / Skip) now work while driving — the inline reply view now stays on `MessageTemplate` instead of switching to `ListTemplate`; template-type transitions in the Messaging category are blocked while the vehicle is in motion
+- Android Auto: voice recording from the notification reply button now shows a clear "Microphone not available — try from the notification reply button" toast instead of silently failing when the host blocks recording (e.g. while driving in some OEM configurations)
+- Android Auto: bumped `minCarApiLevel` from 1 to 2, properly declaring support for `CarAudioRecord` to the host
+
 ## [1.0.32] — 2026-05-31
 
 ### Fixed
