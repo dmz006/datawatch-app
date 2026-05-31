@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.30] — 2026-05-31
+
+### Fixed
+- New Session: task field is now optional — Start button enabled without a task (server starts an interactive shell)
+- New Session: all dropdowns now open on tap anywhere in the field, not just the trailing chevron icon (`SimpleDropdown` and cluster picker converted to `ExposedDropdownMenuBox`)
+- Session Detail: D-pad arrow (↑↓←→) and ESC quick-action buttons now route through tmux `sendkey` instead of raw `send_input`, matching PWA behavior and bypassing PTY line buffering that caused arrows to require a manual Enter press
+
 ## [1.0.29] — 2026-05-31
 
 ### Added
