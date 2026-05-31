@@ -368,9 +368,24 @@ public class SessionDetailViewModel(
         _replying.value = true
         _banner.value = null
         viewModelScope.launch {
-            val ok =
+            // Arrow/ESC keys must go through tmux send-keys (matches PWA sendkey path)
+            // so they bypass PTY line buffering. Raw escape sequences via send_input
+            // get buffered until a CR arrives, causing arrows to appear to require Enter.
+            val sendKeyName = when (text) {
+                "[A" -> "Up"
+                "[B" -> "Down"
+                "[C" -> "Right"
+                "[D" -> "Left"
+                ""   -> "Escape"
+                else       -> null
+            }
+            val ok = if (sendKeyName != null) {
+                com.dmzs.datawatchclient.transport.ws.WsOutbound
+                    .sendCommand(sessionId, "sendkey ${fullIdOrShort()}: $sendKeyName")
+            } else {
                 com.dmzs.datawatchclient.transport.ws.WsOutbound
                     .sendInput(sessionId, text)
+            }
             _replying.value = false
             if (!ok) {
                 _banner.value = "Quick reply failed: WS not connected."
