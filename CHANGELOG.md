@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.37] — 2026-05-31
+
+### Fixed
+- Android Auto: TTS playback now auto-starts when `LastOutputDetailScreen` opens; added explicit **Play Short** and **Play Long** action buttons so playback options are visible (previously the play button was a hidden info icon in the ActionStrip); **Play Long** speaks `currentStatusLong` inline without a screen push, so it works while driving (removed the parked-only `LongOutputScreen` navigation)
+- Android Auto: voice recording (`VoiceRecordingScreen`) now uses `applicationContext` instead of `CarContext` for `SpeechRecognizer` binding — fixes the immediate-pop-back behaviour caused by `isRecognitionAvailable` returning false in the Car App service context; also shows a clear error state instead of silently popping when recognition is unavailable
+
 ## [1.0.36] — 2026-05-31
 
 ### Changed
