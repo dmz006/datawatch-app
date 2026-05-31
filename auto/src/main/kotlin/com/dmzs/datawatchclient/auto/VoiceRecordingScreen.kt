@@ -99,8 +99,19 @@ public class VoiceRecordingScreen(
                     if (read > 0) audioBuffer.write(buf, 0, read)
                     else if (read < 0) break
                 }
-            } catch (e: Throwable) {
-                // Swallow — will surface at Done tap if audio is empty
+            } catch (e: SecurityException) {
+                // Host denied recording (e.g. UX_RESTRICTIONS_NO_RECORDING while driving).
+                // Surface the denial so the user knows why recording didn't capture anything.
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    CarToast.makeText(
+                        carContext,
+                        "Microphone not available — try from the notification reply button",
+                        CarToast.LENGTH_LONG,
+                    ).show()
+                    screenManager.pop()
+                }
+            } catch (_: Throwable) {
+                // Other failures surface as empty audio at Done tap.
             }
         }
     }
