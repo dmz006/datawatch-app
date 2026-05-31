@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.28] — 2026-05-31
+
+### Added
+- Android Auto: Session Detail ActionStrip with context-sensitive icon slots — Running shows status+response, Waiting shows prompt+status, Blocked shows block details+status, Completed/Killed shows last response
+- Android Auto: LastOutputDetailScreen — shows session output (status, prompt, or response) with TTS playback and optional Long Version (parked-only) when long text is available
+- Android Auto: LongOutputScreen — full long-text view pushed from LastOutputDetailScreen, parked-only, with TTS
+- Android Auto: BlockDetailsScreen — lists active guardrail verdicts with Approve Gate and Kill Session actions plus TTS; pushed from Session Detail ActionStrip when session is blocked
+- Android Auto: VoiceRecordingScreen — captures audio via CarAudioRecord with Recording/Transcribing states and Done/Cancel buttons; submits to Whisper transcription endpoint
+- Android Auto: TranscriptionConfirmScreen — shows Whisper transcript with Send/Retry buttons and auto-play TTS on enter; Send delivers transcript to session and pops back to session detail
+- Android Auto: Voice row added to Session Detail reply list — tap to push VoiceRecordingScreen
+- Android Auto: Kill Pending now shows Confirm Kill (red) + Cancel buttons — Cancel exits kill-pending mode without killing
+- Android Auto: Session Detail ActionStrip tracks promptContext and lastPrompt for Waiting state display
+- Android Auto: Automata list rows show colored dot icons (red=awaiting approval, green=active) and 8-char block progress bars in subtitle
+- Android Auto: Monitor screen adds forcedProfile constructor param for single-server drill-down from multi-server list
+- Android Auto: Monitor multi-server rows are now tappable and push AutoMonitorScreen with that profile
+- Android Auto: Monitor Sessions row in single-server mode is tappable and pushes AutoSessionListScreen
+- Android Auto: About screen checks for updates on start; Update button only shown when status=update_available; shows live update status in body
+
 ## [1.0.27] — 2026-05-30
 
 ### Fixed
