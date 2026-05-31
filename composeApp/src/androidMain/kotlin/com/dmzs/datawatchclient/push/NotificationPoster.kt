@@ -72,6 +72,8 @@ public class NotificationPoster(private val context: Context) {
                 .setContentIntent(deepLinkIntent(event.sessionId))
 
         if (event.type == Event.Type.InputNeeded) {
+            builder.addAction(buildQuickReplyAction(event.sessionId, "Yes", "yes"))
+            builder.addAction(buildQuickReplyAction(event.sessionId, "No", "no"))
             builder.addAction(buildReplyAction(event.sessionId))
         }
 
@@ -98,6 +100,21 @@ public class NotificationPoster(private val context: Context) {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    private fun buildQuickReplyAction(sessionId: String, label: String, text: String): NotificationCompat.Action {
+        val intent = Intent(context, ReplyBroadcastReceiver::class.java).apply {
+            action = ReplyBroadcastReceiver.ACTION_QUICK_REPLY
+            putExtra(ReplyBroadcastReceiver.EXTRA_SESSION_ID, sessionId)
+            putExtra(ReplyBroadcastReceiver.EXTRA_REPLY_TEXT, text)
+        }
+        val pi = PendingIntent.getBroadcast(
+            context,
+            (sessionId + label).hashCode() xor QUICK_REPLY_REQUEST_CODE_SALT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return NotificationCompat.Action.Builder(R.drawable.ic_stat_dw, label, pi).build()
     }
 
     private fun buildReplyAction(sessionId: String): NotificationCompat.Action {
@@ -137,6 +154,7 @@ public class NotificationPoster(private val context: Context) {
         // don't collide with the deep-link requestCodes (which use the bare
         // sessionId hashCode).
         private const val REPLY_REQUEST_CODE_SALT: Int = 0x5250_4C59
+        private const val QUICK_REPLY_REQUEST_CODE_SALT: Int = 0x5155_4352
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
