@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.31] — 2026-05-31
+
+### Fixed
+- All remaining read-only dropdown pickers across the app now open on tap anywhere in the field (`ExposedDropdownMenuBox` + `menuAnchor()`): `DashboardCardsCard` (2 pickers), `PrdDetailDialog` (3 pickers — backend, effort, permission mode), `NewPrdDialog` (4 pickers — workspace, backend, effort, model), `NewSessionScreen` `GroupedModelDropdown`
+
 ## [1.0.30] — 2026-05-31
 
 ### Fixed
