@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.40] — 2026-05-31
+
+### Fixed
+- Android Auto: fix crash when opening a terminal session (Completed or Killed) whose `lastResponse` is null or blank — `MessageTemplate` requires at least one action button; the `isTerminal` branch now always shows a **Play** button (navigates to `LastOutputDetailScreen` which handles null content gracefully) instead of emitting a zero-action template that Car App Library rejects
+
 ## [1.0.39] — 2026-05-31
 
 ### Fixed
