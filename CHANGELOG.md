@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.36] — 2026-05-31
+
+### Changed
+- Android Auto: removed four dead-code screens superseded by the v1.0.28 UX overhaul (`WaitingSessionsScreen`, `WaitingPrdsScreen`, `SessionReplyScreen`, `PreMvpPlaceholderScreen`); updated `NavigationGraphTest` accordingly
+- Rewrote `docs/android-auto.md` to reflect the current multi-screen architecture (was v0.32.0 three-screen design)
+
 ## [1.0.35] — 2026-05-31
 
 ### Fixed
