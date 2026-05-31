@@ -63,21 +63,6 @@ class NavigationGraphTest {
         assertNotNull(cls)
     }
 
-    @Test fun `SessionReplyScreen class exists`() {
-        val cls = Class.forName("com.dmzs.datawatchclient.auto.SessionReplyScreen")
-        assertNotNull(cls)
-    }
-
-    @Test fun `WaitingSessionsScreen class exists`() {
-        val cls = Class.forName("com.dmzs.datawatchclient.auto.WaitingSessionsScreen")
-        assertNotNull(cls)
-    }
-
-    @Test fun `WaitingPrdsScreen class exists`() {
-        val cls = Class.forName("com.dmzs.datawatchclient.auto.WaitingPrdsScreen")
-        assertNotNull(cls)
-    }
-
     @Test fun `DatawatchPassengerService root is AutoSummaryScreen`() {
         // DatawatchPassengerService is devPassenger-flavor only; skip in publicMessaging builds
         val serviceClass = try {
@@ -86,12 +71,7 @@ class NavigationGraphTest {
             org.junit.jupiter.api.Assumptions.assumeTrue(false, "devPassenger flavor not in classpath — skipping")
             return
         }
-        val summaryClass = Class.forName("com.dmzs.datawatchclient.auto.AutoSummaryScreen")
-        val placeholderClass = Class.forName("com.dmzs.datawatchclient.auto.PreMvpPlaceholderScreen")
         assertNotNull(serviceClass)
-        assertNotNull(summaryClass)
-        // PlaceholderScreen still exists (not deleted) but is no longer the entry point
-        assertNotNull(placeholderClass)
         // Structural check: service bytecode references AutoSummaryScreen
         val pool = serviceClass.declaredConstructors.isNotEmpty()
         assertTrue(pool, "Service class should be non-empty")

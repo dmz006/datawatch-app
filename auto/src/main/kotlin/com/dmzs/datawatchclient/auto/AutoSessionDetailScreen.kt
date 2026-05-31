@@ -124,9 +124,8 @@ public class AutoSessionDetailScreen(
     }
 
     override fun onGetTemplate(): Template {
-        // Screen stack depth guard: this screen may be at depth 5 (via AutoAutomataScreen →
-        // AutoSessionListScreen path). Pushing SessionReplyScreen would exceed the 5-screen
-        // stack limit. Use inline reply mode (template invalidation) instead of a new push.
+        // Inline reply mode avoids a screen push (this screen may be at depth 5 via
+        // AutoAutomataScreen → AutoSessionListScreen, which would exceed the 5-screen limit).
         if (replyMode) return buildReplyTemplate()
 
         val telem = telemetry
