@@ -25,19 +25,24 @@ public class ReplyBroadcastReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
-        if (intent.action != ACTION_REPLY) return
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
-        val text =
-            RemoteInput.getResultsFromIntent(intent)
-                ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
-                ?.toString()?.trim().orEmpty()
+        val text: String = when (intent.action) {
+            ACTION_REPLY ->
+                RemoteInput.getResultsFromIntent(intent)
+                    ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
+                    ?.toString()?.trim().orEmpty()
+            ACTION_QUICK_REPLY ->
+                intent.getStringExtra(EXTRA_REPLY_TEXT)?.trim().orEmpty()
+            else -> return
+        }
         if (text.isEmpty()) return
 
         scope.launch {
             val profiles = ServiceLocator.profileRepository.observeAll().first()
             val active = profiles.firstOrNull { it.enabled } ?: return@launch
             val transport = ServiceLocator.transportFor(active)
-            transport.replyToSession(sessionId, "$text\r").fold(
+            val payload = if (text.endsWith("\r")) text else "$text\r"
+            transport.replyToSession(sessionId, payload).fold(
                 onSuccess = {
                     NotificationManagerCompat.from(context)
                         .cancel(NotificationPoster.notificationIdFor(sessionId))
@@ -54,6 +59,8 @@ public class ReplyBroadcastReceiver : BroadcastReceiver() {
 
     public companion object {
         public const val ACTION_REPLY: String = "com.dmzs.datawatchclient.action.REPLY"
+        public const val ACTION_QUICK_REPLY: String = "com.dmzs.datawatchclient.action.QUICK_REPLY"
         public const val EXTRA_SESSION_ID: String = "session_id"
+        public const val EXTRA_REPLY_TEXT: String = "reply_text"
     }
 }

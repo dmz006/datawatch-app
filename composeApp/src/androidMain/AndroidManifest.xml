@@ -86,10 +86,15 @@
             android:foregroundServiceType="dataSync"
             tools:ignore="Instantiatable"/>
 
-        <!-- Inline reply receiver for "Input needed" notifications. -->
+        <!-- Inline reply and quick-reply receiver for "Input needed" notifications. -->
         <receiver
             android:name=".push.ReplyBroadcastReceiver"
-            android:exported="false"/>
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.dmzs.datawatchclient.action.REPLY"/>
+                <action android:name="com.dmzs.datawatchclient.action.QUICK_REPLY"/>
+            </intent-filter>
+        </receiver>
 
         <!-- Home-screen widget — Sessions (BL6, ADR-0042). -->
         <receiver
