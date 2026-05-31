@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.35] — 2026-05-31
+
+### Fixed
+- Android Auto: TTS speaker icon now opens `LastOutputDetailScreen` — shows the current status summary text with a "Long Version" button for the full `currentStatusLong` narrative and a playback button to listen; previously the icon spoke inline without showing the text or offering the long version
+
 ## [1.0.34] — 2026-05-31
 
 ### Fixed
