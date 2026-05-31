@@ -16,6 +16,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -260,16 +262,18 @@ internal fun NewPrdDialog(
                 )
 
                 // ── Workspace (Profile) dropdown ─────────────────────────────
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = profileMenuOpen,
+                    onExpandedChange = { profileMenuOpen = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
                     OutlinedTextField(
                         value = if (profile == "__dir__") "— project directory —" else profile,
                         onValueChange = {},
                         label = { Text(stringResource(R.string.new_prd_profile_label)) },
                         readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = {
-                            TextButton(onClick = { profileMenuOpen = !profileMenuOpen }) { Text("▾") }
-                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = profileMenuOpen) },
                     )
                     DropdownMenu(expanded = profileMenuOpen, onDismissRequest = { profileMenuOpen = false }) {
                         DropdownMenuItem(
@@ -311,16 +315,18 @@ internal fun NewPrdDialog(
                     }
 
                     // ── Backend dropdown ─────────────────────────────────────
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    ExposedDropdownMenuBox(
+                        expanded = backendMenuOpen,
+                        onExpandedChange = { backendMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
                         OutlinedTextField(
                             value = backend.ifEmpty { inheritLabel },
                             onValueChange = {},
                             label = { Text(stringResource(R.string.new_prd_backend_label)) },
                             readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                TextButton(onClick = { backendMenuOpen = !backendMenuOpen }) { Text("▾") }
-                            },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = backendMenuOpen) },
                         )
                         DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
                             DropdownMenuItem(
@@ -337,16 +343,18 @@ internal fun NewPrdDialog(
                     }
 
                     // ── Effort dropdown ──────────────────────────────────────
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    ExposedDropdownMenuBox(
+                        expanded = effortMenuOpen,
+                        onExpandedChange = { effortMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
                         OutlinedTextField(
                             value = effort.ifEmpty { inheritLabel },
                             onValueChange = {},
                             label = { Text(stringResource(R.string.new_prd_effort_label)) },
                             readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                TextButton(onClick = { effortMenuOpen = !effortMenuOpen }) { Text("▾") }
-                            },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = effortMenuOpen) },
                         )
                         DropdownMenu(expanded = effortMenuOpen, onDismissRequest = { effortMenuOpen = false }) {
                             listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
@@ -369,16 +377,18 @@ internal fun NewPrdDialog(
                                 model = openCodeDefaultModel
                             }
                         }
-                        Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        ExposedDropdownMenuBox(
+                            expanded = modelMenuOpen,
+                            onExpandedChange = { modelMenuOpen = it },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
                             OutlinedTextField(
                                 value = model.ifEmpty { backendDefaultLabel },
                                 onValueChange = {},
                                 label = { Text(stringResource(R.string.new_prd_model_label)) },
                                 readOnly = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                trailingIcon = {
-                                    TextButton(onClick = { modelMenuOpen = !modelMenuOpen }) { Text("▾") }
-                                },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelMenuOpen) },
                             )
                             DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
                                 DropdownMenuItem(
