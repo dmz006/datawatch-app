@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.38] — 2026-05-31
+
+### Fixed
+- Android Auto: waiting-input notifications now use `NotificationCompat.MessagingStyle` — the car head unit reads the prompt aloud via TTS and surfaces native Yes / No / Reply actions in the car shade; tapping Reply opens the car's voice input and sends the spoken text directly via `RemoteInput` to the session without requiring the app to be open (previously used `BigTextStyle` which Android Auto treats as a generic notification with no auto-read or inline voice reply)
+- Android Auto: notification body now shows `lastPrompt` first (the actual prompt the session is waiting on), then `promptContext`, then `lastResponse`, rather than always using `lastResponse`
+- Android Auto: removed the custom `CarAppExtender` "Voice Reply" action that launched `VoiceRecordingScreen` from the notification; the car now handles voice reply natively via the `RemoteInput` on the base notification's Reply action
+
 ## [1.0.37] — 2026-05-31
 
 ### Fixed
