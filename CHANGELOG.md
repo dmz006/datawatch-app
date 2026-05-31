@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.32] — 2026-05-31
+
+### Fixed
+- CI: wear bundle now built and published to `wear:internal` Play Store track on every release tag; previously only the phone AAB was published, leaving the Wear OS track frozen at v1.0.1
+
 ## [1.0.31] — 2026-05-31
 
 ### Fixed
