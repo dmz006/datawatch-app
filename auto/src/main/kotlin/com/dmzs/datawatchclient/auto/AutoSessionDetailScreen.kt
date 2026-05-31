@@ -1,7 +1,6 @@
 @file:Suppress("MagicNumber")
 package com.dmzs.datawatchclient.auto
 
-import android.speech.tts.TextToSpeech
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
@@ -56,10 +55,6 @@ public class AutoSessionDetailScreen(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastDetailHash: Int = -1
-    private val tts: TextToSpeech = TextToSpeech(carContext) { status ->
-        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
-    }
-
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
@@ -73,8 +68,6 @@ public class AutoSessionDetailScreen(
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
-                tts.stop()
-                tts.shutdown()
                 scope.cancel()
             }
         })
@@ -266,10 +259,11 @@ public class AutoSessionDetailScreen(
             }
             else -> Unit
         }
-        // Always offer a TTS "play" slot so the user can hear the most relevant text
-        // regardless of session state — no tap-into-detail required while driving.
-        val speakText = currentStatusLong ?: currentStatus ?: lastResponse ?: lastPrompt
-        if (!speakText.isNullOrBlank()) {
+        // Always offer a TTS "play" slot — opens LastOutputDetailScreen (shows summary +
+        // Long Version button) rather than speaking inline, matching the ℹ slot UX.
+        val speakShort = currentStatus ?: lastResponse ?: lastPrompt
+        val speakLong = currentStatusLong
+        if (!speakShort.isNullOrBlank() || !speakLong.isNullOrBlank()) {
             actionStripBuilder.addAction(
                 Action.Builder()
                     .setIcon(
@@ -277,7 +271,11 @@ public class AutoSessionDetailScreen(
                             IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
                         ).build()
                     )
-                    .setOnClickListener { speakStatus() }
+                    .setOnClickListener {
+                        screenManager.push(
+                            LastOutputDetailScreen(carContext, sessionId, sessionTitle, speakShort, speakLong)
+                        )
+                    }
                     .build()
             )
             actionStripActions++
@@ -464,13 +462,7 @@ public class AutoSessionDetailScreen(
         }
     }.trim().ifEmpty { sessionState.name.lowercase().replaceFirstChar { it.uppercaseChar() } }.take(BODY_CHAR_LIMIT)
 
-    private fun speakStatus() {
-        // Prefer long narrative for listening; fall back to short → last response
-        val text = currentStatusLong ?: currentStatus ?: lastResponse ?: "No status available"
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "status")
-        replyMode = false
-        invalidate()
-    }
+
 
     private fun onKillTap() {
         killPending = true
