@@ -56,12 +56,13 @@ jobs:
           ./gradlew \
             :composeApp:bundlePublicTrackRelease \
             :composeApp:assemblePublicTrackRelease \
+            :wear:bundleRelease \
             --no-daemon --stacktrace
 
       - name: Compute checksums
         if: hashFiles('gradlew') != ''
         run: |
-          find composeApp/build/outputs -type f \( -name '*.aab' -o -name '*.apk' -o -name 'mapping.txt' \) -print0 |
+          find composeApp/build/outputs wear/build/outputs -type f \( -name '*.aab' -o -name '*.apk' -o -name 'mapping.txt' \) -print0 |
             xargs -0 sha256sum > SHA256SUMS
           cat SHA256SUMS
 
@@ -73,6 +74,7 @@ jobs:
             composeApp/build/outputs/bundle/**/composeApp-*.aab
             composeApp/build/outputs/apk/**/composeApp-*.apk
             composeApp/build/outputs/mapping/**/mapping.txt
+            wear/build/outputs/bundle/**/wear-*.aab
             SHA256SUMS
           generate_release_notes: true
 
@@ -121,7 +123,10 @@ jobs:
           PLAY_PUBLISHER_KEY: ${{ runner.temp }}/play-key.json
         run: |
           set -euo pipefail
-          ./gradlew :composeApp:publishPublicTrackReleaseBundle --no-daemon --stacktrace
+          ./gradlew \
+            :composeApp:publishPublicTrackReleaseBundle \
+            :wear:publishReleaseBundle \
+            --no-daemon --stacktrace
 
       - name: Clean up key file
         if: always()
