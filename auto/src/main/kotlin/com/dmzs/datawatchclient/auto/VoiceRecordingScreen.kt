@@ -55,7 +55,7 @@ public class VoiceRecordingScreen(
     override fun onGetTemplate(): Template {
         return when (state) {
             RecordState.RECORDING ->
-                MessageTemplate.Builder("Listening…\nSpeak your command, then tap Done")
+                MessageTemplate.Builder("Listening…\nSpeak then tap Done")
                     .setTitle(sessionTitle)
                     .setHeaderAction(Action.BACK)
                     .addAction(

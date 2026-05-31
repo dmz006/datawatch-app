@@ -15,7 +15,6 @@ import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
@@ -36,6 +35,9 @@ import kotlinx.coroutines.launch
  * [AutoServiceLocator] profile. Server header shows CPU/mem inline.
  * ActionStrip: Info → About, Monitor icon → Monitor screen.
  *
+ * Phase 1 (2026-05-31): title → "datawatch" (no version); automata row shows
+ * live counts from listPrds(); Last Output row shows most recent lastResponse.
+ *
  * ADR-0031 Play-compliance: static ListTemplate only, no free-form text input.
  */
 public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
@@ -44,12 +46,21 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private var blocked: Int = 0
     private var total: Int = 0
     private var serverStats: StatsDto? = null
-    private var lastCompletedTask: String? = null
     private var activeProfile: ServerProfile? = null
     private var error: String? = null
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastSnapshotHash: Int = -1
+
+    // Automata counts
+    private var automataRunning: Int = 0
+    private var automataBlocked: Int = 0
+    private var automataTotal: Int = 0
+
+    // Last output across sessions
+    private var lastOutputSessionId: String? = null
+    private var lastOutputSessionName: String? = null
+    private var lastOutputText: String? = null
 
     init {
         lifecycle.addObserver(
@@ -74,7 +85,12 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            val newHash = listOf(running, waiting, blocked, total, error, lastCompletedTask, serverStats?.sessionsTotal).hashCode()
+            val newHash = listOf(
+                running, waiting, blocked, total, error,
+                automataRunning, automataBlocked, automataTotal,
+                lastOutputSessionId, lastOutputText,
+                serverStats?.sessionsTotal,
+            ).hashCode()
             if (newHash != lastSnapshotHash) {
                 lastSnapshotHash = newHash
                 invalidate()
@@ -114,16 +130,23 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     waiting = list.count { it.state == SessionState.Waiting }
                     total = list.size
                     blocked = list.count { it.state == SessionState.Error }
+                    // Find most recent non-blank lastResponse across all sessions
+                    val withResponse = list.firstOrNull { !it.lastResponse.isNullOrBlank() }
+                    lastOutputSessionId = withResponse?.id
+                    lastOutputSessionName = withResponse?.let { it.name ?: it.taskSummary ?: it.id }
+                    lastOutputText = withResponse?.lastResponse
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
                 },
             )
             serverStats = transport.stats().getOrNull()
-            transport.listSessions().getOrNull()
-                ?.firstOrNull { it.state == SessionState.Completed }
-                ?.let { s -> transport.getSessionTelemetry(s.id).getOrNull()?.currentTask?.takeIf { it.isNotBlank() } }
-                ?.also { lastCompletedTask = it }
+            // Automata counts from listPrds()
+            transport.listPrds().getOrNull()?.let { prdList ->
+                automataTotal = prdList.prds.size
+                automataRunning = prdList.prds.count { it.status == "running" }
+                automataBlocked = prdList.prds.count { p -> p.stories.any { it.status == "awaiting_approval" } }
+            }
         } catch (e: Throwable) {
             error = "Error: ${e.message ?: e::class.simpleName}"
         }
@@ -173,26 +196,39 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .build(),
         )
 
-        // Row 3: Last completed task (conditional)
-        lastCompletedTask?.let { task ->
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle("✓ Last completed")
-                    .addText(task.take(72))
-                    .build(),
-            )
-        }
-
-        // Row 4: Automata
+        // Row 3: Automata — live counts from listPrds()
+        val automataTitle = buildString {
+            append("⟫ $automataRunning")
+            if (automataBlocked > 0) append("  ⊗ $automataBlocked")
+        }.ifBlank { "⟫ 0" }
+        val automataSubtitle = "$automataTotal automata · tap to view"
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("⟫ Automata")
-                .addText("Running plans overview")
+                .setTitle(automataTitle)
+                .addText(automataSubtitle)
                 .setOnClickListener { screenManager.push(AutoAutomataScreen(carContext)) }
                 .build(),
         )
 
-        val title = "datawatch ${Version.VERSION}"
+        // Row 4: Last Output (conditional — only when any session has a non-blank lastResponse)
+        val outId = lastOutputSessionId
+        val outName = lastOutputSessionName
+        val outText = lastOutputText
+        if (outId != null && outName != null && !outText.isNullOrBlank()) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle("◀ $outName")
+                    .addText(outText.take(72))
+                    .setOnClickListener {
+                        screenManager.push(
+                            LastOutputDetailScreen(carContext, outId, outName, outText, null),
+                        )
+                    }
+                    .build(),
+            )
+        }
+
+        val title = "datawatch"
         // ActionStrip: Info → About, Monitor icon → Monitor (2 actions max)
         val actionStrip =
             ActionStrip.Builder()
@@ -211,7 +247,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 .build()
 
         return ListTemplate.Builder()
-            .setTitle(error?.let { "$title · $it" } ?: title)
+            .setTitle(if (error != null) "$title · $error" else title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(actionStrip)
             .setSingleList(listBuilder.build())

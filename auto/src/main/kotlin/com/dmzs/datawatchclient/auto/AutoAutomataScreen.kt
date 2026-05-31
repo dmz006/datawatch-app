@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
@@ -106,7 +107,13 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                     .build(),
             )
         } else {
-            automata.take(MAX_ROWS).forEach { prd ->
+            val max = runCatching {
+                carContext.getCarService(ConstraintManager::class.java)
+                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+            }.getOrElse { MAX_ROWS_FALLBACK }
+            val visible = automata.take((max - 1).coerceAtLeast(1))
+            val overflow = automata.size - visible.size
+            visible.forEach { prd ->
                 val storyPos = activeStoryPosition(prd)
                 val subtitle = buildSubtitle(prd, storyPos)
                 val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
@@ -126,11 +133,11 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
-            if (automata.size > MAX_ROWS) {
+            if (overflow > 0) {
                 builder.addItem(
                     Row.Builder()
-                        .setTitle("… ${automata.size - MAX_ROWS} more automata")
-                        .addText("Showing top $MAX_ROWS by activity")
+                        .setTitle("… $overflow more automata")
+                        .addText("Showing top ${visible.size} by activity")
                         .build(),
                 )
             }
@@ -145,7 +152,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val POLL_MS: Long = 15_000L
-        const val MAX_ROWS: Int = 5
+        const val MAX_ROWS_FALLBACK: Int = 5
         const val PROGRESS_BAR_WIDTH: Int = 8
 
         val automataComparator: Comparator<PrdDto> = compareByDescending { prd ->

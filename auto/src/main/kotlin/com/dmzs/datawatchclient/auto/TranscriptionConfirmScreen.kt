@@ -56,7 +56,11 @@ public class TranscriptionConfirmScreen(
     override fun onGetTemplate(): Template {
         val cancelAction = Action.Builder()
             .setTitle("Cancel")
-            .setOnClickListener { screenManager.pop() }
+            .setOnClickListener {
+                // Pop both TranscriptionConfirmScreen and VoiceRecordingScreen
+                screenManager.pop()
+                screenManager.pop()
+            }
             .build()
 
         val ttsIcon = CarIcon.Builder(
@@ -79,13 +83,13 @@ public class TranscriptionConfirmScreen(
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Send")
+                    .setTitle("✓ Send")
                     .setOnClickListener { onSend() }
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Retry")
+                    .setTitle("🎤 Retry")
                     .setOnClickListener { screenManager.pop() /* back to VoiceRecordingScreen */ }
                     .build()
             )

@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
@@ -176,7 +177,13 @@ public class AutoSessionListScreen(
                     .build(),
             )
         } else {
-            rows.take(MAX_ROWS).forEach { row ->
+            val max = runCatching {
+                carContext.getCarService(ConstraintManager::class.java)
+                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+            }.getOrElse { MAX_ROWS_FALLBACK }
+            val visible = rows.take((max - 1).coerceAtLeast(1))
+            val overflow = rows.size - visible.size
+            visible.forEach { row ->
                 val s = row.session
                 val subtitle = buildSubtitle(row)
                 builder.addItem(
@@ -192,11 +199,11 @@ public class AutoSessionListScreen(
                         .build(),
                 )
             }
-            if (rows.size > MAX_ROWS) {
+            if (overflow > 0) {
                 builder.addItem(
                     Row.Builder()
-                        .setTitle("… and ${rows.size - MAX_ROWS} more")
-                        .addText("Showing top $MAX_ROWS by urgency")
+                        .setTitle("… and $overflow more · Showing top ${visible.size} by urgency")
+                        .addText("$overflow sessions not shown")
                         .build(),
                 )
             }
@@ -213,7 +220,7 @@ public class AutoSessionListScreen(
         const val POLL_MS: Long = 10_000L
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val STALE_THRESHOLD: Int = 3
-        const val MAX_ROWS: Int = 5
+        const val MAX_ROWS_FALLBACK: Int = 5
 
         fun urgencyScore(row: SessionRow): Int =
             sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)
