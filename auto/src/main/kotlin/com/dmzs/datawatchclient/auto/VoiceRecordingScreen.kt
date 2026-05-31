@@ -7,7 +7,6 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.car.app.CarContext
-import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.MessageTemplate
@@ -20,8 +19,11 @@ import androidx.lifecycle.LifecycleOwner
  * (Google ASR) rather than [androidx.car.app.media.CarAudioRecord] + Whisper, so it
  * works while driving without hitting the host's recording restriction.
  *
- * Recognition is automatic on start — user speaks, result goes to
+ * Recognition starts automatically on [onStart]. Result goes to
  * [TranscriptionConfirmScreen] for a confirm-then-send step.
+ *
+ * Uses [CarContext.getApplicationContext] for [SpeechRecognizer] — the Car App
+ * [CarContext] itself is not suitable for service binding.
  */
 public class VoiceRecordingScreen(
     carContext: CarContext,
@@ -42,8 +44,6 @@ public class VoiceRecordingScreen(
             }
 
             override fun onStop(owner: LifecycleOwner) {
-                // Cancel any in-flight recognition when this screen loses focus
-                // (e.g. TranscriptionConfirmScreen is pushed on top).
                 recognizer?.cancel()
             }
 
@@ -56,20 +56,22 @@ public class VoiceRecordingScreen(
 
     private fun startListening() {
         state = State.LISTENING
+        errorMsg = ""
         recognizer?.destroy()
         recognizer = null
+        invalidate()
 
-        if (!SpeechRecognizer.isRecognitionAvailable(carContext)) {
-            CarToast.makeText(
-                carContext,
-                "Speech recognition not available on this device",
-                CarToast.LENGTH_LONG,
-            ).show()
-            screenManager.pop()
+        // Use applicationContext — CarContext is not suitable for SpeechRecognizer service binding.
+        val appCtx = carContext.applicationContext
+
+        if (!SpeechRecognizer.isRecognitionAvailable(appCtx)) {
+            errorMsg = "Speech recognition not available — check that Google app is installed"
+            state = State.ERROR
+            invalidate()
             return
         }
 
-        recognizer = SpeechRecognizer.createSpeechRecognizer(carContext).also { rec ->
+        recognizer = SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
             rec.setRecognitionListener(object : RecognitionListener {
                 override fun onResults(results: Bundle) {
                     val matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -105,7 +107,6 @@ public class VoiceRecordingScreen(
             }
             rec.startListening(intent)
         }
-        invalidate()
     }
 
     override fun onGetTemplate(): Template =
@@ -147,7 +148,7 @@ public class VoiceRecordingScreen(
     private companion object {
         fun speechErrorString(error: Int): String = when (error) {
             SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
-            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required"
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required — grant in phone settings"
             SpeechRecognizer.ERROR_NETWORK,
             SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network error — try again"
             SpeechRecognizer.ERROR_NO_MATCH -> "Nothing matched — speak clearly and retry"
