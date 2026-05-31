@@ -57,6 +57,7 @@ jobs:
             :composeApp:bundlePublicTrackRelease \
             :composeApp:assemblePublicTrackRelease \
             :wear:bundleRelease \
+            :wear:assembleRelease \
             --no-daemon --stacktrace
 
       - name: Compute checksums
@@ -75,6 +76,7 @@ jobs:
             composeApp/build/outputs/apk/**/composeApp-*.apk
             composeApp/build/outputs/mapping/**/mapping.txt
             wear/build/outputs/bundle/**/wear-*.aab
+            wear/build/outputs/apk/**/wear-*.apk
             SHA256SUMS
           generate_release_notes: true
 
