@@ -69,6 +69,14 @@ gets two levels of validation:
 | Android + iOS | Reply/Enter submission (\r fix, /api/sessions/{id}/input) | No | No | v1.0.25 | Requires real device + running session in waiting_input state | Send reply via composer bar; verify shell executes (not just inputs without running) |
 | Android + iOS | summary_generated_at "AI Xm ago" badge on session cards | No | No | v1.0.25 | Requires datawatch v8.9.5+ with summarizer enabled | Check session card shows "AI Xm ago" badge left of activity timestamp after summarization |
 | Android + iOS | Settings → Session Summarizer "Test" button (POST /api/summarizer/test) | No | No | v1.0.25 | Requires datawatch v8.9.5+ with summarizer configured | Tap Test; verify "✓ ok · Xms" shown; disable summarizer LLM; verify error shown |
+| Auto | LastOutputDetailScreen — TTS + Long Version | No | No | v1.0.28 | Requires DHU / real Android Auto head unit | Tap ActionStrip status icon from session detail; verify text; tap TTS icon; verify spoken; tap Long Version (parked) |
+| Auto | BlockDetailsScreen — Approve Gate from detail | No | No | v1.0.28 | Requires DHU + session with guardrail block | Tap block icon from session detail; verify verdict list; tap Approve Gate; verify toast + screen pop |
+| Auto | VoiceRecordingScreen → TranscriptionConfirmScreen → send | No | No | v1.0.28 | Requires DHU + datawatch server with whisper.backend configured | Open session reply; tap Voice; speak; tap Done; verify transcript; tap Send; verify session receives input |
+| Auto | Session Detail ActionStrip context sensitivity (Running/Waiting/Blocked/Terminal) | No | No | v1.0.28 | Requires DHU + sessions in each state | Verify correct icon slots appear per state; tapping navigates to correct screen |
+| Auto | Monitor tappable server rows → single-server drill-down | No | No | v1.0.28 | Requires DHU + ≥2 enabled servers | Tap a server row in multi-server monitor; verify navigates to that server's detail |
+| Auto | Monitor Sessions row tappable in single-server mode | No | No | v1.0.28 | Requires DHU + 1 enabled server | Tap Sessions row; verify pushes session list screen |
+| Auto | About screen check-for-update (Update button appears only when available) | No | No | v1.0.28 | Requires DHU + datawatch server supporting /api/update/check | Verify Update button absent when up-to-date; appears when update_available returned |
+| Auto | Automata list colored dot icons + progress bar | No | No | v1.0.28 | Requires DHU + running automata | Verify red dot on awaiting_approval, green otherwise; progress bar matches story completion % |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.

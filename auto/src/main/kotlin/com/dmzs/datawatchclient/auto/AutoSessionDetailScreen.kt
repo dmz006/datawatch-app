@@ -8,14 +8,17 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.GuardrailVerdictDto
 import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +48,9 @@ public class AutoSessionDetailScreen(
     private var lastResponse: String? = null
     private var currentStatus: String? = null
     private var currentStatusLong: String? = null
+    private var promptContext: String? = null
+    private var lastPrompt: String? = null
+    private var guardrailVerdicts: List<GuardrailVerdictDto> = emptyList()
     private var killPending: Boolean = false
     private var killFeedback: String? = null
     private var error: String? = null
@@ -81,7 +87,7 @@ public class AutoSessionDetailScreen(
         while (scope.isActive) {
             refresh()
             // §15: only invalidate when telemetry/state actually changed.
-            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse, currentStatus, currentStatusLong).hashCode()
+            val newHash = listOf(sessionState, error, telemetry?.currentTask, telemetry?.progress, killPending, lastResponse, currentStatus, currentStatusLong, promptContext, lastPrompt).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
                 invalidate()
@@ -109,6 +115,9 @@ public class AutoSessionDetailScreen(
                 ?.let { item ->
                     sessionState = item.state
                     lastResponse = item.lastResponse?.takeIf { it.isNotBlank() }
+                    promptContext = item.promptContext?.takeIf { it.isNotBlank() }
+                    lastPrompt = item.lastPrompt?.takeIf { it.isNotBlank() }
+                    guardrailVerdicts = telemetry?.guardrailVerdicts ?: emptyList()
                 }
             if (sessionState == SessionState.Running) {
                 transport.getSessionCurrentStatus(sessionId).getOrNull()?.let { dto ->
@@ -143,7 +152,143 @@ public class AutoSessionDetailScreen(
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
 
-        if (!isTerminal) {
+        // BL303-A6: context-sensitive ActionStrip (max 2 icon actions).
+        // Use ic_auto_info as a universal fallback icon since specific icons may not exist.
+        fun infoIcon() = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_info)
+        ).build()
+
+        val actionStripBuilder = ActionStrip.Builder()
+        var actionStripActions = 0
+
+        when {
+            sessionState == SessionState.Running -> {
+                // Slot 1: status → LastOutputDetailScreen with currentStatus + currentStatusLong
+                if (!currentStatus.isNullOrBlank()) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, currentStatus, currentStatusLong)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+                // Slot 2: response → LastOutputDetailScreen with lastResponse
+                if (!lastResponse.isNullOrBlank() && actionStripActions < MAX_STRIP_ACTIONS) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, lastResponse, null)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+            }
+            sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited -> {
+                // Slot 1: response / prompt → LastOutputDetailScreen with promptContext ?: lastPrompt
+                val waitText = promptContext ?: lastPrompt
+                if (!waitText.isNullOrBlank()) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, waitText, null)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+                // Slot 2: status → LastOutputDetailScreen with currentStatus
+                if (!currentStatus.isNullOrBlank() && actionStripActions < MAX_STRIP_ACTIONS) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, currentStatus, null)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+            }
+            hasBlock -> {
+                // Slot 1: block details → BlockDetailsScreen
+                actionStripBuilder.addAction(
+                    Action.Builder()
+                        .setIcon(infoIcon())
+                        .setOnClickListener {
+                            screenManager.push(
+                                BlockDetailsScreen(carContext, sessionId, sessionTitle, guardrailVerdicts)
+                            )
+                        }
+                        .build()
+                )
+                actionStripActions++
+                // Slot 2: current status
+                if (!currentStatus.isNullOrBlank() && actionStripActions < MAX_STRIP_ACTIONS) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, currentStatus, null)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+            }
+            isTerminal -> {
+                // Completed or Killed: only last response
+                if (!lastResponse.isNullOrBlank()) {
+                    actionStripBuilder.addAction(
+                        Action.Builder()
+                            .setIcon(infoIcon())
+                            .setOnClickListener {
+                                screenManager.push(
+                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, lastResponse, null)
+                                )
+                            }
+                            .build()
+                    )
+                    actionStripActions++
+                }
+            }
+            else -> Unit
+        }
+        if (actionStripActions > 0) {
+            templateBuilder.setActionStrip(actionStripBuilder.build())
+        }
+
+        if (killPending) {
+            // Kill Pending: show Confirm Kill (red) + Cancel
+            templateBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Confirm Kill")
+                    .setBackgroundColor(CarColor.RED)
+                    .setOnClickListener { onConfirmKill() }
+                    .build(),
+            )
+            templateBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Cancel")
+                    .setOnClickListener { killPending = false; invalidate() }
+                    .build(),
+            )
+        } else if (!isTerminal) {
             // BL303-A7.1: Drive compliance — max 2 action buttons per MessageTemplate.
             // Priority: Approve Gate > Kill > Reply (when blocked, gate takes precedence over reply).
             if (hasBlock) {
@@ -155,15 +300,7 @@ public class AutoSessionDetailScreen(
                         .setOnClickListener { onApproveGate() }
                         .build(),
                 )
-                if (killPending) {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Confirm Kill")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { onConfirmKill() }
-                            .build(),
-                    )
-                } else if (isActive) {
+                if (isActive) {
                     templateBuilder.addAction(
                         Action.Builder()
                             .setTitle("Kill Session")
@@ -175,31 +312,19 @@ public class AutoSessionDetailScreen(
                 // Not blocked: Send (all non-terminal) + Kill (if active) — max 2 buttons.
                 // Send uses inline mode (replyMode=true) so we can inject commands into any
                 // session state — Running, Waiting, RateLimited — not just Waiting.
-                if (!killPending) {
+                templateBuilder.addAction(
+                    Action.Builder()
+                        .setTitle("Send")
+                        .setOnClickListener { replyMode = true; invalidate() }
+                        .build(),
+                )
+                if (isActive) {
                     templateBuilder.addAction(
                         Action.Builder()
-                            .setTitle("Send")
-                            .setOnClickListener { replyMode = true; invalidate() }
+                            .setTitle("Kill Session")
+                            .setOnClickListener { onKillTap() }
                             .build(),
                     )
-                }
-                if (isActive) {
-                    if (killPending) {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Confirm Kill")
-                                .setBackgroundColor(CarColor.RED)
-                                .setOnClickListener { onConfirmKill() }
-                                .build(),
-                        )
-                    } else {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Kill Session")
-                                .setOnClickListener { onKillTap() }
-                                .build(),
-                        )
-                    }
                 }
             }
         }
@@ -245,7 +370,9 @@ public class AutoSessionDetailScreen(
             .addItem(Row.Builder().setTitle("Continue").addText("Resume or proceed").setOnClickListener { sendReply("continue\r") }.build())
             .addItem(Row.Builder().setTitle("Skip").addText("Skip current step").setOnClickListener { sendReply("skip\r") }.build())
             .addItem(Row.Builder().setTitle("▶ Play").addText("Hear current status aloud").setOnClickListener { speakStatus() }.build())
-            .addItem(Row.Builder().setTitle(colored("Stop", CarColor.RED)).addText("Stop the session").setOnClickListener { sendReply("stop\r") }.build())
+            .addItem(Row.Builder().setTitle("🎤 Voice").addText("Speak a custom command").setOnClickListener {
+                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+            }.build())
             .build()
         return ListTemplate.Builder()
             .setTitle("Send Command")
@@ -368,6 +495,7 @@ public class AutoSessionDetailScreen(
         const val SUMMARY_CHARS: Int = 60
         const val MS_PER_MIN: Long = 60_000L
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
+        const val MAX_STRIP_ACTIONS: Int = 2
 
         fun computeEtaMinutes(telem: SessionTelemetryDto): Int? {
             val completed = telem.tasks.filter { it.status == "completed" }

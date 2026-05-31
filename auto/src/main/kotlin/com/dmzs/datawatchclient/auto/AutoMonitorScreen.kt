@@ -36,7 +36,10 @@ import kotlinx.coroutines.launch
  * row per server (CPU · Mem · sessions). Single-server detail rows
  * expand when only one server is configured or only one has data.
  */
-public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
+public class AutoMonitorScreen(
+    carContext: CarContext,
+    private val forcedProfile: com.dmzs.datawatchclient.domain.ServerProfile? = null,
+) : Screen(carContext) {
     /** Snapshot per server: (profile, stats?, error?) */
     private var serverRows: List<ServerRow> = emptyList()
     private var pollJob: Job? = null
@@ -90,6 +93,17 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refresh() {
         try {
+            // Forced single-server mode: only fetch stats for that profile.
+            if (forcedProfile != null) {
+                val result = AutoServiceLocator.transportFor(forcedProfile).stats().fold(
+                    onSuccess = { dto -> ServerRow(forcedProfile, dto) },
+                    onFailure = { err ->
+                        ServerRow(forcedProfile, error = err.message ?: err::class.simpleName ?: "error")
+                    },
+                )
+                serverRows = listOf(result)
+                return
+            }
             val profiles = AutoServiceLocator.profileRepository.observeAll().first()
             val enabled = profiles.filter { it.enabled }
             if (enabled.isEmpty()) {
@@ -131,7 +145,7 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
             val row = rows[0]
             val s = row.stats
             if (s != null) {
-                addDetailRows(items, s)
+                addDetailRows(items, s, onSessionsClick = { screenManager.push(AutoSessionListScreen(carContext)) })
             } else {
                 items.addItem(
                     Row.Builder()
@@ -155,6 +169,9 @@ public class AutoMonitorScreen(carContext: CarContext) : Screen(carContext) {
                     Row.Builder()
                         .setTitle(colored("● ${row.profile.displayName}", titleColor))
                         .addText(summary)
+                        .setOnClickListener {
+                            screenManager.push(AutoMonitorScreen(carContext, forcedProfile = row.profile))
+                        }
                         .build(),
                 )
             }
@@ -211,7 +228,7 @@ private fun progressBar(pct: Int, width: Int = PROGRESS_BAR_WIDTH): String {
 }
 
 /** Adds the full detail rows for a single server (single-server mode). */
-private fun addDetailRows(items: ItemList.Builder, s: StatsDto) {
+private fun addDetailRows(items: ItemList.Builder, s: StatsDto, onSessionsClick: (() -> Unit)? = null) {
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
     val cpuPct =
@@ -271,6 +288,7 @@ private fun addDetailRows(items: ItemList.Builder, s: StatsDto) {
         Row.Builder()
             .setTitle("Sessions")
             .addText("${s.sessionsTotal} total · ${s.sessionsRunning} run · ${s.sessionsWaiting} wait")
+            .setOnClickListener(onSessionsClick ?: {})
             .build(),
     )
     if (s.uptimeSeconds > 0) {
