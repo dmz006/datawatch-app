@@ -585,7 +585,11 @@ public fun NewSessionScreen(
                     modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                 )
                 var clusterMenuOpen by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.fillMaxWidth()) {
+                ExposedDropdownMenuBox(
+                    expanded = clusterMenuOpen,
+                    onExpandedChange = { clusterMenuOpen = it },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     OutlinedTextField(
                         value =
                             pickedClusterProfile.ifEmpty {
@@ -593,12 +597,8 @@ public fun NewSessionScreen(
                             },
                         onValueChange = {},
                         readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = {
-                            TextButton(
-                                onClick = { clusterMenuOpen = !clusterMenuOpen },
-                            ) { Text("▾") }
-                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = clusterMenuOpen) },
                     )
                     androidx.compose.material3.DropdownMenu(
                         expanded = clusterMenuOpen,
@@ -797,7 +797,6 @@ public fun NewSessionScreen(
                 }
             }
 
-            val errorEmptyTask = stringResource(R.string.new_session_error_empty_task)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 horizontalArrangement = Arrangement.End,
@@ -809,10 +808,6 @@ public fun NewSessionScreen(
                             val profile =
                                 profiles.firstOrNull { it.id == selectedProfileId }
                                     ?: return@Button
-                            if (task.isBlank()) {
-                                banner = errorEmptyTask
-                                return@Button
-                            }
                             submitting = true
                             banner = null
                             scope.launch {
@@ -860,7 +855,7 @@ public fun NewSessionScreen(
                                 )
                             }
                         },
-                        enabled = !submitting && task.isNotBlank() && selectedProfileId != null,
+                        enabled = !submitting && selectedProfileId != null,
                     ) {
                         if (submitting) {
                             CircularProgressIndicator(
@@ -943,18 +938,18 @@ private fun SimpleDropdown(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier,
+    ) {
         OutlinedTextField(
             value = selected.ifEmpty { noneLabel },
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                androidx.compose.material3.TextButton(
-                    onClick = { expanded = !expanded },
-                ) { Text("▾") }
-            },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         )
         androidx.compose.material3.DropdownMenu(
             expanded = expanded,
