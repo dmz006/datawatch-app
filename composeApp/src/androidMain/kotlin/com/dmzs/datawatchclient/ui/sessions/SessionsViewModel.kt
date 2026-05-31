@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.push.SessionStateWatcher
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.QuickCommandItem
 import com.dmzs.datawatchclient.transport.TransportError
@@ -785,6 +786,8 @@ public class SessionsViewModel : ViewModel() {
                     _refreshing.value = false
                     _banner.value = null
                     _lastProbeEpochMs.value = System.currentTimeMillis()
+                    // Fire or cancel "waiting for input" notifications on state transitions.
+                    SessionStateWatcher.onSessionsUpdated(sessions, ServiceLocator.context())
                     // Push the fresh counts to the home-screen widgets
                     // so they don't wait for AppWidgetManager's
                     // 30-minute cadence to catch up.

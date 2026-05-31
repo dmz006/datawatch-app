@@ -75,6 +75,7 @@ public class NotificationPoster(private val context: Context) {
             builder.addAction(buildQuickReplyAction(event.sessionId, "Yes", "yes"))
             builder.addAction(buildQuickReplyAction(event.sessionId, "No", "no"))
             builder.addAction(buildReplyAction(event.sessionId))
+            builder.extend(buildCarAppExtender(event))
         }
 
         try {
@@ -146,6 +147,40 @@ public class NotificationPoster(private val context: Context) {
             .build()
     }
 
+    /**
+     * Builds a [androidx.car.app.notification.CarAppExtender] for [Event.Type.InputNeeded]
+     * notifications so Android Auto surfaces a "Voice Reply" action in the car
+     * notification shade. Tapping the action launches [VoiceRecordingScreen] in
+     * the DatawatchMessagingService via [ACTION_VOICE_REPLY].
+     */
+    private fun buildCarAppExtender(
+        event: Event,
+    ): androidx.car.app.notification.CarAppExtender {
+        val autoVoiceIntent =
+            Intent().apply {
+                setClassName(
+                    context.packageName,
+                    "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+                )
+                action = ACTION_VOICE_REPLY
+                putExtra(EXTRA_SESSION_ID, event.sessionId)
+                putExtra(EXTRA_SESSION_NAME, event.title)
+            }
+        val autoVoicePi =
+            PendingIntent.getService(
+                context,
+                event.sessionId.hashCode() xor AUTO_VOICE_REPLY_REQUEST_CODE_SALT,
+                autoVoiceIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        return androidx.car.app.notification.CarAppExtender.Builder()
+            .setContentTitle(event.title)
+            .setContentText(event.body)
+            .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
+            .addAction(R.drawable.ic_stat_dw, "Voice Reply", autoVoicePi)
+            .build()
+    }
+
     public companion object {
         public const val REPLY_REMOTE_INPUT_KEY: String = "dw.reply.text"
         private const val ID_BASE: Int = 1_000_000
@@ -155,6 +190,16 @@ public class NotificationPoster(private val context: Context) {
         // sessionId hashCode).
         private const val REPLY_REQUEST_CODE_SALT: Int = 0x5250_4C59
         private const val QUICK_REPLY_REQUEST_CODE_SALT: Int = 0x5155_4352
+
+        // Android Auto voice-reply action — used by CarAppExtender and
+        // DatawatchMessagingService. Kept in sync via this shared constant
+        // (auto module references these as inline strings to avoid a
+        // cross-module dependency on composeApp).
+        public const val ACTION_VOICE_REPLY: String =
+            "com.dmzs.datawatchclient.auto.ACTION_VOICE_REPLY"
+        public const val EXTRA_SESSION_ID: String = "session_id"
+        public const val EXTRA_SESSION_NAME: String = "session_name"
+        private const val AUTO_VOICE_REPLY_REQUEST_CODE_SALT: Int = 0x4156_5249
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }

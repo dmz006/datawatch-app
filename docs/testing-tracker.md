@@ -151,3 +151,4 @@ unit tests alone.
 | Wear | `WearSyncService` publishes `/datawatch/sessions` DataItem | No | No | 32 | Manual — verify DataItem path on watch side | shortId + state + lastActivity arrays |
 | Wear | `WearMainActivity` sessions list — state badge + shortId + task + timestamp | No | No | 32 | Manual — open Sessions page on watch | |
 | Wear | State badge colours (teal/amber/red/dim) | No | No | 32 | Manual — verify badge colours against palette | Running #1DE9B6 · Waiting #FFB300 · Error #EF4444 |
+| Phone+Auto | Waiting-input notification (phone + Auto voice reply) | No | No | 33 | Manual — transition session to Waiting; verify heads-up + Auto "Voice Reply" action launches VoiceRecordingScreen | composeApp+auto |

@@ -62,6 +62,9 @@ kotlin {
                 // Material Components for Android — provides the XML Theme.Material3.*
                 // parent styles referenced in res/values/themes.xml.
                 implementation(libs.material.components)
+                // Android Auto: CarAppExtender for InputNeeded notifications so
+                // Auto surfaces a "Voice Reply" action in the car notification shade.
+                implementation(libs.androidx.car.app)
             }
         }
     }

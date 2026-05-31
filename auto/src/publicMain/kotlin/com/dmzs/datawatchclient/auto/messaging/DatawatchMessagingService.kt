@@ -47,6 +47,26 @@ public class DatawatchMessagingService : CarAppService() {
             override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
 
             override fun onNewIntent(intent: android.content.Intent) {
+                // Handle notification voice-reply tap — fires when the user taps
+                // "Voice Reply" in the Auto notification shade (pushed from
+                // NotificationPoster.buildCarAppExtender). Constants kept as
+                // inline strings because the auto module does not depend on
+                // composeApp (see auto/build.gradle.kts).
+                if (intent.action == "com.dmzs.datawatchclient.auto.ACTION_VOICE_REPLY") {
+                    val sessionId = intent.getStringExtra("session_id") ?: return
+                    val sessionName = intent.getStringExtra("session_name") ?: sessionId
+                    val screenManager = carContext.getCarService(ScreenManager::class.java)
+                    screenManager.popToRoot()
+                    screenManager.push(
+                        com.dmzs.datawatchclient.auto.VoiceRecordingScreen(
+                            carContext,
+                            sessionId,
+                            sessionName,
+                        )
+                    )
+                    return
+                }
+
                 // Handle voice actions — Google Assistant sends the spoken text via
                 // android.speech.RecognizerIntent.EXTRA_RESULTS
                 val voiceResults = intent.getStringArrayListExtra("android.speech.extra.RESULTS")
