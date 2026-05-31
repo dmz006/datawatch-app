@@ -47,37 +47,15 @@ public class DatawatchMessagingService : CarAppService() {
             override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
 
             override fun onNewIntent(intent: android.content.Intent) {
-                // Handle notification voice-reply tap — fires when the user taps
-                // "Voice Reply" in the Auto notification shade (pushed from
-                // NotificationPoster.buildCarAppExtender). Constants kept as
-                // inline strings because the auto module does not depend on
-                // composeApp (see auto/build.gradle.kts).
-                if (intent.action == "com.dmzs.datawatchclient.auto.ACTION_VOICE_REPLY") {
-                    val sessionId = intent.getStringExtra("session_id") ?: return
-                    val sessionName = intent.getStringExtra("session_name") ?: sessionId
-                    val screenManager = carContext.getCarService(ScreenManager::class.java)
-                    screenManager.popToRoot()
-                    screenManager.push(
-                        com.dmzs.datawatchclient.auto.VoiceRecordingScreen(
-                            carContext,
-                            sessionId,
-                            sessionName,
-                        )
-                    )
-                    return
-                }
-
-                // Handle voice actions — Google Assistant sends the spoken text via
-                // android.speech.RecognizerIntent.EXTRA_RESULTS
+                // Handle voice actions from Google Assistant — spoken text arrives via
+                // android.speech.RecognizerIntent.EXTRA_RESULTS.
+                // Waiting-input replies now use MessagingStyle + RemoteInput handled by
+                // the car host natively; no custom ACTION_VOICE_REPLY routing needed.
                 val voiceResults = intent.getStringArrayListExtra("android.speech.extra.RESULTS")
                 val spokenText = voiceResults?.firstOrNull() ?: return
                 val cmd = com.dmzs.datawatchclient.auto.voice.parseVoiceCommand(spokenText)
                 val screenManager = carContext.getCarService(ScreenManager::class.java)
-                // §8: Car App Library enforces a max screen stack depth of 5. Voice commands
-                // arrive independently of the user's navigation state, so pop to root first to
-                // guarantee we are at depth 1 before pushing VoiceStatusScreen (depth 2).
-                // Without this, a deep path (Summary→Monitor→SessionList→SessionDetail)
-                // would push to depth 6 and trigger an IllegalStateException from the host.
+                // §8: pop to root before pushing to stay within the 5-screen stack limit.
                 screenManager.popToRoot()
                 screenManager.push(
                     com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext, cmd),

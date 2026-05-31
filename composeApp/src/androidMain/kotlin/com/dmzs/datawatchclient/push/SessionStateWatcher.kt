@@ -35,15 +35,19 @@ public object SessionStateWatcher {
             val prev = knownStates[session.id]
             val curr = session.state
             if (prev != null && prev != SessionState.Waiting && curr == SessionState.Waiting) {
-                // Transitioned INTO Waiting — fire notification
+                // Transitioned INTO Waiting — fire notification.
+                // title = session name (becomes the MessagingStyle "sender" Auto reads aloud).
+                // body  = the prompt the session is waiting on, in priority order.
                 val name = session.name ?: session.taskSummary ?: session.id
-                val body = session.lastResponse?.take(128)?.ifBlank { null }
+                val body = session.lastPrompt?.takeIf { it.isNotBlank() }?.take(200)
+                    ?: session.promptContext?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(200)
+                    ?: session.lastResponse?.takeIf { it.isNotBlank() }?.take(200)
                     ?: "Waiting for your input"
                 NotificationPoster(context).post(
                     NotificationPoster.Event(
                         sessionId = session.id,
                         type = NotificationPoster.Event.Type.InputNeeded,
-                        title = "$name · waiting for input",
+                        title = name,
                         body = body,
                     )
                 )
