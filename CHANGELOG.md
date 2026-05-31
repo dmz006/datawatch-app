@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.29] — 2026-05-31
+
+### Added
+- Android: `SessionStateWatcher` — detects Waiting-state transitions across REST poll cycles and fires a high-importance `InputNeeded` notification with Yes / No / Reply inline actions; cancels the notification when the session leaves Waiting state
+- Android Auto: `InputNeeded` notifications now include a `CarAppExtender` with a "Voice Reply" action; tapping it in the car notification shade launches `VoiceRecordingScreen` directly via `DatawatchMessagingService.onNewIntent`
+
 ## [1.0.28] — 2026-05-31
 
 ### Added

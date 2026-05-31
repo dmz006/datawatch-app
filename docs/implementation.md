@@ -72,6 +72,10 @@ Each setting added must appear here with its key, type, default, and owning stor
 
 These are stored in `Context.MODE_PRIVATE` SharedPreferences file `"auto_prefs"`. Accessed directly in the Car App Library screen classes (no ViewModel layer — Auto screens are stateful `Screen` objects, not Composables).
 
+### Waiting-input notification suppression
+
+No new SharedPreferences are added for the waiting-input notification flow. `ForegroundSessionTracker.isForeground()` is consulted by `NotificationPoster` before posting any `InputNeeded` event: if the user is already viewing the session detail screen and the app is foregrounded, the notification is suppressed to avoid redundant interruptions — matching PWA behaviour where no bell rings for the visible session tab.
+
 ## Permissions
 
 See [security-model.md](security-model.md) § "Permissions requested".
