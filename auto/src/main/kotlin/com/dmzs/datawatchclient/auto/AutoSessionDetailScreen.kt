@@ -240,18 +240,17 @@ public class AutoSessionDetailScreen(
                 )
             }
             isTerminal -> {
-                val playText = lastResponse
-                if (!playText.isNullOrBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Play")
-                            .setOnClickListener {
-                                screenManager.push(
-                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, playText, null)
-                                )
-                            }
-                            .build()
-                    )
-                }
+                // MessageTemplate requires at least one action — always add Play (LastOutputDetailScreen
+                // shows "No content available" gracefully when lastResponse is null).
+                templateBuilder.addAction(
+                    Action.Builder().setTitle("Play")
+                        .setOnClickListener {
+                            screenManager.push(
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, lastResponse, null)
+                            )
+                        }
+                        .build()
+                )
             }
             else -> {
                 templateBuilder.addAction(
