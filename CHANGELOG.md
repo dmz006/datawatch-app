@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.39] — 2026-05-31
+
+### Fixed
+- Android Auto: rewrote `AutoSessionDetailScreen` layout so all actions are labeled and immediately visible — no more unlabeled icon hunting:
+  - **Waiting session**: body shows the actual prompt being asked; primary buttons are **Voice Reply** (goes directly to voice recording) and **Quick Reply** (opens Yes/No mode); ActionStrip has **Play** (hear the prompt) and **Kill**
+  - **Running session**: body shows `currentStatus` (what the AI is doing); primary buttons are **Play** (hear status, auto-plays with long version available) and **Send**; ActionStrip has **Kill**
+  - **Terminal session**: body shows last response; primary button is **Play**
+  - **Quick Reply mode**: body shows the prompt; **Yes** / **No** buttons; ActionStrip has **Continue** / **Skip** / 🎤 voice / **Cancel**
+- Voice is now a direct primary button on the waiting session screen — no longer buried behind "Send" → reply mode → unlabeled ActionStrip icon
+
 ## [1.0.38] — 2026-05-31
 
 ### Fixed
