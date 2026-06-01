@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.44] — 2026-05-31
+
+### Fixed
+- Quick commands sheet: ESC, arrow keys (↑ ↓ ← →), Tab, PgUp, PgDn now correctly route through `sendkey` (tmux path) instead of raw `send_input` — the `onSend` callback was appending `"\r"` for shell execution, causing e.g. `"\x1b\r"` to miss the Escape pattern match and `"[A\r"` to miss the Up arrow match; fixed by stripping the trailing CR before the `when` comparison, then passing the original text to `sendInput` for non-special-key commands
+- Quick commands sheet pattern match now accepts both the full ANSI form (`"\x1b[A"`) and the short form (`"[A"`) for arrows; added Tab, PgUp, PgDn sendkey routing (were previously falling through to raw `sendInput`)
+
 ## [1.0.43] — 2026-05-31
 
 ### Fixed
