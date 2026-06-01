@@ -229,17 +229,18 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         val title = "datawatch"
-        // ActionStrip: Info → About, Monitor icon → Monitor (2 actions max)
         val actionStrip =
             ActionStrip.Builder()
                 .addAction(
                     Action.Builder()
+                        .setTitle("About")
                         .setIcon(iconOf(R.drawable.ic_auto_info))
                         .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
                         .build(),
                 )
                 .addAction(
                     Action.Builder()
+                        .setTitle("Monitor")
                         .setIcon(iconOf(R.drawable.ic_auto_monitor))
                         .setOnClickListener { screenManager.push(AutoMonitorScreen(carContext)) }
                         .build(),

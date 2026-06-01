@@ -145,7 +145,14 @@ public class AutoMonitorScreen(
             val row = rows[0]
             val s = row.stats
             if (s != null) {
-                addDetailRows(items, s, onSessionsClick = { screenManager.push(AutoSessionListScreen(carContext)) })
+                // forcedProfile = non-null means this is a depth-3 Monitor2 screen (multi-server drill-down).
+                // Pop self before pushing SessionList so the path stays within the 5-screen limit.
+                val onSessions: () -> Unit = if (forcedProfile != null) {
+                    { screenManager.pop(); screenManager.push(AutoSessionListScreen(carContext)) }
+                } else {
+                    { screenManager.push(AutoSessionListScreen(carContext)) }
+                }
+                addDetailRows(items, s, onSessionsClick = onSessions)
             } else {
                 items.addItem(
                     Row.Builder()
@@ -195,12 +202,15 @@ public class AutoMonitorScreen(
                     Action.Builder()
                         .setTitle("Sessions")
                         .setOnClickListener {
+                            // Monitor2 (forcedProfile): pop self first to stay within 5-screen limit.
+                            if (forcedProfile != null) screenManager.pop()
                             screenManager.push(AutoSessionListScreen(carContext))
                         }
                         .build(),
                 )
                 .addAction(
                     Action.Builder()
+                        .setTitle("Servers")
                         .setIcon(iconOf(R.drawable.ic_auto_server))
                         .setOnClickListener {
                             screenManager.push(AutoServerPickerScreen(carContext))

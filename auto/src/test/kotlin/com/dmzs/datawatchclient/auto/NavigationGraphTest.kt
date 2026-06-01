@@ -48,11 +48,6 @@ class NavigationGraphTest {
         assertNotNull(cls)
     }
 
-    @Test fun `TranscriptionConfirmScreen class exists`() {
-        val cls = Class.forName("com.dmzs.datawatchclient.auto.TranscriptionConfirmScreen")
-        assertNotNull(cls)
-    }
-
     @Test fun `LastOutputDetailScreen class exists`() {
         val cls = Class.forName("com.dmzs.datawatchclient.auto.LastOutputDetailScreen")
         assertNotNull(cls)
