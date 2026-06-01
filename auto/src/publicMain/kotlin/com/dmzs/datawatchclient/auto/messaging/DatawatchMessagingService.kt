@@ -9,6 +9,12 @@ import com.dmzs.datawatchclient.auto.AutoServiceLocator
 import com.dmzs.datawatchclient.auto.AutoSummaryScreen
 import com.dmzs.datawatchclient.auto.R
 
+/** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_SESSION_ID]. */
+private const val CAR_SESSION_ID_EXTRA = "dw.car.session_id"
+
+/** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_SESSION_TITLE]. */
+private const val CAR_SESSION_TITLE_EXTRA = "dw.car.session_title"
+
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
  * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
@@ -47,15 +53,29 @@ public class DatawatchMessagingService : CarAppService() {
             override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
 
             override fun onNewIntent(intent: android.content.Intent) {
-                // Handle voice actions from Google Assistant — spoken text arrives via
+                val screenManager = carContext.getCarService(ScreenManager::class.java)
+                // §8: always pop to root before pushing to stay within the 5-screen limit.
+
+                // Notification tap from CarAppExtender — navigate directly to the session.
+                val sessionId = intent.getStringExtra(CAR_SESSION_ID_EXTRA)
+                val sessionTitle = intent.getStringExtra(CAR_SESSION_TITLE_EXTRA)
+                if (sessionId != null) {
+                    screenManager.popToRoot()
+                    screenManager.push(
+                        com.dmzs.datawatchclient.auto.AutoSessionDetailScreen(
+                            carContext,
+                            sessionId,
+                            sessionTitle ?: sessionId,
+                        ),
+                    )
+                    return
+                }
+
+                // Voice actions from Google Assistant — spoken text arrives via
                 // android.speech.RecognizerIntent.EXTRA_RESULTS.
-                // Waiting-input replies now use MessagingStyle + RemoteInput handled by
-                // the car host natively; no custom ACTION_VOICE_REPLY routing needed.
                 val voiceResults = intent.getStringArrayListExtra("android.speech.extra.RESULTS")
                 val spokenText = voiceResults?.firstOrNull() ?: return
                 val cmd = com.dmzs.datawatchclient.auto.voice.parseVoiceCommand(spokenText)
-                val screenManager = carContext.getCarService(ScreenManager::class.java)
-                // §8: pop to root before pushing to stay within the 5-screen stack limit.
                 screenManager.popToRoot()
                 screenManager.push(
                     com.dmzs.datawatchclient.auto.voice.VoiceStatusScreen(carContext, cmd),

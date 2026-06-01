@@ -164,29 +164,51 @@ public class NotificationPoster(private val context: Context) {
     /**
      * Builds a [androidx.car.app.notification.CarAppExtender] for [Event.Type.InputNeeded]
      * notifications. Sets high importance so the car head unit surfaces the alert
-     * immediately. No custom actions are added here — the base notification's
-     * Yes / No / Reply (with RemoteInput) actions are used directly by the car,
-     * which handles voice collection and sends the result via RemoteInput without
-     * needing the app to be open.
+     * immediately. Content intent carries the session ID + title so tapping the alert
+     * in the car navigates directly to [AutoSessionDetailScreen] via [onNewIntent].
      */
     private fun buildCarAppExtender(
         event: Event,
-    ): androidx.car.app.notification.CarAppExtender =
-        androidx.car.app.notification.CarAppExtender.Builder()
+    ): androidx.car.app.notification.CarAppExtender {
+        val tapIntent =
+            android.content.Intent(context, MainActivity::class.java).apply {
+                action = android.content.Intent.ACTION_VIEW
+                putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
+                putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
+                addFlags(
+                    android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                        android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP,
+                )
+            }
+        val tapPi =
+            android.app.PendingIntent.getActivity(
+                context,
+                event.sessionId.hashCode() xor CAR_TAP_REQUEST_CODE_SALT,
+                tapIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                    android.app.PendingIntent.FLAG_IMMUTABLE,
+            )
+        return androidx.car.app.notification.CarAppExtender.Builder()
             .setContentTitle(event.title)
             .setContentText(event.body)
             .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
+            .setContentIntent(tapPi)
             .build()
+    }
 
     public companion object {
         public const val REPLY_REMOTE_INPUT_KEY: String = "dw.reply.text"
+
+        /** Intent extras read by the car app's [onNewIntent] to navigate to a session. */
+        public const val EXTRA_CAR_SESSION_ID: String = "dw.car.session_id"
+        public const val EXTRA_CAR_SESSION_TITLE: String = "dw.car.session_title"
+
         private const val ID_BASE: Int = 1_000_000
 
-        // Salt added to PendingIntent requestCodes for reply broadcasts so they
-        // don't collide with the deep-link requestCodes (which use the bare
-        // sessionId hashCode).
+        // Salt added to PendingIntent requestCodes so they don't collide with each other.
         private const val REPLY_REQUEST_CODE_SALT: Int = 0x5250_4C59
         private const val QUICK_REPLY_REQUEST_CODE_SALT: Int = 0x5155_4352
+        private const val CAR_TAP_REQUEST_CODE_SALT: Int = 0x4341_5220
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }

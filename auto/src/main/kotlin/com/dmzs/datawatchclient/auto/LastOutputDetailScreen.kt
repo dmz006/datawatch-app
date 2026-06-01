@@ -78,23 +78,8 @@ public class LastOutputDetailScreen(
                     .build()
             )
 
-        // "Play Short" — speaks the summary (always available while driving)
-        builder.addAction(
-            Action.Builder()
-                .setTitle(if (isSpeaking) "Stop" else "Play Short")
-                .setOnClickListener {
-                    if (isSpeaking) {
-                        tts.stop()
-                        isSpeaking = false
-                        invalidate()
-                    } else {
-                        speakText(body)
-                    }
-                }
-                .build()
-        )
-
-        // "Play Long" — speaks longText inline, no screen push (works while driving)
+        // "Play Long" — full version; only shown when a longer form exists.
+        // ActionStrip "Listen"/"Stop" handles replay of the short summary above.
         if (!longText.isNullOrBlank()) {
             builder.addAction(
                 Action.Builder()
@@ -103,6 +88,14 @@ public class LastOutputDetailScreen(
                     .build()
             )
         }
+
+        // MessageTemplate requires at least one primary action.
+        builder.addAction(
+            Action.Builder()
+                .setTitle("Close")
+                .setOnClickListener { screenManager.pop() }
+                .build()
+        )
 
         return builder.build()
     }
