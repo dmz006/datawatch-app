@@ -371,13 +371,19 @@ public class SessionDetailViewModel(
             // Arrow/ESC keys must go through tmux send-keys (matches PWA sendkey path)
             // so they bypass PTY line buffering. Raw escape sequences via send_input
             // get buffered until a CR arrives, causing arrows to appear to require Enter.
-            val sendKeyName = when (text) {
-                "[A" -> "Up"
-                "[B" -> "Down"
-                "[C" -> "Right"
-                "[D" -> "Left"
-                ""   -> "Escape"
-                else       -> null
+            // Strip trailing CR before matching: QuickCommandsSheet.onSend appends "\r"
+            // for shell execution, which would otherwise break ESC/arrow/page-key detection.
+            val stripped = text.trimEnd('\r')
+            val sendKeyName = when (stripped) {
+                "[A", "[A" -> "Up"
+                "[B", "[B" -> "Down"
+                "[C", "[C" -> "Right"
+                "[D", "[D" -> "Left"
+                ""         -> "Escape"
+                "\t"           -> "Tab"
+                "[5~"          -> "PgUp"
+                "[6~"          -> "PgDn"
+                else           -> null
             }
             val ok = if (sendKeyName != null) {
                 com.dmzs.datawatchclient.transport.ws.WsOutbound
