@@ -164,9 +164,10 @@ public class AutoSessionDetailScreen(
         if ((sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited) && stripCount < 4) {
             val waitPlayText = lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: lastResponse
             if (!waitPlayText.isNullOrBlank()) {
+                val (shortPlay, longPlay) = splitOutputText(waitPlayText)
                 stripBuilder.addAction(
                     Action.Builder().setTitle("Play").setOnClickListener {
-                        screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, waitPlayText, null))
+                        screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
                     }.build()
                 )
                 stripCount++
@@ -243,11 +244,12 @@ public class AutoSessionDetailScreen(
             isTerminal -> {
                 // MessageTemplate requires at least one action — always add Play (LastOutputDetailScreen
                 // shows "No content available" gracefully when lastResponse is null).
+                val (shortResp, longResp) = splitOutputText(lastResponse)
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
                             screenManager.push(
-                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, lastResponse, null)
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, longResp)
                             )
                         }
                         .build()
@@ -327,6 +329,7 @@ public class AutoSessionDetailScreen(
                     .addAction(Action.Builder().setTitle("Skip").setOnClickListener { sendReply("skip\r") }.build())
                     .addAction(
                         Action.Builder()
+                            .setTitle("Voice")
                             .setIcon(
                                 CarIcon.Builder(
                                     IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
@@ -377,12 +380,20 @@ public class AutoSessionDetailScreen(
         }
     }
 
+    /** Splits long text into a short preview + full version for [LastOutputDetailScreen]. */
+    private fun splitOutputText(text: String?): Pair<String?, String?> {
+        if (text.isNullOrBlank()) return null to null
+        return if (text.length > SHORT_PLAY_CHARS) text.take(SHORT_PLAY_CHARS) to text
+        else text to null
+    }
+
     private companion object {
         const val POLL_MS: Long = 10_000L
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val BODY_CHAR_LIMIT: Int = 500
         const val REPLY_BODY_CHARS: Int = 200
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
+        const val SHORT_PLAY_CHARS: Int = 200
 
         const val MS_PER_MIN: Long = 60_000L
         const val FAST_TASK_MS: Double = 30_000.0

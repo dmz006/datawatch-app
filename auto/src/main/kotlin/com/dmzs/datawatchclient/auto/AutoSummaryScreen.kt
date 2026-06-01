@@ -101,6 +101,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val POLL_MS: Long = 15_000L
+        const val SHORT_PLAY_CHARS: Int = 200
 
         /** Renders a compact progress bar: "▓▓▓░░░ 45%" (6 wide). */
         fun bar(pct: Int, width: Int = 6): String {
@@ -215,13 +216,15 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         val outName = lastOutputSessionName
         val outText = lastOutputText
         if (outId != null && outName != null && !outText.isNullOrBlank()) {
+            val shortOut = outText.take(SHORT_PLAY_CHARS)
+            val longOut = if (outText.length > SHORT_PLAY_CHARS) outText else null
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle("◀ $outName")
                     .addText(outText.take(72))
                     .setOnClickListener {
                         screenManager.push(
-                            LastOutputDetailScreen(carContext, outId, outName, outText, null),
+                            LastOutputDetailScreen(carContext, outId, outName, shortOut, longOut),
                         )
                     }
                     .build(),

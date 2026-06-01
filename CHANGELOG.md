@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.43] — 2026-05-31
+
+### Fixed
+- Android Auto: tapping the car alert banner (CarAppExtender) while inside a session now navigates directly to that session — previously the content intent was missing so tapping did nothing
+- Android Auto: "Play Long" now appears in `LastOutputDetailScreen` for terminal and waiting sessions when the response is > 200 characters (previously `longText` was always null for non-running sessions)
+- Android Auto: removed the redundant "Play Short"/"Stop" primary button from `LastOutputDetailScreen` — the ActionStrip "Listen"/"Stop" toggle already handles this; replaced with a "Close" button; "Play Long" remains as a primary button when a long form exists
+- Android Auto: icon-only voice action in Quick Reply ActionStrip now has title "Voice" for Play Store accessibility compliance
+- Android Auto: notification alert (`CarAppExtender`) now deep-links to the session detail screen when tapped; `onNewIntent()` in `DatawatchMessagingService` routes by session ID before checking for voice commands
+
 ## [1.0.42] — 2026-05-31
 
 ### Fixed
