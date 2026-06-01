@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.42] — 2026-05-31
+
+### Fixed
+- Android Auto: multi-pass Car App Library compliance audit — navigation stack depth, TTS context, icon label accessibility
+  - Merged `TranscriptionConfirmScreen` into `VoiceRecordingScreen` as a sealed `Confirmed` state — eliminates the Automata→SessionList→SessionDetail→VoiceRecording→TranscriptionConfirm depth-6 path that crashes Gearhead (max is 5)
+  - `AutoMonitorScreen` forced-profile mode now pops itself before pushing `AutoSessionListScreen` — eliminates the Monitor→Monitor2→SessionList→SessionDetail→VoiceRecording depth-6 path
+  - `BlockDetailsScreen`: TTS now uses `carContext.applicationContext` (was `carContext`); TTS ActionStrip action title set to "Listen" (was icon-only); icon changed from `ic_auto_info` to `ic_auto_voice`
+  - `VoiceRecordingScreen` (rewritten): TTS uses `applicationContext`; `Confirmed` state auto-plays transcript and shows Send + Retry primary buttons + Listen + Cancel ActionStrip; `onStart` guard prevents re-starting recognition if already in Confirmed/Error state; scope cancelled in `onDestroy`
+  - `AutoSummaryScreen` ActionStrip actions now have titles ("About", "Monitor") — required for Play Store accessibility review
+  - `AutoMonitorScreen` server-picker ActionStrip action now has title ("Servers") — required for Play Store accessibility review
+  - `LastOutputDetailScreen` ActionStrip voice toggle now shows dynamic title ("Listen" / "Stop") — required for Play Store accessibility review
+
 ## [1.0.41] — 2026-05-31
 
 ### Fixed

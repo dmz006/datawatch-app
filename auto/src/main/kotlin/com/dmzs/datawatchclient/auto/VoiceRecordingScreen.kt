@@ -6,24 +6,36 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
- * Voice input screen for Android Auto. Uses Android's built-in [SpeechRecognizer]
- * (Google ASR) rather than [androidx.car.app.media.CarAudioRecord] + Whisper, so it
- * works while driving without hitting the host's recording restriction.
+ * Voice input screen for Android Auto. Handles the full voice reply flow in a
+ * single screen (no separate TranscriptionConfirmScreen push) to keep the
+ * navigation stack within the Car App Library 5-screen limit.
  *
- * Recognition starts automatically on [onStart]. Result goes to
- * [TranscriptionConfirmScreen] for a confirm-then-send step.
+ * States:
+ *   LISTENING  — ASR active, auto-starts on entry
+ *   ERROR      — recognition failed, shows Retry / Cancel
+ *   CONFIRMED  — transcript ready, TTS reads it aloud, user can Send or Retry
  *
- * Uses [CarContext.getApplicationContext] for [SpeechRecognizer] — the Car App
- * [CarContext] itself is not suitable for service binding.
+ * Uses [CarContext.applicationContext] for [SpeechRecognizer] and [TextToSpeech]
+ * binding — the [CarContext] itself is not suitable for service binding.
  */
 public class VoiceRecordingScreen(
     carContext: CarContext,
@@ -31,42 +43,131 @@ public class VoiceRecordingScreen(
     private val sessionTitle: String,
 ) : Screen(carContext) {
 
-    private enum class State { LISTENING, ERROR }
+    private sealed class State {
+        object Listening : State()
+        data class Error(val msg: String) : State()
+        data class Confirmed(val transcript: String) : State()
+    }
 
-    private var state = State.LISTENING
-    private var errorMsg = ""
+    private var state: State = State.Listening
     private var recognizer: SpeechRecognizer? = null
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
+        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
+    }
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                startListening()
+                // Only auto-start listening on first entry, not when returning from a CONFIRMED state.
+                if (state is State.Listening) startListening()
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 recognizer?.cancel()
+                tts.stop()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
                 recognizer?.destroy()
                 recognizer = null
+                tts.stop()
+                tts.shutdown()
+                scope.cancel()
             }
         })
     }
 
+    override fun onGetTemplate(): Template = when (val s = state) {
+        is State.Listening -> buildListeningTemplate()
+        is State.Error -> buildErrorTemplate(s.msg)
+        is State.Confirmed -> buildConfirmTemplate(s.transcript)
+    }
+
+    private fun buildListeningTemplate(): Template =
+        MessageTemplate.Builder("Listening…\nSpeak your reply")
+            .setTitle(sessionTitle)
+            .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Cancel")
+                    .setOnClickListener {
+                        recognizer?.cancel()
+                        screenManager.pop()
+                    }
+                    .build()
+            )
+            .build()
+
+    private fun buildErrorTemplate(msg: String): Template =
+        MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
+            .setTitle(sessionTitle)
+            .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Retry")
+                    .setOnClickListener { startListening() }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle("Cancel")
+                    .setOnClickListener { screenManager.pop() }
+                    .build()
+            )
+            .build()
+
+    private fun buildConfirmTemplate(transcript: String): Template {
+        val voiceIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
+        ).build()
+        return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
+            .setTitle("$sessionTitle · Voice")
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Listen")
+                            .setIcon(voiceIcon)
+                            .setOnClickListener {
+                                tts.speak(transcript, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
+                            }
+                            .build()
+                    )
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Cancel")
+                            .setOnClickListener { screenManager.pop() }
+                            .build()
+                    )
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle("Send")
+                    .setOnClickListener { onSend(transcript) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle("Retry")
+                    .setOnClickListener { startListening() }
+                    .build()
+            )
+            .build()
+    }
+
     private fun startListening() {
-        state = State.LISTENING
-        errorMsg = ""
+        state = State.Listening
         recognizer?.destroy()
         recognizer = null
         invalidate()
 
-        // Use applicationContext — CarContext is not suitable for SpeechRecognizer service binding.
         val appCtx = carContext.applicationContext
 
         if (!SpeechRecognizer.isRecognitionAvailable(appCtx)) {
-            errorMsg = "Speech recognition not available — check that Google app is installed"
-            state = State.ERROR
+            state = State.Error("Speech recognition not available — check that Google app is installed")
             invalidate()
             return
         }
@@ -74,22 +175,21 @@ public class VoiceRecordingScreen(
         recognizer = SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
             rec.setRecognitionListener(object : RecognitionListener {
                 override fun onResults(results: Bundle) {
-                    val matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    val text = matches?.firstOrNull()?.trim().orEmpty()
+                    val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()?.trim().orEmpty()
                     if (text.isNotEmpty()) {
-                        screenManager.push(
-                            TranscriptionConfirmScreen(carContext, sessionId, sessionTitle, text)
-                        )
+                        state = State.Confirmed(text)
+                        invalidate()
+                        // Auto-play TTS so the user can confirm what was heard.
+                        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
                     } else {
-                        errorMsg = "Nothing heard — tap Retry"
-                        state = State.ERROR
+                        state = State.Error("Nothing heard — tap Retry")
                         invalidate()
                     }
                 }
 
                 override fun onError(error: Int) {
-                    errorMsg = speechErrorString(error)
-                    state = State.ERROR
+                    state = State.Error(speechErrorString(error))
                     invalidate()
                 }
 
@@ -109,43 +209,35 @@ public class VoiceRecordingScreen(
         }
     }
 
-    override fun onGetTemplate(): Template =
-        when (state) {
-            State.LISTENING ->
-                MessageTemplate.Builder("Listening…\nSpeak your command")
-                    .setTitle(sessionTitle)
-                    .setHeaderAction(Action.BACK)
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Cancel")
-                            .setOnClickListener {
-                                recognizer?.cancel()
-                                screenManager.pop()
-                            }
-                            .build(),
+    private fun onSend(transcript: String) {
+        scope.launch {
+            runCatching {
+                val profile = resolveActiveProfile() ?: run {
+                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                    return@runCatching
+                }
+                AutoServiceLocator.transportFor(profile)
+                    .replyToSession(sessionId, "$transcript\r")
+                    .fold(
+                        onSuccess = {
+                            CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()
+                            screenManager.pop()
+                        },
+                        onFailure = { err ->
+                            CarToast.makeText(
+                                carContext,
+                                "Send failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
+                                CarToast.LENGTH_LONG,
+                            ).show()
+                        },
                     )
-                    .build()
-
-            State.ERROR ->
-                MessageTemplate.Builder(errorMsg.ifEmpty { "Could not hear — tap Retry" })
-                    .setTitle(sessionTitle)
-                    .setHeaderAction(Action.BACK)
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Retry")
-                            .setOnClickListener { startListening() }
-                            .build(),
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Cancel")
-                            .setOnClickListener { screenManager.pop() }
-                            .build(),
-                    )
-                    .build()
+            }
         }
+    }
 
     private companion object {
+        const val ERROR_MSG_CHARS = 40
+
         fun speechErrorString(error: Int): String = when (error) {
             SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
             SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required — grant in phone settings"

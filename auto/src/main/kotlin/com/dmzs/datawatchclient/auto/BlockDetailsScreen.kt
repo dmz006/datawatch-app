@@ -31,7 +31,7 @@ public class BlockDetailsScreen(
 ) : Screen(carContext) {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private val tts: TextToSpeech = TextToSpeech(carContext) { status ->
+    private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
     }
 
@@ -48,13 +48,19 @@ public class BlockDetailsScreen(
     override fun onGetTemplate(): Template {
         val body = buildVerdictBody()
 
-        val iconCarIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_info)
+        val voiceIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
         ).build()
 
         val actionStrip = ActionStrip.Builder()
             .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { screenManager.pop() }.build())
-            .addAction(Action.Builder().setIcon(iconCarIcon).setOnClickListener { tts.speak(body, TextToSpeech.QUEUE_FLUSH, null, "dw-block") }.build())
+            .addAction(
+                Action.Builder()
+                    .setTitle("Listen")
+                    .setIcon(voiceIcon)
+                    .setOnClickListener { tts.speak(body, TextToSpeech.QUEUE_FLUSH, null, "dw-block") }
+                    .build()
+            )
             .build()
 
         return MessageTemplate.Builder(body)

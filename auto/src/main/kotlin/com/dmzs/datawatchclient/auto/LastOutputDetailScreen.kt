@@ -62,6 +62,7 @@ public class LastOutputDetailScreen(
                 ActionStrip.Builder()
                     .addAction(
                         Action.Builder()
+                            .setTitle(if (isSpeaking) "Stop" else "Listen")
                             .setIcon(voiceIcon)
                             .setOnClickListener {
                                 if (isSpeaking) {
