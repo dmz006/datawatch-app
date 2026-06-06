@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.47] — 2026-06-06
+
+### Fixed
+- xterm terminal: Android IME autocomplete no longer triggers spurious Enter / starts AI processing mid-sentence — the previous boolean `recentCommit` guard was cleared by any `sendKeyEvent` call (e.g. KEYCODE_SPACE fired by the keyboard between the word commit and Samsung/Gboard's phantom Enter), letting the phantom Enter through as an intentional Enter; replaced with a 300 ms timestamp window that only non-Enter keys cannot reset, so the spurious Enter stays suppressed regardless of intervening key events
+- xterm terminal: added `finishComposingText()` override to catch the `setComposingText → finishComposingText` IME path (used by some keyboards instead of `commitText`) — same spurious-Enter suppression window applies
+- xterm terminal: `performEditorAction` suppression now logs when it blocks a spurious action for easier debugging
+
 ## [1.0.46] — 2026-06-06
 
 ### Fixed
