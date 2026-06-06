@@ -162,25 +162,24 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
                 // Strip any trailing \r / \n Samsung/Gboard appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
-                if (cleaned.isNotEmpty()) lastCommitMs = System.currentTimeMillis()
+                // Only open the spurious-Enter window for multi-character commits — those
+                // are autocomplete/autocorrect word commits. Single-character commits are
+                // individual keypresses (no composing); marking the window for them would
+                // suppress intentional Enters typed within 150 ms of any character.
+                if (cleaned.length > 1) lastCommitMs = System.currentTimeMillis()
                 return super.commitText(cleaned, newCursorPosition)
             }
-
-            override fun finishComposingText(): Boolean {
-                // Some IMEs use setComposingText → finishComposingText instead of
-                // commitText. Mark the same window so a spurious Enter on that path
-                // is also suppressed.
-                lastCommitMs = System.currentTimeMillis()
-                return super.finishComposingText()
-            }
+            // finishComposingText NOT overridden: it fires on focus-loss and other
+            // non-commit events in addition to word commits, so always marking the
+            // window there suppresses intentional Enters (breaks typing entirely).
         }
     }
 
     private companion object {
-        // How long after a word commit to treat the next Enter as spurious.
-        // Samsung and Gboard both fire the phantom Enter within ~50 ms; 300 ms
-        // gives headroom without blocking intentional rapid Enter presses.
-        const val SPURIOUS_ENTER_WINDOW_MS = 300L
+        // How long after a multi-char autocomplete commit to treat the next Enter
+        // as spurious. Samsung/Gboard fire the phantom Enter within ~50 ms; 150 ms
+        // gives headroom without blocking rapid intentional Enter presses.
+        const val SPURIOUS_ENTER_WINDOW_MS = 150L
     }
 
     /**

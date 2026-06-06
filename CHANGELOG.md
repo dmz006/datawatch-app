@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.48] — 2026-06-06
+
+### Fixed
+- xterm terminal: restore Enter key — v1.0.47's `finishComposingText()` override fired on focus-loss and other non-commit IME events (not just word commits), keeping the spurious-Enter suppression window permanently open and blocking all intentional Enters; removed the override entirely
+- xterm terminal: spurious-Enter window now only opens for multi-character `commitText` calls (autocomplete/autocorrect word commits); single-character commits (individual keystrokes) no longer trigger the window, so Enter typed immediately after any character goes through normally
+- xterm terminal: suppression window tightened to 150 ms (was 300 ms) to further reduce false positives
+
 ## [1.0.47] — 2026-06-06
 
 ### Fixed
