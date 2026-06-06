@@ -135,12 +135,6 @@ public class VoiceRecordingScreen(
                             }
                             .build()
                     )
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Cancel")
-                            .setOnClickListener { screenManager.pop() }
-                            .build()
-                    )
                     .build()
             )
             .addAction(

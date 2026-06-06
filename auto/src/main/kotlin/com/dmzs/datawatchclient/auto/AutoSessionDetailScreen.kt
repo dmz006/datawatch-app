@@ -166,9 +166,11 @@ public class AutoSessionDetailScreen(
             if (!waitPlayText.isNullOrBlank()) {
                 val (shortPlay, longPlay) = splitOutputText(waitPlayText)
                 stripBuilder.addAction(
-                    Action.Builder().setTitle("Play").setOnClickListener {
-                        screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                    }.build()
+                    Action.Builder()
+                        .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
+                        .setOnClickListener {
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                        }.build()
                 )
                 stripCount++
             }
@@ -326,21 +328,20 @@ public class AutoSessionDetailScreen(
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setTitle("Continue").setOnClickListener { sendReply("continue\r") }.build())
-                    .addAction(Action.Builder().setTitle("Skip").setOnClickListener { sendReply("skip\r") }.build())
                     .addAction(
                         Action.Builder()
-                            .setTitle("Voice")
-                            .setIcon(
-                                CarIcon.Builder(
-                                    IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
-                                ).build()
-                            )
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
                             .setOnClickListener {
                                 screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
                             }
                             .build()
                     )
-                    .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { replyMode = false; invalidate() }.build())
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build())
+                            .setOnClickListener { replyMode = false; invalidate() }
+                            .build()
+                    )
                     .build(),
             )
             .build()
