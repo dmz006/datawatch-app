@@ -111,54 +111,76 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
         return object : InputConnectionWrapper(ic, true) {
-            // True from the moment commitText commits non-empty text until the next
-            // sendKeyEvent or performEditorAction — flags the Samsung spurious-Enter window.
-            private var recentCommit = false
+            // Timestamp of the most recent commitText / finishComposingText call.
+            // We use a time-based window instead of a boolean flag to avoid a
+            // race where any non-Enter sendKeyEvent (e.g. KEYCODE_SPACE fired by
+            // the keyboard between the word commit and the spurious Enter) clears
+            // the guard prematurely, letting the spurious Enter through.
+            private var lastCommitMs = 0L
+            private fun recentlyCommitted() =
+                lastCommitMs > 0 && System.currentTimeMillis() - lastCommitMs < SPURIOUS_ENTER_WINDOW_MS
 
             override fun performEditorAction(editorAction: Int): Boolean {
-                if (!recentCommit) {
+                if (!recentlyCommitted()) {
                     // Intentional soft-keyboard Enter (no autocomplete commit just fired).
                     // Inject \r directly so xterm processes it without a DOM round-trip.
                     this@TerminalWebView.evaluateJavascript(
                         "window.DwBridge && DwBridge.onInput('\r');",
                         null,
                     )
+                } else {
+                    Log.d("DwTerm", "performEditorAction SUPPRESSED (post-commit window)")
                 }
-                recentCommit = false
+                lastCommitMs = 0L
                 return true
             }
 
             override fun sendKeyEvent(event: KeyEvent?): Boolean {
                 val kc = event?.keyCode
                 if (kc == KeyEvent.KEYCODE_DPAD_CENTER) {
-                    recentCommit = false
+                    lastCommitMs = 0L
                     return true // DPAD_CENTER never has a terminal role on touchscreen
                 }
                 if (kc == KeyEvent.KEYCODE_ENTER) {
-                    if (recentCommit) {
-                        // Samsung spurious Enter following autocomplete commit — suppress.
-                        Log.d("DwTerm", "IC.sendKeyEvent SUPPRESSED (post-commit) kc=$kc")
-                        recentCommit = false
+                    if (recentlyCommitted()) {
+                        // Spurious Enter from autocomplete commit — suppress.
+                        Log.d("DwTerm", "IC.sendKeyEvent SUPPRESSED (post-commit window) kc=$kc")
+                        lastCommitMs = 0L
                         return true
                     }
                     // Intentional soft-keyboard Enter — let it reach the WebView DOM so
                     // xterm.js fires onData("\r") → DwBridge.onInput → WsOutbound.sendInput.
-                    recentCommit = false
+                    lastCommitMs = 0L
                     return super.sendKeyEvent(event)
                 }
-                recentCommit = false
+                // Do NOT clear lastCommitMs for non-Enter keys — a KEYCODE_SPACE or
+                // KEYCODE_BACKSPACE fired between commitText and the spurious Enter would
+                // reset the window early and let the spurious Enter through as intentional.
                 return super.sendKeyEvent(event)
             }
 
             override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
-                // Strip any trailing \r / \n Samsung appends when committing a word.
+                // Strip any trailing \r / \n Samsung/Gboard appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
-                // Mark that a word commit just happened so the next Enter event is treated
-                // as Samsung's spurious post-autocomplete Enter, not an intentional keystroke.
-                recentCommit = cleaned.isNotEmpty()
+                if (cleaned.isNotEmpty()) lastCommitMs = System.currentTimeMillis()
                 return super.commitText(cleaned, newCursorPosition)
             }
+
+            override fun finishComposingText(): Boolean {
+                // Some IMEs use setComposingText → finishComposingText instead of
+                // commitText. Mark the same window so a spurious Enter on that path
+                // is also suppressed.
+                lastCommitMs = System.currentTimeMillis()
+                return super.finishComposingText()
+            }
         }
+    }
+
+    private companion object {
+        // How long after a word commit to treat the next Enter as spurious.
+        // Samsung and Gboard both fire the phantom Enter within ~50 ms; 300 ms
+        // gives headroom without blocking intentional rapid Enter presses.
+        const val SPURIOUS_ENTER_WINDOW_MS = 300L
     }
 
     /**
