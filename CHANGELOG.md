@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.45] — 2026-06-06
+
+### Fixed
+- Android Auto: `ListTemplate` ActionStrip now has exactly 1 custom-titled action — Car App Library MESSAGING category enforces a max of 1; v1.0.42 added `.setTitle()` to both actions in `AutoSummaryScreen` ("About" + "Monitor") and `AutoMonitorScreen` ("Sessions" + "Servers"), causing an immediate `IllegalArgumentException` crash on every Auto connect; fixed by making the secondary action icon-only in both screens
+
 ## [1.0.44] — 2026-05-31
 
 ### Fixed

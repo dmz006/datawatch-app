@@ -191,9 +191,8 @@ public class AutoMonitorScreen(
                 )
             }
         }
-        // ActionStrip: Car App Library hard-limits ListTemplate to 2 actions.
-        // "Sessions" is the primary CTA (titled); server picker is secondary (icon only).
-        // Voice and About are reachable via voice commands and are omitted here.
+        // ActionStrip: ListTemplate allows max 1 action with a custom title (MESSAGING category).
+        // "Sessions" is the single titled CTA; "Servers" is icon-only.
         fun iconOf(resId: Int) =
             CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
@@ -210,7 +209,6 @@ public class AutoMonitorScreen(
                 )
                 .addAction(
                     Action.Builder()
-                        .setTitle("Servers")
                         .setIcon(iconOf(R.drawable.ic_auto_server))
                         .setOnClickListener {
                             screenManager.push(AutoServerPickerScreen(carContext))
