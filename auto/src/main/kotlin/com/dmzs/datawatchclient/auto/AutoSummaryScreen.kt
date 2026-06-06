@@ -243,7 +243,6 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .addAction(
                     Action.Builder()
-                        .setTitle("Monitor")
                         .setIcon(iconOf(R.drawable.ic_auto_monitor))
                         .setOnClickListener { screenManager.push(AutoMonitorScreen(carContext)) }
                         .build(),
