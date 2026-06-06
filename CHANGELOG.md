@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.46] — 2026-06-06
+
+### Fixed
+- Android Auto: comprehensive ActionStrip audit — Car App Library MESSAGING category enforces max 1 custom-titled action per ActionStrip across *all* template types, not just `ListTemplate`; fixed 4 remaining violations:
+  - `AutoSessionDetailScreen` main detail view: "Play" strip action (listening to session prompt while Waiting) is now icon-only (voice icon); "Kill" retains its title as the single allowed titled action
+  - `AutoSessionDetailScreen` Quick Reply strip: "Voice" and "Cancel" are now icon-only (voice + close icons); "Skip" removed from strip (rarely needed); "Continue" retains its title
+  - `BlockDetailsScreen`: "Cancel" removed from ActionStrip (header Back button already serves this); "Listen" retains its title
+  - `VoiceRecordingScreen` Confirmed state: "Cancel" removed from ActionStrip (header Back button already serves this); "Listen" retains its title
+- Added `ic_auto_close` vector drawable for icon-only Cancel actions
+
 ## [1.0.45] — 2026-06-06
 
 ### Fixed

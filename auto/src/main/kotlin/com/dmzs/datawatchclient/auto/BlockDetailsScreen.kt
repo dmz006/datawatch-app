@@ -53,7 +53,6 @@ public class BlockDetailsScreen(
         ).build()
 
         val actionStrip = ActionStrip.Builder()
-            .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { screenManager.pop() }.build())
             .addAction(
                 Action.Builder()
                     .setTitle("Listen")
