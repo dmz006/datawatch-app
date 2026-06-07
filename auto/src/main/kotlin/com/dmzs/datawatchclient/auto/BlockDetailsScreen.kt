@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.auto
 
+import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
@@ -32,7 +33,15 @@ public class BlockDetailsScreen(
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = java.util.Locale.getDefault()
+            tts.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+        }
     }
 
     init {

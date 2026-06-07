@@ -2,6 +2,7 @@
 package com.dmzs.datawatchclient.auto
 
 import android.content.Intent
+import android.media.AudioAttributes
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -53,7 +54,15 @@ public class VoiceRecordingScreen(
     private var recognizer: SpeechRecognizer? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = java.util.Locale.getDefault()
+            tts.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+        }
     }
 
     init {
