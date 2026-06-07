@@ -1,5 +1,6 @@
 package com.dmzs.datawatchclient.auto
 
+import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
@@ -26,14 +27,31 @@ public class LastOutputDetailScreen(
 ) : Screen(carContext) {
 
     private var isSpeaking: Boolean = false
+    private var ttsReady: Boolean = false
+    private var pendingSpeak: String? = null
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) tts.language = java.util.Locale.getDefault()
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = java.util.Locale.getDefault()
+            // Route TTS through car speakers. Without this Android Auto
+            // routes output to the phone speaker instead of the head unit.
+            tts.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            ttsReady = true
+            // onStart() may have fired before binding completed — play now if so.
+            pendingSpeak?.let { text -> pendingSpeak = null; speakText(text) }
+        }
     }
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                if (!shortText.isNullOrBlank()) speakText(shortText)
+                if (!shortText.isNullOrBlank()) {
+                    if (ttsReady) speakText(shortText) else pendingSpeak = shortText
+                }
             }
 
             override fun onStop(owner: LifecycleOwner) {

@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  *   Buttons: [Play] [Voice Reply]    Strip: [Kill] [chat-icon → replyMode]
  *
  * Running — Body: currentStatus (what AI is doing right now).
- *   Buttons: [Play]    Strip: [Kill]
+ *   Buttons: [Play] [Voice Reply]    Strip: [Kill] [chat-icon → replyMode]
  *
  * Blocked — Body: block summary.
  *   Buttons: [Approve Gate] [Kill Session]
@@ -208,18 +208,26 @@ public class AutoSessionDetailScreen(
                 )
             }
             sessionState == SessionState.Running -> {
-                // Play = hear what the AI is doing. Kill goes to strip.
+                // Play = hear what the AI is doing. Voice Reply injects input while running.
+                // Quick Reply (typed) and Kill go to the strip.
                 val playText = currentStatus ?: lastResponse
                 val (shortPlay, longPlay) = splitOutputText(playText)
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, currentStatusLong ?: longPlay))
+                        }.build()
+                )
+                templateBuilder.addAction(
+                    Action.Builder().setTitle("Voice Reply")
+                        .setOnClickListener {
+                            screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
                         }.build()
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
                         .addAction(Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
                         .build()
                 )
             }

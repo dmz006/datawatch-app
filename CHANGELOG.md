@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.52] — 2026-06-07
+
+### Fixed
+- Android Auto: TTS race condition — `speak()` was called ~1 ms before the TTS engine finished binding, causing Play to silently drop the utterance; `LastOutputDetailScreen` and `VoiceRecordingScreen` now hold a `pendingSpeak` reference and play it the moment the binding callback fires
+- Android Auto: Running sessions now show `[Play]` + `[Voice Reply]` as primary buttons with `[Kill]` + `[chat-icon]` in the strip — matches Waiting state; previously only `[Play]` was shown with no way to send a reply while the AI was working
+
 ## [1.0.51] — 2026-06-07
 
 ### Fixed
