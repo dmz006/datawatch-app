@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.50] — 2026-06-07
+
+### Changed
+- Android Auto voice recording: live RMS level meter (`▓▓▓▓░░░`) shown while listening so you can see the mic is picking up sound; updates at up to 5 fps (throttled to stay within Car App Library template rate limit)
+- Android Auto voice recording: partial results appear in real-time below the meter as words are recognized, so you can see what the recognizer is hearing before you finish speaking
+- Android Auto voice recording: audio focus claimed with `AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE` before each recording session — navigation guidance and music are silenced while the mic is active and the car mic is properly routed; focus is released on results, error, cancel, or screen stop
+- Android Auto voice recording: `EXTRA_PARTIAL_RESULTS` flag added to the recognizer intent to enable the partial result callbacks
+
 ## [1.0.49] — 2026-06-07
 
 ### Fixed

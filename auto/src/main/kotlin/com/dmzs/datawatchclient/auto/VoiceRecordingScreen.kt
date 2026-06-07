@@ -3,6 +3,8 @@ package com.dmzs.datawatchclient.auto
 
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -31,9 +33,13 @@ import kotlinx.coroutines.launch
  * navigation stack within the Car App Library 5-screen limit.
  *
  * States:
- *   LISTENING  — ASR active, auto-starts on entry
- *   ERROR      — recognition failed, shows Retry / Cancel
- *   CONFIRMED  — transcript ready, TTS reads it aloud, user can Send or Retry
+ *   LISTENING  — ASR active, auto-starts on entry; live RMS meter + partial results shown
+ *   ERROR      — recognition failed, shows Retry / Back
+ *   CONFIRMED  — transcript ready, TTS auto-plays it through car speakers; Send or Retry
+ *
+ * Audio focus is claimed with AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE before each
+ * recognition session so navigation / music is silenced while the mic is active.
+ * Focus is released on results, error, cancel, or screen stop.
  *
  * Uses [CarContext.applicationContext] for [SpeechRecognizer] and [TextToSpeech]
  * binding — the [CarContext] itself is not suitable for service binding.
@@ -51,11 +57,22 @@ public class VoiceRecordingScreen(
     }
 
     private var state: State = State.Listening
+
+    // Live feedback during LISTENING — updated by recognizer callbacks.
+    private var partialText: String = ""
+    private var rmsLevel: Int = 0
+    private var lastRmsInvalidateMs = 0L
+
     private var recognizer: SpeechRecognizer? = null
+    private var focusRequest: AudioFocusRequest? = null
+    private val audioManager = carContext.applicationContext
+        .getSystemService(AudioManager::class.java)
+
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) {
             tts.language = java.util.Locale.getDefault()
+            // Route TTS through car speakers, not the phone speaker.
             tts.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
@@ -68,13 +85,13 @@ public class VoiceRecordingScreen(
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                // Only auto-start listening on first entry, not when returning from a CONFIRMED state.
                 if (state is State.Listening) startListening()
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 recognizer?.cancel()
                 tts.stop()
+                abandonAudioFocus()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
@@ -93,8 +110,13 @@ public class VoiceRecordingScreen(
         is State.Confirmed -> buildConfirmTemplate(s.transcript)
     }
 
-    private fun buildListeningTemplate(): Template =
-        MessageTemplate.Builder("Listening…\nSpeak your reply")
+    private fun buildListeningTemplate(): Template {
+        val meter = "▓".repeat(rmsLevel) + "░".repeat(RMS_BAR_COLS - rmsLevel)
+        val body = buildString {
+            append("Speak your reply\n$meter")
+            if (partialText.isNotBlank()) append("\n${partialText.take(PARTIAL_CHARS)}")
+        }
+        return MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
             .addAction(
@@ -102,11 +124,13 @@ public class VoiceRecordingScreen(
                     .setTitle("Cancel")
                     .setOnClickListener {
                         recognizer?.cancel()
+                        abandonAudioFocus()
                         screenManager.pop()
                     }
                     .build()
             )
             .build()
+    }
 
     private fun buildErrorTemplate(msg: String): Template =
         MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
@@ -161,7 +185,29 @@ public class VoiceRecordingScreen(
             .build()
     }
 
+    private fun requestAudioFocus(): Boolean {
+        abandonAudioFocus()
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .build()
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+            .setAudioAttributes(attrs)
+            .setAcceptsDelayedFocusGain(false)
+            .setOnAudioFocusChangeListener { }
+            .build()
+        focusRequest = req
+        return audioManager.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonAudioFocus() {
+        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        focusRequest = null
+    }
+
     private fun startListening() {
+        partialText = ""
+        rmsLevel = 0
         state = State.Listening
         recognizer?.destroy()
         recognizer = null
@@ -175,15 +221,17 @@ public class VoiceRecordingScreen(
             return
         }
 
+        requestAudioFocus()
+
         recognizer = SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
             rec.setRecognitionListener(object : RecognitionListener {
                 override fun onResults(results: Bundle) {
+                    abandonAudioFocus()
                     val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.trim().orEmpty()
                     if (text.isNotEmpty()) {
                         state = State.Confirmed(text)
                         invalidate()
-                        // Auto-play TTS so the user can confirm what was heard.
                         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
                     } else {
                         state = State.Error("Nothing heard — tap Retry")
@@ -192,21 +240,45 @@ public class VoiceRecordingScreen(
                 }
 
                 override fun onError(error: Int) {
+                    abandonAudioFocus()
                     state = State.Error(speechErrorString(error))
                     invalidate()
                 }
 
+                override fun onPartialResults(partialResults: Bundle) {
+                    val text = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()?.trim().orEmpty()
+                    if (text != partialText) {
+                        partialText = text
+                        invalidate()
+                    }
+                }
+
+                override fun onRmsChanged(rmsdB: Float) {
+                    // Map rmsdB (-2 .. 10) onto 0..RMS_BAR_COLS; throttle to avoid
+                    // hitting the Car App Library 5 updates/sec template rate limit.
+                    val newLevel = ((rmsdB + 2f) / 12f * RMS_BAR_COLS).toInt().coerceIn(0, RMS_BAR_COLS)
+                    if (newLevel != rmsLevel) {
+                        rmsLevel = newLevel
+                        val now = System.currentTimeMillis()
+                        if (now - lastRmsInvalidateMs >= RMS_THROTTLE_MS) {
+                            lastRmsInvalidateMs = now
+                            invalidate()
+                        }
+                    }
+                }
+
                 override fun onReadyForSpeech(params: Bundle) {}
                 override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
                 override fun onBufferReceived(buffer: ByteArray) {}
                 override fun onEndOfSpeech() {}
-                override fun onPartialResults(partialResults: Bundle) {}
                 override fun onEvent(eventType: Int, params: Bundle) {}
             })
+
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             }
             rec.startListening(intent)
         }
@@ -240,6 +312,9 @@ public class VoiceRecordingScreen(
 
     private companion object {
         const val ERROR_MSG_CHARS = 40
+        const val PARTIAL_CHARS = 120
+        const val RMS_BAR_COLS = 7
+        const val RMS_THROTTLE_MS = 200L
 
         fun speechErrorString(error: Int): String = when (error) {
             SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
