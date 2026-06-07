@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.51] — 2026-06-07
+
+### Fixed
+- Android Auto: after confirming a session kill, the app now returns to the session list instead of popping all the way to the root summary screen (`popToRoot()` → `pop()`)
+- Android Auto: terminal sessions (Completed / Killed / Error) now show a `[Restart]` button alongside `[Play]`; tapping it calls `POST /api/sessions/restart` (warm-resume) and returns to the session list on success
+
 ## [1.0.50] — 2026-06-07
 
 ### Changed

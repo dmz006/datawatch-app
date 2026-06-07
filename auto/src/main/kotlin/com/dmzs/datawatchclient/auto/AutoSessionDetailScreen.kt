@@ -40,8 +40,8 @@ import kotlinx.coroutines.launch
  * Blocked — Body: block summary.
  *   Buttons: [Approve Gate] [Kill Session]
  *
- * Terminal — Body: last response.
- *   Buttons: [Play]
+ * Terminal (Completed/Killed/Error) — Body: last response.
+ *   Buttons: [Play] [Restart]
  *
  * Quick Reply mode — Body: prompt/context (200 chars).
  *   Buttons: [Yes] [No]    Strip: [Continue] [🎤 Voice] [✕ Cancel]
@@ -143,7 +143,9 @@ public class AutoSessionDetailScreen(
             sessionState == SessionState.Waiting ||
             sessionState == SessionState.RateLimited
         val isWaiting = sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited
-        val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
+        val isTerminal = sessionState == SessionState.Completed ||
+            sessionState == SessionState.Killed ||
+            sessionState == SessionState.Error
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
 
@@ -221,14 +223,28 @@ public class AutoSessionDetailScreen(
                         .build()
                 )
             }
-            else -> {
-                // Terminal (Completed/Killed) or any other state — Play shows last content.
-                // LastOutputDetailScreen shows "No content available" gracefully when null.
+            isTerminal -> {
+                // Play shows last response; Restart warm-resumes the session on the server.
                 val (shortResp, longResp) = splitOutputText(lastResponse)
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
                             screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, longResp))
+                        }.build()
+                )
+                templateBuilder.addAction(
+                    Action.Builder().setTitle("Restart")
+                        .setOnClickListener { onRestart() }
+                        .build()
+                )
+            }
+            else -> {
+                // New / unknown state — Play shows whatever content is available.
+                val (shortPlay, longPlay) = splitOutputText(lastResponse)
+                templateBuilder.addAction(
+                    Action.Builder().setTitle("Play")
+                        .setOnClickListener {
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
                         }.build()
                 )
             }
@@ -251,7 +267,7 @@ public class AutoSessionDetailScreen(
                     ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() }
                     ?: lastResponse?.takeIf { it.isNotBlank() }
                     ?: "Waiting for your input"
-            SessionState.Completed, SessionState.Killed ->
+            SessionState.Completed, SessionState.Killed, SessionState.Error ->
                 lastResponse?.takeIf { it.isNotBlank() }
                     ?: "Session ${sessionState.name.lowercase()}"
             else -> buildString {
@@ -334,7 +350,32 @@ public class AutoSessionDetailScreen(
                 val profile = resolveActiveProfile() ?: return@runCatching
                 AutoServiceLocator.transportFor(profile).killSession(sessionId)
             }
-            screenManager.popToRoot()
+            // pop() returns to session list; popToRoot() would skip it and land on the summary screen.
+            screenManager.pop()
+        }
+    }
+
+    private fun onRestart() {
+        scope.launch {
+            runCatching {
+                val profile = resolveActiveProfile() ?: run {
+                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                    return@runCatching
+                }
+                AutoServiceLocator.transportFor(profile).restartSession(sessionId).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Session restarting", CarToast.LENGTH_SHORT).show()
+                        screenManager.pop()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Restart failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+            }
         }
     }
 
@@ -363,6 +404,7 @@ public class AutoSessionDetailScreen(
         const val REPLY_BODY_CHARS: Int = 200
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
+        const val ERROR_MSG_CHARS: Int = 40
 
         const val MS_PER_MIN: Long = 60_000L
         const val FAST_TASK_MS: Double = 30_000.0
