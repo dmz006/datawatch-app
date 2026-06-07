@@ -63,6 +63,8 @@ public class VoiceRecordingScreen(
     private var rmsLevel: Int = 0
     private var lastRmsInvalidateMs = 0L
 
+    private var ttsReady = false
+    private var pendingSpeak: String? = null
     private var recognizer: SpeechRecognizer? = null
     private var focusRequest: AudioFocusRequest? = null
     private val audioManager = carContext.applicationContext
@@ -79,6 +81,8 @@ public class VoiceRecordingScreen(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
             )
+            ttsReady = true
+            pendingSpeak?.let { text -> pendingSpeak = null; tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice") }
         }
     }
 
@@ -232,7 +236,9 @@ public class VoiceRecordingScreen(
                     if (text.isNotEmpty()) {
                         state = State.Confirmed(text)
                         invalidate()
-                        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
+                        // Guard against the TTS race: if binding hasn't completed yet, queue the text.
+                        if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
+                        else pendingSpeak = text
                     } else {
                         state = State.Error("Nothing heard — tap Retry")
                         invalidate()
