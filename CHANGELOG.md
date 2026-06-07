@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.49] — 2026-06-07
+
+### Fixed
+- Android Auto: session detail redesigned — Play is now always the first primary button in Waiting/RateLimited state so you can hear the prompt the moment you enter the session; Voice Reply remains second primary; Quick Reply (typed yes/no/continue) moved to a chat icon in the action strip
+- Android Auto: removed "Send" button from session detail — it was crashing on tap by switching to reply mode in states where reply context was unavailable; reply is now accessible only via Voice Reply (primary) or the strip chat icon (typed quick reply)
+- Android Auto: Running state now shows only [Play] as primary; [Kill] remains in strip — no spurious "Send" shown while AI is actively working
+- Android Auto: TTS now routes audio through car speakers instead of the phone speaker in `BlockDetailsScreen` and `VoiceRecordingScreen` — was missing `AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE`; `LastOutputDetailScreen` was already fixed in v1.0.48
+
 ## [1.0.48] — 2026-06-06
 
 ### Fixed

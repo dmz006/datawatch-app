@@ -32,10 +32,10 @@ import kotlinx.coroutines.launch
  * Layout by state:
  *
  * Waiting/RateLimited — Body: the prompt being asked.
- *   Buttons: [Voice Reply] [Quick Reply]    Strip: [Play] [Kill]
+ *   Buttons: [Play] [Voice Reply]    Strip: [Kill] [chat-icon → replyMode]
  *
  * Running — Body: currentStatus (what AI is doing right now).
- *   Buttons: [Play] [Send]    Strip: [Kill]
+ *   Buttons: [Play]    Strip: [Kill]
  *
  * Blocked — Body: block summary.
  *   Buttons: [Approve Gate] [Kill Session]
@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
  *   Buttons: [Play]
  *
  * Quick Reply mode — Body: prompt/context (200 chars).
- *   Buttons: [Yes] [No]    Strip: [Continue] [Skip] [🎤 Voice] [Cancel]
+ *   Buttons: [Yes] [No]    Strip: [Continue] [🎤 Voice] [✕ Cancel]
  */
 public class AutoSessionDetailScreen(
     carContext: CarContext,
@@ -142,42 +142,15 @@ public class AutoSessionDetailScreen(
         val isActive = sessionState == SessionState.Running ||
             sessionState == SessionState.Waiting ||
             sessionState == SessionState.RateLimited
+        val isWaiting = sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited
         val isTerminal = sessionState == SessionState.Completed || sessionState == SessionState.Killed
+
+        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
 
         val templateBuilder = MessageTemplate.Builder(buildBody())
             .setTitle(sessionTitle.ifBlank { sessionId })
             .setHeaderAction(Action.BACK)
 
-        // ActionStrip — labeled text for discoverability while driving.
-        // Kill goes here so it doesn't occupy a primary button slot.
-        val stripBuilder = ActionStrip.Builder()
-        var stripCount = 0
-
-        if (!killPending && isActive && !hasBlock) {
-            stripBuilder.addAction(
-                Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build()
-            )
-            stripCount++
-        }
-        // For waiting sessions: add "Play" to the strip so the user can hear the prompt
-        // without having to enter Quick Reply mode first.
-        if ((sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited) && stripCount < 4) {
-            val waitPlayText = lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: lastResponse
-            if (!waitPlayText.isNullOrBlank()) {
-                val (shortPlay, longPlay) = splitOutputText(waitPlayText)
-                stripBuilder.addAction(
-                    Action.Builder()
-                        .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
-                        .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                        }.build()
-                )
-                stripCount++
-            }
-        }
-        if (stripCount > 0) templateBuilder.setActionStrip(stripBuilder.build())
-
-        // Primary action buttons (max 2 per MessageTemplate).
         when {
             killPending -> {
                 templateBuilder.addAction(
@@ -207,61 +180,56 @@ public class AutoSessionDetailScreen(
                     )
                 }
             }
-            sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited -> {
-                // Voice Reply is the primary action while driving.
-                // Quick Reply opens the Yes/No/Continue/Skip/Voice strip.
+            isWaiting -> {
+                // Play is always primary — LastOutputDetailScreen handles null content gracefully.
+                // Voice Reply is second primary so the user can speak without looking at the screen.
+                // Kill + Quick Reply text input live in the strip (1 titled strip action = Kill).
+                val waitText = lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: lastResponse
+                val (shortPlay, longPlay) = splitOutputText(waitText)
+                templateBuilder.addAction(
+                    Action.Builder().setTitle("Play")
+                        .setOnClickListener {
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                        }.build()
+                )
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
                             screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
-                        }
-                        .build()
+                        }.build()
                 )
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Quick Reply")
-                        .setOnClickListener { replyMode = true; invalidate() }
+                templateBuilder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
                         .build()
                 )
             }
             sessionState == SessionState.Running -> {
-                // Play = hear what the AI is doing. Send = inject a command.
+                // Play = hear what the AI is doing. Kill goes to strip.
                 val playText = currentStatus ?: lastResponse
-                if (!playText.isNullOrBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Play")
-                            .setOnClickListener {
-                                screenManager.push(
-                                    LastOutputDetailScreen(carContext, sessionId, sessionTitle, playText, currentStatusLong)
-                                )
-                            }
-                            .build()
-                    )
-                }
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Send")
-                        .setOnClickListener { replyMode = true; invalidate() }
-                        .build()
-                )
-            }
-            isTerminal -> {
-                // MessageTemplate requires at least one action — always add Play (LastOutputDetailScreen
-                // shows "No content available" gracefully when lastResponse is null).
-                val (shortResp, longResp) = splitOutputText(lastResponse)
+                val (shortPlay, longPlay) = splitOutputText(playText)
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(
-                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, longResp)
-                            )
-                        }
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                        }.build()
+                )
+                templateBuilder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build())
                         .build()
                 )
             }
             else -> {
+                // Terminal (Completed/Killed) or any other state — Play shows last content.
+                // LastOutputDetailScreen shows "No content available" gracefully when null.
+                val (shortResp, longResp) = splitOutputText(lastResponse)
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Send")
-                        .setOnClickListener { replyMode = true; invalidate() }
-                        .build()
+                    Action.Builder().setTitle("Play")
+                        .setOnClickListener {
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, longResp))
+                        }.build()
                 )
             }
         }
