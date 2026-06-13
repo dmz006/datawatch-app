@@ -32,10 +32,10 @@ import kotlinx.coroutines.launch
  * Layout by state:
  *
  * Waiting/RateLimited — Body: the prompt being asked.
- *   Buttons: [Play] [Voice Reply]    Strip: [Kill]
+ *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → replyMode] [Kill]
  *
  * Running — Body: currentStatus (what AI is doing right now).
- *   Buttons: [Play] [Voice Reply]    Strip: [Kill]
+ *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → replyMode] [Kill]
  *
  * Blocked — Body: block summary.
  *   Buttons: [Approve Gate] [Kill Session]
@@ -63,6 +63,7 @@ public class AutoSessionDetailScreen(
     private var guardrailVerdicts: List<GuardrailVerdictDto> = emptyList()
     private var killPending: Boolean = false
     private var error: String? = null
+    private var replyMode: Boolean = false
     private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -139,6 +140,10 @@ public class AutoSessionDetailScreen(
     }
 
     override fun onGetTemplate(): Template {
+        // Inline reply mode avoids a screen push (this screen may be at depth 5 via
+        // AutoAutomataScreen → AutoSessionListScreen, which would exceed the 5-screen limit).
+        if (replyMode) return buildReplyTemplate()
+
         val hasBlock = telemetry?.guardrailVerdicts?.any { it.outcome == "block" } == true
         val isActive = sessionState == SessionState.Running ||
             sessionState == SessionState.Waiting ||
@@ -148,6 +153,7 @@ public class AutoSessionDetailScreen(
             sessionState == SessionState.Killed ||
             sessionState == SessionState.Error
 
+        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
         val killIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_kill)).build()
 
         val templateBuilder = MessageTemplate.Builder(buildBody())
@@ -221,6 +227,7 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
                         .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
@@ -244,6 +251,7 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
                         .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
@@ -345,6 +353,59 @@ public class AutoSessionDetailScreen(
     private fun automataNameFromTelemetry(): String =
         telemetry?.sprint?.automata?.takeIf { it.isNotBlank() } ?: automataIdFromTelemetry()
 
+    private fun buildReplyTemplate(): Template {
+        fun sendReply(text: String) {
+            scope.launch {
+                val profile = resolveActiveProfile() ?: return@launch
+                AutoServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()
+                        replyMode = false
+                        invalidate()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Reply failed — ${err.message ?: err::class.simpleName}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                        replyMode = false
+                        invalidate()
+                    },
+                )
+            }
+        }
+
+        val bodyText = (lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: currentStatus ?: "")
+            .replace("\n", " ").trim().take(REPLY_BODY_CHARS)
+            .ifEmpty { "What do you want to say?" }
+
+        return MessageTemplate.Builder(bodyText)
+            .setTitle("Quick Reply")
+            .addAction(Action.Builder().setTitle("Yes").setOnClickListener { sendReply("yes\r") }.build())
+            .addAction(Action.Builder().setTitle("No").setOnClickListener { sendReply("no\r") }.build())
+            // MESSAGING MessageTemplate strip: max 2 actions (icon-only or 1 titled).
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
+                            .setOnClickListener {
+                                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            }
+                            .build()
+                    )
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build())
+                            .setOnClickListener { replyMode = false; invalidate() }
+                            .build()
+                    )
+                    .build(),
+            )
+            .build()
+    }
+
     private fun onKillTap() {
         killPending = true
         invalidate()
@@ -415,6 +476,7 @@ public class AutoSessionDetailScreen(
         const val POLL_MS: Long = 10_000L
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val BODY_CHAR_LIMIT: Int = 500
+        const val REPLY_BODY_CHARS: Int = 200
         const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
         const val ERROR_MSG_CHARS: Int = 40
