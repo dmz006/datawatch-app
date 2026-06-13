@@ -83,9 +83,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             AutoServiceLocator.transportFor(profile).listPrds().fold(
                 onSuccess = { dto ->
                     error = null
-                    automata = dto.prds
-                        .filter { it.status == "running" }
-                        .sortedWith(automataComparator)
+                    // Show all automata regardless of status; blocked/active sort first.
+                    automata = dto.prds.sortedWith(automataComparator)
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
@@ -102,8 +101,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         if (automata.isEmpty()) {
             builder.addItem(
                 Row.Builder()
-                    .setTitle(if (error != null) "Error" else "No automata running")
-                    .addText(error ?: "All automata are idle on $serverName.")
+                    .setTitle(if (error != null) "Error" else "No automata")
+                    .addText(error ?: "No automata configured on $serverName.")
                     .build(),
             )
         } else {
@@ -117,11 +116,21 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 val storyPos = activeStoryPosition(prd)
                 val subtitle = buildSubtitle(prd, storyPos)
                 val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
-                val dotResId = if (hasBlock) R.drawable.ic_dot_red else R.drawable.ic_dot_green
+                val isActive = prd.status == "running" || prd.status == "active"
+                val dotResId = when {
+                    hasBlock -> R.drawable.ic_dot_red
+                    isActive -> R.drawable.ic_dot_green
+                    else -> R.drawable.ic_dot_gray
+                }
+                val titleColor = when {
+                    hasBlock -> CarColor.RED
+                    isActive -> CarColor.GREEN
+                    else -> CarColor.DEFAULT
+                }
                 val dotIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, dotResId)).build()
                 builder.addItem(
                     Row.Builder()
-                        .setTitle(colored(prd.name.ifBlank { prd.id }, if (hasBlock) CarColor.RED else CarColor.GREEN))
+                        .setTitle(colored(prd.name.ifBlank { prd.id }, titleColor))
                         .setImage(dotIcon)
                         .addText(subtitle)
                         .setOnClickListener {
@@ -178,12 +187,16 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             val totalStories = prd.stories.size
             val completedStories = prd.stories.count { it.status == "complete" }
             val bar = if (totalStories > 0) progressBar(completedStories, totalStories) else ""
+            val isActive = prd.status == "running" || prd.status == "active"
+            if (!isActive) {
+                append("[${prd.status.ifBlank { "idle" }}]  ")
+            }
             if (storyPos != null && totalStories > 0) {
                 append("$bar  Story $storyPos/$totalStories")
             } else if (totalStories > 0) {
                 append("$bar  $completedStories/$totalStories stories")
             } else {
-                append(prd.status)
+                append(prd.status.ifBlank { "no stories" })
             }
             // Blocking flag
             val hasBlock = prd.stories.any { it.status == "awaiting_approval" }

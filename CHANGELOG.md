@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.56] — 2026-06-13
+
+### Fixed
+- Android Auto: session detail now shows "Loading…" on first render instead of stale/empty state — an eager fetch fires in `init` so the first `onGetTemplate()` call has real data before the lifecycle poll loop starts
+- Android Auto: "Play Long" no longer appears when its content is identical to the short "Play" content — added deduplication guard in `LastOutputDetailScreen` and fixed the Waiting-state `longPlay` computation (when `waitText` comes from `lastSummaryLong` itself, using it as both short and long was producing duplicate TTS)
+- Android Auto: server picker no longer flashes "No configured servers" on entry — same eager-load fix applied to `AutoServerPickerScreen`
+- Android Auto: action strip kill button now carries a stop-square icon so it's visually distinct from the chat (reply) icon; chat/reply icon moved to first strip position (more accessible), kill moved to second position
+
+### Changed
+- Android Auto: session list now hides Completed and Killed sessions older than 30 minutes by default; a "N older sessions hidden · tap to show" row appears at the bottom when sessions are hidden; tapping it reveals all history. Error sessions and all active sessions (Running/Waiting/RateLimited) are always shown
+- Android Auto: automata screen now shows all configured automata regardless of status (previously filtered to `status == "running"` only, so idle automata were invisible); idle automata show a gray dot and `[idle]` prefix in the subtitle; active/running show green, blocked show red
+
 ## [1.0.55] — 2026-06-13
 
 ### Changed

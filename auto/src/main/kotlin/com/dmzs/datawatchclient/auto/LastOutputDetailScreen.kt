@@ -111,9 +111,9 @@ public class LastOutputDetailScreen(
                     .build()
             )
 
-        // "Play Long" — full version; only shown when a longer form exists.
-        // ActionStrip "Listen"/"Stop" handles replay of the short summary above.
-        if (!longText.isNullOrBlank()) {
+        // "Play Long" — full version; only shown when it carries meaningfully more content.
+        // Guard against cases where shortText and longText resolved to the same string.
+        if (!longText.isNullOrBlank() && longText.trim() != shortText?.trim()) {
             builder.addAction(
                 Action.Builder()
                     .setTitle("Play Long")

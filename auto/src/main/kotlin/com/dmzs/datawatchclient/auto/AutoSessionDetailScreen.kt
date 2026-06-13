@@ -64,11 +64,15 @@ public class AutoSessionDetailScreen(
     private var killPending: Boolean = false
     private var error: String? = null
     private var replyMode: Boolean = false
+    private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastDetailHash: Int = -1
 
     init {
+        // Eager first fetch so onGetTemplate() has real data before onStart() fires.
+        scope.launch { refresh(); isLoading = false; invalidate() }
+
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 pollJob?.cancel()
@@ -150,6 +154,7 @@ public class AutoSessionDetailScreen(
             sessionState == SessionState.Error
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val killIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_kill)).build()
 
         val templateBuilder = MessageTemplate.Builder(buildBody())
             .setTitle(sessionTitle.ifBlank { sessionId })
@@ -191,9 +196,12 @@ public class AutoSessionDetailScreen(
                 // Full promptContext is the richest "what is it asking" content;
                 // lastSummaryLong gives the AI-generated long form for Play Long.
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
-                val (shortPlay, _) = splitOutputText(waitText)
-                val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() }
-                    ?: waitText?.takeIf { (waitText.length) > SHORT_PLAY_CHARS }?.let { waitText }
+                val (shortPlay, splitLong) = splitOutputText(waitText)
+                // lastSummaryLong is the AI long-form; only use it as longPlay when it differs
+                // from waitText (avoids Play Long speaking identical content to Play when
+                // waitText IS lastSummaryLong and both are short).
+                val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
+                    ?: splitLong
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
@@ -208,8 +216,10 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build())
+                        // Chat icon first (reply-like position); kill icon second with stop icon.
+                        // Only 1 titled action permitted per strip (Kill).
                         .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
+                        .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
             }
@@ -232,8 +242,8 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Kill").setOnClickListener { onKillTap() }.build())
                         .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
+                        .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
             }
@@ -270,6 +280,7 @@ public class AutoSessionDetailScreen(
 
     /** Body text: the most relevant content for the current session state. */
     private fun buildBody(): String {
+        if (isLoading) return "Loading…"
         if (killPending) return "Tap Confirm Kill to kill ${sessionTitle.take(40)}"
         if (error != null) return "Error: $error"
         return when (sessionState) {

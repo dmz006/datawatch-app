@@ -29,10 +29,19 @@ import kotlinx.coroutines.launch
 public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext) {
     private var profiles: List<ServerProfile> = emptyList()
     private var activeId: String? = null
+    private var isLoading: Boolean = true
     private var loadJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
+        // Eager load so the first onGetTemplate() render has real data.
+        scope.launch {
+            profiles = AutoServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
+            activeId = AutoServiceLocator.activeServerStore.get()
+            isLoading = false
+            invalidate()
+        }
+
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
@@ -43,6 +52,7 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                                 AutoServiceLocator.profileRepository.observeAll().first()
                                     .filter { it.enabled }
                             activeId = AutoServiceLocator.activeServerStore.get()
+                            isLoading = false
                             invalidate()
                         }
                 }
@@ -60,7 +70,14 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
 
     override fun onGetTemplate(): Template {
         val items = ItemList.Builder()
-        if (profiles.isEmpty()) {
+        if (isLoading) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("Loading…")
+                    .addText("Fetching server list")
+                    .build(),
+            )
+        } else if (profiles.isEmpty()) {
             items.addItem(
                 Row.Builder()
                     .setTitle("No enabled servers")

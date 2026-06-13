@@ -17,6 +17,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
+import kotlinx.datetime.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -55,6 +56,8 @@ public class AutoSessionListScreen(
     private var rows: List<SessionRow> = emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
+    private var showHistory: Boolean = false   // toggled by "show older sessions" row tap
+    private var hiddenCount: Int = 0
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // BL303-A5.1: ambient mode — after STALE_THRESHOLD polls with no change, slow down to AMBIENT_POLL_MS
@@ -120,7 +123,8 @@ public class AutoSessionListScreen(
                                 .toMap()
                         }
                     }
-                    val newRows = sessions
+                    val now = Clock.System.now()
+                    val allRows = sessions
                         .map { s ->
                             val telem = telemetryMap[s.id]
                             val existing = if (isAmbient) rows.firstOrNull { it.session.id == s.id } else null
@@ -142,6 +146,20 @@ public class AutoSessionListScreen(
                             } else allRows
                         }
                         .sortedWith(compareBy { urgencyScore(it) })
+                    // Hide only Completed/Killed sessions older than HISTORY_THRESHOLD.
+                    // Error sessions always show (need attention); active sessions always show.
+                    val isOldTerminal = { s: Session ->
+                        (s.state == SessionState.Completed || s.state == SessionState.Killed) &&
+                            (now - s.lastActivityAt).inWholeMilliseconds >= HISTORY_THRESHOLD_MS
+                    }
+                    val newRows = if (showHistory) {
+                        hiddenCount = 0
+                        allRows
+                    } else {
+                        val fresh = allRows.filter { row -> !isOldTerminal(row.session) }
+                        hiddenCount = allRows.size - fresh.size
+                        fresh
+                    }
                     // Track stale state for ambient poll
                     val newKey = newRows.map { it.session.id to it.session.state }.hashCode()
                     if (newKey == lastRowsKey) staleCount++ else { staleCount = 0; lastRowsKey = newKey }
@@ -169,7 +187,7 @@ public class AutoSessionListScreen(
         }
 
         val builder = ItemList.Builder()
-        if (rows.isEmpty()) {
+        if (rows.isEmpty() && hiddenCount == 0) {
             builder.addItem(
                 Row.Builder()
                     .setTitle(if (error != null) "Error" else "No sessions")
@@ -181,7 +199,9 @@ public class AutoSessionListScreen(
                 carContext.getCarService(ConstraintManager::class.java)
                     .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
             }.getOrElse { MAX_ROWS_FALLBACK }
-            val visible = rows.take((max - 1).coerceAtLeast(1))
+            // Reserve 1 slot for the history row if needed, 1 for overflow row.
+            val reserveSlots = (if (hiddenCount > 0) 1 else 0)
+            val visible = rows.take((max - 1 - reserveSlots).coerceAtLeast(1))
             val overflow = rows.size - visible.size
             visible.forEach { row ->
                 val s = row.session
@@ -207,6 +227,16 @@ public class AutoSessionListScreen(
                         .build(),
                 )
             }
+            // History row — shown when old terminal sessions are being hidden.
+            if (hiddenCount > 0) {
+                builder.addItem(
+                    Row.Builder()
+                        .setTitle("$hiddenCount older session${if (hiddenCount == 1) "" else "s"} hidden")
+                        .addText("Tap to show completed / killed history")
+                        .setOnClickListener { showHistory = true; invalidate() }
+                        .build(),
+                )
+            }
         }
         val title = if (automataId != null) "$automataId Sessions" else "$serverName Sessions"
         return ListTemplate.Builder()
@@ -221,6 +251,7 @@ public class AutoSessionListScreen(
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val STALE_THRESHOLD: Int = 3
         const val MAX_ROWS_FALLBACK: Int = 5
+        const val HISTORY_THRESHOLD_MS: Long = 30 * 60 * 1000L  // 30 min
 
         fun urgencyScore(row: SessionRow): Int =
             sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)

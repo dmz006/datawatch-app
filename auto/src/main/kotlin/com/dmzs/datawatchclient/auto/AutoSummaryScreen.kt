@@ -131,8 +131,11 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     waiting = list.count { it.state == SessionState.Waiting }
                     total = list.size
                     blocked = list.count { it.state == SessionState.Error }
-                    // Find most recent non-blank lastResponse across all sessions
-                    val withResponse = list.firstOrNull { !it.lastResponse.isNullOrBlank() }
+                    // Prefer the most recently active session that has content.
+                    // Sort by lastActivityAt descending so the freshest response wins.
+                    val withResponse = list
+                        .filter { !it.lastResponse.isNullOrBlank() }
+                        .maxByOrNull { it.lastActivityAt }
                     lastOutputSessionId = withResponse?.id
                     lastOutputSessionName = withResponse?.let { it.name ?: it.taskSummary ?: it.id }
                     lastOutputText = withResponse?.lastResponse
