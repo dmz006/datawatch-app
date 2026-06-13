@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.61] — 2026-06-13
+
+### Added
+- Android Auto: new `AutoPrdStagesScreen` — when a session belongs to an automaton, tapping "Stages" from session detail shows the plan's story list with status markers (✓ complete · ◉ in progress · ⚠ awaiting approval · ✗ rejected) and presents Approve/Reject buttons when the PRD is in review state, or Stop Plan when running
+
+### Changed
+- Android Auto: session detail body now appends the automata name and current task (e.g. "⟫ MyAutomata · Story 2") when the session's telemetry identifies an automaton, so the user always knows which plan the session is executing
+- Android Auto: "Stages" button replaces "Kill Session" in the guardrail-blocked state when the session belongs to an automaton (Kill is still reachable via the strip icon); replaces "Restart" in the terminal state for automata sessions; also shown as a second button in the unknown/New state when automata context is present
+
 ## [1.0.60] — 2026-06-13
 
 ### Fixed

@@ -181,7 +181,18 @@ public class AutoSessionDetailScreen(
                         .setOnClickListener { onApproveGate() }
                         .build()
                 )
-                if (isActive) {
+                // When session belongs to an automaton, show "Stages" to view/approve the plan.
+                // Otherwise fall back to "Kill Session" for the active state.
+                val autoId = automataIdFromTelemetry()
+                if (autoId.isNotBlank()) {
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Stages")
+                            .setOnClickListener {
+                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                            }
+                            .build()
+                    )
+                } else if (isActive) {
                     templateBuilder.addAction(
                         Action.Builder().setTitle("Kill Session")
                             .setOnClickListener { onKillTap() }
@@ -257,11 +268,24 @@ public class AutoSessionDetailScreen(
                             screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, termLong))
                         }.build()
                 )
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Restart")
-                        .setOnClickListener { onRestart() }
-                        .build()
-                )
+                // For automata sessions, show plan stages so the user can see what completed;
+                // for standalone sessions, offer restart.
+                val autoId = automataIdFromTelemetry()
+                if (autoId.isNotBlank()) {
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Stages")
+                            .setOnClickListener {
+                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                            }
+                            .build()
+                    )
+                } else {
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Restart")
+                            .setOnClickListener { onRestart() }
+                            .build()
+                    )
+                }
             }
             else -> {
                 // New / unknown state — Play shows whatever content is available.
@@ -272,6 +296,17 @@ public class AutoSessionDetailScreen(
                             screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
                         }.build()
                 )
+                // Add Stages for automata sessions even in unknown/New state.
+                val autoId = automataIdFromTelemetry()
+                if (autoId.isNotBlank()) {
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Stages")
+                            .setOnClickListener {
+                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                            }
+                            .build()
+                    )
+                }
             }
         }
 
@@ -283,7 +318,7 @@ public class AutoSessionDetailScreen(
         if (isLoading) return "Loading…"
         if (killPending) return "Tap Confirm Kill to kill ${sessionTitle.take(40)}"
         if (error != null) return "Error: $error"
-        return when (sessionState) {
+        val main = when (sessionState) {
             SessionState.Running ->
                 currentStatus?.takeIf { it.isNotBlank() }
                     ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
@@ -303,8 +338,22 @@ public class AutoSessionDetailScreen(
                 telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { appendLine("▶ $it") }
                 currentStatus?.let { appendLine(it) }
             }.trim().ifEmpty { sessionState.name }
-        }.take(BODY_CHAR_LIMIT)
+        }
+        // Append automata/sprint context so the user knows which plan this session belongs to.
+        val sprint = telemetry?.sprint
+        val automataCtx = if (!sprint?.automataId.isNullOrBlank()) buildString {
+            append("\n\n⟫ ${sprint?.automata?.takeIf { it.isNotBlank() } ?: "Automata"}")
+            sprint?.task?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+        } else ""
+        return (main + automataCtx).take(BODY_CHAR_LIMIT)
     }
+
+    /** Returns the automata ID from session telemetry, or empty string if none. */
+    private fun automataIdFromTelemetry(): String = telemetry?.sprint?.automataId.orEmpty()
+
+    /** Returns the automata name from session telemetry, falling back to the ID. */
+    private fun automataNameFromTelemetry(): String =
+        telemetry?.sprint?.automata?.takeIf { it.isNotBlank() } ?: automataIdFromTelemetry()
 
     private fun buildReplyTemplate(): Template {
         fun sendReply(text: String) {
