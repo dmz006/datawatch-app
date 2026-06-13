@@ -246,19 +246,19 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         val title = "datawatch"
         val actionStrip =
             ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("About")
-                        .setIcon(iconOf(R.drawable.ic_auto_info))
-                        .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
-                        .build(),
-                )
-                // Server-switch icon in the upper right — changes which server the app targets.
-                // Row 1 (server name) now navigates to the monitor/stats screen instead.
+                // Server-switch icon first = upper-right position so the user can switch
+                // servers without going into the server row. Row 1 (server name) navigates
+                // to the monitor/stats screen.
                 .addAction(
                     Action.Builder()
                         .setIcon(iconOf(R.drawable.ic_auto_server))
                         .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }
+                        .build(),
+                )
+                .addAction(
+                    Action.Builder()
+                        .setIcon(iconOf(R.drawable.ic_auto_info))
+                        .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
                         .build(),
                 )
                 .build()
