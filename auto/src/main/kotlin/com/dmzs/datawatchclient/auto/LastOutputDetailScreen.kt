@@ -118,7 +118,7 @@ public class LastOutputDetailScreen(
             builder.addAction(
                 Action.Builder()
                     .setTitle("Play Long")
-                    .setOnClickListener { speakText(continuation) }
+                    .setOnClickListener { speakText("Continuing. $continuation") }
                     .build()
             )
         }

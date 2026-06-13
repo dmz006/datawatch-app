@@ -15,6 +15,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +54,9 @@ public class AutoMonitorScreen(
         val profile: ServerProfile,
         val stats: StatsDto? = null,
         val error: String? = null,
+        // Live session counts (total, running, waiting) — supplemented from listSessions()
+        // because the server's /api/stats often returns sessions_* as 0.
+        val sessionCounts: Triple<Int, Int, Int>? = null,
     )
 
     init {
@@ -98,10 +103,14 @@ public class AutoMonitorScreen(
         try {
             // Forced single-server mode: only fetch stats for that profile.
             if (forcedProfile != null) {
-                val result = AutoServiceLocator.transportFor(forcedProfile).stats().fold(
-                    onSuccess = { dto -> ServerRow(forcedProfile, dto) },
+                val transport = AutoServiceLocator.transportFor(forcedProfile)
+                val statsResult = transport.stats()
+                val liveSessions = transport.listSessions().getOrNull()
+                val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
+                val result = statsResult.fold(
+                    onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts) },
                     onFailure = { err ->
-                        ServerRow(forcedProfile, error = err.message ?: err::class.simpleName ?: "error")
+                        ServerRow(forcedProfile, error = err.message ?: err::class.simpleName ?: "error", sessionCounts = counts)
                     },
                 )
                 serverRows = listOf(result)
@@ -113,14 +122,18 @@ public class AutoMonitorScreen(
                 serverRows = emptyList()
                 return
             }
-            // B28: fetch all enabled servers in parallel.
+            // B28: fetch stats + session counts for all enabled servers in parallel.
             val rows = coroutineScope {
                 enabled.map { p ->
                     async {
-                        AutoServiceLocator.transportFor(p).stats().fold(
-                            onSuccess = { dto -> ServerRow(p, dto) },
+                        val transport = AutoServiceLocator.transportFor(p)
+                        val statsResult = transport.stats()
+                        val liveSessions = transport.listSessions().getOrNull()
+                        val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
+                        statsResult.fold(
+                            onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts) },
                             onFailure = { err ->
-                                ServerRow(p, error = err.message ?: err::class.simpleName ?: "error")
+                                ServerRow(p, error = err.message ?: err::class.simpleName ?: "error", sessionCounts = counts)
                             },
                         )
                     }
@@ -132,6 +145,18 @@ public class AutoMonitorScreen(
         } finally {
             isLoading = false
         }
+    }
+
+    private fun buildSessionCounts(stats: StatsDto?, sessions: List<Session>?): Triple<Int, Int, Int>? = when {
+        stats != null && stats.sessionsTotal > 0 ->
+            Triple(stats.sessionsTotal, stats.sessionsRunning, stats.sessionsWaiting)
+        sessions != null ->
+            Triple(
+                sessions.size,
+                sessions.count { it.state == SessionState.Running },
+                sessions.count { it.state == SessionState.Waiting || it.state == SessionState.RateLimited },
+            )
+        else -> null
     }
 
     override fun onGetTemplate(): Template {
@@ -164,7 +189,7 @@ public class AutoMonitorScreen(
                 } else {
                     { screenManager.push(AutoSessionListScreen(carContext)) }
                 }
-                addDetailRows(items, s, onSessionsClick = onSessions)
+                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts)
             } else {
                 items.addItem(
                     Row.Builder()
@@ -181,7 +206,7 @@ public class AutoMonitorScreen(
                     when {
                         row.error != null -> "offline — ${row.error}"
                         s == null -> "loading…"
-                        else -> buildServerSummary(s)
+                        else -> buildServerSummary(s, row.sessionCounts)
                     }
                 val titleColor = if (row.error != null) CarColor.RED else CarColor.GREEN
                 items.addItem(
@@ -249,7 +274,12 @@ private fun progressBar(pct: Int, width: Int = PROGRESS_BAR_WIDTH): String {
 }
 
 /** Adds the full detail rows for a single server (single-server mode). */
-private fun addDetailRows(items: ItemList.Builder, s: StatsDto, onSessionsClick: (() -> Unit)? = null) {
+private fun addDetailRows(
+    items: ItemList.Builder,
+    s: StatsDto,
+    onSessionsClick: (() -> Unit)? = null,
+    sessionCounts: Triple<Int, Int, Int>? = null,
+) {
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
     val cpuPct =
@@ -305,10 +335,11 @@ private fun addDetailRows(items: ItemList.Builder, s: StatsDto, onSessionsClick:
                 .build(),
         )
     }
+    val (sesTotal, sesRunning, sesWaiting) = sessionCounts ?: Triple(s.sessionsTotal, s.sessionsRunning, s.sessionsWaiting)
     items.addItem(
         Row.Builder()
             .setTitle("Sessions")
-            .addText("${s.sessionsTotal} total · ${s.sessionsRunning} run · ${s.sessionsWaiting} wait")
+            .addText("$sesTotal total · $sesRunning run · $sesWaiting wait")
             .setOnClickListener(onSessionsClick ?: {})
             .build(),
     )
@@ -318,7 +349,7 @@ private fun addDetailRows(items: ItemList.Builder, s: StatsDto, onSessionsClick:
 }
 
 /** Compact one-liner summary for multi-server mode: "CPU 45% · Mem 8.2/16 GB · 3 sessions". */
-private fun buildServerSummary(s: StatsDto): String {
+private fun buildServerSummary(s: StatsDto, sessionCounts: Triple<Int, Int, Int>? = null): String {
     val parts = mutableListOf<String>()
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
@@ -336,7 +367,8 @@ private fun buildServerSummary(s: StatsDto): String {
     } else {
         s.memPct?.let { parts += "Mem ${"%.0f".format(it)}%" }
     }
-    if (s.sessionsTotal > 0) parts += "${s.sessionsTotal}s"
+    val totalSessions = sessionCounts?.first ?: s.sessionsTotal
+    if (totalSessions > 0) parts += "${totalSessions}s"
     return parts.joinToString(" · ").ifBlank { "no data" }
 }
 

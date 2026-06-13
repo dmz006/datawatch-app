@@ -387,9 +387,10 @@ public class AutoSessionDetailScreen(
             .setTitle("Reply")
             .addAction(Action.Builder().setTitle("Yes").setOnClickListener { sendReply("yes\r") }.build())
             .addAction(Action.Builder().setTitle("No").setOnClickListener { sendReply("no\r") }.build())
+            // MESSAGING MessageTemplate strip: max 2 actions, icon-only or 1 titled.
+            // "Continue" removed from strip — users can say "continue" via voice.
             .setActionStrip(
                 ActionStrip.Builder()
-                    .addAction(Action.Builder().setTitle("Continue").setOnClickListener { sendReply("continue\r") }.build())
                     .addAction(
                         Action.Builder()
                             .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
