@@ -63,6 +63,7 @@ public class VoiceRecordingScreen(
     private var partialText: String = ""
     private var rmsLevel: Int = 0
     private var lastRmsInvalidateMs = 0L
+    private var micReady = false  // true after onReadyForSpeech fires
 
     private var ttsReady = false
     private var pendingSpeak: String? = null
@@ -128,8 +129,12 @@ public class VoiceRecordingScreen(
     private fun buildListeningTemplate(): Template {
         val meter = "▓".repeat(rmsLevel) + "░".repeat(RMS_BAR_COLS - rmsLevel)
         val body = buildString {
-            append("Speak your reply\n$meter")
-            if (partialText.isNotBlank()) append("\n${partialText.take(PARTIAL_CHARS)}")
+            if (micReady) {
+                append("Speak your reply\n$meter")
+                if (partialText.isNotBlank()) append("\n${partialText.take(PARTIAL_CHARS)}")
+            } else {
+                append("Starting microphone…")
+            }
         }
         return MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
@@ -221,6 +226,7 @@ public class VoiceRecordingScreen(
     private fun startListening() {
         partialText = ""
         rmsLevel = 0
+        micReady = false
         state = State.Listening
         recognizer?.destroy()
         recognizer = null
@@ -283,7 +289,7 @@ public class VoiceRecordingScreen(
                     }
                 }
 
-                override fun onReadyForSpeech(params: Bundle) {}
+                override fun onReadyForSpeech(params: Bundle) { micReady = true; invalidate() }
                 override fun onBeginningOfSpeech() {}
                 override fun onBufferReceived(buffer: ByteArray) {}
                 override fun onEndOfSpeech() {}
@@ -294,6 +300,12 @@ public class VoiceRecordingScreen(
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault().toLanguageTag())
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appCtx.packageName)
+                // Car environments have road/A/C noise — give the user extra silence budget.
+                putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500L)
+                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 3000L)
+                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
             }
             rec.startListening(intent)
         }

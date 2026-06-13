@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.55] — 2026-06-13
+
+### Changed
+- Android Auto voice recording: added silence-tolerance extras for car environments — `SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS=3000ms` (up from default 1500ms) and `SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS=2000ms` give you extra time to pause between words without the recognizer cutting off early (helpful with road/A/C noise)
+- Android Auto voice recording: added `EXTRA_LANGUAGE` (system locale) and `EXTRA_CALLING_PACKAGE` to the recognizer intent so Google's speech engine can optimise recognition for the app
+- Android Auto voice recording: "Starting microphone…" placeholder shown in the listening screen between the time recording is requested and when `onReadyForSpeech` fires, so it's clear the app is initialising rather than stuck
+
 ## [1.0.54] — 2026-06-13
 
 ### Fixed
