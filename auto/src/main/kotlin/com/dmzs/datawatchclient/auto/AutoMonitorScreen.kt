@@ -203,15 +203,15 @@ public class AutoMonitorScreen(
                 )
             }
         }
-        // ActionStrip: ListTemplate allows max 1 action with a custom title (MESSAGING category).
-        // "Sessions" is the single titled CTA; "Servers" is icon-only.
+        // ActionStrip on ListTemplate in MESSAGING category must be icon-only — titled strip
+        // actions cause a "can't do that while driving" validation error on some head units.
+        // Sessions navigation is also reachable via the "Sessions" row in addDetailRows().
         fun iconOf(resId: Int) =
             CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
             ActionStrip.Builder()
                 .addAction(
                     Action.Builder()
-                        .setTitle("Sessions")
                         .setIcon(iconOf(R.drawable.ic_auto_sessions))
                         .setOnClickListener {
                             // Monitor2 (forcedProfile): pop self first to stay within 5-screen limit.

@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.62] — 2026-06-13
+
+### Fixed
+- Android Auto: "can't do that while driving" when tapping Sessions from the Monitor (server stats) screen — root cause was a titled action in a `ListTemplate` ActionStrip, which is rejected by the MESSAGING category host validator on some head units; the Sessions strip action is now icon-only (the list-lines icon still clearly communicates its purpose), matching the same icon-only rule applied to the Summary strip in v1.0.60
+
 ## [1.0.61] — 2026-06-13
 
 ### Added
