@@ -102,6 +102,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
+        const val HISTORY_THRESHOLD_MS: Long = 30 * 60 * 1000L  // mirrors AutoSessionListScreen
 
         /** Renders a compact progress bar: "▓▓▓░░░ 45%" (6 wide). */
         fun bar(pct: Int, width: Int = 6): String {
@@ -129,8 +130,15 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     error = null
                     running = list.count { it.state == SessionState.Running }
                     waiting = list.count { it.state == SessionState.Waiting }
-                    total = list.size
                     blocked = list.count { it.state == SessionState.Error }
+                    // Count only sessions that will actually be visible in the session list:
+                    // active states are always shown; Killed/Completed are hidden after 30 min.
+                    val now = kotlinx.datetime.Clock.System.now()
+                    total = list.count { s ->
+                        val isTerminal = s.state == SessionState.Completed || s.state == SessionState.Killed
+                        !isTerminal ||
+                            (now - s.lastActivityAt).inWholeMilliseconds < HISTORY_THRESHOLD_MS
+                    }
                     // Prefer the most recently active session that has content.
                     // Sort by lastActivityAt descending so the freshest response wins.
                     val withResponse = list

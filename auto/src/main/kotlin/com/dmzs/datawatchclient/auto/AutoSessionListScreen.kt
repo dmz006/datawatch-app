@@ -56,6 +56,7 @@ public class AutoSessionListScreen(
     private var rows: List<SessionRow> = emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
+    private var isLoading: Boolean = true
     private var showHistory: Boolean = false   // toggled by "show older sessions" row tap
     private var hiddenCount: Int = 0
     private var pollJob: Job? = null
@@ -108,6 +109,7 @@ public class AutoSessionListScreen(
             transport.listSessions().fold(
                 onSuccess = { sessions ->
                     error = null
+                    isLoading = false
                     val isAmbient = staleCount >= STALE_THRESHOLD
                     // BL303-A5.1: ambient mode — skip per-session telemetry fetches, use cached rows
                     val telemetryMap: Map<String, SessionTelemetryDto?> = if (isAmbient) {
@@ -166,10 +168,12 @@ public class AutoSessionListScreen(
                     rows = newRows
                 },
                 onFailure = { err ->
+                    isLoading = false
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
                 },
             )
         } catch (e: Throwable) {
+            isLoading = false
             error = "Error: ${e.message ?: e::class.simpleName}"
         }
     }
@@ -187,11 +191,25 @@ public class AutoSessionListScreen(
         }
 
         val builder = ItemList.Builder()
-        if (rows.isEmpty() && hiddenCount == 0) {
+        if (isLoading) {
             builder.addItem(
                 Row.Builder()
-                    .setTitle(if (error != null) "Error" else "No sessions")
-                    .addText(error ?: "No active sessions on $serverName.")
+                    .setTitle("Loading…")
+                    .addText("Fetching sessions from $serverName")
+                    .build(),
+            )
+        } else if (error != null && rows.isEmpty() && hiddenCount == 0) {
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("Cannot reach server")
+                    .addText(error ?: "Check your connection and server settings on the phone.")
+                    .build(),
+            )
+        } else if (rows.isEmpty() && hiddenCount == 0) {
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("No active sessions")
+                    .addText("No sessions running on $serverName.")
                     .build(),
             )
         } else {
