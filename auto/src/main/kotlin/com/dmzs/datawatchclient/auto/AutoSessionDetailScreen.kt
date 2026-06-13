@@ -55,6 +55,7 @@ public class AutoSessionDetailScreen(
     private var telemetry: SessionTelemetryDto? = null
     private var sessionState: SessionState = SessionState.New
     private var lastResponse: String? = null
+    private var lastSummaryLong: String? = null
     private var currentStatus: String? = null
     private var currentStatusLong: String? = null
     private var promptContext: String? = null
@@ -90,7 +91,7 @@ public class AutoSessionDetailScreen(
             refresh()
             val newHash = listOf(
                 sessionState, error, telemetry?.currentTask, telemetry?.progress,
-                killPending, lastResponse, currentStatus, currentStatusLong, promptContext, lastPrompt,
+                killPending, lastResponse, lastSummaryLong, currentStatus, currentStatusLong, promptContext, lastPrompt,
             ).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
@@ -114,6 +115,7 @@ public class AutoSessionDetailScreen(
                 ?.let { item ->
                     sessionState = item.state
                     lastResponse = item.lastResponse?.takeIf { it.isNotBlank() }
+                    lastSummaryLong = item.lastSummaryLong?.takeIf { it.isNotBlank() }
                     promptContext = item.promptContext?.takeIf { it.isNotBlank() }
                     lastPrompt = item.lastPrompt?.takeIf { it.isNotBlank() }
                     guardrailVerdicts = telemetry?.guardrailVerdicts ?: emptyList()
@@ -186,8 +188,12 @@ public class AutoSessionDetailScreen(
                 // Play is always primary — LastOutputDetailScreen handles null content gracefully.
                 // Voice Reply is second primary so the user can speak without looking at the screen.
                 // Kill + Quick Reply text input live in the strip (1 titled strip action = Kill).
-                val waitText = lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: lastResponse
-                val (shortPlay, longPlay) = splitOutputText(waitText)
+                // Full promptContext is the richest "what is it asking" content;
+                // lastSummaryLong gives the AI-generated long form for Play Long.
+                val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
+                val (shortPlay, _) = splitOutputText(waitText)
+                val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() }
+                    ?: waitText?.takeIf { (waitText.length) > SHORT_PLAY_CHARS }?.let { waitText }
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
@@ -232,12 +238,13 @@ public class AutoSessionDetailScreen(
                 )
             }
             isTerminal -> {
-                // Play shows last response; Restart warm-resumes the session on the server.
+                // Play shows last response; lastSummaryLong (AI summary) is the long form when available.
                 val (shortResp, longResp) = splitOutputText(lastResponse)
+                val termLong = lastSummaryLong?.takeIf { it.isNotBlank() } ?: longResp
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, longResp))
+                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, termLong))
                         }.build()
                 )
                 templateBuilder.addAction(
@@ -271,8 +278,11 @@ public class AutoSessionDetailScreen(
                     ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
                     ?: "Running…"
             SessionState.Waiting, SessionState.RateLimited ->
-                lastPrompt?.takeIf { it.isNotBlank() }
-                    ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                // promptContext overrides lastPrompt per server spec: it's the pre-processed
+                // last ~4 lines of conversation, not the raw LLM prompt string.
+                promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                    ?: lastPrompt?.takeIf { it.isNotBlank() }
+                    ?: lastSummaryLong?.takeIf { it.isNotBlank() }
                     ?: lastResponse?.takeIf { it.isNotBlank() }
                     ?: "Waiting for your input"
             SessionState.Completed, SessionState.Killed, SessionState.Error ->

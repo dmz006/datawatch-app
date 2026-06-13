@@ -83,6 +83,13 @@ public data class Session(
      */
     val chrome: Boolean = false,
     /**
+     * datawatch v8.9.0 — long-form AI-generated summary of the session's
+     * current status. Richer than [lastResponse]; used as "Play Long" content
+     * in Auto and as fallback body in notifications. Not persisted to SQLite
+     * (same as [summaryGeneratedAt]); populated from live REST responses only.
+     */
+    val lastSummaryLong: String? = null,
+    /**
      * datawatch v8.9.5 — UTC timestamp when the AI session summary was last
      * generated. Null for unsummarized sessions or servers pre-v8.9.5.
      * Used to render an "AI Xm ago" age badge on the session card.

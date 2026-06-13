@@ -44,6 +44,7 @@ internal fun SessionDto.toDomain(serverProfileId: String): Session =
         llmRef = llmRef,
         computeNodeRef = computeNodeRef,
         chrome = chrome == true,
+        lastSummaryLong = lastSummaryLong?.takeIf { it.isNotBlank() },
         summaryGeneratedAt = summaryGeneratedAt.toInstantOrNull(),
     )
 
