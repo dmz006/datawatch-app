@@ -1,7 +1,10 @@
 package com.dmzs.datawatchclient.auto
 
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -29,6 +32,9 @@ public class LastOutputDetailScreen(
     private var isSpeaking: Boolean = false
     private var ttsReady: Boolean = false
     private var pendingSpeak: String? = null
+    private var focusRequest: AudioFocusRequest? = null
+    private val audioManager = carContext.applicationContext.getSystemService(AudioManager::class.java)
+
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) {
             tts.language = java.util.Locale.getDefault()
@@ -40,6 +46,12 @@ public class LastOutputDetailScreen(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
             )
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String) {}
+                override fun onDone(utteranceId: String) { isSpeaking = false; abandonAudioFocus(); invalidate() }
+                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { isSpeaking = false; abandonAudioFocus(); invalidate() }
+                override fun onStop(utteranceId: String, interrupted: Boolean) { isSpeaking = false; abandonAudioFocus(); invalidate() }
+            })
             ttsReady = true
             // onStart() may have fired before binding completed — play now if so.
             pendingSpeak?.let { text -> pendingSpeak = null; speakText(text) }
@@ -57,11 +69,13 @@ public class LastOutputDetailScreen(
             override fun onStop(owner: LifecycleOwner) {
                 tts.stop()
                 isSpeaking = false
+                abandonAudioFocus()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
                 tts.stop()
                 tts.shutdown()
+                abandonAudioFocus()
             }
         })
     }
@@ -86,6 +100,7 @@ public class LastOutputDetailScreen(
                                 if (isSpeaking) {
                                     tts.stop()
                                     isSpeaking = false
+                                    abandonAudioFocus()
                                     invalidate()
                                 } else {
                                     speakText(body)
@@ -119,8 +134,26 @@ public class LastOutputDetailScreen(
     }
 
     private fun speakText(text: String) {
+        // Claim transient audio focus so music/navigation pauses for the utterance.
+        abandonAudioFocus()
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            .setOnAudioFocusChangeListener { }
+            .build()
+        focusRequest = req
+        audioManager.requestAudioFocus(req)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-detail")
         isSpeaking = true
         invalidate()
+    }
+
+    private fun abandonAudioFocus() {
+        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        focusRequest = null
     }
 }

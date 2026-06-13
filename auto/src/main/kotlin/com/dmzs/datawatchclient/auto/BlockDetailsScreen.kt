@@ -1,7 +1,10 @@
 package com.dmzs.datawatchclient.auto
 
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
@@ -32,6 +35,9 @@ public class BlockDetailsScreen(
 ) : Screen(carContext) {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var focusRequest: AudioFocusRequest? = null
+    private val audioManager = carContext.applicationContext.getSystemService(AudioManager::class.java)
+
     private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) {
             tts.language = java.util.Locale.getDefault()
@@ -41,6 +47,12 @@ public class BlockDetailsScreen(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
             )
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String) {}
+                override fun onDone(utteranceId: String) { abandonAudioFocus() }
+                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { abandonAudioFocus() }
+                override fun onStop(utteranceId: String, interrupted: Boolean) { abandonAudioFocus() }
+            })
         }
     }
 
@@ -49,6 +61,7 @@ public class BlockDetailsScreen(
             override fun onDestroy(owner: LifecycleOwner) {
                 tts.stop()
                 tts.shutdown()
+                abandonAudioFocus()
                 scope.cancel()
             }
         })
@@ -66,7 +79,7 @@ public class BlockDetailsScreen(
                 Action.Builder()
                     .setTitle("Listen")
                     .setIcon(voiceIcon)
-                    .setOnClickListener { tts.speak(body, TextToSpeech.QUEUE_FLUSH, null, "dw-block") }
+                    .setOnClickListener { speakWithFocus(body) }
                     .build()
             )
             .build()
@@ -103,6 +116,27 @@ public class BlockDetailsScreen(
                 "⚠ ${verdict.guardrail}\n${verdict.summary.take(SUMMARY_CHARS)}"
             }
             .take(BODY_CHAR_LIMIT)
+    }
+
+    private fun speakWithFocus(text: String) {
+        abandonAudioFocus()
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            .setOnAudioFocusChangeListener { }
+            .build()
+        focusRequest = req
+        audioManager.requestAudioFocus(req)
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-block")
+    }
+
+    private fun abandonAudioFocus() {
+        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        focusRequest = null
     }
 
     private fun onApproveGate() {

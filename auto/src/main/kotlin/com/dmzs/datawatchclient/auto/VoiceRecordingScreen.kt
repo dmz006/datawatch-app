@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.speech.tts.UtteranceProgressListener
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -66,7 +67,8 @@ public class VoiceRecordingScreen(
     private var ttsReady = false
     private var pendingSpeak: String? = null
     private var recognizer: SpeechRecognizer? = null
-    private var focusRequest: AudioFocusRequest? = null
+    private var focusRequest: AudioFocusRequest? = null   // recording (EXCLUSIVE)
+    private var ttsFocusRequest: AudioFocusRequest? = null // TTS playback (TRANSIENT)
     private val audioManager = carContext.applicationContext
         .getSystemService(AudioManager::class.java)
 
@@ -81,8 +83,14 @@ public class VoiceRecordingScreen(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
             )
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String) {}
+                override fun onDone(utteranceId: String) { abandonTtsFocus() }
+                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { abandonTtsFocus() }
+                override fun onStop(utteranceId: String, interrupted: Boolean) { abandonTtsFocus() }
+            })
             ttsReady = true
-            pendingSpeak?.let { text -> pendingSpeak = null; tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice") }
+            pendingSpeak?.let { text -> pendingSpeak = null; speakWithFocus(text) }
         }
     }
 
@@ -96,6 +104,7 @@ public class VoiceRecordingScreen(
                 recognizer?.cancel()
                 tts.stop()
                 abandonAudioFocus()
+                abandonTtsFocus()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
@@ -103,6 +112,8 @@ public class VoiceRecordingScreen(
                 recognizer = null
                 tts.stop()
                 tts.shutdown()
+                abandonAudioFocus()
+                abandonTtsFocus()
                 scope.cancel()
             }
         })
@@ -167,9 +178,7 @@ public class VoiceRecordingScreen(
                         Action.Builder()
                             .setTitle("Listen")
                             .setIcon(voiceIcon)
-                            .setOnClickListener {
-                                tts.speak(transcript, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
-                            }
+                            .setOnClickListener { speakWithFocus(transcript) }
                             .build()
                     )
                     .build()
@@ -237,7 +246,7 @@ public class VoiceRecordingScreen(
                         state = State.Confirmed(text)
                         invalidate()
                         // Guard against the TTS race: if binding hasn't completed yet, queue the text.
-                        if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
+                        if (ttsReady) speakWithFocus(text)
                         else pendingSpeak = text
                     } else {
                         state = State.Error("Nothing heard — tap Retry")
@@ -314,6 +323,27 @@ public class VoiceRecordingScreen(
                     )
             }
         }
+    }
+
+    private fun speakWithFocus(text: String) {
+        abandonTtsFocus()
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            .setOnAudioFocusChangeListener { }
+            .build()
+        ttsFocusRequest = req
+        audioManager.requestAudioFocus(req)
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
+    }
+
+    private fun abandonTtsFocus() {
+        ttsFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        ttsFocusRequest = null
     }
 
     private companion object {
