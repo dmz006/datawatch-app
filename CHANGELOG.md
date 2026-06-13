@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.58] — 2026-06-13
+
+### Changed
+- Android Auto: tapping the server row (center of main screen) now navigates to the server stats / monitor screen (CPU, memory, process details) instead of the server switcher
+- Android Auto: server-switch icon (upper right of action strip) now opens the server picker; monitor icon removed from strip since the server row handles that navigation
+- Android Auto: session history threshold extended from 30 min to 2 hours — killed/completed sessions are now visible for 2 hours before being moved to history; previously sessions from testing earlier in the day would disappear after 30 min
+- Android Auto: session list now shows explicit "No active sessions" + history row when all sessions are in history, so users can see the navigation worked and find the history tap target
+
 ## [1.0.57] — 2026-06-13
 
 ### Fixed

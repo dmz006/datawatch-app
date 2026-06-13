@@ -102,7 +102,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
-        const val HISTORY_THRESHOLD_MS: Long = 30 * 60 * 1000L  // mirrors AutoSessionListScreen
+        const val HISTORY_THRESHOLD_MS: Long = 2 * 60 * 60 * 1000L  // mirrors AutoSessionListScreen
 
         /** Renders a compact progress bar: "▓▓▓░░░ 45%" (6 wide). */
         fun bar(pct: Int, width: Int = 6): String {
@@ -172,7 +172,8 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         val profile = activeProfile
 
         if (profile != null) {
-            // Row 1: Server — shows CPU/mem inline; tap to switch
+            // Row 1: Server — shows CPU/mem inline; tap → server stats/monitor screen.
+            // Server switching is in the action strip (upper-right server icon).
             val statsLine = serverStats?.let { s ->
                 val cpuPct = s.cpuLoad1?.let { load ->
                     s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null }
@@ -188,8 +189,8 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle("⬡ ${profile.displayName}")
-                    .addText(statsLine ?: "Tap to switch server")
-                    .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }
+                    .addText(statsLine ?: "Tap for server details")
+                    .setOnClickListener { screenManager.push(AutoMonitorScreen(carContext)) }
                     .build(),
             )
         }
@@ -252,10 +253,12 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                         .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
                         .build(),
                 )
+                // Server-switch icon in the upper right — changes which server the app targets.
+                // Row 1 (server name) now navigates to the monitor/stats screen instead.
                 .addAction(
                     Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_monitor))
-                        .setOnClickListener { screenManager.push(AutoMonitorScreen(carContext)) }
+                        .setIcon(iconOf(R.drawable.ic_auto_server))
+                        .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }
                         .build(),
                 )
                 .build()
