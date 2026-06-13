@@ -381,13 +381,13 @@ public class SessionDetailViewModel(
                 "[D", "[D" -> "Left"
                 ""         -> "Escape"
                 "\t"           -> "Tab"
-                "[5~"          -> "PgUp"
-                "[6~"          -> "PgDn"
+                "[5~"    -> "PgUp"
+                "[6~"   -> "PgDn"
                 else           -> null
             }
             val ok = if (sendKeyName != null) {
                 com.dmzs.datawatchclient.transport.ws.WsOutbound
-                    .sendCommand(sessionId, "sendkey ${fullIdOrShort()}: $sendKeyName")
+                    .sendCommand(sessionId, "sendkey $sessionId: $sendKeyName")
             } else {
                 com.dmzs.datawatchclient.transport.ws.WsOutbound
                     .sendInput(sessionId, text)
