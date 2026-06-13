@@ -16,7 +16,10 @@ public object NotificationChannels {
     public const val COMPLETED: String = "dw.completed"
     public const val RATE_LIMITED: String = "dw.rate_limited"
     public const val ERROR: String = "dw.error"
-    public const val FOREGROUND: String = "dw.foreground"
+    // "dw.fg.min" uses IMPORTANCE_MIN (no status-bar icon, silent section in drawer).
+    // The old "dw.foreground" channel was IMPORTANCE_LOW (showed persistent icon) — using a
+    // new ID so existing installs pick up the quieter channel on next service start.
+    public const val FOREGROUND: String = "dw.fg.min"
 
     public fun ensureRegistered(context: Context) {
         val nm = context.getSystemService<NotificationManager>() ?: return
@@ -35,8 +38,8 @@ public object NotificationChannels {
                 NotificationChannel(ERROR, "Errors", NotificationManager.IMPORTANCE_HIGH).apply {
                     description = "A session encountered an error."
                 },
-                NotificationChannel(FOREGROUND, "Background services", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Persistent notifications for ntfy fallback subscriptions."
+                NotificationChannel(FOREGROUND, "Background services", NotificationManager.IMPORTANCE_MIN).apply {
+                    description = "Persistent notifications for background event listeners (no sound, no status-bar icon)."
                 },
             ),
         )

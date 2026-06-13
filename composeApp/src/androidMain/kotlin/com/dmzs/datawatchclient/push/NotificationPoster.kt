@@ -166,22 +166,30 @@ public class NotificationPoster(private val context: Context) {
      * notifications. Sets high importance so the car head unit surfaces the alert
      * immediately. Content intent carries the session ID + title so tapping the alert
      * in the car navigates directly to [AutoSessionDetailScreen] via [onNewIntent].
+     *
+     * IMPORTANT: The intent must target the CarAppService (DatawatchMessagingService) via
+     * getService(), NOT MainActivity via getActivity(). CarAppExtender.contentIntent in
+     * the head unit is delivered to the service's onNewIntent() — an Activity intent silently
+     * does nothing in Android Auto (activities cannot run on the head unit).
      */
     private fun buildCarAppExtender(
         event: Event,
     ): androidx.car.app.notification.CarAppExtender {
         val tapIntent =
-            android.content.Intent(context, MainActivity::class.java).apply {
+            android.content.Intent().apply {
+                // Reference DatawatchMessagingService by class name to avoid an import cycle
+                // between :composeApp and :auto. The class name is stable — it's part of the
+                // public AndroidManifest component declaration.
+                setClassName(
+                    context.packageName,
+                    "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+                )
                 action = android.content.Intent.ACTION_VIEW
                 putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
                 putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
-                addFlags(
-                    android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                        android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP,
-                )
             }
         val tapPi =
-            android.app.PendingIntent.getActivity(
+            android.app.PendingIntent.getService(
                 context,
                 event.sessionId.hashCode() xor CAR_TAP_REQUEST_CODE_SALT,
                 tapIntent,
