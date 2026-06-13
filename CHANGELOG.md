@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.57] — 2026-06-13
+
+### Fixed
+- Android Auto: session count on summary screen now matches the session list — total was counting all sessions (including Killed/Completed history) while the list hides those older than 30 min; summary now counts only sessions that will actually be visible
+- Android Auto: session list now shows "Loading…" on first render instead of a blank/error state before the first fetch completes; previously the Car App Library could reject an empty template or show a confusing error before data arrived
+- Android Auto: server-unreachable error in the session list now shows "Cannot reach server" with the error detail rather than the generic Car App Library error path
+
 ## [1.0.56] — 2026-06-13
 
 ### Fixed
