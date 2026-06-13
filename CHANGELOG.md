@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.59] — 2026-06-13
+
+### Fixed
+- Android Auto: "Play Long" now speaks only the continuation past the short version, so users hear new content instead of a repeat of what "Play" already read; previously `speakText(longText)` started from the beginning, making Play Long indistinguishable from Play
+- Android Auto: "Play Long" button is no longer shown when the continuation is fewer than 100 characters — avoids surfacing it when the text is only slightly over the 200-char split point
+
 ## [1.0.58] — 2026-06-13
 
 ### Changed
