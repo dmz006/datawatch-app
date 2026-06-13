@@ -111,9 +111,17 @@ public class LastOutputDetailScreen(
                     .build()
             )
 
-        // "Play Long" — speaks only the continuation past shortText so the user hears new content
-        // rather than a repeat. Guard: require at least MIN_EXTRA_CHARS of new material.
-        val continuation = longText?.drop(shortText?.length ?: 0)?.trim()
+        // "Play Long" — when longText is a continuation of shortText (both sliced from the same
+        // source), drop the already-played prefix. When longText is an independent narrative
+        // (e.g. lastSummaryLong vs. a short promptContext that served as shortText), speak it
+        // in full — dropping shortText.length chars would silently discard the opening of the
+        // AI summary. Guard: require at least MIN_EXTRA_CHARS of content.
+        val continuation = when {
+            longText.isNullOrBlank() -> null
+            shortText.isNullOrBlank() -> longText.trim()
+            longText.startsWith(shortText) -> longText.drop(shortText.length).trim()
+            else -> longText.trim()
+        }
         if (!continuation.isNullOrBlank() && continuation.length >= MIN_EXTRA_CHARS) {
             builder.addAction(
                 Action.Builder()
