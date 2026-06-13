@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.60] — 2026-06-13
+
+### Fixed
+- Android Auto: Monitor screen now shows "Loading…" on first render instead of "No enabled servers" — eager fetch fires in `init` so data arrives before the first layout; this was the root cause of the confusing error state when tapping the server row from the main page
+- Android Auto: Sessions action in Monitor action strip now has a list icon in addition to its title — defensive fix for MESSAGING category action strip constraint that may have been causing the "can't do that while driving" error when navigating to sessions from Monitor
+
+### Changed
+- Android Auto: Summary action strip order swapped — server-picker icon is now first (upper right) and the info/about icon is second; matches the layout inside the Monitor screen where server picker is also the primary strip action
+- Android Auto: Automata screen now shows "Loading…" on first render (same eager-init fix as Monitor and Server Picker)
+- Android Auto: Tapping a terminal automaton (killed/completed/error) now shows a detail screen with "Delete" and "Sessions" options rather than navigating directly to sessions; tapping a running/active automaton shows "Stop" and "Sessions"; tapping a review automaton shows "Approve" and "Reject"
+- Android Auto: "⊕ New Automata" row added at bottom of automata list (and in empty state) — tapping shows a toast directing the user to create automata on the phone, as the car interface cannot support the full creation flow
+
 ## [1.0.59] — 2026-06-13
 
 ### Fixed

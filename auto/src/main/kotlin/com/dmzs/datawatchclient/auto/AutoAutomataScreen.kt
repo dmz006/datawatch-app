@@ -2,6 +2,7 @@
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
@@ -36,12 +37,15 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
     private var automata: List<PrdDto> = emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
+    private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastHash: Int = -1
 
     init {
+        // Eager fetch so the first onGetTemplate() render has real data.
+        scope.launch { refresh(); invalidate() }
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 pollJob?.cancel()
@@ -92,17 +96,35 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             )
         } catch (e: Throwable) {
             error = "Error: ${e.message ?: e::class.simpleName}"
+        } finally {
+            isLoading = false
         }
     }
 
     override fun onGetTemplate(): Template {
         val builder = ItemList.Builder()
 
-        if (automata.isEmpty()) {
+        if (isLoading) {
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("Loading…")
+                    .addText("Fetching automata from $serverName")
+                    .build(),
+            )
+        } else if (automata.isEmpty()) {
             builder.addItem(
                 Row.Builder()
                     .setTitle(if (error != null) "Error" else "No automata")
                     .addText(error ?: "No automata configured on $serverName.")
+                    .build(),
+            )
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("⊕ New Automata")
+                    .addText("Use your phone to create automata")
+                    .setOnClickListener {
+                        CarToast.makeText(carContext, "Open the phone app to create automata", CarToast.LENGTH_LONG).show()
+                    }
                     .build(),
             )
         } else {
@@ -110,20 +132,24 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 carContext.getCarService(ConstraintManager::class.java)
                     .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
             }.getOrElse { MAX_ROWS_FALLBACK }
-            val visible = automata.take((max - 1).coerceAtLeast(1))
+            // Reserve 1 slot for overflow row and 1 for "New Automata" row.
+            val visible = automata.take((max - 2).coerceAtLeast(1))
             val overflow = automata.size - visible.size
             visible.forEach { prd ->
                 val storyPos = activeStoryPosition(prd)
                 val subtitle = buildSubtitle(prd, storyPos)
                 val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
                 val isActive = prd.status == "running" || prd.status == "active"
+                val isTerminal = prd.status in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
+                val isReview = prd.status in setOf("needs_review", "awaiting_review", "revisions_asked")
                 val dotResId = when {
-                    hasBlock -> R.drawable.ic_dot_red
+                    hasBlock || isReview -> R.drawable.ic_dot_red
                     isActive -> R.drawable.ic_dot_green
+                    isTerminal -> R.drawable.ic_dot_gray
                     else -> R.drawable.ic_dot_gray
                 }
                 val titleColor = when {
-                    hasBlock -> CarColor.RED
+                    hasBlock || isReview -> CarColor.RED
                     isActive -> CarColor.GREEN
                     else -> CarColor.DEFAULT
                 }
@@ -134,10 +160,35 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .setImage(dotIcon)
                         .addText(subtitle)
                         .setOnClickListener {
-                            // BL303-A3.4: navigate to session list filtered to this automaton
-                            screenManager.push(
-                                AutoSessionListScreen(carContext, automataId = prd.name.ifBlank { prd.id }),
-                            )
+                            when {
+                                // Review/running/terminal → PrdActionScreen for approve/stop/delete
+                                isReview || isTerminal ->
+                                    screenManager.push(
+                                        PrdActionScreen(
+                                            carContext,
+                                            prd.id,
+                                            prd.name.ifBlank { prd.id },
+                                            status = prd.status,
+                                            automataName = prd.name.ifBlank { prd.id },
+                                        ),
+                                    )
+                                // Running/active → PrdActionScreen (Stop + Sessions)
+                                isActive ->
+                                    screenManager.push(
+                                        PrdActionScreen(
+                                            carContext,
+                                            prd.id,
+                                            prd.name.ifBlank { prd.id },
+                                            status = prd.status,
+                                            automataName = prd.name.ifBlank { prd.id },
+                                        ),
+                                    )
+                                // Idle/other → filtered session list
+                                else ->
+                                    screenManager.push(
+                                        AutoSessionListScreen(carContext, automataId = prd.name.ifBlank { prd.id }),
+                                    )
+                            }
                         }
                         .build(),
                 )
@@ -150,6 +201,16 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
+            // "New Automata" row — creating from the car requires the phone app
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("⊕ New Automata")
+                    .addText("Use your phone to create automata")
+                    .setOnClickListener {
+                        CarToast.makeText(carContext, "Open the phone app to create automata", CarToast.LENGTH_LONG).show()
+                    }
+                    .build(),
+            )
         }
 
         return ListTemplate.Builder()

@@ -42,6 +42,7 @@ public class AutoMonitorScreen(
 ) : Screen(carContext) {
     /** Snapshot per server: (profile, stats?, error?) */
     private var serverRows: List<ServerRow> = emptyList()
+    private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // Track last snapshot hash to skip redundant invalidate() calls (standard §15).
@@ -54,6 +55,8 @@ public class AutoMonitorScreen(
     )
 
     init {
+        // Eager fetch so the first onGetTemplate() render shows real data, not "No enabled servers".
+        scope.launch { refresh(); invalidate() }
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
@@ -126,13 +129,22 @@ public class AutoMonitorScreen(
             serverRows = rows
         } catch (e: Throwable) {
             serverRows = emptyList()
+        } finally {
+            isLoading = false
         }
     }
 
     override fun onGetTemplate(): Template {
         val items = ItemList.Builder()
         val rows = serverRows
-        if (rows.isEmpty()) {
+        if (isLoading) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("Loading…")
+                    .addText("Fetching server data")
+                    .build(),
+            )
+        } else if (rows.isEmpty()) {
             items.addItem(
                 Row.Builder()
                     .setTitle("No enabled servers")
@@ -200,6 +212,7 @@ public class AutoMonitorScreen(
                 .addAction(
                     Action.Builder()
                         .setTitle("Sessions")
+                        .setIcon(iconOf(R.drawable.ic_auto_sessions))
                         .setOnClickListener {
                             // Monitor2 (forcedProfile): pop self first to stay within 5-screen limit.
                             if (forcedProfile != null) screenManager.pop()
