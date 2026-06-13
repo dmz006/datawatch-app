@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.53] — 2026-06-13
+
+### Fixed
+- Android Auto: TTS playback now pauses music and navigation guidance for the duration of the utterance — `AUDIOFOCUS_GAIN_TRANSIENT` is claimed before every `tts.speak()` call in `LastOutputDetailScreen`, `BlockDetailsScreen`, and `VoiceRecordingScreen`; focus is released via `UtteranceProgressListener.onDone/onStop/onError` so audio resumes automatically when speech finishes or is interrupted
+- Android Auto `VoiceRecordingScreen`: recording focus (`AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE`) and TTS readback focus (`AUDIOFOCUS_GAIN_TRANSIENT`) are now separate so they don't conflict when the transcript confirmation plays after recording ends
+
 ## [1.0.52] — 2026-06-07
 
 ### Fixed
