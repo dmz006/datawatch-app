@@ -212,6 +212,22 @@ public class AutoSessionListScreen(
                     .addText("No sessions running on $serverName.")
                     .build(),
             )
+        } else if (rows.isEmpty()) {
+            // Active sessions list is empty but history exists — make this explicit
+            // so the user knows navigation worked and the server responded.
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("No active sessions")
+                    .addText("$hiddenCount older session${if (hiddenCount == 1) "" else "s"} in history below")
+                    .build(),
+            )
+            builder.addItem(
+                Row.Builder()
+                    .setTitle("$hiddenCount session${if (hiddenCount == 1) "" else "s"} in history")
+                    .addText("Tap to show completed / killed sessions")
+                    .setOnClickListener { showHistory = true; invalidate() }
+                    .build(),
+            )
         } else {
             val max = runCatching {
                 carContext.getCarService(ConstraintManager::class.java)
@@ -269,7 +285,7 @@ public class AutoSessionListScreen(
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val STALE_THRESHOLD: Int = 3
         const val MAX_ROWS_FALLBACK: Int = 5
-        const val HISTORY_THRESHOLD_MS: Long = 30 * 60 * 1000L  // 30 min
+        const val HISTORY_THRESHOLD_MS: Long = 2 * 60 * 60 * 1000L  // 2 hours
 
         fun urgencyScore(row: SessionRow): Int =
             sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)
