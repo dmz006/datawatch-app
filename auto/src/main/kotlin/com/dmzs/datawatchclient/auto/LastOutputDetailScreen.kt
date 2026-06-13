@@ -111,13 +111,14 @@ public class LastOutputDetailScreen(
                     .build()
             )
 
-        // "Play Long" — full version; only shown when it carries meaningfully more content.
-        // Guard against cases where shortText and longText resolved to the same string.
-        if (!longText.isNullOrBlank() && longText.trim() != shortText?.trim()) {
+        // "Play Long" — speaks only the continuation past shortText so the user hears new content
+        // rather than a repeat. Guard: require at least MIN_EXTRA_CHARS of new material.
+        val continuation = longText?.drop(shortText?.length ?: 0)?.trim()
+        if (!continuation.isNullOrBlank() && continuation.length >= MIN_EXTRA_CHARS) {
             builder.addAction(
                 Action.Builder()
                     .setTitle("Play Long")
-                    .setOnClickListener { speakText(longText) }
+                    .setOnClickListener { speakText(continuation) }
                     .build()
             )
         }
@@ -155,5 +156,11 @@ public class LastOutputDetailScreen(
     private fun abandonAudioFocus() {
         focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
         focusRequest = null
+    }
+
+    private companion object {
+        // Minimum chars of continuation required before "Play Long" is offered.
+        // Avoids showing it when longText is only a few chars longer than shortText.
+        const val MIN_EXTRA_CHARS: Int = 100
     }
 }
