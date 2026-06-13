@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.54] — 2026-06-13
+
+### Fixed
+- Notifications and Android Auto now show the correct prompt text when a session enters waiting state — `promptContext` (server-preprocessed last ~4 lines of conversation) is now correctly preferred over `lastPrompt` (raw LLM prompt string that in datawatch v8.9.x can include system prompt junk); previous priority was inverted relative to the server spec
+- Mapped `last_summary_long` (datawatch v8.9.0 AI-generated long-form session summary) through to the `Session` domain class; used as "Play Long" content in Android Auto's `LastOutputDetailScreen` for waiting and terminal states; also added as third-priority fallback in notification body (after `promptContext` and `lastPrompt`)
+
 ## [1.0.53] — 2026-06-13
 
 ### Fixed

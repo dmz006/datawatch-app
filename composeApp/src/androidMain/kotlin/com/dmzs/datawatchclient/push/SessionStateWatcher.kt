@@ -39,8 +39,11 @@ public object SessionStateWatcher {
                 // title = session name (becomes the MessagingStyle "sender" Auto reads aloud).
                 // body  = the prompt the session is waiting on, in priority order.
                 val name = session.name ?: session.taskSummary ?: session.id
-                val body = session.lastPrompt?.takeIf { it.isNotBlank() }?.take(200)
-                    ?: session.promptContext?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(200)
+                // promptContext overrides lastPrompt per server spec — it's the pre-processed
+                // last ~4 lines of conversation rather than the raw LLM prompt string.
+                val body = session.promptContext?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(200)
+                    ?: session.lastPrompt?.takeIf { it.isNotBlank() }?.take(200)
+                    ?: session.lastSummaryLong?.takeIf { it.isNotBlank() }?.take(200)
                     ?: session.lastResponse?.takeIf { it.isNotBlank() }?.take(200)
                     ?: "Waiting for your input"
                 NotificationPoster(context).post(
