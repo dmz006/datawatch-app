@@ -205,8 +205,11 @@ public class VoiceRecordingScreen(
 
     private fun requestAudioFocus(): Boolean {
         abandonAudioFocus()
+        // USAGE_ASSISTANT silences navigation/media without triggering USAGE_VOICE_COMMUNICATION,
+        // which in Android Auto over Bluetooth starts BT SCO (async). SCO setup takes 200-500ms;
+        // SpeechRecognizer starts immediately and gets silence/noise → ERROR_NO_MATCH.
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+            .setUsage(AudioAttributes.USAGE_ASSISTANT)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
             .build()
         val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
@@ -301,13 +304,12 @@ public class VoiceRecordingScreen(
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault().toLanguageTag())
-                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appCtx.packageName)
-                // Car environments have road/A/C noise — give the user extra silence budget.
-                // COMPLETE = 5 s lets the user pause at the end of a sentence before the mic closes.
-                // POSSIBLY_COMPLETE = 3 s allows a natural breath between phrases without cutting off.
-                putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500L)
-                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 5000L)
-                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 3000L)
+                // Car environments have road/A/C noise — give the user a wider silence window
+                // than the OS default (~1 s) so a breath between phrases isn't treated as end-of-speech.
+                // Keep totals well under the Google ASR ~10 s max to avoid ERROR_NO_MATCH on timeout.
+                putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500)
+                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 4000)
+                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500)
             }
             rec.startListening(intent)
         }
