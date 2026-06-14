@@ -204,16 +204,12 @@ public class AutoSessionDetailScreen(
                 }
             }
             isWaiting -> {
-                // Play is always primary — LastOutputDetailScreen handles null content gracefully.
-                // Voice Reply is second primary so the user can speak without looking at the screen.
-                // Kill + Quick Reply text input live in the strip (1 titled strip action = Kill).
-                // Full promptContext is the richest "what is it asking" content;
-                // lastSummaryLong gives the AI-generated long form for Play Long.
+                // Play lets the user hear the prompt before deciding how to reply.
+                // Continue is the single most-common reply in a Waiting session; surface it directly
+                // so the user doesn't have to open the full quick-reply list just to say "continue".
+                // Voice Reply + Yes/No/Stop/Enter remain in the quick-reply list (chat strip button).
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(waitText)
-                // lastSummaryLong is the AI long-form; only use it as longPlay when it differs
-                // from waitText (avoids Play Long speaking identical content to Play when
-                // waitText IS lastSummaryLong and both are short).
                 val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
                     ?: splitLong
                 templateBuilder.addAction(
@@ -223,21 +219,28 @@ public class AutoSessionDetailScreen(
                         }.build()
                 )
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Voice Reply")
+                    Action.Builder().setTitle("Continue")
                         .setOnClickListener {
-                            screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            scope.launch {
+                                val profile = resolveActiveProfile() ?: return@launch
+                                AutoServiceLocator.transportFor(profile)
+                                    .replyToSession(sessionId, "continue\r")
+                                    .onSuccess { CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show() }
+                                    .onFailure { CarToast.makeText(carContext, "Failed", CarToast.LENGTH_SHORT).show() }
+                            }
                         }.build()
                 )
+                // Reply strip: titled so the label shows even when the icon fails to render.
+                // MESSAGING MessageTemplate strip: 1 titled action allowed; Kill is icon-only.
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
-                        .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
+                        .addAction(Action.Builder().setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
             }
             sessionState == SessionState.Running -> {
                 // Play = hear what the AI is doing. Voice Reply injects input while running.
-                // Quick Reply (typed) and Kill go to the strip.
                 val playText = currentStatus ?: lastResponse
                 val (shortPlay, longPlay) = splitOutputText(playText)
                 templateBuilder.addAction(
@@ -254,8 +257,8 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
-                        .addAction(Action.Builder().setTitle("Kill").setIcon(killIcon).setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
+                        .addAction(Action.Builder().setIcon(killIcon).setOnClickListener { onKillTap() }.build())
                         .build()
                 )
             }

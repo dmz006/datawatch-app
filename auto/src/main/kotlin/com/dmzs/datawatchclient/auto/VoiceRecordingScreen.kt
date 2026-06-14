@@ -61,8 +61,6 @@ public class VoiceRecordingScreen(
 
     // Live feedback during LISTENING — updated by recognizer callbacks.
     private var partialText: String = ""
-    private var rmsLevel: Int = 0
-    private var lastRmsInvalidateMs = 0L
     private var micReady = false  // true after onReadyForSpeech fires
 
     private var ttsReady = false
@@ -127,14 +125,13 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildListeningTemplate(): Template {
-        val meter = "▓".repeat(rmsLevel) + "░".repeat(RMS_BAR_COLS - rmsLevel)
-        val body = buildString {
-            if (micReady) {
-                append("Speak your reply\n$meter")
-                if (partialText.isNotBlank()) append("\n${partialText.take(PARTIAL_CHARS)}")
-            } else {
-                append("Starting microphone…")
-            }
+        // Live transcription is the primary content — matches text-message voice input.
+        // RMS meter removed: Car App Library caps template updates at 5/s so it barely
+        // animates and confuses users who expect a smooth waveform.
+        val body = when {
+            !micReady -> "Starting microphone…"
+            partialText.isNotBlank() -> partialText.take(PARTIAL_CHARS)
+            else -> "Listening…"
         }
         return MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
@@ -227,8 +224,12 @@ public class VoiceRecordingScreen(
     }
 
     private fun startListening() {
+        // Stop TTS before grabbing the mic: if Retry is tapped while the confirmed-state
+        // readback is still playing, the recognizer would capture its own TTS audio.
+        tts.stop()
+        pendingSpeak = null
+        abandonTtsFocus()
         partialText = ""
-        rmsLevel = 0
         micReady = false
         state = State.Listening
         recognizer?.destroy()
@@ -279,17 +280,7 @@ public class VoiceRecordingScreen(
                 }
 
                 override fun onRmsChanged(rmsdB: Float) {
-                    // Map rmsdB (-2 .. 10) onto 0..RMS_BAR_COLS; throttle to avoid
-                    // hitting the Car App Library 5 updates/sec template rate limit.
-                    val newLevel = ((rmsdB + 2f) / 12f * RMS_BAR_COLS).toInt().coerceIn(0, RMS_BAR_COLS)
-                    if (newLevel != rmsLevel) {
-                        rmsLevel = newLevel
-                        val now = System.currentTimeMillis()
-                        if (now - lastRmsInvalidateMs >= RMS_THROTTLE_MS) {
-                            lastRmsInvalidateMs = now
-                            invalidate()
-                        }
-                    }
+                    // Meter removed — no template update needed on volume change.
                 }
 
                 override fun onReadyForSpeech(params: Bundle) { micReady = true; invalidate() }
@@ -364,9 +355,7 @@ public class VoiceRecordingScreen(
 
     private companion object {
         const val ERROR_MSG_CHARS = 40
-        const val PARTIAL_CHARS = 120
-        const val RMS_BAR_COLS = 7
-        const val RMS_THROTTLE_MS = 200L
+        const val PARTIAL_CHARS = 200
 
         fun speechErrorString(error: Int): String = when (error) {
             SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
