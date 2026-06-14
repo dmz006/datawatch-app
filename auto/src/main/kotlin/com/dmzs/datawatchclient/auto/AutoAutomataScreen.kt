@@ -132,8 +132,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 carContext.getCarService(ConstraintManager::class.java)
                     .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
             }.getOrElse { MAX_ROWS_FALLBACK }
-            // Reserve 1 slot for overflow row and 1 for "New Automata" row.
-            val visible = automata.take((max - 2).coerceAtLeast(1))
+            // Reserve 1 slot for the overflow row.
+            val visible = automata.take((max - 1).coerceAtLeast(1))
             val overflow = automata.size - visible.size
             visible.forEach { prd ->
                 val storyPos = activeStoryPosition(prd)
@@ -201,16 +201,6 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
-            // "New Automata" row — creating from the car requires the phone app
-            builder.addItem(
-                Row.Builder()
-                    .setTitle("⊕ New Automata")
-                    .addText("Use your phone to create automata")
-                    .setOnClickListener {
-                        CarToast.makeText(carContext, "Open the phone app to create automata", CarToast.LENGTH_LONG).show()
-                    }
-                    .build(),
-            )
         }
 
         return ListTemplate.Builder()
