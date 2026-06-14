@@ -303,9 +303,11 @@ public class VoiceRecordingScreen(
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault().toLanguageTag())
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appCtx.packageName)
                 // Car environments have road/A/C noise — give the user extra silence budget.
+                // COMPLETE = 5 s lets the user pause at the end of a sentence before the mic closes.
+                // POSSIBLY_COMPLETE = 3 s allows a natural breath between phrases without cutting off.
                 putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500L)
-                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 3000L)
-                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
+                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 5000L)
+                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 3000L)
             }
             rec.startListening(intent)
         }
