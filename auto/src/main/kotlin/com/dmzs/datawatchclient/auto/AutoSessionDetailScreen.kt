@@ -8,7 +8,10 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -376,33 +379,61 @@ public class AutoSessionDetailScreen(
             }
         }
 
-        val bodyText = (lastPrompt ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() } ?: currentStatus ?: "")
-            .replace("\n", " ").trim().take(REPLY_BODY_CHARS)
-            .ifEmpty { "What do you want to say?" }
+        // Full prompt raw text for Play and for the preview subtitle on the Play row.
+        val promptRaw = promptContext ?: lastPrompt ?: currentStatus ?: lastResponse
+        val promptPreview = promptRaw?.replace("\n", " ")?.trim()?.take(REPLY_BODY_CHARS) ?: ""
+        val (shortPlay, splitLong) = splitOutputText(promptRaw)
+        val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != promptRaw } ?: splitLong
 
-        return MessageTemplate.Builder(bodyText)
-            .setTitle("Quick Reply")
-            .addAction(Action.Builder().setTitle("Yes").setOnClickListener { sendReply("yes\r") }.build())
-            .addAction(Action.Builder().setTitle("No").setOnClickListener { sendReply("no\r") }.build())
-            // MESSAGING MessageTemplate strip: max 2 actions (icon-only or 1 titled).
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
-                            .setOnClickListener {
-                                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
-                            }
-                            .build()
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build())
-                            .setOnClickListener { replyMode = false; invalidate() }
-                            .build()
-                    )
-                    .build(),
+        val listBuilder = ItemList.Builder()
+
+        // Row 0: Play prompt — secondary text shows the prompt so the user knows what they're replying to.
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("▶ Play Prompt")
+                .apply { if (promptPreview.isNotBlank()) addText(promptPreview) }
+                .setOnClickListener {
+                    screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                }
+                .build()
+        )
+
+        // Quick reply options — ListTemplate supports up to 6 rows in MESSAGING category.
+        listOf(
+            "Yes"      to "yes\r",
+            "No"       to "no\r",
+            "Continue" to "continue\r",
+            "Stop"     to "stop\r",
+            "Enter ⏎" to "\r",
+        ).forEach { (label, text) ->
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(label)
+                    .setOnClickListener { sendReply(text) }
+                    .build()
             )
+        }
+
+        // ActionStrip: icon-only per MESSAGING ListTemplate constraint.
+        val actionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
+                    .setOnClickListener { screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle)) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build())
+                    .setOnClickListener { replyMode = false; invalidate() }
+                    .build()
+            )
+            .build()
+
+        return ListTemplate.Builder()
+            .setTitle("Quick Reply — ${sessionTitle.ifBlank { sessionId }.take(40)}")
+            .setSingleList(listBuilder.build())
+            .setActionStrip(actionStrip)
             .build()
     }
 
