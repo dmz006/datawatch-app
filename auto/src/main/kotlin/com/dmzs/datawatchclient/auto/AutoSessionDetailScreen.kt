@@ -53,6 +53,7 @@ public class AutoSessionDetailScreen(
     carContext: CarContext,
     private val sessionId: String,
     private val sessionTitle: String,
+    private val autoPlayLong: Boolean = false,
 ) : Screen(carContext) {
 
     private var telemetry: SessionTelemetryDto? = null
@@ -74,7 +75,20 @@ public class AutoSessionDetailScreen(
 
     init {
         // Eager first fetch so onGetTemplate() has real data before onStart() fires.
-        scope.launch { refresh(); isLoading = false; invalidate() }
+        scope.launch {
+            refresh()
+            isLoading = false
+            invalidate()
+            if (autoPlayLong) {
+                // "Play Long" notification button: auto-open LastOutputDetailScreen after data loads.
+                val rawText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
+                val (shortPlay, splitLong) = splitOutputText(rawText)
+                val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != rawText } ?: splitLong
+                if (shortPlay != null) {
+                    screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
+                }
+            }
+        }
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
