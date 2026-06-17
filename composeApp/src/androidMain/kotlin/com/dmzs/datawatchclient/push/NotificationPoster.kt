@@ -84,8 +84,7 @@ public class NotificationPoster(private val context: Context) {
                     .setConversationTitle(event.title)
                     .addMessage(event.body, System.currentTimeMillis(), sender)
             )
-            builder.addAction(buildQuickReplyAction(event.sessionId, "Yes", "yes"))
-            builder.addAction(buildQuickReplyAction(event.sessionId, "No", "no"))
+            builder.addAction(buildPlayLongAction(event.sessionId, event.title))
             builder.addAction(buildReplyAction(event.sessionId))
             builder.extend(buildCarAppExtender(event))
         } else {
@@ -115,6 +114,26 @@ public class NotificationPoster(private val context: Context) {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    private fun buildPlayLongAction(sessionId: String, title: String): NotificationCompat.Action {
+        val intent = android.content.Intent().apply {
+            setClassName(
+                context.packageName,
+                "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+            )
+            action = android.content.Intent.ACTION_VIEW
+            putExtra(EXTRA_CAR_SESSION_ID, sessionId)
+            putExtra(EXTRA_CAR_SESSION_TITLE, title)
+            putExtra(EXTRA_CAR_AUTO_PLAY_LONG, true)
+        }
+        val pi = android.app.PendingIntent.getService(
+            context,
+            sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
+            intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+        )
+        return NotificationCompat.Action.Builder(R.drawable.ic_stat_dw, "Play Long", pi).build()
     }
 
     private fun buildQuickReplyAction(sessionId: String, label: String, text: String): NotificationCompat.Action {
@@ -210,6 +229,8 @@ public class NotificationPoster(private val context: Context) {
         /** Intent extras read by the car app's [onNewIntent] to navigate to a session. */
         public const val EXTRA_CAR_SESSION_ID: String = "dw.car.session_id"
         public const val EXTRA_CAR_SESSION_TITLE: String = "dw.car.session_title"
+        /** When true, [AutoSessionDetailScreen] auto-plays the long output on load. */
+        public const val EXTRA_CAR_AUTO_PLAY_LONG: String = "dw.car.auto_play_long"
 
         private const val ID_BASE: Int = 1_000_000
 
@@ -217,6 +238,7 @@ public class NotificationPoster(private val context: Context) {
         private const val REPLY_REQUEST_CODE_SALT: Int = 0x5250_4C59
         private const val QUICK_REPLY_REQUEST_CODE_SALT: Int = 0x5155_4352
         private const val CAR_TAP_REQUEST_CODE_SALT: Int = 0x4341_5220
+        private const val PLAY_LONG_REQUEST_CODE_SALT: Int = 0x504C_4C47
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }

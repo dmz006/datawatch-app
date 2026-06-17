@@ -15,6 +15,9 @@ private const val CAR_SESSION_ID_EXTRA = "dw.car.session_id"
 /** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_SESSION_TITLE]. */
 private const val CAR_SESSION_TITLE_EXTRA = "dw.car.session_title"
 
+/** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_AUTO_PLAY_LONG]. */
+private const val CAR_AUTO_PLAY_LONG_EXTRA = "dw.car.auto_play_long"
+
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
  * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
@@ -59,6 +62,7 @@ public class DatawatchMessagingService : CarAppService() {
                 // Notification tap from CarAppExtender — navigate directly to the session.
                 val sessionId = intent.getStringExtra(CAR_SESSION_ID_EXTRA)
                 val sessionTitle = intent.getStringExtra(CAR_SESSION_TITLE_EXTRA)
+                val autoPlayLong = intent.getBooleanExtra(CAR_AUTO_PLAY_LONG_EXTRA, false)
                 if (sessionId != null) {
                     screenManager.popToRoot()
                     screenManager.push(
@@ -66,6 +70,7 @@ public class DatawatchMessagingService : CarAppService() {
                             carContext,
                             sessionId,
                             sessionTitle ?: sessionId,
+                            autoPlayLong = autoPlayLong,
                         ),
                     )
                     return
