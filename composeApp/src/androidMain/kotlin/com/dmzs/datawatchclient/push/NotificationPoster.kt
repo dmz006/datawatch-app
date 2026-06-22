@@ -190,15 +190,19 @@ public class NotificationPoster(private val context: Context) {
      * getService(), NOT MainActivity via getActivity(). CarAppExtender.contentIntent in
      * the head unit is delivered to the service's onNewIntent() — an Activity intent silently
      * does nothing in Android Auto (activities cannot run on the head unit).
+     *
+     * IMPORTANT: CarAppExtender.addAction(icon, title, pi) replaces the base notification
+     * actions on the head unit — actions added only to NotificationCompat.Builder are ignored
+     * in the car. CarAppExtender does not support RemoteInput, so "Reply" navigates to
+     * VoiceRecordingScreen in the car app instead of using Android's built-in voice input.
      */
     private fun buildCarAppExtender(
         event: Event,
     ): androidx.car.app.notification.CarAppExtender {
-        val tapIntent =
-            android.content.Intent().apply {
-                // Reference DatawatchMessagingService by class name to avoid an import cycle
-                // between :composeApp and :auto. The class name is stable — it's part of the
-                // public AndroidManifest component declaration.
+        // Shared helper: PendingIntent that routes to DatawatchMessagingService.onNewIntent()
+        // with optional boolean extras controlling which screen to open.
+        fun carServicePi(requestCodeSalt: Int, vararg extras: Pair<String, Boolean>): android.app.PendingIntent {
+            val intent = android.content.Intent().apply {
                 setClassName(
                     context.packageName,
                     "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
@@ -206,20 +210,23 @@ public class NotificationPoster(private val context: Context) {
                 action = android.content.Intent.ACTION_VIEW
                 putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
                 putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
+                extras.forEach { (k, v) -> putExtra(k, v) }
             }
-        val tapPi =
-            android.app.PendingIntent.getService(
+            return android.app.PendingIntent.getService(
                 context,
-                event.sessionId.hashCode() xor CAR_TAP_REQUEST_CODE_SALT,
-                tapIntent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or
-                    android.app.PendingIntent.FLAG_IMMUTABLE,
+                event.sessionId.hashCode() xor requestCodeSalt,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
             )
+        }
+
         return androidx.car.app.notification.CarAppExtender.Builder()
             .setContentTitle(event.title)
             .setContentText(event.body)
             .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
-            .setContentIntent(tapPi)
+            .setContentIntent(carServicePi(CAR_TAP_REQUEST_CODE_SALT))
+            .addAction(R.drawable.ic_stat_dw, "Play Long", carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
+            .addAction(R.drawable.ic_stat_dw, "Reply", carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true))
             .build()
     }
 
@@ -231,6 +238,8 @@ public class NotificationPoster(private val context: Context) {
         public const val EXTRA_CAR_SESSION_TITLE: String = "dw.car.session_title"
         /** When true, [AutoSessionDetailScreen] auto-plays the long output on load. */
         public const val EXTRA_CAR_AUTO_PLAY_LONG: String = "dw.car.auto_play_long"
+        /** When true, [DatawatchMessagingService] pushes [VoiceRecordingScreen] after the session screen. */
+        public const val EXTRA_CAR_AUTO_VOICE_REPLY: String = "dw.car.auto_voice_reply"
 
         private const val ID_BASE: Int = 1_000_000
 
@@ -239,6 +248,7 @@ public class NotificationPoster(private val context: Context) {
         private const val QUICK_REPLY_REQUEST_CODE_SALT: Int = 0x5155_4352
         private const val CAR_TAP_REQUEST_CODE_SALT: Int = 0x4341_5220
         private const val PLAY_LONG_REQUEST_CODE_SALT: Int = 0x504C_4C47
+        private const val CAR_VOICE_REPLY_REQUEST_CODE_SALT: Int = 0x5652_5059
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
