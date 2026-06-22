@@ -18,6 +18,9 @@ private const val CAR_SESSION_TITLE_EXTRA = "dw.car.session_title"
 /** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_AUTO_PLAY_LONG]. */
 private const val CAR_AUTO_PLAY_LONG_EXTRA = "dw.car.auto_play_long"
 
+/** Must match [com.dmzs.datawatchclient.push.NotificationPoster.EXTRA_CAR_AUTO_VOICE_REPLY]. */
+private const val CAR_AUTO_VOICE_REPLY_EXTRA = "dw.car.auto_voice_reply"
+
 /**
  * Public Android Auto Messaging-template service per ADR-0031.
  * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
@@ -63,6 +66,7 @@ public class DatawatchMessagingService : CarAppService() {
                 val sessionId = intent.getStringExtra(CAR_SESSION_ID_EXTRA)
                 val sessionTitle = intent.getStringExtra(CAR_SESSION_TITLE_EXTRA)
                 val autoPlayLong = intent.getBooleanExtra(CAR_AUTO_PLAY_LONG_EXTRA, false)
+                val autoVoiceReply = intent.getBooleanExtra(CAR_AUTO_VOICE_REPLY_EXTRA, false)
                 if (sessionId != null) {
                     screenManager.popToRoot()
                     screenManager.push(
@@ -73,6 +77,16 @@ public class DatawatchMessagingService : CarAppService() {
                             autoPlayLong = autoPlayLong,
                         ),
                     )
+                    // "Reply" notification button: go straight to voice input on top of session.
+                    if (autoVoiceReply) {
+                        screenManager.push(
+                            com.dmzs.datawatchclient.auto.VoiceRecordingScreen(
+                                carContext,
+                                sessionId,
+                                sessionTitle ?: sessionId,
+                            ),
+                        )
+                    }
                     return
                 }
 
