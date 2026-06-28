@@ -47,6 +47,12 @@ public class DatawatchMessagingService : CarAppService() {
     // so we need this reference to navigate the car app from that path.
     private var activeSession: Session? = null
 
+    // When a notification action button fires startService() before the car
+    // session has been established (user hasn't opened the app on the head
+    // unit yet), activeSession is null and navigation can't happen immediately.
+    // Store the intent here; onCreateScreen() processes it once the session exists.
+    @Volatile private var pendingNavIntent: Intent? = null
+
     override fun onCreate() {
         super.onCreate()
         AutoServiceLocator.init(applicationContext)
@@ -75,7 +81,23 @@ public class DatawatchMessagingService : CarAppService() {
         object : Session() {
             init { activeSession = this }
 
-            override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
+            override fun onCreateScreen(intent: android.content.Intent): AutoSummaryScreen {
+                val pending = pendingNavIntent
+                if (pending != null) {
+                    pendingNavIntent = null
+                    // Defer navigation until after the root screen is installed — popToRoot()
+                    // requires the stack to exist, and Car framework sets it after this returns.
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        try {
+                            val sm = carContext.getCarService(ScreenManager::class.java)
+                            navigateFromIntent(pending, sm, carContext)
+                        } catch (e: Exception) {
+                            android.util.Log.w(TAG, "pendingNavIntent nav failed: ${e.message}")
+                        }
+                    }
+                }
+                return AutoSummaryScreen(carContext)
+            }
 
             override fun onNewIntent(intent: android.content.Intent) {
                 // contentIntent tap: Gearhead routes here. Delegate to shared nav logic.
@@ -100,6 +122,10 @@ public class DatawatchMessagingService : CarAppService() {
      * Gearhead only routes [contentIntent] through [Session.onNewIntent]; action
      * buttons fire [startService] directly, landing here. We retrieve the active
      * session's [CarContext] and delegate to [navigateFromIntent].
+     *
+     * If the car session isn't active yet (user hasn't opened the app on the head
+     * unit), we queue the intent in [pendingNavIntent] so [onCreateScreen] can
+     * process it once the Car framework establishes the session.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -111,6 +137,10 @@ public class DatawatchMessagingService : CarAppService() {
                 } catch (e: Exception) {
                     android.util.Log.w(TAG, "onStartCommand nav failed: ${e.message}")
                 }
+            } else if (intent.hasExtra(CAR_SESSION_ID_EXTRA)) {
+                // Car session not yet active — queue for onCreateScreen().
+                pendingNavIntent = intent
+                android.util.Log.d(TAG, "queued pendingNavIntent for session ${intent.getStringExtra(CAR_SESSION_ID_EXTRA)}")
             }
         }
         return START_NOT_STICKY

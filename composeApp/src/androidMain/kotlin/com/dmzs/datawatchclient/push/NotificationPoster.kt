@@ -133,7 +133,7 @@ public class NotificationPoster(private val context: Context) {
             intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
         )
-        return NotificationCompat.Action.Builder(R.drawable.ic_stat_dw, "Play", pi).build()
+        return NotificationCompat.Action.Builder(R.drawable.ic_notif_play, "Play", pi).build()
     }
 
     private fun buildQuickReplyAction(sessionId: String, label: String, text: String): NotificationCompat.Action {
@@ -171,7 +171,7 @@ public class NotificationPoster(private val context: Context) {
             )
 
         return NotificationCompat.Action.Builder(
-            R.drawable.ic_stat_dw,
+            R.drawable.ic_notif_reply,
             "Reply",
             replyPi,
         )
@@ -225,8 +225,8 @@ public class NotificationPoster(private val context: Context) {
             .setContentText(event.body)
             .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
             .setContentIntent(carServicePi(CAR_TAP_REQUEST_CODE_SALT))
-            .addAction(R.drawable.ic_stat_dw, "Play", carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
-            .addAction(R.drawable.ic_stat_dw, "Reply", carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true))
+            .addAction(R.drawable.ic_notif_play, "Play", carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
+            .addAction(R.drawable.ic_notif_reply, "Reply", carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true))
             .build()
     }
 

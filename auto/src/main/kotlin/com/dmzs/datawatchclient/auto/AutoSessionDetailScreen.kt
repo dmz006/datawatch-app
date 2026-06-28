@@ -80,13 +80,13 @@ public class AutoSessionDetailScreen(
             isLoading = false
             invalidate()
             if (autoPlayLong) {
-                // "Play Long" notification button: auto-open LastOutputDetailScreen after data loads.
+                // "Play" notification button: always open LastOutputDetailScreen so the user
+                // lands somewhere meaningful. LastOutputDetailScreen shows "No content available"
+                // gracefully when all text fields are null.
                 val rawText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(rawText)
                 val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != rawText } ?: splitLong
-                if (shortPlay != null) {
-                    screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                }
+                screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
             }
         }
 
