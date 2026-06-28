@@ -822,6 +822,7 @@ private fun SessionRow(
     var currentStatusOpen by remember { mutableStateOf(false) }
     var currentStatusText by remember { mutableStateOf<String?>(null) }
     var currentStatusLongText by remember { mutableStateOf<String?>(null) }
+    var summaryExpanded by remember { mutableStateOf(false) }
     val currentStatusScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
@@ -1058,6 +1059,51 @@ private fun SessionRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                         )
+                    }
+                }
+            }
+        }
+
+        // Waiting-input long summary — expandable panel mirrors PWA v8.9.7 ▼/✕ behaviour.
+        // Shows AI narrative for the current waiting prompt when lastSummaryLong is available.
+        if (session.state == SessionState.Waiting && !session.lastSummaryLong.isNullOrBlank()) {
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = { summaryExpanded = !summaryExpanded },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                    modifier = Modifier.height(24.dp),
+                ) {
+                    Icon(
+                        if (summaryExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        if (summaryExpanded) "Less" else "Full summary",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+            if (summaryExpanded) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Text(
+                        session.lastSummaryLong!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = { summaryExpanded = false },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = "Collapse", modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -1667,12 +1713,23 @@ internal fun CurrentStatusSheet(
                     Text(if (expanded) "▲ Less" else "▼ More detail")
                 }
                 if (expanded) {
-                    Text(
-                        displayLong!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Text(
+                            displayLong!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(
+                            onClick = { expanded = false },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(Icons.Filled.Close, contentDescription = "Collapse", modifier = Modifier.size(14.dp))
+                        }
+                    }
                 }
             }
         }
