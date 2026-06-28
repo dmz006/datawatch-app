@@ -1,6 +1,8 @@
 package com.dmzs.datawatchclient.auto.messaging
 
+import android.content.Intent
 import androidx.car.app.CarAppService
+import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
@@ -28,8 +30,23 @@ private const val CAR_AUTO_VOICE_REPLY_EXTRA = "dw.car.auto_voice_reply"
  * Opens [AutoSummaryScreen] as the root hub — shows session counts,
  * server vitals inline, and last completed task. ActionStrip exposes
  * About (info icon) and Monitor. Sessions and Automata are in the list.
+ *
+ * Navigation routing:
+ *   contentIntent tap → Gearhead HOST routes to Session.onNewIntent()
+ *   addAction() button → Android fires startService() → onStartCommand()
+ *
+ * Both paths delegate to [navigateFromIntent] so logic stays in one place.
+ * [activeSession] holds the bound session so onStartCommand() can reach
+ * its CarContext and ScreenManager.
  */
 public class DatawatchMessagingService : CarAppService() {
+
+    // Retained while the session is alive so onStartCommand() can access
+    // the car screen stack. CarAppExtender.addAction() PendingIntents are
+    // delivered via startService() → onStartCommand(), NOT onNewIntent(),
+    // so we need this reference to navigate the car app from that path.
+    private var activeSession: Session? = null
+
     override fun onCreate() {
         super.onCreate()
         AutoServiceLocator.init(applicationContext)
@@ -56,39 +73,14 @@ public class DatawatchMessagingService : CarAppService() {
 
     override fun onCreateSession(): Session =
         object : Session() {
+            init { activeSession = this }
+
             override fun onCreateScreen(intent: android.content.Intent) = AutoSummaryScreen(carContext)
 
             override fun onNewIntent(intent: android.content.Intent) {
+                // contentIntent tap: Gearhead routes here. Delegate to shared nav logic.
                 val screenManager = carContext.getCarService(ScreenManager::class.java)
-                // §8: always pop to root before pushing to stay within the 5-screen limit.
-
-                // Notification tap from CarAppExtender — navigate directly to the session.
-                val sessionId = intent.getStringExtra(CAR_SESSION_ID_EXTRA)
-                val sessionTitle = intent.getStringExtra(CAR_SESSION_TITLE_EXTRA)
-                val autoPlayLong = intent.getBooleanExtra(CAR_AUTO_PLAY_LONG_EXTRA, false)
-                val autoVoiceReply = intent.getBooleanExtra(CAR_AUTO_VOICE_REPLY_EXTRA, false)
-                if (sessionId != null) {
-                    screenManager.popToRoot()
-                    screenManager.push(
-                        com.dmzs.datawatchclient.auto.AutoSessionDetailScreen(
-                            carContext,
-                            sessionId,
-                            sessionTitle ?: sessionId,
-                            autoPlayLong = autoPlayLong,
-                        ),
-                    )
-                    // "Reply" notification button: go straight to voice input on top of session.
-                    if (autoVoiceReply) {
-                        screenManager.push(
-                            com.dmzs.datawatchclient.auto.VoiceRecordingScreen(
-                                carContext,
-                                sessionId,
-                                sessionTitle ?: sessionId,
-                            ),
-                        )
-                    }
-                    return
-                }
+                if (navigateFromIntent(intent, screenManager, carContext)) return
 
                 // Voice actions from Google Assistant — spoken text arrives via
                 // android.speech.RecognizerIntent.EXTRA_RESULTS.
@@ -101,4 +93,68 @@ public class DatawatchMessagingService : CarAppService() {
                 )
             }
         }
+
+    /**
+     * Handles [CarAppExtender.addAction] button taps.
+     *
+     * Gearhead only routes [contentIntent] through [Session.onNewIntent]; action
+     * buttons fire [startService] directly, landing here. We retrieve the active
+     * session's [CarContext] and delegate to [navigateFromIntent].
+     */
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent != null) {
+            val sess = activeSession
+            if (sess != null) {
+                try {
+                    val sm = sess.carContext.getCarService(ScreenManager::class.java)
+                    navigateFromIntent(intent, sm, sess.carContext)
+                } catch (e: Exception) {
+                    android.util.Log.w(TAG, "onStartCommand nav failed: ${e.message}")
+                }
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    /**
+     * Shared navigation logic for both [onNewIntent] and [onStartCommand].
+     * Returns true if a session navigation was performed, false if the intent
+     * carried no session ID (caller may handle voice-action fallback).
+     */
+    private fun navigateFromIntent(
+        intent: android.content.Intent,
+        screenManager: ScreenManager,
+        carCtx: CarContext,
+    ): Boolean {
+        val sessionId = intent.getStringExtra(CAR_SESSION_ID_EXTRA) ?: return false
+        val sessionTitle = intent.getStringExtra(CAR_SESSION_TITLE_EXTRA) ?: sessionId
+        val autoPlayLong = intent.getBooleanExtra(CAR_AUTO_PLAY_LONG_EXTRA, false)
+        val autoVoiceReply = intent.getBooleanExtra(CAR_AUTO_VOICE_REPLY_EXTRA, false)
+
+        // §8: always pop to root before pushing to stay within the 5-screen limit.
+        screenManager.popToRoot()
+        screenManager.push(
+            com.dmzs.datawatchclient.auto.AutoSessionDetailScreen(
+                carCtx,
+                sessionId,
+                sessionTitle,
+                autoPlayLong = autoPlayLong,
+            ),
+        )
+        // "Reply" notification button: go straight to voice input on top of session.
+        if (autoVoiceReply) {
+            screenManager.push(
+                com.dmzs.datawatchclient.auto.VoiceRecordingScreen(
+                    carCtx,
+                    sessionId,
+                    sessionTitle,
+                ),
+            )
+        }
+        return true
+    }
+
+    private companion object {
+        const val TAG = "DatawatchMsgSvc"
+    }
 }
