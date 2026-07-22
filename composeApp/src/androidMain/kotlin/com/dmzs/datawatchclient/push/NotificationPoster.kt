@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.dmzs.datawatchclient.MainActivity
 import com.dmzs.datawatchclient.R
@@ -72,18 +71,14 @@ public class NotificationPoster(private val context: Context) {
                 .setContentIntent(deepLinkIntent(event.sessionId))
 
         if (event.type == Event.Type.InputNeeded) {
-            // MessagingStyle tells Android Auto to treat this as a car message:
-            // the head unit reads it aloud via TTS and offers native voice reply
-            // through the RemoteInput action below — no app screen required.
-            val sender = Person.Builder()
-                .setName(event.title)
-                .setImportant(true)
-                .build()
-            builder.setStyle(
-                NotificationCompat.MessagingStyle(sender)
-                    .setConversationTitle(event.title)
-                    .addMessage(event.body, System.currentTimeMillis(), sender)
-            )
+            // BigTextStyle (not MessagingStyle) so the phone notification fires
+            // contentIntent on body-tap.  MessagingStyle intercepts the tap to
+            // open the inline RemoteInput panel on many Android OEM skins,
+            // preventing the app from opening.  The car head unit gets its full
+            // messaging experience from CarAppExtender regardless of base style.
+            // CATEGORY_MESSAGE keeps the car host categorisation correct.
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
+            builder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
             builder.addAction(buildPlayLongAction(event.sessionId, event.title))
             builder.addAction(buildReplyAction(event.sessionId))
             builder.extend(buildCarAppExtender(event))
@@ -116,22 +111,19 @@ public class NotificationPoster(private val context: Context) {
         )
     }
 
-    private fun buildPlayLongAction(sessionId: String, title: String): NotificationCompat.Action {
-        val intent = android.content.Intent().apply {
-            setClassName(
-                context.packageName,
-                "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
-            )
-            action = android.content.Intent.ACTION_VIEW
-            putExtra(EXTRA_CAR_SESSION_ID, sessionId)
-            putExtra(EXTRA_CAR_SESSION_TITLE, title)
-            putExtra(EXTRA_CAR_AUTO_PLAY_LONG, true)
-        }
-        val pi = android.app.PendingIntent.getService(
+    private fun buildPlayLongAction(sessionId: String, @Suppress("UNUSED_PARAMETER") title: String): NotificationCompat.Action {
+        // On the phone, "Play" opens the app to the session — there's no phone-side
+        // TTS playback.  The car head unit gets its own Play via CarAppExtender.addAction()
+        // (which fires the car service and navigates to LastOutputDetailScreen with TTS).
+        val pi = PendingIntent.getActivity(
             context,
             sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
-            intent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+            Intent(Intent.ACTION_VIEW, Uri.parse("dwclient://session/$sessionId")).apply {
+                setPackage(context.packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                setClass(context, MainActivity::class.java)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Action.Builder(R.drawable.ic_notif_play, "Play", pi).build()
     }
