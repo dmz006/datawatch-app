@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
  * Layout by state:
  *
  * Waiting/RateLimited — Body: the prompt being asked.
- *   Buttons: [Play] [Reply → AutoReplyListScreen]    Strip: [chat-icon → AutoReplyListScreen]
+ *   Buttons: [Play] [Voice Reply → VoiceRecordingScreen]    Strip: [chat-icon → AutoReplyListScreen]
  *
  * Running — Body: currentStatus (what AI is doing right now).
  *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → AutoReplyListScreen]
@@ -198,9 +198,9 @@ public class AutoSessionDetailScreen(
                         }.build()
                 )
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Reply")
+                    Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
-                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
+                            screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
                         }.build()
                 )
                 templateBuilder.setActionStrip(
