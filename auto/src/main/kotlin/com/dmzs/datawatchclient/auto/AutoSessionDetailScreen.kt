@@ -8,10 +8,7 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
-import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -35,19 +32,16 @@ import kotlinx.coroutines.launch
  * Layout by state:
  *
  * Waiting/RateLimited — Body: the prompt being asked.
- *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → replyMode] [Kill]
+ *   Buttons: [Play] [Continue]    Strip: [Reply → AutoReplyListScreen]
  *
  * Running — Body: currentStatus (what AI is doing right now).
- *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → replyMode] [Kill]
+ *   Buttons: [Play] [Voice Reply]    Strip: [Reply → AutoReplyListScreen]
  *
  * Blocked — Body: block summary.
- *   Buttons: [Approve Gate] [Kill Session]
+ *   Buttons: [Approve Gate] (+ [Stages] for automata sessions)
  *
  * Terminal (Completed/Killed/Error) — Body: last response.
- *   Buttons: [Play] [Restart]
- *
- * Quick Reply mode — Body: prompt/context (200 chars).
- *   Buttons: [Yes] [No]    Strip: [Continue] [🎤 Voice] [✕ Cancel]
+ *   Buttons: [Play] [Restart or Stages]
  */
 public class AutoSessionDetailScreen(
     carContext: CarContext,
@@ -65,9 +59,7 @@ public class AutoSessionDetailScreen(
     private var promptContext: String? = null
     private var lastPrompt: String? = null
     private var guardrailVerdicts: List<GuardrailVerdictDto> = emptyList()
-    private var killPending: Boolean = false
     private var error: String? = null
-    private var replyMode: Boolean = false
     private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -112,7 +104,7 @@ public class AutoSessionDetailScreen(
             refresh()
             val newHash = listOf(
                 sessionState, error, telemetry?.currentTask, telemetry?.progress,
-                killPending, lastResponse, lastSummaryLong, currentStatus, currentStatusLong, promptContext, lastPrompt,
+                lastResponse, lastSummaryLong, currentStatus, currentStatusLong, promptContext, lastPrompt,
             ).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
@@ -157,10 +149,6 @@ public class AutoSessionDetailScreen(
     }
 
     override fun onGetTemplate(): Template {
-        // Inline reply mode avoids a screen push (this screen may be at depth 5 via
-        // AutoAutomataScreen → AutoSessionListScreen, which would exceed the 5-screen limit).
-        if (replyMode) return buildReplyTemplate()
-
         val hasBlock = telemetry?.guardrailVerdicts?.any { it.outcome == "block" } == true
         val isActive = sessionState == SessionState.Running ||
             sessionState == SessionState.Waiting ||
@@ -171,26 +159,12 @@ public class AutoSessionDetailScreen(
             sessionState == SessionState.Error
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
-        val killIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_kill)).build()
 
         val templateBuilder = MessageTemplate.Builder(buildBody())
             .setTitle(sessionTitle.ifBlank { sessionId })
             .setHeaderAction(Action.BACK)
 
         when {
-            killPending -> {
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Confirm Kill")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { onConfirmKill() }
-                        .build()
-                )
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Cancel")
-                        .setOnClickListener { killPending = false; invalidate() }
-                        .build()
-                )
-            }
             hasBlock -> {
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Approve Gate")
@@ -198,8 +172,6 @@ public class AutoSessionDetailScreen(
                         .setOnClickListener { onApproveGate() }
                         .build()
                 )
-                // When session belongs to an automaton, show "Stages" to view/approve the plan.
-                // Otherwise fall back to "Kill Session" for the active state.
                 val autoId = automataIdFromTelemetry()
                 if (autoId.isNotBlank()) {
                     templateBuilder.addAction(
@@ -207,12 +179,6 @@ public class AutoSessionDetailScreen(
                             .setOnClickListener {
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
                             }
-                            .build()
-                    )
-                } else if (isActive) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Kill Session")
-                            .setOnClickListener { onKillTap() }
                             .build()
                     )
                 }
@@ -244,12 +210,11 @@ public class AutoSessionDetailScreen(
                             }
                         }.build()
                 )
-                // Reply strip: titled so the label shows even when the icon fails to render.
-                // MESSAGING MessageTemplate strip: 1 titled action allowed; Kill is icon-only.
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
-                        .addAction(Action.Builder().setIcon(killIcon).setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener {
+                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
+                        }.build())
                         .build()
                 )
             }
@@ -271,8 +236,9 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener { replyMode = true; invalidate() }.build())
-                        .addAction(Action.Builder().setIcon(killIcon).setOnClickListener { onKillTap() }.build())
+                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener {
+                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
+                        }.build())
                         .build()
                 )
             }
@@ -334,7 +300,6 @@ public class AutoSessionDetailScreen(
     /** Body text: the most relevant content for the current session state. */
     private fun buildBody(): String {
         if (isLoading) return "Loading…"
-        if (killPending) return "Tap Confirm Kill to kill ${sessionTitle.take(40)}"
         if (error != null) return "Error: $error"
         val main = when (sessionState) {
             SessionState.Running ->
@@ -372,111 +337,6 @@ public class AutoSessionDetailScreen(
     /** Returns the automata name from session telemetry, falling back to the ID. */
     private fun automataNameFromTelemetry(): String =
         telemetry?.sprint?.automata?.takeIf { it.isNotBlank() } ?: automataIdFromTelemetry()
-
-    private fun buildReplyTemplate(): Template {
-        fun sendReply(text: String) {
-            scope.launch {
-                val profile = resolveActiveProfile() ?: return@launch
-                AutoServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
-                    onSuccess = {
-                        CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()
-                        replyMode = false
-                        invalidate()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Reply failed — ${err.message ?: err::class.simpleName}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                        replyMode = false
-                        invalidate()
-                    },
-                )
-            }
-        }
-
-        // Full prompt raw text for Play and for the preview subtitle on the Play row.
-        val promptRaw = promptContext ?: lastPrompt ?: currentStatus ?: lastResponse
-        val promptPreview = promptRaw?.replace("\n", " ")?.trim()?.take(REPLY_BODY_CHARS) ?: ""
-        val (shortPlay, splitLong) = splitOutputText(promptRaw)
-        val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != promptRaw } ?: splitLong
-
-        val listBuilder = ItemList.Builder()
-
-        // Row 0: Play prompt — secondary text shows the prompt so the user knows what they're replying to.
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("▶ Play Prompt")
-                .apply { if (promptPreview.isNotBlank()) addText(promptPreview) }
-                .setOnClickListener {
-                    screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                }
-                .build()
-        )
-
-        // Quick reply options — ListTemplate supports up to 6 rows in MESSAGING category.
-        listOf(
-            "Yes"      to "yes\r",
-            "No"       to "no\r",
-            "Continue" to "continue\r",
-            "Stop"     to "stop\r",
-            "Enter ⏎" to "\r",
-        ).forEach { (label, text) ->
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle(label)
-                    .setOnClickListener { sendReply(text) }
-                    .build()
-            )
-        }
-
-        // ActionStrip: icon-only per MESSAGING ListTemplate constraint.
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build())
-                    .setOnClickListener { screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle)) }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build())
-                    .setOnClickListener { replyMode = false; invalidate() }
-                    .build()
-            )
-            .build()
-
-        return ListTemplate.Builder()
-            .setTitle("Quick Reply — ${sessionTitle.ifBlank { sessionId }.take(40)}")
-            .setSingleList(listBuilder.build())
-            .setActionStrip(actionStrip)
-            .build()
-    }
-
-    private fun onKillTap() {
-        killPending = true
-        invalidate()
-        scope.launch {
-            delay(KILL_CONFIRM_TIMEOUT_MS)
-            if (killPending) {
-                killPending = false
-                invalidate()
-            }
-        }
-    }
-
-    private fun onConfirmKill() {
-        killPending = false
-        scope.launch {
-            runCatching {
-                val profile = resolveActiveProfile() ?: return@runCatching
-                AutoServiceLocator.transportFor(profile).killSession(sessionId)
-            }
-            // pop() returns to session list; popToRoot() would skip it and land on the summary screen.
-            screenManager.pop()
-        }
-    }
 
     private fun onRestart() {
         scope.launch {
@@ -524,8 +384,6 @@ public class AutoSessionDetailScreen(
         const val POLL_MS: Long = 10_000L
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val BODY_CHAR_LIMIT: Int = 500
-        const val REPLY_BODY_CHARS: Int = 200
-        const val KILL_CONFIRM_TIMEOUT_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
         const val ERROR_MSG_CHARS: Int = 40
 
