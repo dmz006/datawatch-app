@@ -32,10 +32,10 @@ import kotlinx.coroutines.launch
  * Layout by state:
  *
  * Waiting/RateLimited — Body: the prompt being asked.
- *   Buttons: [Play] [Continue]    Strip: [Reply → AutoReplyListScreen]
+ *   Buttons: [Play] [Reply → AutoReplyListScreen]    Strip: [chat-icon → AutoReplyListScreen]
  *
  * Running — Body: currentStatus (what AI is doing right now).
- *   Buttons: [Play] [Voice Reply]    Strip: [Reply → AutoReplyListScreen]
+ *   Buttons: [Play] [Voice Reply]    Strip: [chat-icon → AutoReplyListScreen]
  *
  * Blocked — Body: block summary.
  *   Buttons: [Approve Gate] (+ [Stages] for automata sessions)
@@ -184,10 +184,9 @@ public class AutoSessionDetailScreen(
                 }
             }
             isWaiting -> {
-                // Play lets the user hear the prompt before deciding how to reply.
-                // Continue is the single most-common reply in a Waiting session; surface it directly
-                // so the user doesn't have to open the full quick-reply list just to say "continue".
-                // Voice Reply + Yes/No/Stop/Enter remain in the quick-reply list (chat strip button).
+                // [Play] lets the user hear the prompt. [Reply] opens the quick-reply list.
+                // ActionStrip icon is icon-only — titled strip actions cause a driving-validator
+                // error on some head units (see AutoMonitorScreen comment).
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(waitText)
                 val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
@@ -199,20 +198,14 @@ public class AutoSessionDetailScreen(
                         }.build()
                 )
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Continue")
+                    Action.Builder().setTitle("Reply")
                         .setOnClickListener {
-                            scope.launch {
-                                val profile = resolveActiveProfile() ?: return@launch
-                                AutoServiceLocator.transportFor(profile)
-                                    .replyToSession(sessionId, "continue\r")
-                                    .onSuccess { CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show() }
-                                    .onFailure { CarToast.makeText(carContext, "Failed", CarToast.LENGTH_SHORT).show() }
-                            }
+                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
                         }.build()
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener {
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener {
                             screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
                         }.build())
                         .build()
@@ -220,6 +213,7 @@ public class AutoSessionDetailScreen(
             }
             sessionState == SessionState.Running -> {
                 // Play = hear what the AI is doing. Voice Reply injects input while running.
+                // ActionStrip icon-only so driving validator allows it on all head units.
                 val playText = currentStatus ?: lastResponse
                 val (shortPlay, longPlay) = splitOutputText(playText)
                 templateBuilder.addAction(
@@ -236,7 +230,7 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setTitle("Reply").setIcon(chatIcon).setOnClickListener {
+                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener {
                             screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
                         }.build())
                         .build()
