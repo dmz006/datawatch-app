@@ -509,7 +509,10 @@ private fun LlmRegistryDialog(
 
     val scope = rememberCoroutineScope()
 
-    // Pre-load models for all currently-selected compute nodes
+    // Pre-load models for all currently-selected compute nodes.
+    // opencode kinds source their model list from /api/opencode/models?node=<n>
+    // (not /api/compute/nodes/$n/models), matching the session-wizard behaviour.
+    val isOpenCode = kind.startsWith("opencode", ignoreCase = true)
     LaunchedEffect(kind) {
         val transport = resolveActiveTransport() ?: return@LaunchedEffect
         val nodesToLoad = if (isNodeBased) {
@@ -518,7 +521,13 @@ private fun LlmRegistryDialog(
         } else emptySet()
         val loaded = mutableMapOf<String, List<String>>()
         nodesToLoad.forEach { nodeName ->
-            transport.getComputeNodeModels(nodeName, kind).onSuccess { loaded[nodeName] = it }
+            if (isOpenCode) {
+                transport.fetchOpenCodeModels(node = nodeName).onSuccess { resp ->
+                    loaded[nodeName] = resp.models.map { it.id }.filter { it.isNotBlank() }
+                }
+            } else {
+                transport.getComputeNodeModels(nodeName, kind).onSuccess { loaded[nodeName] = it }
+            }
         }
         nodeModels = loaded
     }
@@ -575,12 +584,18 @@ private fun LlmRegistryDialog(
                                 DropdownMenu(expanded = nodeDropdown, onDismissRequest = { nodeDropdown = false }) {
                                     computeNodes.forEach { n ->
                                         DropdownMenuItem(text = { Text(n.name) }, onClick = {
-                                            modelPairs[idx] = pair.copy(computeNode = n.name)
+                                            modelPairs[idx] = pair.copy(computeNode = n.name, model = "")
                                             nodeDropdown = false
                                             scope.launch {
                                                 val transport = resolveActiveTransport() ?: return@launch
-                                                transport.getComputeNodeModels(n.name, kind).onSuccess { models ->
-                                                    nodeModels = nodeModels + (n.name to models)
+                                                if (isOpenCode) {
+                                                    transport.fetchOpenCodeModels(node = n.name).onSuccess { resp ->
+                                                        nodeModels = nodeModels + (n.name to resp.models.map { it.id }.filter { it.isNotBlank() })
+                                                    }
+                                                } else {
+                                                    transport.getComputeNodeModels(n.name, kind).onSuccess { models ->
+                                                        nodeModels = nodeModels + (n.name to models)
+                                                    }
                                                 }
                                             }
                                         })
