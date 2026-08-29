@@ -36,6 +36,10 @@ internal class AutoReplyListScreen(
     private val sessionTitle: String,
 ) : Screen(carContext) {
 
+    companion object {
+        private const val MAX_TITLE_CHARS = 40
+    }
+
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
@@ -65,7 +69,7 @@ internal class AutoReplyListScreen(
         return ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(40))
+                    .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(MAX_TITLE_CHARS))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )
