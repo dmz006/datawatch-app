@@ -1379,8 +1379,12 @@ public interface TransportClient {
      * GET /api/opencode/models — live model list from the opencode binary.
      * Returns grouped models with human-friendly [providerLabel] headers
      * and a [defaultModel] id to pre-select.
+     *
+     * Pass [node] (from the selected LLM's `compute_nodes[0]`) to route
+     * Ollama model discovery to that compute node's Ollama host instead of
+     * the daemon's local default. Omit (or pass null) for local/no-node LLMs.
      */
-    public suspend fun fetchOpenCodeModels(): Result<com.dmzs.datawatchclient.transport.dto.OpenCodeModelsResponseDto>
+    public suspend fun fetchOpenCodeModels(node: String? = null): Result<com.dmzs.datawatchclient.transport.dto.OpenCodeModelsResponseDto>
 
     /** POST /api/summarizer/test — v8.9.5 inline summarizer validation. Returns latency and ok status. */
     public suspend fun testSummarizer(): Result<com.dmzs.datawatchclient.transport.dto.SummarizerTestResultDto>

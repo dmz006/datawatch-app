@@ -206,7 +206,8 @@ public fun NewSessionScreen(
         val profile = profiles.firstOrNull { it.id == selectedProfileId } ?: return@LaunchedEffect
         val transport = ServiceLocator.transportFor(profile)
         if (llm.kind.startsWith("opencode", ignoreCase = true)) {
-            transport.fetchOpenCodeModels().onSuccess { resp ->
+            val node = llm.computeNodes.firstOrNull()?.takeIf { it.isNotBlank() }
+            transport.fetchOpenCodeModels(node = node).onSuccess { resp ->
                 val groups = resp.models
                     .groupBy { it.providerLabel.ifBlank { it.provider } }
                     .mapValues { (_, list) -> list.map { it.id } }

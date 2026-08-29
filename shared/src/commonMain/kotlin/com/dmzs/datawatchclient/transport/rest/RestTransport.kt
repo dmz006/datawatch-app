@@ -3040,10 +3040,11 @@ public class RestTransport(
             }.body()
         }
 
-    override suspend fun fetchOpenCodeModels(): Result<OpenCodeModelsResponseDto> =
+    override suspend fun fetchOpenCodeModels(node: String?): Result<OpenCodeModelsResponseDto> =
         request {
             client.get("${profile.baseUrl}/api/opencode/models") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
+                if (!node.isNullOrBlank()) parameter("node", node)
             }.body()
         }
 
