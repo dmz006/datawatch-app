@@ -8,6 +8,108 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.84] — 2026-08-29
+
+### Fixed
+- Android manifest: fold `connectedDevice` foreground service type into `dataSync` in the Auto messaging service — reduces Play Store foreground service declarations to a single type (`DATA_SYNC`); removes `FOREGROUND_SERVICE_CONNECTED_DEVICE` permission entirely
+
+## [1.0.83] — 2026-08-29
+
+### Fixed
+- Android manifest: remove unused `FOREGROUND_SERVICE_SPECIAL_USE` permission — the app never calls a special-use foreground service; removing it eliminates the Play Store video-justification requirement for that type
+
+## [1.0.82] — 2026-08-29
+
+### Fixed
+- LLM registry dialog: opencode LLM model picker now calls `/api/opencode/models?node=<n>` instead of the compute-node generic models endpoint, matching the same fix applied to the new-session wizard in v1.0.81; Save button no longer stays permanently grayed out when adding or editing an opencode LLM
+- Android Auto: extract `MAX_TITLE_CHARS = 40` constant in `AutoReplyListScreen` to satisfy detekt `MagicNumber` rule (CI detekt failure on v1.0.81 build)
+
+## [1.0.81] — 2026-08-29
+
+### Fixed
+- New-session wizard: OpenCode model fetch now passes `?node=<compute_nodes[0]>` to `/api/opencode/models` when the selected LLM has a primary compute node configured — fixes models not populating in the wizard for node-backed opencode LLMs (daemon v8.13.34 parity, issue #155)
+
+## [1.0.80] — 2026-07-22
+
+### Fixed
+- Android Auto: Waiting-state primary reply button now navigates to `VoiceRecordingScreen` instead of the typed quick-reply list — voice reply is the correct in-car reply path; typed quick reply remains accessible from the strip
+
+## [1.0.79] — 2026-07-22
+
+### Fixed
+- Android Auto: restore `[Play]` + `[Reply]` as primary buttons in Waiting state after v1.0.78 refactor removed them; ActionStrip actions remain icon-only to comply with MESSAGING category host validator on driving-restricted head units
+
+## [1.0.78] — 2026-07-22
+
+### Fixed
+- Phone notifications: notification `Play` and `Reply` actions now fire correctly when the device is connected to Android Auto — intent routing was broken when the car session was active; fixed by aligning the pending-intent flags and the broadcast receiver filter
+- Android Auto: inline reply from a notification while driving now reaches the correct server session without the wrong-server routing bug introduced in v1.0.75
+
+## [1.0.77] — 2026-06-28
+
+### Fixed
+- Sessions screen: long-summary close affordance (✕ button on the expanded summary card) now dismisses only the expanded text and returns to the normal card — synced with PWA v8.9.7 long-summary UX; previously the ✕ tapped through to the session detail (issue #149)
+
+## [1.0.76] — 2026-06-28
+
+### Fixed
+- Android Auto: `[Play]` and `[Reply]` strip icons are now visually distinct — Reply uses the microphone icon; Play uses the speaker/play icon; previously both defaulted to similar generic icons making them hard to distinguish at a glance
+- Android Auto: nav-to-car-session is now queued when the car session is not yet active on entry to the session list, preventing a race where tapping a session immediately after launch navigated to a null screen
+
+## [1.0.75] — 2026-06-28
+
+### Fixed
+- Android Auto: notification action button label changed from "Play Long" to "Play" — "Long" was confusing in the notification shade where users expect a single play action; full long-summary content is still read when tapped
+
+## [1.0.74] — 2026-06-27
+
+### Fixed
+- Android Auto: notification action buttons (`Play` / `Reply`) now correctly navigate the car screen stack — tapping an action from the notification shade pushes the appropriate Auto screen rather than attempting a phone-side navigation
+
+## [1.0.73] — 2026-06-22
+
+### Fixed
+- Android Auto: notification `Play Long` + `Reply` action buttons now function correctly on physical head units — pending-intent construction was using an incompatible flag combination that worked in the DHU but was silently dropped on production AAOS hardware
+
+## [1.0.72] — 2026-06-17
+
+### Added
+- Android Auto: `Continue` button on the Waiting-input screen — sends a configurable continuation prompt without opening the voice recorder; useful for hands-free "keep going" replies
+- Android Auto: live voice transcript shown in real-time as the speech recognizer returns partial results, so drivers can confirm the recognizer heard them before committing
+- Android Auto: quick-reply screen expanded to a selectable list with prompt preview and inline `Play` button — replaces the flat Yes/No buttons; shows last prompt so driver has context when picking a canned reply
+
+### Fixed
+- Android Auto: voice mic race condition — `startListening()` is now deferred until `onReadyForSpeech` fires, eliminating the "microphone not ready" drop on fast taps
+- Android Auto: voice audio focus now uses `USAGE_ASSISTANT` to avoid the Bluetooth SCO route contention that was causing the mic to open silently on some head units
+- Android Auto quick reply: session command now uses the short session ID in the `sendkey` payload; `PgUp`/`PgDn` ESC prefix corrected
+
+### Changed
+- Android Auto: `New Automata` button removed from the bottom of the automata list — creation requires phone UI and the car-side button was misleading; empty state still directs user to the phone
+
+## [1.0.66] — 2026-06-13
+
+### Fixed
+- Android Auto: quick reply restored after v1.0.65 removed it — reply is now always available from the session detail action strip; wrong-server reply bug fixed by passing the active server profile through the reply intent extras rather than reading from a stale global
+
+## [1.0.65] — 2026-06-13
+
+### Fixed
+- Android Auto: chat icon and typed-reply mode removed from session detail — the reply flow was crashing in states where reply context was not available; voice reply (primary button) and quick-reply strip (canned list) are the supported reply surfaces
+
+## [1.0.64] — 2026-06-13
+
+### Fixed
+- Android Auto: `Play Long` now reads the full long-summary text rather than truncating at the short-summary boundary
+- Android Auto: tapping a session notification now navigates to the correct session detail screen on the head unit instead of opening the phone app
+- Android Auto: foreground service notification is now silent (no sound or vibration) — was inadvertently using the default importance channel and alerting the driver on service start
+
+## [1.0.63] — 2026-06-13
+
+### Fixed
+- Android Auto: session count on the summary screen now matches the session list count (both exclude history-only sessions older than the visibility window)
+- Android Auto: chat icon tap no longer crashes in Running state where no reply context is available
+- Android Auto: `Play Long` button label prefixed with session name so drivers can confirm which session is speaking before committing
+
 ## [1.0.62] — 2026-06-13
 
 ### Fixed
