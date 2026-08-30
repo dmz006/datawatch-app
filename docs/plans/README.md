@@ -353,6 +353,10 @@ or retracted rather than scheduled.
 | #125 | ✅ Council persona CRUD + alert dock gating audit (Sprint 31) | v0.100.0 |
 | B31  | ✅ Wear sessions list + state badges (Sprint 32) | v0.101.0 |
 | BL21 | ✅ Signal device-linking (`/api/link/*` + QR SSE flow) | v0.64.0 |
+| #149 | ✅ Sessions: long-summary ✕ close affordance sync (PWA v8.9.7) | v1.0.77 |
+| #155 | ✅ OpenCode model fetch: pass `?node=<compute_nodes[0]>` to `/api/opencode/models` (daemon v8.13.34) | v1.0.81 |
+| B-llm | ✅ LLM registry dialog: opencode model picker used wrong endpoint (Save always grayed out) | v1.0.82 |
+| B-fs  | ✅ Manifest: remove unused `FOREGROUND_SERVICE_SPECIAL_USE` + `FOREGROUND_SERVICE_CONNECTED_DEVICE`; fold Auto into `dataSync` | v1.0.83–v1.0.84 |
 
 ---
 
