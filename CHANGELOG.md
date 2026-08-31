@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.87] — 2026-08-31
+
+### Fixed
+- New session: permission mode dropdown (and Claude model/effort pickers) now appears when using the default backend (no explicit LLM selected) and the server has Claude configured — previously the section was hidden unless an LLM with "claude" in its kind was explicitly picked, so `permissionMode` was never sent for the common default-backend case
+- New session: file browser (Browse…) now browses the server selected in the form, not the globally active server — fixes incorrect server-side paths when the user manually switched the target server on the New Session screen before opening the folder picker
+
 ## [1.0.86] — 2026-08-31
 
 ### Added

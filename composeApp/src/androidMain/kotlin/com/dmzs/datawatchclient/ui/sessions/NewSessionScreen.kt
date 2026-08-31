@@ -627,8 +627,10 @@ public fun NewSessionScreen(
                 }
             }
 
-            // Advanced claude-code options — only when a claude LLM is explicitly selected.
-            val isClaudeCode = pickedLlm?.kind?.lowercase()?.contains("claude") == true
+            // Advanced claude-code options: show when a Claude LLM is explicitly picked, OR when
+            // no LLM is picked and the server reports Claude options (default backend is Claude Code).
+            val isClaudeCode = pickedLlm?.kind?.lowercase()?.contains("claude") == true ||
+                (pickedLlm == null && claudeOptionsAvailable)
             if (claudeOptionsAvailable && isClaudeCode) {
                 Text(
                     stringResource(R.string.new_session_advanced_claude),
@@ -875,6 +877,7 @@ public fun NewSessionScreen(
     if (filePickerOpen) {
         com.dmzs.datawatchclient.ui.files.FilePickerDialog(
             pickerMode = com.dmzs.datawatchclient.ui.files.PickerMode.FolderOnly,
+            profileId = selectedProfileId,
             onPicked = { picked ->
                 filePickerOpen = false
                 if (picked != null) workingDir = picked
