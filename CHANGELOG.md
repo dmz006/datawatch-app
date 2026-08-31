@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.85] — 2026-08-31
+
+### Fixed
+- Android Auto: alerts already heard by the user no longer replay after a Bluetooth or network reconnect — `navigateFromIntent` now cancels the input-needed notification the moment the user interacts with it (tap body, Play button, or Reply button); previously `setAutoCancel(true)` only cancelled on body-tap so action-button interactions left the notification in the shade, and Gearhead re-delivered all unread MESSAGING notifications on every connection restore
+
 ## [1.0.84] — 2026-08-29
 
 ### Fixed
