@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +55,11 @@ import com.dmzs.datawatchclient.domain.FileEntry
 public fun FilePickerDialog(
     onPicked: (String?) -> Unit,
     pickerMode: PickerMode = PickerMode.FolderOrFile,
+    /** When non-null, browse this server profile instead of the globally active one. */
+    profileId: String? = null,
     vm: FilePickerViewModel = viewModel(),
 ) {
+    LaunchedEffect(profileId) { vm.setProfileId(profileId) }
     val state by vm.state.collectAsState()
 
     AlertDialog(
