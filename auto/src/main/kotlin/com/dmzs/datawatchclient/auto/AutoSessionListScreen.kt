@@ -5,6 +5,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
@@ -17,7 +18,6 @@ import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
-import kotlinx.datetime.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -57,7 +57,7 @@ public class AutoSessionListScreen(
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
-    private var showHistory: Boolean = false   // toggled by "show older sessions" row tap
+    private var showTerminal: Boolean = false  // false = active only; toggled via ActionStrip
     private var hiddenCount: Int = 0
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -125,7 +125,6 @@ public class AutoSessionListScreen(
                                 .toMap()
                         }
                     }
-                    val now = Clock.System.now()
                     val allRows = sessions
                         .map { s ->
                             val telem = telemetryMap[s.id]
@@ -148,17 +147,14 @@ public class AutoSessionListScreen(
                             } else allRows
                         }
                         .sortedWith(compareBy { urgencyScore(it) })
-                    // Hide only Completed/Killed sessions older than HISTORY_THRESHOLD.
-                    // Error sessions always show (need attention); active sessions always show.
-                    val isOldTerminal = { s: Session ->
-                        (s.state == SessionState.Completed || s.state == SessionState.Killed) &&
-                            (now - s.lastActivityAt).inWholeMilliseconds >= HISTORY_THRESHOLD_MS
-                    }
-                    val newRows = if (showHistory) {
+                    val newRows = if (showTerminal) {
                         hiddenCount = 0
                         allRows
                     } else {
-                        val fresh = allRows.filter { row -> !isOldTerminal(row.session) }
+                        val fresh = allRows.filter { row ->
+                            row.session.state != SessionState.Completed &&
+                                row.session.state != SessionState.Killed
+                        }
                         hiddenCount = allRows.size - fresh.size
                         fresh
                     }
@@ -213,19 +209,11 @@ public class AutoSessionListScreen(
                     .build(),
             )
         } else if (rows.isEmpty()) {
-            // Active sessions list is empty but history exists — make this explicit
-            // so the user knows navigation worked and the server responded.
+            // Filter is set to Active but all sessions are terminal — prompt user to switch filter.
             builder.addItem(
                 Row.Builder()
                     .setTitle("No active sessions")
-                    .addText("$hiddenCount older session${if (hiddenCount == 1) "" else "s"} in history below")
-                    .build(),
-            )
-            builder.addItem(
-                Row.Builder()
-                    .setTitle("$hiddenCount session${if (hiddenCount == 1) "" else "s"} in history")
-                    .addText("Tap to show completed / killed sessions")
-                    .setOnClickListener { showHistory = true; invalidate() }
+                    .addText("$hiddenCount completed/killed session${if (hiddenCount == 1) "" else "s"} hidden · tap \"All\" to show")
                     .build(),
             )
         } else {
@@ -262,20 +250,25 @@ public class AutoSessionListScreen(
                 )
             }
             // History row — shown when old terminal sessions are being hidden.
-            if (hiddenCount > 0) {
+            if (hiddenCount > 0 && !showTerminal) {
                 builder.addItem(
                     Row.Builder()
-                        .setTitle("$hiddenCount older session${if (hiddenCount == 1) "" else "s"} hidden")
-                        .addText("Tap to show completed / killed history")
-                        .setOnClickListener { showHistory = true; invalidate() }
+                        .setTitle("$hiddenCount completed/killed session${if (hiddenCount == 1) "" else "s"} hidden")
+                        .addText("Tap filter button or tap here to show all")
+                        .setOnClickListener { showTerminal = true; invalidate() }
                         .build(),
                 )
             }
         }
         val title = if (automataId != null) "$automataId Sessions" else "$serverName Sessions"
+        val filterAction = Action.Builder()
+            .setTitle(if (showTerminal) "Active" else "All")
+            .setOnClickListener { showTerminal = !showTerminal; invalidate() }
+            .build()
         return ListTemplate.Builder()
             .setTitle(title)
             .setHeaderAction(Action.BACK)
+            .setActionStrip(ActionStrip.Builder().addAction(filterAction).build())
             .setSingleList(builder.build())
             .build()
     }
@@ -285,7 +278,6 @@ public class AutoSessionListScreen(
         const val AMBIENT_POLL_MS: Long = 60_000L
         const val STALE_THRESHOLD: Int = 3
         const val MAX_ROWS_FALLBACK: Int = 5
-        const val HISTORY_THRESHOLD_MS: Long = 2 * 60 * 60 * 1000L  // 2 hours
 
         fun urgencyScore(row: SessionRow): Int =
             sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)

@@ -212,11 +212,18 @@ public class NotificationPoster(private val context: Context) {
             )
         }
 
+        // contentIntent is delivered via Session.onNewIntent() which the car host uses to
+        // foreground the car app — this is the only reliable "open app" path for the head unit.
+        // CarAppExtender.addAction() intents go to onStartCommand() (background), which pushes
+        // the screen but does not bring the car app to the foreground. So contentIntent carries
+        // autoPlayLong=true so the user can tap the notification body to both open the app and
+        // hear TTS. The Play action button remains as a secondary shortcut (works when the car
+        // app is already in the foreground).
         return androidx.car.app.notification.CarAppExtender.Builder()
             .setContentTitle(event.title)
             .setContentText(event.body)
             .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
-            .setContentIntent(carServicePi(CAR_TAP_REQUEST_CODE_SALT))
+            .setContentIntent(carServicePi(CAR_TAP_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
             .addAction(R.drawable.ic_notif_play, "Play", carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
             .addAction(R.drawable.ic_notif_reply, "Reply", carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true))
             .build()

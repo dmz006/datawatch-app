@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.86] — 2026-08-31
+
+### Added
+- Android Auto: session list now has an "All" / "Active" toggle button in the action strip — tap "All" to reveal completed and killed sessions, tap "Active" to return to active-only view; replaces the time-based hidden-row approach with an explicit persistent filter
+
+### Fixed
+- Android Auto: tapping the notification body (contentIntent) now reliably opens the car app and immediately starts TTS playback — the contentIntent is the only notification path that foregrounds the car app via `Session.onNewIntent()`; the Play action button remains as a secondary shortcut when the app is already visible
+
 ## [1.0.85] — 2026-08-31
 
 ### Fixed
