@@ -7,7 +7,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Current release: v1.0.85 (2026-08-31).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.13.34+` (`v8.9.5+` for baseline; `v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, Android Automotive OS, and iOS with comprehensive testing and Play Store integration. Now in closed testing on the Play Store.
+**Current release: v1.0.86 (2026-08-31).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.13.34+` (`v8.9.5+` for baseline; `v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, Android Automotive OS, and iOS with comprehensive testing and Play Store integration. Now in closed testing on the Play Store.
 
 ---
 
