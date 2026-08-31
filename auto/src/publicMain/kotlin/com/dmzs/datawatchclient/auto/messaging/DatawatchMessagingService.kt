@@ -161,6 +161,14 @@ public class DatawatchMessagingService : CarAppService() {
         val autoPlayLong = intent.getBooleanExtra(CAR_AUTO_PLAY_LONG_EXTRA, false)
         val autoVoiceReply = intent.getBooleanExtra(CAR_AUTO_VOICE_REPLY_EXTRA, false)
 
+        // Cancel the input-needed notification the moment the user interacts with it
+        // (tap body, Play, or Reply). setAutoCancel(true) only fires on body-tap, so
+        // action-button taps leave the notification in the shade. Gearhead re-delivers
+        // all unread MESSAGING notifications on every Bluetooth reconnect, causing alerts
+        // the user already heard to replay. Cancelling here prevents that.
+        androidx.core.app.NotificationManagerCompat.from(carCtx)
+            .cancel(inputNeededNotificationIdFor(sessionId))
+
         // §8: always pop to root before pushing to stay within the 5-screen limit.
         screenManager.popToRoot()
         screenManager.push(
@@ -186,5 +194,11 @@ public class DatawatchMessagingService : CarAppService() {
 
     private companion object {
         const val TAG = "DatawatchMsgSvc"
+
+        // Must mirror NotificationPoster.notificationIdFor() in :composeApp.
+        // :auto depends only on :shared so we can't reference it directly.
+        private const val NOTIF_ID_BASE = 1_000_000
+        fun inputNeededNotificationIdFor(sessionId: String): Int =
+            NOTIF_ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
 }
