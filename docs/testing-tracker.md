@@ -152,3 +152,5 @@ unit tests alone.
 | Wear | `WearMainActivity` sessions list — state badge + shortId + task + timestamp | No | No | 32 | Manual — open Sessions page on watch | |
 | Wear | State badge colours (teal/amber/red/dim) | No | No | 32 | Manual — verify badge colours against palette | Running #1DE9B6 · Waiting #FFB300 · Error #EF4444 |
 | Phone+Auto | Waiting-input notification (phone + Auto voice reply) | No | No | 33 | Manual — transition session to Waiting; verify heads-up + Auto "Voice Reply" action launches VoiceRecordingScreen | composeApp+auto |
+| Shared | `RestTransport.uploadImageAttachment` — multipart upload + path extraction | No | No | 34 | `RestTransportTest` — mock `/api/files` POST returning `{"path":"/abs/path"}` | Closes #158; `deleteFile` also needs mock DELETE test |
+| Phone | `ReplyComposer` image attach — gallery pick → upload → thumbnail chip → send `[image:<path>]` | No | No | 34 | Manual — open session detail, tap 📷, pick image, verify chip appears + send appends `[image:…]` suffix | Cleanup `deleteFile` on `DisposableEffect` also needs verification |
