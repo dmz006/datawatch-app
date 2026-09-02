@@ -357,6 +357,9 @@ or retracted rather than scheduled.
 | #155 | ✅ OpenCode model fetch: pass `?node=<compute_nodes[0]>` to `/api/opencode/models` (daemon v8.13.34) | v1.0.81 |
 | B-llm | ✅ LLM registry dialog: opencode model picker used wrong endpoint (Save always grayed out) | v1.0.82 |
 | B-fs  | ✅ Manifest: remove unused `FOREGROUND_SERVICE_SPECIAL_USE` + `FOREGROUND_SERVICE_CONNECTED_DEVICE`; fold Auto into `dataSync` | v1.0.83–v1.0.84 |
+| #156 | ✅ Settings → Automata: verifier diff max bytes setting (BL366 v8.16.0) | v1.0.88 |
+| #157 | ✅ Settings → Automata: default quality gates settings block (BL367 v8.17.0) | v1.0.88 |
+| #158 | ✅ Session input: 📷 image attachment button (PWA v8.19.0) | v1.0.88 |
 
 ---
 

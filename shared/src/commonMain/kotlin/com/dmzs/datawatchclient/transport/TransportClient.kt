@@ -1317,6 +1317,19 @@ public interface TransportClient {
     /** POST /api/files — upload a file to the file service. */
     public suspend fun uploadFile(bytes: ByteArray, fileName: String, destPath: String): Result<Unit>
 
+    /**
+     * POST /api/files — upload an image for session attachment (v8.19.0).
+     * Returns the server-resolved absolute path to use in `[image:<path>]`.
+     */
+    public suspend fun uploadImageAttachment(
+        bytes: ByteArray,
+        fileName: String,
+        mimeType: String,
+    ): Result<String>
+
+    /** DELETE /api/files — delete a file uploaded to the file service (v8.19.0). */
+    public suspend fun deleteFile(path: String): Result<Unit>
+
     // ---- T30: Discussion Scopes ----
 
     /** GET /api/memory/discussion — list discussion scope IDs. */

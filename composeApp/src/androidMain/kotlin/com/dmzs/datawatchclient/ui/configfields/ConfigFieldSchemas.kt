@@ -119,6 +119,30 @@ public object ConfigFieldSchemas {
                     // runs. Operator UI for the gate already lives on
                     // PrdDetailDialog (v0.38.1).
                     Toggle("autonomous.per_story_approval", "Per-story approval gate"),
+                    // BL366 v8.16.0 — verifier git-diff grounding.
+                    // 0 means use the server default of 8192 bytes.
+                    NumberField(
+                        "autonomous.verifier_diff_max_bytes",
+                        "Verifier diff max bytes (0 = 8192 default)",
+                    ),
+                    // BL367 v8.17.0 — default quality gates for all PRDs.
+                    Toggle(
+                        "autonomous.default_quality_gates.enabled",
+                        "Quality gates enabled by default",
+                    ),
+                    TextField(
+                        "autonomous.default_quality_gates.test_command",
+                        "Quality gate test command",
+                        placeholder = "go test ./...",
+                    ),
+                    NumberField(
+                        "autonomous.default_quality_gates.timeout",
+                        "Quality gate timeout (sec, 0 = no limit)",
+                    ),
+                    Toggle(
+                        "autonomous.default_quality_gates.block_on_regression",
+                        "Block on test regression",
+                    ),
                 ),
         )
 

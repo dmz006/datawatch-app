@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.88] — 2026-09-01
+
+### Added
+- Settings → Automata: verifier diff max bytes field (`autonomous.verifier_diff_max_bytes`) — caps the git diff injected into the verifier prompt; 0 = server default of 8192 bytes (BL366 v8.16.0 parity, issue #156)
+- Settings → Automata: quality gates settings block — 4 fields for default PRD quality gates: enabled toggle, test command, timeout (sec), and block-on-regression toggle (BL367 v8.17.0 parity, issue #157)
+- Session detail: 📷 image attachment button in the reply composer (PWA v8.19.0 parity, issue #158) — tap to open system image picker, uploads via `POST /api/files`, shows upload progress chip with filename and ✕ cancel, appends `[image:<server-path>]` to the outgoing message; uploaded file is cleaned up on session switch or navigation away
+
 ## [1.0.87] — 2026-08-31
 
 ### Fixed

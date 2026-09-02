@@ -30,9 +30,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -42,6 +45,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -1832,6 +1836,83 @@ private fun ReplyComposer(
     var transcribing by remember { mutableStateOf(false) }
     val recording = recorder != null
 
+    // Image attachment state (issue #158 — PWA v8.19.0 parity).
+    var pendingImagePath by remember { mutableStateOf<String?>(null) }
+    var pendingImageName by remember { mutableStateOf<String?>(null) }
+    var imageUploading by remember { mutableStateOf(false) }
+
+    // Gallery launcher — system image picker (handles gallery + camera on modern Android).
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        imageUploading = true
+        scope.launch {
+            val bytes = runCatching {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.readBytes()
+                }
+            }.getOrNull()
+            if (bytes == null) {
+                imageUploading = false
+                android.widget.Toast.makeText(context, "Could not read image.", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val displayName = runCatching {
+                val cursor = context.contentResolver.query(
+                    uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
+                )
+                cursor?.use { it.moveToFirst(); it.getString(0) }
+            }.getOrNull() ?: "image.jpg"
+            val mimeType = context.contentResolver.getType(uri) ?: "image/*"
+            val timestamp = System.currentTimeMillis()
+            val safeDisplayName = displayName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val destName = "dw_attach_${timestamp}_$safeDisplayName"
+
+            // Resolve session's server profile.
+            val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
+                .sessionRepository.observeForProfileAny(sessionId).first()
+            val profiles = com.dmzs.datawatchclient.di.ServiceLocator
+                .profileRepository.observeAll().first()
+            val profile = sessionRow?.serverProfileId
+                ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                ?: profiles.firstOrNull { it.enabled }
+            if (profile == null) {
+                imageUploading = false
+                android.widget.Toast.makeText(context, "No server connected.", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+                .uploadImageAttachment(bytes, destName, mimeType)
+                .onSuccess { serverPath ->
+                    pendingImagePath = serverPath
+                    pendingImageName = displayName
+                    imageUploading = false
+                }
+                .onFailure {
+                    imageUploading = false
+                    android.widget.Toast.makeText(context, "Image upload failed: ${it.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    // Clean up the uploaded image when the composer leaves composition (session switch, back nav).
+    DisposableEffect(sessionId) {
+        onDispose {
+            val path = pendingImagePath ?: return@onDispose
+            scope.launch {
+                val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+                val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
+                    .sessionRepository.observeForProfileAny(sessionId).first()
+                val profile = sessionRow?.serverProfileId
+                    ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                    ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+                    .deleteFile(path)
+            }
+        }
+    }
+
     // RECORD_AUDIO is a runtime permission on Android 6+. Request at first
     // tap — on grant start recording and show the PWA-style recording dialog;
     // on denial surface a toast so the button never silently no-ops.
@@ -2040,6 +2121,52 @@ private fun ReplyComposer(
         }
     }
 
+    // Pending image chip — shown when an image is queued for attachment.
+    if (pendingImagePath != null || imageUploading) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AssistChip(
+                onClick = {},
+                label = {
+                    Text(
+                        if (imageUploading) "Uploading…" else "✓ ${pendingImageName ?: "image"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                    )
+                },
+                trailingIcon = if (!imageUploading && pendingImagePath != null) {
+                    {
+                        IconButton(
+                            onClick = {
+                                val path = pendingImagePath
+                                pendingImagePath = null
+                                pendingImageName = null
+                                if (path != null) {
+                                    scope.launch {
+                                        val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+                                        val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
+                                            .sessionRepository.observeForProfileAny(sessionId).first()
+                                        val profile = sessionRow?.serverProfileId
+                                            ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                                            ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                                        com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+                                            .deleteFile(path)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(16.dp),
+                        ) {
+                            Icon(Icons.Filled.Close, contentDescription = "Remove image", modifier = Modifier.size(12.dp))
+                        }
+                    }
+                } else null,
+                modifier = Modifier.height(28.dp),
+            )
+        }
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -2073,8 +2200,17 @@ private fun ReplyComposer(
                 ),
         )
         IconButton(
-            onClick = onSend,
-            enabled = !sending && text.isNotBlank(),
+            onClick = {
+                // Append pending image reference before sending (issue #158).
+                val imgPath = pendingImagePath
+                if (imgPath != null) {
+                    onTextChange(text.trimEnd() + "\n[image:$imgPath]")
+                    pendingImagePath = null
+                    pendingImageName = null
+                }
+                onSend()
+            },
+            enabled = !sending && (text.isNotBlank() || pendingImagePath != null),
             modifier = Modifier.size(36.dp),
         ) {
             if (sending) {
@@ -2085,7 +2221,7 @@ private fun ReplyComposer(
                     contentDescription = stringResource(R.string.action_send),
                     modifier = Modifier.size(18.dp),
                     tint =
-                        if (text.isNotBlank()) {
+                        if (text.isNotBlank() || pendingImagePath != null) {
                             MaterialTheme.colorScheme.primary
                         } else {
                             Color.Gray
@@ -2133,6 +2269,24 @@ private fun ReplyComposer(
                     Icons.Filled.Mic,
                     contentDescription = "Voice input",
                     tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        // Image attachment button (issue #158 — PWA v8.19.0 parity).
+        IconButton(
+            onClick = { galleryLauncher.launch("image/*") },
+            enabled = !sending && !imageUploading && pendingImagePath == null,
+            modifier = Modifier.size(40.dp),
+        ) {
+            if (imageUploading) {
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
+            } else {
+                Icon(
+                    Icons.Filled.AddAPhoto,
+                    contentDescription = "Attach image",
+                    tint = if (pendingImagePath != null) MaterialTheme.colorScheme.tertiary
+                           else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
