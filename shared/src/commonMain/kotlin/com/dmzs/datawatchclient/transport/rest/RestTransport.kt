@@ -2857,6 +2857,47 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun uploadImageAttachment(
+        bytes: ByteArray,
+        fileName: String,
+        mimeType: String,
+    ): Result<String> =
+        request {
+            val boundary = "dw-${kotlin.random.Random.nextLong()}"
+            val resp = client.post("${profile.baseUrl}/api/files") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    io.ktor.client.request.forms.MultiPartFormDataContent(
+                        parts = io.ktor.client.request.forms.formData {
+                            append(
+                                key = "file",
+                                filename = fileName,
+                                contentType = io.ktor.http.ContentType.parse(mimeType),
+                                size = bytes.size.toLong(),
+                            ) { writeFully(bytes) }
+                            append("path", fileName)
+                        },
+                        boundary = boundary,
+                    ),
+                )
+            }
+            val body = resp.body<kotlinx.serialization.json.JsonObject>()
+            (body["path"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                ?: error("server returned no path in upload response")
+        }
+
+    override suspend fun deleteFile(path: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/files") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("path", kotlinx.serialization.json.JsonPrimitive(path))
+                })
+            }
+            Unit
+        }
+
     // ---- T30: Discussion Scopes ----
 
     override suspend fun listDiscussions(): Result<com.dmzs.datawatchclient.transport.dto.DiscussionListDto> =
