@@ -302,6 +302,64 @@ Managed via **ChannelsCard** under Settings → Comms.
 
 ---
 
+## Autonomous (v8.16.0 / v8.17.0)
+
+Settings for the Autonomous / Automata subsystem. Persisted server-side; displayed in
+Settings → Autonomous (ConfigFieldsPanel / ConfigSection `Autonomous`).
+
+### autonomous.verifier_diff_max_bytes
+
+- **UI path:** Settings → Autonomous → "Verifier diff max bytes (0 = 8192 default)".
+- **Type:** Integer (≥ 0).
+- **Default:** `0` (server interprets as 8192 bytes).
+- **Server version:** v8.16.0+.
+- **Wire:** `/api/config` — key `autonomous.verifier_diff_max_bytes`.
+- **Effect:** Maximum byte count of the git-diff payload sent to the verifier for
+  grounding. Raise this when the verifier misses context in large changesets; 0 uses
+  the server's built-in default of 8192.
+
+### autonomous.default_quality_gates.enabled
+
+- **UI path:** Settings → Autonomous → "Quality gates enabled by default".
+- **Type:** Boolean.
+- **Default:** `false`.
+- **Server version:** v8.17.0+.
+- **Wire:** `/api/config` — key `autonomous.default_quality_gates.enabled`.
+- **Effect:** When `true`, every new PRD starts with a quality-gate check enabled. Can
+  be overridden per-PRD.
+
+### autonomous.default_quality_gates.test_command
+
+- **UI path:** Settings → Autonomous → "Quality gate test command".
+- **Type:** String (shell command, e.g. `go test ./...`).
+- **Default:** `""` (no test command).
+- **Server version:** v8.17.0+.
+- **Wire:** `/api/config` — key `autonomous.default_quality_gates.test_command`.
+- **Effect:** Shell command the quality gate runs to validate work. Executed in the
+  working directory of the session.
+
+### autonomous.default_quality_gates.timeout
+
+- **UI path:** Settings → Autonomous → "Quality gate timeout (sec, 0 = no limit)".
+- **Type:** Integer (seconds, ≥ 0).
+- **Default:** `0` (no limit).
+- **Server version:** v8.17.0+.
+- **Wire:** `/api/config` — key `autonomous.default_quality_gates.timeout`.
+- **Effect:** Hard wall-clock limit for the quality-gate test command. 0 means no
+  timeout.
+
+### autonomous.default_quality_gates.block_on_regression
+
+- **UI path:** Settings → Autonomous → "Block on test regression".
+- **Type:** Boolean.
+- **Default:** `false`.
+- **Server version:** v8.17.0+.
+- **Wire:** `/api/config` — key `autonomous.default_quality_gates.block_on_regression`.
+- **Effect:** When `true`, a failing quality-gate blocks PRD progression and moves the
+  session to the waiting-input state so a human can intervene.
+
+---
+
 ## Auto (v0.33.0)
 
 Auto is a **messaging-template** surface; no user-configurable
