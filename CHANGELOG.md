@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.90] — 2026-09-05
+
+### Fixed
+- Session detail: image attach button now matches the color of other action buttons (`onSurfaceVariant` tint)
+- Session detail: image upload no longer fails with "path outside service root" — now fetches `GET /api/files/meta` first and uploads to the correct absolute path under the server's file service root
+- Session detail: MIME type `image/*` wildcard no longer used as upload content-type — falls back to `image/jpeg` when the content resolver returns a wildcard type
+
+### Added
+- Session detail: image attach button now shows a bottom sheet with **Choose from gallery** and **Take a photo** options — uses `TakePicture` contract via `FileProvider` for camera capture
+
 ## [1.0.89] — 2026-09-05
 
 ### Fixed

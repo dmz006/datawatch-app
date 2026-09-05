@@ -36,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -1812,6 +1813,7 @@ private fun EventRow(event: SessionEvent) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReplyComposer(
     text: String,
@@ -1840,12 +1842,10 @@ private fun ReplyComposer(
     var pendingImagePath by remember { mutableStateOf<String?>(null) }
     var pendingImageName by remember { mutableStateOf<String?>(null) }
     var imageUploading by remember { mutableStateOf(false) }
+    var showImageSourceSheet by remember { mutableStateOf(false) }
+    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
-    // Gallery launcher — system image picker (handles gallery + camera on modern Android).
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    fun uploadUri(uri: android.net.Uri, fallbackName: String, fallbackMime: String) {
         imageUploading = true
         scope.launch {
             val bytes = runCatching {
@@ -1863,13 +1863,12 @@ private fun ReplyComposer(
                     uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
                 )
                 cursor?.use { it.moveToFirst(); it.getString(0) }
-            }.getOrNull() ?: "image.jpg"
-            val mimeType = context.contentResolver.getType(uri) ?: "image/*"
+            }.getOrNull() ?: fallbackName
+            val mimeType = context.contentResolver.getType(uri)?.takeIf { it != "image/*" } ?: fallbackMime
             val timestamp = System.currentTimeMillis()
             val safeDisplayName = displayName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
             val destName = "dw_attach_${timestamp}_$safeDisplayName"
 
-            // Resolve session's server profile.
             val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
                 .sessionRepository.observeForProfileAny(sessionId).first()
             val profiles = com.dmzs.datawatchclient.di.ServiceLocator
@@ -1882,8 +1881,15 @@ private fun ReplyComposer(
                 android.widget.Toast.makeText(context, "No server connected.", android.widget.Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
-                .uploadImageAttachment(bytes, destName, mimeType)
+            val transport = com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+            val root = transport.getFileServiceMeta().getOrNull()?.root?.trimEnd('/')
+            if (root == null) {
+                imageUploading = false
+                android.widget.Toast.makeText(context, "Could not resolve server file root.", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val fullPath = "$root/$destName"
+            transport.uploadImageAttachment(bytes, destName, mimeType, fullPath)
                 .onSuccess { serverPath ->
                     pendingImagePath = serverPath
                     pendingImageName = displayName
@@ -1894,6 +1900,15 @@ private fun ReplyComposer(
                     android.widget.Toast.makeText(context, "Image upload failed: ${it.message}", android.widget.Toast.LENGTH_SHORT).show()
                 }
         }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        uploadUri(uri, "image.jpg", "image/jpeg")
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) cameraUri?.let { uploadUri(it, "camera_${System.currentTimeMillis()}.jpg", "image/jpeg") }
     }
 
     // Clean up the uploaded image when the composer leaves composition (session switch, back nav).
@@ -2274,7 +2289,7 @@ private fun ReplyComposer(
         }
         // Image attachment button (issue #158 — PWA v8.19.0 parity).
         IconButton(
-            onClick = { galleryLauncher.launch("image/*") },
+            onClick = { showImageSourceSheet = true },
             enabled = !sending && !imageUploading && pendingImagePath == null,
             modifier = Modifier.size(40.dp),
         ) {
@@ -2284,9 +2299,50 @@ private fun ReplyComposer(
                 Icon(
                     Icons.Filled.AddAPhoto,
                     contentDescription = "Attach image",
-                    tint = if (pendingImagePath != null) MaterialTheme.colorScheme.tertiary
-                           else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+
+    if (showImageSourceSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showImageSourceSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text("Choose from gallery") },
+                    leadingContent = {
+                        Icon(Icons.Filled.AddAPhoto, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                    modifier = Modifier.clickable {
+                        showImageSourceSheet = false
+                        galleryLauncher.launch("image/*")
+                    },
+                )
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text("Take a photo") },
+                    leadingContent = {
+                        Icon(Icons.Filled.CameraAlt, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                    modifier = Modifier.clickable {
+                        showImageSourceSheet = false
+                        val file = java.io.File(
+                            context.cacheDir,
+                            "dw_camera_${System.currentTimeMillis()}.jpg",
+                        )
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file,
+                        )
+                        cameraUri = uri
+                        cameraLauncher.launch(uri)
+                    },
                 )
             }
         }
