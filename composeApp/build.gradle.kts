@@ -72,7 +72,7 @@ kotlin {
 
 android {
     namespace = "com.dmzs.datawatchclient"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures { buildConfig = true }
 
@@ -99,7 +99,7 @@ android {
     defaultConfig {
         applicationId = "com.dmzs.datawatchclient"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

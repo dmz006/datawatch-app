@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.89] — 2026-09-05
+
+### Fixed
+- Build: bump `compileSdk` and `targetSdk` from 35 → 36 (Android 16) — Google Play now requires targetSdk ≥ 36 for closed-testing track uploads; v1.0.88 was blocked at the commit step with `Target SDK of artifact is too low: 397`
+
 ## [1.0.88] — 2026-09-01
 
 ### Added
