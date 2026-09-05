@@ -20,7 +20,7 @@ android {
     // watch subscriber. This was the root cause of the "Pair phone in
     // Settings" placeholder never flipping.
     namespace = "com.dmzs.datawatchclient.wear"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         // applicationId MUST match the phone app so the Wearable Data Layer
@@ -28,7 +28,7 @@ android {
         // phone app's AAB via `wearApp(project(":wear"))` in composeApp.
         applicationId = "com.dmzs.datawatchclient"
         minSdk = 28  // Support Wear OS 4.0+ (API 28+) for broader device compatibility
-        targetSdk = 35
+        targetSdk = 36
         // Wear version codes are offset by 100_000 so phone (305) and wear (100305)
         // occupy the same listing without version code collision in Play Console.
         versionCode = appVersionCode + 100_000
