@@ -1325,6 +1325,7 @@ public interface TransportClient {
         bytes: ByteArray,
         fileName: String,
         mimeType: String,
+        destPath: String,
     ): Result<String>
 
     /** DELETE /api/files — delete a file uploaded to the file service (v8.19.0). */

@@ -2861,6 +2861,7 @@ public class RestTransport(
         bytes: ByteArray,
         fileName: String,
         mimeType: String,
+        destPath: String,
     ): Result<String> =
         request {
             val boundary = "dw-${kotlin.random.Random.nextLong()}"
@@ -2875,7 +2876,7 @@ public class RestTransport(
                                 contentType = io.ktor.http.ContentType.parse(mimeType),
                                 size = bytes.size.toLong(),
                             ) { writeFully(bytes) }
-                            append("path", fileName)
+                            append("path", destPath)
                         },
                         boundary = boundary,
                     ),
