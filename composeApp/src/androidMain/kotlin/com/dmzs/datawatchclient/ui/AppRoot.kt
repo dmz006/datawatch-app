@@ -53,6 +53,7 @@ import com.dmzs.datawatchclient.ui.monitoring.FederatedPeersViewModel
 import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 import com.dmzs.datawatchclient.ui.shell.BottomNavBar
 import com.dmzs.datawatchclient.ui.shell.Destinations
+import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.shell.SettingsNavChannel
 import com.dmzs.datawatchclient.ui.splash.MatrixSplashScreen
 import com.dmzs.datawatchclient.ui.theme.DatawatchTheme
@@ -396,6 +397,16 @@ private fun HomeShell(
     }
 
     val context = LocalContext.current
+    val pendingSessionsFilter by SessionsNavChannel.pendingFilter.collectAsState()
+    LaunchedEffect(pendingSessionsFilter) {
+        pendingSessionsFilter ?: return@LaunchedEffect
+        tabNav.navigate(Destinations.Tabs.Sessions) {
+            popUpTo(Destinations.Tabs.Sessions) { inclusive = false }
+            launchSingleTop = true
+        }
+        // filter text is consumed by SessionsScreen itself via SessionsNavChannel
+    }
+
     val pendingSettingsTab by SettingsNavChannel.pendingTab.collectAsState()
     LaunchedEffect(pendingSettingsTab) {
         val tab = pendingSettingsTab ?: return@LaunchedEffect

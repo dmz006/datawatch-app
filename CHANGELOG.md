@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.93] — 2026-09-07
+
+### Fixed
+- Sessions: state filter chips (All / Active / Waiting / Done) are now always visible when the toolbar is open — no longer hidden behind a secondary "State ▸" toggle button requiring an extra tap
+- Sessions: "Active" filter now reliably excludes failed/done tasks; jump from Automata detail also auto-expands the toolbar and pre-fills the filter text
+
+### Added
+- Automata detail (Overview tab): "→ View sessions" button jumps to the Sessions tab pre-filtered by the automaton name, making it easy to see all sessions spawned by that automaton
+- Automata detail (Overview tab): spec text is now shown in full (previously truncated to 240 chars / 4 lines)
+
 ## [1.0.92] — 2026-09-06
 
 ### Fixed
