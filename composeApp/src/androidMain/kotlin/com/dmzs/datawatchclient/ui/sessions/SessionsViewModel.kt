@@ -241,6 +241,17 @@ public class SessionsViewModel : ViewModel() {
                 return sessions.filter { it.state in doneStates }.map { it.id }
             }
 
+        public val visibleDoneCount: Int
+            get() {
+                val doneStates =
+                    setOf(
+                        com.dmzs.datawatchclient.domain.SessionState.Completed,
+                        com.dmzs.datawatchclient.domain.SessionState.Killed,
+                        com.dmzs.datawatchclient.domain.SessionState.Error,
+                    )
+                return visibleSessions.count { s -> s.state in doneStates }
+            }
+
         private companion object {
             const val RECENT_WINDOW_MINUTES: Long = 5
         }
@@ -641,7 +652,7 @@ public class SessionsViewModel : ViewModel() {
         return ServiceLocator.transportFor(profile)
             .getSessionCurrentStatus(fullIdFor(sessionId))
             .getOrNull()
-            ?.takeIf { it.currentStatus.isNotBlank() }
+            ?.takeIf { it.currentStatus.isNotBlank() || it.noChange }
     }
 
     /** Trigger a manual re-summarize and return the result wrapped as a [CurrentStatusDto] for display. */

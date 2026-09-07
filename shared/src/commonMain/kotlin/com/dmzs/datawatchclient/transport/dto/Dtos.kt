@@ -1590,6 +1590,7 @@ public data class CurrentStatusDto(
     @SerialName("current_status") val currentStatus: String = "",
     @SerialName("current_status_long") val currentStatusLong: String = "",
     @SerialName("generated_at") val generatedAt: String = "",
+    @SerialName("no_change") val noChange: Boolean = false,
 )
 
 @Serializable
