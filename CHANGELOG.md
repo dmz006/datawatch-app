@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.91] — 2026-09-06
+
+### Fixed
+- Sessions: "Select All" counter now scopes to the currently visible/filtered set, not all done sessions — matches PWA v8.19.2 behavior; changing any filter (state chip, backend, search text, history toggle) automatically clears the active selection (closes #159)
+- Sessions: "What's it doing?" button now renders a "no change since last refresh" message instead of silently doing nothing when the server returns `{no_change:true}` — adds `no_change` field to `CurrentStatusDto` (closes #160)
+
 ## [1.0.90] — 2026-09-05
 
 ### Fixed

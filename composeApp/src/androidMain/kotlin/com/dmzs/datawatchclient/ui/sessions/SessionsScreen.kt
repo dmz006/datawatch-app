@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
 import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -140,6 +141,9 @@ public fun SessionsScreen(
     var pickerOpen by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val selectionMode = selectedIds.isNotEmpty()
+    LaunchedEffect(state.stateFilter, state.backendFilter, state.filterText, state.showHistory) {
+        selectedIds = emptySet()
+    }
     var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
     // Search / filter / sort toolbar is collapsed by default — user
     // 2026-04-24 (dmz006/datawatch#23). The top-app-bar search icon
@@ -288,6 +292,7 @@ public fun SessionsScreen(
                 activeCount = state.activeCount,
                 waitingCount = state.waitingCount,
                 doneCount = state.doneCount,
+                visibleDoneCount = state.visibleDoneCount,
                 onStateFilterChange = vm::setStateFilter,
                 historyAllSelected = state.historySessionIds.isNotEmpty() &&
                     selectedIds.containsAll(state.historySessionIds),
@@ -527,6 +532,7 @@ private fun SessionsToolbar(
     activeCount: Int = 0,
     waitingCount: Int = 0,
     doneCount: Int = 0,
+    visibleDoneCount: Int = doneCount,
     onStateFilterChange: (SessionsViewModel.SessionStateFilter) -> Unit = {},
     // BL-SL-2: select-all button for history sessions (PWA ☑ All / None)
     historyAllSelected: Boolean = false,
@@ -734,7 +740,7 @@ private fun SessionsToolbar(
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
-                        "☑ ${if (selectedCount == doneCount && doneCount > 0) "None" else "All"} ($doneCount)",
+                        "☑ ${if (selectedCount == visibleDoneCount && visibleDoneCount > 0) "None" else "All"} ($visibleDoneCount)",
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -824,6 +830,7 @@ private fun SessionRow(
     var currentStatusLongText by remember { mutableStateOf<String?>(null) }
     var summaryExpanded by remember { mutableStateOf(false) }
     val currentStatusScope = rememberCoroutineScope()
+    val noChangeStr = stringResource(R.string.no_change_since_last_refresh)
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 64.dp.toPx() }
     var restartConfirmOpen by remember { mutableStateOf(false) }
@@ -1140,7 +1147,7 @@ private fun SessionRow(
                                 currentStatusScope.launch {
                                     val dto = fetchCurrentStatus()
                                     if (dto != null) {
-                                        currentStatusText = dto.currentStatus
+                                        currentStatusText = if (dto.noChange) noChangeStr else dto.currentStatus
                                         currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
                                         currentStatusOpen = true
                                     }
@@ -1767,7 +1774,7 @@ internal fun QuickCommandsSheet(
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var systemCmds by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.QuickCommandItem>>(emptyList()) }
     var customText by remember { mutableStateOf("") }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         saved = fetchSavedCommands()
         systemCmds = fetchSystemCommands()
     }
