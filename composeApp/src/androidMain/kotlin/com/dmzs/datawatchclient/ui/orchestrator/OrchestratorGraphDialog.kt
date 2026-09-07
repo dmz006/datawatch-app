@@ -165,10 +165,24 @@ public class OrchestratorGraphViewModel(
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state
 
-    public fun refresh(id: String) {
+    public fun refresh(prdId: String) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
-            transport.orchestratorGraph(id).fold(
+            // Orchestrator graphs have their own IDs separate from PRD IDs.
+            // List all graphs and find one(s) that include this PRD, then
+            // fetch the full graph by its own ID.
+            val listResult = transport.getOrchestratorGraphsList()
+            if (listResult.isFailure) {
+                _state.value = UiState(banner = "Load failed — ${listResult.exceptionOrNull()?.message}")
+                return@launch
+            }
+            val matchingId = listResult.getOrNull()?.graphs
+                ?.firstOrNull { prdId in it.prdIds }?.id
+            if (matchingId == null) {
+                _state.value = UiState(banner = "No orchestrator graph found for this automaton")
+                return@launch
+            }
+            transport.orchestratorGraph(matchingId).fold(
                 onSuccess = { dto -> _state.value = UiState(graph = dto) },
                 onFailure = { err ->
                     _state.value =
