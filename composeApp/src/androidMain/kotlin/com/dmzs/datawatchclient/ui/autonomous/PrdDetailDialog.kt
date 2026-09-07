@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
+import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
 
@@ -336,11 +337,18 @@ internal fun PrdDetailDialog(
                         PrdSkillsRow(prd, onSetSkills)
                         prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
                             Text(
-                                spec.take(240),
+                                spec,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 4,
                             )
+                        }
+                        TextButton(
+                            onClick = {
+                                SessionsNavChannel.jumpTo(prd.name)
+                                onDismiss()
+                            },
+                        ) {
+                            Text(stringResource(R.string.prd_view_sessions))
                         }
                     }
                     1 -> {

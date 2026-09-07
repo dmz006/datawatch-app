@@ -107,6 +107,7 @@ import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -143,6 +144,13 @@ public fun SessionsScreen(
     val selectionMode = selectedIds.isNotEmpty()
     LaunchedEffect(state.stateFilter, state.backendFilter, state.filterText, state.showHistory) {
         selectedIds = emptySet()
+    }
+    val pendingFilter by SessionsNavChannel.pendingFilter.collectAsState()
+    LaunchedEffect(pendingFilter) {
+        val f = pendingFilter ?: return@LaunchedEffect
+        vm.setFilterText(f)
+        SessionsNavChannel.consume()
+        toolbarExpanded = true
     }
     var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
     // Search / filter / sort toolbar is collapsed by default — user
@@ -555,8 +563,7 @@ private fun SessionsToolbar(
     if (!show) return
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
         run {
-            // BL-SL-3: PWA layout — text input + LLM button + State button on same row.
-            var stateExpanded by remember { mutableStateOf(false) }
+            // BL-SL-3: PWA layout — text input + LLM button on same row; state chips always visible.
             var llmExpanded by remember { mutableStateOf(false) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -592,38 +599,29 @@ private fun SessionsToolbar(
                     Text(stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1), style = MaterialTheme.typography.labelSmall)
                     Icon(if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(12.dp))
                 }
-                OutlinedButton(
-                    onClick = { stateExpanded = !stateExpanded },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text(stringResource(R.string.state_filter_btn_tip, activeCount + waitingCount + doneCount), style = MaterialTheme.typography.labelSmall)
-                    Icon(if (stateExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(12.dp))
-                }
             }
-            AnimatedVisibility(visible = stateExpanded) {
-                // stringResource calls hoisted out of LazyListScope
-                val stateFilterAllLabel = stringResource(R.string.session_filter_all)
-                val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
-                val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
-                val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
-                val stateChips = listOf(
-                    Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
-                    Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
-                    Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
-                    Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
-                )
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-                ) {
-                    items(stateChips) { (filter, label, count) ->
-                        FilterChip(
-                            selected = stateFilter == filter,
-                            onClick = { onStateFilterChange(filter) },
-                            label = { Text(if (count >= 0) "$label ($count)" else label, style = MaterialTheme.typography.labelSmall) },
-                            colors = FilterChipDefaults.filterChipColors(),
-                        )
-                    }
+            // State filter chips always visible when toolbar is expanded
+            val stateFilterAllLabel = stringResource(R.string.session_filter_all)
+            val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
+            val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
+            val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
+            val stateChips = listOf(
+                Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
+                Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
+                Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
+                Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
+            )
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                items(stateChips) { (filter, label, count) ->
+                    FilterChip(
+                        selected = stateFilter == filter,
+                        onClick = { onStateFilterChange(filter) },
+                        label = { Text(if (count >= 0) "$label ($count)" else label, style = MaterialTheme.typography.labelSmall) },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
                 }
             }
             AnimatedVisibility(visible = llmExpanded) {

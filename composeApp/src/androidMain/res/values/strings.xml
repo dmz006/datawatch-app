@@ -624,6 +624,7 @@
     <string name="prd_story_title_label">Title</string>
     <string name="prd_task_llm_hint">Per-task LLM override — empty inherits PRD then global.</string>
     <string name="prd_view_spec">View spec</string>
+    <string name="prd_view_sessions">→ View sessions</string>
     <string name="profile_agent_settings_section">Agent Settings</string>
     <string name="profile_claude_key_secret_label">Claude auth key secret</string>
     <string name="profile_claude_key_secret_ph">secret name → ANTHROPIC_API_KEY</string>
