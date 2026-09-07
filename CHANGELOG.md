@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.92] — 2026-09-06
+
+### Fixed
+- Automata detail: "Graph" button no longer shows "Load failed — 404 Not Found" — was incorrectly calling `GET /api/orchestrator/graphs/{prd.id}` (PRD ID is not an orchestrator graph ID); now lists all graphs and finds the one whose `prd_ids` contains this PRD, then fetches that graph; shows "No orchestrator graph found for this automaton" when none exists
+
 ## [1.0.91] — 2026-09-06
 
 ### Fixed
