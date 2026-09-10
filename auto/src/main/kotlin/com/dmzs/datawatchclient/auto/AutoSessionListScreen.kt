@@ -1,4 +1,5 @@
 @file:Suppress("MagicNumber")
+
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
@@ -45,7 +46,6 @@ public class AutoSessionListScreen(
     carContext: CarContext,
     private val automataId: String? = null,
 ) : Screen(carContext) {
-
     private data class SessionRow(
         val session: Session,
         val progress: Float?,
@@ -57,31 +57,35 @@ public class AutoSessionListScreen(
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
+
     // When filtering to a specific automaton, show all its sessions by default.
     private var showTerminal: Boolean = automataId != null
     private var hiddenCount: Int = 0
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     // BL303-A5.1: ambient mode — after STALE_THRESHOLD polls with no change, slow down to AMBIENT_POLL_MS
     private var staleCount: Int = 0
     private var lastRowsKey: Int = -1
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = scope.launch { pollLoop() }
-            }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = scope.launch { pollLoop() }
+                }
 
-            override fun onStop(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = null
-            }
+                override fun onStop(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = null
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.cancel()
-            }
-        })
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private suspend fun pollLoop() {
@@ -100,11 +104,12 @@ public class AutoSessionListScreen(
 
     private suspend fun refresh() {
         try {
-            val profile = resolveActiveProfile() ?: run {
-                error = "No enabled server (configure on phone)"
-                rows = emptyList()
-                return
-            }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server (configure on phone)"
+                    rows = emptyList()
+                    return
+                }
             serverName = profile.displayName
             val transport = AutoServiceLocator.transportFor(profile)
             transport.listSessions().fold(
@@ -113,56 +118,68 @@ public class AutoSessionListScreen(
                     isLoading = false
                     val isAmbient = staleCount >= STALE_THRESHOLD
                     // BL303-A5.1: ambient mode — skip per-session telemetry fetches, use cached rows
-                    val telemetryMap: Map<String, SessionTelemetryDto?> = if (isAmbient) {
-                        emptyMap()
-                    } else {
-                        coroutineScope {
-                            sessions
-                                .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
-                                .map { s ->
-                                    async { s.id to transport.getSessionTelemetry(s.id).getOrNull() }
+                    val telemetryMap: Map<String, SessionTelemetryDto?> =
+                        if (isAmbient) {
+                            emptyMap()
+                        } else {
+                            coroutineScope {
+                                sessions
+                                    .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
+                                    .map { s ->
+                                        async { s.id to transport.getSessionTelemetry(s.id).getOrNull() }
+                                    }
+                                    .awaitAll()
+                                    .toMap()
+                            }
+                        }
+                    val allRows =
+                        sessions
+                            .map { s ->
+                                val telem = telemetryMap[s.id]
+                                val existing = if (isAmbient) rows.firstOrNull { it.session.id == s.id } else null
+                                SessionRow(
+                                    session = s,
+                                    progress = telem?.progress?.takeIf { it > 0f } ?: existing?.progress,
+                                    hasGuardrailBlock =
+                                        telem?.guardrailVerdicts
+                                            ?.any { it.outcome == "block" } ?: existing?.hasGuardrailBlock ?: false,
+                                    automataName = telem?.sprint?.automata.orEmpty().ifEmpty { existing?.automataName.orEmpty() },
+                                )
+                            }
+                            // BL303-A3.4: filter by automaton id when coming from AutomataScreen
+                            .let { allRows ->
+                                if (automataId != null) {
+                                    allRows.filter { row ->
+                                        row.automataName.equals(automataId, ignoreCase = true) ||
+                                            row.session.name?.startsWith(automataId, ignoreCase = true) == true
+                                    }
+                                } else {
+                                    allRows
                                 }
-                                .awaitAll()
-                                .toMap()
-                        }
-                    }
-                    val allRows = sessions
-                        .map { s ->
-                            val telem = telemetryMap[s.id]
-                            val existing = if (isAmbient) rows.firstOrNull { it.session.id == s.id } else null
-                            SessionRow(
-                                session = s,
-                                progress = telem?.progress?.takeIf { it > 0f } ?: existing?.progress,
-                                hasGuardrailBlock = telem?.guardrailVerdicts
-                                    ?.any { it.outcome == "block" } ?: existing?.hasGuardrailBlock ?: false,
-                                automataName = telem?.sprint?.automata.orEmpty().ifEmpty { existing?.automataName.orEmpty() },
-                            )
-                        }
-                        // BL303-A3.4: filter by automaton id when coming from AutomataScreen
-                        .let { allRows ->
-                            if (automataId != null) {
+                            }
+                            .sortedWith(compareBy { urgencyScore(it) })
+                    val newRows =
+                        if (showTerminal) {
+                            hiddenCount = 0
+                            allRows
+                        } else {
+                            val fresh =
                                 allRows.filter { row ->
-                                    row.automataName.equals(automataId, ignoreCase = true) ||
-                                        row.session.name?.startsWith(automataId, ignoreCase = true) == true
+                                    row.session.state != SessionState.Completed &&
+                                        row.session.state != SessionState.Killed &&
+                                        row.session.state != SessionState.Error
                                 }
-                            } else allRows
+                            hiddenCount = allRows.size - fresh.size
+                            fresh
                         }
-                        .sortedWith(compareBy { urgencyScore(it) })
-                    val newRows = if (showTerminal) {
-                        hiddenCount = 0
-                        allRows
-                    } else {
-                        val fresh = allRows.filter { row ->
-                            row.session.state != SessionState.Completed &&
-                                row.session.state != SessionState.Killed &&
-                                row.session.state != SessionState.Error
-                        }
-                        hiddenCount = allRows.size - fresh.size
-                        fresh
-                    }
                     // Track stale state for ambient poll
                     val newKey = newRows.map { it.session.id to it.session.state }.hashCode()
-                    if (newKey == lastRowsKey) staleCount++ else { staleCount = 0; lastRowsKey = newKey }
+                    if (newKey == lastRowsKey) {
+                        staleCount++
+                    } else {
+                        staleCount = 0
+                        lastRowsKey = newKey
+                    }
                     rows = newRows
                 },
                 onFailure = { err ->
@@ -178,13 +195,14 @@ public class AutoSessionListScreen(
 
     override fun onGetTemplate(): Template {
         fun dotIcon(row: SessionRow): CarIcon {
-            val resId = when {
-                row.hasGuardrailBlock || row.session.state == SessionState.Error -> R.drawable.ic_dot_red
-                row.session.state == SessionState.Waiting ||
-                    row.session.state == SessionState.RateLimited -> R.drawable.ic_dot_amber
-                row.session.state == SessionState.Running -> R.drawable.ic_dot_green
-                else -> R.drawable.ic_dot_gray
-            }
+            val resId =
+                when {
+                    row.hasGuardrailBlock || row.session.state == SessionState.Error -> R.drawable.ic_dot_red
+                    row.session.state == SessionState.Waiting ||
+                        row.session.state == SessionState.RateLimited -> R.drawable.ic_dot_amber
+                    row.session.state == SessionState.Running -> R.drawable.ic_dot_green
+                    else -> R.drawable.ic_dot_gray
+                }
             return CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         }
 
@@ -215,14 +233,17 @@ public class AutoSessionListScreen(
             builder.addItem(
                 Row.Builder()
                     .setTitle("No active sessions")
-                    .addText("$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden · tap \"All\" to show")
+                    .addText(
+                        "$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden · tap \"All\" to show",
+                    )
                     .build(),
             )
         } else {
-            val max = runCatching {
-                carContext.getCarService(ConstraintManager::class.java)
-                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
-            }.getOrElse { MAX_ROWS_FALLBACK }
+            val max =
+                runCatching {
+                    carContext.getCarService(ConstraintManager::class.java)
+                        .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+                }.getOrElse { MAX_ROWS_FALLBACK }
             // Reserve 1 slot for the history row if needed, 1 for overflow row.
             val reserveSlots = (if (hiddenCount > 0) 1 else 0)
             val visible = rows.take((max - 1 - reserveSlots).coerceAtLeast(1))
@@ -255,18 +276,27 @@ public class AutoSessionListScreen(
             if (hiddenCount > 0 && !showTerminal) {
                 builder.addItem(
                     Row.Builder()
-                        .setTitle("$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden")
+                        .setTitle(
+                            "$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden",
+                        )
                         .addText("Tap filter button or tap here to show all")
-                        .setOnClickListener { showTerminal = true; invalidate() }
+                        .setOnClickListener {
+                            showTerminal = true
+                            invalidate()
+                        }
                         .build(),
                 )
             }
         }
         val title = if (automataId != null) "$automataId Sessions" else "$serverName Sessions"
-        val filterAction = Action.Builder()
-            .setTitle(if (showTerminal) "Active" else "All")
-            .setOnClickListener { showTerminal = !showTerminal; invalidate() }
-            .build()
+        val filterAction =
+            Action.Builder()
+                .setTitle(if (showTerminal) "Active" else "All")
+                .setOnClickListener {
+                    showTerminal = !showTerminal
+                    invalidate()
+                }
+                .build()
         return ListTemplate.Builder()
             .setTitle(title)
             .setHeaderAction(Action.BACK)
@@ -281,34 +311,35 @@ public class AutoSessionListScreen(
         const val STALE_THRESHOLD: Int = 3
         const val MAX_ROWS_FALLBACK: Int = 5
 
-        fun urgencyScore(row: SessionRow): Int =
-            sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)
+        fun urgencyScore(row: SessionRow): Int = sessionUrgencyScore(row.session.state, row.hasGuardrailBlock)
 
-        fun stateColor(row: SessionRow): CarColor = when {
-            row.hasGuardrailBlock || row.session.state == SessionState.Error -> CarColor.RED
-            row.session.state == SessionState.Waiting ||
-                row.session.state == SessionState.RateLimited -> CarColor.YELLOW
-            row.session.state == SessionState.Running -> CarColor.GREEN
-            else -> CarColor.DEFAULT
-        }
-
-        fun buildSubtitle(row: SessionRow): String = buildString {
+        fun stateColor(row: SessionRow): CarColor =
             when {
-                row.hasGuardrailBlock -> append("⊗ guardrail blocked")
-                row.session.state == SessionState.Error -> append("⊗ error")
-                row.session.state == SessionState.Waiting -> append("⊙ waiting input")
-                row.session.state == SessionState.RateLimited -> append("⊙ rate limited")
-                row.session.state == SessionState.Running -> append("◉ running")
-                row.session.state == SessionState.Completed -> append("✓ completed")
-                row.session.state == SessionState.Killed -> append("✗ killed")
-                else -> append(row.session.state.name.lowercase())
+                row.hasGuardrailBlock || row.session.state == SessionState.Error -> CarColor.RED
+                row.session.state == SessionState.Waiting ||
+                    row.session.state == SessionState.RateLimited -> CarColor.YELLOW
+                row.session.state == SessionState.Running -> CarColor.GREEN
+                else -> CarColor.DEFAULT
             }
-            row.progress?.let { p ->
-                val pct = (p * 100).toInt()
-                val filled = (p * 8).toInt().coerceIn(0, 8)
-                val bar = "▓".repeat(filled) + "░".repeat(8 - filled)
-                append("  $bar $pct%")
+
+        fun buildSubtitle(row: SessionRow): String =
+            buildString {
+                when {
+                    row.hasGuardrailBlock -> append("⊗ guardrail blocked")
+                    row.session.state == SessionState.Error -> append("⊗ error")
+                    row.session.state == SessionState.Waiting -> append("⊙ waiting input")
+                    row.session.state == SessionState.RateLimited -> append("⊙ rate limited")
+                    row.session.state == SessionState.Running -> append("◉ running")
+                    row.session.state == SessionState.Completed -> append("✓ completed")
+                    row.session.state == SessionState.Killed -> append("✗ killed")
+                    else -> append(row.session.state.name.lowercase())
+                }
+                row.progress?.let { p ->
+                    val pct = (p * 100).toInt()
+                    val filled = (p * 8).toInt().coerceIn(0, 8)
+                    val bar = "▓".repeat(filled) + "░".repeat(8 - filled)
+                    append("  $bar $pct%")
+                }
             }
-        }
     }
 }

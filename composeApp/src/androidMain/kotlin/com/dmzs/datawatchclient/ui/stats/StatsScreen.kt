@@ -22,9 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerInfo
@@ -157,7 +157,12 @@ private fun DaemonCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     PwaCardContainer {
         PwaSectionTitle(stringResource(R.string.stats_section_daemon))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            if (s.daemonRssBytes > 0) MonoRow(stringResource(R.string.stats_row_memory), "${formatBytes(s.daemonRssBytes)} RSS")
+            if (s.daemonRssBytes > 0) {
+                MonoRow(
+                    stringResource(R.string.stats_row_memory),
+                    "${formatBytes(s.daemonRssBytes)} RSS",
+                )
+            }
             if (s.goroutines > 0) MonoRow(stringResource(R.string.stats_row_goroutines), s.goroutines.toString())
             if (s.openFds > 0) MonoRow(stringResource(R.string.stats_row_open_fds), s.openFds.toString())
             MonoRow(stringResource(R.string.stats_row_uptime), formatUptime(s.uptimeSeconds))
@@ -176,9 +181,17 @@ private fun InfrastructureCard(
     PwaCardContainer {
         PwaSectionTitle(stringResource(R.string.stats_section_infrastructure))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            MonoRow(stringResource(R.string.stats_row_http), "http://$host:$httpPort${if (hasTls) " (→ HTTPS)" else ""}")
+            MonoRow(
+                stringResource(R.string.stats_row_http),
+                "http://$host:$httpPort${if (hasTls) " (→ HTTPS)" else ""}",
+            )
             if (hasTls) MonoRow(stringResource(R.string.stats_row_https), "https://$host:${s.tlsPort}")
-            s.mcpSsePort?.let { MonoRow(stringResource(R.string.stats_row_mcp_sse), "${s.mcpSseHost ?: "0.0.0.0"}:$it") }
+            s.mcpSsePort?.let {
+                MonoRow(
+                    stringResource(R.string.stats_row_mcp_sse),
+                    "${s.mcpSseHost ?: "0.0.0.0"}:$it",
+                )
+            }
             val tmux =
                 "${s.tmuxSessions} sessions" +
                     (if (s.orphanedTmux.isNotEmpty()) " · ${s.orphanedTmux.size} orphan" else "")
@@ -234,7 +247,13 @@ private fun MemoryStatsCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (s.memoryEnabled) stringResource(R.string.stats_label_enabled) else stringResource(R.string.stats_label_disabled),
+                    if (s.memoryEnabled) {
+                        stringResource(
+                            R.string.stats_label_enabled,
+                        )
+                    } else {
+                        stringResource(R.string.stats_label_disabled)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (s.memoryEnabled) dw.success else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -273,7 +292,13 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (o.available) stringResource(R.string.stats_label_online) else stringResource(R.string.stats_label_offline),
+                    if (o.available) {
+                        stringResource(
+                            R.string.stats_label_online,
+                        )
+                    } else {
+                        stringResource(R.string.stats_label_offline)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (o.available) dw.success else MaterialTheme.colorScheme.error,
                 )

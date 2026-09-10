@@ -25,7 +25,6 @@ import kotlin.test.assertTrue
  *   - chronological sort    — newest-first ordering
  */
 class AlertsViewModelTest {
-
     // ---- helpers ----
 
     private fun alert(
@@ -45,15 +44,17 @@ class AlertsViewModelTest {
         createdAt = createdAt,
     )
 
-    private fun runningSession(id: String, name: String? = null) =
-        Session(
-            id = id,
-            serverProfileId = "srv-1",
-            state = SessionState.Running,
-            createdAt = Instant.DISTANT_PAST,
-            lastActivityAt = Instant.DISTANT_PAST,
-            name = name,
-        )
+    private fun runningSession(
+        id: String,
+        name: String? = null,
+    ) = Session(
+        id = id,
+        serverProfileId = "srv-1",
+        state = SessionState.Running,
+        createdAt = Instant.DISTANT_PAST,
+        lastActivityAt = Instant.DISTANT_PAST,
+        name = name,
+    )
 
     private fun terminalSession(id: String) =
         Session(
@@ -68,58 +69,64 @@ class AlertsViewModelTest {
 
     @Test
     fun `running session group is active`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "sess-1",
-            session = runningSession("sess-1"),
-            alerts = listOf(alert("a1")),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "sess-1",
+                session = runningSession("sess-1"),
+                alerts = listOf(alert("a1")),
+            )
         assertTrue(group.isActive)
     }
 
     @Test
     fun `completed session group is not active`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "sess-2",
-            session = terminalSession("sess-2"),
-            alerts = listOf(alert("a2")),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "sess-2",
+                session = terminalSession("sess-2"),
+                alerts = listOf(alert("a2")),
+            )
         assertFalse(group.isActive)
     }
 
     @Test
     fun `system bucket group is never active`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = AlertsViewModel.AlertGroup.SYSTEM_BUCKET,
-            session = null,
-            alerts = listOf(alert("sys1")),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = AlertsViewModel.AlertGroup.SYSTEM_BUCKET,
+                session = null,
+                alerts = listOf(alert("sys1")),
+            )
         assertFalse(group.isActive)
     }
 
     @Test
     fun `null session group is not active`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "orphan-99",
-            session = null,
-            alerts = listOf(alert("a3")),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "orphan-99",
+                session = null,
+                alerts = listOf(alert("a3")),
+            )
         assertFalse(group.isActive)
     }
 
     @Test
     fun `waiting session group is active`() {
-        val waitingSession = Session(
-            id = "w1",
-            serverProfileId = "srv-1",
-            state = SessionState.Waiting,
-            createdAt = Instant.DISTANT_PAST,
-            lastActivityAt = Instant.DISTANT_PAST,
-        )
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "w1",
-            session = waitingSession,
-            alerts = listOf(alert("aw")),
-        )
+        val waitingSession =
+            Session(
+                id = "w1",
+                serverProfileId = "srv-1",
+                state = SessionState.Waiting,
+                createdAt = Instant.DISTANT_PAST,
+                lastActivityAt = Instant.DISTANT_PAST,
+            )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "w1",
+                session = waitingSession,
+                alerts = listOf(alert("aw")),
+            )
         assertTrue(group.isActive)
     }
 
@@ -127,31 +134,34 @@ class AlertsViewModelTest {
 
     @Test
     fun `system bucket label is System`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = AlertsViewModel.AlertGroup.SYSTEM_BUCKET,
-            session = null,
-            alerts = emptyList(),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = AlertsViewModel.AlertGroup.SYSTEM_BUCKET,
+                session = null,
+                alerts = emptyList(),
+            )
         assertEquals("System", group.label)
     }
 
     @Test
     fun `session with user-assigned name prefers name as label`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "sess-abc",
-            session = runningSession("sess-abc", name = "My Task"),
-            alerts = emptyList(),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "sess-abc",
+                session = runningSession("sess-abc", name = "My Task"),
+                alerts = emptyList(),
+            )
         assertEquals("My Task", group.label)
     }
 
     @Test
     fun `session without name falls back to session id`() {
-        val group = AlertsViewModel.AlertGroup(
-            sessionId = "sess-abc",
-            session = runningSession("sess-abc"),
-            alerts = emptyList(),
-        )
+        val group =
+            AlertsViewModel.AlertGroup(
+                sessionId = "sess-abc",
+                session = runningSession("sess-abc"),
+                alerts = emptyList(),
+            )
         assertEquals("sess-abc", group.label)
     }
 
@@ -159,16 +169,18 @@ class AlertsViewModelTest {
 
     @Test
     fun `count equals sum of alerts in active groups`() {
-        val active1 = AlertsViewModel.AlertGroup(
-            sessionId = "s1",
-            session = runningSession("s1"),
-            alerts = listOf(alert("a1"), alert("a2")),
-        )
-        val active2 = AlertsViewModel.AlertGroup(
-            sessionId = "s2",
-            session = runningSession("s2"),
-            alerts = listOf(alert("a3")),
-        )
+        val active1 =
+            AlertsViewModel.AlertGroup(
+                sessionId = "s1",
+                session = runningSession("s1"),
+                alerts = listOf(alert("a1"), alert("a2")),
+            )
+        val active2 =
+            AlertsViewModel.AlertGroup(
+                sessionId = "s2",
+                session = runningSession("s2"),
+                alerts = listOf(alert("a3")),
+            )
         val state = AlertsViewModel.UiState(active = listOf(active1, active2))
         assertEquals(3, state.count)
     }
@@ -181,7 +193,10 @@ class AlertsViewModelTest {
 
     // ---- Chip filter logic (mirrors inline lambdas in filteredState) ----
 
-    private fun matchesChip(chip: AlertsViewModel.ChipFilter, a: Alert): Boolean =
+    private fun matchesChip(
+        chip: AlertsViewModel.ChipFilter,
+        a: Alert,
+    ): Boolean =
         when (chip) {
             AlertsViewModel.ChipFilter.All -> true
             AlertsViewModel.ChipFilter.Prompt ->

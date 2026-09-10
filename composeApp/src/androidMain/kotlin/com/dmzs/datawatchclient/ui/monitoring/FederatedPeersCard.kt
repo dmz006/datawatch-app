@@ -32,7 +32,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
-import com.dmzs.datawatchclient.transport.dto.ObserverPeersByNodeDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,13 +66,14 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     if (state.peers.isEmpty() && !state.loading) return
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(8.dp),
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(8.dp),
+                ),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -160,15 +160,16 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                             )
                         }
                     }
-                    val visible = state.peers.filter { peer ->
-                        when (state.filter) {
-                            FederatedPeersViewModel.Filter.All -> true
-                            FederatedPeersViewModel.Filter.Standalone -> peer.shape == "standalone"
-                            FederatedPeersViewModel.Filter.Cluster -> peer.shape == "cluster"
-                            FederatedPeersViewModel.Filter.Agent ->
-                                peer.shape == "agent" || peer.hostInfo?.shape == "agent"
+                    val visible =
+                        state.peers.filter { peer ->
+                            when (state.filter) {
+                                FederatedPeersViewModel.Filter.All -> true
+                                FederatedPeersViewModel.Filter.Standalone -> peer.shape == "standalone"
+                                FederatedPeersViewModel.Filter.Cluster -> peer.shape == "cluster"
+                                FederatedPeersViewModel.Filter.Agent ->
+                                    peer.shape == "agent" || peer.hostInfo?.shape == "agent"
+                            }
                         }
-                    }
                     if (visible.isEmpty()) {
                         Text(
                             "No peers in this group.",
@@ -193,10 +194,11 @@ private fun PeerRow(peer: ObserverPeerDto) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier.size(10.dp).background(
-                color = healthDotColor(peer.lastPushAt),
-                shape = CircleShape,
-            ),
+            modifier =
+                Modifier.size(10.dp).background(
+                    color = healthDotColor(peer.lastPushAt),
+                    shape = CircleShape,
+                ),
         )
         Spacer(Modifier.size(4.dp))
         Canvas(modifier = Modifier.size(8.dp)) { drawCircle(color = staleDotColor) }
@@ -225,20 +227,22 @@ private fun PeerRow(peer: ObserverPeerDto) {
             SuggestionChip(
                 onClick = {},
                 label = { Text("⇄ $nodeName", style = MaterialTheme.typography.labelSmall) },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = Color(0xFF00897B).copy(alpha = 0.18f),
-                    labelColor = Color(0xFF4DB6AC),
-                ),
+                colors =
+                    SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = Color(0xFF00897B).copy(alpha = 0.18f),
+                        labelColor = Color(0xFF4DB6AC),
+                    ),
             )
             Spacer(Modifier.size(4.dp))
         } else {
             SuggestionChip(
                 onClick = {},
                 label = { Text(stringResource(R.string.observer_free), style = MaterialTheme.typography.labelSmall) },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
+                colors =
+                    SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
             Spacer(Modifier.size(4.dp))
         }
@@ -249,16 +253,18 @@ private fun PeerRow(peer: ObserverPeerDto) {
 @Composable
 private fun ShapeBadge(shape: String) {
     val s = shape.lowercase()
-    val (label, color) = when (s) {
-        "agent" -> "agent" to Color(0xFF7C3AED)
-        "cluster" -> "cluster" to Color(0xFF10B981)
-        "standalone" -> "standalone" to Color(0xFF3B82F6)
-        else -> (s.ifBlank { "—" }) to MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val (label, color) =
+        when (s) {
+            "agent" -> "agent" to Color(0xFF7C3AED)
+            "cluster" -> "cluster" to Color(0xFF10B981)
+            "standalone" -> "standalone" to Color(0xFF3B82F6)
+            else -> (s.ifBlank { "—" }) to MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Box(
-        modifier = Modifier
-            .background(color = color.copy(alpha = 0.18f), shape = RoundedCornerShape(8.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(color = color.copy(alpha = 0.18f), shape = RoundedCornerShape(8.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
@@ -266,28 +272,30 @@ private fun ShapeBadge(shape: String) {
 
 private fun staleDotColor(lastPushAt: String?): Color {
     if (lastPushAt.isNullOrBlank()) return Color(0xFF94A3B8)
-    val ageHours = runCatching {
-        val parsed = kotlinx.datetime.Instant.parse(lastPushAt)
-        val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
-        (ageMs / 3_600_000).toInt()
-    }.getOrDefault(-1)
+    val ageHours =
+        runCatching {
+            val parsed = kotlinx.datetime.Instant.parse(lastPushAt)
+            val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
+            (ageMs / 3_600_000).toInt()
+        }.getOrDefault(-1)
     return when {
-        ageHours < 0  -> Color(0xFF94A3B8)
-        ageHours < 1  -> Color(0xFF10B981)
-        ageHours < 6  -> Color(0xFFFFB300)
-        else          -> Color(0xFFEF4444)
+        ageHours < 0 -> Color(0xFF94A3B8)
+        ageHours < 1 -> Color(0xFF10B981)
+        ageHours < 6 -> Color(0xFFFFB300)
+        else -> Color(0xFFEF4444)
     }
 }
 
 private fun healthDotColor(lastPushAt: String?): Color {
     if (lastPushAt.isNullOrBlank()) return Color(0xFF94A3B8)
-    val parsed = runCatching { kotlinx.datetime.Instant.parse(lastPushAt) }.getOrNull()
-        ?: return Color(0xFF94A3B8)
+    val parsed =
+        runCatching { kotlinx.datetime.Instant.parse(lastPushAt) }.getOrNull()
+            ?: return Color(0xFF94A3B8)
     val ageSec = (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()) / 1000
     return when {
         ageSec <= 15 -> Color(0xFF10B981)
         ageSec <= 60 -> Color(0xFFF59E0B)
-        else         -> Color(0xFFEF4444)
+        else -> Color(0xFFEF4444)
     }
 }
 
@@ -317,19 +325,21 @@ public class FederatedPeersViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.observerPeers().fold(
                 onSuccess = { dto ->
-                    val stale = dto.peers.any { peer ->
-                        runCatching {
-                            val parsed = kotlinx.datetime.Instant.parse(peer.lastPushAt ?: return@any false)
-                            val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
-                            ageMs >= 6 * 3_600_000L
-                        }.getOrDefault(false)
-                    }
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        peers = dto.peers,
-                        error = null,
-                        anyPeerStale = stale,
-                    )
+                    val stale =
+                        dto.peers.any { peer ->
+                            runCatching {
+                                val parsed = kotlinx.datetime.Instant.parse(peer.lastPushAt ?: return@any false)
+                                val ageMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - parsed.toEpochMilliseconds()
+                                ageMs >= 6 * 3_600_000L
+                            }.getOrDefault(false)
+                        }
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            peers = dto.peers,
+                            error = null,
+                            anyPeerStale = stale,
+                        )
                 },
                 onFailure = { err ->
                     _state.value = _state.value.copy(loading = false, peers = emptyList(), error = err.message)

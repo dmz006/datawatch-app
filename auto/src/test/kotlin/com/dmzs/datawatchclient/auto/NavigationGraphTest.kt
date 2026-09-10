@@ -12,7 +12,6 @@ import kotlin.test.assertTrue
  * that class loading would succeed at runtime.
  */
 class NavigationGraphTest {
-
     @Test fun `AutoSummaryScreen class exists`() {
         val cls = Class.forName("com.dmzs.datawatchclient.auto.AutoSummaryScreen")
         assertNotNull(cls)
@@ -60,12 +59,13 @@ class NavigationGraphTest {
 
     @Test fun `DatawatchPassengerService root is AutoSummaryScreen`() {
         // DatawatchPassengerService is devPassenger-flavor only; skip in publicMessaging builds
-        val serviceClass = try {
-            Class.forName("com.dmzs.datawatchclient.auto.dev.DatawatchPassengerService")
-        } catch (_: ClassNotFoundException) {
-            org.junit.jupiter.api.Assumptions.assumeTrue(false, "devPassenger flavor not in classpath — skipping")
-            return
-        }
+        val serviceClass =
+            try {
+                Class.forName("com.dmzs.datawatchclient.auto.dev.DatawatchPassengerService")
+            } catch (_: ClassNotFoundException) {
+                org.junit.jupiter.api.Assumptions.assumeTrue(false, "devPassenger flavor not in classpath — skipping")
+                return
+            }
         assertNotNull(serviceClass)
         // Structural check: service bytecode references AutoSummaryScreen
         val pool = serviceClass.declaredConstructors.isNotEmpty()

@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -29,10 +28,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 
-private val COMM_BACKENDS = listOf(
-    "telegram", "discord", "slack", "matrix", "ntfy",
-    "email", "twilio", "github_webhook", "webhook", "dns_channel",
-)
+private val COMM_BACKENDS =
+    listOf(
+        "telegram", "discord", "slack", "matrix", "ntfy",
+        "email", "twilio", "github_webhook", "webhook", "dns_channel",
+    )
 
 @Composable
 internal fun CommBackendsCard() {
@@ -42,14 +42,16 @@ internal fun CommBackendsCard() {
     LaunchedEffect(Unit) {
         val id = ServiceLocator.activeServerStore.get()
         val profiles = ServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
-        val profile = profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
-            ?: return@LaunchedEffect
+        val profile =
+            profiles.firstOrNull { it.id == id } ?: profiles.firstOrNull()
+                ?: return@LaunchedEffect
         ServiceLocator.transportFor(profile).fetchConfig().fold(
             onSuccess = { cfg ->
-                enabledBackends = COMM_BACKENDS.filter { key ->
-                    val section = cfg.raw[key] as? JsonObject ?: return@filter false
-                    (section["enabled"] as? JsonPrimitive)?.booleanOrNull == true
-                }
+                enabledBackends =
+                    COMM_BACKENDS.filter { key ->
+                        val section = cfg.raw[key] as? JsonObject ?: return@filter false
+                        (section["enabled"] as? JsonPrimitive)?.booleanOrNull == true
+                    }
             },
             onFailure = { banner = it.message },
         )

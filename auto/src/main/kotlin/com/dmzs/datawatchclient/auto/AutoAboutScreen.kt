@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
 private const val ERROR_MSG_CHARS: Int = 40
 
 public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
-
     private enum class UpdateStatus { CHECKING, UP_TO_DATE, AVAILABLE, ERROR }
 
     private var updateStatus = UpdateStatus.CHECKING
@@ -31,39 +30,46 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                scope.launch { checkForUpdate() }
-            }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    scope.launch { checkForUpdate() }
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) { scope.cancel() }
-        })
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private suspend fun checkForUpdate() {
         runCatching {
-            val profile = resolveActiveProfile() ?: run {
-                updateStatus = UpdateStatus.UP_TO_DATE
-                invalidate()
-                return
-            }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    updateStatus = UpdateStatus.UP_TO_DATE
+                    invalidate()
+                    return
+                }
             AutoServiceLocator.transportFor(profile).checkUpdate().fold(
                 onSuccess = { json ->
-                    val status = json["status"]?.let {
-                        kotlinx.serialization.json.Json.decodeFromJsonElement(
-                            kotlinx.serialization.json.JsonPrimitive.serializer(),
-                            it
-                        ).content
-                    }
+                    val status =
+                        json["status"]?.let {
+                            kotlinx.serialization.json.Json.decodeFromJsonElement(
+                                kotlinx.serialization.json.JsonPrimitive.serializer(),
+                                it,
+                            ).content
+                        }
                     when (status) {
                         "update_available" -> {
                             updateStatus = UpdateStatus.AVAILABLE
-                            availableVersion = json["version"]?.let {
-                                kotlinx.serialization.json.Json.decodeFromJsonElement(
-                                    kotlinx.serialization.json.JsonPrimitive.serializer(),
-                                    it
-                                ).content
-                            }
+                            availableVersion =
+                                json["version"]?.let {
+                                    kotlinx.serialization.json.Json.decodeFromJsonElement(
+                                        kotlinx.serialization.json.JsonPrimitive.serializer(),
+                                        it,
+                                    ).content
+                                }
                         }
                         else -> updateStatus = UpdateStatus.UP_TO_DATE
                     }
@@ -71,7 +77,7 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
                 onFailure = {
                     // 404 or any error → fail safe, don't show Update button
                     updateStatus = UpdateStatus.UP_TO_DATE
-                }
+                },
             )
         }.onFailure {
             updateStatus = UpdateStatus.UP_TO_DATE
@@ -80,31 +86,34 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     override fun onGetTemplate(): Template {
-        val updateLine = when (updateStatus) {
-            UpdateStatus.CHECKING -> "\n⟳ Checking for updates…"
-            UpdateStatus.UP_TO_DATE -> "\n✓ Up to date"
-            UpdateStatus.AVAILABLE -> "\n⟫ Update available: ${availableVersion ?: "new version"}"
-            UpdateStatus.ERROR -> "\n✓ Up to date"
-        }
+        val updateLine =
+            when (updateStatus) {
+                UpdateStatus.CHECKING -> "\n⟳ Checking for updates…"
+                UpdateStatus.UP_TO_DATE -> "\n✓ Up to date"
+                UpdateStatus.AVAILABLE -> "\n⟫ Update available: ${availableVersion ?: "new version"}"
+                UpdateStatus.ERROR -> "\n✓ Up to date"
+            }
 
-        val body = """
-v${Version.VERSION}  (build ${Version.VERSION_CODE})
-fleet observability · driver surface
+        val body =
+            """
+            v${Version.VERSION}  (build ${Version.VERSION_CODE})
+            fleet observability · driver surface
 
-⟫ Reboot — restart the daemon process
-⟫ Update — pull and apply latest version$updateLine
-        """.trimIndent()
+            ⟫ Reboot — restart the daemon process
+            ⟫ Update — pull and apply latest version$updateLine
+            """.trimIndent()
 
-        val templateBuilder = MessageTemplate.Builder(body)
-            .setTitle("datawatch  v${Version.VERSION}")
-            .setHeaderAction(Action.BACK)
-            .addAction(
-                Action.Builder()
-                    .setTitle("Reboot")
-                    .setBackgroundColor(CarColor.YELLOW)
-                    .setOnClickListener { onReboot() }
-                    .build(),
-            )
+        val templateBuilder =
+            MessageTemplate.Builder(body)
+                .setTitle("datawatch  v${Version.VERSION}")
+                .setHeaderAction(Action.BACK)
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Reboot")
+                        .setBackgroundColor(CarColor.YELLOW)
+                        .setOnClickListener { onReboot() }
+                        .build(),
+                )
 
         // Only add Update action when an update is actually available
         if (updateStatus == UpdateStatus.AVAILABLE) {
@@ -122,10 +131,11 @@ fleet observability · driver surface
     private fun onReboot() {
         scope.launch {
             runCatching {
-                val profile = resolveActiveProfile() ?: run {
-                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
-                    return@runCatching
-                }
+                val profile =
+                    resolveActiveProfile() ?: run {
+                        CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                        return@runCatching
+                    }
                 AutoServiceLocator.transportFor(profile).restartDaemon().fold(
                     onSuccess = {
                         CarToast.makeText(carContext, "◉ Daemon restart requested", CarToast.LENGTH_SHORT).show()
@@ -145,10 +155,11 @@ fleet observability · driver surface
     private fun onUpdate() {
         scope.launch {
             runCatching {
-                val profile = resolveActiveProfile() ?: run {
-                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
-                    return@runCatching
-                }
+                val profile =
+                    resolveActiveProfile() ?: run {
+                        CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                        return@runCatching
+                    }
                 AutoServiceLocator.transportFor(profile).updateDaemon().fold(
                     onSuccess = {
                         CarToast.makeText(carContext, "⟫ Update initiated", CarToast.LENGTH_SHORT).show()

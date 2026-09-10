@@ -30,8 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.dmzs.datawatchclient.R
 import androidx.core.content.ContextCompat
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.ui.settings.Section
 import com.dmzs.datawatchclient.voice.VoiceRecorder
@@ -75,9 +75,10 @@ public fun TestWhisperCard() {
                 .firstOrNull { it.id == activeId && it.enabled }
         if (profile != null) {
             ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
-                whisperBackend = (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
-                    ?.content
-                    ?.takeIf { it.isNotBlank() && it != "null" }
+                whisperBackend =
+                    (cfg.raw["whisper.backend"] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.content
+                        ?.takeIf { it.isNotBlank() && it != "null" }
             }
         }
     }

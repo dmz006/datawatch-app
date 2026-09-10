@@ -54,7 +54,10 @@ public fun ObserverScreen(
                         onToggle = { pickerOpen = !pickerOpen },
                         onDismiss = { pickerOpen = false },
                         profiles = state.allProfiles,
-                        onSelect = { vm.selectProfile(it); pickerOpen = false },
+                        onSelect = {
+                            vm.selectProfile(it)
+                            pickerOpen = false
+                        },
                     )
                 },
                 actions = {
@@ -80,10 +83,11 @@ public fun ObserverScreen(
             }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState()),
             ) {
                 com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                 com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()

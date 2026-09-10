@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
@@ -66,33 +65,36 @@ internal fun IdentityWizardSheet(
     val focusState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(currentFocus) }
     val notesState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(contextNotes) }
 
-    val pageTitles = listOf(
-        stringResource(R.string.identity_wizard_page_role),
-        stringResource(R.string.identity_wizard_page_goals),
-        stringResource(R.string.identity_wizard_page_projects),
-        stringResource(R.string.identity_wizard_page_values),
-        stringResource(R.string.identity_wizard_page_focus),
-        stringResource(R.string.identity_wizard_page_notes),
-    )
+    val pageTitles =
+        listOf(
+            stringResource(R.string.identity_wizard_page_role),
+            stringResource(R.string.identity_wizard_page_goals),
+            stringResource(R.string.identity_wizard_page_projects),
+            stringResource(R.string.identity_wizard_page_values),
+            stringResource(R.string.identity_wizard_page_focus),
+            stringResource(R.string.identity_wizard_page_notes),
+        )
 
-    fun buildDto() = IdentityDto(
-        role = roleState.value.trim(),
-        northStarGoals = northStarState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
-        currentProjects = projectsState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
-        values = valuesState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
-        currentFocus = focusState.value.trim(),
-        contextNotes = notesState.value.trim(),
-        updatedAt = initial.updatedAt,
-    )
+    fun buildDto() =
+        IdentityDto(
+            role = roleState.value.trim(),
+            northStarGoals = northStarState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
+            currentProjects = projectsState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
+            values = valuesState.value.lines().map { it.trim() }.filter { it.isNotEmpty() },
+            currentFocus = focusState.value.trim(),
+            contextNotes = notesState.value.trim(),
+            updatedAt = initial.updatedAt,
+        )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             // Header
             Text(
@@ -112,51 +114,57 @@ internal fun IdentityWizardSheet(
             ) { page ->
                 Box(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                     when (page) {
-                        0 -> OutlinedTextField(
-                            value = roleState.value,
-                            onValueChange = { roleState.value = it },
-                            label = { Text(stringResource(R.string.identity_role_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        1 -> OutlinedTextField(
-                            value = northStarState.value,
-                            onValueChange = { northStarState.value = it },
-                            label = { Text(stringResource(R.string.identity_wizard_page_goals)) },
-                            placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 4,
-                        )
-                        2 -> OutlinedTextField(
-                            value = projectsState.value,
-                            onValueChange = { projectsState.value = it },
-                            label = { Text(stringResource(R.string.identity_wizard_page_projects)) },
-                            placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 4,
-                        )
-                        3 -> OutlinedTextField(
-                            value = valuesState.value,
-                            onValueChange = { valuesState.value = it },
-                            label = { Text(stringResource(R.string.identity_wizard_page_values)) },
-                            placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 4,
-                        )
-                        4 -> OutlinedTextField(
-                            value = focusState.value,
-                            onValueChange = { focusState.value = it },
-                            label = { Text(stringResource(R.string.identity_focus_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 4,
-                        )
-                        5 -> OutlinedTextField(
-                            value = notesState.value,
-                            onValueChange = { notesState.value = it },
-                            label = { Text(stringResource(R.string.identity_notes_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 4,
-                        )
+                        0 ->
+                            OutlinedTextField(
+                                value = roleState.value,
+                                onValueChange = { roleState.value = it },
+                                label = { Text(stringResource(R.string.identity_role_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                        1 ->
+                            OutlinedTextField(
+                                value = northStarState.value,
+                                onValueChange = { northStarState.value = it },
+                                label = { Text(stringResource(R.string.identity_wizard_page_goals)) },
+                                placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 4,
+                            )
+                        2 ->
+                            OutlinedTextField(
+                                value = projectsState.value,
+                                onValueChange = { projectsState.value = it },
+                                label = { Text(stringResource(R.string.identity_wizard_page_projects)) },
+                                placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 4,
+                            )
+                        3 ->
+                            OutlinedTextField(
+                                value = valuesState.value,
+                                onValueChange = { valuesState.value = it },
+                                label = { Text(stringResource(R.string.identity_wizard_page_values)) },
+                                placeholder = { Text(stringResource(R.string.identity_wizard_one_per_line)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 4,
+                            )
+                        4 ->
+                            OutlinedTextField(
+                                value = focusState.value,
+                                onValueChange = { focusState.value = it },
+                                label = { Text(stringResource(R.string.identity_focus_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 4,
+                            )
+                        5 ->
+                            OutlinedTextField(
+                                value = notesState.value,
+                                onValueChange = { notesState.value = it },
+                                label = { Text(stringResource(R.string.identity_notes_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 4,
+                            )
                     }
                 }
             }

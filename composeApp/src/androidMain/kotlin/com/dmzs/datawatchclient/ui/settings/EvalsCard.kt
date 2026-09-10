@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,10 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.EvalRunHistoryDto
 import com.dmzs.datawatchclient.transport.dto.EvalRunResultDto
 import com.dmzs.datawatchclient.transport.dto.EvalSuiteDto
-import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -52,12 +51,16 @@ internal fun EvalsCard() {
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.filter { it.enabled }.firstOrNull()
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                        }
+                    } ?: return@runCatching
             val transport = ServiceLocator.transportFor(sp)
             transport.evalsList().onSuccess { list ->
                 suites = list
@@ -73,11 +76,12 @@ internal fun EvalsCard() {
     if (!visible) return
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.evals_title), docsAnchor = "evals")
 
@@ -100,12 +104,16 @@ internal fun EvalsCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).evalsRun(suite.effectiveId)
                                     .onSuccess { r -> results = results + (suite.effectiveId to r) }
                             }
@@ -140,7 +148,11 @@ private fun EvalRunHistoryRow(run: EvalRunHistoryDto) {
         Column(modifier = Modifier.weight(1f)) {
             Text(run.name, style = MaterialTheme.typography.bodySmall)
             if (run.createdAt.isNotBlank()) {
-                Text(run.createdAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    run.createdAt,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
         ScoreBadge(run.score)
@@ -163,7 +175,11 @@ private fun EvalSuiteRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(suite.name, style = MaterialTheme.typography.bodySmall)
                 suite.lastRun?.let { lr ->
-                    Text(lr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        lr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             suite.lastScore?.let { score ->
@@ -174,10 +190,11 @@ private fun EvalSuiteRow(
             } else {
                 FilledTonalButton(
                     onClick = onRun,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = Color(0xFF3B82F6).copy(alpha = 0.18f),
-                        contentColor = Color(0xFF3B82F6),
-                    ),
+                    colors =
+                        ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFF3B82F6).copy(alpha = 0.18f),
+                            contentColor = Color(0xFF3B82F6),
+                        ),
                 ) { Text(stringResource(R.string.evals_run)) }
             }
         }
@@ -207,15 +224,17 @@ private fun EvalSuiteRow(
 
 @Composable
 private fun ScoreBadge(score: Double) {
-    val (bg, text) = when {
-        score >= 0.8 -> Color(0xFF10B981) to Color(0xFF10B981)
-        score >= 0.5 -> Color(0xFFF59E0B) to Color(0xFFF59E0B)
-        else -> Color(0xFFEF4444) to Color(0xFFEF4444)
-    }
+    val (bg, text) =
+        when {
+            score >= 0.8 -> Color(0xFF10B981) to Color(0xFF10B981)
+            score >= 0.5 -> Color(0xFFF59E0B) to Color(0xFFF59E0B)
+            else -> Color(0xFFEF4444) to Color(0xFFEF4444)
+        }
     Box(
-        modifier = Modifier
-            .background(bg.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(bg.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
             "%.0f%%".format(score * 100),

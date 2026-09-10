@@ -3,9 +3,9 @@ package com.dmzs.datawatchclient.ui.compute
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +28,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -109,13 +108,17 @@ public fun LlmRegistryCard() {
 
     LaunchedEffect(refreshTick) {
         loading = true
-        val transport = resolveActiveTransport() ?: run {
-            banner = "No enabled server."
-            loading = false
-            return@LaunchedEffect
-        }
+        val transport =
+            resolveActiveTransport() ?: run {
+                banner = "No enabled server."
+                loading = false
+                return@LaunchedEffect
+            }
         transport.listLlms().fold(
-            onSuccess = { llms = it; banner = null },
+            onSuccess = {
+                llms = it
+                banner = null
+            },
             onFailure = { banner = "LLMs unavailable — ${it.message ?: it::class.simpleName}" },
         )
         transport.listComputeNodes().onSuccess { computeNodes = it }
@@ -129,11 +132,12 @@ public fun LlmRegistryCard() {
         val migCount = if (migrationStatus?.show == true) migrationStatus?.migrated?.size ?: 0 else 0
         if (migCount > 0) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .background(color = Color(0xFFFFF8E1), shape = RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .background(color = Color(0xFFFFF8E1), shape = RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -148,26 +152,47 @@ public fun LlmRegistryCard() {
                         migrationStatus = migrationStatus?.copy(show = false)
                     }
                 }) {
-                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.llm_migration_dismiss), tint = Color(0xFF5D4037))
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.llm_migration_dismiss),
+                        tint = Color(0xFF5D4037),
+                    )
                 }
             }
         }
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(stringResource(R.string.settings_llm_registry_title), modifier = Modifier.weight(1f), docsAnchor = "llms")
-            IconButton(onClick = { selectedLlm = null; showAddDialog = true }) {
+            PwaSectionTitle(
+                stringResource(R.string.settings_llm_registry_title),
+                modifier = Modifier.weight(1f),
+                docsAnchor = "llms",
+            )
+            IconButton(onClick = {
+                selectedLlm = null
+                showAddDialog = true
+            }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.llm_registry_add))
             }
         }
         banner?.let {
-            Text(it, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
         if (loading) {
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.Center) {
                 CircularProgressIndicator()
             }
         } else if (llms.isEmpty() && banner == null) {
-            Text(stringResource(R.string.llm_registry_empty), modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.llm_registry_empty),
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         } else {
             llms.forEachIndexed { idx, llm ->
                 if (idx > 0) HorizontalDivider()
@@ -176,12 +201,21 @@ public fun LlmRegistryCard() {
                     onToggle = { enabled, onDone ->
                         scope.launch {
                             resolveActiveTransport()?.enableLlm(llm.name, enabled)?.fold(
-                                onSuccess = { refreshTick++; onDone() },
-                                onFailure = { banner = "Toggle failed — ${it.message ?: it::class.simpleName}"; onDone() },
+                                onSuccess = {
+                                    refreshTick++
+                                    onDone()
+                                },
+                                onFailure = {
+                                    banner = "Toggle failed — ${it.message ?: it::class.simpleName}"
+                                    onDone()
+                                },
                             )
                         }
                     },
-                    onEdit = { selectedLlm = llm; showAddDialog = true },
+                    onEdit = {
+                        selectedLlm = llm
+                        showAddDialog = true
+                    },
                     onDelete = { llmToDelete = llm },
                     onDetails = { detailLlm = llm },
                 )
@@ -193,13 +227,28 @@ public fun LlmRegistryCard() {
         LlmRegistryDialog(
             existing = selectedLlm,
             computeNodes = computeNodes,
-            onDismiss = { showAddDialog = false; selectedLlm = null },
+            onDismiss = {
+                showAddDialog = false
+                selectedLlm = null
+            },
             onSave = { dto ->
                 scope.launch {
                     val transport = resolveActiveTransport() ?: return@launch
-                    val result = if (selectedLlm != null) transport.updateLlm(selectedLlm!!.name, dto) else transport.createLlm(dto)
+                    val result =
+                        if (selectedLlm != null) {
+                            transport.updateLlm(
+                                selectedLlm!!.name,
+                                dto,
+                            )
+                        } else {
+                            transport.createLlm(dto)
+                        }
                     result.fold(
-                        onSuccess = { showAddDialog = false; selectedLlm = null; refreshTick++ },
+                        onSuccess = {
+                            showAddDialog = false
+                            selectedLlm = null
+                            refreshTick++
+                        },
                         onFailure = { banner = "Save failed — ${it.message ?: it::class.simpleName}" },
                     )
                 }
@@ -217,7 +266,10 @@ public fun LlmRegistryCard() {
                     scope.launch {
                         val transport = resolveActiveTransport() ?: return@launch
                         transport.deleteLlm(llm.name).fold(
-                            onSuccess = { llmToDelete = null; refreshTick++ },
+                            onSuccess = {
+                                llmToDelete = null
+                                refreshTick++
+                            },
                             onFailure = { err ->
                                 llmToDelete = null
                                 if (err is TransportError.Conflict) {
@@ -256,17 +308,30 @@ public fun LlmRegistryCard() {
                             transport?.reassignLlmSessions(blocked.name, reassignTarget, force = true)?.fold(
                                 onSuccess = {
                                     transport.deleteLlm(blocked.name).fold(
-                                        onSuccess = { llmDeleteBlocked = null; showForceConfirm = false; refreshTick++ },
-                                        onFailure = { banner = "Force delete failed — ${it.message}"; llmDeleteBlocked = null },
+                                        onSuccess = {
+                                            llmDeleteBlocked = null
+                                            showForceConfirm = false
+                                            refreshTick++
+                                        },
+                                        onFailure = {
+                                            banner = "Force delete failed — ${it.message}"
+                                            llmDeleteBlocked = null
+                                        },
                                     )
                                 },
-                                onFailure = { banner = "Force reassign failed — ${it.message}"; llmDeleteBlocked = null },
+                                onFailure = {
+                                    banner = "Force reassign failed — ${it.message}"
+                                    llmDeleteBlocked = null
+                                },
                             )
                             reassigning = false
                         }
                     }, enabled = !reassigning) {
-                        if (reassigning) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        else Text(stringResource(R.string.action_delete))
+                        if (reassigning) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                        } else {
+                            Text(stringResource(R.string.action_delete))
+                        }
                     }
                 },
                 dismissButton = {
@@ -286,12 +351,19 @@ public fun LlmRegistryCard() {
                             }
                             DropdownMenu(expanded = reassignDropdown, onDismissRequest = { reassignDropdown = false }) {
                                 otherLlms.forEach { other ->
-                                    DropdownMenuItem(text = { Text(other.name) }, onClick = { reassignTarget = other.name; reassignDropdown = false })
+                                    DropdownMenuItem(text = { Text(other.name) }, onClick = {
+                                        reassignTarget = other.name
+                                        reassignDropdown = false
+                                    })
                                 }
                             }
                         }
                         TextButton(onClick = { showForceConfirm = true }) {
-                            Text(stringResource(R.string.llm_force_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                stringResource(R.string.llm_force_delete),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                         }
                     }
                 },
@@ -304,13 +376,23 @@ public fun LlmRegistryCard() {
                                 transport?.reassignLlmSessions(blocked.name, reassignTarget)?.fold(
                                     onSuccess = {
                                         transport.deleteLlm(blocked.name).fold(
-                                            onSuccess = { llmDeleteBlocked = null; refreshTick++ },
-                                            onFailure = { banner = "Delete after reassign failed — ${it.message}"; llmDeleteBlocked = null },
+                                            onSuccess = {
+                                                llmDeleteBlocked = null
+                                                refreshTick++
+                                            },
+                                            onFailure = {
+                                                banner = "Delete after reassign failed — ${it.message}"
+                                                llmDeleteBlocked = null
+                                            },
                                         )
                                     },
                                     onFailure = { err ->
-                                        if (err is TransportError.Conflict) showForceConfirm = true
-                                        else { banner = "Reassign failed — ${err.message}"; llmDeleteBlocked = null }
+                                        if (err is TransportError.Conflict) {
+                                            showForceConfirm = true
+                                        } else {
+                                            banner = "Reassign failed — ${err.message}"
+                                            llmDeleteBlocked = null
+                                        }
                                     },
                                 )
                                 reassigning = false
@@ -318,8 +400,11 @@ public fun LlmRegistryCard() {
                         },
                         enabled = reassignTarget.isNotBlank() && !reassigning,
                     ) {
-                        if (reassigning) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        else Text(stringResource(R.string.llm_reassign_btn))
+                        if (reassigning) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                        } else {
+                            Text(stringResource(R.string.llm_reassign_btn))
+                        }
                     }
                 },
                 dismissButton = {
@@ -331,7 +416,10 @@ public fun LlmRegistryCard() {
 
     // LLM detail dialog (models + sessions tabs)
     detailLlm?.let { llm ->
-        LlmDetailDialog(llm = llm, onDismiss = { detailLlm = null; refreshTick++ })
+        LlmDetailDialog(llm = llm, onDismiss = {
+            detailLlm = null
+            refreshTick++
+        })
     }
 }
 
@@ -345,11 +433,14 @@ private fun LlmRegistryRow(
 ) {
     var toggling by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
-    val displayPairs = llm.models.ifEmpty {
-        if (llm.computeNode.isNotBlank() || llm.model.isNotBlank())
-            listOf(LlmModelPairDto(llm.computeNode, llm.model))
-        else emptyList()
-    }
+    val displayPairs =
+        llm.models.ifEmpty {
+            if (llm.computeNode.isNotBlank() || llm.model.isNotBlank()) {
+                listOf(LlmModelPairDto(llm.computeNode, llm.model))
+            } else {
+                emptyList()
+            }
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -365,14 +456,18 @@ private fun LlmRegistryRow(
                 AssistChip(
                     onClick = {},
                     label = { Text(llm.kind, style = MaterialTheme.typography.labelSmall, maxLines = 1) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                    colors =
+                        AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                 )
                 if (llm.autoAddModels) {
                     Badge(containerColor = MaterialTheme.colorScheme.tertiary) {
-                        Text(stringResource(R.string.llm_models_auto_badge), style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            stringResource(R.string.llm_models_auto_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
                 }
                 if (!llm.enabled) {
@@ -382,14 +477,26 @@ private fun LlmRegistryRow(
                 }
             }
             if (displayPairs.isEmpty()) {
-                Text(stringResource(R.string.llm_models_none), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.llm_models_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             } else {
                 displayPairs.take(3).forEach { pair ->
                     val label = if (pair.computeNode.isNotBlank()) "${pair.computeNode} / ${pair.model}" else pair.model
-                    Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 if (displayPairs.size > 3) {
-                    Text("…+${displayPairs.size - 3} more", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "…+${displayPairs.size - 3} more",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -402,31 +509,51 @@ private fun LlmRegistryRow(
                     toggling = true
                     onToggle(newVal) { toggling = false }
                 },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                ),
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    ),
             )
         }
         Box {
             IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    Icons.Filled.MoreVert,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.llm_in_use_tab)) },
                     leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
-                    onClick = { menuOpen = false; onDetails() },
+                    onClick = {
+                        menuOpen = false
+                        onDetails()
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.llm_registry_edit)) },
                     leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    onClick = { menuOpen = false; onEdit() },
+                    onClick = {
+                        menuOpen = false
+                        onEdit()
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.action_delete)) },
-                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                    onClick = { menuOpen = false; onDelete() },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onDelete()
+                    },
                 )
             }
         }
@@ -434,23 +561,32 @@ private fun LlmRegistryRow(
 }
 
 /** alpha.41 — session-backend kinds expose binary/console/git/claude fields. */
-private val SESSION_BACKEND_KINDS = setOf(
-    "claude-code", "aider", "goose", "gemini", "opencode", "opencode-acp", "opencode-prompt", "shell",
-)
+private val SESSION_BACKEND_KINDS =
+    setOf(
+        "claude-code",
+        "aider",
+        "goose",
+        "gemini",
+        "opencode",
+        "opencode-acp",
+        "opencode-prompt",
+        "shell",
+    )
 
 /** The 10 valid LLM kinds. openwebui IS valid here (references an ollama ComputeNode). */
-private val LLM_KINDS = listOf(
-    "ollama",
-    "openwebui",
-    "opencode",
-    "opencode-acp",
-    "opencode-prompt",
-    "claude-code",
-    "aider",
-    "goose",
-    "gemini",
-    "shell",
-)
+private val LLM_KINDS =
+    listOf(
+        "ollama",
+        "openwebui",
+        "opencode",
+        "opencode-acp",
+        "opencode-prompt",
+        "claude-code",
+        "aider",
+        "goose",
+        "gemini",
+        "shell",
+    )
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -462,7 +598,9 @@ private fun LlmRegistryDialog(
 ) {
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
     var kind by remember(existing) { mutableStateOf(existing?.kind ?: LLM_KINDS.first()) }
-    var singleModel by remember(existing) { mutableStateOf(if (existing != null && existing.kind !in NODE_BASED_KINDS) existing.model else "") }
+    var singleModel by remember(existing) {
+        mutableStateOf(if (existing != null && existing.kind !in NODE_BASED_KINDS) existing.model else "")
+    }
     var pretestEnabled by remember(existing) { mutableStateOf(existing?.pretestEnabled ?: false) }
     var kindDropdown by remember { mutableStateOf(false) }
     var nodeModels by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
@@ -493,19 +631,25 @@ private fun LlmRegistryDialog(
     var permissionMode by remember(existing) { mutableStateOf(existing?.permissionMode ?: "default") }
     var defaultEffortDropdown by remember { mutableStateOf(false) }
     var defaultEffort by remember(existing) { mutableStateOf(existing?.defaultEffort ?: "") }
-    val fallbackChain = remember(existing) { mutableStateListOf(*(existing?.fallbackChain?.toTypedArray() ?: emptyArray())) }
+    val fallbackChain =
+        remember(existing) { mutableStateListOf(*(existing?.fallbackChain?.toTypedArray() ?: emptyArray())) }
     var fallbackInput by remember { mutableStateOf("") }
 
     // Per-node model pairs: initialize from existing.models or from legacy computeNode+model
-    val modelPairs = remember(existing) {
-        val initial = when {
-            existing == null -> mutableListOf()
-            existing.models.isNotEmpty() -> existing.models.toMutableList()
-            existing.computeNode.isNotBlank() -> mutableListOf(LlmModelPairDto(existing.computeNode, existing.model))
-            else -> mutableListOf()
+    val modelPairs =
+        remember(existing) {
+            val initial =
+                when {
+                    existing == null -> mutableListOf()
+                    existing.models.isNotEmpty() -> existing.models.toMutableList()
+                    existing.computeNode.isNotBlank() ->
+                        mutableListOf(
+                            LlmModelPairDto(existing.computeNode, existing.model),
+                        )
+                    else -> mutableListOf()
+                }
+            mutableStateListOf(*initial.toTypedArray())
         }
-        mutableStateListOf(*initial.toTypedArray())
-    }
 
     val scope = rememberCoroutineScope()
 
@@ -515,10 +659,13 @@ private fun LlmRegistryDialog(
     val isOpenCode = kind.startsWith("opencode", ignoreCase = true)
     LaunchedEffect(kind) {
         val transport = resolveActiveTransport() ?: return@LaunchedEffect
-        val nodesToLoad = if (isNodeBased) {
-            modelPairs.map { it.computeNode }.filter { it.isNotBlank() }.toSet() +
-                computeNodes.map { it.name }.toSet()
-        } else emptySet()
+        val nodesToLoad =
+            if (isNodeBased) {
+                modelPairs.map { it.computeNode }.filter { it.isNotBlank() }.toSet() +
+                    computeNodes.map { it.name }.toSet()
+            } else {
+                emptySet()
+            }
         val loaded = mutableMapOf<String, List<String>>()
         nodesToLoad.forEach { nodeName ->
             if (isOpenCode) {
@@ -534,7 +681,17 @@ private fun LlmRegistryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (existing != null) stringResource(R.string.llm_registry_edit) else stringResource(R.string.llm_registry_add)) },
+        title = {
+            Text(
+                if (existing != null) {
+                    stringResource(
+                        R.string.llm_registry_edit,
+                    )
+                } else {
+                    stringResource(R.string.llm_registry_add)
+                },
+            )
+        },
         text = {
             Column(modifier = Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Name
@@ -548,12 +705,19 @@ private fun LlmRegistryDialog(
                 )
                 // Kind
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.llm_registry_kind_label), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    Text(
+                        stringResource(R.string.llm_registry_kind_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
                     Spacer(Modifier.width(8.dp))
                     TextButton(onClick = { kindDropdown = true }) { Text(kind) }
                     DropdownMenu(expanded = kindDropdown, onDismissRequest = { kindDropdown = false }) {
                         LLM_KINDS.forEach { k ->
-                            DropdownMenuItem(text = { Text(k) }, onClick = { kind = k; kindDropdown = false })
+                            DropdownMenuItem(text = { Text(k) }, onClick = {
+                                kind = k
+                                kindDropdown = false
+                            })
                         }
                     }
                 }
@@ -561,15 +725,27 @@ private fun LlmRegistryDialog(
                 if (isNodeBased) {
                     // Per-node model table
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_models_node_col), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_models_node_col),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.llm_models_model_col), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_models_model_col),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Spacer(Modifier.width(32.dp))
                     }
                     HorizontalDivider()
 
                     if (modelPairs.isEmpty() && isAutoAdd) {
-                        Text(stringResource(R.string.llm_models_none), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.llm_models_none),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
 
                     modelPairs.forEachIndexed { idx, pair ->
@@ -610,9 +786,15 @@ private fun LlmRegistryDialog(
                                     TextButton(onClick = { modelDropdown = true }) {
                                         Text(pair.model.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall)
                                     }
-                                    DropdownMenu(expanded = modelDropdown, onDismissRequest = { modelDropdown = false }) {
+                                    DropdownMenu(
+                                        expanded = modelDropdown,
+                                        onDismissRequest = { modelDropdown = false },
+                                    ) {
                                         availableModels.forEach { m ->
-                                            DropdownMenuItem(text = { Text(m) }, onClick = { modelPairs[idx] = pair.copy(model = m); modelDropdown = false })
+                                            DropdownMenuItem(text = { Text(m) }, onClick = {
+                                                modelPairs[idx] = pair.copy(model = m)
+                                                modelDropdown = false
+                                            })
                                         }
                                     }
                                 } else {
@@ -643,7 +825,10 @@ private fun LlmRegistryDialog(
                         ) {
                             Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.llm_models_add_row), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                stringResource(R.string.llm_models_add_row),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                     }
                 } else {
@@ -660,7 +845,11 @@ private fun LlmRegistryDialog(
 
                 // Pretest enabled (G20: Switch replaces Checkbox)
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.llm_registry_pretest_label), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    Text(
+                        stringResource(R.string.llm_registry_pretest_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
                     Switch(checked = pretestEnabled, onCheckedChange = { pretestEnabled = it })
                 }
 
@@ -673,7 +862,11 @@ private fun LlmRegistryDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     OutlinedTextField(
                         value = timeout,
                         onValueChange = { if (it.all { c -> c.isDigit() }) timeout = it },
@@ -689,7 +882,13 @@ private fun LlmRegistryDialog(
                             AssistChip(
                                 onClick = { tags.remove(tag) },
                                 label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
-                                trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(12.dp)) },
+                                trailingIcon = {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                },
                             )
                         }
                     }
@@ -702,48 +901,115 @@ private fun LlmRegistryDialog(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = { if (tagInput.isNotBlank()) { tags.add(tagInput.trim()); tagInput = "" } }) { Text("+") }
+                    TextButton(onClick = {
+                        if (tagInput.isNotBlank()) {
+                            tags.add(tagInput.trim())
+                            tagInput = ""
+                        }
+                    }) { Text("+") }
                 }
 
                 // alpha.41 session-backend section
                 if (isSessionBackend) {
                     HorizontalDivider()
-                    Text(stringResource(R.string.llm_section_session_backend), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    OutlinedTextField(value = binary, onValueChange = { binary = it }, label = { Text(stringResource(R.string.llm_field_binary)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        stringResource(R.string.llm_section_session_backend),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    OutlinedTextField(value = binary, onValueChange = {
+                        binary = it
+                    }, label = {
+                        Text(
+                            stringResource(R.string.llm_field_binary),
+                        )
+                    }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = consoleCols, onValueChange = { if (it.all { c -> c.isDigit() }) consoleCols = it }, label = { Text(stringResource(R.string.llm_field_console_cols)) }, singleLine = true, modifier = Modifier.weight(1f))
-                        OutlinedTextField(value = consoleRows, onValueChange = { if (it.all { c -> c.isDigit() }) consoleRows = it }, label = { Text(stringResource(R.string.llm_field_console_rows)) }, singleLine = true, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = consoleCols, onValueChange = {
+                            if (it.all {
+                                        c ->
+                                    c.isDigit()
+                                }
+                            ) {
+                                consoleCols = it
+                            }
+                        }, label = {
+                            Text(
+                                stringResource(R.string.llm_field_console_cols),
+                            )
+                        }, singleLine = true, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = consoleRows, onValueChange = {
+                            if (it.all {
+                                        c ->
+                                    c.isDigit()
+                                }
+                            ) {
+                                consoleRows = it
+                            }
+                        }, label = {
+                            Text(
+                                stringResource(R.string.llm_field_console_rows),
+                            )
+                        }, singleLine = true, modifier = Modifier.weight(1f))
                     }
                     // Output mode
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_output_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_output_mode),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Box {
                             TextButton(onClick = { outputModeDropdown = true }) { Text(outputMode) }
-                            DropdownMenu(expanded = outputModeDropdown, onDismissRequest = { outputModeDropdown = false }) {
+                            DropdownMenu(
+                                expanded = outputModeDropdown,
+                                onDismissRequest = { outputModeDropdown = false },
+                            ) {
                                 listOf("terminal", "log", "chat").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = { outputMode = m; outputModeDropdown = false })
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        outputMode = m
+                                        outputModeDropdown = false
+                                    })
                                 }
                             }
                         }
                     }
                     // Input mode
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_input_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_input_mode),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Box {
                             TextButton(onClick = { inputModeDropdown = true }) { Text(inputMode) }
-                            DropdownMenu(expanded = inputModeDropdown, onDismissRequest = { inputModeDropdown = false }) {
+                            DropdownMenu(
+                                expanded = inputModeDropdown,
+                                onDismissRequest = { inputModeDropdown = false },
+                            ) {
                                 listOf("tmux", "chat", "none").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = { inputMode = m; inputModeDropdown = false })
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        inputMode = m
+                                        inputModeDropdown = false
+                                    })
                                 }
                             }
                         }
                     }
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_auto_git_init), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_auto_git_init),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = autoGitInit, onCheckedChange = { autoGitInit = it })
                     }
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_auto_git_commit), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_auto_git_commit),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = autoGitCommit, onCheckedChange = { autoGitCommit = it })
                     }
                 }
@@ -752,15 +1018,28 @@ private fun LlmRegistryDialog(
                 if (isNodeBased || isClaudeCode) {
                     HorizontalDivider()
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_default_effort), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_default_effort),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Box {
                             TextButton(onClick = { defaultEffortDropdown = true }) {
                                 Text(defaultEffort.ifBlank { "— inherit —" })
                             }
-                            DropdownMenu(expanded = defaultEffortDropdown, onDismissRequest = { defaultEffortDropdown = false }) {
-                                DropdownMenuItem(text = { Text("— inherit —") }, onClick = { defaultEffort = ""; defaultEffortDropdown = false })
+                            DropdownMenu(
+                                expanded = defaultEffortDropdown,
+                                onDismissRequest = { defaultEffortDropdown = false },
+                            ) {
+                                DropdownMenuItem(text = { Text("— inherit —") }, onClick = {
+                                    defaultEffort = ""
+                                    defaultEffortDropdown = false
+                                })
                                 listOf("low", "medium", "normal", "high", "max", "quick", "thorough").forEach { e ->
-                                    DropdownMenuItem(text = { Text(e) }, onClick = { defaultEffort = e; defaultEffortDropdown = false })
+                                    DropdownMenuItem(text = { Text(e) }, onClick = {
+                                        defaultEffort = e
+                                        defaultEffortDropdown = false
+                                    })
                                 }
                             }
                         }
@@ -770,25 +1049,47 @@ private fun LlmRegistryDialog(
                 // alpha.41 claude-code-specific section
                 if (isClaudeCode) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_skip_permissions), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_skip_permissions),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = skipPermissions, onCheckedChange = { skipPermissions = it })
                     }
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_channel_enabled), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_channel_enabled),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = channelEnabled, onCheckedChange = { channelEnabled = it })
                     }
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_auto_accept), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_auto_accept),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = autoAcceptDisclaimer, onCheckedChange = { autoAcceptDisclaimer = it })
                     }
                     // Permission mode
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.llm_field_permission_mode), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.llm_field_permission_mode),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
                         Box {
                             TextButton(onClick = { permissionModeDropdown = true }) { Text(permissionMode) }
-                            DropdownMenu(expanded = permissionModeDropdown, onDismissRequest = { permissionModeDropdown = false }) {
+                            DropdownMenu(
+                                expanded = permissionModeDropdown,
+                                onDismissRequest = { permissionModeDropdown = false },
+                            ) {
                                 listOf("default", "acceptEdits", "bypassPermissions").forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = { permissionMode = m; permissionModeDropdown = false })
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        permissionMode = m
+                                        permissionModeDropdown = false
+                                    })
                                 }
                             }
                         }
@@ -797,23 +1098,44 @@ private fun LlmRegistryDialog(
                     if (fallbackChain.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             fallbackChain.forEach { llm ->
-                                AssistChip(onClick = { fallbackChain.remove(llm) }, label = { Text(llm, style = MaterialTheme.typography.labelSmall) }, trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(12.dp)) })
+                                AssistChip(onClick = {
+                                    fallbackChain.remove(llm)
+                                }, label = {
+                                    Text(llm, style = MaterialTheme.typography.labelSmall)
+                                }, trailingIcon = {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                })
                             }
                         }
                     }
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(value = fallbackInput, onValueChange = { fallbackInput = it }, label = { Text(stringResource(R.string.llm_field_fallback_chain)) }, singleLine = true, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { if (fallbackInput.isNotBlank()) { fallbackChain.add(fallbackInput.trim()); fallbackInput = "" } }) { Text("+") }
+                        OutlinedTextField(value = fallbackInput, onValueChange = {
+                            fallbackInput = it
+                        }, label = {
+                            Text(stringResource(R.string.llm_field_fallback_chain))
+                        }, singleLine = true, modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            if (fallbackInput.isNotBlank()) {
+                                fallbackChain.add(fallbackInput.trim())
+                                fallbackInput = ""
+                            }
+                        }) { Text("+") }
                     }
                 }
             }
         },
         confirmButton = {
-            val saveEnabled = name.isNotBlank() && when {
-                isNodeBased && !isAutoAdd -> modelPairs.isNotEmpty() && modelPairs.all { it.model.isNotBlank() }
-                isNodeBased && isAutoAdd -> true
-                else -> singleModel.isNotBlank()
-            }
+            val saveEnabled =
+                name.isNotBlank() &&
+                    when {
+                        isNodeBased && !isAutoAdd -> modelPairs.isNotEmpty() && modelPairs.all { it.model.isNotBlank() }
+                        isNodeBased && isAutoAdd -> true
+                        else -> singleModel.isNotBlank()
+                    }
             TextButton(
                 onClick = {
                     val commonFields = { base: LlmRegistryEntryDto ->
@@ -836,32 +1158,33 @@ private fun LlmRegistryDialog(
                             fallbackChain = if (isClaudeCode) fallbackChain.toList().ifEmpty { null } else null,
                         )
                     }
-                    val dto = if (isNodeBased) {
-                        commonFields(
-                            LlmRegistryEntryDto(
-                                name = name.trim(),
-                                kind = kind,
-                                computeNode = modelPairs.firstOrNull()?.computeNode ?: "",
-                                computeNodes = modelPairs.drop(1).map { it.computeNode },
-                                model = modelPairs.firstOrNull()?.model ?: "",
-                                models = modelPairs.toList(),
-                                enabled = existing?.enabled ?: true,
-                                pretestEnabled = pretestEnabled,
-                                autoAddModels = isAutoAdd,
-                            ),
-                        )
-                    } else {
-                        commonFields(
-                            LlmRegistryEntryDto(
-                                name = name.trim(),
-                                kind = kind,
-                                computeNode = "",
-                                model = singleModel.trim(),
-                                enabled = existing?.enabled ?: true,
-                                pretestEnabled = pretestEnabled,
-                            ),
-                        )
-                    }
+                    val dto =
+                        if (isNodeBased) {
+                            commonFields(
+                                LlmRegistryEntryDto(
+                                    name = name.trim(),
+                                    kind = kind,
+                                    computeNode = modelPairs.firstOrNull()?.computeNode ?: "",
+                                    computeNodes = modelPairs.drop(1).map { it.computeNode },
+                                    model = modelPairs.firstOrNull()?.model ?: "",
+                                    models = modelPairs.toList(),
+                                    enabled = existing?.enabled ?: true,
+                                    pretestEnabled = pretestEnabled,
+                                    autoAddModels = isAutoAdd,
+                                ),
+                            )
+                        } else {
+                            commonFields(
+                                LlmRegistryEntryDto(
+                                    name = name.trim(),
+                                    kind = kind,
+                                    computeNode = "",
+                                    model = singleModel.trim(),
+                                    enabled = existing?.enabled ?: true,
+                                    pretestEnabled = pretestEnabled,
+                                ),
+                            )
+                        }
                     onSave(dto)
                 },
                 enabled = saveEnabled,
@@ -893,20 +1216,30 @@ private fun LlmDetailDialog(
     LaunchedEffect(selectedTab, sessionsPage, sessionsSize) {
         if (selectedTab == 1) {
             sessionsLoading = true
-            val transport = resolveActiveTransport() ?: run { sessionsLoading = false; return@LaunchedEffect }
+            val transport =
+                resolveActiveTransport() ?: run {
+                    sessionsLoading = false
+                    return@LaunchedEffect
+                }
             transport.getLlmSessions(llm.name, sessionsPage, sessionsSize).fold(
-                onSuccess = { sessions = it.sessions; sessionsTotal = it.total },
+                onSuccess = {
+                    sessions = it.sessions
+                    sessionsTotal = it.total
+                },
                 onFailure = {},
             )
             sessionsLoading = false
         }
     }
 
-    val displayPairs = llm.models.ifEmpty {
-        if (llm.computeNode.isNotBlank() || llm.model.isNotBlank())
-            listOf(LlmModelPairDto(llm.computeNode, llm.model))
-        else emptyList()
-    }
+    val displayPairs =
+        llm.models.ifEmpty {
+            if (llm.computeNode.isNotBlank() || llm.model.isNotBlank()) {
+                listOf(LlmModelPairDto(llm.computeNode, llm.model))
+            } else {
+                emptyList()
+            }
+        }
     val totalPages = if (sessionsSize > 0) (sessionsTotal + sessionsSize - 1) / sessionsSize else 1
 
     AlertDialog(
@@ -915,13 +1248,24 @@ private fun LlmDetailDialog(
         text = {
             Column(modifier = Modifier.heightIn(max = 480.dp)) {
                 TabRow(selectedTabIndex = selectedTab) {
-                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.llm_models_tab)) })
-                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.llm_in_use_tab)) })
+                    Tab(selected = selectedTab == 0, onClick = {
+                        selectedTab = 0
+                    }, text = { Text(stringResource(R.string.llm_models_tab)) })
+                    Tab(selected = selectedTab == 1, onClick = {
+                        selectedTab = 1
+                    }, text = { Text(stringResource(R.string.llm_in_use_tab)) })
                 }
                 when (selectedTab) {
                     0 -> {
-                        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.llm_models_tab), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                stringResource(R.string.llm_models_tab),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
                             if (refreshingModels) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
                             } else {
@@ -937,26 +1281,57 @@ private fun LlmDetailDialog(
                                         refreshingModels = false
                                     }
                                 }) {
-                                    Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Icon(
+                                        Icons.Filled.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
                                 }
                             }
                         }
                         modelRefreshBanner?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
                         }
                         if (displayPairs.isEmpty()) {
-                            Text(stringResource(R.string.llm_models_none), modifier = Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.llm_models_none),
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         } else {
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                Text(stringResource(R.string.llm_models_node_col), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(stringResource(R.string.llm_models_model_col), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    stringResource(R.string.llm_models_node_col),
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    stringResource(R.string.llm_models_model_col),
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             HorizontalDivider()
                             LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
                                 items(displayPairs) { pair ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                        Text(pair.computeNode, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Text(pair.model, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            pair.computeNode,
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        Text(
+                                            pair.model,
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
                                     }
                                     HorizontalDivider()
                                 }
@@ -964,48 +1339,93 @@ private fun LlmDetailDialog(
                         }
                     }
                     1 -> {
-                        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(
-                                "${sessionsTotal} ${stringResource(R.string.llm_in_use_tab)}",
+                                "$sessionsTotal ${stringResource(R.string.llm_in_use_tab)}",
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.labelMedium,
                             )
                             Box {
                                 TextButton(onClick = { sessionsSizeDropdown = true }) { Text("$sessionsSize / page") }
-                                DropdownMenu(expanded = sessionsSizeDropdown, onDismissRequest = { sessionsSizeDropdown = false }) {
+                                DropdownMenu(
+                                    expanded = sessionsSizeDropdown,
+                                    onDismissRequest = { sessionsSizeDropdown = false },
+                                ) {
                                     listOf(5, 10, 50).forEach { sz ->
-                                        DropdownMenuItem(text = { Text("$sz") }, onClick = { sessionsSize = sz; sessionsPage = 1; sessionsSizeDropdown = false })
+                                        DropdownMenuItem(text = { Text("$sz") }, onClick = {
+                                            sessionsSize = sz
+                                            sessionsPage = 1
+                                            sessionsSizeDropdown = false
+                                        })
                                     }
                                 }
                             }
                         }
                         if (sessionsLoading) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.Center) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                horizontalArrangement = Arrangement.Center,
+                            ) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         } else if (sessions.isEmpty()) {
-                            Text(stringResource(R.string.llm_in_use_none), modifier = Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.llm_in_use_none),
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         } else {
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                Text(stringResource(R.string.llm_in_use_task_col), modifier = Modifier.weight(2f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("State", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    stringResource(R.string.llm_in_use_task_col),
+                                    modifier = Modifier.weight(2f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    "State",
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             HorizontalDivider()
                             LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                                 items(sessions) { session ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                        Text(session.task, modifier = Modifier.weight(2f), style = MaterialTheme.typography.bodySmall)
-                                        Text(session.state, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            session.task,
+                                            modifier = Modifier.weight(2f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        Text(
+                                            session.state,
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
                                     }
                                     HorizontalDivider()
                                 }
                             }
                             // Pagination controls
                             if (totalPages > 1) {
-                                Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(onClick = { if (sessionsPage > 1) sessionsPage-- }, enabled = sessionsPage > 1) { Text("<") }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    TextButton(
+                                        onClick = { if (sessionsPage > 1) sessionsPage-- },
+                                        enabled = sessionsPage > 1,
+                                    ) { Text("<") }
                                     Text("$sessionsPage / $totalPages", style = MaterialTheme.typography.labelSmall)
-                                    TextButton(onClick = { if (sessionsPage < totalPages) sessionsPage++ }, enabled = sessionsPage < totalPages) { Text(">") }
+                                    TextButton(onClick = {
+                                        if (sessionsPage < totalPages) sessionsPage++
+                                    }, enabled = sessionsPage < totalPages) { Text(">") }
                                 }
                             }
                         }

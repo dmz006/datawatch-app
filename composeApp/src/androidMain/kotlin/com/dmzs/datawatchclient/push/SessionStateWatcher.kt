@@ -23,7 +23,10 @@ public object SessionStateWatcher {
     private val knownStates = ConcurrentHashMap<String, SessionState>()
     private var seeded = false // first call seeds without firing
 
-    public fun onSessionsUpdated(sessions: List<Session>, context: Context) {
+    public fun onSessionsUpdated(
+        sessions: List<Session>,
+        context: Context,
+    ) {
         if (!seeded) {
             sessions.forEach { knownStates[it.id] = it.state }
             seeded = true
@@ -41,18 +44,19 @@ public object SessionStateWatcher {
                 val name = session.name ?: session.taskSummary ?: session.id
                 // promptContext overrides lastPrompt per server spec — it's the pre-processed
                 // last ~4 lines of conversation rather than the raw LLM prompt string.
-                val body = session.promptContext?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(200)
-                    ?: session.lastPrompt?.takeIf { it.isNotBlank() }?.take(200)
-                    ?: session.lastSummaryLong?.takeIf { it.isNotBlank() }?.take(200)
-                    ?: session.lastResponse?.takeIf { it.isNotBlank() }?.take(200)
-                    ?: "Waiting for your input"
+                val body =
+                    session.promptContext?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(200)
+                        ?: session.lastPrompt?.takeIf { it.isNotBlank() }?.take(200)
+                        ?: session.lastSummaryLong?.takeIf { it.isNotBlank() }?.take(200)
+                        ?: session.lastResponse?.takeIf { it.isNotBlank() }?.take(200)
+                        ?: "Waiting for your input"
                 NotificationPoster(context).post(
                     NotificationPoster.Event(
                         sessionId = session.id,
                         type = NotificationPoster.Event.Type.InputNeeded,
                         title = name,
                         body = body,
-                    )
+                    ),
                 )
             } else if (prev == SessionState.Waiting && curr != SessionState.Waiting) {
                 // Transitioned OUT OF Waiting — cancel the notification

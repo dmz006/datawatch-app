@@ -53,20 +53,25 @@ public fun TailscaleMeshCard() {
     var actionTitle by remember { mutableStateOf("") }
     var actionBusy by remember { mutableStateOf(false) }
 
-    suspend fun activeTransport() = run {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val activeId = ServiceLocator.activeServerStore.get()
-        profiles.firstOrNull { it.id == activeId && it.enabled }
-            ?.let { ServiceLocator.transportFor(it) }
-    }
+    suspend fun activeTransport() =
+        run {
+            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val activeId = ServiceLocator.activeServerStore.get()
+            profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?.let { ServiceLocator.transportFor(it) }
+        }
 
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-            ?: profiles.firstOrNull { it.enabled } ?: return@LaunchedEffect
+        val profile =
+            profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled } ?: return@LaunchedEffect
         ServiceLocator.transportFor(profile).getTailscaleStatus().fold(
-            onSuccess = { status = it; loadError = null },
+            onSuccess = {
+                status = it
+                loadError = null
+            },
             onFailure = { loadError = it.message },
         )
     }
@@ -88,15 +93,16 @@ public fun TailscaleMeshCard() {
                 )
                 return@Column
             }
-            val s = status ?: run {
-                Text(
-                    stringResource(R.string.tailscale_loading),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-                return@Column
-            }
+            val s =
+                status ?: run {
+                    Text(
+                        stringResource(R.string.tailscale_loading),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    return@Column
+                }
 
             // Status badge row
             Row(
@@ -113,7 +119,13 @@ public fun TailscaleMeshCard() {
                     color = if (s.enabled) Color(0xFF1B5E20) else MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     Text(
-                        if (s.enabled) stringResource(R.string.tailscale_enabled) else stringResource(R.string.tailscale_disabled),
+                        if (s.enabled) {
+                            stringResource(
+                                R.string.tailscale_enabled,
+                            )
+                        } else {
+                            stringResource(R.string.tailscale_disabled)
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (s.enabled) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -211,12 +223,16 @@ public fun TailscaleMeshCard() {
                             actionTitle = "Auth Key"
                             activeTransport()?.generateTailscaleAuthKey()?.fold(
                                 onSuccess = { dto ->
-                                    actionResult = if (dto.error != null) "Error: ${dto.error}"
-                                    else buildString {
-                                        appendLine("Key:")
-                                        appendLine(dto.key)
-                                        dto.expiresAt?.let { appendLine("Expires: $it") }
-                                    }
+                                    actionResult =
+                                        if (dto.error != null) {
+                                            "Error: ${dto.error}"
+                                        } else {
+                                            buildString {
+                                                appendLine("Key:")
+                                                appendLine(dto.key)
+                                                dto.expiresAt?.let { appendLine("Expires: $it") }
+                                            }
+                                        }
                                 },
                                 onFailure = { actionResult = "Error: ${it.message}" },
                             )

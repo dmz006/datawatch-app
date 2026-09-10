@@ -43,14 +43,19 @@ public fun ToolingCard(vm: ToolingViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.load() }
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                PwaSectionTitle(stringResource(R.string.tooling_title), Modifier.weight(1f), docsAnchor = "backend-artifact-lifecycle")
+                PwaSectionTitle(
+                    stringResource(R.string.tooling_title),
+                    Modifier.weight(1f),
+                    docsAnchor = "backend-artifact-lifecycle",
+                )
                 TextButton(onClick = { vm.load() }) {
                     Text(stringResource(R.string.tooling_refresh))
                 }

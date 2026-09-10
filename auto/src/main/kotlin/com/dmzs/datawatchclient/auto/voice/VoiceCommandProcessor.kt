@@ -11,6 +11,7 @@ public enum class VoiceCommand {
     REPORT,
     CANCEL,
     REFRESH,
+
     // BL303-A4: new commands
     CREATE_SESSION,
     APPROVE_GATE,
@@ -74,7 +75,11 @@ public fun parseVoiceCommandFull(input: String): ParsedVoiceCommand {
 
         lower.contains("remember what") || lower.contains("what do you know") ||
             lower.contains("recall ") || lower.contains("memory ") ->
-            ParsedVoiceCommand(VoiceCommand.MEMORY_RECALL, serverName, extractTopic(lower, "recall", "about", "know about"))
+            ParsedVoiceCommand(
+                VoiceCommand.MEMORY_RECALL,
+                serverName,
+                extractTopic(lower, "recall", "about", "know about"),
+            )
 
         lower.contains("switch to ") || lower.contains("use server") ||
             (lower.contains("switch") && serverName != null) ->
@@ -107,7 +112,10 @@ public fun parseVoiceCommandFull(input: String): ParsedVoiceCommand {
  * This is a pure-string operation — the profiles must be passed in by the
  * caller to avoid coupling this function to the coroutine context.
  */
-public fun resolveServerName(input: String, profileNames: List<String>): String? {
+public fun resolveServerName(
+    input: String,
+    profileNames: List<String>,
+): String? {
     val words = input.lowercase().split(Regex("\\s+"))
     for (name in profileNames) {
         val nameLower = name.lowercase()
@@ -121,7 +129,10 @@ public fun resolveServerName(input: String, profileNames: List<String>): String?
 
 private fun extractServerName(lower: String): String? = null // resolved async via resolveServerName
 
-private fun extractTopic(lower: String, vararg prefixes: String): String? {
+private fun extractTopic(
+    lower: String,
+    vararg prefixes: String,
+): String? {
     for (prefix in prefixes) {
         val idx = lower.indexOf(prefix)
         if (idx >= 0) {
@@ -133,7 +144,10 @@ private fun extractTopic(lower: String, vararg prefixes: String): String? {
 }
 
 /** Iterative Levenshtein distance capped at [MAX_EDIT_DIST] + 1 for efficiency. */
-public fun levenshtein(a: String, b: String): Int {
+public fun levenshtein(
+    a: String,
+    b: String,
+): Int {
     if (a == b) return 0
     if (a.isEmpty()) return b.length
     if (b.isEmpty()) return a.length
@@ -143,8 +157,12 @@ public fun levenshtein(a: String, b: String): Int {
         dp[0] = i + 1
         for (j in b.indices) {
             val temp = dp[j + 1]
-            dp[j + 1] = if (a[i] == b[j]) prev
-            else minOf(prev, dp[j], dp[j + 1]) + 1
+            dp[j + 1] =
+                if (a[i] == b[j]) {
+                    prev
+                } else {
+                    minOf(prev, dp[j], dp[j + 1]) + 1
+                }
             prev = temp
         }
     }
@@ -159,25 +177,30 @@ private const val MAX_EDIT_DIST: Int = 2
  */
 public suspend fun buildStatusSummary(): StatusSummary {
     return runCatching {
-        val activeId = AutoServiceLocator.activeServerStore.get()
-            ?: return@runCatching StatusSummary.noServer()
+        val activeId =
+            AutoServiceLocator.activeServerStore.get()
+                ?: return@runCatching StatusSummary.noServer()
         val profiles = AutoServiceLocator.profileRepository.observeAll().first()
-        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-            ?: return@runCatching StatusSummary.noServer()
-        val stats = AutoServiceLocator.transportFor(profile).stats().getOrNull()
-            ?: return@runCatching StatusSummary.noServer()
-        val cpuPct = stats.cpuLoad1?.let { load ->
-            stats.cpuCores?.let { cores ->
-                if (cores > 0) (load / cores * PCT_MULTIPLIER).toInt() else null
+        val profile =
+            profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: return@runCatching StatusSummary.noServer()
+        val stats =
+            AutoServiceLocator.transportFor(profile).stats().getOrNull()
+                ?: return@runCatching StatusSummary.noServer()
+        val cpuPct =
+            stats.cpuLoad1?.let { load ->
+                stats.cpuCores?.let { cores ->
+                    if (cores > 0) (load / cores * PCT_MULTIPLIER).toInt() else null
+                }
             }
-        }
-        val memPct = stats.memTotal?.let { total ->
-            if (total > 0) {
-                stats.memUsed?.let { used -> (used.toDouble() / total * PCT_MULTIPLIER).toInt() }
-            } else {
-                null
+        val memPct =
+            stats.memTotal?.let { total ->
+                if (total > 0) {
+                    stats.memUsed?.let { used -> (used.toDouble() / total * PCT_MULTIPLIER).toInt() }
+                } else {
+                    null
+                }
             }
-        }
         StatusSummary(
             serverName = profile.displayName,
             running = stats.sessionsRunning,
@@ -195,27 +218,30 @@ public suspend fun buildStatusSummary(): StatusSummary {
  */
 public suspend fun buildWhatFailedReport(): String {
     return runCatching {
-        val profile = run {
-            val activeId = AutoServiceLocator.activeServerStore.get()
-            val profiles = AutoServiceLocator.profileRepository.observeAll().first()
-            profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-        } ?: return@runCatching "No enabled server configured."
+        val profile =
+            run {
+                val activeId = AutoServiceLocator.activeServerStore.get()
+                val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            } ?: return@runCatching "No enabled server configured."
         val transport = AutoServiceLocator.transportFor(profile)
         val sessions = transport.listSessions().getOrNull() ?: return@runCatching "Could not reach ${profile.displayName}."
-        val blocked = sessions.filter { it.state == SessionState.Error || it.state == SessionState.Waiting }
-            .firstOrNull() ?: return@runCatching "No failed or waiting sessions on ${profile.displayName}."
+        val blocked =
+            sessions.filter { it.state == SessionState.Error || it.state == SessionState.Waiting }
+                .firstOrNull() ?: return@runCatching "No failed or waiting sessions on ${profile.displayName}."
         val telem = transport.getSessionTelemetry(blocked.id).getOrNull()
         val blocks = telem?.guardrailVerdicts?.filter { it.outcome == "block" }
         return@runCatching when {
             blocks.isNullOrEmpty() ->
                 "${blocked.name ?: blocked.id} is ${blocked.state.name.lowercase()} but no guardrail block found."
-            else -> buildString {
-                append("${blocked.name ?: "Session"} is blocked. ")
-                blocks.take(2).forEach { v ->
-                    append("${v.guardrail}: ${v.summary.take(SPOKEN_SUMMARY_CHARS)}. ")
+            else ->
+                buildString {
+                    append("${blocked.name ?: "Session"} is blocked. ")
+                    blocks.take(2).forEach { v ->
+                        append("${v.guardrail}: ${v.summary.take(SPOKEN_SUMMARY_CHARS)}. ")
+                    }
                 }
-            }
         }
     }.getOrElse { "Error building report." }
 }
@@ -233,6 +259,7 @@ public data class StatusSummary(
 ) {
     public companion object {
         public fun noServer(): StatusSummary = StatusSummary("", 0, 0, 0, null, null)
+
         public fun error(): StatusSummary = StatusSummary("", -1, -1, -1, null, null)
     }
 

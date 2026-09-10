@@ -43,30 +43,35 @@ public fun AuditLogCard() {
     suspend fun reload() {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
-            profiles.firstOrNull { it.enabled }
-        } else {
-            profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-        }
+        val profile =
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                profiles.firstOrNull { it.enabled }
+            } else {
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            }
         profile?.let {
             ServiceLocator.transportFor(it).getAuditLog(
                 actor = actorFilter.takeIf { a -> a.isNotBlank() },
                 action = actionFilter.takeIf { a -> a.isNotBlank() },
                 limit = 20,
-            ).onSuccess { list -> entries = list.entries; banner = null }
-             .onFailure { e -> banner = e.message }
+            ).onSuccess { list ->
+                entries = list.entries
+                banner = null
+            }
+                .onFailure { e -> banner = e.message }
         }
     }
 
     LaunchedEffect(Unit) { reload() }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle("Audit Log", docsAnchor = "audit-log")
 

@@ -33,18 +33,20 @@ public fun ThemePickerCard(modifier: Modifier = Modifier) {
     var selected by remember { mutableStateOf(ThemePrefs.load(context)) }
     var expanded by remember { mutableStateOf(false) }
 
-    fun label(mode: ThemeMode) = when (mode) {
-        ThemeMode.Dark -> context.getString(R.string.settings_theme_dark)
-        ThemeMode.Light -> context.getString(R.string.settings_theme_light)
-        ThemeMode.System -> context.getString(R.string.settings_theme_system)
-    }
+    fun label(mode: ThemeMode) =
+        when (mode) {
+            ThemeMode.Dark -> context.getString(R.string.settings_theme_dark)
+            ThemeMode.Light -> context.getString(R.string.settings_theme_light)
+            ThemeMode.System -> context.getString(R.string.settings_theme_system)
+        }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

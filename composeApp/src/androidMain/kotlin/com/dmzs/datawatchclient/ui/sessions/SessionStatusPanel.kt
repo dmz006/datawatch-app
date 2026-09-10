@@ -3,13 +3,13 @@ package com.dmzs.datawatchclient.ui.sessions
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -39,23 +39,23 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.GuardrailVerdictDto
 import com.dmzs.datawatchclient.transport.dto.LastEventDto
 import com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto
-import com.dmzs.datawatchclient.transport.dto.SessionTelemetryDto
 import com.dmzs.datawatchclient.transport.dto.SprintStatusDto
 import com.dmzs.datawatchclient.transport.dto.TelemetrySprintDto
 import com.dmzs.datawatchclient.transport.dto.TelemetryTaskDto
-import kotlinx.serialization.json.Json
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
+import kotlinx.serialization.json.Json
 
 @Composable
 public fun SessionStatusPanel(
     sessionId: String,
     modifier: Modifier = Modifier,
-    vm: SessionStatusViewModel = viewModel(
-        factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
-        key = "session-status-$sessionId",
-    ),
+    vm: SessionStatusViewModel =
+        viewModel(
+            factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
+            key = "session-status-$sessionId",
+        ),
 ) {
     val uiState by vm.state.collectAsState()
 
@@ -65,10 +65,11 @@ public fun SessionStatusPanel(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         if (uiState.loading && uiState.board == null) {
@@ -123,14 +124,18 @@ public fun SessionStatusPanel(
 }
 
 @Composable
-private fun HookHealthPill(hookHealth: String, onClick: () -> Unit) {
+private fun HookHealthPill(
+    hookHealth: String,
+    onClick: () -> Unit,
+) {
     val dw = LocalDatawatchColors.current
     val uriHandler = LocalUriHandler.current
-    val (color, label) = when (hookHealth) {
-        "alive" -> dw.success to stringResource(R.string.status_hooks_alive)
-        "stale" -> dw.warning to stringResource(R.string.status_hooks_stale)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant to stringResource(R.string.status_hooks_missing)
-    }
+    val (color, label) =
+        when (hookHealth) {
+            "alive" -> dw.success to stringResource(R.string.status_hooks_alive)
+            "stale" -> dw.warning to stringResource(R.string.status_hooks_stale)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant to stringResource(R.string.status_hooks_missing)
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -156,7 +161,11 @@ private fun HookHealthPill(hookHealth: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun FocusCard(focus: String, lastEvent: LastEventDto?, idleSince: Long?) {
+private fun FocusCard(
+    focus: String,
+    lastEvent: LastEventDto?,
+    idleSince: Long?,
+) {
     val dw = LocalDatawatchColors.current
     StatusCard(title = stringResource(R.string.status_card_focus)) {
         Text(focus, style = MaterialTheme.typography.bodySmall)
@@ -167,7 +176,11 @@ private fun FocusCard(focus: String, lastEvent: LastEventDto?, idleSince: Long?)
                 val tsStr = lastEvent.ts?.let { ts -> timeAgo(nowMs - ts) }
                 val subtitle = (parts + listOfNotNull(tsStr)).joinToString(" · ")
                 Spacer(Modifier.height(2.dp))
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
         if (idleSince != null) {
@@ -184,17 +197,19 @@ private fun FocusCard(focus: String, lastEvent: LastEventDto?, idleSince: Long?)
     }
 }
 
-private fun timeAgo(elapsedMs: Long): String = when {
-    elapsedMs < 60_000L -> "${elapsedMs / 1_000}s ago"
-    elapsedMs < 3_600_000L -> "${elapsedMs / 60_000}m ago"
-    else -> "${elapsedMs / 3_600_000}h ago"
-}
+private fun timeAgo(elapsedMs: Long): String =
+    when {
+        elapsedMs < 60_000L -> "${elapsedMs / 1_000}s ago"
+        elapsedMs < 3_600_000L -> "${elapsedMs / 60_000}m ago"
+        else -> "${elapsedMs / 3_600_000}h ago"
+    }
 
 @Composable
 private fun SprintCard(sprint: SprintStatusDto) {
-    val prettyJson = remember(sprint) {
-        Json { prettyPrint = true }.encodeToString(SprintStatusDto.serializer(), sprint)
-    }
+    val prettyJson =
+        remember(sprint) {
+            Json { prettyPrint = true }.encodeToString(SprintStatusDto.serializer(), sprint)
+        }
     StatusCard(title = stringResource(R.string.status_card_sprint)) {
         SelectionContainer {
             Text(
@@ -209,7 +224,11 @@ private fun SprintCard(sprint: SprintStatusDto) {
 }
 
 @Composable
-private fun TestsCard(passing: Int, failing: Int, total: Int) {
+private fun TestsCard(
+    passing: Int,
+    failing: Int,
+    total: Int,
+) {
     val dw = LocalDatawatchColors.current
     StatusCard(title = stringResource(R.string.status_card_tests)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -225,7 +244,11 @@ private fun TestsCard(passing: Int, failing: Int, total: Int) {
 }
 
 @Composable
-private fun GitCard(branch: String, uncommitted: Int, ahead: Int) {
+private fun GitCard(
+    branch: String,
+    uncommitted: Int,
+    ahead: Int,
+) {
     StatusCard(title = stringResource(R.string.status_card_git)) {
         StatusRow("Branch", branch)
         if (uncommitted > 0) StatusRow("Uncommitted", uncommitted.toString())
@@ -234,7 +257,11 @@ private fun GitCard(branch: String, uncommitted: Int, ahead: Int) {
 }
 
 @Composable
-private fun StatChip(label: String, value: String, color: Color) {
+private fun StatChip(
+    label: String,
+    value: String,
+    color: Color,
+) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
         Text(value, style = MaterialTheme.typography.bodySmall, color = color)
@@ -242,23 +269,34 @@ private fun StatChip(label: String, value: String, color: Color) {
 }
 
 @Composable
-private fun StatusRow(label: String, value: String) {
+private fun StatusRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+        )
     }
 }
 
 @Composable
-private fun StatusCard(title: String, content: @Composable () -> Unit) {
+private fun StatusCard(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             PwaSectionTitle(title)
@@ -270,7 +308,10 @@ private fun StatusCard(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun TaskTreeCard(tasks: List<TelemetryTaskDto>, progress: Float) {
+private fun TaskTreeCard(
+    tasks: List<TelemetryTaskDto>,
+    progress: Float,
+) {
     StatusCard(title = stringResource(R.string.telemetry_task_tree_title)) {
         // Progress bar
         if (progress > 0f) {
@@ -292,12 +333,13 @@ private fun TaskTreeCard(tasks: List<TelemetryTaskDto>, progress: Float) {
         }
         // Task list
         tasks.forEach { task ->
-            val (dot, color) = when (task.status) {
-                "completed" -> "✓" to Color(0xFF10B981)
-                "in_progress" -> "●" to Color(0xFF3B82F6)
-                "failed" -> "✗" to Color(0xFFEF4444)
-                else -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            val (dot, color) =
+                when (task.status) {
+                    "completed" -> "✓" to Color(0xFF10B981)
+                    "in_progress" -> "●" to Color(0xFF3B82F6)
+                    "failed" -> "✗" to Color(0xFFEF4444)
+                    else -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+                }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -325,12 +367,13 @@ private fun TaskTreeCard(tasks: List<TelemetryTaskDto>, progress: Float) {
 private fun GuardrailVerdictsCard(verdicts: List<GuardrailVerdictDto>) {
     StatusCard(title = stringResource(R.string.telemetry_guardrails_title)) {
         verdicts.forEach { verdict ->
-            val (dot, color) = when (verdict.outcome) {
-                "pass" -> "✓" to Color(0xFF10B981)
-                "warn" -> "⚠" to Color(0xFFF59E0B)
-                "block" -> "✗" to Color(0xFFEF4444)
-                else -> "●" to MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            val (dot, color) =
+                when (verdict.outcome) {
+                    "pass" -> "✓" to Color(0xFF10B981)
+                    "warn" -> "⚠" to Color(0xFFF59E0B)
+                    "block" -> "✗" to Color(0xFFEF4444)
+                    else -> "●" to MaterialTheme.colorScheme.onSurfaceVariant
+                }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -366,10 +409,18 @@ private fun TelemetrySprintBreadcrumb(sprint: TelemetrySprintDto) {
     ) {
         Text(sprint.automata, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         Text("→", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(sprint.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            sprint.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (sprint.task.isNotBlank()) {
             Text("→", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(sprint.task, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                sprint.task,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -380,8 +431,9 @@ private fun formatDurationMs(ms: Long): String {
 }
 
 /** Returns the coloured dot for the Status tab label based on board state. */
-public fun statusTabBadge(board: SessionStatusBoardDto?): String = when (board?.state) {
-    "running" -> "🟢"
-    "waiting", "waiting_input" -> "🟠"
-    else -> "⚪"
-}
+public fun statusTabBadge(board: SessionStatusBoardDto?): String =
+    when (board?.state) {
+        "running" -> "🟢"
+        "waiting", "waiting_input" -> "🟠"
+        else -> "⚪"
+    }

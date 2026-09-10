@@ -21,8 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -57,7 +55,6 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.AnalyticsDto
-import com.dmzs.datawatchclient.transport.dto.DashboardCardDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.SmokeProgressDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
@@ -73,10 +70,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.math.min
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
@@ -112,10 +107,11 @@ public fun DashboardScreen(
             sheetState = editSheetState,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 24.dp),
             ) {
                 com.dmzs.datawatchclient.ui.settings.DashboardCardsCard()
             }
@@ -132,7 +128,10 @@ public fun DashboardScreen(
                         onToggle = { pickerOpen = !pickerOpen },
                         onDismiss = { pickerOpen = false },
                         profiles = state.allProfiles,
-                        onSelect = { vm.selectProfile(it); pickerOpen = false },
+                        onSelect = {
+                            vm.selectProfile(it)
+                            pickerOpen = false
+                        },
                     )
                 },
                 actions = {
@@ -183,18 +182,20 @@ public fun DashboardScreen(
         val cardIds = state.cards.map { it.id }.ifEmpty { DEFAULT_CARDS }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState()),
         ) {
             // tree and orbital are synonyms for the same constellation view.
             val rendered = mutableSetOf<String>()
             cardIds.forEach { id ->
-                val group = when (id) {
-                    "tree", "orbital" -> "constellation"
-                    else -> id
-                }
+                val group =
+                    when (id) {
+                        "tree", "orbital" -> "constellation"
+                        else -> id
+                    }
                 if (rendered.add(group)) {
                     when (group) {
                         "constellation" -> ConstellationCard(state.sessions, state.prds, onOpenSession)
@@ -216,7 +217,11 @@ public fun DashboardScreen(
 // ---- Constellation card (tree / orbital) ----------------------------------------
 
 @Composable
-private fun ConstellationCard(sessions: List<Session>, prds: List<PrdDto>, onOpenSession: (String) -> Unit) {
+private fun ConstellationCard(
+    sessions: List<Session>,
+    prds: List<PrdDto>,
+    onOpenSession: (String) -> Unit,
+) {
     val dw = LocalDatawatchColors.current
     val running = sessions.filter { it.state == SessionState.Running }
     val waiting = sessions.filter { it.state == SessionState.Waiting }
@@ -232,7 +237,11 @@ private fun ConstellationCard(sessions: List<Session>, prds: List<PrdDto>, onOpe
             StatChip(waiting.size.toString(), stringResource(R.string.dash_stat_waiting), dw.warning)
             StatChip(error.size.toString(), stringResource(R.string.dash_stat_error), MaterialTheme.colorScheme.error)
             val done = sessions.count { it.state == SessionState.Completed || it.state == SessionState.Killed }
-            StatChip(done.toString(), stringResource(R.string.dash_stat_done), MaterialTheme.colorScheme.onSurfaceVariant)
+            StatChip(
+                done.toString(),
+                stringResource(R.string.dash_stat_done),
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         // Active session rows (running first, then waiting)
@@ -268,11 +277,12 @@ private fun ConstellationCard(sessions: List<Session>, prds: List<PrdDto>, onOpe
                 modifier = Modifier.padding(bottom = 2.dp),
             )
             prds.take(4).forEach { prd ->
-                val prdColor = when (prd.status) {
-                    "running" -> dw.success
-                    "decomposing", "planning" -> dw.warning
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                val prdColor =
+                    when (prd.status) {
+                        "running" -> dw.success
+                        "decomposing", "planning" -> dw.warning
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -305,31 +315,38 @@ private fun ConstellationCard(sessions: List<Session>, prds: List<PrdDto>, onOpe
 }
 
 @Composable
-private fun SessionNodeRow(session: Session, onOpenSession: (String) -> Unit) {
+private fun SessionNodeRow(
+    session: Session,
+    onOpenSession: (String) -> Unit,
+) {
     val dw = LocalDatawatchColors.current
-    val stateColor = when (session.state) {
-        SessionState.Running -> dw.success
-        SessionState.Waiting -> dw.warning
-        SessionState.Error -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val stateColor =
+        when (session.state) {
+            SessionState.Running -> dw.success
+            SessionState.Waiting -> dw.warning
+            SessionState.Error -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpenSession(session.id) }
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onOpenSession(session.id) }
+                .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(stateColor),
+            modifier =
+                Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(stateColor),
         )
-        val label = session.name?.takeIf { it.isNotBlank() }
-            ?: session.taskSummary?.take(60)
-            ?: session.id.take(8)
+        val label =
+            session.name?.takeIf { it.isNotBlank() }
+                ?: session.taskSummary?.take(60)
+                ?: session.id.take(8)
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
@@ -347,7 +364,10 @@ private fun SessionNodeRow(session: Session, onOpenSession: (String) -> Unit) {
 // ---- Pulse card (ekg / sparklines) -----------------------------------------------
 
 @Composable
-private fun PulseCard(sessions: List<Session>, stats: StatsDto?) {
+private fun PulseCard(
+    sessions: List<Session>,
+    stats: StatsDto?,
+) {
     val dw = LocalDatawatchColors.current
     val running = sessions.count { it.state == SessionState.Running }
     val waiting = sessions.count { it.state == SessionState.Waiting }
@@ -361,23 +381,32 @@ private fun PulseCard(sessions: List<Session>, stats: StatsDto?) {
             BigStat(running.toString(), stringResource(R.string.dash_stat_running), dw.success)
             BigStat(waiting.toString(), stringResource(R.string.dash_stat_waiting), dw.warning)
             BigStat(error.toString(), stringResource(R.string.dash_stat_error), MaterialTheme.colorScheme.error)
-            BigStat(sessions.size.toString(), stringResource(R.string.dash_stat_total), MaterialTheme.colorScheme.onSurface)
+            BigStat(
+                sessions.size.toString(),
+                stringResource(R.string.dash_stat_total),
+                MaterialTheme.colorScheme.onSurface,
+            )
         }
 
         if (stats != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
             ResourceBar(
                 label = stringResource(R.string.dash_resource_cpu),
-                pct = stats.cpuLoad1?.let { load ->
-                    stats.cpuCores?.let { c -> if (c > 0) (load / c).toFloat().coerceIn(0f, 1f) else null }
-                } ?: stats.cpuPct?.let { (it / 100.0).toFloat().coerceIn(0f, 1f) },
+                pct =
+                    stats.cpuLoad1?.let { load ->
+                        stats.cpuCores?.let { c -> if (c > 0) (load / c).toFloat().coerceIn(0f, 1f) else null }
+                    } ?: stats.cpuPct?.let { (it / 100.0).toFloat().coerceIn(0f, 1f) },
                 dw = dw,
             )
             ResourceBar(
                 label = stringResource(R.string.dash_resource_mem),
-                pct = stats.memUsed?.let { used ->
-                    stats.memTotal?.let { total -> if (total > 0) (used.toFloat() / total).coerceIn(0f, 1f) else null }
-                } ?: stats.memPct?.let { (it / 100.0).toFloat().coerceIn(0f, 1f) },
+                pct =
+                    stats.memUsed?.let { used ->
+                        stats.memTotal?.let {
+                                total ->
+                            if (total > 0) (used.toFloat() / total).coerceIn(0f, 1f) else null
+                        }
+                    } ?: stats.memPct?.let { (it / 100.0).toFloat().coerceIn(0f, 1f) },
                 dw = dw,
             )
         }
@@ -385,13 +414,18 @@ private fun PulseCard(sessions: List<Session>, stats: StatsDto?) {
 }
 
 @Composable
-private fun ResourceBar(label: String, pct: Float?, dw: com.dmzs.datawatchclient.ui.theme.DatawatchColors) {
+private fun ResourceBar(
+    label: String,
+    pct: Float?,
+    dw: com.dmzs.datawatchclient.ui.theme.DatawatchColors,
+) {
     if (pct == null) return
-    val color = when {
-        pct > 0.90f -> MaterialTheme.colorScheme.error
-        pct > 0.70f -> dw.warning
-        else -> dw.success
-    }
+    val color =
+        when {
+            pct > 0.90f -> MaterialTheme.colorScheme.error
+            pct > 0.70f -> dw.warning
+            else -> dw.success
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -415,7 +449,10 @@ private fun ResourceBar(label: String, pct: Float?, dw: com.dmzs.datawatchclient
 // ---- Recent Events card ----------------------------------------------------------
 
 @Composable
-private fun RecentEventsCard(sessions: List<Session>, onOpenSession: (String) -> Unit) {
+private fun RecentEventsCard(
+    sessions: List<Session>,
+    onOpenSession: (String) -> Unit,
+) {
     val recent = sessions.sortedByDescending { it.lastActivityAt }.take(6)
     CardWrapper(title = stringResource(R.string.dash_card_events)) {
         if (recent.isEmpty()) {
@@ -434,26 +471,32 @@ private fun RecentEventsCard(sessions: List<Session>, onOpenSession: (String) ->
 }
 
 @Composable
-private fun RecentEventRow(session: Session, onOpenSession: (String) -> Unit) {
+private fun RecentEventRow(
+    session: Session,
+    onOpenSession: (String) -> Unit,
+) {
     val dw = LocalDatawatchColors.current
-    val stateColor = when (session.state) {
-        SessionState.Running -> dw.success
-        SessionState.Waiting -> dw.warning
-        SessionState.Error -> MaterialTheme.colorScheme.error
-        SessionState.Completed -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val stateColor =
+        when (session.state) {
+            SessionState.Running -> dw.success
+            SessionState.Waiting -> dw.warning
+            SessionState.Error -> MaterialTheme.colorScheme.error
+            SessionState.Completed -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpenSession(session.id) }
-            .padding(vertical = 3.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onOpenSession(session.id) }
+                .padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val label = session.name?.takeIf { it.isNotBlank() }
-            ?: session.taskSummary?.take(50)
-            ?: session.id.take(8)
+        val label =
+            session.name?.takeIf { it.isNotBlank() }
+                ?: session.taskSummary?.take(50)
+                ?: session.id.take(8)
         Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1)
         Text(
             relativeTime(session.lastActivityAt),
@@ -468,10 +511,11 @@ private fun RecentEventRow(session: Session, onOpenSession: (String) -> Unit) {
 @Composable
 private fun PipelineCard(sessions: List<Session>) {
     val dw = LocalDatawatchColors.current
-    val active = sessions
-        .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
-        .sortedBy { it.createdAt }
-        .take(6)
+    val active =
+        sessions
+            .filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
+            .sortedBy { it.createdAt }
+            .take(6)
 
     CardWrapper(title = stringResource(R.string.dash_card_pipeline)) {
         if (active.isEmpty()) {
@@ -499,21 +543,28 @@ private fun PipelineRow(
     rangeMs: Long,
     dw: com.dmzs.datawatchclient.ui.theme.DatawatchColors,
 ) {
-    val label = session.name?.takeIf { it.isNotBlank() }
-        ?: session.taskSummary?.take(30)
-        ?: session.id.take(8)
+    val label =
+        session.name?.takeIf { it.isNotBlank() }
+            ?: session.taskSummary?.take(30)
+            ?: session.id.take(8)
     val barColor = if (session.state == SessionState.Waiting) dw.warning else dw.success
     val startFraction = ((session.createdAt - oldest).inWholeMilliseconds.toFloat() / rangeMs).coerceIn(0f, 1f)
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-        Box(modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+        Box(
+            modifier =
+                Modifier.fillMaxWidth().height(
+                    8.dp,
+                ).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(1f - startFraction)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(barColor)
-                    .align(Alignment.CenterEnd),
+                modifier =
+                    Modifier
+                        .fillMaxWidth(1f - startFraction)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(barColor)
+                        .align(Alignment.CenterEnd),
             )
         }
     }
@@ -547,11 +598,12 @@ private fun SparklineCard(analytics: AnalyticsDto?) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height((40 * heightFraction.coerceAtLeast(0.04f)).dp)
-                            .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
-                            .background(if (bucket.failed > 0) dw.warning else dw.success),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height((40 * heightFraction.coerceAtLeast(0.04f)).dp)
+                                .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                                .background(if (bucket.failed > 0) dw.warning else dw.success),
                     )
                     Text(
                         bucket.date.takeLast(5).replace("-", "/"),
@@ -597,11 +649,15 @@ private fun HeatmapCard(analytics: AnalyticsDto?) {
         val cellGap = 2.dp
 
         // 30 days grid — 5 weeks × 7 days but we only fill the last 30 days
-        val days30 = (29 downTo 0).map { offset ->
-            val date = (Clock.System.now() - offset.days).toLocalDateTime(TimeZone.currentSystemDefault()).date
-            val key = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}"
-            Pair(date, bucketMap[key]?.sessionCount ?: 0)
-        }
+        val days30 =
+            (29 downTo 0).map { offset ->
+                val date = (Clock.System.now() - offset.days).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val key = "${date.year}-${date.monthNumber.toString().padStart(
+                    2,
+                    '0',
+                )}-${date.dayOfMonth.toString().padStart(2, '0')}"
+                Pair(date, bucketMap[key]?.sessionCount ?: 0)
+            }
 
         FlowRow(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -611,20 +667,30 @@ private fun HeatmapCard(analytics: AnalyticsDto?) {
         ) {
             days30.forEach { (date, count) ->
                 val intensity = count.toFloat() / maxCount
-                val cellColor = when {
-                    count == 0 -> MaterialTheme.colorScheme.surfaceVariant
-                    intensity < 0.25f -> dw.success.copy(alpha = 0.3f)
-                    intensity < 0.5f -> dw.success.copy(alpha = 0.55f)
-                    intensity < 0.75f -> dw.success.copy(alpha = 0.78f)
-                    else -> dw.success
-                }
+                val cellColor =
+                    when {
+                        count == 0 -> MaterialTheme.colorScheme.surfaceVariant
+                        intensity < 0.25f -> dw.success.copy(alpha = 0.3f)
+                        intensity < 0.5f -> dw.success.copy(alpha = 0.55f)
+                        intensity < 0.75f -> dw.success.copy(alpha = 0.78f)
+                        else -> dw.success
+                    }
                 val isToday = date == today
                 Box(
-                    modifier = Modifier
-                        .size(cellSize)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(cellColor)
-                        .then(if (isToday) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) else Modifier),
+                    modifier =
+                        Modifier
+                            .size(cellSize)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(cellColor)
+                            .then(
+                                if (isToday) {
+                                    Modifier.background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            ),
                 )
             }
         }
@@ -633,7 +699,11 @@ private fun HeatmapCard(analytics: AnalyticsDto?) {
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("30 days", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "30 days",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
                 "${analytics.buckets.sumOf { it.sessionCount }} sessions",
                 style = MaterialTheme.typography.labelSmall,
@@ -646,7 +716,10 @@ private fun HeatmapCard(analytics: AnalyticsDto?) {
 // ---- Guardrails overview card ----------------------------------------------------
 
 @Composable
-private fun GuardrailsOverviewCard(sessions: List<Session>, onOpenSession: (String) -> Unit) {
+private fun GuardrailsOverviewCard(
+    sessions: List<Session>,
+    onOpenSession: (String) -> Unit,
+) {
     val dw = LocalDatawatchColors.current
     val errorSessions = sessions.filter { it.state == SessionState.Error }
     val runningSessions = sessions.filter { it.state == SessionState.Running }
@@ -655,7 +728,11 @@ private fun GuardrailsOverviewCard(sessions: List<Session>, onOpenSession: (Stri
         if (errorSessions.isEmpty() && runningSessions.isEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(dw.success))
-                Text(stringResource(R.string.dash_guardrails_clear), style = MaterialTheme.typography.bodySmall, color = dw.success)
+                Text(
+                    stringResource(R.string.dash_guardrails_clear),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = dw.success,
+                )
             }
         } else {
             if (errorSessions.isNotEmpty()) {
@@ -667,17 +744,19 @@ private fun GuardrailsOverviewCard(sessions: List<Session>, onOpenSession: (Stri
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
                 errorSessions.take(4).forEach { session ->
-                    val label = session.name?.takeIf { it.isNotBlank() }
-                        ?: session.taskSummary?.take(50)
-                        ?: session.id.take(8)
+                    val label =
+                        session.name?.takeIf { it.isNotBlank() }
+                            ?: session.taskSummary?.take(50)
+                            ?: session.id.take(8)
                     Text(
                         "• $label",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenSession(session.id) }
-                            .padding(vertical = 1.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenSession(session.id) }
+                                .padding(vertical = 1.dp),
                         maxLines = 1,
                     )
                 }
@@ -711,12 +790,13 @@ private fun SmokeProgressCard(smoke: SmokeProgressDto?) {
             return@CardWrapper
         }
 
-        val statusColor = when (smoke.status) {
-            "complete", "passed" -> dw.success
-            "failed" -> MaterialTheme.colorScheme.error
-            "running" -> dw.warning
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
+        val statusColor =
+            when (smoke.status) {
+                "complete", "passed" -> dw.success
+                "failed" -> MaterialTheme.colorScheme.error
+                "running" -> dw.warning
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
@@ -791,13 +871,17 @@ private fun SmokeProgressCard(smoke: SmokeProgressDto?) {
 // ---- Shared primitives -----------------------------------------------------------
 
 @Composable
-private fun CardWrapper(title: String, content: @Composable () -> Unit) {
+private fun CardWrapper(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(title)
         Spacer(Modifier.height(6.dp))
@@ -806,7 +890,11 @@ private fun CardWrapper(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun StatChip(value: String, label: String, color: Color) {
+private fun StatChip(
+    value: String,
+    label: String,
+    color: Color,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -814,7 +902,11 @@ private fun StatChip(value: String, label: String, color: Color) {
 }
 
 @Composable
-private fun BigStat(value: String, label: String, color: Color) {
+private fun BigStat(
+    value: String,
+    label: String,
+    color: Color,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = color)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

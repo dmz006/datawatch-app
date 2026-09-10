@@ -38,7 +38,6 @@ import com.dmzs.datawatchclient.transport.dto.AlertActionDto
 import com.dmzs.datawatchclient.transport.dto.AlertConditionDto
 import com.dmzs.datawatchclient.transport.dto.AlertRuleDto
 import com.dmzs.datawatchclient.transport.dto.AlertRuleFiringDto
-import com.dmzs.datawatchclient.transport.dto.AlertRulesListDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -61,11 +60,13 @@ public fun AlertRulesCard() {
     suspend fun transport(): TransportClient? {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS)
-            profiles.firstOrNull { it.enabled }
-        else
-            profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
+        val profile =
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                profiles.firstOrNull { it.enabled }
+            } else {
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            }
         return profile?.let { ServiceLocator.transportFor(it) }
     }
 
@@ -78,11 +79,12 @@ public fun AlertRulesCard() {
     LaunchedEffect(Unit) { reload() }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PwaSectionTitle("Alert Rules", docsAnchor = "alert-rules")
@@ -130,10 +132,11 @@ public fun AlertRulesCard() {
         if (firings.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { firingsExpanded = !firingsExpanded }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { firingsExpanded = !firingsExpanded }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -192,7 +195,11 @@ private fun AlertRuleRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             rule.description?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
         Switch(
@@ -227,53 +234,71 @@ private fun AddAlertRuleDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(
-                    value = name, onValueChange = { name = it },
+                    value = name,
+                    onValueChange = { name = it },
                     label = { Text("Name (e.g. high-cpu)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = description, onValueChange = { description = it },
+                    value = description,
+                    onValueChange = { description = it },
                     label = { Text("Description (optional)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = sourceFilter, onValueChange = { sourceFilter = it },
+                    value = sourceFilter,
+                    onValueChange = { sourceFilter = it },
                     label = { Text("Source filter (optional)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedTextField(
-                        value = metric, onValueChange = { metric = it },
+                        value = metric,
+                        onValueChange = { metric = it },
                         label = { Text("Metric") },
-                        singleLine = true, modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
-                        value = operator, onValueChange = { operator = it },
+                        value = operator,
+                        onValueChange = { operator = it },
                         label = { Text("Op") },
-                        singleLine = true, modifier = Modifier.width(56.dp),
+                        singleLine = true,
+                        modifier = Modifier.width(56.dp),
                     )
                     OutlinedTextField(
-                        value = threshold, onValueChange = { threshold = it },
+                        value = threshold,
+                        onValueChange = { threshold = it },
                         label = { Text("Value") },
-                        singleLine = true, modifier = Modifier.weight(0.8f),
+                        singleLine = true,
+                        modifier = Modifier.weight(0.8f),
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedTextField(
-                        value = window, onValueChange = { window = it },
+                        value = window,
+                        onValueChange = { window = it },
                         label = { Text("Window (s)") },
-                        singleLine = true, modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
-                        value = cooldown, onValueChange = { cooldown = it },
+                        value = cooldown,
+                        onValueChange = { cooldown = it },
                         label = { Text("Cooldown (s)") },
-                        singleLine = true, modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 OutlinedTextField(
-                    value = action, onValueChange = { action = it },
+                    value = action,
+                    onValueChange = { action = it },
                     label = { Text("Action (alert/scale_up/scale_down)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
@@ -286,11 +311,12 @@ private fun AddAlertRuleDialog(
                             name = name.trim(),
                             description = description.takeIf { it.isNotBlank() },
                             sourceFilter = sourceFilter.takeIf { it.isNotBlank() },
-                            condition = AlertConditionDto(
-                                metric = metric.trim(),
-                                operator = operator.trim(),
-                                threshold = threshold.toDoubleOrNull() ?: 90.0,
-                            ),
+                            condition =
+                                AlertConditionDto(
+                                    metric = metric.trim(),
+                                    operator = operator.trim(),
+                                    threshold = threshold.toDoubleOrNull() ?: 90.0,
+                                ),
                             windowSeconds = window.toIntOrNull() ?: 60,
                             action = AlertActionDto(kind = action.trim()),
                             cooldownSeconds = cooldown.toIntOrNull() ?: 300,

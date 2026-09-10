@@ -274,101 +274,104 @@ public fun MemoryCard() {
         }
 
         when (activeTab) {
-            MemoryTab.List -> ListTab(
-                memories = memories,
-                searchText = searchText,
-                stats = stats,
-                onSearchChange = { v ->
-                    searchText = v
-                    scope.launch { refreshList(v) }
-                },
-                onDelete = { id ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryDelete(id).fold(
-                            onSuccess = {
-                                refreshStats()
-                                refreshList(searchText)
-                            },
-                            onFailure = {
-                                banner = "Delete failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-                onTogglePin = { id, pinned ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
-                            onSuccess = { refreshList(searchText) },
-                            onFailure = {
-                                banner = "Pin failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-            )
+            MemoryTab.List ->
+                ListTab(
+                    memories = memories,
+                    searchText = searchText,
+                    stats = stats,
+                    onSearchChange = { v ->
+                        searchText = v
+                        scope.launch { refreshList(v) }
+                    },
+                    onDelete = { id ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryDelete(id).fold(
+                                onSuccess = {
+                                    refreshStats()
+                                    refreshList(searchText)
+                                },
+                                onFailure = {
+                                    banner = "Delete failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                    onTogglePin = { id, pinned ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
+                                onSuccess = { refreshList(searchText) },
+                                onFailure = {
+                                    banner = "Pin failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                )
 
-            MemoryTab.Timeline -> TimelineTab(
-                memories = timelineMemories,
-                onDelete = { id ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryDelete(id).fold(
-                            onSuccess = {
-                                refreshStats()
-                                refreshTimeline()
-                            },
-                            onFailure = {
-                                banner = "Delete failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-                onTogglePin = { id, pinned ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
-                            onSuccess = { refreshTimeline() },
-                            onFailure = {
-                                banner = "Pin failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-            )
+            MemoryTab.Timeline ->
+                TimelineTab(
+                    memories = timelineMemories,
+                    onDelete = { id ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryDelete(id).fold(
+                                onSuccess = {
+                                    refreshStats()
+                                    refreshTimeline()
+                                },
+                                onFailure = {
+                                    banner = "Delete failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                    onTogglePin = { id, pinned ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
+                                onSuccess = { refreshTimeline() },
+                                onFailure = {
+                                    banner = "Pin failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                )
 
-            MemoryTab.Research -> ResearchTab(
-                query = researchQuery,
-                results = researchResults,
-                onQueryChange = { researchQuery = it },
-                onSearch = { scope.launch { runResearch(researchQuery) } },
-                onDelete = { id ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryDelete(id).fold(
-                            onSuccess = {
-                                refreshStats()
-                                runResearch(researchQuery)
-                            },
-                            onFailure = {
-                                banner = "Delete failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-                onTogglePin = { id, pinned ->
-                    scope.launch {
-                        val profile = resolveProfile() ?: return@launch
-                        ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
-                            onSuccess = { runResearch(researchQuery) },
-                            onFailure = {
-                                banner = "Pin failed — ${it.message ?: it::class.simpleName}"
-                            },
-                        )
-                    }
-                },
-            )
+            MemoryTab.Research ->
+                ResearchTab(
+                    query = researchQuery,
+                    results = researchResults,
+                    onQueryChange = { researchQuery = it },
+                    onSearch = { scope.launch { runResearch(researchQuery) } },
+                    onDelete = { id ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryDelete(id).fold(
+                                onSuccess = {
+                                    refreshStats()
+                                    runResearch(researchQuery)
+                                },
+                                onFailure = {
+                                    banner = "Delete failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                    onTogglePin = { id, pinned ->
+                        scope.launch {
+                            val profile = resolveProfile() ?: return@launch
+                            ServiceLocator.transportFor(profile).memoryPin(id, pinned).fold(
+                                onSuccess = { runResearch(researchQuery) },
+                                onFailure = {
+                                    banner = "Pin failed — ${it.message ?: it::class.simpleName}"
+                                },
+                            )
+                        }
+                    },
+                )
         }
     }
 
@@ -431,11 +434,12 @@ private fun ListTab(
     }
     if (memories.isEmpty()) {
         val totalCount = stats?.longField("total_count") ?: 0L
-        val emptyMsg = when {
-            searchText.isNotBlank() -> "No matches."
-            totalCount > 0L -> "No manually saved memories yet — $totalCount session memories are searchable above."
-            else -> "No memories stored yet."
-        }
+        val emptyMsg =
+            when {
+                searchText.isNotBlank() -> "No matches."
+                totalCount > 0L -> "No manually saved memories yet — $totalCount session memories are searchable above."
+                else -> "No memories stored yet."
+            }
         Text(
             emptyMsg,
             modifier = Modifier.padding(12.dp),
@@ -462,9 +466,10 @@ private fun TimelineTab(
     }
 
     // Group by date prefix (first 10 chars of created_at: "YYYY-MM-DD")
-    val grouped = memories.groupBy { m ->
-        m.stringField("created_at")?.take(10) ?: "Unknown date"
-    }
+    val grouped =
+        memories.groupBy { m ->
+            m.stringField("created_at")?.take(10) ?: "Unknown date"
+        }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
@@ -473,9 +478,10 @@ private fun TimelineTab(
             item(key = "header_$dateLabel") {
                 Text(
                     dateLabel,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -507,9 +513,10 @@ private fun TimelineRow(
     val pinned = (memory["pinned"] as? JsonPrimitive)?.boolean == true
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.Top,
     ) {
         // Left time marker column

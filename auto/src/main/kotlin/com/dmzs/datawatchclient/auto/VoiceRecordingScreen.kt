@@ -1,16 +1,17 @@
 @file:Suppress("MagicNumber")
+
 package com.dmzs.datawatchclient.auto
 
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.speech.tts.UtteranceProgressListener
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
@@ -50,10 +51,11 @@ public class VoiceRecordingScreen(
     private val sessionId: String,
     private val sessionTitle: String,
 ) : Screen(carContext) {
-
     private sealed class State {
         object Listening : State()
+
         data class Error(val msg: String) : State()
+
         data class Confirmed(val transcript: String) : State()
     }
 
@@ -61,78 +63,102 @@ public class VoiceRecordingScreen(
 
     // Live feedback during LISTENING — updated by recognizer callbacks.
     private var partialText: String = ""
-    private var micReady = false  // true after onReadyForSpeech fires
+    private var micReady = false // true after onReadyForSpeech fires
 
     private var ttsReady = false
     private var pendingSpeak: String? = null
     private var recognizer: SpeechRecognizer? = null
-    private var focusRequest: AudioFocusRequest? = null   // recording (EXCLUSIVE)
+    private var focusRequest: AudioFocusRequest? = null // recording (EXCLUSIVE)
     private var ttsFocusRequest: AudioFocusRequest? = null // TTS playback (TRANSIENT)
-    private val audioManager = carContext.applicationContext
-        .getSystemService(AudioManager::class.java)
+    private val audioManager =
+        carContext.applicationContext
+            .getSystemService(AudioManager::class.java)
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) {
-            tts.language = java.util.Locale.getDefault()
-            // Route TTS through car speakers, not the phone speaker.
-            tts.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String) {}
-                override fun onDone(utteranceId: String) { abandonTtsFocus() }
-                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { abandonTtsFocus() }
-                override fun onStop(utteranceId: String, interrupted: Boolean) { abandonTtsFocus() }
-            })
-            ttsReady = true
-            pendingSpeak?.let { text -> pendingSpeak = null; speakWithFocus(text) }
+    private val tts: TextToSpeech =
+        TextToSpeech(carContext.applicationContext) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts.language = java.util.Locale.getDefault()
+                // Route TTS through car speakers, not the phone speaker.
+                tts.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                tts.setOnUtteranceProgressListener(
+                    object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String) {}
+
+                        override fun onDone(utteranceId: String) {
+                            abandonTtsFocus()
+                        }
+
+                        @Deprecated("replaced by onStop")
+                        override fun onError(utteranceId: String) {
+                            abandonTtsFocus()
+                        }
+
+                        override fun onStop(
+                            utteranceId: String,
+                            interrupted: Boolean,
+                        ) {
+                            abandonTtsFocus()
+                        }
+                    },
+                )
+                ttsReady = true
+                pendingSpeak?.let { text ->
+                    pendingSpeak = null
+                    speakWithFocus(text)
+                }
+            }
         }
-    }
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                if (state is State.Listening) startListening()
-            }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    if (state is State.Listening) startListening()
+                }
 
-            override fun onStop(owner: LifecycleOwner) {
-                recognizer?.cancel()
-                tts.stop()
-                abandonAudioFocus()
-                abandonTtsFocus()
-            }
+                override fun onStop(owner: LifecycleOwner) {
+                    recognizer?.cancel()
+                    tts.stop()
+                    abandonAudioFocus()
+                    abandonTtsFocus()
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                recognizer?.destroy()
-                recognizer = null
-                tts.stop()
-                tts.shutdown()
-                abandonAudioFocus()
-                abandonTtsFocus()
-                scope.cancel()
-            }
-        })
+                override fun onDestroy(owner: LifecycleOwner) {
+                    recognizer?.destroy()
+                    recognizer = null
+                    tts.stop()
+                    tts.shutdown()
+                    abandonAudioFocus()
+                    abandonTtsFocus()
+                    scope.cancel()
+                }
+            },
+        )
     }
 
-    override fun onGetTemplate(): Template = when (val s = state) {
-        is State.Listening -> buildListeningTemplate()
-        is State.Error -> buildErrorTemplate(s.msg)
-        is State.Confirmed -> buildConfirmTemplate(s.transcript)
-    }
+    override fun onGetTemplate(): Template =
+        when (val s = state) {
+            is State.Listening -> buildListeningTemplate()
+            is State.Error -> buildErrorTemplate(s.msg)
+            is State.Confirmed -> buildConfirmTemplate(s.transcript)
+        }
 
     private fun buildListeningTemplate(): Template {
         // Live transcription is the primary content — matches text-message voice input.
         // RMS meter removed: Car App Library caps template updates at 5/s so it barely
         // animates and confuses users who expect a smooth waveform.
-        val body = when {
-            !micReady -> "Starting microphone…"
-            partialText.isNotBlank() -> partialText.take(PARTIAL_CHARS)
-            else -> "Listening…"
-        }
+        val body =
+            when {
+                !micReady -> "Starting microphone…"
+                partialText.isNotBlank() -> partialText.take(PARTIAL_CHARS)
+                else -> "Listening…"
+            }
         return MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
@@ -144,7 +170,7 @@ public class VoiceRecordingScreen(
                         abandonAudioFocus()
                         screenManager.pop()
                     }
-                    .build()
+                    .build(),
             )
             .build()
     }
@@ -157,20 +183,21 @@ public class VoiceRecordingScreen(
                 Action.Builder()
                     .setTitle("Retry")
                     .setOnClickListener { startListening() }
-                    .build()
+                    .build(),
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Cancel")
                     .setOnClickListener { screenManager.pop() }
-                    .build()
+                    .build(),
             )
             .build()
 
     private fun buildConfirmTemplate(transcript: String): Template {
-        val voiceIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
-        ).build()
+        val voiceIcon =
+            CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+            ).build()
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
             .setTitle("$sessionTitle · Voice")
             .setHeaderAction(Action.BACK)
@@ -181,21 +208,21 @@ public class VoiceRecordingScreen(
                             .setTitle("Listen")
                             .setIcon(voiceIcon)
                             .setOnClickListener { speakWithFocus(transcript) }
-                            .build()
+                            .build(),
                     )
-                    .build()
+                    .build(),
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Send")
                     .setOnClickListener { onSend(transcript) }
-                    .build()
+                    .build(),
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Retry")
                     .setOnClickListener { startListening() }
-                    .build()
+                    .build(),
             )
             .build()
     }
@@ -205,15 +232,17 @@ public class VoiceRecordingScreen(
         // USAGE_ASSISTANT silences navigation/media without triggering USAGE_VOICE_COMMUNICATION,
         // which in Android Auto over Bluetooth starts BT SCO (async). SCO setup takes 200-500ms;
         // SpeechRecognizer starts immediately and gets silence/noise → ERROR_NO_MATCH.
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANT)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-            .build()
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-            .setAudioAttributes(attrs)
-            .setAcceptsDelayedFocusGain(false)
-            .setOnAudioFocusChangeListener { }
-            .build()
+        val attrs =
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+        val req =
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                .setAudioAttributes(attrs)
+                .setAcceptsDelayedFocusGain(false)
+                .setOnAudioFocusChangeListener { }
+                .build()
         focusRequest = req
         return audioManager.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
@@ -246,73 +275,93 @@ public class VoiceRecordingScreen(
 
         requestAudioFocus()
 
-        recognizer = SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
-            rec.setRecognitionListener(object : RecognitionListener {
-                override fun onResults(results: Bundle) {
-                    abandonAudioFocus()
-                    val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull()?.trim().orEmpty()
-                    if (text.isNotEmpty()) {
-                        state = State.Confirmed(text)
-                        invalidate()
-                        // Guard against the TTS race: if binding hasn't completed yet, queue the text.
-                        if (ttsReady) speakWithFocus(text)
-                        else pendingSpeak = text
-                    } else {
-                        state = State.Error("Nothing heard — tap Retry")
-                        invalidate()
+        recognizer =
+            SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
+                rec.setRecognitionListener(
+                    object : RecognitionListener {
+                        override fun onResults(results: Bundle) {
+                            abandonAudioFocus()
+                            val text =
+                                results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                    ?.firstOrNull()?.trim().orEmpty()
+                            if (text.isNotEmpty()) {
+                                state = State.Confirmed(text)
+                                invalidate()
+                                // Guard against the TTS race: if binding hasn't completed yet, queue the text.
+                                if (ttsReady) {
+                                    speakWithFocus(text)
+                                } else {
+                                    pendingSpeak = text
+                                }
+                            } else {
+                                state = State.Error("Nothing heard — tap Retry")
+                                invalidate()
+                            }
+                        }
+
+                        override fun onError(error: Int) {
+                            abandonAudioFocus()
+                            state = State.Error(speechErrorString(error))
+                            invalidate()
+                        }
+
+                        override fun onPartialResults(partialResults: Bundle) {
+                            val text =
+                                partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                    ?.firstOrNull()?.trim().orEmpty()
+                            if (text != partialText) {
+                                partialText = text
+                                invalidate()
+                            }
+                        }
+
+                        override fun onRmsChanged(rmsdB: Float) {
+                            // Meter removed — no template update needed on volume change.
+                        }
+
+                        override fun onReadyForSpeech(params: Bundle) {
+                            micReady = true
+                            invalidate()
+                        }
+
+                        override fun onBeginningOfSpeech() {}
+
+                        override fun onBufferReceived(buffer: ByteArray) {}
+
+                        override fun onEndOfSpeech() {}
+
+                        override fun onEvent(
+                            eventType: Int,
+                            params: Bundle,
+                        ) {}
+                    },
+                )
+
+                val intent =
+                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault().toLanguageTag())
+                        // Car environments have road/A/C noise — give the user a wider silence window
+                        // than the OS default (~1 s) so a breath between phrases isn't treated as end-of-speech.
+                        // Keep totals well under the Google ASR ~10 s max to avoid ERROR_NO_MATCH on timeout.
+                        putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500)
+                        putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 4000)
+                        putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500)
                     }
-                }
-
-                override fun onError(error: Int) {
-                    abandonAudioFocus()
-                    state = State.Error(speechErrorString(error))
-                    invalidate()
-                }
-
-                override fun onPartialResults(partialResults: Bundle) {
-                    val text = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull()?.trim().orEmpty()
-                    if (text != partialText) {
-                        partialText = text
-                        invalidate()
-                    }
-                }
-
-                override fun onRmsChanged(rmsdB: Float) {
-                    // Meter removed — no template update needed on volume change.
-                }
-
-                override fun onReadyForSpeech(params: Bundle) { micReady = true; invalidate() }
-                override fun onBeginningOfSpeech() {}
-                override fun onBufferReceived(buffer: ByteArray) {}
-                override fun onEndOfSpeech() {}
-                override fun onEvent(eventType: Int, params: Bundle) {}
-            })
-
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault().toLanguageTag())
-                // Car environments have road/A/C noise — give the user a wider silence window
-                // than the OS default (~1 s) so a breath between phrases isn't treated as end-of-speech.
-                // Keep totals well under the Google ASR ~10 s max to avoid ERROR_NO_MATCH on timeout.
-                putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 500)
-                putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 4000)
-                putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500)
+                rec.startListening(intent)
             }
-            rec.startListening(intent)
-        }
     }
 
     private fun onSend(transcript: String) {
         scope.launch {
             runCatching {
-                val profile = resolveActiveProfile() ?: run {
-                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
-                    return@runCatching
-                }
+                val profile =
+                    resolveActiveProfile() ?: run {
+                        CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                        return@runCatching
+                    }
                 AutoServiceLocator.transportFor(profile)
                     .replyToSession(sessionId, "$transcript\r")
                     .fold(
@@ -334,15 +383,16 @@ public class VoiceRecordingScreen(
 
     private fun speakWithFocus(text: String) {
         abandonTtsFocus()
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener { }
-            .build()
+        val req =
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                .setOnAudioFocusChangeListener { }
+                .build()
         ttsFocusRequest = req
         audioManager.requestAudioFocus(req)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-voice")
@@ -357,15 +407,17 @@ public class VoiceRecordingScreen(
         const val ERROR_MSG_CHARS = 40
         const val PARTIAL_CHARS = 200
 
-        fun speechErrorString(error: Int): String = when (error) {
-            SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
-            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required — grant in phone settings"
-            SpeechRecognizer.ERROR_NETWORK,
-            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network error — try again"
-            SpeechRecognizer.ERROR_NO_MATCH -> "Nothing matched — speak clearly and retry"
-            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech service busy — retry"
-            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected — tap Retry"
-            else -> "Recognition error ($error) — tap Retry"
-        }
+        fun speechErrorString(error: Int): String =
+            when (error) {
+                SpeechRecognizer.ERROR_AUDIO -> "Microphone error — check audio"
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required — grant in phone settings"
+                SpeechRecognizer.ERROR_NETWORK,
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
+                -> "Network error — try again"
+                SpeechRecognizer.ERROR_NO_MATCH -> "Nothing matched — speak clearly and retry"
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech service busy — retry"
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected — tap Retry"
+                else -> "Recognition error ($error) — tap Retry"
+            }
     }
 }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -58,10 +57,13 @@ public class WearSyncService(
     private var prevWaitingIds: Set<String> = emptySet()
     private var prevErrorIds: Set<String> = emptySet()
     private var prevCouncilCompletedIds: Set<String> = emptySet()
+
     // BL303-W3: track last blocked session to fire notification once per new block only.
     private var lastGuardrailBlockSessionId: String = ""
+
     // BL303-W5: most recent sessions cache for voice query replies (updated in publishSessions).
     @Volatile private var lastSessionsCache: SessionsListSnapshot = SessionsListSnapshot(emptyList())
+
     @Volatile private var lastCountsCache: Snapshot = Snapshot("", "", 0, 0, 0)
     private val messageListener =
         MessageClient.OnMessageReceivedListener { ev: MessageEvent ->
@@ -271,37 +273,43 @@ public class WearSyncService(
                 .collectLatest { (snap, list) ->
                     publishCounts(snap)
                     publishSessions(list)
-                    val currentWaitingIds = list.items
-                        .filter { it.stateName.equals("waiting", ignoreCase = true) }
-                        .map { it.id }.toSet()
+                    val currentWaitingIds =
+                        list.items
+                            .filter { it.stateName.equals("waiting", ignoreCase = true) }
+                            .map { it.id }.toSet()
                     val newWaiting = currentWaitingIds - prevWaitingIds
                     if (newWaiting.isNotEmpty() && prevWaitingIds.isNotEmpty()) {
-                        val title = list.items
-                            .firstOrNull { it.id in newWaiting }?.title.orEmpty()
+                        val title =
+                            list.items
+                                .firstOrNull { it.id in newWaiting }?.title.orEmpty()
                         alertWatchNodes(title)
                     }
                     prevWaitingIds = currentWaitingIds
 
                     // Council consensus: council- sessions that just became Completed
-                    val currentCouncilCompletedIds = list.items
-                        .filter { it.stateName.equals("completed", ignoreCase = true) && it.id.startsWith("council-") }
-                        .map { it.id }.toSet()
+                    val currentCouncilCompletedIds =
+                        list.items
+                            .filter { it.stateName.equals("completed", ignoreCase = true) && it.id.startsWith("council-") }
+                            .map { it.id }.toSet()
                     val newCouncilCompleted = currentCouncilCompletedIds - prevCouncilCompletedIds
                     if (newCouncilCompleted.isNotEmpty() && prevCouncilCompletedIds.isNotEmpty()) {
-                        val title = list.items
-                            .firstOrNull { it.id in newCouncilCompleted }?.title.orEmpty()
+                        val title =
+                            list.items
+                                .firstOrNull { it.id in newCouncilCompleted }?.title.orEmpty()
                         councilAlertWatchNodes(title.ifBlank { "council run" })
                     }
                     prevCouncilCompletedIds = currentCouncilCompletedIds
 
                     // Error/killed sessions that just entered error state
-                    val currentErrorIds = list.items
-                        .filter { it.stateName.equals("error", ignoreCase = true) || it.stateName.equals("killed", ignoreCase = true) }
-                        .map { it.id }.toSet()
+                    val currentErrorIds =
+                        list.items
+                            .filter { it.stateName.equals("error", ignoreCase = true) || it.stateName.equals("killed", ignoreCase = true) }
+                            .map { it.id }.toSet()
                     val newErrors = currentErrorIds - prevErrorIds
                     if (newErrors.isNotEmpty() && prevErrorIds.isNotEmpty()) {
-                        val title = list.items
-                            .firstOrNull { it.id in newErrors }?.title.orEmpty()
+                        val title =
+                            list.items
+                                .firstOrNull { it.id in newErrors }?.title.orEmpty()
                         errorAlertWatchNodes(title)
                     }
                     prevErrorIds = currentErrorIds
@@ -344,12 +352,14 @@ public class WearSyncService(
             ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
                 Log.d(TAG, "fetchDashboard listSessions OK count=${list.size}")
                 ServiceLocator.sessionRepository.replaceAll(profile.id, list)
-                sessionErrorCount = list.count {
-                    it.state == SessionState.Error || it.state == SessionState.Killed
-                }
-                sessionCouncilCount = list.count {
-                    it.fullId.startsWith("council-") && it.state == SessionState.Running
-                }
+                sessionErrorCount =
+                    list.count {
+                        it.state == SessionState.Error || it.state == SessionState.Killed
+                    }
+                sessionCouncilCount =
+                    list.count {
+                        it.fullId.startsWith("council-") && it.state == SessionState.Running
+                    }
             }.onFailure { err ->
                 Log.w(TAG, "fetchDashboard listSessions FAILED ${err.message}")
             }
@@ -388,15 +398,20 @@ public class WearSyncService(
                         .map { p ->
                             // BL303-W4: compute automata carousel extras from story counts
                             val totalStories = p.stories.size
-                            val doneStories = p.stories.count {
-                                it.status == "complete" || it.status == "rejected"
-                            }
-                            val blockedStories = p.stories.count {
-                                it.status == "awaiting_approval"
-                            }
-                            val prgress = if (totalStories > 0) {
-                                doneStories.toFloat() / totalStories.toFloat()
-                            } else 0f
+                            val doneStories =
+                                p.stories.count {
+                                    it.status == "complete" || it.status == "rejected"
+                                }
+                            val blockedStories =
+                                p.stories.count {
+                                    it.status == "awaiting_approval"
+                                }
+                            val prgress =
+                                if (totalStories > 0) {
+                                    doneStories.toFloat() / totalStories.toFloat()
+                                } else {
+                                    0f
+                                }
                             PrdSnapshotItem(
                                 id = p.id,
                                 title = (p.title ?: p.name).take(40),
@@ -414,14 +429,16 @@ public class WearSyncService(
             // W-#114 — publish active alert counts for the alerts tile + complication.
             ServiceLocator.transportFor(profile).listAlerts().onSuccess { view ->
                 val alerts = view.alerts
-                val needsInput = alerts.count {
-                    val t = it.type.lowercase()
-                    t.contains("input") || t == "needs_input" || t == "input_needed"
-                }
-                val errors = alerts.count {
-                    it.severity == com.dmzs.datawatchclient.domain.AlertSeverity.Error ||
-                        it.type.lowercase().contains("error")
-                }
+                val needsInput =
+                    alerts.count {
+                        val t = it.type.lowercase()
+                        t.contains("input") || t == "needs_input" || t == "input_needed"
+                    }
+                val errors =
+                    alerts.count {
+                        it.severity == com.dmzs.datawatchclient.domain.AlertSeverity.Error ||
+                            it.type.lowercase().contains("error")
+                    }
                 publishAlerts(AlertsCountSnapshot(total = alerts.size, needsInput = needsInput, errors = errors))
             }.onFailure {
                 // best-effort; silence so missing alerts endpoint doesn't break dashboard
@@ -435,19 +452,21 @@ public class WearSyncService(
                     ?.filter { it.state == SessionState.Running || it.state == SessionState.Waiting }
                     ?.maxByOrNull { it.lastActivityAt }
                     ?.let { activeSession ->
-                        val telem = ServiceLocator.transportFor(profile)
-                            .getSessionTelemetry(activeSession.id).getOrNull()
+                        val telem =
+                            ServiceLocator.transportFor(profile)
+                                .getSessionTelemetry(activeSession.id).getOrNull()
                         val blocks = telem?.guardrailVerdicts?.filter { it.outcome == "block" }
-                        val snap = TelemetrySnapshot(
-                            sessionId = activeSession.id,
-                            currentTask = telem?.currentTask.orEmpty(),
-                            progress = telem?.progress ?: 0f,
-                            sprintName = telem?.sprint?.name.orEmpty(),
-                            automataName = telem?.sprint?.automata.orEmpty(),
-                            sessionState = activeSession.state.name,
-                            guardrailBlock = !blocks.isNullOrEmpty(),
-                            blockSummary = blocks?.firstOrNull()?.summary.orEmpty(),
-                        )
+                        val snap =
+                            TelemetrySnapshot(
+                                sessionId = activeSession.id,
+                                currentTask = telem?.currentTask.orEmpty(),
+                                progress = telem?.progress ?: 0f,
+                                sprintName = telem?.sprint?.name.orEmpty(),
+                                automataName = telem?.sprint?.automata.orEmpty(),
+                                sessionState = activeSession.state.name,
+                                guardrailBlock = !blocks.isNullOrEmpty(),
+                                blockSummary = blocks?.firstOrNull()?.summary.orEmpty(),
+                            )
                         publishTelemetry(snap)
                         // BL303-W3 — fire watch notification when a NEW block appears.
                         // Idempotent: same session id does not re-fire.
@@ -464,35 +483,39 @@ public class WearSyncService(
         }
         // B28: all-servers compact summary — published on demand.
         runCatching {
-            val all = ServiceLocator.profileRepository.observeAll().first()
-                .filter { it.enabled }
+            val all =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .filter { it.enabled }
             if (all.size > 1) {
-                val rows = coroutineScope {
-                    all.map { p ->
-                        async {
-                            ServiceLocator.transportFor(p).stats().fold(
-                                onSuccess = { s ->
-                                    val cpuPct = when {
-                                        s.cpuLoad1 != null && (s.cpuCores ?: 0) > 0 ->
-                                            (s.cpuLoad1!! / s.cpuCores!! * 100.0)
-                                                .toFloat().coerceIn(0f, 100f)
-                                        s.cpuPct != null -> s.cpuPct!!.toFloat().coerceIn(0f, 100f)
-                                        else -> 0f
-                                    }
-                                    val memPct = when {
-                                        (s.memTotal ?: 0L) > 0 ->
-                                            ((s.memUsed ?: 0L).toDouble() / s.memTotal!!.toDouble() * 100.0)
-                                                .toFloat().coerceIn(0f, 100f)
-                                        s.memPct != null -> s.memPct!!.toFloat().coerceIn(0f, 100f)
-                                        else -> 0f
-                                    }
-                                    AllStatsRow(p.displayName, cpuPct, memPct, s.sessionsTotal, true)
-                                },
-                                onFailure = { AllStatsRow(p.displayName, 0f, 0f, 0, false) },
-                            )
-                        }
-                    }.awaitAll()
-                }
+                val rows =
+                    coroutineScope {
+                        all.map { p ->
+                            async {
+                                ServiceLocator.transportFor(p).stats().fold(
+                                    onSuccess = { s ->
+                                        val cpuPct =
+                                            when {
+                                                s.cpuLoad1 != null && (s.cpuCores ?: 0) > 0 ->
+                                                    (s.cpuLoad1!! / s.cpuCores!! * 100.0)
+                                                        .toFloat().coerceIn(0f, 100f)
+                                                s.cpuPct != null -> s.cpuPct!!.toFloat().coerceIn(0f, 100f)
+                                                else -> 0f
+                                            }
+                                        val memPct =
+                                            when {
+                                                (s.memTotal ?: 0L) > 0 ->
+                                                    ((s.memUsed ?: 0L).toDouble() / s.memTotal!!.toDouble() * 100.0)
+                                                        .toFloat().coerceIn(0f, 100f)
+                                                s.memPct != null -> s.memPct!!.toFloat().coerceIn(0f, 100f)
+                                                else -> 0f
+                                            }
+                                        AllStatsRow(p.displayName, cpuPct, memPct, s.sessionsTotal, true)
+                                    },
+                                    onFailure = { AllStatsRow(p.displayName, 0f, 0f, 0, false) },
+                                )
+                            }
+                        }.awaitAll()
+                    }
                 publishAllStats(rows)
             }
         }.onFailure { err ->
@@ -686,8 +709,9 @@ public class WearSyncService(
                 ServiceLocator.profileRepository.observeAll().first()
                     .firstOrNull { it.id == activeId && it.enabled } ?: return
             ServiceLocator.transportFor(profile).listSessions().onSuccess { list ->
-                val target = list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
-                    ?: return@onSuccess
+                val target =
+                    list.firstOrNull { it.id == sessionId || it.fullId == sessionId }
+                        ?: return@onSuccess
                 ServiceLocator.transportFor(profile).killSession(target.fullId)
             }
         }
@@ -733,17 +757,21 @@ public class WearSyncService(
      * session flow and the 15-min heartbeat) is intentionally stale-tolerant;
      * voice replies are best-effort status snapshots, not live data.
      */
-    private suspend fun forwardVoiceQuery(query: String, sourceNodeId: String) {
+    private suspend fun forwardVoiceQuery(
+        query: String,
+        sourceNodeId: String,
+    ) {
         runCatching {
             val counts = lastCountsCache
-            val reply = buildVoiceReply(
-                query = query,
-                running = counts.running,
-                waiting = counts.waiting,
-                error = counts.error,
-                serverName = counts.serverName,
-                sessionTitles = lastSessionsCache.items.map { it.title },
-            )
+            val reply =
+                buildVoiceReply(
+                    query = query,
+                    running = counts.running,
+                    waiting = counts.waiting,
+                    error = counts.error,
+                    serverName = counts.serverName,
+                    sessionTitles = lastSessionsCache.items.map { it.title },
+                )
             Log.d(TAG, "voiceQuery reply='$reply'")
             val payload = reply.toByteArray(Charsets.UTF_8)
             Wearable.getMessageClient(context)
@@ -959,7 +987,7 @@ public class WearSyncService(
     }
 
     private fun publishCounts(snap: Snapshot) {
-        lastCountsCache = snap  // BL303-W5: cache for voice query
+        lastCountsCache = snap // BL303-W5: cache for voice query
         runCatching {
             val req =
                 PutDataMapRequest.create(COUNTS_PATH).apply {
@@ -1034,20 +1062,21 @@ public class WearSyncService(
 
     private fun publishAllStats(rows: List<AllStatsRow>) {
         runCatching {
-            val req = PutDataMapRequest.create(ALL_STATS_PATH).apply {
-                dataMap.putStringArray("names", rows.map { it.name }.toTypedArray())
-                dataMap.putFloatArray("cpuPcts", rows.map { it.cpuPct }.toFloatArray())
-                dataMap.putFloatArray("memPcts", rows.map { it.memPct }.toFloatArray())
-                dataMap.putFloatArray("totals", rows.map { it.sessionsTotal.toFloat() }.toFloatArray())
-                dataMap.putStringArray("statuses", rows.map { if (it.online) "ok" else "err" }.toTypedArray())
-                dataMap.putLong("ts", System.currentTimeMillis())
-            }.asPutDataRequest().setUrgent()
+            val req =
+                PutDataMapRequest.create(ALL_STATS_PATH).apply {
+                    dataMap.putStringArray("names", rows.map { it.name }.toTypedArray())
+                    dataMap.putFloatArray("cpuPcts", rows.map { it.cpuPct }.toFloatArray())
+                    dataMap.putFloatArray("memPcts", rows.map { it.memPct }.toFloatArray())
+                    dataMap.putFloatArray("totals", rows.map { it.sessionsTotal.toFloat() }.toFloatArray())
+                    dataMap.putStringArray("statuses", rows.map { if (it.online) "ok" else "err" }.toTypedArray())
+                    dataMap.putLong("ts", System.currentTimeMillis())
+                }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
         }
     }
 
     private fun publishSessions(snap: SessionsListSnapshot) {
-        lastSessionsCache = snap  // BL303-W5: cache for voice query
+        lastSessionsCache = snap // BL303-W5: cache for voice query
         runCatching {
             Log.d(TAG, "publishSessions n=${snap.items.size}")
             val req =
@@ -1111,7 +1140,10 @@ public class WearSyncService(
      * WearAlertListenerService can post a notification with the triple-buzz haptic.
      * Payload: "sessionId\nblockSummary".
      */
-    private fun guardrailBlockWatchNodes(sessionId: String, blockSummary: String) {
+    private fun guardrailBlockWatchNodes(
+        sessionId: String,
+        blockSummary: String,
+    ) {
         scope.launch {
             runCatching {
                 val nodes =
@@ -1137,17 +1169,18 @@ public class WearSyncService(
      */
     private fun publishTelemetry(snap: TelemetrySnapshot) {
         runCatching {
-            val req = PutDataMapRequest.create(TELEMETRY_PATH).apply {
-                dataMap.putString("currentTask", snap.currentTask)
-                dataMap.putFloat("progress", snap.progress)
-                dataMap.putString("sprintName", snap.sprintName)
-                dataMap.putString("automataName", snap.automataName)
-                dataMap.putString("sessionState", snap.sessionState)
-                dataMap.putBoolean("guardrailBlock", snap.guardrailBlock)
-                dataMap.putString("blockSummary", snap.blockSummary)
-                dataMap.putString("sessionId", snap.sessionId)
-                dataMap.putLong("ts", System.currentTimeMillis())
-            }.asPutDataRequest().setUrgent()
+            val req =
+                PutDataMapRequest.create(TELEMETRY_PATH).apply {
+                    dataMap.putString("currentTask", snap.currentTask)
+                    dataMap.putFloat("progress", snap.progress)
+                    dataMap.putString("sprintName", snap.sprintName)
+                    dataMap.putString("automataName", snap.automataName)
+                    dataMap.putString("sessionState", snap.sessionState)
+                    dataMap.putBoolean("guardrailBlock", snap.guardrailBlock)
+                    dataMap.putString("blockSummary", snap.blockSummary)
+                    dataMap.putString("sessionId", snap.sessionId)
+                    dataMap.putLong("ts", System.currentTimeMillis())
+                }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)
         }.onFailure { Log.w(TAG, "publishTelemetry FAILED", it) }
     }
@@ -1173,18 +1206,23 @@ public class WearSyncService(
         public const val ALERT_PATH: String = "/datawatch/alert"
         public const val COUNCIL_ALERT_PATH: String = "/datawatch/council"
         public const val ERROR_ALERT_PATH: String = "/datawatch/error-alert"
+
         // S10-2 — watch-initiated demand sync request path.
         public const val SYNC_PATH: String = "/datawatch/sync"
         public const val ALERTS_PATH: String = "/datawatch/alerts"
+
         // BL303-W1: telemetry for the primary glance screen
         public const val TELEMETRY_PATH: String = "/datawatch/telemetry"
         public const val VOICE_QUERY_PATH: String = "/datawatch/voiceQuery"
+
         // BL303-W5: phone replies on this path with the spoken status string.
         public const val VOICE_REPLY_PATH: String = "/datawatch/voiceReply"
         private const val TELEMETRY_DEBOUNCE_MS: Long = 500L
+
         // BL303-W3: guardrail block notification + gate approval
         public const val GUARDRAIL_BLOCK_PATH: String = "/datawatch/guardrailBlock"
         public const val APPROVE_GATE_PATH: String = "/datawatch/approveGate"
+
         // BL303-W4: memory sweep quick action
         public const val MEMORY_SWEEP_PATH: String = "/datawatch/memorySweep"
 

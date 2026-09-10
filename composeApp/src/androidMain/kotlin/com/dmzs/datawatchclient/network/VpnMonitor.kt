@@ -11,9 +11,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 public enum class VpnState { Connected, Dropped, Unknown }
 
@@ -38,29 +38,34 @@ public class VpnMonitor(private val context: Context) {
     private val isAlwaysOn: Boolean
         get() = false
 
-    private val callback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            _state.value = VpnState.Connected
-            dropJob?.cancel()
-        }
+    private val callback =
+        object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                _state.value = VpnState.Connected
+                dropJob?.cancel()
+            }
 
-        override fun onLost(network: Network) {
-            handleVpnDrop()
+            override fun onLost(network: Network) {
+                handleVpnDrop()
+            }
         }
-    }
 
     private var dropJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     public fun start() {
-        val request = NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
-            .build()
+        val request =
+            NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+                .build()
         runCatching { cm.registerNetworkCallback(request, callback) }
     }
 
     public fun stop() {
-        try { cm.unregisterNetworkCallback(callback) } catch (_: Exception) {}
+        try {
+            cm.unregisterNetworkCallback(callback)
+        } catch (_: Exception) {
+        }
         scope.cancel()
     }
 
@@ -68,12 +73,13 @@ public class VpnMonitor(private val context: Context) {
         _state.value = VpnState.Dropped
         if (isAlwaysOn) {
             // Always-on VPN: Android will restart it — wait 30 s silently before notifying
-            dropJob = scope.launch {
-                delay(30_000)
-                if (_state.value == VpnState.Dropped) {
-                    showVpnDropNotification()
+            dropJob =
+                scope.launch {
+                    delay(30_000)
+                    if (_state.value == VpnState.Dropped) {
+                        showVpnDropNotification()
+                    }
                 }
-            }
         } else {
             // Non-always-on: notify immediately + show wake intent
             showVpnDropNotification()

@@ -17,7 +17,6 @@ public class SessionStatusViewModel(
     private val sessionId: String,
     private val resolver: ProfileResolver = ProfileResolver.Default,
 ) : ViewModel() {
-
     public data class UiState(
         val board: SessionStatusBoardDto? = null,
         val telemetry: SessionTelemetryDto? = null,
@@ -32,12 +31,13 @@ public class SessionStatusViewModel(
 
     public fun startPolling() {
         if (pollJob?.isActive == true) return
-        pollJob = viewModelScope.launch {
-            while (isActive) {
-                fetchStatus()
-                delay(POLL_INTERVAL_MS)
+        pollJob =
+            viewModelScope.launch {
+                while (isActive) {
+                    fetchStatus()
+                    delay(POLL_INTERVAL_MS)
+                }
             }
-        }
     }
 
     public fun stopPolling() {

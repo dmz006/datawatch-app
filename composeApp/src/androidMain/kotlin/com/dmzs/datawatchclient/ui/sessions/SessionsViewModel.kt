@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
-import com.dmzs.datawatchclient.push.SessionStateWatcher
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.push.SessionStateWatcher
 import com.dmzs.datawatchclient.transport.QuickCommandItem
 import com.dmzs.datawatchclient.transport.TransportError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -290,16 +290,19 @@ public class SessionsViewModel : ViewModel() {
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
     private val _sortOrder = MutableStateFlow(SortOrder.RecentActivity)
+
     // v0.83.0: state filter; persisted via SharedPreferences
-    private val _stateFilter = MutableStateFlow(
-        run {
-            val prefs = android.preference.PreferenceManager.getDefaultSharedPreferences(
-                ServiceLocator.context(),
-            )
-            val saved = prefs.getString("cs_session_state_filter", SessionStateFilter.ALL.name)
-            runCatching { SessionStateFilter.valueOf(saved ?: "") }.getOrDefault(SessionStateFilter.ALL)
-        },
-    )
+    private val _stateFilter =
+        MutableStateFlow(
+            run {
+                val prefs =
+                    android.preference.PreferenceManager.getDefaultSharedPreferences(
+                        ServiceLocator.context(),
+                    )
+                val saved = prefs.getString("cs_session_state_filter", SessionStateFilter.ALL.name)
+                runCatching { SessionStateFilter.valueOf(saved ?: "") }.getOrDefault(SessionStateFilter.ALL)
+            },
+        )
     val stateFilter: StateFlow<SessionStateFilter> = _stateFilter.asStateFlow()
 
     /**
@@ -359,61 +362,65 @@ public class SessionsViewModel : ViewModel() {
         // Build the base state from the 16-flow combine (max allowed), then
         // layer in _stateFilter with a second combine so we don't exceed the
         // vararg limit.
-        val baseFlow = combine(
-            activeProfile,
-            allProfiles,
-            sessionsFlow,
-            _refreshing,
-            _banner,
-            _filterText,
-            _backendFilter,
-            _showHistory,
-            _sortOrder,
-            allServersMode,
-            activeReachable,
-            _lastProbeEpochMs,
-            _deleteSupported,
-            _backendByProfileId,
-            _customOrder,
-            _reorderMode,
-        ) { args ->
-            @Suppress("UNCHECKED_CAST")
-            UiState(
-                activeProfile = args[0] as ServerProfile?,
-                allProfiles = args[1] as List<ServerProfile>,
-                sessions = args[2] as List<Session>,
-                refreshing = args[3] as Boolean,
-                banner = args[4] as String?,
-                filterText = args[5] as String,
-                backendFilter = args[6] as String?,
-                showHistory = args[7] as Boolean,
-                sortOrder = args[8] as SortOrder,
-                allServersMode = args[9] as Boolean,
-                activeReachable = args[10] as Boolean?,
-                lastProbeEpochMs = args[11] as Long?,
-                deleteSupported = args[12] as Boolean,
-                backendByProfileId = args[13] as Map<String, String>,
-                customOrder = args[14] as List<String>,
-                reorderMode = args[15] as Boolean,
-            )
-        }
+        val baseFlow =
+            combine(
+                activeProfile,
+                allProfiles,
+                sessionsFlow,
+                _refreshing,
+                _banner,
+                _filterText,
+                _backendFilter,
+                _showHistory,
+                _sortOrder,
+                allServersMode,
+                activeReachable,
+                _lastProbeEpochMs,
+                _deleteSupported,
+                _backendByProfileId,
+                _customOrder,
+                _reorderMode,
+            ) { args ->
+                @Suppress("UNCHECKED_CAST")
+                UiState(
+                    activeProfile = args[0] as ServerProfile?,
+                    allProfiles = args[1] as List<ServerProfile>,
+                    sessions = args[2] as List<Session>,
+                    refreshing = args[3] as Boolean,
+                    banner = args[4] as String?,
+                    filterText = args[5] as String,
+                    backendFilter = args[6] as String?,
+                    showHistory = args[7] as Boolean,
+                    sortOrder = args[8] as SortOrder,
+                    allServersMode = args[9] as Boolean,
+                    activeReachable = args[10] as Boolean?,
+                    lastProbeEpochMs = args[11] as Long?,
+                    deleteSupported = args[12] as Boolean,
+                    backendByProfileId = args[13] as Map<String, String>,
+                    customOrder = args[14] as List<String>,
+                    reorderMode = args[15] as Boolean,
+                )
+            }
         // v0.83.0: layer in state filter + counts; whisperConfigured added alongside
         return combine(baseFlow, _stateFilter, _whisperConfigured) { base, sf, wc ->
-            val doneStates = setOf(
-                com.dmzs.datawatchclient.domain.SessionState.Completed,
-                com.dmzs.datawatchclient.domain.SessionState.Killed,
-                com.dmzs.datawatchclient.domain.SessionState.Error,
-            )
+            val doneStates =
+                setOf(
+                    com.dmzs.datawatchclient.domain.SessionState.Completed,
+                    com.dmzs.datawatchclient.domain.SessionState.Killed,
+                    com.dmzs.datawatchclient.domain.SessionState.Error,
+                )
             base.copy(
                 stateFilter = sf,
                 whisperConfigured = wc,
-                activeCount = base.sessions.count { s ->
-                    s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
-                        s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
-                },
-                waitingCount = base.sessions.count { s ->
-                    s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
-                },
+                activeCount =
+                    base.sessions.count { s ->
+                        s.state == com.dmzs.datawatchclient.domain.SessionState.Running ||
+                            s.state == com.dmzs.datawatchclient.domain.SessionState.RateLimited
+                    },
+                waitingCount =
+                    base.sessions.count { s ->
+                        s.state == com.dmzs.datawatchclient.domain.SessionState.Waiting
+                    },
                 doneCount = base.sessions.count { s -> s.state in doneStates },
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
@@ -656,11 +663,14 @@ public class SessionsViewModel : ViewModel() {
     }
 
     /** Trigger a manual re-summarize and return the result wrapped as a [CurrentStatusDto] for display. */
-    public suspend fun resummmarizeSession(sessionId: String): com.dmzs.datawatchclient.transport.dto.CurrentStatusDto? {
+    public suspend fun resummmarizeSession(
+        sessionId: String,
+    ): com.dmzs.datawatchclient.transport.dto.CurrentStatusDto? {
         val profile = profileForSession(sessionId) ?: return null
-        val result = ServiceLocator.transportFor(profile)
-            .summarizeSession(fullIdFor(sessionId))
-            .getOrNull() ?: return null
+        val result =
+            ServiceLocator.transportFor(profile)
+                .summarizeSession(fullIdFor(sessionId))
+                .getOrNull() ?: return null
         // summarize returns a flat "summary" field — wrap it as a CurrentStatusDto for display
         return com.dmzs.datawatchclient.transport.dto.CurrentStatusDto(currentStatus = result.summary)
     }
@@ -742,8 +752,11 @@ public class SessionsViewModel : ViewModel() {
                 ServiceLocator.transportFor(profile).deleteSession(fullIdFor(sessionId)).fold(
                     onSuccess = {},
                     onFailure = { err ->
-                        if (err is TransportError.NotFound) hadNotFound = true
-                        else _banner.value = "Delete failed — ${err.message ?: err::class.simpleName}"
+                        if (err is TransportError.NotFound) {
+                            hadNotFound = true
+                        } else {
+                            _banner.value = "Delete failed — ${err.message ?: err::class.simpleName}"
+                        }
                     },
                 )
             }

@@ -51,10 +51,11 @@ public fun DeviceAliasesCard(vm: DeviceAliasesViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.load() }
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             PwaSectionTitle(stringResource(R.string.device_aliases_title), docsAnchor = "device-aliases")
@@ -78,7 +79,8 @@ public fun DeviceAliasesCard(vm: DeviceAliasesViewModel = viewModel()) {
                 onClick = {
                     if (alias.isNotBlank() && server.isNotBlank()) {
                         vm.addAlias(alias, server)
-                        alias = ""; server = ""
+                        alias = ""
+                        server = ""
                     }
                 },
                 modifier = Modifier.padding(top = 4.dp),
@@ -147,7 +149,10 @@ public class DeviceAliasesViewModel : ViewModel() {
         }
     }
 
-    public fun addAlias(alias: String, server: String) {
+    public fun addAlias(
+        alias: String,
+        server: String,
+    ) {
         viewModelScope.launch {
             val transport = resolveTransport() ?: return@launch
             transport.createDeviceAlias(alias, server).onSuccess { load() }

@@ -39,10 +39,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.DocsPendingSourceDto
 import com.dmzs.datawatchclient.transport.dto.DocsSearchResultDto
-import com.dmzs.datawatchclient.transport.dto.DocsTrustBulkRequest
 import com.dmzs.datawatchclient.transport.dto.DocsTrustedSourceDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -68,10 +66,11 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
     }
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             PwaSectionTitle(stringResource(R.string.docs_search_title), docsAnchor = "docs-search")
@@ -81,8 +80,11 @@ public fun DocsSearchCard(vm: DocsSearchViewModel = viewModel()) {
                 value = query,
                 onValueChange = { q ->
                     query = q
-                    if (q.length >= 2) vm.search(q)
-                    else if (q.isEmpty()) vm.clearResults()
+                    if (q.length >= 2) {
+                        vm.search(q)
+                    } else if (q.isEmpty()) {
+                        vm.clearResults()
+                    }
                 },
                 label = { Text(stringResource(R.string.docs_search_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -269,12 +271,16 @@ public class DocsSearchViewModel : ViewModel() {
     }
 
     public fun selectAll(select: Boolean) {
-        _state.value = _state.value.copy(
-            selected = if (select) _state.value.pending.map { it.path }.toSet() else emptySet(),
-        )
+        _state.value =
+            _state.value.copy(
+                selected = if (select) _state.value.pending.map { it.path }.toSet() else emptySet(),
+            )
     }
 
-    public fun toggle(path: String, checked: Boolean) {
+    public fun toggle(
+        path: String,
+        checked: Boolean,
+    ) {
         val current = _state.value.selected.toMutableSet()
         if (checked) current.add(path) else current.remove(path)
         _state.value = _state.value.copy(selected = current)

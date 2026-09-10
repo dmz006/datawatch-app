@@ -56,15 +56,19 @@ public fun RoutingRulesCard() {
 
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
-        val p = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == id && it.enabled }
+        val p =
+            ServiceLocator.profileRepository.observeAll().first()
+                .firstOrNull { it.id == id && it.enabled }
         return if (p != null) ServiceLocator.transportFor(p) else null
     }
 
     fun load() {
         scope.launch {
             transport()?.getRoutingRules()
-                ?.onSuccess { rules = it.rules; loadError = null }
+                ?.onSuccess {
+                    rules = it.rules
+                    loadError = null
+                }
                 ?.onFailure { loadError = it.message }
         }
     }
@@ -115,7 +119,12 @@ public fun RoutingRulesCard() {
                     scope.launch {
                         val newRule = RoutingRuleDto(pattern = pattern, backend = backend, description = desc)
                         transport()?.setRoutingRules(rules + newRule)
-                            ?.onSuccess { rules = it.rules; pattern = ""; backend = ""; desc = "" }
+                            ?.onSuccess {
+                                rules = it.rules
+                                pattern = ""
+                                backend = ""
+                                desc = ""
+                            }
                     }
                 },
             ) {
@@ -133,7 +142,11 @@ public fun RoutingRulesCard() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = testTask,
-                    onValueChange = { testTask = it; testRan = false; testResult = null },
+                    onValueChange = {
+                        testTask = it
+                        testRan = false
+                        testResult = null
+                    },
                     placeholder = { Text(stringResource(R.string.routing_test_task_hint)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
@@ -147,7 +160,11 @@ public fun RoutingRulesCard() {
                                 testResult = if (result.matched) result.backend else null
                                 testRan = true
                             }
-                            ?.onFailure { testRan = true; testMatched = false; testResult = null }
+                            ?.onFailure {
+                                testRan = true
+                                testMatched = false
+                                testResult = null
+                            }
                     }
                 }) {
                     Text(stringResource(R.string.routing_test_btn))

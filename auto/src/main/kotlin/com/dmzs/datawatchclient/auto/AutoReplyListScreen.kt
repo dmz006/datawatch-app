@@ -35,7 +35,6 @@ internal class AutoReplyListScreen(
     private val sessionId: String,
     private val sessionTitle: String,
 ) : Screen(carContext) {
-
     companion object {
         private const val MAX_TITLE_CHARS = 40
     }
@@ -43,26 +42,30 @@ internal class AutoReplyListScreen(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) { scope.cancel() }
-        })
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     override fun onGetTemplate(): Template {
         val listBuilder = ItemList.Builder()
 
         listOf(
-            "Yes"      to "yes\r",
-            "No"       to "no\r",
+            "Yes" to "yes\r",
+            "No" to "no\r",
             "Continue" to "continue\r",
-            "Stop"     to "stop\r",
+            "Stop" to "stop\r",
             "Enter ⏎" to "\r",
         ).forEach { (label, text) ->
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
                     .setOnClickListener { sendReply(text) }
-                    .build()
+                    .build(),
             )
         }
 
@@ -71,7 +74,7 @@ internal class AutoReplyListScreen(
                 Header.Builder()
                     .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(MAX_TITLE_CHARS))
                     .setStartHeaderAction(Action.BACK)
-                    .build()
+                    .build(),
             )
             .setSingleList(listBuilder.build())
             .build()
@@ -79,10 +82,11 @@ internal class AutoReplyListScreen(
 
     private fun sendReply(text: String) {
         scope.launch {
-            val profile = resolveActiveProfile() ?: run {
-                CarToast.makeText(carContext, "No server", CarToast.LENGTH_SHORT).show()
-                return@launch
-            }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    CarToast.makeText(carContext, "No server", CarToast.LENGTH_SHORT).show()
+                    return@launch
+                }
             AutoServiceLocator.transportFor(profile).replyToSession(sessionId, text).fold(
                 onSuccess = {
                     CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()

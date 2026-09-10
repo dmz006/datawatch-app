@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,56 +81,80 @@ internal fun CouncilCard() {
 
     suspend fun loadAll() {
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                else list.firstOrNull { it.id == activeId && it.enabled }
-            } ?: return
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.filter { it.enabled }.firstOrNull()
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                    }
+                } ?: return
         val t = ServiceLocator.transportFor(sp)
         t.councilListPersonas().onSuccess { personas = it }
         t.councilListRuns().onSuccess { runs = it }
         t.councilGetConfig().onSuccess { config = it }
     }
 
-    fun createPersona(name: String, prompt: String, description: String, assistBackend: String?) {
+    fun createPersona(
+        name: String,
+        prompt: String,
+        description: String,
+        assistBackend: String?,
+    ) {
         scope.launch {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
-                    .first { list -> list.any { it.enabled } }
-                    .let { list ->
-                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                        else list.firstOrNull { it.id == activeId && it.enabled }
-                    } ?: return@runCatching
-                val dto = CouncilPersonaCreateDto(
-                    name = name,
-                    prompt = prompt,
-                    description = description,
-                    assistBackend = assistBackend,
-                )
+                val sp =
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .let { list ->
+                            if (activeId == null) {
+                                list.filter { it.enabled }.firstOrNull()
+                            } else {
+                                list.firstOrNull { it.id == activeId && it.enabled }
+                            }
+                        } ?: return@runCatching
+                val dto =
+                    CouncilPersonaCreateDto(
+                        name = name,
+                        prompt = prompt,
+                        description = description,
+                        assistBackend = assistBackend,
+                    )
                 ServiceLocator.transportFor(sp).createCouncilPersona(dto)
                     .onSuccess { loadAll() }
             }
         }
     }
 
-    fun updatePersona(name: String, prompt: String, description: String, assistBackend: String?) {
+    fun updatePersona(
+        name: String,
+        prompt: String,
+        description: String,
+        assistBackend: String?,
+    ) {
         scope.launch {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
-                    .first { list -> list.any { it.enabled } }
-                    .let { list ->
-                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                        else list.firstOrNull { it.id == activeId && it.enabled }
-                    } ?: return@runCatching
-                val dto = CouncilPersonaCreateDto(
-                    name = name,
-                    prompt = prompt,
-                    description = description,
-                    assistBackend = assistBackend,
-                )
+                val sp =
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .let { list ->
+                            if (activeId == null) {
+                                list.filter { it.enabled }.firstOrNull()
+                            } else {
+                                list.firstOrNull { it.id == activeId && it.enabled }
+                            }
+                        } ?: return@runCatching
+                val dto =
+                    CouncilPersonaCreateDto(
+                        name = name,
+                        prompt = prompt,
+                        description = description,
+                        assistBackend = assistBackend,
+                    )
                 ServiceLocator.transportFor(sp).updateCouncilPersona(name, dto)
                     .onSuccess { loadAll() }
             }
@@ -142,12 +165,16 @@ internal fun CouncilCard() {
         scope.launch {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
-                    .first { list -> list.any { it.enabled } }
-                    .let { list ->
-                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                        else list.firstOrNull { it.id == activeId && it.enabled }
-                    } ?: return@runCatching
+                val sp =
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .let { list ->
+                            if (activeId == null) {
+                                list.filter { it.enabled }.firstOrNull()
+                            } else {
+                                list.firstOrNull { it.id == activeId && it.enabled }
+                            }
+                        } ?: return@runCatching
                 ServiceLocator.transportFor(sp).deleteCouncilPersona(name)
                     .onSuccess { loadAll() }
             }
@@ -157,11 +184,12 @@ internal fun CouncilCard() {
     LaunchedEffect(Unit) { runCatching { loadAll() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.council_title), docsAnchor = "council-mode")
 
@@ -198,11 +226,12 @@ internal fun CouncilCard() {
                     FilterChip(
                         selected = persona.enabled && persona.name in selectedPersonas,
                         onClick = {
-                            selectedPersonas = if (persona.name in selectedPersonas) {
-                                selectedPersonas - persona.name
-                            } else {
-                                selectedPersonas + persona.name
-                            }
+                            selectedPersonas =
+                                if (persona.name in selectedPersonas) {
+                                    selectedPersonas - persona.name
+                                } else {
+                                    selectedPersonas + persona.name
+                                }
                         },
                         label = { Text(persona.name, style = MaterialTheme.typography.labelSmall) },
                         enabled = persona.enabled,
@@ -216,9 +245,10 @@ internal fun CouncilCard() {
         if (showPersonasSheet) {
             ModalBottomSheet(onDismissRequest = { showPersonasSheet = false }) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                 ) {
                     Text(
                         stringResource(R.string.council_personas_label),
@@ -228,9 +258,10 @@ internal fun CouncilCard() {
                     LazyColumn {
                         items(personas) { persona ->
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
@@ -259,22 +290,30 @@ internal fun CouncilCard() {
                                     }
                                 }
                                 IconButton(onClick = {
-                                    editingPersona = CouncilPersonaForEdit(
-                                        name = persona.name,
-                                        prompt = persona.prompt,
-                                        description = persona.description,
-                                        isBuiltin = persona.isBuiltin,
-                                    )
+                                    editingPersona =
+                                        CouncilPersonaForEdit(
+                                            name = persona.name,
+                                            prompt = persona.prompt,
+                                            description = persona.description,
+                                            isBuiltin = persona.isBuiltin,
+                                        )
                                     showPersonasSheet = false
                                 }) {
-                                    Icon(imageVector = Icons.Filled.Edit, contentDescription = stringResource(R.string.council_persona_edit))
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = stringResource(R.string.council_persona_edit),
+                                    )
                                 }
                                 if (!persona.isBuiltin) {
                                     IconButton(onClick = {
                                         personaToDelete = persona
                                         showPersonasSheet = false
                                     }) {
-                                        Icon(imageVector = Icons.Filled.Delete, contentDescription = stringResource(R.string.council_persona_delete), tint = MaterialTheme.colorScheme.error)
+                                        Icon(
+                                            imageVector = Icons.Filled.Delete,
+                                            contentDescription = stringResource(R.string.council_persona_delete),
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
                                     }
                                 }
                             }
@@ -348,12 +387,16 @@ internal fun CouncilCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                } ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.filter { it.enabled }.firstOrNull()
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                        }
+                                    } ?: return@runCatching
                             ServiceLocator.transportFor(sp).councilUpdateConfig(updated)
                                 .onSuccess { config = it }
                         }
@@ -391,20 +434,25 @@ internal fun CouncilCard() {
         }
         TextButton(
             onClick = {
-                val updated = config.copy(
-                    llmRef = configLlmRef.trim().ifBlank { null },
-                    maxParallel = configMaxParallel.trim().toIntOrNull(),
-                    draftRetentionDays = configDraftRetention.trim().toIntOrNull(),
-                )
+                val updated =
+                    config.copy(
+                        llmRef = configLlmRef.trim().ifBlank { null },
+                        maxParallel = configMaxParallel.trim().toIntOrNull(),
+                        draftRetentionDays = configDraftRetention.trim().toIntOrNull(),
+                    )
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).councilUpdateConfig(updated)
                             .onSuccess { config = it }
                     }
@@ -446,17 +494,22 @@ internal fun CouncilCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                } ?: return@runCatching
-                            val req = StartCouncilRunRequest(
-                                proposal = proposal.trim(),
-                                mode = mode,
-                                personas = selectedPersonas.toList(),
-                            )
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.filter { it.enabled }.firstOrNull()
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                        }
+                                    } ?: return@runCatching
+                            val req =
+                                StartCouncilRunRequest(
+                                    proposal = proposal.trim(),
+                                    mode = mode,
+                                    personas = selectedPersonas.toList(),
+                                )
                             ServiceLocator.transportFor(sp).councilStartRun(req)
                                 .onSuccess { run ->
                                     runs = runs + run
@@ -489,12 +542,16 @@ internal fun CouncilCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).councilStopRun(run.id)
                                     .onSuccess { runs = runs.filter { it.id != run.id } }
                             }
@@ -516,10 +573,11 @@ private fun CouncilRunRow(
     val isActive = run.status in listOf("running", "pending", "deliberating")
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggle() }
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(vertical = 4.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -589,9 +647,10 @@ private fun CouncilRunRow(
                     OutlinedButton(
                         onClick = onCancel,
                         modifier = Modifier.padding(top = 8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error,
-                        ),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
                     ) { Text(stringResource(R.string.action_cancel)) }
                 }
             }
@@ -601,23 +660,28 @@ private fun CouncilRunRow(
 
 @Composable
 private fun CouncilStatusBadge(status: String) {
-    val color = when (status) {
-        "running", "deliberating" -> Color(0xFF3B82F6)
-        "completed" -> Color(0xFF10B981)
-        "cancelled", "aborted" -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val color =
+        when (status) {
+            "running", "deliberating" -> Color(0xFF3B82F6)
+            "completed" -> Color(0xFF10B981)
+            "cancelled", "aborted" -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Box(
-        modifier = Modifier
-            .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(status, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
 
 @Composable
-private fun MilestoneEntry(label: String, value: String) {
+private fun MilestoneEntry(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

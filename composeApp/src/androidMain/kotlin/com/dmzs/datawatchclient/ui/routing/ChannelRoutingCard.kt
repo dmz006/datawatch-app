@@ -52,8 +52,9 @@ public fun ChannelRoutingCard() {
 
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
-        val enabled = ServiceLocator.profileRepository.observeAll().first()
-            .filter { it.enabled }
+        val enabled =
+            ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         return if (p != null) ServiceLocator.transportFor(p) else null
     }
@@ -61,7 +62,10 @@ public fun ChannelRoutingCard() {
     fun load() {
         scope.launch {
             transport()?.getChannelRouting()
-                ?.onSuccess { rules = it.rules; loadError = null }
+                ?.onSuccess {
+                    rules = it.rules
+                    loadError = null
+                }
                 ?.onFailure { loadError = it.message }
         }
     }
@@ -111,11 +115,12 @@ public fun ChannelRoutingCard() {
                     if (channelPattern.isBlank()) return@Button
                     scope.launch {
                         saving = true
-                        val newRule = ChannelRoutingRuleDto(
-                            channelPattern = channelPattern,
-                            peerName = peerName,
-                            automataType = automataType,
-                        )
+                        val newRule =
+                            ChannelRoutingRuleDto(
+                                channelPattern = channelPattern,
+                                peerName = peerName,
+                                automataType = automataType,
+                            )
                         transport()?.putChannelRouting(rules + newRule)
                             ?.onSuccess {
                                 rules = it.rules

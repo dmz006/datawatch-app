@@ -6,12 +6,12 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.AnalyticsDto
 import com.dmzs.datawatchclient.transport.dto.DashboardCardDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.SmokeProgressDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
-import com.dmzs.datawatchclient.transport.TransportClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -44,14 +44,15 @@ public data class DashboardState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 public class DashboardViewModel : ViewModel() {
-
     private val _state = MutableStateFlow(DashboardState())
 
-    private val _allProfiles = ServiceLocator.profileRepository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _allProfiles =
+        ServiceLocator.profileRepository.observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val _activeId = ServiceLocator.activeServerStore.observe()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val _activeId =
+        ServiceLocator.activeServerStore.observe()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _computedActiveProfile: StateFlow<ServerProfile?> =
         combine(_allProfiles, _activeId) { profiles, storedId ->
@@ -65,16 +66,21 @@ public class DashboardViewModel : ViewModel() {
             s.copy(allProfiles = profiles.filter { it.enabled }, activeProfile = active)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, DashboardState())
 
-    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf<Boolean?>(null)
-            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val reachable: StateFlow<Boolean?> =
+        _computedActiveProfile
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf<Boolean?>(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    public val lastProbeEpochMs: StateFlow<Long?> = reachable
-        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val lastProbeEpochMs: StateFlow<Long?> =
+        reachable
+            .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
         viewModelScope.launch {
@@ -103,8 +109,11 @@ public class DashboardViewModel : ViewModel() {
             ServiceLocator.profileRepository.observeAll()
                 .first { list -> list.any { it.enabled } }
                 .let { list ->
-                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                    else list.firstOrNull { it.id == activeId && it.enabled }
+                    if (activeId == null) {
+                        list.filter { it.enabled }.firstOrNull()
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                    }
                 }
                 ?.let { ServiceLocator.transportFor(it) }
         }.getOrNull()

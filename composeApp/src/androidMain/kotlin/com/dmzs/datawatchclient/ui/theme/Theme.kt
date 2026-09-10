@@ -137,11 +137,12 @@ public fun DatawatchTheme(
     val dyn = dynamicColor
     val context = LocalContext.current
     val storedMode = remember { ThemePrefs.load(context) }
-    val darkTheme = when (storedMode) {
-        ThemeMode.Dark -> true
-        ThemeMode.Light -> false
-        ThemeMode.System -> isSystemInDarkTheme()
-    }
+    val darkTheme =
+        when (storedMode) {
+            ThemeMode.Dark -> true
+            ThemeMode.Light -> false
+            ThemeMode.System -> isSystemInDarkTheme()
+        }
     val colorScheme =
         when {
             darkTheme -> DatawatchDarkScheme

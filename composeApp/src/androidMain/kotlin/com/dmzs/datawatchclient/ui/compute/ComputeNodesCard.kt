@@ -2,17 +2,17 @@ package com.dmzs.datawatchclient.ui.compute
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -28,11 +28,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -116,11 +116,12 @@ public fun ComputeNodesCard(
 
     LaunchedEffect(refreshTick) {
         loading = true
-        val transport = resolveTransport() ?: run {
-            banner = "No enabled server."
-            loading = false
-            return@LaunchedEffect
-        }
+        val transport =
+            resolveTransport() ?: run {
+                banner = "No enabled server."
+                loading = false
+                return@LaunchedEffect
+            }
         transport.listComputeNodes().fold(
             onSuccess = {
                 nodes = it
@@ -147,7 +148,10 @@ public fun ComputeNodesCard(
                 modifier = Modifier.weight(1f),
                 docsAnchor = "compute-nodes",
             )
-            IconButton(onClick = { selectedNode = null; showAddDialog = true }) {
+            IconButton(onClick = {
+                selectedNode = null
+                showAddDialog = true
+            }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.compute_node_add))
             }
         }
@@ -155,10 +159,11 @@ public fun ComputeNodesCard(
         // Migration banner — shown when deprecated-kind nodes exist
         if ((migrationData?.count ?: 0) > 0) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clickable { showMigrationModal = true },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .clickable { showMigrationModal = true },
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF4D3000)),
             ) {
                 Text(
@@ -197,7 +202,10 @@ public fun ComputeNodesCard(
                 if (idx > 0) HorizontalDivider()
                 ComputeNodeRow(
                     node = node,
-                    onEdit = { selectedNode = node; showAddDialog = true },
+                    onEdit = {
+                        selectedNode = node
+                        showAddDialog = true
+                    },
                     onDelete = { nodeToDelete = node },
                     onToggleEnabled = { enabled ->
                         scope.launch {
@@ -214,7 +222,10 @@ public fun ComputeNodesCard(
     if (showAddDialog) {
         ComputeNodeDialog(
             existing = selectedNode,
-            onDismiss = { showAddDialog = false; selectedNode = null },
+            onDismiss = {
+                showAddDialog = false
+                selectedNode = null
+            },
             onSave = { dto ->
                 scope.launch {
                     val transport = resolveTransport() ?: return@launch
@@ -377,9 +388,10 @@ private fun MigrationModal(
     onMigrate: (nodeName: String, newKind: String) -> Unit,
 ) {
     // Per-node selected kind state
-    val selectedKinds = remember(migrationData) {
-        migrationData.nodes.associate { it.name to mutableStateOf(COMPUTE_NODE_KINDS.first()) }.toMutableMap()
-    }
+    val selectedKinds =
+        remember(migrationData) {
+            migrationData.nodes.associate { it.name to mutableStateOf(COMPUTE_NODE_KINDS.first()) }.toMutableMap()
+        }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -409,7 +421,10 @@ private fun MigrationModal(
                                 COMPUTE_NODE_KINDS.forEach { k ->
                                     DropdownMenuItem(
                                         text = { Text(k) },
-                                        onClick = { kindState.value = k; kindDropdown = false },
+                                        onClick = {
+                                            kindState.value = k
+                                            kindDropdown = false
+                                        },
                                     )
                                 }
                             }
@@ -435,15 +450,16 @@ private fun MigrationModal(
 // Sprint 15 — reduced to 2 supported kinds only
 private val COMPUTE_NODE_KINDS = listOf("ollama", "openai-compat")
 
-private val SAAS_ADDRESS_PATTERNS = listOf(
-    "api.openai.com",
-    ".azure.com",
-    "generativelanguage.googleapis.com",
-    "api.anthropic.com",
-    "api.together.xyz",
-    "api.groq.com",
-    "api.mistral.ai",
-)
+private val SAAS_ADDRESS_PATTERNS =
+    listOf(
+        "api.openai.com",
+        ".azure.com",
+        "generativelanguage.googleapis.com",
+        "api.anthropic.com",
+        "api.together.xyz",
+        "api.groq.com",
+        "api.mistral.ai",
+    )
 
 private fun isSaasAddress(address: String): Boolean =
     SAAS_ADDRESS_PATTERNS.any { address.contains(it, ignoreCase = true) }
@@ -492,7 +508,12 @@ private fun ComputeNodeDialog(
         resolveTransport()?.getInstalledOllamaModels(existing.name)?.onSuccess { installedModels = it.models }
         installedModelsLoading = false
     }
-    recentlyInstalled?.let { m -> LaunchedEffect(m) { delay(3000); recentlyInstalled = null } }
+    recentlyInstalled?.let { m ->
+        LaunchedEffect(m) {
+            delay(3000)
+            recentlyInstalled = null
+        }
+    }
 
     // Determine if hardware section should be hidden (SaaS endpoint + openai-compat)
     val hideSaas = kind == "openai-compat" && isSaasAddress(address)
@@ -535,7 +556,10 @@ private fun ComputeNodeDialog(
                         COMPUTE_NODE_KINDS.forEach { k ->
                             DropdownMenuItem(
                                 text = { Text(k) },
-                                onClick = { kind = k; kindDropdown = false },
+                                onClick = {
+                                    kind = k
+                                    kindDropdown = false
+                                },
                             )
                         }
                     }
@@ -583,20 +607,35 @@ private fun ComputeNodeDialog(
                         DropdownMenu(expanded = peerDropdown, onDismissRequest = { peerDropdown = false }) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.compute_observer_none)) },
-                                onClick = { observerPeer = ""; peerDropdown = false },
+                                onClick = {
+                                    observerPeer = ""
+                                    peerDropdown = false
+                                },
                             )
                             freePeers.forEach { peer ->
                                 DropdownMenuItem(
                                     text = { Text(peer.name) },
-                                    onClick = { observerPeer = peer.name; peerDropdown = false },
+                                    onClick = {
+                                        observerPeer = peer.name
+                                        peerDropdown = false
+                                    },
                                 )
                             }
                             // If editing and existing peer not in free list, show it as "(currently attached)"
                             val existingPeer = existing?.observerPeer
                             if (existingPeer != null && freePeers.none { it.name == existingPeer }) {
                                 DropdownMenuItem(
-                                    text = { Text("$existingPeer ${stringResource(R.string.compute_observer_currently_attached)}") },
-                                    onClick = { observerPeer = existingPeer; peerDropdown = false },
+                                    text = {
+                                        Text(
+                                            "$existingPeer ${stringResource(
+                                                R.string.compute_observer_currently_attached,
+                                            )}",
+                                        )
+                                    },
+                                    onClick = {
+                                        observerPeer = existingPeer
+                                        peerDropdown = false
+                                    },
                                 )
                             }
                         }
@@ -626,14 +665,43 @@ private fun ComputeNodeDialog(
                             Column(modifier = Modifier.padding(start = 8.dp)) {
                                 spec.os?.let { HardwareRow(stringResource(R.string.compute_hardware_os), it) }
                                 spec.arch?.let { HardwareRow(stringResource(R.string.compute_hardware_arch), it) }
-                                if (spec.cpuCores > 0) HardwareRow(stringResource(R.string.compute_hardware_cpu_cores), "${spec.cpuCores}")
-                                if (spec.memoryGb > 0) HardwareRow(stringResource(R.string.compute_hardware_ram_gb), "${spec.memoryGb} GB")
-                                spec.gpuVendor?.let { HardwareRow(stringResource(R.string.compute_hardware_gpu_vendor), it) }
-                                spec.gpuModel?.let { HardwareRow(stringResource(R.string.compute_hardware_gpu_model), it) }
-                                if (spec.gpuCount > 0) HardwareRow(stringResource(R.string.compute_hardware_gpu_count), "${spec.gpuCount}")
+                                if (spec.cpuCores > 0) {
+                                    HardwareRow(
+                                        stringResource(R.string.compute_hardware_cpu_cores),
+                                        "${spec.cpuCores}",
+                                    )
+                                }
+                                if (spec.memoryGb > 0) {
+                                    HardwareRow(
+                                        stringResource(R.string.compute_hardware_ram_gb),
+                                        "${spec.memoryGb} GB",
+                                    )
+                                }
+                                spec.gpuVendor?.let {
+                                    HardwareRow(
+                                        stringResource(R.string.compute_hardware_gpu_vendor),
+                                        it,
+                                    )
+                                }
+                                spec.gpuModel?.let {
+                                    HardwareRow(
+                                        stringResource(R.string.compute_hardware_gpu_model),
+                                        it,
+                                    )
+                                }
+                                if (spec.gpuCount > 0) {
+                                    HardwareRow(
+                                        stringResource(R.string.compute_hardware_gpu_count),
+                                        "${spec.gpuCount}",
+                                    )
+                                }
                                 // Computed max suggestion: floor(VRAM_per_GPU × GPU_count / 8)
-                                val computedMax = if (spec.memoryGb > 0 && spec.gpuCount > 0)
-                                    (spec.memoryGb * spec.gpuCount) / 8 else 0
+                                val computedMax =
+                                    if (spec.memoryGb > 0 && spec.gpuCount > 0) {
+                                        (spec.memoryGb * spec.gpuCount) / 8
+                                    } else {
+                                        0
+                                    }
                                 if (computedMax > 0) {
                                     Text(
                                         stringResource(R.string.compute_hardware_computed_max, computedMax),
@@ -658,7 +726,10 @@ private fun ComputeNodeDialog(
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(onClick = { showMarketplace = true }) {
-                            Text(stringResource(R.string.ollama_browse_btn), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                stringResource(R.string.ollama_browse_btn),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                     }
                     recentlyInstalled?.let { model ->
@@ -771,7 +842,10 @@ private fun ComputeNodeDialog(
 }
 
 @Composable
-private fun HardwareRow(label: String, value: String) {
+private fun HardwareRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -822,8 +896,9 @@ private fun OllamaMarketplaceDialog(
                         horizontalArrangement = Arrangement.Center,
                     ) { CircularProgressIndicator() }
                 } else {
-                    val models = (catalog?.models ?: emptyList())
-                        .filter { it.name.contains(search, ignoreCase = true) }
+                    val models =
+                        (catalog?.models ?: emptyList())
+                            .filter { it.name.contains(search, ignoreCase = true) }
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -832,15 +907,18 @@ private fun OllamaMarketplaceDialog(
                             val isExpanded = model.name in expandedModels
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            expandedModels = if (isExpanded)
-                                                expandedModels - model.name
-                                            else
-                                                expandedModels + model.name
-                                        }
-                                        .padding(vertical = 4.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                expandedModels =
+                                                    if (isExpanded) {
+                                                        expandedModels - model.name
+                                                    } else {
+                                                        expandedModels + model.name
+                                                    }
+                                            }
+                                            .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
@@ -897,9 +975,10 @@ private fun OllamaTagRow(
     onPull: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 8.dp, top = 2.dp, end = 0.dp, bottom = 2.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, top = 2.dp, end = 0.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(tag.tag, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
@@ -932,23 +1011,25 @@ private fun OllamaTagRow(
         Spacer(Modifier.weight(1f))
         when {
             isInstalled -> Text("✓", style = MaterialTheme.typography.labelSmall, color = Color(0xFF10B981))
-            pullTask != null -> Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    "${pullTask.progress}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                LinearProgressIndicator(
-                    progress = { pullTask.progress / 100f },
-                    modifier = Modifier.width(50.dp),
-                )
-            }
-            else -> TextButton(
-                onClick = onPull,
-                modifier = Modifier.heightIn(min = 24.dp),
-            ) {
-                Text(stringResource(R.string.ollama_pull_btn), style = MaterialTheme.typography.labelSmall)
-            }
+            pullTask != null ->
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "${pullTask.progress}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    LinearProgressIndicator(
+                        progress = { pullTask.progress / 100f },
+                        modifier = Modifier.width(50.dp),
+                    )
+                }
+            else ->
+                TextButton(
+                    onClick = onPull,
+                    modifier = Modifier.heightIn(min = 24.dp),
+                ) {
+                    Text(stringResource(R.string.ollama_pull_btn), style = MaterialTheme.typography.labelSmall)
+                }
         }
     }
 }

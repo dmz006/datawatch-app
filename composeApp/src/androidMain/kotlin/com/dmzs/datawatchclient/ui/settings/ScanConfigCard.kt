@@ -41,13 +41,17 @@ internal fun ScanConfigCard() {
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.firstOrNull { it.enabled }
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                        ?: list.firstOrNull { it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.firstOrNull { it.enabled }
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                                ?: list.firstOrNull { it.enabled }
+                        }
+                    } ?: return@runCatching
             ServiceLocator.transportFor(sp).getScanConfig().onSuccess { config = it }
         }
     }
@@ -57,24 +61,29 @@ internal fun ScanConfigCard() {
         scope.launch {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
-                    .first { list -> list.any { it.enabled } }
-                    .let { list ->
-                        if (activeId == null) list.firstOrNull { it.enabled }
-                        else list.firstOrNull { it.id == activeId && it.enabled }
-                            ?: list.firstOrNull { it.enabled }
-                    } ?: return@runCatching
+                val sp =
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .let { list ->
+                            if (activeId == null) {
+                                list.firstOrNull { it.enabled }
+                            } else {
+                                list.firstOrNull { it.id == activeId && it.enabled }
+                                    ?: list.firstOrNull { it.enabled }
+                            }
+                        } ?: return@runCatching
                 ServiceLocator.transportFor(sp).updateScanConfig(updated)
             }
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.scan_config_title), docsAnchor = "guardrail-library")
         val cfg = config ?: return@Column
@@ -93,13 +102,17 @@ internal fun ScanConfigCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.firstOrNull { it.enabled }
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: list.firstOrNull { it.enabled }
-                                } ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.firstOrNull { it.enabled }
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                                ?: list.firstOrNull { it.enabled }
+                                        }
+                                    } ?: return@runCatching
                             // Stub: trigger scan on first PRD available via scan config context
                             ServiceLocator.transportFor(sp).updateScanConfig(cfg)
                         }
@@ -112,13 +125,17 @@ internal fun ScanConfigCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.firstOrNull { it.enabled }
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: list.firstOrNull { it.enabled }
-                                } ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.firstOrNull { it.enabled }
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                                ?: list.firstOrNull { it.enabled }
+                                        }
+                                    } ?: return@runCatching
                             // Stub: trigger rules via scan config update (will hook up to dedicated endpoint in later sprint)
                             ServiceLocator.transportFor(sp).updateScanConfig(cfg)
                         }
@@ -131,7 +148,11 @@ internal fun ScanConfigCard() {
 }
 
 @Composable
-private fun ScanToggleRow(label: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
+private fun ScanToggleRow(
+    label: String,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -143,7 +164,10 @@ private fun ScanToggleRow(label: String, checked: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
-private fun ScanSeverityRow(value: String, onSelect: (String) -> Unit) {
+private fun ScanSeverityRow(
+    value: String,
+    onSelect: (String) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
@@ -154,14 +178,20 @@ private fun ScanSeverityRow(value: String, onSelect: (String) -> Unit) {
         TextButton(onClick = { expanded = true }) { Text(value) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             SEVERITY_OPTIONS.forEach { opt ->
-                DropdownMenuItem(text = { Text(opt) }, onClick = { onSelect(opt); expanded = false })
+                DropdownMenuItem(text = { Text(opt) }, onClick = {
+                    onSelect(opt)
+                    expanded = false
+                })
             }
         }
     }
 }
 
 @Composable
-private fun ScanRetryRow(value: Int, onUpdate: (Int) -> Unit) {
+private fun ScanRetryRow(
+    value: Int,
+    onUpdate: (Int) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,

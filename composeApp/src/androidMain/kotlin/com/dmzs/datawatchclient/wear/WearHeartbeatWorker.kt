@@ -24,7 +24,6 @@ public class WearHeartbeatWorker(
     ctx: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(ctx, params) {
-
     override suspend fun doWork(): Result {
         android.util.Log.d(TAG, "15-min heartbeat tick — fetching dashboard")
         runCatching {

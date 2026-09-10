@@ -43,12 +43,16 @@ public fun EncryptionStatusCard() {
 
     LaunchedEffect(Unit) {
         val id = ServiceLocator.activeServerStore.get()
-        val enabled = ServiceLocator.profileRepository.observeAll().first()
-            .filter { it.enabled }
+        val enabled =
+            ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         if (p != null) {
             ServiceLocator.transportFor(p).getEncryptionStatus()
-                .onSuccess { status = it; loadError = null }
+                .onSuccess {
+                    status = it
+                    loadError = null
+                }
                 .onFailure { loadError = it.message }
         }
     }
@@ -63,18 +67,20 @@ public fun EncryptionStatusCard() {
             PwaSectionTitle(stringResource(R.string.encryption_status_title), docsAnchor = "security")
 
             when {
-                loadError != null -> Text(
-                    loadError!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                status == null -> Text(
-                    stringResource(R.string.common_loading),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                loadError != null ->
+                    Text(
+                        loadError!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                status == null ->
+                    Text(
+                        stringResource(R.string.common_loading),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 else -> {
                     val s = status!!
                     // Secure mode row
@@ -90,8 +96,11 @@ public fun EncryptionStatusCard() {
                         Spacer(Modifier.width(6.dp))
                         Text(
                             stringResource(
-                                if (s.secureMode) R.string.encryption_secure_on
-                                else R.string.encryption_secure_off,
+                                if (s.secureMode) {
+                                    R.string.encryption_secure_on
+                                } else {
+                                    R.string.encryption_secure_off
+                                },
                             ),
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -119,9 +128,22 @@ public fun EncryptionStatusCard() {
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    if (file.encrypted) stringResource(R.string.encryption_check) else stringResource(R.string.encryption_cross),
+                                    if (file.encrypted) {
+                                        stringResource(
+                                            R.string.encryption_check,
+                                        )
+                                    } else {
+                                        stringResource(R.string.encryption_cross)
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (file.encrypted) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color =
+                                        if (file.encrypted) {
+                                            Color(
+                                                0xFF10B981,
+                                            )
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
@@ -131,7 +153,13 @@ public fun EncryptionStatusCard() {
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    if (file.exists) stringResource(R.string.encryption_check) else stringResource(R.string.encryption_cross),
+                                    if (file.exists) {
+                                        stringResource(
+                                            R.string.encryption_check,
+                                        )
+                                    } else {
+                                        stringResource(R.string.encryption_cross)
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (file.exists) Color(0xFF10B981) else MaterialTheme.colorScheme.error,
                                 )

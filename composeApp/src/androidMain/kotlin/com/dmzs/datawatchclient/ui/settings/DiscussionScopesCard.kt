@@ -60,15 +60,19 @@ public fun DiscussionScopesCard() {
 
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
-        val enabled = ServiceLocator.profileRepository.observeAll().first()
-            .filter { it.enabled }
+        val enabled =
+            ServiceLocator.profileRepository.observeAll().first()
+                .filter { it.enabled }
         val p = enabled.firstOrNull { it.id == id } ?: enabled.firstOrNull()
         return if (p != null) ServiceLocator.transportFor(p) else null
     }
 
     suspend fun reload() {
         transport()?.listDiscussions()
-            ?.onSuccess { discussions = it.discussions; loadError = null }
+            ?.onSuccess {
+                discussions = it.discussions
+                loadError = null
+            }
             ?.onFailure { loadError = it.message }
     }
 
@@ -87,7 +91,10 @@ public fun DiscussionScopesCard() {
                 Column {
                     OutlinedTextField(
                         value = dialogMessage,
-                        onValueChange = { dialogMessage = it; sendResult = null },
+                        onValueChange = {
+                            dialogMessage = it
+                            sendResult = null
+                        },
                         label = { Text(stringResource(R.string.discussion_message_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
@@ -98,8 +105,12 @@ public fun DiscussionScopesCard() {
                         Text(
                             it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (it.startsWith("Error")) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.primary,
+                            color =
+                                if (it.startsWith("Error")) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
                         )
                     }
                 }
@@ -144,7 +155,11 @@ public fun DiscussionScopesCard() {
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PwaSectionTitle(stringResource(R.string.discussion_scopes_title), docsAnchor = "discussion-scopes", modifier = Modifier.weight(1f))
+                PwaSectionTitle(
+                    stringResource(R.string.discussion_scopes_title),
+                    docsAnchor = "discussion-scopes",
+                    modifier = Modifier.weight(1f),
+                )
                 IconButton(onClick = { scope.launch { reload() } }) {
                     Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
                 }
@@ -153,16 +168,18 @@ public fun DiscussionScopesCard() {
             Spacer(Modifier.height(8.dp))
 
             when {
-                loadError != null -> Text(
-                    loadError!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                discussions.isEmpty() -> Text(
-                    stringResource(R.string.discussion_no_scopes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                loadError != null ->
+                    Text(
+                        loadError!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                discussions.isEmpty() ->
+                    Text(
+                        stringResource(R.string.discussion_no_scopes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 else -> {
                     Text(
                         stringResource(R.string.discussion_tap_hint),
@@ -224,7 +241,10 @@ public fun DiscussionScopesCard() {
                         scope.launch {
                             creating = true
                             transport()?.createDiscussionScope(newDiscussionId.trim())
-                                ?.onSuccess { newDiscussionId = ""; reload() }
+                                ?.onSuccess {
+                                    newDiscussionId = ""
+                                    reload()
+                                }
                                 ?.onFailure { loadError = it.message }
                             creating = false
                         }

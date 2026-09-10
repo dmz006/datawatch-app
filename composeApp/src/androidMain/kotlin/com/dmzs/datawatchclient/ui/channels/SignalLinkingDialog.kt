@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.res.stringResource
-import com.dmzs.datawatchclient.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
@@ -64,9 +64,11 @@ public fun SignalLinkingDialog(
     suspend fun activeTransport() =
         ServiceLocator.profileRepository.observeAll().first().let { profiles ->
             val activeId = ServiceLocator.activeServerStore.get()
-            (profiles.firstOrNull {
-                it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-            } ?: profiles.firstOrNull { it.enabled })?.let { ServiceLocator.transportFor(it) }
+            (
+                profiles.firstOrNull {
+                    it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+                } ?: profiles.firstOrNull { it.enabled }
+            )?.let { ServiceLocator.transportFor(it) }
         }
 
     suspend fun checkLinked(profile: ServerProfile): Boolean {
@@ -76,30 +78,33 @@ public fun SignalLinkingDialog(
     }
 
     LaunchedEffect(Unit) {
-        val transport = activeTransport() ?: run {
-            error = strNoServer
-            return@LaunchedEffect
-        }
-        sseJob = scope.launch {
-            transport.startSignalLinking()
-                .catch { e -> error = e.message ?: "Stream error" }
-                .collect { frame ->
-                    qrFrame = frame
-                    status = strScanPrompt
-                    // Check if pairing completed after each frame
-                    val profiles = ServiceLocator.profileRepository.observeAll().first()
-                    val activeId = ServiceLocator.activeServerStore.get()
-                    val profile = profiles.firstOrNull {
-                        it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-                    } ?: profiles.firstOrNull { it.enabled } ?: return@collect
-                    if (checkLinked(profile)) {
-                        ServiceLocator.profileRepository.setSignalLinked(profile.id, true)
-                        linked = true
-                        status = strSuccess
-                        onLinked()
+        val transport =
+            activeTransport() ?: run {
+                error = strNoServer
+                return@LaunchedEffect
+            }
+        sseJob =
+            scope.launch {
+                transport.startSignalLinking()
+                    .catch { e -> error = e.message ?: "Stream error" }
+                    .collect { frame ->
+                        qrFrame = frame
+                        status = strScanPrompt
+                        // Check if pairing completed after each frame
+                        val profiles = ServiceLocator.profileRepository.observeAll().first()
+                        val activeId = ServiceLocator.activeServerStore.get()
+                        val profile =
+                            profiles.firstOrNull {
+                                it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+                            } ?: profiles.firstOrNull { it.enabled } ?: return@collect
+                        if (checkLinked(profile)) {
+                            ServiceLocator.profileRepository.setSignalLinked(profile.id, true)
+                            linked = true
+                            status = strSuccess
+                            onLinked()
+                        }
                     }
-                }
-        }
+            }
     }
 
     DisposableEffect(Unit) {
@@ -168,18 +173,20 @@ public fun SignalLinkingDialog(
 
 @Composable
 private fun QrImageView(imageBase64: String) {
-    val bitmap = remember(imageBase64) {
-        runCatching {
-            val bytes = Base64.decode(imageBase64, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        }.getOrNull()
-    }
+    val bitmap =
+        remember(imageBase64) {
+            runCatching {
+                val bytes = Base64.decode(imageBase64, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            }.getOrNull()
+        }
     if (bitmap != null) {
         Box(
-            modifier = Modifier
-                .size(200.dp)
-                .background(Color.White)
-                .padding(8.dp),
+            modifier =
+                Modifier
+                    .size(200.dp)
+                    .background(Color.White)
+                    .padding(8.dp),
         ) {
             Image(
                 bitmap = bitmap.asImageBitmap(),

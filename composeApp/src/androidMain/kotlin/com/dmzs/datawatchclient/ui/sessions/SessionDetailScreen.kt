@@ -1,5 +1,7 @@
 package com.dmzs.datawatchclient.ui.sessions
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -14,13 +16,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,8 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -39,14 +37,12 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -63,12 +59,15 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -79,13 +78,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.draw.drawBehind
-import com.dmzs.datawatchclient.R
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -93,15 +90,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
-import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import android.content.Intent
-import android.os.Bundle
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -143,22 +137,23 @@ public fun SessionDetailScreen(
     // ON_START: resume the stream so live events flow as soon as the user returns.
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, vm) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
-                    vm.refreshFromServer()
-                    // Sprint 3 S3-2: if disconnected, trigger a full reconnect so
-                    // pane-capture dedup is cleared and resize_term is sent as the
-                    // first outbound WS frame after the stream re-establishes.
-                    if (vm.state.value.reachable == false) {
-                        vm.resumeStream()
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                when (event) {
+                    androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                        vm.refreshFromServer()
+                        // Sprint 3 S3-2: if disconnected, trigger a full reconnect so
+                        // pane-capture dedup is cleared and resize_term is sent as the
+                        // first outbound WS frame after the stream re-establishes.
+                        if (vm.state.value.reachable == false) {
+                            vm.resumeStream()
+                        }
                     }
+                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> vm.pauseStream()
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> vm.resumeStream()
+                    else -> {}
                 }
-                androidx.lifecycle.Lifecycle.Event.ON_STOP -> vm.pauseStream()
-                androidx.lifecycle.Lifecycle.Event.ON_START -> vm.resumeStream()
-                else -> {}
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -175,9 +170,11 @@ public fun SessionDetailScreen(
     // 500ms on reconnect so the eye is always visible.
     var sessionLoaded by remember { mutableStateOf(!isNew) }
     var overlayMinWaitDone by remember { mutableStateOf(!isNew) }
-    var overlayDataArrived by remember { mutableStateOf(
-        state.events.any { it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture }
-    ) }
+    var overlayDataArrived by remember {
+        mutableStateOf(
+            state.events.any { it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture },
+        )
+    }
 
     // Minimum display time depends on whether this is a new session or reconnect
     val minWaitMs = if (isNew) 2_000 else 500
@@ -195,7 +192,8 @@ public fun SessionDetailScreen(
 
     // Watch for first pane_capture (means session is streaming data)
     androidx.compose.runtime.LaunchedEffect(state.events.size) {
-        if (!overlayDataArrived && state.events.any {
+        if (!overlayDataArrived &&
+            state.events.any {
                 it is com.dmzs.datawatchclient.domain.SessionEvent.PaneCapture
             }
         ) {
@@ -248,10 +246,11 @@ public fun SessionDetailScreen(
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
     }
 
-    val statusVm: SessionStatusViewModel = viewModel(
-        factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
-        key = "session-status-$sessionId",
-    )
+    val statusVm: SessionStatusViewModel =
+        viewModel(
+            factory = viewModelFactory { initializer { SessionStatusViewModel(sessionId) } },
+            key = "session-status-$sessionId",
+        )
     val statusState by statusVm.state.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -421,8 +420,9 @@ public fun SessionDetailScreen(
         // across SessionInfoBar + the quick-actions row below.
         var responseOpen by remember { mutableStateOf(false) }
         val hasResponse = !state.session?.lastResponse.isNullOrBlank()
-        val isCouncilVirtual = state.session?.backend == "council-virtual" ||
-            state.session?.fullId?.startsWith("council-") == true
+        val isCouncilVirtual =
+            state.session?.backend == "council-virtual" ||
+                state.session?.fullId?.startsWith("council-") == true
         val terminalController = rememberTerminalController()
         val toolbarState = rememberTerminalToolbarState(terminalController, sessionId)
 
@@ -449,39 +449,186 @@ public fun SessionDetailScreen(
                         .navigationBarsPadding()
                         .imePadding(),
             ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        SessionInfoBar(
-                            backend = state.session?.backend,
-                            llmRef = state.session?.llmRef,
-                            computeNodeRef = state.session?.computeNodeRef,
-                            sessionMode = state.messagingBackend ?: "tmux",
-                            state = state.session?.state,
-                            reachable = state.reachable,
-                            onStateClick = { stateMenuOpen = true },
-                            onStop = { killConfirm = true },
-                            onRestart = { /* parent-level reschedule not wired here yet */ },
-                            onTimeline = { timelineOpen = true },
-                            onDelete = { deleteConfirm = true },
-                            stateMenuOpen = stateMenuOpen,
-                            onStateMenuDismiss = { stateMenuOpen = false },
-                            onPickState = { s ->
-                                stateMenuOpen = false
-                                vm.overrideState(s)
-                            },
-                            hasResponse = hasResponse,
-                            onResponse = {
-                                vm.refreshFromServer()
-                                responseOpen = true
-                            },
-                        )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    SessionInfoBar(
+                        backend = state.session?.backend,
+                        llmRef = state.session?.llmRef,
+                        computeNodeRef = state.session?.computeNodeRef,
+                        sessionMode = state.messagingBackend ?: "tmux",
+                        state = state.session?.state,
+                        reachable = state.reachable,
+                        onStateClick = { stateMenuOpen = true },
+                        onStop = { killConfirm = true },
+                        onRestart = { /* parent-level reschedule not wired here yet */ },
+                        onTimeline = { timelineOpen = true },
+                        onDelete = { deleteConfirm = true },
+                        stateMenuOpen = stateMenuOpen,
+                        onStateMenuDismiss = { stateMenuOpen = false },
+                        onPickState = { s ->
+                            stateMenuOpen = false
+                            vm.overrideState(s)
+                        },
+                        hasResponse = hasResponse,
+                        onResponse = {
+                            vm.refreshFromServer()
+                            responseOpen = true
+                        },
+                    )
 
-                        // Fixed tab row - stays below SessionInfoBar while content scrolls below
-                        if (!isCouncilVirtual) {
+                    // Fixed tab row - stays below SessionInfoBar while content scrolls below
+                    if (!isCouncilVirtual) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(horizontal = 8.dp)
+                                    .drawBehind {
+                                        drawLine(
+                                            color = tabRowBorderColor,
+                                            start = Offset(0f, size.height),
+                                            end = Offset(size.width, size.height),
+                                            strokeWidth = 1.dp.toPx(),
+                                        )
+                                    },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                        ) {
+                            val sessionBackend = state.session?.backend
+                            val showChannelTab =
+                                sessionBackend?.let {
+                                    it == "claude" || it == "claude-code" || it == "opencode-acp"
+                                } == true
+                            SessionModeTab(
+                                label =
+                                    stringResource(
+                                        R.string.session_detail_tab_tmux,
+                                    ),
+                                selected = !chatMode && !statusMode,
+                                onClick = {
+                                    chatMode = false
+                                    statusMode = false
+                                },
+                            )
+                            if (showChannelTab) {
+                                SessionModeTab(
+                                    label =
+                                        stringResource(
+                                            R.string.session_detail_tab_channel,
+                                        ),
+                                    selected = chatMode && !statusMode,
+                                    onClick = {
+                                        chatMode = true
+                                        statusMode = false
+                                    },
+                                )
+                            }
+                            SessionModeTab(
+                                label = "${statusTabBadge(
+                                    statusState.board,
+                                )} ${stringResource(R.string.session_detail_tab_status)}",
+                                selected = statusMode,
+                                onClick = {
+                                    statusMode = true
+                                    statusSubStats = false
+                                },
+                            )
+                            Spacer(Modifier.weight(1f))
+                            val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
+                            if (showToolbar) {
+                                TerminalToolbarControls(toolbarState)
+                            }
+                        }
+                    }
+                }
+
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                ) {
+                    if (responseOpen) {
+                        LastResponseSheet(
+                            response = state.session?.lastResponse.orEmpty(),
+                            onDismiss = { responseOpen = false },
+                        )
+                    }
+                    state.banner?.let { banner ->
+                        Surface(color = MaterialTheme.colorScheme.errorContainer) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    banner,
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                TextButton(
+                                    onClick = vm::dismissBanner,
+                                ) { Text(stringResource(R.string.action_dismiss)) }
+                            }
+                        }
+                    }
+
+                    // Connection banner — shows when the owning profile's transport
+                    // last-probe failed. PWA renders an equivalent strip when WS or
+                    // REST drops; ours doubles as a hint that the live event stream
+                    // is also degraded (REST + WS share the trust-anchor wiring).
+                    // TODO(Sprint 7 S7-polish #101): replace ConnectionBanner with a
+                    //   DatawatchToastHost toast (ToastMessage(showReconnect=true)) so
+                    //   the Reconnect button calls vm.resumeStream() and the toast
+                    //   auto-dismisses when state.reachable turns true. The component
+                    //   is complete in DatawatchToast.kt as of v0.72.0.
+                    if (state.reachable == false) {
+                        ConnectionBanner(onRetry = vm::dismissBanner)
+                    }
+
+                    // Server-reported chat-mode sessions (output_mode=chat, e.g.
+                    // OpenWebUI / Ollama) emit structured `chat_message` WS frames
+                    // instead of `pane_capture` — no terminal exists. When on, the
+                    // transcript panel is the only sensible output surface; user's
+                    // Terminal/Chat view toggle doesn't apply.
+                    val serverChatMode = state.session?.isChatMode == true
+                    // v0.74.0 S5-7 — Council virtual sessions show proposal + response transcript only
+                    if (isCouncilVirtual) {
+                        androidx.compose.foundation.lazy.LazyColumn(
+                            modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+                        ) {
+                            item {
+                                Text(
+                                    stringResource(R.string.council_session_proposal_label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    state.session?.lastPrompt ?: "",
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                Text(
+                                    state.session?.lastResponse
+                                        ?: stringResource(R.string.council_session_in_progress),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color =
+                                        if (state.session?.lastResponse.isNullOrBlank()) {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
+                                )
+                            }
+                        }
+                    } else if (statusMode) {
+                        // G6: Status top-level tab hosts Status | Stats sub-tab strip (PWA alpha.36)
+                        Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
                             Row(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surface)
                                         .padding(horizontal = 8.dp)
                                         .drawBehind {
                                             drawLine(
@@ -492,248 +639,137 @@ public fun SessionDetailScreen(
                                             )
                                         },
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(0.dp),
                             ) {
-                                val sessionBackend = state.session?.backend
-                                val showChannelTab = sessionBackend?.let {
-                                    it == "claude" || it == "claude-code" || it == "opencode-acp"
-                                } == true
-                                SessionModeTab(label = stringResource(R.string.session_detail_tab_tmux), selected = !chatMode && !statusMode, onClick = { chatMode = false; statusMode = false })
-                                if (showChannelTab) {
-                                    SessionModeTab(label = stringResource(R.string.session_detail_tab_channel), selected = chatMode && !statusMode, onClick = { chatMode = true; statusMode = false })
-                                }
                                 SessionModeTab(
-                                    label = "${statusTabBadge(statusState.board)} ${stringResource(R.string.session_detail_tab_status)}",
-                                    selected = statusMode,
-                                    onClick = { statusMode = true; statusSubStats = false },
+                                    label = stringResource(R.string.session_detail_status_subtab_status),
+                                    selected = !statusSubStats,
+                                    onClick = { statusSubStats = false },
                                 )
-                                Spacer(Modifier.weight(1f))
-                                val showToolbar = !chatMode && !statusMode && state.session?.isChatMode != true
-                                if (showToolbar) {
-                                    TerminalToolbarControls(toolbarState)
-                                }
+                                SessionModeTab(
+                                    label = stringResource(R.string.session_detail_status_subtab_stats),
+                                    selected = statusSubStats,
+                                    onClick = { statusSubStats = true },
+                                )
+                            }
+                            if (statusSubStats) {
+                                SessionStatsPanel(
+                                    sessionId = sessionId,
+                                    session = state.session,
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
+                                    onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
+                                )
+                            } else {
+                                SessionStatusPanel(
+                                    sessionId = sessionId,
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    vm = statusVm,
+                                )
                             }
                         }
-                    }
-
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                ) {
-            if (responseOpen) {
-                LastResponseSheet(
-                    response = state.session?.lastResponse.orEmpty(),
-                    onDismiss = { responseOpen = false },
-                )
-            }
-            state.banner?.let { banner ->
-                Surface(color = MaterialTheme.colorScheme.errorContainer) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            banner,
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        TextButton(onClick = vm::dismissBanner) { Text(stringResource(R.string.action_dismiss)) }
-                    }
-                }
-            }
-
-            // Connection banner — shows when the owning profile's transport
-            // last-probe failed. PWA renders an equivalent strip when WS or
-            // REST drops; ours doubles as a hint that the live event stream
-            // is also degraded (REST + WS share the trust-anchor wiring).
-            // TODO(Sprint 7 S7-polish #101): replace ConnectionBanner with a
-            //   DatawatchToastHost toast (ToastMessage(showReconnect=true)) so
-            //   the Reconnect button calls vm.resumeStream() and the toast
-            //   auto-dismisses when state.reachable turns true. The component
-            //   is complete in DatawatchToast.kt as of v0.72.0.
-            if (state.reachable == false) {
-                ConnectionBanner(onRetry = vm::dismissBanner)
-            }
-
-            // Server-reported chat-mode sessions (output_mode=chat, e.g.
-            // OpenWebUI / Ollama) emit structured `chat_message` WS frames
-            // instead of `pane_capture` — no terminal exists. When on, the
-            // transcript panel is the only sensible output surface; user's
-            // Terminal/Chat view toggle doesn't apply.
-            val serverChatMode = state.session?.isChatMode == true
-            // v0.74.0 S5-7 — Council virtual sessions show proposal + response transcript only
-            if (isCouncilVirtual) {
-                androidx.compose.foundation.lazy.LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
-                ) {
-                    item {
-                        Text(
-                            stringResource(R.string.council_session_proposal_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            state.session?.lastPrompt ?: "",
-                            modifier = Modifier.padding(bottom = 8.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        Text(
-                            state.session?.lastResponse
-                                ?: stringResource(R.string.council_session_in_progress),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (state.session?.lastResponse.isNullOrBlank()) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                        )
-                    }
-                }
-            } else if (statusMode) {
-                // G6: Status top-level tab hosts Status | Stats sub-tab strip (PWA alpha.36)
-                Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .drawBehind {
-                                drawLine(
-                                    color = tabRowBorderColor,
-                                    start = Offset(0f, size.height),
-                                    end = Offset(size.width, size.height),
-                                    strokeWidth = 1.dp.toPx(),
-                                )
-                            },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SessionModeTab(
-                            label = stringResource(R.string.session_detail_status_subtab_status),
-                            selected = !statusSubStats,
-                            onClick = { statusSubStats = false },
-                        )
-                        SessionModeTab(
-                            label = stringResource(R.string.session_detail_status_subtab_stats),
-                            selected = statusSubStats,
-                            onClick = { statusSubStats = true },
-                        )
-                    }
-                    if (statusSubStats) {
-                        SessionStatsPanel(
+                    } else if (serverChatMode) {
+                        ChatTranscriptPanel(
                             sessionId = sessionId,
-                            session = state.session,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
-                            onNavigateToComputeTab = onNavigateToSettings?.let { cb -> { cb("compute") } },
-                            onNavigateToLlmTab = onNavigateToSettings?.let { cb -> { cb("llm") } },
+                        )
+                    } else if (chatMode) {
+                        // User's view-mode toggle (Terminal vs Chat-style bubbles
+                        // for any non-chat session). Renders the event stream as
+                        // bubbles but is different from server-side chat mode.
+                        // BL-T3-3: Filter PaneCapture + ChatMessage before passing —
+                        // ChatBubbleRow returns early for both, producing zero-height
+                        // items that make the list appear blank when all recent events
+                        // are pane snapshots (typical for active tmux sessions).
+                        ChatEventList(
+                            events =
+                                state.events.filter {
+                                    it !is SessionEvent.PaneCapture && it !is SessionEvent.ChatMessage
+                                },
+                            onQuickReply = vm::sendQuickReply,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
                     } else {
-                        SessionStatusPanel(
+                        // v0.42.0 — controller + toolbar state are hoisted
+                        // above the tabs row so the font / scroll buttons
+                        // render inline next to the tmux/channel pills.
+                        // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
+                        // appears directly under the terminal viewport so
+                        // the keys land where the user is reading.
+                        // TerminalView must take a direct weight so its inner
+                        // AndroidView/WebView gets a finite Compose height to
+                        // bind MATCH_PARENT against. The extra wrapper Column
+                        // that lived here (commits 0dac78b → 4b4c371) gave the
+                        // wrapper the weight but left TerminalView unbounded,
+                        // collapsing the WebView and producing "text up off the
+                        // top of the screen" + broken IME resize.
+                        TerminalView(
                             sessionId = sessionId,
+                            events = state.events,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
-                            vm = statusVm,
+                            controller = terminalController,
+                        )
+                        TerminalScrollModeStrip(toolbarState)
+                        // Backend-specific minimum cols/rows. Matches parent
+                        // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
+                        // Without this, claude's TUI wraps on phone widths.
+                        // Sprint 3 S3-2 (#65): resolved cols/rows are also written to
+                        // vm.terminalCols/terminalRows so the reconnect handler can send
+                        // resize_term with current dimensions as the first outbound WS frame.
+                        androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
+                            val backend = state.session?.backend?.lowercase()
+                            // BL13 — user override from SharedPreferences, fallback to backend defaults
+                            val termPrefs =
+                                context.getSharedPreferences(
+                                    "settings",
+                                    android.content.Context.MODE_PRIVATE,
+                                )
+                            val prefCols = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_COLS, 0)
+                            val prefRows = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_ROWS, 0)
+                            val (defaultCols, defaultRows) =
+                                when (backend) {
+                                    "claude-code", "claude" -> 120 to 40
+                                    else -> 80 to 24
+                                }
+                            val resolvedCols = if (prefCols > 0) prefCols else defaultCols
+                            val resolvedRows = if (prefRows > 0) prefRows else defaultRows
+                            // Enforce MIN COLS only (TUIs like Claude Code need 120 cols
+                            // for their layout). Rows are NOT enforced as a minimum on
+                            // mobile — when the keyboard opens, the WebView area can
+                            // shrink to far fewer rows than 40, and forcing xterm to
+                            // 40 rows would render content TALLER than the viewport,
+                            // clipping the live tail (the bottom rows) off-screen and
+                            // making it impossible to see the cursor while typing.
+                            // Pass 0 for rows so dwSetMinCols treats it as "no minimum".
+                            terminalController.setMinSize(resolvedCols, 0)
+                            // VM still tracks the configured row count for the
+                            // reconnect handler's initial resize_term frame.
+                            vm.terminalCols = resolvedCols
+                            vm.terminalRows = resolvedRows
+                        }
+                        // Freeze writes when session reaches a terminal state so
+                        // the final screenshot isn't overpainted by subsequent
+                        // shell-prompt pane_captures (PWA behaviour).
+                        androidx.compose.runtime.LaunchedEffect(state.session?.state) {
+                            val st = state.session?.state
+                            val frozen =
+                                st == SessionState.Completed ||
+                                    st == SessionState.Killed ||
+                                    st == SessionState.Error
+                            terminalController.setFrozen(frozen)
+                        }
+                        InlineNotices(state.events)
+                    }
+
+                    // Per-session "Scheduled" strip — mirrors PWA
+                    // loadSessionSchedules() in app.js. Hidden when no pending
+                    // schedules or when the server predates the session_id filter.
+                    if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
+                        SessionSchedulesStrip(
+                            schedules = sessionSchedules.schedules,
+                            onCancel = sessionSchedulesVm::cancel,
                         )
                     }
                 }
-            } else if (serverChatMode) {
-                ChatTranscriptPanel(
-                    sessionId = sessionId,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                )
-            } else if (chatMode) {
-                // User's view-mode toggle (Terminal vs Chat-style bubbles
-                // for any non-chat session). Renders the event stream as
-                // bubbles but is different from server-side chat mode.
-                // BL-T3-3: Filter PaneCapture + ChatMessage before passing —
-                // ChatBubbleRow returns early for both, producing zero-height
-                // items that make the list appear blank when all recent events
-                // are pane snapshots (typical for active tmux sessions).
-                ChatEventList(
-                    events = state.events.filter {
-                        it !is SessionEvent.PaneCapture && it !is SessionEvent.ChatMessage
-                    },
-                    onQuickReply = vm::sendQuickReply,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                )
-            } else {
-                // v0.42.0 — controller + toolbar state are hoisted
-                // above the tabs row so the font / scroll buttons
-                // render inline next to the tmux/channel pills.
-                // Scroll-mode nav strip (PgUp / PgDn / ↑ / ↓ / ESC)
-                // appears directly under the terminal viewport so
-                // the keys land where the user is reading.
-                // TerminalView must take a direct weight so its inner
-                // AndroidView/WebView gets a finite Compose height to
-                // bind MATCH_PARENT against. The extra wrapper Column
-                // that lived here (commits 0dac78b → 4b4c371) gave the
-                // wrapper the weight but left TerminalView unbounded,
-                // collapsing the WebView and producing "text up off the
-                // top of the screen" + broken IME resize.
-                TerminalView(
-                    sessionId = sessionId,
-                    events = state.events,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    controller = terminalController,
-                )
-                TerminalScrollModeStrip(toolbarState)
-                // Backend-specific minimum cols/rows. Matches parent
-                // v0.14.1 per-LLM console-size rule (claude-code = 120×40).
-                // Without this, claude's TUI wraps on phone widths.
-                // Sprint 3 S3-2 (#65): resolved cols/rows are also written to
-                // vm.terminalCols/terminalRows so the reconnect handler can send
-                // resize_term with current dimensions as the first outbound WS frame.
-                androidx.compose.runtime.LaunchedEffect(state.session?.backend) {
-                    val backend = state.session?.backend?.lowercase()
-                    // BL13 — user override from SharedPreferences, fallback to backend defaults
-                    val termPrefs = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
-                    val prefCols = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_COLS, 0)
-                    val prefRows = termPrefs.getInt(com.dmzs.datawatchclient.prefs.TerminalPrefs.KEY_ROWS, 0)
-                    val (defaultCols, defaultRows) = when (backend) {
-                        "claude-code", "claude" -> 120 to 40
-                        else -> 80 to 24
-                    }
-                    val resolvedCols = if (prefCols > 0) prefCols else defaultCols
-                    val resolvedRows = if (prefRows > 0) prefRows else defaultRows
-                    // Enforce MIN COLS only (TUIs like Claude Code need 120 cols
-                    // for their layout). Rows are NOT enforced as a minimum on
-                    // mobile — when the keyboard opens, the WebView area can
-                    // shrink to far fewer rows than 40, and forcing xterm to
-                    // 40 rows would render content TALLER than the viewport,
-                    // clipping the live tail (the bottom rows) off-screen and
-                    // making it impossible to see the cursor while typing.
-                    // Pass 0 for rows so dwSetMinCols treats it as "no minimum".
-                    terminalController.setMinSize(resolvedCols, 0)
-                    // VM still tracks the configured row count for the
-                    // reconnect handler's initial resize_term frame.
-                    vm.terminalCols = resolvedCols
-                    vm.terminalRows = resolvedRows
-                }
-                // Freeze writes when session reaches a terminal state so
-                // the final screenshot isn't overpainted by subsequent
-                // shell-prompt pane_captures (PWA behaviour).
-                androidx.compose.runtime.LaunchedEffect(state.session?.state) {
-                    val st = state.session?.state
-                    val frozen =
-                        st == SessionState.Completed ||
-                            st == SessionState.Killed ||
-                            st == SessionState.Error
-                    terminalController.setFrozen(frozen)
-                }
-                InlineNotices(state.events)
-            }
-
-                // Per-session "Scheduled" strip — mirrors PWA
-                // loadSessionSchedules() in app.js. Hidden when no pending
-                // schedules or when the server predates the session_id filter.
-                if (sessionSchedules.supported && sessionSchedules.schedules.isNotEmpty()) {
-                    SessionSchedulesStrip(
-                        schedules = sessionSchedules.schedules,
-                        onCancel = sessionSchedulesVm::cancel,
-                    )
-                }
-            }
 
                 // Composer in its own layer responding to keyboard insets separately.
                 // In scroll mode the big PgUp/PgDn overlay replaces the composer.
@@ -746,22 +782,22 @@ public fun SessionDetailScreen(
                     ) {
                         Column {
                             ReplyComposer(
-                        text = state.replyText,
-                        onTextChange = vm::onReplyTextChange,
-                        onSend = vm::sendReply,
-                        sending = state.replying,
-                        sessionId = sessionId,
-                        onTranscribed = { vm.onReplyTextChange(it) },
-                        onSchedule = { scheduleOpen = true },
-                        waitingInput = state.session?.state == SessionState.Waiting,
-                        onQuickReply = vm::sendQuickReply,
-                        // Last Response button moved to SessionInfoBar (header)
-                        // 2026-05-25 per user request — no longer duplicated
-                        // in the composer toolbar.
-                        onResponse = {},
-                        hasResponse = false,
-                        onSavedCommands = { savedCmdsOpen = true },
-                        whisperConfigured = state.whisperConfigured,
+                                text = state.replyText,
+                                onTextChange = vm::onReplyTextChange,
+                                onSend = vm::sendReply,
+                                sending = state.replying,
+                                sessionId = sessionId,
+                                onTranscribed = { vm.onReplyTextChange(it) },
+                                onSchedule = { scheduleOpen = true },
+                                waitingInput = state.session?.state == SessionState.Waiting,
+                                onQuickReply = vm::sendQuickReply,
+                                // Last Response button moved to SessionInfoBar (header)
+                                // 2026-05-25 per user request — no longer duplicated
+                                // in the composer toolbar.
+                                onResponse = {},
+                                hasResponse = false,
+                                onSavedCommands = { savedCmdsOpen = true },
+                                whisperConfigured = state.whisperConfigured,
                             )
                             if (savedCmdsOpen) {
                                 QuickCommandsSheet(
@@ -1154,7 +1190,6 @@ private fun stateLabel(s: SessionState): String =
         SessionState.Error -> "failed"
         SessionState.New -> "new"
     }
-
 
 @Composable
 private fun InlineNotices(events: List<SessionEvent>) {
@@ -1845,37 +1880,54 @@ private fun ReplyComposer(
     var showImageSourceSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
-    fun uploadUri(uri: android.net.Uri, fallbackName: String, fallbackMime: String) {
+    fun uploadUri(
+        uri: android.net.Uri,
+        fallbackName: String,
+        fallbackMime: String,
+    ) {
         imageUploading = true
         scope.launch {
-            val bytes = runCatching {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.readBytes()
-                }
-            }.getOrNull()
+            val bytes =
+                runCatching {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        context.contentResolver.openInputStream(uri)?.readBytes()
+                    }
+                }.getOrNull()
             if (bytes == null) {
                 imageUploading = false
-                android.widget.Toast.makeText(context, "Could not read image.", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(
+                    context,
+                    "Could not read image.",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
                 return@launch
             }
-            val displayName = runCatching {
-                val cursor = context.contentResolver.query(
-                    uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
-                )
-                cursor?.use { it.moveToFirst(); it.getString(0) }
-            }.getOrNull() ?: fallbackName
+            val displayName =
+                runCatching {
+                    val cursor =
+                        context.contentResolver.query(
+                            uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
+                        )
+                    cursor?.use {
+                        it.moveToFirst()
+                        it.getString(0)
+                    }
+                }.getOrNull() ?: fallbackName
             val mimeType = context.contentResolver.getType(uri)?.takeIf { it != "image/*" } ?: fallbackMime
             val timestamp = System.currentTimeMillis()
             val safeDisplayName = displayName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
             val destName = "dw_attach_${timestamp}_$safeDisplayName"
 
-            val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
-                .sessionRepository.observeForProfileAny(sessionId).first()
-            val profiles = com.dmzs.datawatchclient.di.ServiceLocator
-                .profileRepository.observeAll().first()
-            val profile = sessionRow?.serverProfileId
-                ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
-                ?: profiles.firstOrNull { it.enabled }
+            val sessionRow =
+                com.dmzs.datawatchclient.di.ServiceLocator
+                    .sessionRepository.observeForProfileAny(sessionId).first()
+            val profiles =
+                com.dmzs.datawatchclient.di.ServiceLocator
+                    .profileRepository.observeAll().first()
+            val profile =
+                sessionRow?.serverProfileId
+                    ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                    ?: profiles.firstOrNull { it.enabled }
             if (profile == null) {
                 imageUploading = false
                 android.widget.Toast.makeText(context, "No server connected.", android.widget.Toast.LENGTH_SHORT).show()
@@ -1885,7 +1937,11 @@ private fun ReplyComposer(
             val root = transport.getFileServiceMeta().getOrNull()?.root?.trimEnd('/')
             if (root == null) {
                 imageUploading = false
-                android.widget.Toast.makeText(context, "Could not resolve server file root.", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(
+                    context,
+                    "Could not resolve server file root.",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
                 return@launch
             }
             val fullPath = "$root/$destName"
@@ -1897,19 +1953,25 @@ private fun ReplyComposer(
                 }
                 .onFailure {
                     imageUploading = false
-                    android.widget.Toast.makeText(context, "Image upload failed: ${it.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(
+                        context,
+                        "Image upload failed: ${it.message}",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
                 }
         }
     }
 
-    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        uploadUri(uri, "image.jpg", "image/jpeg")
-    }
+    val galleryLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri ?: return@rememberLauncherForActivityResult
+            uploadUri(uri, "image.jpg", "image/jpeg")
+        }
 
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) cameraUri?.let { uploadUri(it, "camera_${System.currentTimeMillis()}.jpg", "image/jpeg") }
-    }
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) cameraUri?.let { uploadUri(it, "camera_${System.currentTimeMillis()}.jpg", "image/jpeg") }
+        }
 
     // Clean up the uploaded image when the composer leaves composition (session switch, back nav).
     DisposableEffect(sessionId) {
@@ -1917,11 +1979,13 @@ private fun ReplyComposer(
             val path = pendingImagePath ?: return@onDispose
             scope.launch {
                 val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
-                val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
-                    .sessionRepository.observeForProfileAny(sessionId).first()
-                val profile = sessionRow?.serverProfileId
-                    ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
-                    ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                val sessionRow =
+                    com.dmzs.datawatchclient.di.ServiceLocator
+                        .sessionRepository.observeForProfileAny(sessionId).first()
+                val profile =
+                    sessionRow?.serverProfileId
+                        ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                        ?: profiles.firstOrNull { it.enabled } ?: return@launch
                 com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
                     .deleteFile(path)
             }
@@ -1938,7 +2002,10 @@ private fun ReplyComposer(
             if (granted) {
                 val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
                 runCatching { r.start() }
-                    .onSuccess { recorder = r; showRecordingDialog = true }
+                    .onSuccess {
+                        recorder = r
+                        showRecordingDialog = true
+                    }
                     .onFailure { e ->
                         android.widget.Toast.makeText(
                             context,
@@ -1964,7 +2031,11 @@ private fun ReplyComposer(
                 showRecordingDialog = false
             },
             onSend = {
-                val r = recorder ?: run { showRecordingDialog = false; return@VoiceRecordingDialog }
+                val r =
+                    recorder ?: run {
+                        showRecordingDialog = false
+                        return@VoiceRecordingDialog
+                    }
                 recorder = null
                 showRecordingDialog = false
                 val captured = r.stop() ?: return@VoiceRecordingDialog
@@ -2151,32 +2222,41 @@ private fun ReplyComposer(
                         maxLines = 1,
                     )
                 },
-                trailingIcon = if (!imageUploading && pendingImagePath != null) {
-                    {
-                        IconButton(
-                            onClick = {
-                                val path = pendingImagePath
-                                pendingImagePath = null
-                                pendingImageName = null
-                                if (path != null) {
-                                    scope.launch {
-                                        val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
-                                        val sessionRow = com.dmzs.datawatchclient.di.ServiceLocator
-                                            .sessionRepository.observeForProfileAny(sessionId).first()
-                                        val profile = sessionRow?.serverProfileId
-                                            ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
-                                            ?: profiles.firstOrNull { it.enabled } ?: return@launch
-                                        com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
-                                            .deleteFile(path)
+                trailingIcon =
+                    if (!imageUploading && pendingImagePath != null) {
+                        {
+                            IconButton(
+                                onClick = {
+                                    val path = pendingImagePath
+                                    pendingImagePath = null
+                                    pendingImageName = null
+                                    if (path != null) {
+                                        scope.launch {
+                                            val profiles = com.dmzs.datawatchclient.di.ServiceLocator.profileRepository.observeAll().first()
+                                            val sessionRow =
+                                                com.dmzs.datawatchclient.di.ServiceLocator
+                                                    .sessionRepository.observeForProfileAny(sessionId).first()
+                                            val profile =
+                                                sessionRow?.serverProfileId
+                                                    ?.let { pid -> profiles.firstOrNull { it.id == pid && it.enabled } }
+                                                    ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                                            com.dmzs.datawatchclient.di.ServiceLocator.transportFor(profile)
+                                                .deleteFile(path)
+                                        }
                                     }
-                                }
-                            },
-                            modifier = Modifier.size(16.dp),
-                        ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Remove image", modifier = Modifier.size(12.dp))
+                                },
+                                modifier = Modifier.size(16.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = "Remove image",
+                                    modifier = Modifier.size(12.dp),
+                                )
+                            }
                         }
-                    }
-                } else null,
+                    } else {
+                        null
+                    },
                 modifier = Modifier.height(28.dp),
             )
         }
@@ -2252,39 +2332,44 @@ private fun ReplyComposer(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-        if (whisperConfigured) IconButton(
-            modifier = Modifier.size(40.dp),
-            onClick = {
-                val granted =
-                    androidx.core.content.ContextCompat.checkSelfPermission(
-                        context,
-                        android.Manifest.permission.RECORD_AUDIO,
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                if (granted) {
-                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
-                    runCatching { r.start() }
-                        .onSuccess { recorder = r; showRecordingDialog = true }
-                        .onFailure { e ->
-                            android.widget.Toast.makeText(
-                                context,
-                                "Recording failed: ${e.message ?: e::class.simpleName}",
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                        }
+        if (whisperConfigured) {
+            IconButton(
+                modifier = Modifier.size(40.dp),
+                onClick = {
+                    val granted =
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context,
+                            android.Manifest.permission.RECORD_AUDIO,
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) {
+                        val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                        runCatching { r.start() }
+                            .onSuccess {
+                                recorder = r
+                                showRecordingDialog = true
+                            }
+                            .onFailure { e ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Recording failed: ${e.message ?: e::class.simpleName}",
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                    } else {
+                        micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                    }
+                },
+                enabled = !sending && !transcribing,
+            ) {
+                if (transcribing) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
                 } else {
-                    micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = "Voice input",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
-            },
-            enabled = !sending && !transcribing,
-        ) {
-            if (transcribing) {
-                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(4.dp))
-            } else {
-                Icon(
-                    Icons.Filled.Mic,
-                    contentDescription = "Voice input",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
             }
         }
         // Image attachment button (issue #158 — PWA v8.19.0 parity).
@@ -2315,34 +2400,44 @@ private fun ReplyComposer(
                 androidx.compose.material3.ListItem(
                     headlineContent = { Text("Choose from gallery") },
                     leadingContent = {
-                        Icon(Icons.Filled.AddAPhoto, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Filled.AddAPhoto,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     },
-                    modifier = Modifier.clickable {
-                        showImageSourceSheet = false
-                        galleryLauncher.launch("image/*")
-                    },
+                    modifier =
+                        Modifier.clickable {
+                            showImageSourceSheet = false
+                            galleryLauncher.launch("image/*")
+                        },
                 )
                 androidx.compose.material3.ListItem(
                     headlineContent = { Text("Take a photo") },
                     leadingContent = {
-                        Icon(Icons.Filled.CameraAlt, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                    modifier = Modifier.clickable {
-                        showImageSourceSheet = false
-                        val file = java.io.File(
-                            context.cacheDir,
-                            "dw_camera_${System.currentTimeMillis()}.jpg",
+                        Icon(
+                            Icons.Filled.CameraAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            file,
-                        )
-                        cameraUri = uri
-                        cameraLauncher.launch(uri)
                     },
+                    modifier =
+                        Modifier.clickable {
+                            showImageSourceSheet = false
+                            val file =
+                                java.io.File(
+                                    context.cacheDir,
+                                    "dw_camera_${System.currentTimeMillis()}.jpg",
+                                )
+                            val uri =
+                                androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file,
+                                )
+                            cameraUri = uri
+                            cameraLauncher.launch(uri)
+                        },
                 )
             }
         }
@@ -2392,22 +2487,28 @@ private fun SessionModeTab(
     val textColor = if (selected) dw.accent2 else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .then(
-                if (selected) {
-                    Modifier.drawBehind {
-                        val stroke = 1.dp.toPx()
-                        drawRect(surfaceBg)
-                        drawLine(borderColor, Offset(stroke / 2f, 0f), Offset(stroke / 2f, size.height), stroke)
-                        drawLine(borderColor, Offset(size.width - stroke / 2f, 0f), Offset(size.width - stroke / 2f, size.height), stroke)
-                        drawLine(borderColor, Offset(0f, stroke / 2f), Offset(size.width, stroke / 2f), stroke)
-                    }
-                } else {
-                    Modifier
-                },
-            )
-            .padding(horizontal = 12.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .clickable(onClick = onClick)
+                .then(
+                    if (selected) {
+                        Modifier.drawBehind {
+                            val stroke = 1.dp.toPx()
+                            drawRect(surfaceBg)
+                            drawLine(borderColor, Offset(stroke / 2f, 0f), Offset(stroke / 2f, size.height), stroke)
+                            drawLine(
+                                borderColor,
+                                Offset(size.width - stroke / 2f, 0f),
+                                Offset(size.width - stroke / 2f, size.height),
+                                stroke,
+                            )
+                            drawLine(borderColor, Offset(0f, stroke / 2f), Offset(size.width, stroke / 2f), stroke)
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(horizontal = 12.dp, vertical = 2.dp),
     ) {
         Text(
             label,

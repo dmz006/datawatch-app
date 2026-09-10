@@ -2,7 +2,6 @@ package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +22,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,9 +44,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private val VALID_CARD_IDS = listOf(
-    "tree", "orbital", "events", "sparklines", "gantt", "heatmap", "guardrails", "ekg", "smoke",
-)
+private val VALID_CARD_IDS =
+    listOf(
+        "tree", "orbital", "events", "sparklines", "gantt", "heatmap", "guardrails", "ekg", "smoke",
+    )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,8 +81,11 @@ internal fun DashboardCardsCard() {
         return ServiceLocator.profileRepository.observeAll()
             .first { list -> list.any { it.enabled } }
             .let { list ->
-                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                else list.firstOrNull { it.id == activeId && it.enabled }
+                if (activeId == null) {
+                    list.filter { it.enabled }.firstOrNull()
+                } else {
+                    list.firstOrNull { it.id == activeId && it.enabled }
+                }
             }
             ?.let { ServiceLocator.transportFor(it) }
     }
@@ -98,12 +100,16 @@ internal fun DashboardCardsCard() {
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.filter { it.enabled }.firstOrNull()
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                        }
+                    } ?: return@runCatching
             val result = ServiceLocator.transportFor(sp).listDashboardCards()
             result.onSuccess { list ->
                 cards = list
@@ -117,11 +123,12 @@ internal fun DashboardCardsCard() {
     if (!visible) return
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.dash_cards_title), docsAnchor = "dashboard")
 
@@ -208,7 +215,10 @@ internal fun DashboardCardsCard() {
                 VALID_CARD_IDS.forEach { opt ->
                     DropdownMenuItem(
                         text = { Text(opt) },
-                        onClick = { addId = opt; addIdExpanded = false },
+                        onClick = {
+                            addId = opt
+                            addIdExpanded = false
+                        },
                     )
                 }
             }
@@ -216,9 +226,10 @@ internal fun DashboardCardsCard() {
 
         // Column span slider for add section
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -246,9 +257,10 @@ internal fun DashboardCardsCard() {
             value = addRs,
             onValueChange = { v -> if (v.isEmpty() || v.all { it.isDigit() }) addRs = v },
             label = { Text(stringResource(R.string.dash_card_rs)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
             singleLine = true,
         )
 
@@ -271,9 +283,10 @@ internal fun DashboardCardsCard() {
                     }
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             enabled = addId.isNotBlank(),
         ) {
             Text(stringResource(R.string.dash_card_add))
@@ -299,10 +312,11 @@ private fun DashboardCardRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         // Summary row
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onToggleExpand() }
-                .padding(vertical = 4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleExpand() }
+                    .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -329,9 +343,10 @@ private fun DashboardCardRow(
         // Inline editor (shown when expanded)
         if (expanded) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // Card ID picker
@@ -354,7 +369,10 @@ private fun DashboardCardRow(
                         VALID_CARD_IDS.forEach { opt ->
                             DropdownMenuItem(
                                 text = { Text(opt) },
-                                onClick = { editId = opt; idDropdownExpanded = false },
+                                onClick = {
+                                    editId = opt
+                                    idDropdownExpanded = false
+                                },
                             )
                         }
                     }

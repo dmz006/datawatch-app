@@ -31,7 +31,6 @@ public class AutoPrdStagesScreen(
     private val prdId: String,
     private val prdName: String,
 ) : Screen(carContext) {
-
     private var prdStatus: String = ""
     private var stories: List<PrdStoryDto> = emptyList()
     private var isLoading: Boolean = true
@@ -39,15 +38,26 @@ public class AutoPrdStagesScreen(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
-        scope.launch { loadPrd(); invalidate() }
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) { scope.cancel() }
-        })
+        scope.launch {
+            loadPrd()
+            invalidate()
+        }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private suspend fun loadPrd() {
         try {
-            val profile = resolveActiveProfile() ?: run { error = "No enabled server"; return }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server"
+                    return
+                }
             val result = AutoServiceLocator.transportFor(profile).listPrds().getOrNull()
             val prd = result?.prds?.firstOrNull { it.id == prdId }
             if (prd != null) {
@@ -69,7 +79,11 @@ public class AutoPrdStagesScreen(
                 val profile = resolveActiveProfile() ?: return@launch
                 AutoServiceLocator.transportFor(profile).prdAction(prdId, action).fold(
                     onSuccess = {
-                        CarToast.makeText(carContext, "${action.replaceFirstChar { it.uppercase() }} sent", CarToast.LENGTH_SHORT).show()
+                        CarToast.makeText(
+                            carContext,
+                            "${action.replaceFirstChar { it.uppercase() }} sent",
+                            CarToast.LENGTH_SHORT,
+                        ).show()
                         screenManager.pop()
                     },
                     onFailure = { err ->
@@ -87,32 +101,36 @@ public class AutoPrdStagesScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val body = when {
-            isLoading -> "Loading plan stages…"
-            error != null -> "Error: $error"
-            stories.isEmpty() -> "No stages configured for this plan.\n\nStatus: $prdStatus"
-            else -> buildString {
-                appendLine("Status: $prdStatus\n")
-                stories.forEach { s ->
-                    val marker = when (s.status) {
-                        "complete" -> "✓"
-                        "in_progress" -> "◉"
-                        "awaiting_approval" -> "⚠"
-                        "rejected" -> "✗"
-                        else -> "○"
-                    }
-                    appendLine("$marker ${s.title.take(MAX_STORY_TITLE)}")
-                }
-            }.trimEnd()
-        }
+        val body =
+            when {
+                isLoading -> "Loading plan stages…"
+                error != null -> "Error: $error"
+                stories.isEmpty() -> "No stages configured for this plan.\n\nStatus: $prdStatus"
+                else ->
+                    buildString {
+                        appendLine("Status: $prdStatus\n")
+                        stories.forEach { s ->
+                            val marker =
+                                when (s.status) {
+                                    "complete" -> "✓"
+                                    "in_progress" -> "◉"
+                                    "awaiting_approval" -> "⚠"
+                                    "rejected" -> "✗"
+                                    else -> "○"
+                                }
+                            appendLine("$marker ${s.title.take(MAX_STORY_TITLE)}")
+                        }
+                    }.trimEnd()
+            }
 
         val statusLower = prdStatus.lowercase()
         val isReview = statusLower in setOf("needs_review", "revisions_asked", "awaiting_review")
         val isRunning = statusLower == "running" || statusLower == "active"
 
-        val builder = MessageTemplate.Builder(body)
-            .setTitle(prdName.take(MAX_TITLE_CHARS))
-            .setHeaderAction(Action.BACK)
+        val builder =
+            MessageTemplate.Builder(body)
+                .setTitle(prdName.take(MAX_TITLE_CHARS))
+                .setHeaderAction(Action.BACK)
 
         if (!isLoading && error == null) {
             when {

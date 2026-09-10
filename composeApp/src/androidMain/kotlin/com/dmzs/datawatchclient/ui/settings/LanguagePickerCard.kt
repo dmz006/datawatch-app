@@ -26,19 +26,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
 
-private val LANGUAGE_OPTIONS = listOf(
-    "auto" to "Auto (server default)",
-    "en" to "English",
-    "de" to "Deutsch",
-    "es" to "Español",
-    "fr" to "Français",
-    "it" to "Italiano",
-    "ja" to "日本語",
-    "ko" to "한국어",
-    "pt" to "Português",
-    "ru" to "Русский",
-    "zh" to "中文",
-)
+private val LANGUAGE_OPTIONS =
+    listOf(
+        "auto" to "Auto (server default)",
+        "en" to "English",
+        "de" to "Deutsch",
+        "es" to "Español",
+        "fr" to "Français",
+        "it" to "Italiano",
+        "ja" to "日本語",
+        "ko" to "한국어",
+        "pt" to "Português",
+        "ru" to "Русский",
+        "zh" to "中文",
+    )
 
 /**
  * Settings → About: whisper.language picker. Surfaced prominently here per
@@ -55,8 +56,9 @@ internal fun LanguagePickerCard() {
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = profiles.firstOrNull { it.id == activeId } ?: profiles.firstOrNull()
-            ?: return@LaunchedEffect
+        val profile =
+            profiles.firstOrNull { it.id == activeId } ?: profiles.firstOrNull()
+                ?: return@LaunchedEffect
         ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
             current = cfg.raw["whisper.language"]?.jsonPrimitive?.content ?: "auto"
         }
@@ -65,17 +67,19 @@ internal fun LanguagePickerCard() {
     val displayLabel = LANGUAGE_OPTIONS.firstOrNull { it.first == current }?.second ?: current
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         PwaSectionTitle("Language / Whisper Language", docsAnchor = "language")
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -101,8 +105,9 @@ internal fun LanguagePickerCard() {
                                 scope.launch {
                                     val profiles = ServiceLocator.profileRepository.observeAll().first()
                                     val activeId = ServiceLocator.activeServerStore.get()
-                                    val profile = profiles.firstOrNull { it.id == activeId }
-                                        ?: profiles.firstOrNull() ?: return@launch
+                                    val profile =
+                                        profiles.firstOrNull { it.id == activeId }
+                                            ?: profiles.firstOrNull() ?: return@launch
                                     ServiceLocator.transportFor(profile).setWhisperLanguage(code)
                                 }
                             }

@@ -8,6 +8,11 @@ public object AlertDockChannel {
     private val _open = MutableStateFlow(false)
     public val open: StateFlow<Boolean> = _open.asStateFlow()
 
-    public fun toggle() { _open.value = !_open.value }
-    public fun close() { _open.value = false }
+    public fun toggle() {
+        _open.value = !_open.value
+    }
+
+    public fun close() {
+        _open.value = false
+    }
 }

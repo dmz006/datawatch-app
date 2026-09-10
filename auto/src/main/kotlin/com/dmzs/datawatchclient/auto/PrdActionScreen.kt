@@ -35,11 +35,13 @@ public class PrdActionScreen(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.cancel()
-            }
-        })
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private fun fire(
@@ -127,16 +129,18 @@ public class PrdActionScreen(
         val isTerminal = statusLower in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
         val isReview = statusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
 
-        val prompt = when {
-            isRunning -> "Running: $title"
-            isTerminal -> "Delete this automata?"
-            isReview -> "Review: $title"
-            else -> title
-        }
+        val prompt =
+            when {
+                isRunning -> "Running: $title"
+                isTerminal -> "Delete this automata?"
+                isReview -> "Review: $title"
+                else -> title
+            }
 
-        val builder = MessageTemplate.Builder(prompt)
-            .setTitle("Automata")
-            .setHeaderAction(Action.BACK)
+        val builder =
+            MessageTemplate.Builder(prompt)
+                .setTitle("Automata")
+                .setHeaderAction(Action.BACK)
 
         when {
             isRunning -> {

@@ -58,10 +58,11 @@ public fun McpChannelCard() {
             }
         ServiceLocator.transportFor(profile).fetchChannelInfo().fold(
             onSuccess = { el ->
-                val obj = el as? JsonObject ?: run {
-                    banner = "Unexpected response."
-                    return@fold
-                }
+                val obj =
+                    el as? JsonObject ?: run {
+                        banner = "Unexpected response."
+                        return@fold
+                    }
                 kind = (obj["kind"] as? JsonPrimitive)?.takeIf { it.isString }?.content
                 ready = (obj["ready"] as? JsonPrimitive)?.booleanOrNull
                 path = (obj["path"] as? JsonPrimitive)?.takeIf { it.isString }?.content
@@ -98,7 +99,16 @@ public fun McpChannelCard() {
                 // Kind row
                 kind?.let { k ->
                     val kindLabel = if (k.equals("go", ignoreCase = true)) "Go ✓" else "JS ⚠"
-                    val kindColor = if (k.equals("go", ignoreCase = true)) dw.success else MaterialTheme.colorScheme.error
+                    val kindColor =
+                        if (k.equals(
+                                "go",
+                                ignoreCase = true,
+                            )
+                        ) {
+                            dw.success
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        }
                     BridgeInfoRow("Kind", kindLabel, kindColor)
                 }
                 // Ready badge
@@ -115,10 +125,11 @@ public fun McpChannelCard() {
                 if (stale.isNotEmpty()) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { staleExpanded = !staleExpanded }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { staleExpanded = !staleExpanded }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -156,9 +167,10 @@ private fun BridgeInfoRow(
     valueColor: androidx.compose.ui.graphics.Color,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

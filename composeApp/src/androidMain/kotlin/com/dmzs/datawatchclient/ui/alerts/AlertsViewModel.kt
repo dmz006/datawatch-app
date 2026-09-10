@@ -47,6 +47,7 @@ public class AlertsViewModel : ViewModel() {
     public enum class Tab { Active, Historical, System }
 
     public enum class ChipFilter { All, Prompt, Error, Warn, Info }
+
     public enum class SortMode { BySession, Chronological }
 
     public data class AlertGroup(
@@ -82,6 +83,7 @@ public class AlertsViewModel : ViewModel() {
 
         public companion object {
             public const val SYSTEM_BUCKET: String = "__system__"
+
             /** Synthetic session id for the flat chronological view. */
             public const val CHRONO_BUCKET: String = "__chrono__"
         }
@@ -213,7 +215,9 @@ public class AlertsViewModel : ViewModel() {
                                             }
                                         },
                                         onFailure = { err ->
-                                            synchronized(errors) { errors += "${p.displayName}: ${err.message ?: err::class.simpleName}" }
+                                            synchronized(
+                                                errors,
+                                            ) { errors += "${p.displayName}: ${err.message ?: err::class.simpleName}" }
                                         },
                                     )
                                 }
@@ -223,10 +227,20 @@ public class AlertsViewModel : ViewModel() {
                         _groupProfileNames.value = nameMap.toMap()
                         _banner.value = if (errors.isEmpty()) null else "Some unreachable: " + errors.take(2).joinToString("; ")
                     } else {
-                        if (profile == null) { _refreshing.value = false; break }
+                        if (profile == null) {
+                            _refreshing.value = false
+                            break
+                        }
                         ServiceLocator.transportFor(profile).listAlerts().fold(
-                            onSuccess = { _alerts.value = it.alerts; _groupProfileNames.value = emptyMap(); _banner.value = null },
-                            onFailure = { err -> _banner.value = "Alerts fetch failed — ${err.message ?: err::class.simpleName}" },
+                            onSuccess = {
+                                _alerts.value = it.alerts
+                                _groupProfileNames.value = emptyMap()
+                                _banner.value = null
+                            },
+                            onFailure = {
+                                    err ->
+                                _banner.value = "Alerts fetch failed — ${err.message ?: err::class.simpleName}"
+                            },
                         )
                     }
                     _refreshing.value = false
@@ -236,20 +250,21 @@ public class AlertsViewModel : ViewModel() {
         }
     }
 
-    private fun prefs() =
-        android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
+    private fun prefs() = android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
 
     private fun loadPersistedTabState() {
         val p = prefs()
         val tabName = p.getString(PREF_ACTIVE_TAB, Tab.Active.name) ?: Tab.Active.name
         val tab = runCatching { Tab.valueOf(tabName) }.getOrDefault(Tab.Active)
         _selectedTab.value = tab
-        _chipFilter.value = runCatching {
-            ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
-        }.getOrDefault(ChipFilter.All)
-        _sortMode.value = runCatching {
-            SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
-        }.getOrDefault(SortMode.BySession)
+        _chipFilter.value =
+            runCatching {
+                ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
+            }.getOrDefault(ChipFilter.All)
+        _sortMode.value =
+            runCatching {
+                SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
+            }.getOrDefault(SortMode.BySession)
         _search.value = p.getString("alerts_${tab.name.lowercase()}_search", "") ?: ""
     }
 
@@ -274,10 +289,13 @@ public class AlertsViewModel : ViewModel() {
             when {
                 allMode -> {
                     val enabled = profiles.filter { it.enabled }
-                    if (enabled.isEmpty()) flowOf(emptyList())
-                    else combine(
-                        enabled.map { ServiceLocator.sessionRepository.observeForProfile(it.id) }
-                    ) { arrays: Array<List<Session>> -> arrays.flatMap { it } }
+                    if (enabled.isEmpty()) {
+                        flowOf(emptyList())
+                    } else {
+                        combine(
+                            enabled.map { ServiceLocator.sessionRepository.observeForProfile(it.id) },
+                        ) { arrays: Array<List<Session>> -> arrays.flatMap { it } }
+                    }
                 }
                 profile == null -> flowOf(emptyList())
                 else -> ServiceLocator.sessionRepository.observeForProfile(profile.id)
@@ -349,7 +367,11 @@ public class AlertsViewModel : ViewModel() {
                     alert.message.contains(search, ignoreCase = true)
 
             val promptRegex = Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE)
-            fun matchesChip(alert: Alert, sessState: SessionState?): Boolean =
+
+            fun matchesChip(
+                alert: Alert,
+                sessState: SessionState?,
+            ): Boolean =
                 when (chip) {
                     ChipFilter.All -> true
                     ChipFilter.Prompt ->
@@ -378,28 +400,36 @@ public class AlertsViewModel : ViewModel() {
 
             // Chip counts: count from current tab's alerts filtered by search only (not chip).
             // Matches PWA catOf() which also considers sessState === 'waiting_input'.
-            val rawTabGroups = when (inner.selectedTab) {
-                Tab.Active -> inner.active
-                Tab.Historical -> inner.historical
-                Tab.System -> inner.system
-            }
-            val rawTabGroupedAlerts = rawTabGroups.flatMap { group ->
-                group.alerts.filter { matchesSearch(it) }.map { Pair(it, group.state) }
-            }
-            fun isPromptAlert(alert: Alert, sessState: SessionState?): Boolean =
+            val rawTabGroups =
+                when (inner.selectedTab) {
+                    Tab.Active -> inner.active
+                    Tab.Historical -> inner.historical
+                    Tab.System -> inner.system
+                }
+            val rawTabGroupedAlerts =
+                rawTabGroups.flatMap { group ->
+                    group.alerts.filter { matchesSearch(it) }.map { Pair(it, group.state) }
+                }
+
+            fun isPromptAlert(
+                alert: Alert,
+                sessState: SessionState?,
+            ): Boolean =
                 sessState == SessionState.Waiting ||
                     alert.type.contains("input", ignoreCase = true) ||
                     alert.type == "needs_input" || alert.type == "input_needed" ||
                     promptRegex.containsMatchIn(alert.title)
-            val chipCounts = mapOf(
-                ChipFilter.All to rawTabGroupedAlerts.size,
-                ChipFilter.Prompt to rawTabGroupedAlerts.count { (a, s) -> isPromptAlert(a, s) },
-                ChipFilter.Error to rawTabGroupedAlerts.count { (a, _) ->
-                    a.severity == AlertSeverity.Error || a.type.contains("error", ignoreCase = true)
-                },
-                ChipFilter.Warn to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Warning },
-                ChipFilter.Info to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Info },
-            )
+            val chipCounts =
+                mapOf(
+                    ChipFilter.All to rawTabGroupedAlerts.size,
+                    ChipFilter.Prompt to rawTabGroupedAlerts.count { (a, s) -> isPromptAlert(a, s) },
+                    ChipFilter.Error to
+                        rawTabGroupedAlerts.count { (a, _) ->
+                            a.severity == AlertSeverity.Error || a.type.contains("error", ignoreCase = true)
+                        },
+                    ChipFilter.Warn to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Warning },
+                    ChipFilter.Info to rawTabGroupedAlerts.count { (a, _) -> a.severity == AlertSeverity.Info },
+                )
 
             val flatChrono: List<Alert> =
                 if (sort == SortMode.Chronological) {
@@ -429,16 +459,21 @@ public class AlertsViewModel : ViewModel() {
                 ?: profiles.firstOrNull { it.enabled }
         }
 
-    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf<Boolean?>(null)
-            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val reachable: StateFlow<Boolean?> =
+        _computedActiveProfile
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf<Boolean?>(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    public val lastProbeEpochMs: StateFlow<Long?> = reachable
-        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val lastProbeEpochMs: StateFlow<Long?> =
+        reachable
+            .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     public val state: StateFlow<UiState> =
         combine(
@@ -475,18 +510,28 @@ public class AlertsViewModel : ViewModel() {
         _selectedTab.value = tab
         prefs().edit().putString(PREF_ACTIVE_TAB, tab.name).apply()
         val p = prefs()
-        _chipFilter.value = runCatching {
-            ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
-        }.getOrDefault(ChipFilter.All)
-        _sortMode.value = runCatching {
-            SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
-        }.getOrDefault(SortMode.BySession)
+        _chipFilter.value =
+            runCatching {
+                ChipFilter.valueOf(p.getString("alerts_${tab.name.lowercase()}_chip", ChipFilter.All.name) ?: ChipFilter.All.name)
+            }.getOrDefault(ChipFilter.All)
+        _sortMode.value =
+            runCatching {
+                SortMode.valueOf(p.getString("alerts_${tab.name.lowercase()}_sort", SortMode.BySession.name) ?: SortMode.BySession.name)
+            }.getOrDefault(SortMode.BySession)
         _search.value = p.getString("alerts_${tab.name.lowercase()}_search", "") ?: ""
     }
 
-    public fun setChipFilter(f: ChipFilter) { _chipFilter.value = f }
-    public fun setSortMode(m: SortMode) { _sortMode.value = m }
-    public fun setSearch(q: String) { _search.value = q }
+    public fun setChipFilter(f: ChipFilter) {
+        _chipFilter.value = f
+    }
+
+    public fun setSortMode(m: SortMode) {
+        _sortMode.value = m
+    }
+
+    public fun setSearch(q: String) {
+        _search.value = q
+    }
 
     /** Toggle a per-session group's expanded state. */
     public fun toggleExpanded(sessionId: String) {

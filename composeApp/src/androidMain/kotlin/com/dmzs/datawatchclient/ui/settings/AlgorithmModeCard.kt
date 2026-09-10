@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -46,9 +44,16 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private val ALGORITHM_PHASES = listOf(
-    "observe", "orient", "decide", "act", "measure", "learn", "improve",
-)
+private val ALGORITHM_PHASES =
+    listOf(
+        "observe",
+        "orient",
+        "decide",
+        "act",
+        "measure",
+        "learn",
+        "improve",
+    )
 
 @Composable
 internal fun AlgorithmModeCard() {
@@ -59,24 +64,29 @@ internal fun AlgorithmModeCard() {
 
     suspend fun loadSessions() {
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.firstOrNull { it.enabled }
-                else list.firstOrNull { it.id == activeId && it.enabled }
-                    ?: list.firstOrNull { it.enabled }
-            } ?: return
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.firstOrNull { it.enabled }
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                            ?: list.firstOrNull { it.enabled }
+                    }
+                } ?: return
         ServiceLocator.transportFor(sp).algorithmList().onSuccess { sessions = it }
     }
 
     LaunchedEffect(Unit) { runCatching { loadSessions() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.algorithm_mode_title), docsAnchor = "algorithm-mode")
 
@@ -89,7 +99,12 @@ internal fun AlgorithmModeCard() {
             OutlinedTextField(
                 value = startSessionId,
                 onValueChange = { startSessionId = it },
-                placeholder = { Text(stringResource(R.string.algorithm_start_hint), style = MaterialTheme.typography.labelSmall) },
+                placeholder = {
+                    Text(
+                        stringResource(R.string.algorithm_start_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 textStyle = MaterialTheme.typography.bodySmall,
@@ -101,13 +116,17 @@ internal fun AlgorithmModeCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.firstOrNull { it.enabled }
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: list.firstOrNull { it.enabled }
-                                } ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.firstOrNull { it.enabled }
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                                ?: list.firstOrNull { it.enabled }
+                                        }
+                                    } ?: return@runCatching
                             ServiceLocator.transportFor(sp).algorithmStart(id).onSuccess { state ->
                                 sessions = (sessions.filter { it.sessionId != state.sessionId } + state)
                                 startSessionId = ""
@@ -136,13 +155,17 @@ internal fun AlgorithmModeCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmAdvance(state.sessionId)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -154,13 +177,17 @@ internal fun AlgorithmModeCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmAbort(state.sessionId)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -172,13 +199,17 @@ internal fun AlgorithmModeCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmReset(state.sessionId)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -190,13 +221,17 @@ internal fun AlgorithmModeCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmEdit(state.sessionId, output)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -208,13 +243,17 @@ internal fun AlgorithmModeCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).algorithmMeasure(state.sessionId, suite)
                                     .onSuccess { updated ->
                                         sessions = sessions.map { if (it.sessionId == updated.sessionId) updated else it }
@@ -243,10 +282,11 @@ private fun AlgorithmSessionRow(
     var measureSuite by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggle() }
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(vertical = 4.dp),
     ) {
         // Session ID + phase strip
         Row(
@@ -297,7 +337,12 @@ private fun AlgorithmSessionRow(
                         OutlinedTextField(
                             value = editOutput,
                             onValueChange = { editOutput = it },
-                            placeholder = { Text(stringResource(R.string.algorithm_edit_hint), style = MaterialTheme.typography.labelSmall) },
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.algorithm_edit_hint),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
                             singleLine = true,
                             modifier = Modifier.weight(1f),
                             textStyle = MaterialTheme.typography.bodySmall,
@@ -305,9 +350,17 @@ private fun AlgorithmSessionRow(
                         TextButton(
                             onClick = {
                                 val out = editOutput.trim()
-                                if (out.isNotBlank()) { onEdit(out); editOutput = "" }
+                                if (out.isNotBlank()) {
+                                    onEdit(out)
+                                    editOutput = ""
+                                }
                             },
-                        ) { Text(stringResource(R.string.algorithm_edit_action), style = MaterialTheme.typography.labelSmall) }
+                        ) {
+                            Text(
+                                stringResource(R.string.algorithm_edit_action),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
 
                     // Measure: run eval suite against current phase
@@ -319,7 +372,12 @@ private fun AlgorithmSessionRow(
                         OutlinedTextField(
                             value = measureSuite,
                             onValueChange = { measureSuite = it },
-                            placeholder = { Text(stringResource(R.string.algorithm_measure_hint), style = MaterialTheme.typography.labelSmall) },
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.algorithm_measure_hint),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
                             singleLine = true,
                             modifier = Modifier.weight(1f),
                             textStyle = MaterialTheme.typography.bodySmall,
@@ -327,9 +385,17 @@ private fun AlgorithmSessionRow(
                         TextButton(
                             onClick = {
                                 val suite = measureSuite.trim()
-                                if (suite.isNotBlank()) { onMeasure(suite); measureSuite = "" }
+                                if (suite.isNotBlank()) {
+                                    onMeasure(suite)
+                                    measureSuite = ""
+                                }
                             },
-                        ) { Text(stringResource(R.string.algorithm_measure_action), style = MaterialTheme.typography.labelSmall) }
+                        ) {
+                            Text(
+                                stringResource(R.string.algorithm_measure_action),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
 
@@ -341,26 +407,29 @@ private fun AlgorithmSessionRow(
                     if (!state.aborted) {
                         FilledTonalButton(
                             onClick = onAdvance,
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = Color(0xFF10B981).copy(alpha = 0.18f),
-                                contentColor = Color(0xFF10B981),
-                            ),
+                            colors =
+                                ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = Color(0xFF10B981).copy(alpha = 0.18f),
+                                    contentColor = Color(0xFF10B981),
+                                ),
                         ) { Text(stringResource(R.string.algorithm_advance)) }
                         FilledTonalButton(
                             onClick = onAbort,
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
-                                contentColor = MaterialTheme.colorScheme.error,
-                            ),
+                            colors =
+                                ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
                         ) { Text(stringResource(R.string.algorithm_abort)) }
                     }
                     // Reset available always — restarts from Observe phase
                     FilledTonalButton(
                         onClick = onReset,
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        ),
+                        colors =
+                            ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
                     ) { Text(stringResource(R.string.algorithm_reset)) }
                 }
             }
@@ -369,36 +438,51 @@ private fun AlgorithmSessionRow(
 }
 
 @Composable
-private fun PhaseStrip(current: String, aborted: Boolean) {
+private fun PhaseStrip(
+    current: String,
+    aborted: Boolean,
+) {
     val currentIdx = ALGORITHM_PHASES.indexOf(current).coerceAtLeast(0)
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         ALGORITHM_PHASES.forEachIndexed { idx, _ ->
             when {
                 aborted && idx == currentIdx -> PhaseDot(color = MaterialTheme.colorScheme.error, pulse = false)
                 idx < currentIdx -> PhaseDot(color = Color(0xFF10B981), pulse = false) // done: teal
-                idx == currentIdx -> PhaseDot(color = Color(0xFF3B82F6), pulse = true)  // current: pulsing blue
-                else -> PhaseDot(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), pulse = false) // future: grey
+                idx == currentIdx -> PhaseDot(color = Color(0xFF3B82F6), pulse = true) // current: pulsing blue
+                else ->
+                    PhaseDot(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        pulse = false,
+                    ) // future: grey
             }
         }
     }
 }
 
 @Composable
-private fun PhaseDot(color: Color, pulse: Boolean) {
-    val alpha = if (pulse) {
-        val transition = rememberInfiniteTransition(label = "pulseDot")
-        val a by transition.animateFloat(
-            initialValue = 0.4f, targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse),
-            label = "dotAlpha",
-        )
-        a
-    } else 1f
+private fun PhaseDot(
+    color: Color,
+    pulse: Boolean,
+) {
+    val alpha =
+        if (pulse) {
+            val transition = rememberInfiniteTransition(label = "pulseDot")
+            val a by transition.animateFloat(
+                initialValue = 0.4f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse),
+                label = "dotAlpha",
+            )
+            a
+        } else {
+            1f
+        }
 
     Box(
-        modifier = Modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .background(color.copy(alpha = alpha)),
+        modifier =
+            Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(color.copy(alpha = alpha)),
     )
 }

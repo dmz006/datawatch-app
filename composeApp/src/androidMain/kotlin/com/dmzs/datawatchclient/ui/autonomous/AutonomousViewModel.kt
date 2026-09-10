@@ -24,8 +24,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
@@ -110,26 +110,35 @@ public class AutonomousViewModel(
     // When ServiceLocator is not yet initialized (unit-test environment), expose
     // _state directly so tests can read loading/prds/banner/selectedIds without
     // triggering the database + SharedPrefs initialization.
-    public val state: StateFlow<UiState> = run {
-        if (!ServiceLocator.isInitialized) {
-            _state.asStateFlow()
-        } else {
-            combine(_state, _allProfiles, _allServersMode, _computedActiveProfile) { s, profiles, allMode, activeProf ->
-                s.copy(
-                    allProfiles = profiles.filter { it.enabled },
-                    allServersMode = allMode,
-                    activeProfile = activeProf,
-                )
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+    public val state: StateFlow<UiState> =
+        run {
+            if (!ServiceLocator.isInitialized) {
+                _state.asStateFlow()
+            } else {
+                combine(
+                    _state,
+                    _allProfiles,
+                    _allServersMode,
+                    _computedActiveProfile,
+                ) { s, profiles, allMode, activeProf ->
+                    s.copy(
+                        allProfiles = profiles.filter { it.enabled },
+                        allServersMode = allMode,
+                        activeProfile = activeProf,
+                    )
+                }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+            }
         }
-    }
 
     /** Reachability of the active single-server profile (null = probing). */
     public val reachable: StateFlow<Boolean?> by lazy {
         _computedActiveProfile
             .flatMapLatest { profile ->
-                if (profile == null) flowOf<Boolean?>(null)
-                else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                if (profile == null) {
+                    flowOf<Boolean?>(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                }
             }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     }
@@ -166,8 +175,9 @@ public class AutonomousViewModel(
                 }
             transport.listPrds().fold(
                 onSuccess = { dto ->
-                    val backends = transport.listBackends()
-                        .getOrNull()?.llm.orEmpty()
+                    val backends =
+                        transport.listBackends()
+                            .getOrNull()?.llm.orEmpty()
                     val permModes = transport.listClaudePermissionModes().getOrElse { emptyList() }
                     _state.value = UiState(loading = false, prds = dto.prds, backends = backends, permissionModes = permModes)
                 },
@@ -214,24 +224,29 @@ public class AutonomousViewModel(
                     }
                 }.awaitAll()
             }
-            _state.value = _state.value.copy(
-                loading = false,
-                prds = merged.toList(),
-                prdProfileNames = nameMap.toMap(),
-                banner = if (errors.isEmpty()) null else "Some servers unreachable: " + errors.take(3).joinToString("; "),
-            )
+            _state.value =
+                _state.value.copy(
+                    loading = false,
+                    prds = merged.toList(),
+                    prdProfileNames = nameMap.toMap(),
+                    banner = if (errors.isEmpty()) null else "Some servers unreachable: " + errors.take(3).joinToString("; "),
+                )
         }
     }
 
-    private fun prdOp(label: String, block: suspend (com.dmzs.datawatchclient.transport.TransportClient) -> Result<Unit>) {
+    private fun prdOp(
+        label: String,
+        block: suspend (com.dmzs.datawatchclient.transport.TransportClient) -> Result<Unit>,
+    ) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             block(transport).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "$label failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "$label failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -256,7 +271,10 @@ public class AutonomousViewModel(
         prdOp("Approve") { it.prdAction(prdId, "approve") }
     }
 
-    public fun reject(prdId: String, reason: String) {
+    public fun reject(
+        prdId: String,
+        reason: String,
+    ) {
         val body = buildJsonObject { put("reason", JsonPrimitive(reason)) }
         prdOp("Reject") { it.prdAction(prdId, "reject", body) }
     }
@@ -265,12 +283,18 @@ public class AutonomousViewModel(
         prdOp("Decompose") { it.prdAction(prdId, "decompose") }
     }
 
-    public fun setLlm(prdId: String, backend: String, effort: String, model: String) {
-        val body = buildJsonObject {
-            if (backend.isNotBlank()) put("backend", JsonPrimitive(backend))
-            if (effort.isNotBlank()) put("effort", JsonPrimitive(effort))
-            if (model.isNotBlank()) put("model", JsonPrimitive(model))
-        }
+    public fun setLlm(
+        prdId: String,
+        backend: String,
+        effort: String,
+        model: String,
+    ) {
+        val body =
+            buildJsonObject {
+                if (backend.isNotBlank()) put("backend", JsonPrimitive(backend))
+                if (effort.isNotBlank()) put("effort", JsonPrimitive(effort))
+                if (model.isNotBlank()) put("model", JsonPrimitive(model))
+            }
         prdOp("Set LLM") { it.prdAction(prdId, "set_llm", body) }
     }
 
@@ -309,12 +333,20 @@ public class AutonomousViewModel(
         prdOp("Cancel") { it.deletePrd(prdId, hard = false) }
     }
 
-    public fun requestRevision(prdId: String, note: String) {
+    public fun requestRevision(
+        prdId: String,
+        note: String,
+    ) {
         val body = buildJsonObject { put("note", JsonPrimitive(note)) }
         prdOp("Request revision") { it.prdAction(prdId, "request_revision", body) }
     }
 
-    public fun editPrd(prdId: String, title: String?, spec: String?, permissionMode: String? = null) {
+    public fun editPrd(
+        prdId: String,
+        title: String?,
+        spec: String?,
+        permissionMode: String? = null,
+    ) {
         prdOp("Edit PRD") {
             it.patchPrd(
                 prdId = prdId,
@@ -397,12 +429,21 @@ public class AutonomousViewModel(
         }
     }
 
-    public fun createFixPrd(prdId: String, onSuccess: (String) -> Unit) {
+    public fun createFixPrd(
+        prdId: String,
+        onSuccess: (String) -> Unit,
+    ) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.createFixPrd(prdId).fold(
-                onSuccess = { prd -> refresh(); onSuccess(prd.id) },
-                onFailure = { err -> _state.value = _state.value.copy(banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}") },
+                onSuccess = { prd ->
+                    refresh()
+                    onSuccess(prd.id)
+                },
+                onFailure = {
+                        err ->
+                    _state.value = _state.value.copy(banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}")
+                },
             )
         }
     }
@@ -412,7 +453,10 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.proposeRules(prdId).fold(
                 onSuccess = { _state.value = _state.value.copy(proposedRules = it) },
-                onFailure = { err -> _state.value = _state.value.copy(banner = "Propose rules failed — ${err.message ?: err::class.simpleName}") },
+                onFailure = {
+                        err ->
+                    _state.value = _state.value.copy(banner = "Propose rules failed — ${err.message ?: err::class.simpleName}")
+                },
             )
         }
     }
@@ -425,17 +469,26 @@ public class AutonomousViewModel(
         _state.value = _state.value.copy(scanResult = null, scanLoading = false, proposedRules = null)
     }
 
-    public fun setPrdType(prdId: String, type: String) {
+    public fun setPrdType(
+        prdId: String,
+        type: String,
+    ) {
         val body = buildJsonObject { put("type", JsonPrimitive(type)) }
         prdOp("Set type") { it.prdAction(prdId, "set_type", body) }
     }
 
-    public fun setPrdGuidedMode(prdId: String, guidedMode: Boolean) {
+    public fun setPrdGuidedMode(
+        prdId: String,
+        guidedMode: Boolean,
+    ) {
         val body = buildJsonObject { put("guided_mode", JsonPrimitive(guidedMode)) }
         prdOp("Set guided mode") { it.prdAction(prdId, "set_guided_mode", body) }
     }
 
-    public fun setPrdSkills(prdId: String, skills: List<String>) {
+    public fun setPrdSkills(
+        prdId: String,
+        skills: List<String>,
+    ) {
         val body = buildJsonObject { put("skills", buildJsonArray { skills.forEach { add(JsonPrimitive(it)) } }) }
         prdOp("Set skills") { it.prdAction(prdId, "set_skills", body) }
     }
@@ -466,9 +519,10 @@ public class AutonomousViewModel(
     /** Toggle selection state for an automaton row (v0.76.0). */
     public fun toggleSelection(id: String) {
         val current = _state.value.selectedIds
-        _state.value = _state.value.copy(
-            selectedIds = if (id in current) current - id else current + id,
-        )
+        _state.value =
+            _state.value.copy(
+                selectedIds = if (id in current) current - id else current + id,
+            )
     }
 
     /** Clear all multi-select selections (v0.76.0). */
@@ -481,7 +535,10 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.registerAutomataType(req).fold(
                 onSuccess = { loadAutomataTypes() },
-                onFailure = { err -> _state.value = _state.value.copy(banner = "Create type failed — ${err.message ?: err::class.simpleName}") },
+                onFailure = {
+                        err ->
+                    _state.value = _state.value.copy(banner = "Create type failed — ${err.message ?: err::class.simpleName}")
+                },
             )
         }
     }
@@ -491,7 +548,10 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.deleteAutomataType(id).fold(
                 onSuccess = { loadAutomataTypes() },
-                onFailure = { err -> _state.value = _state.value.copy(banner = "Delete type failed — ${err.message ?: err::class.simpleName}") },
+                onFailure = {
+                        err ->
+                    _state.value = _state.value.copy(banner = "Delete type failed — ${err.message ?: err::class.simpleName}")
+                },
             )
         }
     }

@@ -3,7 +3,6 @@ package com.dmzs.datawatchclient.auto.messaging
 import android.content.Intent
 import androidx.car.app.CarAppService
 import androidx.car.app.CarContext
-import androidx.car.app.Screen
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
@@ -40,7 +39,6 @@ private const val CAR_AUTO_VOICE_REPLY_EXTRA = "dw.car.auto_voice_reply"
  * its CarContext and ScreenManager.
  */
 public class DatawatchMessagingService : CarAppService() {
-
     // Retained while the session is alive so onStartCommand() can access
     // the car screen stack. CarAppExtender.addAction() PendingIntents are
     // delivered via startService() → onStartCommand(), NOT onNewIntent(),
@@ -79,7 +77,9 @@ public class DatawatchMessagingService : CarAppService() {
 
     override fun onCreateSession(): Session =
         object : Session() {
-            init { activeSession = this }
+            init {
+                activeSession = this
+            }
 
             override fun onCreateScreen(intent: android.content.Intent): AutoSummaryScreen {
                 val pending = pendingNavIntent
@@ -127,7 +127,11 @@ public class DatawatchMessagingService : CarAppService() {
      * unit), we queue the intent in [pendingNavIntent] so [onCreateScreen] can
      * process it once the Car framework establishes the session.
      */
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         if (intent != null) {
             val sess = activeSession
             if (sess != null) {
@@ -140,7 +144,10 @@ public class DatawatchMessagingService : CarAppService() {
             } else if (intent.hasExtra(CAR_SESSION_ID_EXTRA)) {
                 // Car session not yet active — queue for onCreateScreen().
                 pendingNavIntent = intent
-                android.util.Log.d(TAG, "queued pendingNavIntent for session ${intent.getStringExtra(CAR_SESSION_ID_EXTRA)}")
+                android.util.Log.d(
+                    TAG,
+                    "queued pendingNavIntent for session ${intent.getStringExtra(CAR_SESSION_ID_EXTRA)}",
+                )
             }
         }
         return START_NOT_STICKY
@@ -198,7 +205,7 @@ public class DatawatchMessagingService : CarAppService() {
         // Must mirror NotificationPoster.notificationIdFor() in :composeApp.
         // :auto depends only on :shared so we can't reference it directly.
         private const val NOTIF_ID_BASE = 1_000_000
-        fun inputNeededNotificationIdFor(sessionId: String): Int =
-            NOTIF_ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
+
+        fun inputNeededNotificationIdFor(sessionId: String): Int = NOTIF_ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
 }

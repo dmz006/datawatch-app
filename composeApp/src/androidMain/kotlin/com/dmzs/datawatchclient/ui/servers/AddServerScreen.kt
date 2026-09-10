@@ -59,9 +59,10 @@ public fun AddServerScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            val urlHasSchemeError = state.baseUrl.isNotBlank() &&
-                !state.baseUrl.trim().startsWith("http://") &&
-                !state.baseUrl.trim().startsWith("https://")
+            val urlHasSchemeError =
+                state.baseUrl.isNotBlank() &&
+                    !state.baseUrl.trim().startsWith("http://") &&
+                    !state.baseUrl.trim().startsWith("https://")
             OutlinedTextField(
                 value = state.baseUrl,
                 onValueChange = vm::onBaseUrl,
@@ -69,9 +70,12 @@ public fun AddServerScreen(
                 placeholder = { Text("https://host:8080") },
                 singleLine = true,
                 isError = urlHasSchemeError,
-                supportingText = if (urlHasSchemeError) {
-                    { Text("URL must start with http:// or https://") }
-                } else null,
+                supportingText =
+                    if (urlHasSchemeError) {
+                        { Text("URL must start with http:// or https://") }
+                    } else {
+                        null
+                    },
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(

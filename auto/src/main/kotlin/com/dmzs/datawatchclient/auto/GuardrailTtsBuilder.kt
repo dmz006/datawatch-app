@@ -8,7 +8,6 @@ import com.dmzs.datawatchclient.transport.dto.GuardrailVerdictDto
  * Designed for ≤15s readout at normal speaking rate.
  */
 internal object GuardrailTtsBuilder {
-
     fun buildGuardrailVerdict(verdict: GuardrailVerdictDto): String {
         val name = friendlyName(verdict.guardrail)
         return when (verdict.outcome) {
@@ -39,13 +38,14 @@ internal object GuardrailTtsBuilder {
         }.trim().ifEmpty { "All guardrails passed." }
     }
 
-    private fun friendlyName(guardrail: String): String = when (guardrail) {
-        "sast-scan" -> "Security scan"
-        "secrets-scan" -> "Secrets scan"
-        "deps-scan" -> "Dependencies scan"
-        "llm-grader" -> "Quality review"
-        else -> guardrail.replace("-", " ").replaceFirstChar { it.uppercaseChar() }
-    }
+    private fun friendlyName(guardrail: String): String =
+        when (guardrail) {
+            "sast-scan" -> "Security scan"
+            "secrets-scan" -> "Secrets scan"
+            "deps-scan" -> "Dependencies scan"
+            "llm-grader" -> "Quality review"
+            else -> guardrail.replace("-", " ").replaceFirstChar { it.uppercaseChar() }
+        }
 
     private const val MAX_SPOKEN_CHARS = 80
     private const val MAX_SPOKEN_VERDICTS = 2

@@ -117,10 +117,10 @@ public fun SessionLoadingOverlay(visible: Boolean) {
                 // Classic ⚡ zigzag: top-right slant → crossbar → bottom-right slant
                 val path =
                     Path().apply {
-                        moveTo(cx + boltW * 0.35f, cy - boltH)           // top
-                        lineTo(cx - boltW * 0.25f, cy - boltH * 0.08f)   // mid-left
-                        lineTo(cx + boltW * 0.55f, cy - boltH * 0.08f)   // mid-right (crossbar)
-                        lineTo(cx - boltW * 0.35f, cy + boltH)            // bottom
+                        moveTo(cx + boltW * 0.35f, cy - boltH) // top
+                        lineTo(cx - boltW * 0.25f, cy - boltH * 0.08f) // mid-left
+                        lineTo(cx + boltW * 0.55f, cy - boltH * 0.08f) // mid-right (crossbar)
+                        lineTo(cx - boltW * 0.35f, cy + boltH) // bottom
                     }
 
                 // Glow halo

@@ -28,106 +28,135 @@ public class LastOutputDetailScreen(
     private val shortText: String?,
     private val longText: String?,
 ) : Screen(carContext) {
-
     private var isSpeaking: Boolean = false
     private var ttsReady: Boolean = false
     private var pendingSpeak: String? = null
     private var focusRequest: AudioFocusRequest? = null
     private val audioManager = carContext.applicationContext.getSystemService(AudioManager::class.java)
 
-    private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) {
-            tts.language = java.util.Locale.getDefault()
-            // Route TTS through car speakers. Without this Android Auto
-            // routes output to the phone speaker instead of the head unit.
-            tts.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String) {}
-                override fun onDone(utteranceId: String) { isSpeaking = false; abandonAudioFocus(); invalidate() }
-                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { isSpeaking = false; abandonAudioFocus(); invalidate() }
-                override fun onStop(utteranceId: String, interrupted: Boolean) { isSpeaking = false; abandonAudioFocus(); invalidate() }
-            })
-            ttsReady = true
-            // onStart() may have fired before binding completed — play now if so.
-            pendingSpeak?.let { text -> pendingSpeak = null; speakText(text) }
-        }
-    }
+    private val tts: TextToSpeech =
+        TextToSpeech(carContext.applicationContext) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts.language = java.util.Locale.getDefault()
+                // Route TTS through car speakers. Without this Android Auto
+                // routes output to the phone speaker instead of the head unit.
+                tts.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                tts.setOnUtteranceProgressListener(
+                    object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String) {}
 
-    init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                if (!shortText.isNullOrBlank()) {
-                    if (ttsReady) speakText(shortText) else pendingSpeak = shortText
+                        override fun onDone(utteranceId: String) {
+                            isSpeaking = false
+                            abandonAudioFocus()
+                            invalidate()
+                        }
+
+                        @Deprecated("replaced by onStop")
+                        override fun onError(utteranceId: String) {
+                            isSpeaking = false
+                            abandonAudioFocus()
+                            invalidate()
+                        }
+
+                        override fun onStop(
+                            utteranceId: String,
+                            interrupted: Boolean,
+                        ) {
+                            isSpeaking = false
+                            abandonAudioFocus()
+                            invalidate()
+                        }
+                    },
+                )
+                ttsReady = true
+                // onStart() may have fired before binding completed — play now if so.
+                pendingSpeak?.let { text ->
+                    pendingSpeak = null
+                    speakText(text)
                 }
             }
+        }
 
-            override fun onStop(owner: LifecycleOwner) {
-                tts.stop()
-                isSpeaking = false
-                abandonAudioFocus()
-            }
+    init {
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    if (!shortText.isNullOrBlank()) {
+                        if (ttsReady) speakText(shortText) else pendingSpeak = shortText
+                    }
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                tts.stop()
-                tts.shutdown()
-                abandonAudioFocus()
-            }
-        })
+                override fun onStop(owner: LifecycleOwner) {
+                    tts.stop()
+                    isSpeaking = false
+                    abandonAudioFocus()
+                }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    tts.stop()
+                    tts.shutdown()
+                    abandonAudioFocus()
+                }
+            },
+        )
     }
 
     override fun onGetTemplate(): Template {
         val body = shortText?.takeIf { it.isNotBlank() } ?: "No content available"
 
-        val voiceIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
-        ).build()
+        val voiceIcon =
+            CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+            ).build()
 
-        val builder = MessageTemplate.Builder(body)
-            .setTitle(sessionName)
-            .setHeaderAction(Action.BACK)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle(if (isSpeaking) "Stop" else "Listen")
-                            .setIcon(voiceIcon)
-                            .setOnClickListener {
-                                if (isSpeaking) {
-                                    tts.stop()
-                                    isSpeaking = false
-                                    abandonAudioFocus()
-                                    invalidate()
-                                } else {
-                                    speakText(body)
+        val builder =
+            MessageTemplate.Builder(body)
+                .setTitle(sessionName)
+                .setHeaderAction(Action.BACK)
+                .setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(
+                            Action.Builder()
+                                .setTitle(if (isSpeaking) "Stop" else "Listen")
+                                .setIcon(voiceIcon)
+                                .setOnClickListener {
+                                    if (isSpeaking) {
+                                        tts.stop()
+                                        isSpeaking = false
+                                        abandonAudioFocus()
+                                        invalidate()
+                                    } else {
+                                        speakText(body)
+                                    }
                                 }
-                            }
-                            .build()
-                    )
-                    .build()
-            )
+                                .build(),
+                        )
+                        .build(),
+                )
 
         // "Play Long" — when longText is a continuation of shortText (both sliced from the same
         // source), drop the already-played prefix. When longText is an independent narrative
         // (e.g. lastSummaryLong vs. a short promptContext that served as shortText), speak it
         // in full — dropping shortText.length chars would silently discard the opening of the
         // AI summary. Guard: require at least MIN_EXTRA_CHARS of content.
-        val continuation = when {
-            longText.isNullOrBlank() -> null
-            shortText.isNullOrBlank() -> longText.trim()
-            longText.startsWith(shortText) -> longText.drop(shortText.length).trim()
-            else -> longText.trim()
-        }
+        val continuation =
+            when {
+                longText.isNullOrBlank() -> null
+                shortText.isNullOrBlank() -> longText.trim()
+                longText.startsWith(shortText) -> longText.drop(shortText.length).trim()
+                else -> longText.trim()
+            }
         if (!continuation.isNullOrBlank() && continuation.length >= MIN_EXTRA_CHARS) {
             builder.addAction(
                 Action.Builder()
                     .setTitle("Play Long")
                     .setOnClickListener { speakText("Continuing. $continuation") }
-                    .build()
+                    .build(),
             )
         }
 
@@ -136,7 +165,7 @@ public class LastOutputDetailScreen(
             Action.Builder()
                 .setTitle("Close")
                 .setOnClickListener { screenManager.pop() }
-                .build()
+                .build(),
         )
 
         return builder.build()
@@ -145,15 +174,16 @@ public class LastOutputDetailScreen(
     private fun speakText(text: String) {
         // Claim transient audio focus so music/navigation pauses for the utterance.
         abandonAudioFocus()
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener { }
-            .build()
+        val req =
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                .setOnAudioFocusChangeListener { }
+                .build()
         focusRequest = req
         audioManager.requestAudioFocus(req)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-detail")

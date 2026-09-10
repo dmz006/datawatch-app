@@ -19,7 +19,6 @@ public class SessionStatsViewModel(
     private val sessionId: String,
     private val resolver: ProfileResolver = ProfileResolver.Default,
 ) : ViewModel() {
-
     public data class UiState(
         val cpuSamples: List<Float> = emptyList(),
         val rssSamples: List<Float> = emptyList(),
@@ -36,12 +35,13 @@ public class SessionStatsViewModel(
 
     public fun startPolling() {
         if (pollJob?.isActive == true) return
-        pollJob = viewModelScope.launch {
-            while (isActive) {
-                fetchEnvelopes()
-                delay(POLL_MS)
+        pollJob =
+            viewModelScope.launch {
+                while (isActive) {
+                    fetchEnvelopes()
+                    delay(POLL_MS)
+                }
             }
-        }
     }
 
     public fun stopPolling() {
@@ -52,20 +52,25 @@ public class SessionStatsViewModel(
     private suspend fun fetchEnvelopes() {
         val (_, transport) = resolver.resolve() ?: return
         transport.getSessionEnvelopes(sessionId).onSuccess { envelopes ->
-            val env = envelopes.firstOrNull { it.kind == "session" }
-                ?: envelopes.firstOrNull()
-                ?: return
+            val env =
+                envelopes.firstOrNull { it.kind == "session" }
+                    ?: envelopes.firstOrNull()
+                    ?: return
             push(cpuBuf, env.cpuPct.toFloat())
             push(rssBuf, env.rssBytes.toFloat())
-            _state.value = UiState(
-                cpuSamples = cpuBuf.toList(),
-                rssSamples = rssBuf.toList(),
-                envelope = env,
-            )
+            _state.value =
+                UiState(
+                    cpuSamples = cpuBuf.toList(),
+                    rssSamples = rssBuf.toList(),
+                    envelope = env,
+                )
         }
     }
 
-    private fun push(buf: ArrayDeque<Float>, value: Float) {
+    private fun push(
+        buf: ArrayDeque<Float>,
+        value: Float,
+    ) {
         if (buf.size >= SPARKLINE_SIZE) buf.removeFirst()
         buf.addLast(value)
     }
