@@ -1,4 +1,5 @@
 @file:Suppress("MagicNumber")
+
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
@@ -34,35 +35,40 @@ import kotlinx.coroutines.launch
  * Tap → [AutoSessionListScreen] filtered to sessions for that automaton.
  */
 public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
-
     private var automata: List<PrdDto> = emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
-    private var historyOn: Boolean = false  // false = hide terminal automata by default
+    private var historyOn: Boolean = false // false = hide terminal automata by default
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastHash: Int = -1
 
     init {
         // Eager fetch so the first onGetTemplate() render has real data.
-        scope.launch { refresh(); invalidate() }
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = scope.launch { pollLoop() }
-            }
+        scope.launch {
+            refresh()
+            invalidate()
+        }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = scope.launch { pollLoop() }
+                }
 
-            override fun onStop(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = null
-            }
+                override fun onStop(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = null
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.cancel()
-            }
-        })
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private suspend fun pollLoop() {
@@ -80,19 +86,22 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refresh() {
         try {
-            val profile = resolveActiveProfile() ?: run {
-                error = "No enabled server"
-                automata = emptyList()
-                return
-            }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server"
+                    automata = emptyList()
+                    return
+                }
             serverName = profile.displayName
             AutoServiceLocator.transportFor(profile).listPrds().fold(
                 onSuccess = { dto ->
                     error = null
-                    val terminalStatuses = setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
-                    automata = dto.prds
-                        .filter { prd -> historyOn || prd.status.lowercase() !in terminalStatuses }
-                        .sortedWith(automataComparator)
+                    val terminalStatuses =
+                        setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
+                    automata =
+                        dto.prds
+                            .filter { prd -> historyOn || prd.status.lowercase() !in terminalStatuses }
+                            .sortedWith(automataComparator)
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
@@ -127,15 +136,20 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                     .setTitle("⊕ New Automata")
                     .addText("Use your phone to create automata")
                     .setOnClickListener {
-                        CarToast.makeText(carContext, "Open the phone app to create automata", CarToast.LENGTH_LONG).show()
+                        CarToast.makeText(
+                            carContext,
+                            "Open the phone app to create automata",
+                            CarToast.LENGTH_LONG,
+                        ).show()
                     }
                     .build(),
             )
         } else {
-            val max = runCatching {
-                carContext.getCarService(ConstraintManager::class.java)
-                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
-            }.getOrElse { MAX_ROWS_FALLBACK }
+            val max =
+                runCatching {
+                    carContext.getCarService(ConstraintManager::class.java)
+                        .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+                }.getOrElse { MAX_ROWS_FALLBACK }
             // Reserve 1 slot for the overflow row.
             val visible = automata.take((max - 1).coerceAtLeast(1))
             val overflow = automata.size - visible.size
@@ -146,17 +160,19 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 val isActive = prd.status == "running" || prd.status == "active"
                 val isTerminal = prd.status in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
                 val isReview = prd.status in setOf("needs_review", "awaiting_review", "revisions_asked")
-                val dotResId = when {
-                    hasBlock || isReview -> R.drawable.ic_dot_red
-                    isActive -> R.drawable.ic_dot_green
-                    isTerminal -> R.drawable.ic_dot_gray
-                    else -> R.drawable.ic_dot_gray
-                }
-                val titleColor = when {
-                    hasBlock || isReview -> CarColor.RED
-                    isActive -> CarColor.GREEN
-                    else -> CarColor.DEFAULT
-                }
+                val dotResId =
+                    when {
+                        hasBlock || isReview -> R.drawable.ic_dot_red
+                        isActive -> R.drawable.ic_dot_green
+                        isTerminal -> R.drawable.ic_dot_gray
+                        else -> R.drawable.ic_dot_gray
+                    }
+                val titleColor =
+                    when {
+                        hasBlock || isReview -> CarColor.RED
+                        isActive -> CarColor.GREEN
+                        else -> CarColor.DEFAULT
+                    }
                 val dotIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, dotResId)).build()
                 builder.addItem(
                     Row.Builder()
@@ -207,10 +223,18 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             }
         }
 
-        val historyAction = Action.Builder()
-            .setTitle(if (historyOn) "Active" else "All")
-            .setOnClickListener { historyOn = !historyOn; scope.launch { refresh(); invalidate() } }
-            .build()
+        val historyAction =
+            Action.Builder()
+                .setTitle(if (historyOn) "Active" else "All")
+                .setOnClickListener {
+                    historyOn = !historyOn
+                    invalidate()
+                    scope.launch {
+                        refresh()
+                        invalidate()
+                    }
+                }
+                .build()
         return ListTemplate.Builder()
             .setTitle("$serverName Automata")
             .setHeaderAction(Action.BACK)
@@ -224,43 +248,52 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         const val MAX_ROWS_FALLBACK: Int = 5
         const val PROGRESS_BAR_WIDTH: Int = 8
 
-        val automataComparator: Comparator<PrdDto> = compareByDescending { prd ->
-            // Gravitation: blocked stories float to top; deeper work (more depth) wins ties
-            val blockedStories = prd.stories.count { it.status == "awaiting_approval" }
-            blockedStories * 10 + prd.depth
-        }
+        val automataComparator: Comparator<PrdDto> =
+            compareByDescending { prd ->
+                // Gravitation: blocked stories float to top; deeper work (more depth) wins ties
+                val blockedStories = prd.stories.count { it.status == "awaiting_approval" }
+                blockedStories * 10 + prd.depth
+            }
 
         fun activeStoryPosition(prd: PrdDto): Int? {
-            val idx = prd.stories.indexOfFirst {
-                it.status == "in_progress" || it.status == "awaiting_approval"
-            }
+            val idx =
+                prd.stories.indexOfFirst {
+                    it.status == "in_progress" || it.status == "awaiting_approval"
+                }
             return if (idx >= 0) idx + 1 else null
         }
 
-        fun progressBar(completedStories: Int, totalStories: Int): String {
+        fun progressBar(
+            completedStories: Int,
+            totalStories: Int,
+        ): String {
             val pct = if (totalStories > 0) (completedStories * 100) / totalStories else 0
             val filled = (pct * PROGRESS_BAR_WIDTH / 100).coerceIn(0, PROGRESS_BAR_WIDTH)
             return "▓".repeat(filled) + "░".repeat(PROGRESS_BAR_WIDTH - filled) + " $pct%"
         }
 
-        fun buildSubtitle(prd: PrdDto, storyPos: Int?): String = buildString {
-            val totalStories = prd.stories.size
-            val completedStories = prd.stories.count { it.status == "complete" }
-            val bar = if (totalStories > 0) progressBar(completedStories, totalStories) else ""
-            val isActive = prd.status == "running" || prd.status == "active"
-            if (!isActive) {
-                append("[${prd.status.ifBlank { "idle" }}]  ")
+        fun buildSubtitle(
+            prd: PrdDto,
+            storyPos: Int?,
+        ): String =
+            buildString {
+                val totalStories = prd.stories.size
+                val completedStories = prd.stories.count { it.status.lowercase() in setOf("complete", "completed", "done") }
+                val bar = if (totalStories > 0) progressBar(completedStories, totalStories) else ""
+                val isActive = prd.status == "running" || prd.status == "active"
+                if (!isActive) {
+                    append("[${prd.status.ifBlank { "idle" }}]  ")
+                }
+                if (storyPos != null && totalStories > 0) {
+                    append("$bar  Story $storyPos/$totalStories")
+                } else if (totalStories > 0) {
+                    append("$bar  $completedStories/$totalStories stories")
+                } else {
+                    append(prd.status.ifBlank { "no stories" })
+                }
+                // Blocking flag
+                val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
+                if (hasBlock) append(" ⚠ awaiting approval")
             }
-            if (storyPos != null && totalStories > 0) {
-                append("$bar  Story $storyPos/$totalStories")
-            } else if (totalStories > 0) {
-                append("$bar  $completedStories/$totalStories stories")
-            } else {
-                append(prd.status.ifBlank { "no stories" })
-            }
-            // Blocking flag
-            val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
-            if (hasBlock) append(" ⚠ awaiting approval")
-        }
     }
 }
