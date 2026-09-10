@@ -917,7 +917,7 @@ private fun SessionRow(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Column(modifier = Modifier.padding(end = 8.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 val displayName = session.name?.takeIf { it.isNotBlank() }
                 Text(
                     displayName ?: session.id,
@@ -951,7 +951,6 @@ private fun SessionRow(
                 Spacer(modifier = Modifier.width(6.dp))
                 PwaMetaBadge(text = "🎭")
             }
-            Spacer(modifier = Modifier.weight(1f))
             if (reorderMode) {
                 IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.sessions_move_up))
@@ -2032,6 +2031,8 @@ private fun WorkerPill(agentId: String) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = purple,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }
