@@ -57,7 +57,8 @@ public class AutoSessionListScreen(
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
-    private var showTerminal: Boolean = false  // false = active only; toggled via ActionStrip
+    // When filtering to a specific automaton, show all its sessions by default.
+    private var showTerminal: Boolean = automataId != null
     private var hiddenCount: Int = 0
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -153,7 +154,8 @@ public class AutoSessionListScreen(
                     } else {
                         val fresh = allRows.filter { row ->
                             row.session.state != SessionState.Completed &&
-                                row.session.state != SessionState.Killed
+                                row.session.state != SessionState.Killed &&
+                                row.session.state != SessionState.Error
                         }
                         hiddenCount = allRows.size - fresh.size
                         fresh
@@ -213,7 +215,7 @@ public class AutoSessionListScreen(
             builder.addItem(
                 Row.Builder()
                     .setTitle("No active sessions")
-                    .addText("$hiddenCount completed/killed session${if (hiddenCount == 1) "" else "s"} hidden · tap \"All\" to show")
+                    .addText("$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden · tap \"All\" to show")
                     .build(),
             )
         } else {
@@ -253,7 +255,7 @@ public class AutoSessionListScreen(
             if (hiddenCount > 0 && !showTerminal) {
                 builder.addItem(
                     Row.Builder()
-                        .setTitle("$hiddenCount completed/killed session${if (hiddenCount == 1) "" else "s"} hidden")
+                        .setTitle("$hiddenCount completed/killed/error session${if (hiddenCount == 1) "" else "s"} hidden")
                         .addText("Tap filter button or tap here to show all")
                         .setOnClickListener { showTerminal = true; invalidate() }
                         .build(),

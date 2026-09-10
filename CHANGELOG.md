@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.95] — 2026-09-10
+
+### Fixed
+- Auto: sessions list active-only filter now also hides `Error`-state sessions (previously only `Completed` and `Killed` were excluded)
+- Auto: automata list now hides terminal automata (completed/cancelled/rejected/error) by default; tap "All" in the action strip to show history (same as phone's ⏱ toggle)
+- Auto: viewing sessions from an automata action screen (Stop/Delete/Approve) now defaults to showing all sessions for that automaton instead of active-only — avoids the confusing "no active sessions" empty state when the automaton has only historical sessions
+- Phone: automata list no longer shows cancelled-US-spelling (`canceled`) entries when history is off — both `cancelled` and `canceled` are now treated as terminal statuses
+
+### Added
+- Auto: Monitor screen now shows GPU utilization progress bar (when the host has a GPU) matching the phone Monitor tab; VRAM is shown as a separate "GPU VRAM" row with its own progress bar; multi-server summary line includes GPU %
+
 ## [1.0.94] — 2026-09-10
 
 ### Fixed

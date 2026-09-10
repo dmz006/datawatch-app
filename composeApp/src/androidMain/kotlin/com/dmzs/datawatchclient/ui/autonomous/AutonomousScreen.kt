@@ -464,7 +464,7 @@ private fun PrdsBody(
         Text(banner, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
     // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false
-    val terminalStatuses = setOf("completed", "complete", "cancelled", "rejected", "archived")
+    val terminalStatuses = setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
     val visible = state.prds
         .filter { prd ->
             (includeTemplates || !prd.isTemplate) &&
@@ -539,7 +539,7 @@ private fun PrdRow(
 ) {
     val statusColor = prdStatusColor(prd.status)
     val statusLower = prd.status.lowercase()
-    val isTerminal = statusLower in setOf("completed", "complete", "cancelled", "rejected", "archived")
+    val isTerminal = statusLower in setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
     val showCancel = !isTerminal
     val showApprove = isApprovalState(statusLower)
     val showPlan = statusLower in setOf("draft", "revisions_asked")
