@@ -322,16 +322,23 @@ private fun addDetailRows(
             Row.Builder().setTitle("Disk").addText("${fmt(diskUsed)} / ${fmt(diskTotal)}").build(),
         )
     }
+    // GPU utilization bar — shown whenever util% or a GPU name is reported.
+    val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
+    if (s.gpuName != null || gpuUtilInt != null) {
+        val name = s.gpuName ?: "GPU"
+        val tempSuffix = s.gpuTemp?.let { " · ${it.toInt()}°C" } ?: ""
+        val utilLine = gpuUtilInt?.let { "${progressBar(it)}$tempSuffix" } ?: tempSuffix.ifBlank { "—" }
+        items.addItem(Row.Builder().setTitle(name).addText(utilLine).build())
+    }
+    // GPU VRAM bar — separate row when VRAM data is available.
     val vramTotal = s.gpuMemTotalMb
     if (vramTotal != null && vramTotal > 0) {
         val used = s.gpuMemUsedMb ?: 0L
-        val name = s.gpuName ?: "GPU"
+        val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
         items.addItem(
             Row.Builder()
-                .setTitle(name)
-                .addText(
-                    "${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)} VRAM",
-                )
+                .setTitle("GPU VRAM")
+                .addText("${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}")
                 .build(),
         )
     }
@@ -367,6 +374,8 @@ private fun buildServerSummary(s: StatsDto, sessionCounts: Triple<Int, Int, Int>
     } else {
         s.memPct?.let { parts += "Mem ${"%.0f".format(it)}%" }
     }
+    val gpuSummaryPct = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
+    gpuSummaryPct?.let { parts += "GPU $it%" }
     val totalSessions = sessionCounts?.first ?: s.sessionsTotal
     if (totalSessions > 0) parts += "${totalSessions}s"
     return parts.joinToString(" · ").ifBlank { "no data" }

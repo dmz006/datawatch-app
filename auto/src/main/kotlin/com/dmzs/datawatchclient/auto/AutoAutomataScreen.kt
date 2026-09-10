@@ -6,6 +6,7 @@ import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
@@ -38,6 +39,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
+    private var historyOn: Boolean = false  // false = hide terminal automata by default
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // §15: track snapshot hash to skip redundant invalidate() calls.
@@ -87,8 +89,10 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             AutoServiceLocator.transportFor(profile).listPrds().fold(
                 onSuccess = { dto ->
                     error = null
-                    // Show all automata regardless of status; blocked/active sort first.
-                    automata = dto.prds.sortedWith(automataComparator)
+                    val terminalStatuses = setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
+                    automata = dto.prds
+                        .filter { prd -> historyOn || prd.status.lowercase() !in terminalStatuses }
+                        .sortedWith(automataComparator)
                 },
                 onFailure = { err ->
                     error = "Unreachable: ${err.message ?: err::class.simpleName}"
@@ -203,9 +207,14 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             }
         }
 
+        val historyAction = Action.Builder()
+            .setTitle(if (historyOn) "Active" else "All")
+            .setOnClickListener { historyOn = !historyOn; scope.launch { refresh(); invalidate() } }
+            .build()
         return ListTemplate.Builder()
             .setTitle("$serverName Automata")
             .setHeaderAction(Action.BACK)
+            .setActionStrip(ActionStrip.Builder().addAction(historyAction).build())
             .setSingleList(builder.build())
             .build()
     }
