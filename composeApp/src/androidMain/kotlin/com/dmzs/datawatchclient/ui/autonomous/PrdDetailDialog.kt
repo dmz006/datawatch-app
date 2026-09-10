@@ -16,9 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -111,11 +110,12 @@ internal fun PrdDetailDialog(
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
     var graphOpen by remember { mutableStateOf(false) }
 
-    val tabs = listOf(
-        stringResource(R.string.prd_tab_overview),
-        stringResource(R.string.prd_tab_stories),
-        stringResource(R.string.prd_tab_decisions),
-    )
+    val tabs =
+        listOf(
+            stringResource(R.string.prd_tab_overview),
+            stringResource(R.string.prd_tab_stories),
+            stringResource(R.string.prd_tab_decisions),
+        )
 
     Scaffold(
         topBar = {
@@ -128,7 +128,10 @@ internal fun PrdDetailDialog(
                 },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_close))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_close),
+                        )
                     }
                 },
                 actions = {
@@ -138,281 +141,335 @@ internal fun PrdDetailDialog(
                         }
                     }
                     IconButton(onClick = { deleteConfirmOpen = true }) {
-                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.error)
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.action_delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
                     }
                 },
             )
         },
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
-            // ── Header section — intrinsic height, stays fixed at top ─────
-            Column(modifier = Modifier.padding(12.dp)) {
-                // Row 1: type badge + template badge + spacer + status pill
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
-                    if (prd.isTemplate) {
-                        Text(
-                            stringResource(R.string.autonomous_template_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.tertiary,
-                        )
+            item {
+                // ── Header section — scrolls with page ──────────────────────
+                Column(modifier = Modifier.padding(12.dp)) {
+                    // Row 1: type badge + template badge + spacer + status pill
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
+                        if (prd.isTemplate) {
+                            Text(
+                                stringResource(R.string.autonomous_template_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        PrdStatusBadge(status)
                     }
-                    Spacer(Modifier.weight(1f))
-                    PrdStatusBadge(status)
-                }
 
-                // Row 2: id code + created date
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        prd.id,
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                    )
-                    prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                    // Row 2: id code + created date
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            ts.take(10),
-                            style = MaterialTheme.typography.labelSmall,
+                            prd.id,
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         )
+                        prd.createdAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                            Text(
+                                ts.take(10),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                            )
+                        }
                     }
-                }
 
-                // Spec snippet
-                prd.spec?.takeIf { it.isNotBlank() }?.let { fullSpec ->
-                    val snippet = if (fullSpec.length > 280) fullSpec.take(280) + "…" else fullSpec
-                    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .drawBehind {
-                                drawRect(
-                                    color = accent2,
-                                    topLeft = Offset.Zero,
-                                    size = Size(3.dp.toPx(), size.height),
-                                )
+                    // Spec snippet
+                    prd.spec?.takeIf { it.isNotBlank() }?.let { fullSpec ->
+                        val snippet = if (fullSpec.length > 280) fullSpec.take(280) + "…" else fullSpec
+                        val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
+                                    .drawBehind {
+                                        drawRect(
+                                            color = accent2,
+                                            topLeft = Offset.Zero,
+                                            size = Size(3.dp.toPx(), size.height),
+                                        )
+                                    }
+                                    .padding(start = 8.dp),
+                        ) {
+                            Text(
+                                snippet,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    // Lifecycle strip
+                    LifecycleStrip(status)
+
+                    // Terminal-state hint
+                    if (status in listOf("done", "aborted", "failed", "archived")) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.prd_terminal_state_hint),
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+
+                    // Primary action buttons
+                    val hasPrimaryAction = canReview || status == "approved" || isCancellable
+                    if (hasPrimaryAction) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (canReview) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        onApprove()
+                                        onDismiss()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors =
+                                        ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = Color(0xFF10B981).copy(alpha = 0.18f),
+                                            contentColor = Color(0xFF10B981),
+                                        ),
+                                ) { Text(stringResource(R.string.action_approve)) }
                             }
-                            .padding(start = 8.dp),
-                    ) {
-                        Text(
-                            snippet,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                            if (status == "approved") {
+                                FilledTonalButton(
+                                    onClick = {
+                                        onRun()
+                                        onDismiss()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors =
+                                        ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = Color(0xFF3B82F6).copy(alpha = 0.18f),
+                                            contentColor = Color(0xFF3B82F6),
+                                        ),
+                                ) { Text(stringResource(R.string.prd_detail_run)) }
+                            }
+                            if (isCancellable) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        onCancel()
+                                        onDismiss()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors =
+                                        ButtonDefaults.filledTonalButtonColors(
+                                            containerColor =
+                                                MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                    alpha = 0.5f,
+                                                ),
+                                            contentColor = MaterialTheme.colorScheme.onSurface,
+                                        ),
+                                ) { Text(stringResource(R.string.action_cancel)) }
+                            }
+                            if (status == "draft" || status == "revisions_asked") {
+                                FilledTonalButton(
+                                    onClick = {
+                                        onDecompose()
+                                        onDismiss()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) { Text(stringResource(R.string.prd_detail_decompose)) }
+                            }
+                        }
                     }
-                }
 
-                // Lifecycle strip
-                LifecycleStrip(status)
-
-                // Terminal-state hint
-                if (status in listOf("done", "aborted", "failed", "archived")) {
-                    Spacer(Modifier.height(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = MaterialTheme.shapes.small,
+                    // Secondary actions
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.prd_terminal_state_hint),
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-
-                // Primary action buttons
-                val hasPrimaryAction = canReview || status == "approved" || isCancellable
-                if (hasPrimaryAction) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
                         if (canReview) {
-                            FilledTonalButton(
-                                onClick = { onApprove(); onDismiss() },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = Color(0xFF10B981).copy(alpha = 0.18f),
-                                    contentColor = Color(0xFF10B981),
-                                ),
-                            ) { Text(stringResource(R.string.action_approve)) }
-                        }
-                        if (status == "approved") {
-                            FilledTonalButton(
-                                onClick = { onRun(); onDismiss() },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = Color(0xFF3B82F6).copy(alpha = 0.18f),
-                                    contentColor = Color(0xFF3B82F6),
-                                ),
-                            ) { Text(stringResource(R.string.prd_detail_run)) }
-                        }
-                        if (isCancellable) {
-                            FilledTonalButton(
-                                onClick = { onCancel(); onDismiss() },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                ),
-                            ) { Text(stringResource(R.string.action_cancel)) }
-                        }
-                        if (status == "draft" || status == "revisions_asked") {
-                            FilledTonalButton(
-                                onClick = { onDecompose(); onDismiss() },
-                                modifier = Modifier.weight(1f),
-                            ) { Text(stringResource(R.string.prd_detail_decompose)) }
-                        }
-                    }
-                }
-
-                // Secondary actions
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    if (canReview) {
-                        TextButton(onClick = { rejectOpen = true }) {
-                            Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-                        }
-                        TextButton(onClick = { reviseOpen = true }) {
-                            Text(stringResource(R.string.prd_detail_revise), color = Color(0xFFF59E0B), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    if (status != "running" && status != "completed") {
-                        TextButton(onClick = { llmOpen = true }) {
-                            Text(stringResource(R.string.prd_detail_llm), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    TextButton(onClick = { graphOpen = true }) {
-                        Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
-                    }
-                    if (onCloneTemplate != null && status in setOf("completed", "done", "approved", "cancelled", "failed")) {
-                        TextButton(onClick = { onCloneTemplate(); onDismiss() }) {
-                            Text(stringResource(R.string.prd_btn_clone_template), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-
-            HorizontalDivider()
-
-            // ── Tab strip ──────────────────────────────────────────────────
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, label ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                    )
-                }
-            }
-
-            // ── Tab content — fills remaining space, scrolls independently ─
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                when (selectedTab) {
-                    0 -> {
-                        PrdTypeRow(prd, automataTypes, onSetType)
-                        PrdGuidedModeRow(prd, onSetGuidedMode)
-                        PrdSkillsRow(prd, onSetSkills)
-                        prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                            Text(
-                                spec,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        TextButton(
-                            onClick = {
-                                SessionsNavChannel.jumpTo(prd.name)
-                                onDismiss()
-                            },
-                        ) {
-                            Text(stringResource(R.string.prd_view_sessions))
-                        }
-                    }
-                    1 -> {
-                        val conflicts = buildMap<String, List<String>> {
-                            val byPath = mutableMapOf<String, MutableList<String>>()
-                            prd.stories
-                                .filter {
-                                    it.status.lowercase() != "complete" &&
-                                        it.status.lowercase() != "rejected"
-                                }
-                                .forEach { story ->
-                                    story.files.forEach { f ->
-                                        byPath.getOrPut(f) { mutableListOf() }.add(story.id)
-                                    }
-                                }
-                            byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
-                                put(path, ids)
+                            TextButton(onClick = { rejectOpen = true }) {
+                                Text(
+                                    stringResource(R.string.action_reject),
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                            TextButton(onClick = { reviseOpen = true }) {
+                                Text(
+                                    stringResource(R.string.prd_detail_revise),
+                                    color = Color(0xFFF59E0B),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
                             }
                         }
-                        if (prd.stories.isEmpty()) {
-                            Text(
-                                stringResource(R.string.prd_detail_no_stories),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        } else {
-                            Text(
-                                stringResource(R.string.prd_detail_stories_header, prd.stories.size),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            prd.stories.forEach { story ->
-                                StoryRow(
-                                    story = story,
-                                    canEdit = canEdit,
-                                    onEdit = { editingStory = story },
-                                    onEditFiles = { editingFilesFor = story },
-                                    conflicts = conflicts,
+                        if (status != "running" && status != "completed") {
+                            TextButton(onClick = { llmOpen = true }) {
+                                Text(
+                                    stringResource(R.string.prd_detail_llm),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+                        TextButton(onClick = { graphOpen = true }) {
+                            Text(stringResource(R.string.prd_detail_graph), style = MaterialTheme.typography.labelSmall)
+                        }
+                        if (onCloneTemplate != null && status in setOf("completed", "done", "approved", "cancelled", "failed")) {
+                            TextButton(onClick = {
+                                onCloneTemplate()
+                                onDismiss()
+                            }) {
+                                Text(
+                                    stringResource(R.string.prd_btn_clone_template),
+                                    style = MaterialTheme.typography.labelSmall,
                                 )
                             }
                         }
                     }
-                    2 -> {
-                        val decisions = prd.decisions
-                        if (decisions.isNullOrEmpty()) {
-                            Text(
-                                stringResource(R.string.prd_tab_decisions_empty),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                }
+
+                HorizontalDivider()
+            } // end header item
+
+            // ── Tab strip — sticks to top as header scrolls away ──────────
+            stickyHeader {
+                Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                    TabRow(selectedTabIndex = selectedTab) {
+                        tabs.forEachIndexed { index, label ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
-                        } else {
-                            decisions.forEach { decision ->
-                                val label = buildString {
-                                    decision.kind?.let { append("[$it] ") }
-                                    append(decision.note ?: "")
-                                    decision.actor?.let { append(" ($it)") }
-                                }
-                                Text("• $label", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                            }
                         }
                     }
                 }
             }
-        }
+
+            // ── Tab content ────────────────────────────────────────────────
+            item {
+                Column(
+                    modifier =
+                        Modifier
+                            .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    when (selectedTab) {
+                        0 -> {
+                            PrdTypeRow(prd, automataTypes, onSetType)
+                            PrdGuidedModeRow(prd, onSetGuidedMode)
+                            PrdSkillsRow(prd, onSetSkills)
+                            prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
+                                Text(
+                                    spec,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    SessionsNavChannel.jumpTo(prd.name)
+                                    onDismiss()
+                                },
+                            ) {
+                                Text(stringResource(R.string.prd_view_sessions))
+                            }
+                        }
+                        1 -> {
+                            val conflicts =
+                                buildMap<String, List<String>> {
+                                    val byPath = mutableMapOf<String, MutableList<String>>()
+                                    prd.stories
+                                        .filter {
+                                            it.status.lowercase() != "complete" &&
+                                                it.status.lowercase() != "rejected"
+                                        }
+                                        .forEach { story ->
+                                            story.files.forEach { f ->
+                                                byPath.getOrPut(f) { mutableListOf() }.add(story.id)
+                                            }
+                                        }
+                                    byPath.filter { it.value.size > 1 }.forEach { (path, ids) ->
+                                        put(path, ids)
+                                    }
+                                }
+                            if (prd.stories.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.prd_detail_no_stories),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                Text(
+                                    stringResource(R.string.prd_detail_stories_header, prd.stories.size),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                prd.stories.forEach { story ->
+                                    StoryRow(
+                                        story = story,
+                                        canEdit = canEdit,
+                                        onEdit = { editingStory = story },
+                                        onEditFiles = { editingFilesFor = story },
+                                        conflicts = conflicts,
+                                    )
+                                }
+                            }
+                        }
+                        2 -> {
+                            val decisions = prd.decisions
+                            if (decisions.isNullOrEmpty()) {
+                                Text(
+                                    stringResource(R.string.prd_tab_decisions_empty),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                decisions.forEach { decision ->
+                                    val label =
+                                        buildString {
+                                            decision.kind?.let { append("[$it] ") }
+                                            append(decision.note ?: "")
+                                            decision.actor?.let { append(" ($it)") }
+                                        }
+                                    Text(
+                                        "• $label",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(vertical = 2.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } // end tab content item
+        } // end LazyColumn
     }
 
     // ── Sub-dialogs ────────────────────────────────────────────────────────
@@ -442,7 +499,11 @@ internal fun PrdDetailDialog(
                     enabled = rejectReason.isNotBlank(),
                 ) { Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { rejectOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { rejectOpen = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 
@@ -471,7 +532,11 @@ internal fun PrdDetailDialog(
                     enabled = reviseNote.isNotBlank(),
                 ) { Text(stringResource(R.string.action_send)) }
             },
-            dismissButton = { TextButton(onClick = { reviseOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { reviseOpen = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 
@@ -482,7 +547,10 @@ internal fun PrdDetailDialog(
             currentModel = prd.model.orEmpty(),
             backends = backends,
             onDismiss = { llmOpen = false },
-            onSave = { b, e, m -> onSetLlm(b, e, m); llmOpen = false },
+            onSave = { b, e, m ->
+                onSetLlm(b, e, m)
+                llmOpen = false
+            },
         )
     }
 
@@ -493,7 +561,10 @@ internal fun PrdDetailDialog(
             currentPermissionMode = prd.permissionMode.orEmpty(),
             permissionModes = permissionModes,
             onDismiss = { editPrdOpen = false },
-            onSave = { title, spec, pm -> onEditPrd(title, spec, pm); editPrdOpen = false },
+            onSave = { title, spec, pm ->
+                onEditPrd(title, spec, pm)
+                editPrdOpen = false
+            },
         )
     }
 
@@ -509,10 +580,16 @@ internal fun PrdDetailDialog(
             },
             confirmButton = {
                 TextButton(
-                    onClick = { onDelete(); deleteConfirmOpen = false; onDismiss() },
+                    onClick = {
+                        onDelete()
+                        deleteConfirmOpen = false
+                        onDismiss()
+                    },
                 ) { Text(stringResource(R.string.action_delete), color = Color(0xFF7C2D12)) }
             },
-            dismissButton = { TextButton(onClick = { deleteConfirmOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(onClick = { deleteConfirmOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 
@@ -531,7 +608,10 @@ internal fun PrdDetailDialog(
         EditFilesDialog(
             story = story,
             onDismiss = { editingFilesFor = null },
-            onSave = { files -> onEditFiles(story.id, files); editingFilesFor = null },
+            onSave = { files ->
+                onEditFiles(story.id, files)
+                editingFilesFor = null
+            },
         )
     }
 
@@ -547,9 +627,10 @@ internal fun PrdDetailDialog(
 private fun PrdStatusBadge(status: String) {
     val color = prdStatusColor(status)
     Box(
-        modifier = Modifier
-            .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
             status.lowercase().replace('_', ' '),
@@ -596,9 +677,15 @@ private fun LlmOverrideDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = backendMenuOpen) },
                     )
                     DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
-                        DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { backend = ""; backendMenuOpen = false })
+                        DropdownMenuItem(text = { Text(inheritLabel) }, onClick = {
+                            backend = ""
+                            backendMenuOpen = false
+                        })
                         backends.forEach { b ->
-                            DropdownMenuItem(text = { Text(b) }, onClick = { backend = b; backendMenuOpen = false })
+                            DropdownMenuItem(text = { Text(b) }, onClick = {
+                                backend = b
+                                backendMenuOpen = false
+                            })
                         }
                     }
                 }
@@ -619,7 +706,10 @@ private fun LlmOverrideDialog(
                         EFFORT_OPTIONS.forEach { e ->
                             DropdownMenuItem(
                                 text = { Text(if (e.isEmpty()) inheritLabel else e) },
-                                onClick = { effort = e; effortMenuOpen = false },
+                                onClick = {
+                                    effort = e
+                                    effortMenuOpen = false
+                                },
                             )
                         }
                     }
@@ -633,7 +723,9 @@ private fun LlmOverrideDialog(
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(backend, effort, model) }) { Text(stringResource(R.string.action_save)) } },
+        confirmButton = {
+            TextButton(onClick = { onSave(backend, effort, model) }) { Text(stringResource(R.string.action_save)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
@@ -662,12 +754,15 @@ private fun EditPrdDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = title, onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.prd_detail_title_label)) }, singleLine = true,
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.prd_detail_title_label)) },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = spec, onValueChange = { spec = it },
+                    value = spec,
+                    onValueChange = { spec = it },
                     label = { Text(stringResource(R.string.prd_detail_spec_label)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     maxLines = 8,
@@ -689,12 +784,18 @@ private fun EditPrdDialog(
                         DropdownMenu(expanded = pmMenuOpen, onDismissRequest = { pmMenuOpen = false }) {
                             DropdownMenuItem(
                                 text = { Text(inheritLabel) },
-                                onClick = { permissionMode = ""; pmMenuOpen = false },
+                                onClick = {
+                                    permissionMode = ""
+                                    pmMenuOpen = false
+                                },
                             )
                             permissionModes.forEach { pm ->
                                 DropdownMenuItem(
                                     text = { Text(pm) },
-                                    onClick = { permissionMode = pm; pmMenuOpen = false },
+                                    onClick = {
+                                        permissionMode = pm
+                                        pmMenuOpen = false
+                                    },
                                 )
                             }
                         }
@@ -728,12 +829,13 @@ private fun StoryRow(
     var expanded by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 3.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-            .clickable { expanded = !expanded }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 3.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         // Always-visible header row: title + chevron + status pill
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -770,7 +872,19 @@ private fun StoryRow(
                     ) {
                         story.files.forEach { f ->
                             val others = conflicts[f]?.filter { it != story.id }.orEmpty()
-                            FilePill(name = f, color = Color(0xFF3B82F6), conflict = others.isNotEmpty(), conflictNote = if (others.isNotEmpty()) "also in ${others.joinToString(", ")}" else null)
+                            FilePill(
+                                name = f,
+                                color = Color(0xFF3B82F6),
+                                conflict = others.isNotEmpty(),
+                                conflictNote =
+                                    if (others.isNotEmpty()) {
+                                        "also in ${others.joinToString(
+                                            ", ",
+                                        )}"
+                                    } else {
+                                        null
+                                    },
+                            )
                         }
                         story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
                     }
@@ -778,10 +892,16 @@ private fun StoryRow(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = onEdit) {
                                 Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Text(" ${stringResource(R.string.action_edit)}", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    " ${stringResource(R.string.action_edit)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
                             }
                             TextButton(onClick = onEditFiles) {
-                                Text(stringResource(R.string.prd_detail_edit_files), style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    stringResource(R.string.prd_detail_edit_files),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
                             }
                         }
                     }
@@ -793,32 +913,62 @@ private fun StoryRow(
 
 @Composable
 private fun StoryStatusPill(status: String) {
-    val color = when (status.lowercase()) {
-        "complete" -> Color(0xFF3B82F6)
-        "in_progress" -> Color(0xFF10B981)
-        "awaiting_approval" -> Color(0xFFF59E0B)
-        "rejected" -> Color(0xFFEF4444)
-        else -> Color(0xFF94A3B8)
-    }
-    Box(modifier = Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 1.dp)) {
+    val color =
+        when (status.lowercase()) {
+            "complete" -> Color(0xFF3B82F6)
+            "in_progress" -> Color(0xFF10B981)
+            "awaiting_approval" -> Color(0xFFF59E0B)
+            "rejected" -> Color(0xFFEF4444)
+            else -> Color(0xFF94A3B8)
+        }
+    Box(
+        modifier =
+            Modifier.background(
+                color.copy(alpha = 0.18f),
+                RoundedCornerShape(8.dp),
+            ).padding(horizontal = 6.dp, vertical = 1.dp),
+    ) {
         Text(status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
 
 @Composable
-private fun FilePill(name: String, color: Color, conflict: Boolean = false, conflictNote: String? = null) {
+private fun FilePill(
+    name: String,
+    color: Color,
+    conflict: Boolean = false,
+    conflictNote: String? = null,
+) {
     val pillColor = if (conflict) Color(0xFFEF4444) else color
     Column {
-        Box(modifier = Modifier.background(pillColor.copy(alpha = 0.18f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)) {
-            Text(if (conflict) "⚠ $name" else "📝 $name", style = MaterialTheme.typography.labelSmall, color = pillColor, maxLines = 1)
+        Box(
+            modifier =
+                Modifier.background(
+                    pillColor.copy(alpha = 0.18f),
+                    RoundedCornerShape(6.dp),
+                ).padding(horizontal = 6.dp, vertical = 1.dp),
+        ) {
+            Text(
+                if (conflict) "⚠ $name" else "📝 $name",
+                style = MaterialTheme.typography.labelSmall,
+                color = pillColor,
+                maxLines = 1,
+            )
         }
-        conflictNote?.let { note -> Text(note, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), maxLines = 1) }
+        conflictNote?.let {
+                note ->
+            Text(note, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), maxLines = 1)
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditStoryDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (newTitle: String?, newDescription: String?) -> Unit) {
+private fun EditStoryDialog(
+    story: PrdStoryDto,
+    onDismiss: () -> Unit,
+    onSave: (newTitle: String?, newDescription: String?) -> Unit,
+) {
     var title by remember(story.id) { mutableStateOf(story.title) }
     var description by remember(story.id) { mutableStateOf(story.description.orEmpty()) }
     AlertDialog(
@@ -826,8 +976,16 @@ private fun EditStoryDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (
         title = { Text(stringResource(R.string.prd_detail_edit_story_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(stringResource(R.string.prd_detail_title_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.prd_detail_description_label)) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 6)
+                OutlinedTextField(value = title, onValueChange = {
+                    title = it
+                }, label = {
+                    Text(stringResource(R.string.prd_detail_title_label))
+                }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = {
+                    description = it
+                }, label = {
+                    Text(stringResource(R.string.prd_detail_description_label))
+                }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 6)
             }
         },
         confirmButton = {
@@ -848,7 +1006,11 @@ private fun PrdTypeRow(
     if (prd.type == null && types.isEmpty()) return
     var menuOpen by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.automata_detail_type), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.automata_detail_type),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         prd.type?.takeIf { it.isNotBlank() }?.let { t ->
             Text(t, style = MaterialTheme.typography.labelSmall)
         }
@@ -856,7 +1018,10 @@ private fun PrdTypeRow(
             TextButton(onClick = { menuOpen = true }) { Text("▾", style = MaterialTheme.typography.labelSmall) }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 types.forEach { dt ->
-                    DropdownMenuItem(text = { Text(dt.label) }, onClick = { onSetType(dt.id); menuOpen = false })
+                    DropdownMenuItem(text = { Text(dt.label) }, onClick = {
+                        onSetType(dt.id)
+                        menuOpen = false
+                    })
                 }
             }
         }
@@ -864,10 +1029,17 @@ private fun PrdTypeRow(
 }
 
 @Composable
-private fun PrdGuidedModeRow(prd: PrdDto, onSetGuidedMode: ((Boolean) -> Unit)?) {
+private fun PrdGuidedModeRow(
+    prd: PrdDto,
+    onSetGuidedMode: ((Boolean) -> Unit)?,
+) {
     if (!prd.guidedMode && onSetGuidedMode == null) return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.automata_detail_guided_mode), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.automata_detail_guided_mode),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (onSetGuidedMode != null) {
             androidx.compose.material3.Switch(checked = prd.guidedMode, onCheckedChange = onSetGuidedMode)
         } else {
@@ -878,21 +1050,39 @@ private fun PrdGuidedModeRow(prd: PrdDto, onSetGuidedMode: ((Boolean) -> Unit)?)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PrdSkillsRow(prd: PrdDto, onSetSkills: ((List<String>) -> Unit)?) {
+private fun PrdSkillsRow(
+    prd: PrdDto,
+    onSetSkills: ((List<String>) -> Unit)?,
+) {
     var editOpen by remember { mutableStateOf(false) }
     var skillsText by remember(prd.skills) { mutableStateOf(prd.skills.joinToString(", ")) }
     if (prd.skills.isEmpty() && onSetSkills == null) return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.automata_detail_skills), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.automata_detail_skills),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             prd.skills.forEach { skill ->
-                Box(androidx.compose.ui.Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
-                    Text(skill, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                Box(
+                    androidx.compose.ui.Modifier.background(
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        RoundedCornerShape(4.dp),
+                    ).padding(horizontal = 4.dp, vertical = 1.dp),
+                ) {
+                    Text(
+                        skill,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
                 }
             }
         }
         if (onSetSkills != null) {
-            IconButton(onClick = { editOpen = true }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
+            IconButton(onClick = {
+                editOpen = true
+            }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
         }
     }
     if (editOpen && onSetSkills != null) {
@@ -900,7 +1090,11 @@ private fun PrdSkillsRow(prd: PrdDto, onSetSkills: ((List<String>) -> Unit)?) {
             onDismissRequest = { editOpen = false },
             title = { Text(stringResource(R.string.automata_detail_skills)) },
             text = {
-                OutlinedTextField(value = skillsText, onValueChange = { skillsText = it }, label = { Text(stringResource(R.string.new_prd_skills_label)) }, singleLine = true, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                OutlinedTextField(value = skillsText, onValueChange = {
+                    skillsText = it
+                }, label = {
+                    Text(stringResource(R.string.new_prd_skills_label))
+                }, singleLine = true, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -908,22 +1102,38 @@ private fun PrdSkillsRow(prd: PrdDto, onSetSkills: ((List<String>) -> Unit)?) {
                     editOpen = false
                 }) { Text(stringResource(R.string.action_save)) }
             },
-            dismissButton = { TextButton(onClick = { editOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { editOpen = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditFilesDialog(story: PrdStoryDto, onDismiss: () -> Unit, onSave: (files: List<String>) -> Unit) {
+private fun EditFilesDialog(
+    story: PrdStoryDto,
+    onDismiss: () -> Unit,
+    onSave: (files: List<String>) -> Unit,
+) {
     var text by remember(story.id) { mutableStateOf(story.files.joinToString("\n")) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Files for ${story.title.ifBlank { story.id }}") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.prd_detail_files_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text(stringResource(R.string.prd_detail_files_label)) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 8)
+                Text(
+                    stringResource(R.string.prd_detail_files_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(value = text, onValueChange = {
+                    text = it
+                }, label = {
+                    Text(stringResource(R.string.prd_detail_files_label))
+                }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), maxLines = 8)
             }
         },
         confirmButton = {

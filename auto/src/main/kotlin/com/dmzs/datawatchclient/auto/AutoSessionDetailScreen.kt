@@ -1,4 +1,5 @@
 @file:Suppress("MagicNumber")
+
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
@@ -22,7 +23,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -49,7 +49,6 @@ public class AutoSessionDetailScreen(
     private val sessionTitle: String,
     private val autoPlayLong: Boolean = false,
 ) : Screen(carContext) {
-
     private var telemetry: SessionTelemetryDto? = null
     private var sessionState: SessionState = SessionState.New
     private var lastResponse: String? = null
@@ -82,30 +81,33 @@ public class AutoSessionDetailScreen(
             }
         }
 
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = scope.launch { pollLoop() }
-            }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = scope.launch { pollLoop() }
+                }
 
-            override fun onStop(owner: LifecycleOwner) {
-                pollJob?.cancel()
-                pollJob = null
-            }
+                override fun onStop(owner: LifecycleOwner) {
+                    pollJob?.cancel()
+                    pollJob = null
+                }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.cancel()
-            }
-        })
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            val newHash = listOf(
-                sessionState, error, telemetry?.currentTask, telemetry?.progress,
-                lastResponse, lastSummaryLong, currentStatus, currentStatusLong, promptContext, lastPrompt,
-            ).hashCode()
+            val newHash =
+                listOf(
+                    sessionState, error, telemetry?.currentTask, telemetry?.progress,
+                    lastResponse, lastSummaryLong, currentStatus, currentStatusLong, promptContext, lastPrompt,
+                ).hashCode()
             if (newHash != lastDetailHash) {
                 lastDetailHash = newHash
                 invalidate()
@@ -117,10 +119,17 @@ public class AutoSessionDetailScreen(
 
     private suspend fun refresh() {
         try {
-            val profile = resolveActiveProfile() ?: run { error = "No enabled server"; return }
+            val profile =
+                resolveActiveProfile() ?: run {
+                    error = "No enabled server"
+                    return
+                }
             val transport = AutoServiceLocator.transportFor(profile)
             transport.getSessionTelemetry(sessionId).fold(
-                onSuccess = { t -> error = null; telemetry = t },
+                onSuccess = { t ->
+                    error = null
+                    telemetry = t
+                },
                 onFailure = { err -> error = err.message ?: "Could not load telemetry" },
             )
             transport.listSessions().getOrNull()
@@ -150,19 +159,22 @@ public class AutoSessionDetailScreen(
 
     override fun onGetTemplate(): Template {
         val hasBlock = telemetry?.guardrailVerdicts?.any { it.outcome == "block" } == true
-        val isActive = sessionState == SessionState.Running ||
-            sessionState == SessionState.Waiting ||
-            sessionState == SessionState.RateLimited
+        val isActive =
+            sessionState == SessionState.Running ||
+                sessionState == SessionState.Waiting ||
+                sessionState == SessionState.RateLimited
         val isWaiting = sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited
-        val isTerminal = sessionState == SessionState.Completed ||
-            sessionState == SessionState.Killed ||
-            sessionState == SessionState.Error
+        val isTerminal =
+            sessionState == SessionState.Completed ||
+                sessionState == SessionState.Killed ||
+                sessionState == SessionState.Error
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
 
-        val templateBuilder = MessageTemplate.Builder(buildBody())
-            .setTitle(sessionTitle.ifBlank { sessionId })
-            .setHeaderAction(Action.BACK)
+        val templateBuilder =
+            MessageTemplate.Builder(buildBody())
+                .setTitle(sessionTitle.ifBlank { sessionId })
+                .setHeaderAction(Action.BACK)
 
         when {
             hasBlock -> {
@@ -170,7 +182,7 @@ public class AutoSessionDetailScreen(
                     Action.Builder().setTitle("Approve Gate")
                         .setBackgroundColor(CarColor.GREEN)
                         .setOnClickListener { onApproveGate() }
-                        .build()
+                        .build(),
                 )
                 val autoId = automataIdFromTelemetry()
                 if (autoId.isNotBlank()) {
@@ -179,7 +191,7 @@ public class AutoSessionDetailScreen(
                             .setOnClickListener {
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
                             }
-                            .build()
+                            .build(),
                     )
                 }
             }
@@ -189,26 +201,33 @@ public class AutoSessionDetailScreen(
                 // error on some head units (see AutoMonitorScreen comment).
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(waitText)
-                val longPlay = lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
-                    ?: splitLong
+                val longPlay =
+                    lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
+                        ?: splitLong
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                        }.build()
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
+                            )
+                        }.build(),
                 )
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
+                            CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
                             screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
-                        }.build()
+                        }.build(),
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener {
-                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
-                        }.build())
-                        .build()
+                        .addAction(
+                            Action.Builder().setIcon(chatIcon).setOnClickListener {
+                                screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
+                            }.build(),
+                        )
+                        .build(),
                 )
             }
             sessionState == SessionState.Running -> {
@@ -219,21 +238,33 @@ public class AutoSessionDetailScreen(
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, currentStatusLong ?: longPlay))
-                        }.build()
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(
+                                    carContext,
+                                    sessionId,
+                                    sessionTitle,
+                                    shortPlay,
+                                    currentStatusLong ?: longPlay,
+                                ),
+                            )
+                        }.build(),
                 )
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
+                            CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
                             screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
-                        }.build()
+                        }.build(),
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(chatIcon).setOnClickListener {
-                            screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
-                        }.build())
-                        .build()
+                        .addAction(
+                            Action.Builder().setIcon(chatIcon).setOnClickListener {
+                                screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
+                            }.build(),
+                        )
+                        .build(),
                 )
             }
             isTerminal -> {
@@ -243,8 +274,11 @@ public class AutoSessionDetailScreen(
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, termLong))
-                        }.build()
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortResp, termLong),
+                            )
+                        }.build(),
                 )
                 // For automata sessions, show plan stages so the user can see what completed;
                 // for standalone sessions, offer restart.
@@ -253,15 +287,16 @@ public class AutoSessionDetailScreen(
                     templateBuilder.addAction(
                         Action.Builder().setTitle("Stages")
                             .setOnClickListener {
+                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
                             }
-                            .build()
+                            .build(),
                     )
                 } else {
                     templateBuilder.addAction(
                         Action.Builder().setTitle("Restart")
                             .setOnClickListener { onRestart() }
-                            .build()
+                            .build(),
                     )
                 }
             }
@@ -271,8 +306,11 @@ public class AutoSessionDetailScreen(
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            screenManager.push(LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay))
-                        }.build()
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
+                            )
+                        }.build(),
                 )
                 // Add Stages for automata sessions even in unknown/New state.
                 val autoId = automataIdFromTelemetry()
@@ -280,9 +318,10 @@ public class AutoSessionDetailScreen(
                     templateBuilder.addAction(
                         Action.Builder().setTitle("Stages")
                             .setOnClickListener {
+                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
                             }
-                            .build()
+                            .build(),
                     )
                 }
             }
@@ -295,33 +334,40 @@ public class AutoSessionDetailScreen(
     private fun buildBody(): String {
         if (isLoading) return "Loading…"
         if (error != null) return "Error: $error"
-        val main = when (sessionState) {
-            SessionState.Running ->
-                currentStatus?.takeIf { it.isNotBlank() }
-                    ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
-                    ?: "Running…"
-            SessionState.Waiting, SessionState.RateLimited ->
-                // promptContext overrides lastPrompt per server spec: it's the pre-processed
-                // last ~4 lines of conversation, not the raw LLM prompt string.
-                promptContext?.lines()?.firstOrNull { it.isNotBlank() }
-                    ?: lastPrompt?.takeIf { it.isNotBlank() }
-                    ?: lastSummaryLong?.takeIf { it.isNotBlank() }
-                    ?: lastResponse?.takeIf { it.isNotBlank() }
-                    ?: "Waiting for your input"
-            SessionState.Completed, SessionState.Killed, SessionState.Error ->
-                lastResponse?.takeIf { it.isNotBlank() }
-                    ?: "Session ${sessionState.name.lowercase()}"
-            else -> buildString {
-                telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { appendLine("▶ $it") }
-                currentStatus?.let { appendLine(it) }
-            }.trim().ifEmpty { sessionState.name }
-        }
+        val main =
+            when (sessionState) {
+                SessionState.Running ->
+                    currentStatus?.takeIf { it.isNotBlank() }
+                        ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
+                        ?: "Running…"
+                SessionState.Waiting, SessionState.RateLimited ->
+                    // promptContext overrides lastPrompt per server spec: it's the pre-processed
+                    // last ~4 lines of conversation, not the raw LLM prompt string.
+                    promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                        ?: lastPrompt?.takeIf { it.isNotBlank() }
+                        ?: lastSummaryLong?.takeIf { it.isNotBlank() }
+                        ?: lastResponse?.takeIf { it.isNotBlank() }
+                        ?: "Waiting for your input"
+                SessionState.Completed, SessionState.Killed, SessionState.Error ->
+                    lastResponse?.takeIf { it.isNotBlank() }
+                        ?: "Session ${sessionState.name.lowercase()}"
+                else ->
+                    buildString {
+                        telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { appendLine("▶ $it") }
+                        currentStatus?.let { appendLine(it) }
+                    }.trim().ifEmpty { sessionState.name }
+            }
         // Append automata/sprint context so the user knows which plan this session belongs to.
         val sprint = telemetry?.sprint
-        val automataCtx = if (!sprint?.automataId.isNullOrBlank()) buildString {
-            append("\n\n⟫ ${sprint?.automata?.takeIf { it.isNotBlank() } ?: "Automata"}")
-            sprint?.task?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
-        } else ""
+        val automataCtx =
+            if (!sprint?.automataId.isNullOrBlank()) {
+                buildString {
+                    append("\n\n⟫ ${sprint?.automata?.takeIf { it.isNotBlank() } ?: "Automata"}")
+                    sprint?.task?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                }
+            } else {
+                ""
+            }
         return (main + automataCtx).take(BODY_CHAR_LIMIT)
     }
 
@@ -335,10 +381,11 @@ public class AutoSessionDetailScreen(
     private fun onRestart() {
         scope.launch {
             runCatching {
-                val profile = resolveActiveProfile() ?: run {
-                    CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
-                    return@runCatching
-                }
+                val profile =
+                    resolveActiveProfile() ?: run {
+                        CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
+                        return@runCatching
+                    }
                 AutoServiceLocator.transportFor(profile).restartSession(sessionId).fold(
                     onSuccess = {
                         CarToast.makeText(carContext, "Session restarting", CarToast.LENGTH_SHORT).show()
@@ -370,8 +417,11 @@ public class AutoSessionDetailScreen(
     /** Splits long text into a short preview + full version for [LastOutputDetailScreen]. */
     private fun splitOutputText(text: String?): Pair<String?, String?> {
         if (text.isNullOrBlank()) return null to null
-        return if (text.length > SHORT_PLAY_CHARS) text.take(SHORT_PLAY_CHARS) to text
-        else text to null
+        return if (text.length > SHORT_PLAY_CHARS) {
+            text.take(SHORT_PLAY_CHARS) to text
+        } else {
+            text to null
+        }
     }
 
     private companion object {
@@ -389,8 +439,9 @@ public class AutoSessionDetailScreen(
             val completed = telem.tasks.filter { it.status == "completed" }
             val remaining = telem.tasks.count { it.status != "completed" && it.status != "failed" }
             if (completed.isEmpty() || remaining == 0) return null
-            val avgMs = completed.map { it.durationMs }.filter { it > 0 }.average()
-                .takeIf { !it.isNaN() } ?: return null
+            val avgMs =
+                completed.map { it.durationMs }.filter { it > 0 }.average()
+                    .takeIf { !it.isNaN() } ?: return null
             return ((avgMs * remaining) / MS_PER_MIN).toInt().coerceAtLeast(1)
         }
 
@@ -399,8 +450,9 @@ public class AutoSessionDetailScreen(
             val hasBlock = telem.guardrailVerdicts.any { it.outcome == "block" }
             if (hasBlock) return "🔥"
             if (completed.isEmpty()) return ""
-            val avgMs = completed.map { it.durationMs }.filter { it > 0 }.average()
-                .takeIf { !it.isNaN() } ?: return ""
+            val avgMs =
+                completed.map { it.durationMs }.filter { it > 0 }.average()
+                    .takeIf { !it.isNaN() } ?: return ""
             return when {
                 avgMs < FAST_TASK_MS -> "🚀"
                 avgMs > SLOW_TASK_MS -> "🐢"

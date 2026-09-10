@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.96] — 2026-09-10
+
+### Fixed
+- Auto session detail: Play / Stages / Voice Reply buttons now show a "Loading…" / "Loading stages…" toast immediately on tap so users get instant confirmation the touch registered (no more double-tapping thinking it was missed)
+- Auto automata list: story completed-count now uses case-insensitive matching for "complete" / "completed" / "done" statuses so the `X/N stories` subtitle is accurate regardless of server capitalisation
+- Auto automata filter toggle: button label now updates instantly on tap (invalidate before async refresh) so the UI responds immediately rather than waiting for the next network round-trip
+- Phone automata detail: page now scrolls as a whole — the header (spec, action buttons, lifecycle strip) scrolls up to reveal tab content, while the tab row (Overview / Stories / Decisions) sticks at the top
+
+### Known issue
+- Auto/phone automata list story count may show fewer stories than actual (#163) — suspected server-side truncation of `stories[]` in the list endpoint; filed issue for server team
+
 ## [1.0.95] — 2026-09-10
 
 ### Fixed
