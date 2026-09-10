@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.94] — 2026-09-10
+
+### Fixed
+- Sessions: autonomous task session cards no longer render oversized/bloated — the name/ID Column was not width-constrained (`weight(1f)` missing), so for long autonomous session names it consumed the full row width leaving the state pill and worker-agent pill (⬡) with zero available space; the worker pill's text then wrapped into many lines making the header row extremely tall and the card 2× normal height. Fixed by giving the Column `weight(1f)` (fills remaining space after pills) and adding `maxLines = 1` / ellipsis to the WorkerPill text as a safety guard.
+
 ## [1.0.93] — 2026-09-07
 
 ### Fixed
