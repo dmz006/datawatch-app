@@ -35,6 +35,7 @@ import java.util.UUID
  */
 public class UnifiedPushSseService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     // profile.id → Pair(job, transportSignature) so we can detect profile trust changes
     private val jobs = mutableMapOf<String, Pair<Job, String>>()
 
@@ -44,7 +45,11 @@ public class UnifiedPushSseService : Service() {
         startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         scope.launch { reconcile() }
         return START_STICKY
     }
@@ -69,9 +74,10 @@ public class UnifiedPushSseService : Service() {
             // Generate or retrieve stable client_id per server URL.
             val prefs = applicationContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
             val key = "sse_client_id_${profile.baseUrl.hashCode()}"
-            val clientId = prefs.getString(key, null) ?: UUID.randomUUID().toString().also {
-                prefs.edit().putString(key, it).apply()
-            }
+            val clientId =
+                prefs.getString(key, null) ?: UUID.randomUUID().toString().also {
+                    prefs.edit().putString(key, it).apply()
+                }
             // Register this device as a push receiver — fire-and-forget.
             runCatching {
                 transport.registerPush(
@@ -82,26 +88,29 @@ public class UnifiedPushSseService : Service() {
                 )
             }
             // Subscribe and collect events indefinitely.
-            val job = scope.launch {
-                transport.subscribePushAlerts().collect { event -> postNotification(event) }
-            }
+            val job =
+                scope.launch {
+                    transport.subscribePushAlerts().collect { event -> postNotification(event) }
+                }
             jobs[profile.id] = job to sig
         }
     }
 
     private suspend fun postNotification(event: PushEventDto) {
-        val sessionId = event.tags.firstOrNull()
-            ?: event.click.substringAfterLast('/').takeIf { it.isNotBlank() }
-            ?: "system"
+        val sessionId =
+            event.tags.firstOrNull()
+                ?: event.click.substringAfterLast('/').takeIf { it.isNotBlank() }
+                ?: "system"
         if (runCatching { ServiceLocator.sessionRepository.isMuted(sessionId) }.getOrDefault(false)) return
-        val type = when {
-            event.priority >= 4 && event.title.contains("input", ignoreCase = true) ->
-                NotificationPoster.Event.Type.InputNeeded
-            event.priority >= 4 && event.title.contains("error", ignoreCase = true) ->
-                NotificationPoster.Event.Type.Error
-            event.priority >= 4 -> NotificationPoster.Event.Type.InputNeeded
-            else -> NotificationPoster.Event.Type.StateChange
-        }
+        val type =
+            when {
+                event.priority >= 4 && event.title.contains("input", ignoreCase = true) ->
+                    NotificationPoster.Event.Type.InputNeeded
+                event.priority >= 4 && event.title.contains("error", ignoreCase = true) ->
+                    NotificationPoster.Event.Type.Error
+                event.priority >= 4 -> NotificationPoster.Event.Type.InputNeeded
+                else -> NotificationPoster.Event.Type.StateChange
+            }
         NotificationPoster(applicationContext).post(
             NotificationPoster.Event(
                 sessionId = sessionId,

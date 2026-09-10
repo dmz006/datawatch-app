@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -28,8 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -119,17 +117,24 @@ public fun AutonomousScreen(
         if (openPrdId != null) detailPrd = state.prds.firstOrNull { it.id == openPrdId }
     }
 
-    LaunchedEffect(Unit) { vm.refresh(); vm.loadAutomataTypes() }
+    LaunchedEffect(Unit) {
+        vm.refresh()
+        vm.loadAutomataTypes()
+    }
     LaunchedEffect(identityWizardOpen) {
         if (identityWizardOpen) {
             runCatching {
                 val activeId = ServiceLocator.activeServerStore.get()
-                val sp = ServiceLocator.profileRepository.observeAll()
-                    .first { list -> list.any { it.enabled } }
-                    .let { list ->
-                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                        else list.firstOrNull { it.id == activeId && it.enabled }
-                    } ?: return@runCatching
+                val sp =
+                    ServiceLocator.profileRepository.observeAll()
+                        .first { list -> list.any { it.enabled } }
+                        .let { list ->
+                            if (activeId == null) {
+                                list.filter { it.enabled }.firstOrNull()
+                            } else {
+                                list.firstOrNull { it.id == activeId && it.enabled }
+                            }
+                        } ?: return@runCatching
                 ServiceLocator.transportFor(sp).getIdentity().onSuccess { identity = it }
             }
         }
@@ -146,8 +151,14 @@ public fun AutonomousScreen(
                         onToggle = { pickerOpen = !pickerOpen },
                         onDismiss = { pickerOpen = false },
                         profiles = state.allProfiles,
-                        onSelectAll = { vm.selectAllServers(); pickerOpen = false },
-                        onSelect = { vm.selectProfile(it); pickerOpen = false },
+                        onSelectAll = {
+                            vm.selectAllServers()
+                            pickerOpen = false
+                        },
+                        onSelect = {
+                            vm.selectProfile(it)
+                            pickerOpen = false
+                        },
                     )
                 },
                 actions = {
@@ -187,18 +198,19 @@ public fun AutonomousScreen(
                 // Custom tab row — matches SessionDetailScreen style with icons on right
                 val tabBorderColor = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.border
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .drawBehind {
-                            drawLine(
-                                color = tabBorderColor,
-                                start = Offset(0f, size.height),
-                                end = Offset(size.width, size.height),
-                                strokeWidth = 1.dp.toPx(),
-                            )
-                        }
-                        .padding(horizontal = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .drawBehind {
+                                drawLine(
+                                    color = tabBorderColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
+                            .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     AutonomousTab(
@@ -214,7 +226,10 @@ public fun AutonomousScreen(
                     Spacer(Modifier.weight(1f))
                     // Action buttons matching PWA .automata-action-btn order: ☑ select, ⊞ filter, ⏱ history
                     if (currentTab == 0) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             AutomataActionBtn("☑", active = selectMode) {
                                 selectMode = !selectMode
                                 if (!selectMode) vm.clearSelection()
@@ -225,8 +240,37 @@ public fun AutonomousScreen(
                     }
                 }
                 when (currentTab) {
-                    0 -> PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, onOpenPrd = { if (!selectMode) openPrdId = it }, onStatusFilter = { statusFilter = it }, onIncludeTemplates = { includeTemplates = it }, onTypeFilter = { typeFilter = it }, onToggleSelect = { vm.toggleSelection(it) }, onTogglePin = { vm.togglePin(it) }, onRequestCancel = { vm.requestCancel(it) }, onApprove = { vm.approve(it) }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = { id, reason -> vm.reject(id, reason) }, onRevise = { id, note -> vm.requestRevision(id, note) })
-                    else -> TemplatesTab(vm = tmplVm, createOpen = tmplCreateOpen, onCreateDismiss = { tmplCreateOpen = false })
+                    0 ->
+                        PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, onOpenPrd = {
+                            if (!selectMode) openPrdId = it
+                        }, onStatusFilter = {
+                            statusFilter = it
+                        }, onIncludeTemplates = {
+                            includeTemplates = it
+                        }, onTypeFilter = {
+                            typeFilter = it
+                        }, onToggleSelect = {
+                            vm.toggleSelection(it)
+                        }, onTogglePin = {
+                            vm.togglePin(it)
+                        }, onRequestCancel = {
+                            vm.requestCancel(it)
+                        }, onApprove = {
+                            vm.approve(
+                                it,
+                            )
+                        }, onPlan = { vm.decompose(it) }, onRun = { vm.runPrd(it) }, onReject = {
+                                id,
+                                reason,
+                            ->
+                            vm.reject(id, reason)
+                        }, onRevise = { id, note -> vm.requestRevision(id, note) })
+                    else ->
+                        TemplatesTab(
+                            vm = tmplVm,
+                            createOpen = tmplCreateOpen,
+                            onCreateDismiss = { tmplCreateOpen = false },
+                        )
                 }
             }
             // Multi-select bar (v0.76.0)
@@ -275,8 +319,14 @@ public fun AutonomousScreen(
     if (newOpen) {
         NewPrdDialog(
             onDismiss = { newOpen = false },
-            onCreate = { req -> vm.create(req); newOpen = false },
-            onBrowseTemplates = { currentTab = 1; newOpen = false },
+            onCreate = { req ->
+                vm.create(req)
+                newOpen = false
+            },
+            onBrowseTemplates = {
+                currentTab = 1
+                newOpen = false
+            },
         )
     }
 
@@ -286,7 +336,16 @@ public fun AutonomousScreen(
         AlertDialog(
             onDismissRequest = { vm.dismissCancelConfirm() },
             title = { Text(stringResource(R.string.automata_confirm_cancel_title)) },
-            text = { Text(stringResource(R.string.automata_confirm_cancel_body, prd?.title?.takeIf { it.isNotBlank() } ?: prd?.name ?: cancelId)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.automata_confirm_cancel_body,
+                        prd?.title?.takeIf {
+                            it.isNotBlank()
+                        } ?: prd?.name ?: cancelId,
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { vm.cancelPrd(cancelId) }) {
                     Text(stringResource(R.string.action_cancel))
@@ -352,8 +411,14 @@ public fun AutonomousScreen(
                 backends = state.backends,
                 permissionModes = state.permissionModes,
                 onDismiss = { openPrdId = null },
-                onApprove = { vm.approve(id); openPrdId = null },
-                onReject = { reason -> vm.reject(id, reason); openPrdId = null },
+                onApprove = {
+                    vm.approve(id)
+                    openPrdId = null
+                },
+                onReject = { reason ->
+                    vm.reject(id, reason)
+                    openPrdId = null
+                },
                 onDecompose = { vm.decompose(id) },
                 onSetLlm = { backend, effort, model -> vm.setLlm(id, backend, effort, model) },
                 onRun = { vm.runPrd(id) },
@@ -361,7 +426,13 @@ public fun AutonomousScreen(
                 onRequestRevision = { note -> vm.requestRevision(id, note) },
                 onEditPrd = { title, spec, pm -> vm.editPrd(id, title, spec, pm) },
                 onDelete = { vm.hardDeletePrd(id) },
-                onEditStory = { storyId, newTitle, newDescription -> vm.editStory(id, storyId, newTitle, newDescription) },
+                onEditStory = {
+                        storyId,
+                        newTitle,
+                        newDescription,
+                    ->
+                    vm.editStory(id, storyId, newTitle, newDescription)
+                },
                 onEditFiles = { storyId, files -> vm.editFiles(id, storyId, files) },
                 automataTypes = state.automataTypes,
                 onSetType = { type -> vm.setPrdType(id, type) },
@@ -382,12 +453,16 @@ public fun AutonomousScreen(
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@launch
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@launch
                         ServiceLocator.transportFor(sp).setIdentity(updated)
                     }
                 }
@@ -426,25 +501,52 @@ private fun PrdsBody(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             item {
-                FilterChip(selected = statusFilter == null, onClick = { onStatusFilter(null) }, label = { Text(stringResource(R.string.autonomous_filter_all), style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = statusFilter == null, onClick = {
+                    onStatusFilter(null)
+                }, label = {
+                    Text(
+                        stringResource(R.string.autonomous_filter_all),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                })
             }
-            items(listOf("needs_review", "revisions_asked", "approved", "decomposing", "running", "complete", "rejected", "cancelled")) { s ->
+            items(
+                listOf(
+                    "needs_review",
+                    "revisions_asked",
+                    "approved",
+                    "decomposing",
+                    "running",
+                    "complete",
+                    "rejected",
+                    "cancelled",
+                ),
+            ) { s ->
                 val statusColor = prdStatusColor(s)
                 FilterChip(
                     selected = statusFilter == s,
                     onClick = { onStatusFilter(if (statusFilter == s) null else s) },
                     label = { Text(s.replace('_', ' '), style = MaterialTheme.typography.labelSmall) },
-                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = statusColor.copy(alpha = 0.18f),
-                        selectedLabelColor = statusColor,
-                        selectedLeadingIconColor = statusColor,
-                    ),
-                    border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
-                        borderColor = if (statusFilter == s) statusColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                        selectedBorderColor = statusColor,
-                        enabled = true,
-                        selected = statusFilter == s,
-                    ),
+                    colors =
+                        androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = statusColor.copy(alpha = 0.18f),
+                            selectedLabelColor = statusColor,
+                            selectedLeadingIconColor = statusColor,
+                        ),
+                    border =
+                        androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+                            borderColor =
+                                if (statusFilter == s) {
+                                    statusColor.copy(
+                                        alpha = 0.5f,
+                                    )
+                                } else {
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                },
+                            selectedBorderColor = statusColor,
+                            enabled = true,
+                            selected = statusFilter == s,
+                        ),
                 )
             }
             // PWA type filters: software / research / operational / personal
@@ -456,30 +558,43 @@ private fun PrdsBody(
                 )
             }
             item {
-                FilterChip(selected = includeTemplates, onClick = { onIncludeTemplates(!includeTemplates) }, label = { Text(stringResource(R.string.autonomous_filter_templates), style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = includeTemplates, onClick = {
+                    onIncludeTemplates(!includeTemplates)
+                }, label = {
+                    Text(
+                        stringResource(R.string.autonomous_filter_templates),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                })
             }
         }
     }
     state.banner?.let { banner ->
-        Text(banner, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        Text(
+            banner,
+            modifier = Modifier.padding(12.dp),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
     // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false
     val terminalStatuses = setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
-    val visible = state.prds
-        .filter { prd ->
-            (includeTemplates || !prd.isTemplate) &&
-                (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
-                (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
-                // History filter: override when a status filter is explicitly set
-                (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses)
-        }
-        .sortedWith(
-            compareBy(
-                { if (it.id in pinnedIds) 0 else 1 },
-                { prdStateRank(it.status) },
-                { -(it.createdAt?.hashCode() ?: 0) },
-            ),
-        )
+    val visible =
+        state.prds
+            .filter { prd ->
+                (includeTemplates || !prd.isTemplate) &&
+                    (statusFilter == null || prd.status.equals(statusFilter, ignoreCase = true)) &&
+                    (typeFilter == null || prd.type.equals(typeFilter, ignoreCase = true)) &&
+                    // History filter: override when a status filter is explicitly set
+                    (historyOn || statusFilter != null || prd.status.lowercase() !in terminalStatuses)
+            }
+            .sortedWith(
+                compareBy(
+                    { if (it.id in pinnedIds) 0 else 1 },
+                    { prdStateRank(it.status) },
+                    { -(it.createdAt?.hashCode() ?: 0) },
+                ),
+            )
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
@@ -492,7 +607,11 @@ private fun PrdsBody(
             }
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.autonomous_empty_state), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.autonomous_empty_state),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -552,18 +671,32 @@ private fun PrdRow(
     var inputText by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .let { mod ->
-                if (selected) mod.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)) else mod
-            }
-            .drawBehind { drawRect(color = statusColor, topLeft = Offset.Zero, size = Size(4.dp.toPx(), size.height)) }
-            .combinedClickable(
-                onClick = if (selectMode) onLongClick else onClick,
-                onLongClick = onLongClick,
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .let { mod ->
+                    if (selected) {
+                        mod.background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        mod
+                    }
+                }
+                .drawBehind {
+                    drawRect(
+                        color = statusColor,
+                        topLeft = Offset.Zero,
+                        size = Size(4.dp.toPx(), size.height),
+                    )
+                }
+                .combinedClickable(
+                    onClick = if (selectMode) onLongClick else onClick,
+                    onLongClick = onLongClick,
+                ),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 4.dp),
@@ -572,17 +705,24 @@ private fun PrdRow(
             // Selection indicator dot (only visible in selectMode)
             if (selectMode) {
                 Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            CircleShape,
-                        )
-                        .border(
-                            1.5.dp,
-                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            CircleShape,
-                        ),
+                    modifier =
+                        Modifier
+                            .size(16.dp)
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                CircleShape,
+                            )
+                            .border(
+                                1.5.dp,
+                                if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                        alpha = 0.4f,
+                                    )
+                                },
+                                CircleShape,
+                            ),
                 )
                 androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
             }
@@ -594,7 +734,13 @@ private fun PrdRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     prd.type?.takeIf { it.isNotBlank() }?.let { TypeBadge(it) }
-                    if (prd.isTemplate) Text(stringResource(R.string.autonomous_template_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    if (prd.isTemplate) {
+                        Text(
+                            stringResource(R.string.autonomous_template_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
                     Text(
                         prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "(no title)",
                         style = MaterialTheme.typography.bodyMedium,
@@ -611,29 +757,60 @@ private fun PrdRow(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (prd.depth > 0) Text(stringResource(R.string.autonomous_depth, prd.depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 6.dp))
+                    if (prd.depth > 0) {
+                        Text(
+                            stringResource(R.string.autonomous_depth, prd.depth),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                    }
                     prd.parentPrdId?.takeIf { it.isNotBlank() }?.let { pid ->
                         val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
-                        Box(Modifier.background(accent2.copy(alpha = 0.16f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp).padding(end = 6.dp)) {
+                        Box(
+                            Modifier.background(
+                                accent2.copy(alpha = 0.16f),
+                                RoundedCornerShape(6.dp),
+                            ).padding(horizontal = 5.dp, vertical = 1.dp).padding(end = 6.dp),
+                        ) {
                             Text("↗ ${pid.take(8)}", style = MaterialTheme.typography.labelSmall, color = accent2)
                         }
                     }
                     Text(
                         prd.id.take(8),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                     )
                     serverName?.let { name ->
-                        Text(" · $name", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+                        Text(
+                            " · $name",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        )
                     }
                     // PWA uses updated_at formatted as "DD/MM/YYYY, HH:MM:SS" (en-GB locale)
                     (prd.updatedAt ?: prd.createdAt)?.takeIf { it.isNotBlank() }?.let { ts ->
-                        val display = runCatching {
-                            val inst = java.time.Instant.parse(ts)
-                            val ldt = java.time.LocalDateTime.ofInstant(inst, java.time.ZoneId.systemDefault())
-                            "%02d/%02d/%04d, %02d:%02d:%02d".format(ldt.dayOfMonth, ldt.monthValue, ldt.year, ldt.hour, ldt.minute, ldt.second)
-                        }.getOrDefault(ts.take(10))
-                        Text("  $display", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+                        val display =
+                            runCatching {
+                                val inst = java.time.Instant.parse(ts)
+                                val ldt = java.time.LocalDateTime.ofInstant(inst, java.time.ZoneId.systemDefault())
+                                "%02d/%02d/%04d, %02d:%02d:%02d".format(
+                                    ldt.dayOfMonth,
+                                    ldt.monthValue,
+                                    ldt.year,
+                                    ldt.hour,
+                                    ldt.minute,
+                                    ldt.second,
+                                )
+                            }.getOrDefault(ts.take(10))
+                        Text(
+                            "  $display",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        )
                     }
                 }
                 // Lifecycle strip (5 steps matching PWA: Plan → Review → Approve → Run → Done)
@@ -641,67 +818,109 @@ private fun PrdRow(
                     status = prd.status,
                     onPlan = if (showPlan) onPlan else null,
                     onApprove = if (showApprove) onApprove else null,
-                    onReject = if (showRejectRevise) { { rejectDialogOpen = true } } else null,
-                    onRevise = if (showRejectRevise) { { reviseDialogOpen = true } } else null,
+                    onReject =
+                        if (showRejectRevise) {
+                            { rejectDialogOpen = true }
+                        } else {
+                            null
+                        },
+                    onRevise =
+                        if (showRejectRevise) {
+                            { reviseDialogOpen = true }
+                        } else {
+                            null
+                        },
                     onRun = if (showRun) onRun else null,
                     onCancel = if (showCancel) onCancel else null,
                 )
                 // Action row: cancel left | approve+pin right — border-top separator mirrors PWA
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .drawBehind {
-                            drawLine(
-                                color = androidx.compose.ui.graphics.Color(0xFF333333),
-                                start = Offset(0f, 0f),
-                                end = Offset(size.width, 0f),
-                                strokeWidth = 0.5.dp.toPx(),
-                            )
-                        }
-                        .padding(top = 6.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .drawBehind {
+                                drawLine(
+                                    color = androidx.compose.ui.graphics.Color(0xFF333333),
+                                    start = Offset(0f, 0f),
+                                    end = Offset(size.width, 0f),
+                                    strokeWidth = 0.5.dp.toPx(),
+                                )
+                            }
+                            .padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (showCancel) {
                         // PWA uses btn-secondary: bg3 background, border, normal text — not red
                         val dw2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
                         Box(
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                                .border(1.dp, dw2.border, RoundedCornerShape(6.dp))
-                                .clickable(onClick = onCancel)
-                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        RoundedCornerShape(6.dp),
+                                    )
+                                    .border(1.dp, dw2.border, RoundedCornerShape(6.dp))
+                                    .clickable(onClick = onCancel)
+                                    .padding(horizontal = 10.dp, vertical = 3.dp),
                         ) {
-                            Text("✕ ${stringResource(R.string.action_cancel)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                "✕ ${stringResource(R.string.action_cancel)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
                         }
                     }
                     Spacer(Modifier.weight(1f))
                     if (showApprove) {
                         TextButton(
                             onClick = onApprove,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        ) { Text("✓ ${stringResource(R.string.action_approve)}", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold) }
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 2.dp,
+                                ),
+                        ) {
+                            Text(
+                                "✓ ${stringResource(R.string.action_approve)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFF59E0B),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
                     // Pin button — 📌 when pinned (yellow), 📍 when not (dim)
                     TextButton(
                         onClick = onTogglePin,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 2.dp,
+                            ),
                     ) {
                         Text(
                             if (pinned) "📌" else "📍",
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (pinned) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            color =
+                                if (pinned) {
+                                    Color(
+                                        0xFFF59E0B,
+                                    )
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                },
                         )
                     }
                 }
                 // Stories envelope — always visible, matches PWA <details> (shows "no stories yet" when empty)
                 var storiesExpanded by remember(prd.id) { mutableStateOf(false) }
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
-                        .clickable { storiesExpanded = !storiesExpanded }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .clickable { storiesExpanded = !storiesExpanded }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -712,7 +931,12 @@ private fun PrdRow(
                 }
                 if (storiesExpanded) {
                     if (prd.stories.isEmpty()) {
-                        Text("no stories yet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
+                        Text(
+                            "no stories yet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+                        )
                     } else {
                         Column(modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)) {
                             prd.stories.forEach { story ->
@@ -726,19 +950,25 @@ private fun PrdRow(
                                         modifier = Modifier.weight(1f),
                                         maxLines = 1,
                                     )
-                                    val sColor = when (story.status.lowercase()) {
-                                        "complete", "completed" -> Color(0xFF10B981)
-                                        "in_progress", "running" -> Color(0xFF3B82F6)
-                                        "awaiting_approval", "needs_review" -> Color(0xFFF59E0B)
-                                        "rejected", "cancelled" -> Color(0xFFEF4444)
-                                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    }
+                                    val sColor =
+                                        when (story.status.lowercase()) {
+                                            "complete", "completed" -> Color(0xFF10B981)
+                                            "in_progress", "running" -> Color(0xFF3B82F6)
+                                            "awaiting_approval", "needs_review" -> Color(0xFFF59E0B)
+                                            "rejected", "cancelled" -> Color(0xFFEF4444)
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        }
                                     Box(
-                                        modifier = Modifier
-                                            .background(sColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                                        modifier =
+                                            Modifier
+                                                .background(sColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                                                .padding(horizontal = 5.dp, vertical = 1.dp),
                                     ) {
-                                        Text(story.status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = sColor)
+                                        Text(
+                                            story.status.lowercase().replace('_', ' '),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = sColor,
+                                        )
                                     }
                                 }
                             }
@@ -764,7 +994,10 @@ private fun PrdRow(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { onReject(inputText.trim()); rejectDialogOpen = false }) {
+                TextButton(onClick = {
+                    onReject(inputText.trim())
+                    rejectDialogOpen = false
+                }) {
                     Text(stringResource(R.string.action_reject))
                 }
             },
@@ -789,7 +1022,10 @@ private fun PrdRow(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { onRevise(inputText.trim()); reviseDialogOpen = false }) {
+                TextButton(onClick = {
+                    onRevise(inputText.trim())
+                    reviseDialogOpen = false
+                }) {
                     Text("↩ Revise")
                 }
             },
@@ -804,24 +1040,31 @@ private fun PrdRow(
 private fun StatusPill(status: String) {
     val color = prdStatusColor(status)
     Box(
-        modifier = Modifier
-            .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
-            .border(1.dp, color, RoundedCornerShape(10.dp))
-            .padding(horizontal = 7.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+                .border(1.dp, color, RoundedCornerShape(10.dp))
+                .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
-        Text(status.lowercase().replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = color, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+        Text(
+            status.lowercase().replace('_', ' '),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+        )
     }
 }
 
 @Composable
 internal fun TypeBadge(type: String) {
-    val color = when (type.lowercase()) {
-        "software" -> Color(0xFF6366F1)
-        "research" -> Color(0xFFF59E0B)
-        "operational" -> Color(0xFF10B981)
-        "personal" -> Color(0xFFEC4899)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val color =
+        when (type.lowercase()) {
+            "software" -> Color(0xFF6366F1)
+            "research" -> Color(0xFFF59E0B)
+            "operational" -> Color(0xFF10B981)
+            "personal" -> Color(0xFFEC4899)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Box(
         Modifier
             .background(color.copy(alpha = 0.13f), RoundedCornerShape(8.dp))
@@ -844,46 +1087,49 @@ internal fun LifecycleStrip(
     onCancel: (() -> Unit)? = null,
 ) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
-    val accent = MaterialTheme.colorScheme.primary   // #7C3AED = var(--accent)
-    val success = dw.success                          // #10B981 = var(--success)
+    val accent = MaterialTheme.colorScheme.primary // #7C3AED = var(--accent)
+    val success = dw.success // #10B981 = var(--success)
     val statusLower = status.lowercase()
     val isDanger = statusLower in setOf("rejected", "cancelled", "blocked", "archived")
     val isRunning = statusLower == "running"
 
     // 5-step lifecycle matching PWA: Plan(0) → Review(1) → Approve(2) → Run(3) → Done(4)
-    val currentIndex = when {
-        isDanger -> 4
-        statusLower in setOf("draft", "planning", "revisions_asked", "decomposing") -> 0
-        statusLower in setOf("needs_review", "awaiting_approval") -> 1
-        statusLower == "approved" -> 2
-        statusLower == "running" -> 3
-        statusLower in setOf("complete", "completed") -> 4
-        else -> -1
-    }
+    val currentIndex =
+        when {
+            isDanger -> 4
+            statusLower in setOf("draft", "planning", "revisions_asked", "decomposing") -> 0
+            statusLower in setOf("needs_review", "awaiting_approval") -> 1
+            statusLower == "approved" -> 2
+            statusLower == "running" -> 3
+            statusLower in setOf("complete", "completed") -> 4
+            else -> -1
+        }
     if (currentIndex == -1) return
 
-    val hintText = when {
-        statusLower in setOf("draft", "revisions_asked") -> "Next: Plan — break your spec into stories + tasks"
-        statusLower == "decomposing" -> "Planning… review will become available shortly"
-        statusLower in setOf("needs_review", "awaiting_approval") -> "Next: Review the plan and Approve / Reject / Revise"
-        statusLower == "approved" -> "Next: Run the approved automaton"
-        statusLower == "running" -> "Running — Cancel if needed"
-        statusLower in setOf("complete", "completed") -> "✓ Completed"
-        statusLower == "rejected" -> "✗ Rejected"
-        statusLower == "cancelled" -> "Cancelled"
-        statusLower == "archived" -> "Archived"
-        else -> null
-    }
+    val hintText =
+        when {
+            statusLower in setOf("draft", "revisions_asked") -> "Next: Plan — break your spec into stories + tasks"
+            statusLower == "decomposing" -> "Planning… review will become available shortly"
+            statusLower in setOf("needs_review", "awaiting_approval") -> "Next: Review the plan and Approve / Reject / Revise"
+            statusLower == "approved" -> "Next: Run the approved automaton"
+            statusLower == "running" -> "Running — Cancel if needed"
+            statusLower in setOf("complete", "completed") -> "✓ Completed"
+            statusLower == "rejected" -> "✗ Rejected"
+            statusLower == "cancelled" -> "Cancelled"
+            statusLower == "archived" -> "Archived"
+            else -> null
+        }
 
     Column(modifier = Modifier.padding(top = 4.dp)) {
         // Hint text: uppercase + accent color, matching PWA .lifecycle-strip-current
         hintText?.let {
             Text(
                 it.uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.4.sp,
-                ),
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.4.sp,
+                    ),
                 color = accent,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
@@ -891,13 +1137,14 @@ internal fun LifecycleStrip(
 
         data class Step(val baseLabel: String, val activeLabel: String, val onClick: (() -> Unit)?)
         val planLabel = if (statusLower == "revisions_asked") "Re-plan" else "Plan"
-        val steps = listOf(
-            Step("Plan", "▶ $planLabel", onPlan),
-            Step("Review", "Review", null),
-            Step("Approve", "Approve", if (!isRunning) onApprove else null),
-            Step("Run", if (isRunning) "■ Cancel" else "▶ Run", if (isRunning) onCancel else onRun),
-            Step("Done", "Done", null),
-        )
+        val steps =
+            listOf(
+                Step("Plan", "▶ $planLabel", onPlan),
+                Step("Review", "Review", null),
+                Step("Approve", "Approve", if (!isRunning) onApprove else null),
+                Step("Run", if (isRunning) "■ Cancel" else "▶ Run", if (isRunning) onCancel else onRun),
+                Step("Done", "Done", null),
+            )
         val shape = RoundedCornerShape(6.dp)
 
         Row(
@@ -967,11 +1214,12 @@ internal fun LifecycleStrip(
                 val clickHandler = if (isActive) step.onClick else null
 
                 Box(
-                    modifier = Modifier
-                        .background(bgColor, shape)
-                        .then(if (borderColor != null) Modifier.border(1.dp, borderColor, shape) else Modifier)
-                        .then(if (clickHandler != null) Modifier.clickable(onClick = clickHandler) else Modifier)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .background(bgColor, shape)
+                            .then(if (borderColor != null) Modifier.border(1.dp, borderColor, shape) else Modifier)
+                            .then(if (clickHandler != null) Modifier.clickable(onClick = clickHandler) else Modifier)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(
                         label,
@@ -990,24 +1238,34 @@ internal fun LifecycleStrip(
             if (isApprovalState(statusLower) && (onReject != null || onRevise != null)) {
                 onReject?.let { handler ->
                     Box(
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .background(Color(0xFFEF4444).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                            .clickable(onClick = handler)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier =
+                            Modifier
+                                .padding(start = 4.dp)
+                                .background(Color(0xFFEF4444).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .clickable(onClick = handler)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
                         Text("✗", fontSize = 11.sp, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
                     }
                 }
                 onRevise?.let { handler ->
                     Box(
-                        modifier = Modifier
-                            .padding(start = 2.dp)
-                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                            .clickable(onClick = handler)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier =
+                            Modifier
+                                .padding(start = 2.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .clickable(onClick = handler)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
-                        Text("↩", fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
+                        Text(
+                            "↩",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                 }
             }
@@ -1057,15 +1315,31 @@ private fun AutonomousServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)))
-            Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server), modifier = Modifier.padding(start = 4.dp))
+            Text(
+                if (allMode) {
+                    stringResource(
+                        R.string.sessions_all_servers,
+                    )
+                } else {
+                    (active?.displayName ?: stringResource(R.string.sessions_no_server))
+                },
+            )
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = stringResource(R.string.sessions_switch_server),
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
         DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
             if (profiles.size > 1) {
                 DropdownMenuItem(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Text(
+                                stringResource(R.string.sessions_all_servers),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
                             if (allMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
                         }
                     },
@@ -1074,7 +1348,11 @@ private fun AutonomousServerPickerTitle(
                 HorizontalDivider()
             }
             if (profiles.isEmpty()) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = onDismiss, enabled = false)
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.sessions_no_servers)) },
+                    onClick = onDismiss,
+                    enabled = false,
+                )
             } else {
                 profiles.forEach { p ->
                     DropdownMenuItem(
@@ -1083,9 +1361,19 @@ private fun AutonomousServerPickerTitle(
                                 AutonomousStatusDot(enabled = p.enabled)
                                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                                     Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        p.baseUrl,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
-                                if (p.id == active?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                if (p.id == active?.id) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        "Active",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         },
                         onClick = { onSelect(p.id) },
@@ -1104,17 +1392,22 @@ private fun AutonomousStatusDot(enabled: Boolean) {
 
 /** Action button matching PWA .automata-action-btn — border pill, accent when active. */
 @Composable
-private fun AutomataActionBtn(label: String, active: Boolean, onClick: () -> Unit) {
+private fun AutomataActionBtn(
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit,
+) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
     val accent = MaterialTheme.colorScheme.primary
-    val tintBg = Color(0xFF60A5FA).copy(alpha = 0.1f)  // .automata-action-btn.active bg
+    val tintBg = Color(0xFF60A5FA).copy(alpha = 0.1f) // .automata-action-btn.active bg
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(width = 32.dp, height = 28.dp)
-            .background(if (active) tintBg else Color.Transparent, RoundedCornerShape(6.dp))
-            .border(1.dp, if (active) accent else dw.border, RoundedCornerShape(6.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .size(width = 32.dp, height = 28.dp)
+                .background(if (active) tintBg else Color.Transparent, RoundedCornerShape(6.dp))
+                .border(1.dp, if (active) accent else dw.border, RoundedCornerShape(6.dp))
+                .clickable(onClick = onClick),
     ) {
         Text(label, fontSize = 13.sp, color = if (active) accent else MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -1127,15 +1420,16 @@ private fun AutonomousTab(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val accent = MaterialTheme.colorScheme.primary               // #7C3AED = var(--accent)
-    val activeBg = Color(0xFF60A5FA).copy(alpha = 0.12f)        // rgba(96,165,250,0.12) = active tint
+    val accent = MaterialTheme.colorScheme.primary // #7C3AED = var(--accent)
+    val activeBg = Color(0xFF60A5FA).copy(alpha = 0.12f) // rgba(96,165,250,0.12) = active tint
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .background(if (selected) activeBg else Color.Transparent, RoundedCornerShape(6.dp))
-            .border(1.dp, if (selected) accent else Color.Transparent, RoundedCornerShape(6.dp))
-            .padding(horizontal = 14.dp, vertical = 5.dp),
+        modifier =
+            Modifier
+                .clickable(onClick = onClick)
+                .background(if (selected) activeBg else Color.Transparent, RoundedCornerShape(6.dp))
+                .border(1.dp, if (selected) accent else Color.Transparent, RoundedCornerShape(6.dp))
+                .padding(horizontal = 14.dp, vertical = 5.dp),
     ) {
         Text(
             label,

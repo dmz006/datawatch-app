@@ -47,6 +47,7 @@ public class AutoMonitorScreen(
     private var isLoading: Boolean = true
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     // Track last snapshot hash to skip redundant invalidate() calls (standard §15).
     private var lastRowsHash: Int = -1
 
@@ -61,7 +62,10 @@ public class AutoMonitorScreen(
 
     init {
         // Eager fetch so the first onGetTemplate() render shows real data, not "No enabled servers".
-        scope.launch { refresh(); invalidate() }
+        scope.launch {
+            refresh()
+            invalidate()
+        }
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
@@ -107,12 +111,17 @@ public class AutoMonitorScreen(
                 val statsResult = transport.stats()
                 val liveSessions = transport.listSessions().getOrNull()
                 val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
-                val result = statsResult.fold(
-                    onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts) },
-                    onFailure = { err ->
-                        ServerRow(forcedProfile, error = err.message ?: err::class.simpleName ?: "error", sessionCounts = counts)
-                    },
-                )
+                val result =
+                    statsResult.fold(
+                        onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts) },
+                        onFailure = { err ->
+                            ServerRow(
+                                forcedProfile,
+                                error = err.message ?: err::class.simpleName ?: "error",
+                                sessionCounts = counts,
+                            )
+                        },
+                    )
                 serverRows = listOf(result)
                 return
             }
@@ -123,22 +132,27 @@ public class AutoMonitorScreen(
                 return
             }
             // B28: fetch stats + session counts for all enabled servers in parallel.
-            val rows = coroutineScope {
-                enabled.map { p ->
-                    async {
-                        val transport = AutoServiceLocator.transportFor(p)
-                        val statsResult = transport.stats()
-                        val liveSessions = transport.listSessions().getOrNull()
-                        val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
-                        statsResult.fold(
-                            onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts) },
-                            onFailure = { err ->
-                                ServerRow(p, error = err.message ?: err::class.simpleName ?: "error", sessionCounts = counts)
-                            },
-                        )
-                    }
-                }.awaitAll()
-            }
+            val rows =
+                coroutineScope {
+                    enabled.map { p ->
+                        async {
+                            val transport = AutoServiceLocator.transportFor(p)
+                            val statsResult = transport.stats()
+                            val liveSessions = transport.listSessions().getOrNull()
+                            val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
+                            statsResult.fold(
+                                onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts) },
+                                onFailure = { err ->
+                                    ServerRow(
+                                        p,
+                                        error = err.message ?: err::class.simpleName ?: "error",
+                                        sessionCounts = counts,
+                                    )
+                                },
+                            )
+                        }
+                    }.awaitAll()
+                }
             serverRows = rows
         } catch (e: Throwable) {
             serverRows = emptyList()
@@ -147,17 +161,21 @@ public class AutoMonitorScreen(
         }
     }
 
-    private fun buildSessionCounts(stats: StatsDto?, sessions: List<Session>?): Triple<Int, Int, Int>? = when {
-        stats != null && stats.sessionsTotal > 0 ->
-            Triple(stats.sessionsTotal, stats.sessionsRunning, stats.sessionsWaiting)
-        sessions != null ->
-            Triple(
-                sessions.size,
-                sessions.count { it.state == SessionState.Running },
-                sessions.count { it.state == SessionState.Waiting || it.state == SessionState.RateLimited },
-            )
-        else -> null
-    }
+    private fun buildSessionCounts(
+        stats: StatsDto?,
+        sessions: List<Session>?,
+    ): Triple<Int, Int, Int>? =
+        when {
+            stats != null && stats.sessionsTotal > 0 ->
+                Triple(stats.sessionsTotal, stats.sessionsRunning, stats.sessionsWaiting)
+            sessions != null ->
+                Triple(
+                    sessions.size,
+                    sessions.count { it.state == SessionState.Running },
+                    sessions.count { it.state == SessionState.Waiting || it.state == SessionState.RateLimited },
+                )
+            else -> null
+        }
 
     override fun onGetTemplate(): Template {
         val items = ItemList.Builder()
@@ -184,11 +202,15 @@ public class AutoMonitorScreen(
             if (s != null) {
                 // forcedProfile = non-null means this is a depth-3 Monitor2 screen (multi-server drill-down).
                 // Pop self before pushing SessionList so the path stays within the 5-screen limit.
-                val onSessions: () -> Unit = if (forcedProfile != null) {
-                    { screenManager.pop(); screenManager.push(AutoSessionListScreen(carContext)) }
-                } else {
-                    { screenManager.push(AutoSessionListScreen(carContext)) }
-                }
+                val onSessions: () -> Unit =
+                    if (forcedProfile != null) {
+                        {
+                            screenManager.pop()
+                            screenManager.push(AutoSessionListScreen(carContext))
+                        }
+                    } else {
+                        { screenManager.push(AutoSessionListScreen(carContext)) }
+                    }
                 addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts)
             } else {
                 items.addItem(
@@ -228,11 +250,11 @@ public class AutoMonitorScreen(
                 )
             }
         }
+
         // ActionStrip on ListTemplate in MESSAGING category must be icon-only — titled strip
         // actions cause a "can't do that while driving" validation error on some head units.
         // Sessions navigation is also reachable via the "Sessions" row in addDetailRows().
-        fun iconOf(resId: Int) =
-            CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+        fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =
             ActionStrip.Builder()
                 .addAction(
@@ -267,7 +289,10 @@ public class AutoMonitorScreen(
 private const val PROGRESS_BAR_WIDTH: Int = 10
 
 /** Renders a compact progress bar: "▓▓▓░░░░░░░ 28%" (10 wide). */
-private fun progressBar(pct: Int, width: Int = PROGRESS_BAR_WIDTH): String {
+private fun progressBar(
+    pct: Int,
+    width: Int = PROGRESS_BAR_WIDTH,
+): String {
     val clamped = pct.coerceIn(0, PCT_MULTIPLIER)
     val filled = (clamped * width / PCT_MULTIPLIER).coerceIn(0, width)
     return "▓".repeat(filled) + "░".repeat(width - filled) + " $clamped%"
@@ -338,7 +363,11 @@ private fun addDetailRows(
         items.addItem(
             Row.Builder()
                 .setTitle("GPU VRAM")
-                .addText("${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}")
+                .addText(
+                    "${progressBar(
+                        vramPct,
+                    )}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+                )
                 .build(),
         )
     }
@@ -356,7 +385,10 @@ private fun addDetailRows(
 }
 
 /** Compact one-liner summary for multi-server mode: "CPU 45% · Mem 8.2/16 GB · 3 sessions". */
-private fun buildServerSummary(s: StatsDto, sessionCounts: Triple<Int, Int, Int>? = null): String {
+private fun buildServerSummary(
+    s: StatsDto,
+    sessionCounts: Triple<Int, Int, Int>? = null,
+): String {
     val parts = mutableListOf<String>()
     val load1 = s.cpuLoad1
     val cores = s.cpuCores

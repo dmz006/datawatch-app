@@ -374,24 +374,26 @@ public class SessionDetailViewModel(
             // Strip trailing CR before matching: QuickCommandsSheet.onSend appends "\r"
             // for shell execution, which would otherwise break ESC/arrow/page-key detection.
             val stripped = text.trimEnd('\r')
-            val sendKeyName = when (stripped) {
-                "[A", "[A" -> "Up"
-                "[B", "[B" -> "Down"
-                "[C", "[C" -> "Right"
-                "[D", "[D" -> "Left"
-                ""         -> "Escape"
-                "\t"           -> "Tab"
-                "[5~"    -> "PgUp"
-                "[6~"   -> "PgDn"
-                else           -> null
-            }
-            val ok = if (sendKeyName != null) {
-                com.dmzs.datawatchclient.transport.ws.WsOutbound
-                    .sendCommand(sessionId, "sendkey $sessionId: $sendKeyName")
-            } else {
-                com.dmzs.datawatchclient.transport.ws.WsOutbound
-                    .sendInput(sessionId, text)
-            }
+            val sendKeyName =
+                when (stripped) {
+                    "[A", "[A" -> "Up"
+                    "[B", "[B" -> "Down"
+                    "[C", "[C" -> "Right"
+                    "[D", "[D" -> "Left"
+                    "" -> "Escape"
+                    "\t" -> "Tab"
+                    "[5~" -> "PgUp"
+                    "[6~" -> "PgDn"
+                    else -> null
+                }
+            val ok =
+                if (sendKeyName != null) {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendCommand(sessionId, "sendkey $sessionId: $sendKeyName")
+                } else {
+                    com.dmzs.datawatchclient.transport.ws.WsOutbound
+                        .sendInput(sessionId, text)
+                }
             _replying.value = false
             if (!ok) {
                 _banner.value = "Quick reply failed: WS not connected."

@@ -54,7 +54,10 @@ internal fun PushNotificationsCard() {
 
     suspend fun reload() {
         transport()?.listWebPushRegistrations()
-            ?.onSuccess { registrations = it.registrations; banner = null }
+            ?.onSuccess {
+                registrations = it.registrations
+                banner = null
+            }
             ?.onFailure { banner = it.message }
     }
 
@@ -86,7 +89,12 @@ internal fun PushNotificationsCard() {
         }
 
         banner?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
         }
 
         // Register new endpoint
@@ -107,7 +115,10 @@ internal fun PushNotificationsCard() {
                     scope.launch {
                         registering = true
                         transport()?.addWebPushRegistration(endpointInput.trim())
-                            ?.onSuccess { endpointInput = ""; reload() }
+                            ?.onSuccess {
+                                endpointInput = ""
+                                reload()
+                            }
                             ?.onFailure { banner = it.message }
                         registering = false
                     }
@@ -157,7 +168,11 @@ internal fun PushNotificationsCard() {
                                 ?.onFailure { banner = it.message }
                         }
                     }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Unregister", tint = MaterialTheme.colorScheme.error)
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Unregister",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
                     }
                 }
                 HorizontalDivider()

@@ -43,9 +43,17 @@ internal fun PipelineManagerCard() {
 
     suspend fun load() {
         loading = true
-        val activeId = ServiceLocator.activeServerStore.get() ?: run { loading = false; return }
-        val sp = ServiceLocator.profileRepository.observeAll().first()
-            .firstOrNull { it.id == activeId && it.enabled } ?: run { loading = false; return }
+        val activeId =
+            ServiceLocator.activeServerStore.get() ?: run {
+                loading = false
+                return
+            }
+        val sp =
+            ServiceLocator.profileRepository.observeAll().first()
+                .firstOrNull { it.id == activeId && it.enabled } ?: run {
+                loading = false
+                return
+            }
         ServiceLocator.transportFor(sp).getPipelines()
             .onSuccess { pipelines = it }
         loading = false
@@ -54,14 +62,19 @@ internal fun PipelineManagerCard() {
     LaunchedEffect(Unit) { runCatching { load() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(stringResource(R.string.pipeline_manager_title), modifier = Modifier.weight(1f), docsAnchor = "pipeline-manager")
+            PwaSectionTitle(
+                stringResource(R.string.pipeline_manager_title),
+                modifier = Modifier.weight(1f),
+                docsAnchor = "pipeline-manager",
+            )
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
 
@@ -89,14 +102,18 @@ internal fun PipelineManagerCard() {
 }
 
 @Composable
-private fun PipelineRow(p: PipelineListItemDto, onCancel: () -> Unit) {
-    val statusColor = when (p.state) {
-        "running" -> Color(0xFF6366F1)
-        "completed" -> Color(0xFF10B981)
-        "failed" -> MaterialTheme.colorScheme.error
-        "cancelled" -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+private fun PipelineRow(
+    p: PipelineListItemDto,
+    onCancel: () -> Unit,
+) {
+    val statusColor =
+        when (p.state) {
+            "running" -> Color(0xFF6366F1)
+            "completed" -> Color(0xFF10B981)
+            "failed" -> MaterialTheme.colorScheme.error
+            "cancelled" -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     val tasksDone = p.tasks.count { it.state == "completed" }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

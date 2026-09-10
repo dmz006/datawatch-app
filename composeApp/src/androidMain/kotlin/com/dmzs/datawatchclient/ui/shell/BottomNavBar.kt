@@ -100,17 +100,19 @@ internal fun BottomNavBar(
                             BadgedBox(
                                 badge = {
                                     Badge(
-                                        containerColor = if (alertsMuted || alertsBadge == 0) {
-                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                        } else {
-                                            MaterialTheme.colorScheme.error
-                                        },
+                                        containerColor =
+                                            if (alertsMuted || alertsBadge == 0) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                            } else {
+                                                MaterialTheme.colorScheme.error
+                                            },
                                     ) {
-                                        val label = when {
-                                            alertsMuted -> "🔕"
-                                            alertsBadge > 0 -> alertsBadge.toString()
-                                            else -> ""
-                                        }
+                                        val label =
+                                            when {
+                                                alertsMuted -> "🔕"
+                                                alertsBadge > 0 -> alertsBadge.toString()
+                                                else -> ""
+                                            }
                                         if (label.isNotEmpty()) {
                                             Text(label, style = MaterialTheme.typography.labelSmall)
                                         }

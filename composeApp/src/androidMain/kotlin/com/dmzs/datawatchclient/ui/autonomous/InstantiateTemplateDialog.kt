@@ -32,12 +32,14 @@ internal fun InstantiateTemplateDialog(
     onDismiss: () -> Unit,
     onInstantiate: (InstantiateTemplateRequestDto) -> Unit,
 ) {
-    val varNames = remember(template.spec) {
-        VAR_REGEX.findAll(template.spec).map { it.groupValues[1] }.toSortedSet().toList()
-    }
-    val varValues: SnapshotStateMap<String, String> = remember(varNames) {
-        varNames.associateWith { "" }.entries.map { it.toPair() }.toMutableStateMap()
-    }
+    val varNames =
+        remember(template.spec) {
+            VAR_REGEX.findAll(template.spec).map { it.groupValues[1] }.toSortedSet().toList()
+        }
+    val varValues: SnapshotStateMap<String, String> =
+        remember(varNames) {
+            varNames.associateWith { "" }.entries.map { it.toPair() }.toMutableStateMap()
+        }
     var projectDir by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -45,14 +47,17 @@ internal fun InstantiateTemplateDialog(
         title = { Text("${stringResource(R.string.tmpl_instantiate)}: ${template.title}") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 OutlinedTextField(
-                    value = projectDir, onValueChange = { projectDir = it },
+                    value = projectDir,
+                    onValueChange = { projectDir = it },
                     label = { Text(stringResource(R.string.new_prd_project_dir_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 if (varNames.isNotEmpty()) {
                     Text(

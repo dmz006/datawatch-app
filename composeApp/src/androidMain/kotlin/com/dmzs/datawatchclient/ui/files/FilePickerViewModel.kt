@@ -37,6 +37,7 @@ public class FilePickerViewModel : ViewModel() {
         overrideProfileId = id
         browse(null)
     }
+
     public data class UiState(
         val path: String? = null,
         val entries: List<FileEntry> = emptyList(),
@@ -149,15 +150,16 @@ public class FilePickerViewModel : ViewModel() {
     private suspend fun resolveActiveProfile(): ServerProfile? {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val overrideId = overrideProfileId
-        val profile = if (overrideId != null) {
-            profiles.firstOrNull { it.id == overrideId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-        } else {
-            val activeId = ServiceLocator.activeServerStore.get()
-            profiles.firstOrNull {
-                it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-            } ?: profiles.firstOrNull { it.enabled }
-        }
+        val profile =
+            if (overrideId != null) {
+                profiles.firstOrNull { it.id == overrideId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            } else {
+                val activeId = ServiceLocator.activeServerStore.get()
+                profiles.firstOrNull {
+                    it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+                } ?: profiles.firstOrNull { it.enabled }
+            }
         if (profile == null) {
             _state.value = UiState(banner = "No enabled server to browse.")
         }

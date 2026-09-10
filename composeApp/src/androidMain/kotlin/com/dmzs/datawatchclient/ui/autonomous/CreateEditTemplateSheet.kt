@@ -38,34 +38,45 @@ internal fun CreateEditTemplateSheet(
         title = { Text(stringResource(if (template != null) R.string.tmpl_edit else R.string.tmpl_create)) },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 OutlinedTextField(
-                    value = title, onValueChange = { title = it },
+                    value = title,
+                    onValueChange = { title = it },
                     label = { Text(stringResource(R.string.tmpl_title_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = spec, onValueChange = { spec = it },
+                    value = spec,
+                    onValueChange = { spec = it },
                     label = { Text(stringResource(R.string.tmpl_spec_label)) },
-                    minLines = 3, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    minLines = 3,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
                 OutlinedTextField(
-                    value = type, onValueChange = { type = it },
+                    value = type,
+                    onValueChange = { type = it },
                     label = { Text(stringResource(R.string.tmpl_type_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
                 OutlinedTextField(
-                    value = tags, onValueChange = { tags = it },
+                    value = tags,
+                    onValueChange = { tags = it },
                     label = { Text(stringResource(R.string.tmpl_tags_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
                 OutlinedTextField(
-                    value = description, onValueChange = { description = it },
+                    value = description,
+                    onValueChange = { description = it },
                     label = { Text(stringResource(R.string.tmpl_description_label)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
             }
         },

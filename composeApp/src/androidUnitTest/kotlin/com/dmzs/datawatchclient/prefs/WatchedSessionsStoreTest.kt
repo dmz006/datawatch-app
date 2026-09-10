@@ -77,25 +77,27 @@ class WatchedSessionsStoreTest {
     }
 
     @Test
-    fun `watchedFlow_emitsInitialState`() = runTest {
-        store.setWatched("p1", "sess-A", true)
-        store.watchedFlow("p1").test {
-            assertEquals(setOf("sess-A"), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+    fun `watchedFlow_emitsInitialState`() =
+        runTest {
+            store.setWatched("p1", "sess-A", true)
+            store.watchedFlow("p1").test {
+                assertEquals(setOf("sess-A"), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `watchedFlow_emitsOnChange`() = runTest {
-        store.watchedFlow("p1").test {
-            assertEquals(emptySet(), awaitItem()) // initial
-            store.setWatched("p1", "sess-X", true)
-            assertEquals(setOf("sess-X"), awaitItem())
-            store.setWatched("p1", "sess-X", false)
-            assertEquals(emptySet(), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+    fun `watchedFlow_emitsOnChange`() =
+        runTest {
+            store.watchedFlow("p1").test {
+                assertEquals(emptySet(), awaitItem()) // initial
+                store.setWatched("p1", "sess-X", true)
+                assertEquals(setOf("sess-X"), awaitItem())
+                store.setWatched("p1", "sess-X", false)
+                assertEquals(emptySet(), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 }
 
 /**
@@ -106,8 +108,10 @@ private class FakeSharedPreferences : SharedPreferences {
     private val map = mutableMapOf<String, Any?>()
     private val listeners = mutableListOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
-    override fun getStringSet(key: String, defValues: Set<String>?): Set<String>? =
-        (map[key] as? Set<*>)?.mapNotNull { it as? String }?.toSet() ?: defValues?.toSet()
+    override fun getStringSet(
+        key: String,
+        defValues: Set<String>?,
+    ): Set<String>? = (map[key] as? Set<*>)?.mapNotNull { it as? String }?.toSet() ?: defValues?.toSet()
 
     override fun edit(): SharedPreferences.Editor = Editor()
 
@@ -123,18 +127,42 @@ private class FakeSharedPreferences : SharedPreferences {
 
     // Unused overrides — WatchedSessionsStore only uses StringSet.
     override fun getAll(): Map<String, *> = map
-    override fun getString(key: String, defValue: String?): String? = map[key] as? String ?: defValue
-    override fun getInt(key: String, defValue: Int): Int = (map[key] as? Int) ?: defValue
-    override fun getLong(key: String, defValue: Long): Long = (map[key] as? Long) ?: defValue
-    override fun getFloat(key: String, defValue: Float): Float = (map[key] as? Float) ?: defValue
-    override fun getBoolean(key: String, defValue: Boolean): Boolean = (map[key] as? Boolean) ?: defValue
+
+    override fun getString(
+        key: String,
+        defValue: String?,
+    ): String? = map[key] as? String ?: defValue
+
+    override fun getInt(
+        key: String,
+        defValue: Int,
+    ): Int = (map[key] as? Int) ?: defValue
+
+    override fun getLong(
+        key: String,
+        defValue: Long,
+    ): Long = (map[key] as? Long) ?: defValue
+
+    override fun getFloat(
+        key: String,
+        defValue: Float,
+    ): Float = (map[key] as? Float) ?: defValue
+
+    override fun getBoolean(
+        key: String,
+        defValue: Boolean,
+    ): Boolean = (map[key] as? Boolean) ?: defValue
+
     override fun contains(key: String): Boolean = map.containsKey(key)
 
     inner class Editor : SharedPreferences.Editor {
         private val pending = mutableMapOf<String, Any?>()
         private val removals = mutableSetOf<String>()
 
-        override fun putStringSet(key: String, values: Set<String>?): SharedPreferences.Editor {
+        override fun putStringSet(
+            key: String,
+            values: Set<String>?,
+        ): SharedPreferences.Editor {
             pending[key] = values?.toSet()
             return this
         }
@@ -156,14 +184,37 @@ private class FakeSharedPreferences : SharedPreferences {
             changed.forEach { notify(it) }
         }
 
-        override fun commit(): Boolean { apply(); return true }
+        override fun commit(): Boolean {
+            apply()
+            return true
+        }
 
         // Unused
-        override fun putString(key: String, value: String?): SharedPreferences.Editor = this
-        override fun putInt(key: String, value: Int): SharedPreferences.Editor = this
-        override fun putLong(key: String, value: Long): SharedPreferences.Editor = this
-        override fun putFloat(key: String, value: Float): SharedPreferences.Editor = this
-        override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor = this
+        override fun putString(
+            key: String,
+            value: String?,
+        ): SharedPreferences.Editor = this
+
+        override fun putInt(
+            key: String,
+            value: Int,
+        ): SharedPreferences.Editor = this
+
+        override fun putLong(
+            key: String,
+            value: Long,
+        ): SharedPreferences.Editor = this
+
+        override fun putFloat(
+            key: String,
+            value: Float,
+        ): SharedPreferences.Editor = this
+
+        override fun putBoolean(
+            key: String,
+            value: Boolean,
+        ): SharedPreferences.Editor = this
+
         override fun clear(): SharedPreferences.Editor = this
     }
 }

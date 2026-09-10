@@ -26,8 +26,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
@@ -586,7 +586,10 @@ public fun SubsystemReloadCard() {
                     RELOAD_SUBSYSTEMS.forEach { sub ->
                         androidx.compose.material3.DropdownMenuItem(
                             text = { Text(sub) },
-                            onClick = { selected = sub; menuOpen = false },
+                            onClick = {
+                                selected = sub
+                                menuOpen = false
+                            },
                         )
                     }
                 }
@@ -615,11 +618,12 @@ public fun SubsystemReloadCard() {
                                         ?.mapNotNull {
                                             (it as? kotlinx.serialization.json.JsonPrimitive)?.content
                                         } ?: emptyList()
-                                banner = buildString {
-                                    append("Reloaded $selected.")
-                                    if (applied.isNotEmpty()) append(" Applied: ${applied.joinToString(", ")}.")
-                                    if (restart.isNotEmpty()) append(" Restart required: ${restart.joinToString(", ")}.")
-                                }
+                                banner =
+                                    buildString {
+                                        append("Reloaded $selected.")
+                                        if (applied.isNotEmpty()) append(" Applied: ${applied.joinToString(", ")}.")
+                                        if (restart.isNotEmpty()) append(" Restart required: ${restart.joinToString(", ")}.")
+                                    }
                             },
                             onFailure = {
                                 banner = "Reload failed — ${it.message ?: it::class.simpleName}"

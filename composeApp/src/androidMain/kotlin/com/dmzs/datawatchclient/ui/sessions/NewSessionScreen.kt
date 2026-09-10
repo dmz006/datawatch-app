@@ -48,9 +48,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -96,7 +96,10 @@ public fun NewSessionScreen(
             if (granted) {
                 val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
                 runCatching { r.start() }
-                    .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                    .onSuccess {
+                        voiceRecorder = r
+                        showVoiceDialog = true
+                    }
                     .onFailure { e ->
                         android.widget.Toast.makeText(
                             context,
@@ -124,7 +127,6 @@ public fun NewSessionScreen(
                 }.sortedByDescending { it.lastActivityAt }.take(30)
         }
     }
-
 
     // Claude-code advanced options — permission mode + model + effort.
     // Fetched from /api/llm/claude/{models,efforts,permission_modes} (v5.27.5+).
@@ -208,9 +210,10 @@ public fun NewSessionScreen(
         if (llm.kind.startsWith("opencode", ignoreCase = true)) {
             val node = llm.computeNodes.firstOrNull()?.takeIf { it.isNotBlank() }
             transport.fetchOpenCodeModels(node = node).onSuccess { resp ->
-                val groups = resp.models
-                    .groupBy { it.providerLabel.ifBlank { it.provider } }
-                    .mapValues { (_, list) -> list.map { it.id } }
+                val groups =
+                    resp.models
+                        .groupBy { it.providerLabel.ifBlank { it.provider } }
+                        .mapValues { (_, list) -> list.map { it.id } }
                 openCodeModelGroups = groups
                 // Pre-select the server-declared default if nothing chosen yet.
                 if (pickedNonClaudeModel.isBlank() && resp.defaultModel.isNotBlank()) {
@@ -302,7 +305,10 @@ public fun NewSessionScreen(
                 title = { Text(stringResource(R.string.new_session_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
                 actions = {
@@ -356,15 +362,23 @@ public fun NewSessionScreen(
                     Icon(
                         Icons.Filled.Mail,
                         contentDescription = stringResource(R.string.new_session_task_label),
-                        tint = if (taskExpanded || task.isNotBlank()) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint =
+                            if (taskExpanded || task.isNotBlank()) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                     )
                 }
                 Text(
                     stringResource(R.string.new_session_task_label),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (taskExpanded || task.isNotBlank()) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color =
+                        if (taskExpanded || task.isNotBlank()) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                 )
                 if (taskExpanded) {
@@ -380,7 +394,11 @@ public fun NewSessionScreen(
                             showVoiceDialog = false
                         },
                         onSend = {
-                            val r = voiceRecorder ?: run { showVoiceDialog = false; return@VoiceRecordingDialog }
+                            val r =
+                                voiceRecorder ?: run {
+                                    showVoiceDialog = false
+                                    return@VoiceRecordingDialog
+                                }
                             voiceRecorder = null
                             showVoiceDialog = false
                             val captured = r.stop() ?: return@VoiceRecordingDialog
@@ -425,16 +443,22 @@ public fun NewSessionScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
                             onClick = {
-                                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context, android.Manifest.permission.RECORD_AUDIO,
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                val granted =
+                                    androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context, android.Manifest.permission.RECORD_AUDIO,
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (granted) {
                                     val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
                                     runCatching { r.start() }
-                                        .onSuccess { voiceRecorder = r; showVoiceDialog = true }
+                                        .onSuccess {
+                                            voiceRecorder = r
+                                            showVoiceDialog = true
+                                        }
                                         .onFailure { e ->
                                             android.widget.Toast.makeText(
-                                                context, "Recording failed: ${e.message}", android.widget.Toast.LENGTH_SHORT,
+                                                context,
+                                                "Recording failed: ${e.message}",
+                                                android.widget.Toast.LENGTH_SHORT,
                                             ).show()
                                         }
                                 } else {
@@ -444,7 +468,11 @@ public fun NewSessionScreen(
                             enabled = !transcribingVoice,
                             modifier = Modifier.padding(top = 4.dp),
                         ) {
-                            Icon(Icons.Filled.Mic, contentDescription = "Voice input", tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Filled.Mic,
+                                contentDescription = "Voice input",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
                 }
@@ -494,10 +522,11 @@ public fun NewSessionScreen(
                 // Compute Node sub-picker — non-claude LLMs only, and only when nodes exist.
                 val isClaudeLlm = pickedLlm?.kind?.lowercase()?.contains("claude") == true
                 if (pickedLlm != null && !isClaudeLlm) {
-                    val allNodes = buildList {
-                        add(pickedLlm!!.computeNode)
-                        addAll(pickedLlm!!.computeNodes.filter { it != pickedLlm!!.computeNode })
-                    }.distinct().filter { it.isNotBlank() }
+                    val allNodes =
+                        buildList {
+                            add(pickedLlm!!.computeNode)
+                            addAll(pickedLlm!!.computeNodes.filter { it != pickedLlm!!.computeNode })
+                        }.distinct().filter { it.isNotBlank() }
                     if (allNodes.isNotEmpty()) {
                         Text(
                             stringResource(R.string.session_compute_node_label),
@@ -544,11 +573,13 @@ public fun NewSessionScreen(
                         selected = pickedNonClaudeEffort,
                         noneLabel = stringResource(R.string.new_session_config_default),
                         onSelect = { pickedNonClaudeEffort = it },
-                        modifier = Modifier.fillMaxWidth().padding(top = if (nonClaudeModels.isNotEmpty()) 8.dp else 12.dp),
+                        modifier =
+                            Modifier.fillMaxWidth().padding(
+                                top = if (nonClaudeModels.isNotEmpty()) 8.dp else 12.dp,
+                            ),
                     )
                 }
             }
-
 
             // Profile picker — maps to /api/profiles. Optional; users
             // can start "Default (no profile)" and the parent picks its
@@ -629,8 +660,9 @@ public fun NewSessionScreen(
 
             // Advanced claude-code options: show when a Claude LLM is explicitly picked, OR when
             // no LLM is picked and the server reports Claude options (default backend is Claude Code).
-            val isClaudeCode = pickedLlm?.kind?.lowercase()?.contains("claude") == true ||
-                (pickedLlm == null && claudeOptionsAvailable)
+            val isClaudeCode =
+                pickedLlm?.kind?.lowercase()?.contains("claude") == true ||
+                    (pickedLlm == null && claudeOptionsAvailable)
             if (claudeOptionsAvailable && isClaudeCode) {
                 Text(
                     stringResource(R.string.new_session_advanced_claude),
@@ -961,12 +993,18 @@ private fun SimpleDropdown(
         ) {
             DropdownMenuItem(
                 text = { Text(noneLabel) },
-                onClick = { onSelect(""); expanded = false },
+                onClick = {
+                    onSelect("")
+                    expanded = false
+                },
             )
             options.forEach { opt ->
                 DropdownMenuItem(
                     text = { Text(opt) },
-                    onClick = { onSelect(opt); expanded = false },
+                    onClick = {
+                        onSelect(opt)
+                        expanded = false
+                    },
                 )
             }
         }
@@ -1004,7 +1042,10 @@ private fun GroupedModelDropdown(
         ) {
             DropdownMenuItem(
                 text = { Text(noneLabel) },
-                onClick = { onSelect(""); expanded = false },
+                onClick = {
+                    onSelect("")
+                    expanded = false
+                },
             )
             groups.forEach { (groupLabel, models) ->
                 DropdownMenuItem(
@@ -1026,7 +1067,10 @@ private fun GroupedModelDropdown(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         },
-                        onClick = { onSelect(model); expanded = false },
+                        onClick = {
+                            onSelect(model)
+                            expanded = false
+                        },
                     )
                 }
             }
@@ -1158,7 +1202,6 @@ private fun ProfilePickerDropdown(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ServerPickerDropdown(
@@ -1247,7 +1290,10 @@ private fun LlmPickerDropdown(
         ) {
             DropdownMenuItem(
                 text = { Text(noneLabel) },
-                onClick = { onSelect(null); expanded = false },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
             )
             llms.forEach { llm ->
                 DropdownMenuItem(
@@ -1261,7 +1307,10 @@ private fun LlmPickerDropdown(
                             )
                         }
                     },
-                    onClick = { onSelect(llm); expanded = false },
+                    onClick = {
+                        onSelect(llm)
+                        expanded = false
+                    },
                 )
             }
         }
@@ -1283,14 +1332,20 @@ private fun ComputeNodePickerDropdown(
     onSelect: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    fun nodeLabel(index: Int, name: String): String = when (index) {
-        0 -> "$name $primaryLabel"
-        else -> "$name ${String.format(failoverFmt, index)}"
-    }
-    val displayValue = selected?.let { sel ->
-        val idx = nodes.indexOf(sel)
-        if (idx >= 0) nodeLabel(idx, sel) else sel
-    } ?: anyNodeLabel
+
+    fun nodeLabel(
+        index: Int,
+        name: String,
+    ): String =
+        when (index) {
+            0 -> "$name $primaryLabel"
+            else -> "$name ${String.format(failoverFmt, index)}"
+        }
+    val displayValue =
+        selected?.let { sel ->
+            val idx = nodes.indexOf(sel)
+            if (idx >= 0) nodeLabel(idx, sel) else sel
+        } ?: anyNodeLabel
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -1308,12 +1363,18 @@ private fun ComputeNodePickerDropdown(
         ) {
             DropdownMenuItem(
                 text = { Text(anyNodeLabel) },
-                onClick = { onSelect(null); expanded = false },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
             )
             nodes.forEachIndexed { idx, name ->
                 DropdownMenuItem(
                     text = { Text(nodeLabel(idx, name)) },
-                    onClick = { onSelect(name); expanded = false },
+                    onClick = {
+                        onSelect(name)
+                        expanded = false
+                    },
                 )
             }
         }

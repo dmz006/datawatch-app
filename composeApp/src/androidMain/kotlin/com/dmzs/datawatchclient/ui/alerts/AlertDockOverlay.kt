@@ -3,17 +3,16 @@ package com.dmzs.datawatchclient.ui.alerts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -70,13 +69,14 @@ public fun AlertDockOverlay(
     val total = alerts.size
 
     Box(
-        modifier = modifier
-            .wrapContentWidth(Alignment.End)
-            .padding(end = 8.dp, top = 8.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.97f),
-                shape = RoundedCornerShape(10.dp),
-            ),
+        modifier =
+            modifier
+                .wrapContentWidth(Alignment.End)
+                .padding(end = 8.dp, top = 8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.97f),
+                    shape = RoundedCornerShape(10.dp),
+                ),
     ) {
         Column(modifier = Modifier.widthIn(min = 220.dp, max = 420.dp)) {
             // Header row: pill + categories + chevron + dismiss + mute
@@ -86,13 +86,18 @@ public fun AlertDockOverlay(
             ) {
                 // Count pill
                 Box(
-                    modifier = Modifier
-                        .background(Color(0xFFD97706).copy(alpha = 0.20f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    modifier =
+                        Modifier
+                            .background(Color(0xFFD97706).copy(alpha = 0.20f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        text = if (total == 1) stringResource(R.string.alert_dock_one)
-                               else stringResource(R.string.alert_dock_many, total),
+                        text =
+                            if (total == 1) {
+                                stringResource(R.string.alert_dock_one)
+                            } else {
+                                stringResource(R.string.alert_dock_many, total)
+                            },
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp),
                         color = Color(0xFFD97706),
                     )
@@ -122,18 +127,31 @@ public fun AlertDockOverlay(
                 }
                 // Dismiss ✕ — hides dock header; re-appears on next batch
                 IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.alert_dock_dismiss), modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.alert_dock_dismiss),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 // Mute 🔕 — suppresses for session
                 IconButton(onClick = onMute, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Filled.NotificationsOff, contentDescription = stringResource(R.string.alert_dock_mute), modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.Filled.NotificationsOff,
+                        contentDescription = stringResource(R.string.alert_dock_mute),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
             // Expanded: scrolling alert list (last 100)
             AnimatedVisibility(visible = expanded) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp).padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(
+                            max = 280.dp,
+                        ).padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(alerts.take(100)) { alert ->
@@ -146,11 +164,15 @@ public fun AlertDockOverlay(
 }
 
 @Composable
-private fun CategoryPill(label: String, color: Color) {
+private fun CategoryPill(
+    label: String,
+    color: Color,
+) {
     Box(
-        modifier = Modifier
-            .background(color.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 5.dp, vertical = 1.dp),
+        modifier =
+            Modifier
+                .background(color.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 5.dp, vertical = 1.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = color)
     }
@@ -158,21 +180,23 @@ private fun CategoryPill(label: String, color: Color) {
 
 @Composable
 private fun DockAlertRow(alert: Alert) {
-    val railColor = when (alert.severity) {
-        AlertSeverity.Error -> Color(0xFFEF4444)
-        AlertSeverity.Warning -> Color(0xFFF59E0B)
-        else -> Color(0xFF10B981)
-    }
+    val railColor =
+        when (alert.severity) {
+            AlertSeverity.Error -> Color(0xFFEF4444)
+            AlertSeverity.Warning -> Color(0xFFF59E0B)
+            else -> Color(0xFF10B981)
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.Top,
     ) {
         // Per-type color rail — left edge stripe (Sprint 27 alpha.33)
         Box(
-            modifier = Modifier
-                .width(3.dp)
-                .fillMaxHeight()
-                .background(railColor, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+            modifier =
+                Modifier
+                    .width(3.dp)
+                    .fillMaxHeight()
+                    .background(railColor, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
         )
         Spacer(Modifier.width(6.dp))
         Column {

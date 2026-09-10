@@ -176,8 +176,9 @@ public class OrchestratorGraphViewModel(
                 _state.value = UiState(banner = "Load failed — ${listResult.exceptionOrNull()?.message}")
                 return@launch
             }
-            val matchingId = listResult.getOrNull()?.graphs
-                ?.firstOrNull { prdId in it.prdIds }?.id
+            val matchingId =
+                listResult.getOrNull()?.graphs
+                    ?.firstOrNull { prdId in it.prdIds }?.id
             if (matchingId == null) {
                 _state.value = UiState(banner = "No orchestrator graph found for this automaton")
                 return@launch

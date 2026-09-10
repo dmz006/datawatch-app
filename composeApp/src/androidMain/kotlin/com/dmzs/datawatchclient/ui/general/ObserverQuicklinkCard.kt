@@ -20,10 +20,11 @@ import com.dmzs.datawatchclient.ui.theme.pwaCard
 @Composable
 public fun ObserverQuicklinkCard(onNavigateToMonitor: () -> Unit) {
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             PwaSectionTitle(stringResource(R.string.observer_quicklink_title), docsAnchor = "federated-observer")

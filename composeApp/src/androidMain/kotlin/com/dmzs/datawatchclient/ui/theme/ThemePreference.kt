@@ -14,7 +14,10 @@ object ThemePrefs {
         return ThemeMode.entries.firstOrNull { it.name == stored } ?: DEFAULT
     }
 
-    fun save(context: Context, mode: ThemeMode) {
+    fun save(
+        context: Context,
+        mode: ThemeMode,
+    ) {
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             .edit().putString(KEY, mode.name).apply()
     }

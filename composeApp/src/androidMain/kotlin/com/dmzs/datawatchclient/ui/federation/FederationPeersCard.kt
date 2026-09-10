@@ -44,19 +44,24 @@ public fun FederationPeersCard() {
     var banner by remember { mutableStateOf<String?>(null) }
     var addOpen by remember { mutableStateOf(false) }
 
-    suspend fun activeTransport() = run {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val activeId = ServiceLocator.activeServerStore.get()
-        val profile = profiles.firstOrNull {
-            it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
-        } ?: profiles.firstOrNull { it.enabled }
-        profile?.let { ServiceLocator.transportFor(it) }
-    }
+    suspend fun activeTransport() =
+        run {
+            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val activeId = ServiceLocator.activeServerStore.get()
+            val profile =
+                profiles.firstOrNull {
+                    it.id == activeId && it.enabled && activeId != ActiveServerStore.SENTINEL_ALL_SERVERS
+                } ?: profiles.firstOrNull { it.enabled }
+            profile?.let { ServiceLocator.transportFor(it) }
+        }
 
     suspend fun reload() {
         val transport = activeTransport() ?: return
         transport.listRemoteServers().fold(
-            onSuccess = { peers = it; banner = null },
+            onSuccess = {
+                peers = it
+                banner = null
+            },
             onFailure = { banner = "Peers unavailable — ${it.message ?: it::class.simpleName}" },
         )
     }
@@ -151,7 +156,10 @@ public fun FederationPeersCard() {
 }
 
 @Composable
-private fun AddPeerDialog(onDismiss: () -> Unit, onSave: (RemoteServerDto) -> Unit) {
+private fun AddPeerDialog(
+    onDismiss: () -> Unit,
+    onSave: (RemoteServerDto) -> Unit,
+) {
     var name by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
@@ -165,19 +173,25 @@ private fun AddPeerDialog(onDismiss: () -> Unit, onSave: (RemoteServerDto) -> Un
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = name, onValueChange = { name = it },
+                    value = name,
+                    onValueChange = { name = it },
                     label = { Text("Name") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = url, onValueChange = { url = it },
+                    value = url,
+                    onValueChange = { url = it },
                     label = { Text("URL (e.g. https://host:8443)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = token, onValueChange = { token = it },
+                    value = token,
+                    onValueChange = { token = it },
                     label = { Text("Token (optional)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -197,9 +211,11 @@ private fun AddPeerDialog(onDismiss: () -> Unit, onSave: (RemoteServerDto) -> Un
                 }
                 if (federated) {
                     OutlinedTextField(
-                        value = capabilities, onValueChange = { capabilities = it },
+                        value = capabilities,
+                        onValueChange = { capabilities = it },
                         label = { Text("Capabilities (comma-separated)") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

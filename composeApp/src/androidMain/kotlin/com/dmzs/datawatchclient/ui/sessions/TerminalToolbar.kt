@@ -148,7 +148,10 @@ public fun TerminalToolbarControls(
                 )
                 DropdownMenuItem(
                     text = { Text("Fit", fontSize = 11.sp) },
-                    onClick = { controller.autoFitToWidth(); fontMenuOpen = false },
+                    onClick = {
+                        controller.autoFitToWidth()
+                        fontMenuOpen = false
+                    },
                 )
             }
         }
@@ -245,13 +248,14 @@ private fun BigScrollBtn(
         onClick = onClick,
         modifier = modifier.heightIn(min = 48.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
-        colors = if (highlight) {
-            ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary,
-            )
-        } else {
-            ButtonDefaults.outlinedButtonColors()
-        },
+        colors =
+            if (highlight) {
+                ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                ButtonDefaults.outlinedButtonColors()
+            },
     ) {
         Text(
             label,

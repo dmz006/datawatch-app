@@ -49,13 +49,20 @@ internal fun OrchestratorGraphsCard() {
     suspend fun load() {
         loading = true
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.firstOrNull { it.enabled }
-                else list.firstOrNull { it.id == activeId && it.enabled }
-                    ?: list.firstOrNull { it.enabled }
-            } ?: run { loading = false; return }
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.firstOrNull { it.enabled }
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                            ?: list.firstOrNull { it.enabled }
+                    }
+                } ?: run {
+                loading = false
+                return
+            }
         ServiceLocator.transportFor(sp).getOrchestratorGraphsList()
             .onSuccess { graphs = it.graphs }
         loading = false
@@ -64,21 +71,29 @@ internal fun OrchestratorGraphsCard() {
     LaunchedEffect(Unit) { runCatching { load() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            PwaSectionTitle(stringResource(R.string.orchestrator_graphs_title), modifier = Modifier.weight(1f), docsAnchor = "automata-orchestrator")
+            PwaSectionTitle(
+                stringResource(R.string.orchestrator_graphs_title),
+                modifier = Modifier.weight(1f),
+                docsAnchor = "automata-orchestrator",
+            )
             if (loading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
 
         // Create form
         OutlinedTextField(
             value = titleInput,
-            onValueChange = { titleInput = it; titleError = false },
+            onValueChange = {
+                titleInput = it
+                titleError = false
+            },
             label = { Text(stringResource(R.string.orchestrator_graph_title_hint)) },
             isError = titleError,
             supportingText = if (titleError) ({ Text(stringResource(R.string.orchestrator_title_required)) }) else null,
@@ -101,19 +116,28 @@ internal fun OrchestratorGraphsCard() {
         )
         Button(
             onClick = {
-                if (titleInput.isBlank()) { titleError = true; return@Button }
+                if (titleInput.isBlank()) {
+                    titleError = true
+                    return@Button
+                }
                 val prdIds = prdIdsInput.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.firstOrNull { it.enabled }
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                                    ?: list.firstOrNull { it.enabled }
-                            } ?: return@runCatching
-                        ServiceLocator.transportFor(sp).createOrchestratorGraph(titleInput.trim(), dirInput.trim(), prdIds)
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.firstOrNull { it.enabled }
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    }
+                                } ?: return@runCatching
+                        ServiceLocator.transportFor(
+                            sp,
+                        ).createOrchestratorGraph(titleInput.trim(), dirInput.trim(), prdIds)
                             .onSuccess {
                                 titleInput = ""
                                 dirInput = ""
@@ -143,13 +167,17 @@ internal fun OrchestratorGraphsCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).runOrchestratorGraph(g.id)
                                     .onSuccess { load() }
                             }
@@ -159,13 +187,17 @@ internal fun OrchestratorGraphsCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteOrchestratorGraph(g.id)
                                     .onSuccess { load() }
                             }
@@ -183,13 +215,14 @@ private fun OrchestratorGraphRow(
     onRun: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val statusColor = when (g.status) {
-        "running" -> Color(0xFF6366F1)
-        "done" -> Color(0xFF10B981)
-        "failed" -> MaterialTheme.colorScheme.error
-        "cancelled" -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val statusColor =
+        when (g.status) {
+            "running" -> Color(0xFF6366F1)
+            "done" -> Color(0xFF10B981)
+            "failed" -> MaterialTheme.colorScheme.error
+            "cancelled" -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -42,49 +42,79 @@ internal fun AutomataTypesCard() {
 
     suspend fun loadTypes() {
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.firstOrNull { it.enabled }
-                else list.firstOrNull { it.id == activeId && it.enabled }
-                    ?: list.firstOrNull { it.enabled }
-            } ?: return
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.firstOrNull { it.enabled }
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                            ?: list.firstOrNull { it.enabled }
+                    }
+                } ?: return
         ServiceLocator.transportFor(sp).listAutomataTypes().onSuccess { types = it }
     }
 
     LaunchedEffect(Unit) { runCatching { loadTypes() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle(stringResource(R.string.automata_type_registry_title), modifier = Modifier.weight(1f), docsAnchor = "automata")
+            PwaSectionTitle(
+                stringResource(R.string.automata_type_registry_title),
+                modifier = Modifier.weight(1f),
+                docsAnchor = "automata",
+            )
             IconButton(onClick = { createOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automata_type_create))
             }
         }
         if (types.isEmpty()) {
-            Text(stringResource(R.string.automata_type_create) + "…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                stringResource(R.string.automata_type_create) + "…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         } else {
             types.forEach { dt ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(dt.label.ifBlank { dt.id }, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    Text(dt.id, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        dt.label.ifBlank { dt.id },
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        dt.id,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
                     IconButton(onClick = {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.firstOrNull { it.enabled }
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                            ?: list.firstOrNull { it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.firstOrNull { it.enabled }
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                                    ?: list.firstOrNull { it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteAutomataType(dt.id).onSuccess { loadTypes() }
                             }
                         }
@@ -103,13 +133,17 @@ internal fun AutomataTypesCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.firstOrNull { it.enabled }
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                                    ?: list.firstOrNull { it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.firstOrNull { it.enabled }
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: list.firstOrNull { it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).registerAutomataType(req).onSuccess { loadTypes() }
                     }
                 }
@@ -120,7 +154,10 @@ internal fun AutomataTypesCard() {
 }
 
 @Composable
-private fun CreateTypeDialog(onDismiss: () -> Unit, onCreate: (AutomataTypeRequestDto) -> Unit) {
+private fun CreateTypeDialog(
+    onDismiss: () -> Unit,
+    onCreate: (AutomataTypeRequestDto) -> Unit,
+) {
     var id by remember { mutableStateOf("") }
     var label by remember { mutableStateOf("") }
     var color by remember { mutableStateOf("") }
@@ -130,14 +167,34 @@ private fun CreateTypeDialog(onDismiss: () -> Unit, onCreate: (AutomataTypeReque
         title = { Text(stringResource(R.string.automata_type_create)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(value = id, onValueChange = { id = it }, label = { Text(stringResource(R.string.automata_type_id_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text(stringResource(R.string.automata_type_label_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                OutlinedTextField(value = color, onValueChange = { color = it }, label = { Text(stringResource(R.string.automata_type_color_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                OutlinedTextField(value = id, onValueChange = {
+                    id = it
+                }, label = {
+                    Text(stringResource(R.string.automata_type_id_label))
+                }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = label, onValueChange = {
+                    label = it
+                }, label = {
+                    Text(stringResource(R.string.automata_type_label_label))
+                }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                OutlinedTextField(value = color, onValueChange = {
+                    color = it
+                }, label = {
+                    Text(stringResource(R.string.automata_type_color_label))
+                }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onCreate(AutomataTypeRequestDto(id = id.trim(), label = label.trim(), color = color.trim().ifBlank { null })) },
+                onClick = {
+                    onCreate(
+                        AutomataTypeRequestDto(
+                            id = id.trim(),
+                            label = label.trim(),
+                            color = color.trim().ifBlank { null },
+                        ),
+                    )
+                },
                 enabled = id.isNotBlank() && label.isNotBlank(),
             ) { Text(stringResource(R.string.action_create)) }
         },

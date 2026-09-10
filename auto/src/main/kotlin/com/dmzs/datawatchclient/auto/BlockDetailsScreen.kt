@@ -33,56 +33,75 @@ public class BlockDetailsScreen(
     private val sessionName: String,
     private val verdicts: List<GuardrailVerdictDto>,
 ) : Screen(carContext) {
-
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var focusRequest: AudioFocusRequest? = null
     private val audioManager = carContext.applicationContext.getSystemService(AudioManager::class.java)
 
-    private val tts: TextToSpeech = TextToSpeech(carContext.applicationContext) { status ->
-        if (status == TextToSpeech.SUCCESS) {
-            tts.language = java.util.Locale.getDefault()
-            tts.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String) {}
-                override fun onDone(utteranceId: String) { abandonAudioFocus() }
-                @Deprecated("replaced by onStop") override fun onError(utteranceId: String) { abandonAudioFocus() }
-                override fun onStop(utteranceId: String, interrupted: Boolean) { abandonAudioFocus() }
-            })
+    private val tts: TextToSpeech =
+        TextToSpeech(carContext.applicationContext) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts.language = java.util.Locale.getDefault()
+                tts.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                tts.setOnUtteranceProgressListener(
+                    object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String) {}
+
+                        override fun onDone(utteranceId: String) {
+                            abandonAudioFocus()
+                        }
+
+                        @Deprecated("replaced by onStop")
+                        override fun onError(utteranceId: String) {
+                            abandonAudioFocus()
+                        }
+
+                        override fun onStop(
+                            utteranceId: String,
+                            interrupted: Boolean,
+                        ) {
+                            abandonAudioFocus()
+                        }
+                    },
+                )
+            }
         }
-    }
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) {
-                tts.stop()
-                tts.shutdown()
-                abandonAudioFocus()
-                scope.cancel()
-            }
-        })
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    tts.stop()
+                    tts.shutdown()
+                    abandonAudioFocus()
+                    scope.cancel()
+                }
+            },
+        )
     }
 
     override fun onGetTemplate(): Template {
         val body = buildVerdictBody()
 
-        val voiceIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)
-        ).build()
+        val voiceIcon =
+            CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+            ).build()
 
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setTitle("Listen")
-                    .setIcon(voiceIcon)
-                    .setOnClickListener { speakWithFocus(body) }
-                    .build()
-            )
-            .build()
+        val actionStrip =
+            ActionStrip.Builder()
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Listen")
+                        .setIcon(voiceIcon)
+                        .setOnClickListener { speakWithFocus(body) }
+                        .build(),
+                )
+                .build()
 
         return MessageTemplate.Builder(body)
             .setTitle("$sessionName · Blocked")
@@ -93,7 +112,7 @@ public class BlockDetailsScreen(
                     .setTitle("Approve Gate")
                     .setBackgroundColor(CarColor.GREEN)
                     .setOnClickListener { onApproveGate() }
-                    .build()
+                    .build(),
             )
             .addAction(
                 Action.Builder()
@@ -102,7 +121,7 @@ public class BlockDetailsScreen(
                         CarToast.makeText(carContext, "Kill — use session detail", CarToast.LENGTH_SHORT).show()
                         screenManager.pop()
                     }
-                    .build()
+                    .build(),
             )
             .build()
     }
@@ -120,15 +139,16 @@ public class BlockDetailsScreen(
 
     private fun speakWithFocus(text: String) {
         abandonAudioFocus()
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener { }
-            .build()
+        val req =
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                .setOnAudioFocusChangeListener { }
+                .build()
         focusRequest = req
         audioManager.requestAudioFocus(req)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dw-block")
@@ -149,8 +169,12 @@ public class BlockDetailsScreen(
                         screenManager.pop()
                     },
                     onFailure = { err ->
-                        CarToast.makeText(carContext, "Approve failed: ${err.message?.take(ERROR_MSG_CHARS)}", CarToast.LENGTH_LONG).show()
-                    }
+                        CarToast.makeText(
+                            carContext,
+                            "Approve failed: ${err.message?.take(ERROR_MSG_CHARS)}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
                 )
             }
         }

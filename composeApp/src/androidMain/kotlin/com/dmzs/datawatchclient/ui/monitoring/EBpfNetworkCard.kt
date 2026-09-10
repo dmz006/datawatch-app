@@ -53,9 +53,10 @@ public fun EBpfNetworkCard(vm: StatsViewModel = viewModel()) {
         return
     }
 
-    val rows = stats.envelopes
-        .filter { it.netRxBps > 0 || it.netTxBps > 0 }
-        .sortedByDescending { it.netRxBps + it.netTxBps }
+    val rows =
+        stats.envelopes
+            .filter { it.netRxBps > 0 || it.netTxBps > 0 }
+            .sortedByDescending { it.netRxBps + it.netTxBps }
 
     if (rows.isEmpty()) return
 

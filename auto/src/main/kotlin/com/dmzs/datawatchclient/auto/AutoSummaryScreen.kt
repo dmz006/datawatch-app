@@ -1,4 +1,5 @@
 @file:Suppress("MagicNumber")
+
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
@@ -24,8 +25,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -85,12 +86,13 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
-            val newHash = listOf(
-                running, waiting, blocked, total, error,
-                automataRunning, automataBlocked, automataTotal,
-                lastOutputSessionId, lastOutputText,
-                serverStats?.sessionsTotal,
-            ).hashCode()
+            val newHash =
+                listOf(
+                    running, waiting, blocked, total, error,
+                    automataRunning, automataBlocked, automataTotal,
+                    lastOutputSessionId, lastOutputText,
+                    serverStats?.sessionsTotal,
+                ).hashCode()
             if (newHash != lastSnapshotHash) {
                 lastSnapshotHash = newHash
                 invalidate()
@@ -102,10 +104,13 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val SHORT_PLAY_CHARS: Int = 200
-        const val HISTORY_THRESHOLD_MS: Long = 2 * 60 * 60 * 1000L  // mirrors AutoSessionListScreen
+        const val HISTORY_THRESHOLD_MS: Long = 2 * 60 * 60 * 1000L // mirrors AutoSessionListScreen
 
         /** Renders a compact progress bar: "▓▓▓░░░ 45%" (6 wide). */
-        fun bar(pct: Int, width: Int = 6): String {
+        fun bar(
+            pct: Int,
+            width: Int = 6,
+        ): String {
             val clamped = pct.coerceIn(0, 100)
             val filled = (clamped * width / 100).coerceIn(0, width)
             return "▓".repeat(filled) + "░".repeat(width - filled) + " $clamped%"
@@ -134,16 +139,18 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                     // Count only sessions that will actually be visible in the session list:
                     // active states are always shown; Killed/Completed are hidden after 30 min.
                     val now = kotlinx.datetime.Clock.System.now()
-                    total = list.count { s ->
-                        val isTerminal = s.state == SessionState.Completed || s.state == SessionState.Killed
-                        !isTerminal ||
-                            (now - s.lastActivityAt).inWholeMilliseconds < HISTORY_THRESHOLD_MS
-                    }
+                    total =
+                        list.count { s ->
+                            val isTerminal = s.state == SessionState.Completed || s.state == SessionState.Killed
+                            !isTerminal ||
+                                (now - s.lastActivityAt).inWholeMilliseconds < HISTORY_THRESHOLD_MS
+                        }
                     // Prefer the most recently active session that has content.
                     // Sort by lastActivityAt descending so the freshest response wins.
-                    val withResponse = list
-                        .filter { !it.lastResponse.isNullOrBlank() }
-                        .maxByOrNull { it.lastActivityAt }
+                    val withResponse =
+                        list
+                            .filter { !it.lastResponse.isNullOrBlank() }
+                            .maxByOrNull { it.lastActivityAt }
                     lastOutputSessionId = withResponse?.id
                     lastOutputSessionName = withResponse?.let { it.name ?: it.taskSummary ?: it.id }
                     lastOutputText = withResponse?.lastResponse
@@ -165,8 +172,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     override fun onGetTemplate(): Template {
-        fun iconOf(resId: Int) =
-            CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+        fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
 
         val listBuilder = ItemList.Builder()
         val profile = activeProfile
@@ -174,18 +180,21 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         if (profile != null) {
             // Row 1: Server — shows CPU/mem inline; tap → server stats/monitor screen.
             // Server switching is in the action strip (upper-right server icon).
-            val statsLine = serverStats?.let { s ->
-                val cpuPct = s.cpuLoad1?.let { load ->
-                    s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null }
-                } ?: s.cpuPct?.toInt()
-                val memPct = s.memUsed?.let { used ->
-                    s.memTotal?.let { total -> if (total > 0) (used * 100 / total).toInt() else null }
-                } ?: s.memPct?.toInt()
-                listOfNotNull(
-                    cpuPct?.let { "cpu ${bar(it)}" },
-                    memPct?.let { "mem ${bar(it)}" },
-                ).joinToString("  ").takeIf { it.isNotBlank() }
-            }
+            val statsLine =
+                serverStats?.let { s ->
+                    val cpuPct =
+                        s.cpuLoad1?.let { load ->
+                            s.cpuCores?.let { c -> if (c > 0) (load / c * 100).toInt() else null }
+                        } ?: s.cpuPct?.toInt()
+                    val memPct =
+                        s.memUsed?.let { used ->
+                            s.memTotal?.let { total -> if (total > 0) (used * 100 / total).toInt() else null }
+                        } ?: s.memPct?.toInt()
+                    listOfNotNull(
+                        cpuPct?.let { "cpu ${bar(it)}" },
+                        memPct?.let { "mem ${bar(it)}" },
+                    ).joinToString("  ").takeIf { it.isNotBlank() }
+                }
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle("⬡ ${profile.displayName}")
@@ -196,11 +205,12 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         // Row 2: Session counts — cyber glyph state summary
-        val statusTitle = buildString {
-            append("◉ $running")
-            if (waiting > 0) append("  ⊙ $waiting")
-            if (blocked > 0) append("  ⊗ $blocked")
-        }.ifBlank { "◉ 0" }
+        val statusTitle =
+            buildString {
+                append("◉ $running")
+                if (waiting > 0) append("  ⊙ $waiting")
+                if (blocked > 0) append("  ⊗ $blocked")
+            }.ifBlank { "◉ 0" }
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(statusTitle)
@@ -210,10 +220,11 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         )
 
         // Row 3: Automata — live counts from listPrds()
-        val automataTitle = buildString {
-            append("⟫ $automataRunning")
-            if (automataBlocked > 0) append("  ⊗ $automataBlocked")
-        }.ifBlank { "⟫ 0" }
+        val automataTitle =
+            buildString {
+                append("⟫ $automataRunning")
+                if (automataBlocked > 0) append("  ⊗ $automataBlocked")
+            }.ifBlank { "⟫ 0" }
         val automataSubtitle = "$automataTotal automata · tap to view"
         listBuilder.addItem(
             Row.Builder()

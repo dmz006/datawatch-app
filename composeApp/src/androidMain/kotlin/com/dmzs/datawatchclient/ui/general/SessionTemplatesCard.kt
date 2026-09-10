@@ -55,10 +55,11 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.load() }
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             PwaSectionTitle(stringResource(R.string.session_templates_title), docsAnchor = "session-templates")
@@ -111,7 +112,11 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
                                 description = description,
                             ),
                         )
-                        name = ""; backend = ""; projectDir = ""; effort = ""; description = ""
+                        name = ""
+                        backend = ""
+                        projectDir = ""
+                        effort = ""
+                        description = ""
                     }
                 },
                 modifier = Modifier.padding(top = 4.dp),
@@ -135,11 +140,12 @@ public fun SessionTemplatesCard(vm: SessionTemplatesViewModel = viewModel()) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(t.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                            val meta = listOfNotNull(
-                                t.backend.takeIf { it.isNotBlank() },
-                                t.effort.takeIf { it.isNotBlank() },
-                                t.description.takeIf { it.isNotBlank() },
-                            ).joinToString(" · ")
+                            val meta =
+                                listOfNotNull(
+                                    t.backend.takeIf { it.isNotBlank() },
+                                    t.effort.takeIf { it.isNotBlank() },
+                                    t.description.takeIf { it.isNotBlank() },
+                                ).joinToString(" · ")
                             if (meta.isNotBlank()) {
                                 Text(
                                     meta,

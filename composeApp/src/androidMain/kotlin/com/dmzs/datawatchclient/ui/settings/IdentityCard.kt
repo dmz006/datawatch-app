@@ -43,23 +43,28 @@ internal fun IdentityCard() {
 
     suspend fun loadIdentity() {
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                else list.firstOrNull { it.id == activeId && it.enabled }
-            } ?: return
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.filter { it.enabled }.firstOrNull()
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                    }
+                } ?: return
         ServiceLocator.transportFor(sp).getIdentity().onSuccess { identity = it }
     }
 
     LaunchedEffect(Unit) { runCatching { loadIdentity() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PwaSectionTitle(
@@ -103,12 +108,16 @@ internal fun IdentityCard() {
                     scope.launch {
                         runCatching {
                             val activeId = ServiceLocator.activeServerStore.get()
-                            val sp = ServiceLocator.profileRepository.observeAll()
-                                .first { list -> list.any { it.enabled } }
-                                .let { list ->
-                                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                    else list.firstOrNull { it.id == activeId && it.enabled }
-                                } ?: return@runCatching
+                            val sp =
+                                ServiceLocator.profileRepository.observeAll()
+                                    .first { list -> list.any { it.enabled } }
+                                    .let { list ->
+                                        if (activeId == null) {
+                                            list.filter { it.enabled }.firstOrNull()
+                                        } else {
+                                            list.firstOrNull { it.id == activeId && it.enabled }
+                                        }
+                                    } ?: return@runCatching
                             ServiceLocator.transportFor(sp).setIdentity(identity)
                         }
                         saving = false
@@ -133,12 +142,16 @@ internal fun IdentityCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).setIdentity(updated)
                     }
                 }

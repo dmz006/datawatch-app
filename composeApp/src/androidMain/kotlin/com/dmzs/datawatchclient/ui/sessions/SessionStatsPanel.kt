@@ -48,10 +48,11 @@ public fun SessionStatsPanel(
     modifier: Modifier = Modifier,
     onNavigateToComputeTab: (() -> Unit)? = null,
     onNavigateToLlmTab: (() -> Unit)? = null,
-    sessionStatsVm: SessionStatsViewModel = viewModel(
-        factory = viewModelFactory { initializer { SessionStatsViewModel(sessionId) } },
-        key = "session-stats-$sessionId",
-    ),
+    sessionStatsVm: SessionStatsViewModel =
+        viewModel(
+            factory = viewModelFactory { initializer { SessionStatsViewModel(sessionId) } },
+            key = "session-stats-$sessionId",
+        ),
 ) {
     val sparkState by sessionStatsVm.state.collectAsState()
 
@@ -63,23 +64,27 @@ public fun SessionStatsPanel(
     val envelope: StatEnvelopeDto? = sparkState.envelope
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         // Host card — always shown
         HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples)
 
         // Container card — conditional on envelope.container != null
-        val containerInfo = envelope?.container
-            ?: if (envelope?.containerId?.isNotBlank() == true) {
-                ContainerInfoDto(
-                    containerId = envelope.containerId ?: "",
-                    image = envelope.image ?: "",
-                )
-            } else null
+        val containerInfo =
+            envelope?.container
+                ?: if (envelope?.containerId?.isNotBlank() == true) {
+                    ContainerInfoDto(
+                        containerId = envelope.containerId ?: "",
+                        image = envelope.image ?: "",
+                    )
+                } else {
+                    null
+                }
         if (containerInfo != null) {
             ContainerCard(containerInfo)
         }
@@ -136,11 +141,12 @@ private fun HostCard(
             ) {
                 val cpuPct = env?.cpuPct ?: 0.0
                 val cpuFraction = (cpuPct / 100.0).toFloat().coerceIn(0f, 1f)
-                val cpuColor = when {
-                    cpuPct >= 90 -> MaterialTheme.colorScheme.error
-                    cpuPct >= 70 -> dw.warning
-                    else -> dw.success
-                }
+                val cpuColor =
+                    when {
+                        cpuPct >= 90 -> MaterialTheme.colorScheme.error
+                        cpuPct >= 70 -> dw.warning
+                        else -> dw.success
+                    }
                 Box(modifier = Modifier.size(72.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
                         progress = { 1f },
@@ -170,7 +176,12 @@ private fun HostCard(
                     StatRow(stringResource(R.string.stats_field_cpu), "%.1f%%".format(cpuPct))
                     val rssBytes = env?.rssBytes ?: 0L
                     StatRow(stringResource(R.string.stats_field_rss), formatBytes(rssBytes))
-                    if ((env?.threads ?: 0) > 0) StatRow(stringResource(R.string.stats_field_threads), env!!.threads.toString())
+                    if ((env?.threads ?: 0) > 0) {
+                        StatRow(
+                            stringResource(R.string.stats_field_threads),
+                            env!!.threads.toString(),
+                        )
+                    }
                     if ((env?.fds ?: 0) > 0) StatRow(stringResource(R.string.stats_field_fds), env!!.fds.toString())
                     val pid = env?.rootPid ?: 0
                     if (pid > 0) {
@@ -248,10 +259,11 @@ private fun ComputeNodeCard(
                     stringResource(R.string.stats_open_compute),
                     style = MaterialTheme.typography.labelMedium,
                     color = dw.success,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate() }
-                        .padding(vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate() }
+                            .padding(vertical = 4.dp),
                 )
             }
         }
@@ -278,10 +290,11 @@ private fun LlmCard(
                     stringResource(R.string.stats_open_llm),
                     style = MaterialTheme.typography.labelMedium,
                     color = dw.success,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate() }
-                        .padding(vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate() }
+                            .padding(vertical = 4.dp),
                 )
             }
             Spacer(Modifier.height(4.dp))
@@ -297,10 +310,11 @@ private fun LlmCard(
 @Composable
 private fun SectionCard(content: @Composable () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             content()
@@ -336,7 +350,10 @@ private fun Sparkline(
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
+private fun StatRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

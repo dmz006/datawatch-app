@@ -49,10 +49,11 @@ internal fun VoiceRecordingDialog(
 ) {
     Dialog(
         onDismissRequest = onCancel,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false,
-        ),
+        properties =
+            DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+            ),
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -68,10 +69,11 @@ internal fun VoiceRecordingDialog(
                 val micAlpha by pulse.animateFloat(
                     initialValue = 0.55f,
                     targetValue = 1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 600),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 600),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
                     label = "micAlpha",
                 )
                 Icon(
@@ -93,10 +95,11 @@ internal fun VoiceRecordingDialog(
                     TextButton(onClick = onCancel) { Text("Cancel") }
                     Button(
                         onClick = onSend,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError,
-                        ),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
                     ) { Text("Send") }
                 }
             }
@@ -114,17 +117,19 @@ internal fun VoiceWaveformBars(modifier: Modifier = Modifier) {
     // [minDp, maxDp] — symmetric bell shape, center bar tallest
     val barSpecs = listOf(8f to 14f, 14f to 26f, 18f to 36f, 14f to 26f, 8f to 14f)
     val staggerMs = listOf(0, 120, 240, 360, 480)
-    val heights = barSpecs.mapIndexed { i, (min, max) ->
-        transition.animateFloat(
-            initialValue = min,
-            targetValue = max,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 900, delayMillis = staggerMs[i]),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "bar$i",
-        )
-    }
+    val heights =
+        barSpecs.mapIndexed { i, (min, max) ->
+            transition.animateFloat(
+                initialValue = min,
+                targetValue = max,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = 900, delayMillis = staggerMs[i]),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "bar$i",
+            )
+        }
     Row(
         modifier = modifier.height(40.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -133,11 +138,12 @@ internal fun VoiceWaveformBars(modifier: Modifier = Modifier) {
         heights.forEach { heightState ->
             val h by heightState
             Box(
-                modifier = Modifier
-                    .width(5.dp)
-                    .height(h.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MaterialTheme.colorScheme.error),
+                modifier =
+                    Modifier
+                        .width(5.dp)
+                        .height(h.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MaterialTheme.colorScheme.error),
             )
         }
     }

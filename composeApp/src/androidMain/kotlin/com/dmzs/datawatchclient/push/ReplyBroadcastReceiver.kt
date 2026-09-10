@@ -26,15 +26,16 @@ public class ReplyBroadcastReceiver : BroadcastReceiver() {
         intent: Intent,
     ) {
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
-        val text: String = when (intent.action) {
-            ACTION_REPLY ->
-                RemoteInput.getResultsFromIntent(intent)
-                    ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
-                    ?.toString()?.trim().orEmpty()
-            ACTION_QUICK_REPLY ->
-                intent.getStringExtra(EXTRA_REPLY_TEXT)?.trim().orEmpty()
-            else -> return
-        }
+        val text: String =
+            when (intent.action) {
+                ACTION_REPLY ->
+                    RemoteInput.getResultsFromIntent(intent)
+                        ?.getCharSequence(NotificationPoster.REPLY_REMOTE_INPUT_KEY)
+                        ?.toString()?.trim().orEmpty()
+                ACTION_QUICK_REPLY ->
+                    intent.getStringExtra(EXTRA_REPLY_TEXT)?.trim().orEmpty()
+                else -> return
+            }
         if (text.isEmpty()) return
 
         scope.launch {

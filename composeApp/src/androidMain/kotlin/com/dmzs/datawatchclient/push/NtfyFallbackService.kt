@@ -43,18 +43,22 @@ public class NtfyFallbackService : Service() {
     private val jobs = mutableMapOf<String, Job>()
 
     // S10-3: pause/resume the ntfy stream when Doze mode engages/exits.
-    private val dozeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED) {
-                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-                if (pm.isDeviceIdleMode) {
-                    pauseStream()
-                } else {
-                    resumeStream()
+    private val dozeReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                if (intent.action == PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED) {
+                    val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                    if (pm.isDeviceIdleMode) {
+                        pauseStream()
+                    } else {
+                        resumeStream()
+                    }
                 }
             }
         }
-    }
 
     // Reuse the shared module's pre-configured HttpClient (OkHttp engine on
     // Android) — keeps engine selection in one place. The shared client already
@@ -90,9 +94,15 @@ public class NtfyFallbackService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        try { unregisterReceiver(dozeReceiver) } catch (_: Exception) {}
+        try {
+            unregisterReceiver(dozeReceiver)
+        } catch (_: Exception) {
+        }
         scope.cancel()
-        try { client.close() } catch (_: Exception) {}
+        try {
+            client.close()
+        } catch (_: Exception) {
+        }
     }
 
     /** S10-3: Cancel all active ntfy subscription jobs (Doze entered). */
@@ -113,9 +123,10 @@ public class NtfyFallbackService : Service() {
     private suspend fun reconcile() {
         try {
             val store = ServiceLocator.pushTokenStore
-            val profiles = withTimeoutOrNull(5_000L) {
-                ServiceLocator.profileRepository.observeAll().firstOrNull()
-            }?.filter { it.enabled } ?: return
+            val profiles =
+                withTimeoutOrNull(5_000L) {
+                    ServiceLocator.profileRepository.observeAll().firstOrNull()
+                }?.filter { it.enabled } ?: return
             for (profile in profiles) {
                 val topic = store.ntfyTopicFor(profile.id) ?: continue
                 val server = store.ntfyServerFor(profile.id) ?: PushTokenStore.DEFAULT_NTFY_SERVER

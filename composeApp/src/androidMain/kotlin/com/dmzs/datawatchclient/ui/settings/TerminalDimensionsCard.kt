@@ -35,15 +35,23 @@ internal fun TerminalDimensionsCard() {
     var cols by remember { mutableIntStateOf(prefs.getInt(TerminalPrefs.KEY_COLS, TerminalPrefs.DEFAULT_COLS)) }
     var rows by remember { mutableIntStateOf(prefs.getInt(TerminalPrefs.KEY_ROWS, TerminalPrefs.DEFAULT_ROWS)) }
 
-    fun saveCols(v: Int) { cols = v; prefs.edit().putInt(TerminalPrefs.KEY_COLS, maxOf(0, v)).apply() }
-    fun saveRows(v: Int) { rows = v; prefs.edit().putInt(TerminalPrefs.KEY_ROWS, maxOf(0, v)).apply() }
+    fun saveCols(v: Int) {
+        cols = v
+        prefs.edit().putInt(TerminalPrefs.KEY_COLS, maxOf(0, v)).apply()
+    }
+
+    fun saveRows(v: Int) {
+        rows = v
+        prefs.edit().putInt(TerminalPrefs.KEY_ROWS, maxOf(0, v)).apply()
+    }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle(stringResource(R.string.terminal_dims_title), docsAnchor = "session")
         Text(

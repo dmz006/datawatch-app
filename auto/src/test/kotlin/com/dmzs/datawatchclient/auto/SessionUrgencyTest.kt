@@ -6,7 +6,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SessionUrgencyTest {
-
     @Test
     fun `guardrail block is highest urgency`() {
         val score = sessionUrgencyScore(SessionState.Running, hasGuardrailBlock = true)
@@ -53,15 +52,16 @@ class SessionUrgencyTest {
     @Test
     fun `sort order with mixed sessions`() {
         data class FakeRow(val state: SessionState, val block: Boolean)
-        val rows = listOf(
-            FakeRow(SessionState.Completed, false),
-            FakeRow(SessionState.Running, true),   // blocked — should be #1
-            FakeRow(SessionState.Waiting, false),  // should be #2
-            FakeRow(SessionState.Error, false),    // should be #2 area
-            FakeRow(SessionState.Running, false),  // should be after waiting
-        )
+        val rows =
+            listOf(
+                FakeRow(SessionState.Completed, false),
+                FakeRow(SessionState.Running, true), // blocked — should be #1
+                FakeRow(SessionState.Waiting, false), // should be #2
+                FakeRow(SessionState.Error, false), // should be #2 area
+                FakeRow(SessionState.Running, false), // should be after waiting
+            )
         val sorted = rows.sortedBy { sessionUrgencyScore(it.state, it.block) }
-        assertEquals(true, sorted[0].block)        // blocked first
+        assertEquals(true, sorted[0].block) // blocked first
         assertEquals(SessionState.Error, sorted[1].state)
         assertEquals(SessionState.Waiting, sorted[2].state)
         assertEquals(SessionState.Running, sorted[3].state)

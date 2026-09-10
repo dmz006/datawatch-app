@@ -8,20 +8,21 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AutomataScreenTest {
-
     private fun makePrd(
         id: String,
         storyStatuses: List<String>,
         depth: Int = 0,
-    ): PrdDto = PrdDto(
-        id = id,
-        name = id,
-        status = "running",
-        depth = depth,
-        stories = storyStatuses.mapIndexed { i, s ->
-            PrdStoryDto(id = "$id-s$i", title = "Story $i", status = s)
-        },
-    )
+    ): PrdDto =
+        PrdDto(
+            id = id,
+            name = id,
+            status = "running",
+            depth = depth,
+            stories =
+                storyStatuses.mapIndexed { i, s ->
+                    PrdStoryDto(id = "$id-s$i", title = "Story $i", status = s)
+                },
+        )
 
     @Test
     fun `active story position returns 1-based index of first in_progress story`() {
@@ -74,31 +75,37 @@ class AutomataScreenTest {
 
     // Mirror companion object logic for white-box testing
     private fun activeStoryPosition(prd: PrdDto): Int? {
-        val idx = prd.stories.indexOfFirst {
-            it.status == "in_progress" || it.status == "awaiting_approval"
-        }
+        val idx =
+            prd.stories.indexOfFirst {
+                it.status == "in_progress" || it.status == "awaiting_approval"
+            }
         return if (idx >= 0) idx + 1 else null
     }
 
-    private fun buildSubtitle(prd: PrdDto, storyPos: Int?): String = buildString {
-        val totalStories = prd.stories.size
-        val completedStories = prd.stories.count { it.status == "complete" }
-        if (storyPos != null && totalStories > 0) {
-            append("Story $storyPos/$totalStories")
-            val pct = (completedStories * 100) / totalStories
-            append(" · $pct%")
-        } else if (totalStories > 0) {
-            val pct = (completedStories * 100) / totalStories
-            append("$completedStories/$totalStories stories · $pct%")
-        } else {
-            append(prd.status)
+    private fun buildSubtitle(
+        prd: PrdDto,
+        storyPos: Int?,
+    ): String =
+        buildString {
+            val totalStories = prd.stories.size
+            val completedStories = prd.stories.count { it.status == "complete" }
+            if (storyPos != null && totalStories > 0) {
+                append("Story $storyPos/$totalStories")
+                val pct = (completedStories * 100) / totalStories
+                append(" · $pct%")
+            } else if (totalStories > 0) {
+                val pct = (completedStories * 100) / totalStories
+                append("$completedStories/$totalStories stories · $pct%")
+            } else {
+                append(prd.status)
+            }
+            val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
+            if (hasBlock) append(" ⚠ awaiting approval")
         }
-        val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
-        if (hasBlock) append(" ⚠ awaiting approval")
-    }
 
-    private val automataComparator: Comparator<PrdDto> = compareByDescending { prd ->
-        val blockedStories = prd.stories.count { it.status == "awaiting_approval" }
-        blockedStories * 10 + prd.depth
-    }
+    private val automataComparator: Comparator<PrdDto> =
+        compareByDescending { prd ->
+            val blockedStories = prd.stories.count { it.status == "awaiting_approval" }
+            blockedStories * 10 + prd.depth
+        }
 }

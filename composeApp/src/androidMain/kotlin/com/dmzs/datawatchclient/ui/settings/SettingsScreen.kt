@@ -3,20 +3,23 @@ package com.dmzs.datawatchclient.ui.settings
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,9 +28,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +47,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
@@ -56,45 +62,38 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.transport.TransportError
-import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
-import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
-import androidx.annotation.StringRes
-import androidx.compose.ui.res.stringResource
-import com.dmzs.datawatchclient.R
-import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
-import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
 import com.dmzs.datawatchclient.push.AlertTier
 import com.dmzs.datawatchclient.push.AlertTierDetector
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.DocsViewerSheet
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.SignalCellularAlt
-import androidx.compose.ui.graphics.Color
+import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
+import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
+import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
+import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
+import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -115,7 +114,9 @@ import java.io.FileOutputStream
  * PWA stashes the default active tab in `localStorage.cs_settings_tab = 'monitor'`
  * so users land on Monitor first. About is mobile-only (no PWA equivalent).
  */
-private enum class SettingsTab(@StringRes val labelRes: Int) {
+private enum class SettingsTab(
+    @StringRes val labelRes: Int,
+) {
     General(R.string.settings_tab_general),
     Plugins(R.string.settings_tab_plugins),
     Comms(R.string.settings_tab_comms),
@@ -151,19 +152,22 @@ public fun SettingsScreen(
         transport?.isReachable?.map { it as Boolean? } ?: flowOf<Boolean?>(null)
     }.collectAsState(initial = null)
     var lastProbeMs by remember { mutableStateOf<Long?>(null) }
-    androidx.compose.runtime.LaunchedEffect(reachable) { if (reachable == true) lastProbeMs = System.currentTimeMillis() }
+    androidx.compose.runtime.LaunchedEffect(
+        reachable,
+    ) { if (reachable == true) lastProbeMs = System.currentTimeMillis() }
 
     val prefs = LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val storedTab = prefs.getString("settings_active_tab", null)
-    val migratedTab = when (storedTab) {
-        "llm", "agents" -> SettingsTab.Compute
-        "plugins" -> SettingsTab.Plugins
-        "comms" -> SettingsTab.Comms
-        "automata" -> SettingsTab.Automata
-        "monitor" -> SettingsTab.General  // Monitor removed; redirect to General
-        "about" -> SettingsTab.About
-        else -> SettingsTab.General
-    }
+    val migratedTab =
+        when (storedTab) {
+            "llm", "agents" -> SettingsTab.Compute
+            "plugins" -> SettingsTab.Plugins
+            "comms" -> SettingsTab.Comms
+            "automata" -> SettingsTab.Automata
+            "monitor" -> SettingsTab.General // Monitor removed; redirect to General
+            "about" -> SettingsTab.About
+            else -> SettingsTab.General
+        }
     var activeTab by remember { mutableStateOf(migratedTab) }
     var pickerOpen by remember { mutableStateOf(false) }
 
@@ -379,7 +383,9 @@ public fun SettingsScreen(
                                 // v0.88.0 Sprint 19 (#111) — alpha.25 settings move
                                 SecretsCard()
                                 // PWA alpha.25 #230 — Observer quicklink moved from General → Compute
-                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(onNavigateToMonitor = onNavigateToObserver)
+                                com.dmzs.datawatchclient.ui.general.ObserverQuicklinkCard(
+                                    onNavigateToMonitor = onNavigateToObserver,
+                                )
                             }
                             SettingsTab.Automata -> {
                                 // Order mirrors PWA v8.6.0 Settings → Automata tab
@@ -436,7 +442,6 @@ public fun SettingsScreen(
             } // end settings-scale MaterialTheme
         }
     }
-
 }
 
 /**
@@ -823,27 +828,30 @@ private fun AboutCard(activeProfile: ServerProfile?) {
             // S10-4 — alert tier indicator
             val alertContext = LocalContext.current
             val tier = remember { AlertTierDetector.resolve(alertContext) }
-            val tierText = when (tier) {
-                AlertTier.UnifiedPush -> stringResource(R.string.alert_tier_unified_push)
-                AlertTier.CommChannel -> stringResource(R.string.alert_tier_comm_channel)
-                AlertTier.Background -> stringResource(R.string.alert_tier_background)
-            }
+            val tierText =
+                when (tier) {
+                    AlertTier.UnifiedPush -> stringResource(R.string.alert_tier_unified_push)
+                    AlertTier.CommChannel -> stringResource(R.string.alert_tier_comm_channel)
+                    AlertTier.Background -> stringResource(R.string.alert_tier_background)
+                }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    imageVector = when (tier) {
-                        AlertTier.UnifiedPush -> Icons.Filled.NotificationsActive
-                        AlertTier.CommChannel -> Icons.Filled.SignalCellularAlt
-                        AlertTier.Background -> Icons.Filled.NotificationsNone
-                    },
+                    imageVector =
+                        when (tier) {
+                            AlertTier.UnifiedPush -> Icons.Filled.NotificationsActive
+                            AlertTier.CommChannel -> Icons.Filled.SignalCellularAlt
+                            AlertTier.Background -> Icons.Filled.NotificationsNone
+                        },
                     contentDescription = null,
-                    tint = when (tier) {
-                        AlertTier.UnifiedPush -> Color(0xFF00C853)
-                        AlertTier.CommChannel -> Color(0xFF00BCD4)
-                        AlertTier.Background -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    tint =
+                        when (tier) {
+                            AlertTier.UnifiedPush -> Color(0xFF00C853)
+                            AlertTier.CommChannel -> Color(0xFF00BCD4)
+                            AlertTier.Background -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(Modifier.width(4.dp))

@@ -11,7 +11,6 @@ import kotlin.test.assertTrue
  * All pure logic — no Android context needed.
  */
 class GuardrailTtsBuilderTest {
-
     // ---- buildGuardrailVerdict: individual verdict ----
 
     @Test fun `pass verdict`() {
@@ -66,29 +65,32 @@ class GuardrailTtsBuilderTest {
     }
 
     @Test fun `all pass list`() {
-        val verdicts = listOf(
-            GuardrailVerdictDto("sast-scan", "pass", ""),
-            GuardrailVerdictDto("secrets-scan", "pass", ""),
-        )
+        val verdicts =
+            listOf(
+                GuardrailVerdictDto("sast-scan", "pass", ""),
+                GuardrailVerdictDto("secrets-scan", "pass", ""),
+            )
         val result = GuardrailTtsBuilder.buildAllVerdicts(verdicts)
         assertEquals("All guardrails passed.", result)
     }
 
     @Test fun `single block in list`() {
-        val verdicts = listOf(
-            GuardrailVerdictDto("secrets-scan", "block", "Token found"),
-        )
+        val verdicts =
+            listOf(
+                GuardrailVerdictDto("secrets-scan", "block", "Token found"),
+            )
         val result = GuardrailTtsBuilder.buildAllVerdicts(verdicts)
         assertTrue(result.contains("1 block"), "Expected '1 block' in: $result")
         assertTrue(result.contains("Secrets scan is blocking"))
     }
 
     @Test fun `multiple blocks capped at 2 spoken`() {
-        val verdicts = listOf(
-            GuardrailVerdictDto("sast-scan", "block", "Issue A"),
-            GuardrailVerdictDto("deps-scan", "block", "Issue B"),
-            GuardrailVerdictDto("llm-grader", "block", "Issue C"),
-        )
+        val verdicts =
+            listOf(
+                GuardrailVerdictDto("sast-scan", "block", "Issue A"),
+                GuardrailVerdictDto("deps-scan", "block", "Issue B"),
+                GuardrailVerdictDto("llm-grader", "block", "Issue C"),
+            )
         val result = GuardrailTtsBuilder.buildAllVerdicts(verdicts)
         assertTrue(result.startsWith("3 blocks."), "Expected '3 blocks.' prefix in: $result")
         // Only first 2 are spoken in detail
@@ -97,20 +99,22 @@ class GuardrailTtsBuilderTest {
     }
 
     @Test fun `warn list summary`() {
-        val verdicts = listOf(
-            GuardrailVerdictDto("sast-scan", "warn", "Minor issue"),
-            GuardrailVerdictDto("deps-scan", "warn", "Outdated dep"),
-        )
+        val verdicts =
+            listOf(
+                GuardrailVerdictDto("sast-scan", "warn", "Minor issue"),
+                GuardrailVerdictDto("deps-scan", "warn", "Outdated dep"),
+            )
         val result = GuardrailTtsBuilder.buildAllVerdicts(verdicts)
         assertTrue(result.contains("2 warnings"), "Expected '2 warnings' in: $result")
         assertFalse(result.contains("block"), "Should not mention block")
     }
 
     @Test fun `mixed blocks and warns`() {
-        val verdicts = listOf(
-            GuardrailVerdictDto("secrets-scan", "block", "Token found"),
-            GuardrailVerdictDto("sast-scan", "warn", "Minor"),
-        )
+        val verdicts =
+            listOf(
+                GuardrailVerdictDto("secrets-scan", "block", "Token found"),
+                GuardrailVerdictDto("sast-scan", "warn", "Minor"),
+            )
         val result = GuardrailTtsBuilder.buildAllVerdicts(verdicts)
         assertTrue(result.contains("1 block"))
         assertTrue(result.contains("1 warning"))

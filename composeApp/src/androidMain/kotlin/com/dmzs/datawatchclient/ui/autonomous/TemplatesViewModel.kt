@@ -26,10 +26,11 @@ public class TemplatesViewModel(
 
     public fun refresh() {
         viewModelScope.launch {
-            val (_, transport) = resolver.resolve() ?: run {
-                _state.value = UiState(loading = false, banner = "No enabled server.")
-                return@launch
-            }
+            val (_, transport) =
+                resolver.resolve() ?: run {
+                    _state.value = UiState(loading = false, banner = "No enabled server.")
+                    return@launch
+                }
             transport.listTemplates().fold(
                 onSuccess = { dto ->
                     _state.value = UiState(loading = false, templates = dto.templates)
@@ -53,7 +54,10 @@ public class TemplatesViewModel(
         }
     }
 
-    public fun updateTemplate(id: String, req: UpdateTemplateRequestDto) {
+    public fun updateTemplate(
+        id: String,
+        req: UpdateTemplateRequestDto,
+    ) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.updateTemplate(id, req).fold(
@@ -93,7 +97,11 @@ public class TemplatesViewModel(
         }
     }
 
-    public fun clonePrdToTemplate(prdId: String, description: String?, actor: String?) {
+    public fun clonePrdToTemplate(
+        prdId: String,
+        description: String?,
+        actor: String?,
+    ) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.clonePrdToTemplate(prdId, ClonePrdToTemplateRequestDto(description, actor)).fold(

@@ -67,12 +67,16 @@ internal fun SkillRegistriesCard() {
 
     suspend fun loadAll() {
         val activeId = ServiceLocator.activeServerStore.get()
-        val sp = ServiceLocator.profileRepository.observeAll()
-            .first { list -> list.any { it.enabled } }
-            .let { list ->
-                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                else list.firstOrNull { it.id == activeId && it.enabled }
-            } ?: return
+        val sp =
+            ServiceLocator.profileRepository.observeAll()
+                .first { list -> list.any { it.enabled } }
+                .let { list ->
+                    if (activeId == null) {
+                        list.filter { it.enabled }.firstOrNull()
+                    } else {
+                        list.firstOrNull { it.id == activeId && it.enabled }
+                    }
+                } ?: return
         val t = ServiceLocator.transportFor(sp)
         t.listSkillRegistries().onSuccess { registries = it }
         t.listSyncedSkills().onSuccess { syncedSkills = it }
@@ -81,11 +85,12 @@ internal fun SkillRegistriesCard() {
     LaunchedEffect(Unit) { runCatching { loadAll() } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             PwaSectionTitle(
@@ -97,12 +102,16 @@ internal fun SkillRegistriesCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).addDefaultSkillRegistry().onSuccess { loadAll() }
                     }
                 }
@@ -129,12 +138,16 @@ internal fun SkillRegistriesCard() {
                             runCatching {
                                 connectingName = reg.name
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).connectSkillRegistry(reg.name).onSuccess { loadAll() }
                             }
                             connectingName = null
@@ -146,12 +159,16 @@ internal fun SkillRegistriesCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp).deleteSkillRegistry(reg.name).onSuccess { loadAll() }
                             }
                         }
@@ -182,12 +199,16 @@ internal fun SkillRegistriesCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).createSkillRegistry(req).onSuccess { loadAll() }
                     }
                 }
@@ -204,12 +225,16 @@ internal fun SkillRegistriesCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
                         ServiceLocator.transportFor(sp).updateSkillRegistry(
                             reg.name,
                             SkillRegistryUpdateDto(url = req.url, branch = req.branch),
@@ -229,13 +254,19 @@ internal fun SkillRegistriesCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
-                        ServiceLocator.transportFor(sp).syncSkills(reg.name, SyncSkillsRequestDto(selected)).onSuccess { loadAll() }
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
+                        ServiceLocator.transportFor(
+                            sp,
+                        ).syncSkills(reg.name, SyncSkillsRequestDto(selected)).onSuccess { loadAll() }
                     }
                 }
                 browseTarget = null
@@ -256,14 +287,22 @@ private fun RegistryRow(
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .padding(end = 0.dp),
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .padding(end = 0.dp),
             ) {
                 Surface(
                     modifier = Modifier.size(8.dp),
                     shape = MaterialTheme.shapes.extraSmall,
-                    color = if (reg.status == "connected") Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    color =
+                        if (reg.status == "connected") {
+                            Color(
+                                0xFF10B981,
+                            )
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        },
                     content = {},
                 )
             }
@@ -292,14 +331,26 @@ private fun RegistryRow(
             if (connecting) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(end = 4.dp), strokeWidth = 2.dp)
             } else {
-                TextButton(onClick = onConnect) { Text(stringResource(R.string.skills_btn_connect), style = MaterialTheme.typography.labelSmall) }
+                TextButton(onClick = onConnect) {
+                    Text(stringResource(R.string.skills_btn_connect), style = MaterialTheme.typography.labelSmall)
+                }
             }
-            TextButton(onClick = onBrowse) { Text(stringResource(R.string.skills_btn_browse), style = MaterialTheme.typography.labelSmall) }
+            TextButton(onClick = onBrowse) {
+                Text(stringResource(R.string.skills_btn_browse), style = MaterialTheme.typography.labelSmall)
+            }
             IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.skills_btn_edit), modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.skills_btn_edit),
+                    modifier = Modifier.size(16.dp),
+                )
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.action_delete),
+                    modifier = Modifier.size(16.dp),
+                )
             }
         }
     }
@@ -315,7 +366,11 @@ private fun SyncedSkillRow(skill: SkillDto) {
         Column(modifier = Modifier.weight(1f)) {
             Text(skill.name, style = MaterialTheme.typography.bodySmall)
             skill.description?.let {
-                Text(it.take(60), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    it.take(60),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
         Text(
@@ -348,8 +403,11 @@ private fun AddEditRegistryDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (existing == null) stringResource(R.string.skills_dialog_add_title)
-                else stringResource(R.string.skills_dialog_edit_title),
+                if (existing == null) {
+                    stringResource(R.string.skills_dialog_add_title)
+                } else {
+                    stringResource(R.string.skills_dialog_edit_title)
+                },
             )
         },
         text = {
@@ -380,7 +438,15 @@ private fun AddEditRegistryDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(SkillRegistryRequestDto(name = name.trim(), url = url.trim(), branch = branch.trim().ifBlank { "main" })) },
+                onClick = {
+                    onSave(
+                        SkillRegistryRequestDto(
+                            name = name.trim(),
+                            url = url.trim(),
+                            branch = branch.trim().ifBlank { "main" },
+                        ),
+                    )
+                },
                 enabled = name.isNotBlank() && url.isNotBlank(),
             ) { Text(stringResource(if (existing == null) R.string.action_create else R.string.action_save)) }
         },
@@ -402,12 +468,16 @@ private fun BrowseSkillsDialog(
     LaunchedEffect(registry.name) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.filter { it.enabled }.firstOrNull()
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                        }
+                    } ?: return@runCatching
             ServiceLocator.transportFor(sp).listAvailableSkills(registry.name).onSuccess {
                 available = it
                 selected = it.filter { s -> s.synced }.map { s -> s.name }.toSet()
@@ -428,10 +498,16 @@ private fun BrowseSkillsDialog(
                 } else {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         TextButton(onClick = { selected = available.map { it.name }.toSet() }) {
-                            Text(stringResource(R.string.skills_select_all), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                stringResource(R.string.skills_select_all),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                         TextButton(onClick = { selected = emptySet() }) {
-                            Text(stringResource(R.string.skills_select_none), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                stringResource(R.string.skills_select_none),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                     }
                     available.forEach { sk ->
@@ -448,7 +524,11 @@ private fun BrowseSkillsDialog(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(sk.name, style = MaterialTheme.typography.bodySmall)
                                 sk.description?.let {
-                                    Text(it.take(50), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        it.take(50),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
                             }
                         }

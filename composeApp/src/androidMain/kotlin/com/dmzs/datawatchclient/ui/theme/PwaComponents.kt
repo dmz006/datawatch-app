@@ -73,10 +73,11 @@ public fun PwaStatePill(state: SessionState) {
     val pillAlpha by runPulse.animateFloat(
         initialValue = 0.5f,
         targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(900, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "pill-alpha",
     )
     val alpha = if (state == SessionState.Running) pillAlpha else 1f
@@ -206,11 +207,15 @@ public fun PwaSectionTitle(
 internal fun DocsInlineButton(anchor: String) {
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
-    val activeProfile = remember(profiles, activeId) {
-        val enabled = profiles.filter { it.enabled }
-        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()
-        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())
-    }
+    val activeProfile =
+        remember(profiles, activeId) {
+            val enabled = profiles.filter { it.enabled }
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                enabled.firstOrNull()
+            } else {
+                (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())
+            }
+        }
     val baseUrl = activeProfile?.baseUrl
     val allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL
     var showDocs by remember { mutableStateOf(false) }

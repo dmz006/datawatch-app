@@ -12,23 +12,26 @@ import kotlin.test.assertNull
  * Uses reflection to access private companion object methods.
  */
 class SessionDetailTest {
-
     private fun makeTelemetry(
-        completedMs: List<Long>,   // 0 = "not recorded" sentinel
+        completedMs: List<Long>, // 0 = "not recorded" sentinel
         remainingCount: Int,
         guardrailBlock: Boolean = false,
     ): SessionTelemetryDto {
-        val tasks = buildList {
-            completedMs.forEach { ms ->
-                add(TelemetryTaskDto(id = "c", title = "", status = "completed", durationMs = ms))
+        val tasks =
+            buildList {
+                completedMs.forEach { ms ->
+                    add(TelemetryTaskDto(id = "c", title = "", status = "completed", durationMs = ms))
+                }
+                repeat(remainingCount) {
+                    add(TelemetryTaskDto(id = "r", title = "", status = "running", durationMs = 0L))
+                }
             }
-            repeat(remainingCount) {
-                add(TelemetryTaskDto(id = "r", title = "", status = "running", durationMs = 0L))
+        val verdicts =
+            if (guardrailBlock) {
+                listOf(GuardrailVerdictDto(guardrail = "sast-scan", outcome = "block", summary = "fail"))
+            } else {
+                emptyList()
             }
-        }
-        val verdicts = if (guardrailBlock) {
-            listOf(GuardrailVerdictDto(guardrail = "sast-scan", outcome = "block", summary = "fail"))
-        } else emptyList()
         return SessionTelemetryDto(tasks = tasks, guardrailVerdicts = verdicts)
     }
 
@@ -53,10 +56,11 @@ class SessionDetailTest {
     @Test
     fun `eta correct with uniform task durations`() {
         // 3 completed tasks of 2 min each, 2 remaining → ETA 4 min
-        val telem = makeTelemetry(
-            completedMs = listOf(120_000L, 120_000L, 120_000L),
-            remainingCount = 2,
-        )
+        val telem =
+            makeTelemetry(
+                completedMs = listOf(120_000L, 120_000L, 120_000L),
+                remainingCount = 2,
+            )
         assertEquals(4, etaMinutes(telem))
     }
 
@@ -96,8 +100,9 @@ class SessionDetailTest {
         val completed = telem.tasks.filter { it.status == "completed" }
         val remaining = telem.tasks.count { it.status != "completed" && it.status != "failed" }
         if (completed.isEmpty() || remaining == 0) return null
-        val avgMs = completed.map { it.durationMs }.filter { it > 0 }.average()
-            .takeIf { !it.isNaN() } ?: return null
+        val avgMs =
+            completed.map { it.durationMs }.filter { it > 0 }.average()
+                .takeIf { !it.isNaN() } ?: return null
         return ((avgMs * remaining) / 60_000L).toInt().coerceAtLeast(1)
     }
 
@@ -106,8 +111,9 @@ class SessionDetailTest {
         val hasBlock = telem.guardrailVerdicts.any { it.outcome == "block" }
         if (hasBlock) return "🔥"
         if (completed.isEmpty()) return ""
-        val avgMs = completed.map { it.durationMs }.filter { it > 0 }.average()
-            .takeIf { !it.isNaN() } ?: return ""
+        val avgMs =
+            completed.map { it.durationMs }.filter { it > 0 }.average()
+                .takeIf { !it.isNaN() } ?: return ""
         return when {
             avgMs < 30_000.0 -> "🚀"
             avgMs > 300_000.0 -> "🐢"

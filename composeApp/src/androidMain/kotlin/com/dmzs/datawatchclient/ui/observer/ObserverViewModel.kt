@@ -27,11 +27,13 @@ public class ObserverViewModel : ViewModel() {
         val loading: Boolean = true,
     )
 
-    private val _allProfiles = ServiceLocator.profileRepository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _allProfiles =
+        ServiceLocator.profileRepository.observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val _activeId = ServiceLocator.activeServerStore.observe()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val _activeId =
+        ServiceLocator.activeServerStore.observe()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _computedActiveProfile: StateFlow<ServerProfile?> =
         combine(_allProfiles, _activeId) { profiles, storedId ->
@@ -57,16 +59,21 @@ public class ObserverViewModel : ViewModel() {
         }
     }
 
-    public val reachable: StateFlow<Boolean?> = _computedActiveProfile
-        .flatMapLatest { profile ->
-            if (profile == null) flowOf<Boolean?>(null)
-            else ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val reachable: StateFlow<Boolean?> =
+        _computedActiveProfile
+            .flatMapLatest { profile ->
+                if (profile == null) {
+                    flowOf<Boolean?>(null)
+                } else {
+                    ServiceLocator.transportFor(profile).isReachable.map { it as Boolean? }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    public val lastProbeEpochMs: StateFlow<Long?> = reachable
-        .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    public val lastProbeEpochMs: StateFlow<Long?> =
+        reachable
+            .runningFold(null as Long?) { acc, r -> if (r == true) System.currentTimeMillis() else acc }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     public fun selectProfile(profileId: String) {
         ServiceLocator.activeServerStore.set(profileId)

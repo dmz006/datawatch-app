@@ -64,10 +64,11 @@ public fun SecretsCard(vm: SecretsCardViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.load() }
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
             PwaSectionTitle(stringResource(R.string.secrets_section_store), docsAnchor = "secrets-store")
@@ -122,7 +123,11 @@ public fun SecretsCard(vm: SecretsCardViewModel = viewModel()) {
                                 scopes = scopes.split(",").map { it.trim() }.filter { it.isNotBlank() },
                             ),
                         )
-                        name = ""; value = ""; desc = ""; tags = ""; scopes = ""
+                        name = ""
+                        value = ""
+                        desc = ""
+                        tags = ""
+                        scopes = ""
                     }
                 },
                 modifier = Modifier.padding(top = 4.dp),
@@ -244,9 +249,13 @@ public class SecretsCardViewModel : ViewModel() {
     private suspend fun resolveTransport(): com.dmzs.datawatchclient.transport.TransportClient? {
         val activeId = ServiceLocator.activeServerStore.get()
         val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val profile = if (activeId == null) profiles.firstOrNull { it.enabled }
-            else profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
+        val profile =
+            if (activeId == null) {
+                profiles.firstOrNull { it.enabled }
+            } else {
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            }
         return profile?.let { ServiceLocator.transportFor(it) }
     }
 }

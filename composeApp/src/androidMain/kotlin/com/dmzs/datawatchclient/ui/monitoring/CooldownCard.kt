@@ -57,18 +57,22 @@ public fun CooldownCard() {
 
     suspend fun reload() {
         transport()?.getCooldownStatus()
-            ?.onSuccess { status = it; banner = null }
+            ?.onSuccess {
+                status = it
+                banner = null
+            }
             ?.onFailure { banner = it.message }
     }
 
     LaunchedEffect(Unit) { reload() }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle("Global Cooldown", docsAnchor = "global-cooldown")
 
@@ -89,11 +93,12 @@ public fun CooldownCard() {
         if (s.active) {
             val remainingMs = (s.untilUnixMs ?: 0L) - System.currentTimeMillis()
             val remainingMin = if (remainingMs > 0) Math.ceil(remainingMs / 60000.0).toInt() else 0
-            val label = buildString {
-                append("⚠ Active")
-                if (remainingMin > 0) append(" — ${remainingMin}m remaining")
-                s.reason?.takeIf { it.isNotBlank() }?.let { append(" — $it") }
-            }
+            val label =
+                buildString {
+                    append("⚠ Active")
+                    if (remainingMin > 0) append(" — ${remainingMin}m remaining")
+                    s.reason?.takeIf { it.isNotBlank() }?.let { append(" — $it") }
+                }
             Text(
                 label,
                 style = MaterialTheme.typography.bodySmall,
@@ -128,7 +133,10 @@ public fun CooldownCard() {
                             scope.launch {
                                 val t = transport() ?: return@launch
                                 t.setCooldown(System.currentTimeMillis() + mins * 60_000L, reason)
-                                    .onSuccess { reload(); reason = "" }
+                                    .onSuccess {
+                                        reload()
+                                        reason = ""
+                                    }
                                     .onFailure { banner = it.message }
                             }
                         },

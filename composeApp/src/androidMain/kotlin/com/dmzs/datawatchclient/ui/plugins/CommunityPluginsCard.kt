@@ -121,11 +121,13 @@ public fun CommunityPluginsCard() {
                     },
                     enabled = !isInstalled && !isInstalling,
                 ) {
-                    Text(when {
-                        isInstalled -> "✓ Installed"
-                        isInstalling -> "…"
-                        else -> "Install"
-                    })
+                    Text(
+                        when {
+                            isInstalled -> "✓ Installed"
+                            isInstalling -> "…"
+                            else -> "Install"
+                        },
+                    )
                 }
             }
         }

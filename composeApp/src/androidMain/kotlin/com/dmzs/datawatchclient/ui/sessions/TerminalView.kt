@@ -72,11 +72,17 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             isTouchEvent,
         )
 
-    override fun scrollTo(x: Int, y: Int) {
+    override fun scrollTo(
+        x: Int,
+        y: Int,
+    ) {
         super.scrollTo(x, 0)
     }
 
-    override fun scrollBy(x: Int, y: Int) {
+    override fun scrollBy(
+        x: Int,
+        y: Int,
+    ) {
         super.scrollBy(x, 0)
     }
 
@@ -117,6 +123,7 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             // the keyboard between the word commit and the spurious Enter) clears
             // the guard prematurely, letting the spurious Enter through.
             private var lastCommitMs = 0L
+
             private fun recentlyCommitted() =
                 lastCommitMs > 0 && System.currentTimeMillis() - lastCommitMs < SPURIOUS_ENTER_WINDOW_MS
 
@@ -159,7 +166,10 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
                 return super.sendKeyEvent(event)
             }
 
-            override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+            override fun commitText(
+                text: CharSequence?,
+                newCursorPosition: Int,
+            ): Boolean {
                 // Strip any trailing \r / \n Samsung/Gboard appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
                 // Only open the spurious-Enter window for multi-character commits — those
@@ -191,19 +201,21 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
      * ANSI sequence directly via DwBridge bypasses the DOM path entirely.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val isDpad = event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
-            event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
-            event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
-            event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        val isDpad =
+            event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
         if (isDpad) {
             if (event.action == KeyEvent.ACTION_DOWN) {
-                val jsAnsi = when (event.keyCode) {
-                    KeyEvent.KEYCODE_DPAD_UP    -> "\\x1b[A"
-                    KeyEvent.KEYCODE_DPAD_DOWN  -> "\\x1b[B"
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> "\\x1b[C"
-                    KeyEvent.KEYCODE_DPAD_LEFT  -> "\\x1b[D"
-                    else -> return super.dispatchKeyEvent(event)
-                }
+                val jsAnsi =
+                    when (event.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_UP -> "\\x1b[A"
+                        KeyEvent.KEYCODE_DPAD_DOWN -> "\\x1b[B"
+                        KeyEvent.KEYCODE_DPAD_RIGHT -> "\\x1b[C"
+                        KeyEvent.KEYCODE_DPAD_LEFT -> "\\x1b[D"
+                        else -> return super.dispatchKeyEvent(event)
+                    }
                 evaluateJavascript(
                     "window.DwBridge && DwBridge.onInput('$jsAnsi');",
                     null,

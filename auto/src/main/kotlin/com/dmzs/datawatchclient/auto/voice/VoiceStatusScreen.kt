@@ -25,61 +25,67 @@ public class VoiceStatusScreen(
     carContext: CarContext,
     private val command: VoiceCommand = VoiceCommand.STATUS,
 ) : Screen(carContext) {
-
     private var statusText: String = carContext.getString(R.string.auto_voice_loading)
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.cancel()
-            }
-        })
-        scope.launch {
-            statusText = when (command) {
-                VoiceCommand.STATUS, VoiceCommand.UNKNOWN -> {
-                    val summary = buildStatusSummary()
-                    when {
-                        summary.isError -> carContext.getString(R.string.auto_voice_error)
-                        summary.noServer -> carContext.getString(R.string.auto_voice_no_server)
-                        else -> buildStatusString(summary)
-                    }
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    scope.cancel()
                 }
-                VoiceCommand.REFRESH -> {
-                    runCatching {
-                        val activeId = AutoServiceLocator.activeServerStore.get()
-                        val profiles = AutoServiceLocator.profileRepository.observeAll().first()
-                        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                        if (profile != null) {
-                            AutoServiceLocator.transportFor(profile).stats()
+            },
+        )
+        scope.launch {
+            statusText =
+                when (command) {
+                    VoiceCommand.STATUS, VoiceCommand.UNKNOWN -> {
+                        val summary = buildStatusSummary()
+                        when {
+                            summary.isError -> carContext.getString(R.string.auto_voice_error)
+                            summary.noServer -> carContext.getString(R.string.auto_voice_no_server)
+                            else -> buildStatusString(summary)
                         }
                     }
-                    carContext.getString(R.string.auto_voice_refresh_done)
-                }
-                VoiceCommand.CANCEL -> carContext.getString(R.string.auto_voice_cancel_hint)
-                VoiceCommand.REPORT -> {
-                    val summary = buildStatusSummary()
-                    if (summary.isError || summary.noServer) {
-                        carContext.getString(R.string.auto_voice_no_report)
-                    } else {
-                        buildStatusString(summary)
+                    VoiceCommand.REFRESH -> {
+                        runCatching {
+                            val activeId = AutoServiceLocator.activeServerStore.get()
+                            val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                            val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
+                            if (profile != null) {
+                                AutoServiceLocator.transportFor(profile).stats()
+                            }
+                        }
+                        carContext.getString(R.string.auto_voice_refresh_done)
                     }
+                    VoiceCommand.CANCEL -> carContext.getString(R.string.auto_voice_cancel_hint)
+                    VoiceCommand.REPORT -> {
+                        val summary = buildStatusSummary()
+                        if (summary.isError || summary.noServer) {
+                            carContext.getString(R.string.auto_voice_no_report)
+                        } else {
+                            buildStatusString(summary)
+                        }
+                    }
+                    VoiceCommand.WHAT_FAILED -> buildWhatFailedReport()
+                    VoiceCommand.SERVER_STATUS -> {
+                        val summary = buildStatusSummary()
+                        if (summary.isError || summary.noServer) {
+                            carContext.getString(R.string.auto_voice_no_server)
+                        } else {
+                            buildStatusString(summary)
+                        }
+                    }
+                    VoiceCommand.COST_REPORT -> "Cost reporting is coming soon."
+                    VoiceCommand.MEMORY_RECALL -> "Memory recall is coming soon."
+                    VoiceCommand.CREATE_SESSION,
+                    VoiceCommand.APPROVE_GATE,
+                    VoiceCommand.LIST_AUTOMATA,
+                    VoiceCommand.PAUSE_SESSION,
+                    VoiceCommand.KILL_SESSION,
+                    VoiceCommand.SWITCH_SERVER,
+                    -> "Use the datawatch screen to complete this action."
                 }
-                VoiceCommand.WHAT_FAILED -> buildWhatFailedReport()
-                VoiceCommand.SERVER_STATUS -> {
-                    val summary = buildStatusSummary()
-                    if (summary.isError || summary.noServer) carContext.getString(R.string.auto_voice_no_server)
-                    else buildStatusString(summary)
-                }
-                VoiceCommand.COST_REPORT -> "Cost reporting is coming soon."
-                VoiceCommand.MEMORY_RECALL -> "Memory recall is coming soon."
-                VoiceCommand.CREATE_SESSION,
-                VoiceCommand.APPROVE_GATE,
-                VoiceCommand.LIST_AUTOMATA,
-                VoiceCommand.PAUSE_SESSION,
-                VoiceCommand.KILL_SESSION,
-                VoiceCommand.SWITCH_SERVER -> "Use the datawatch screen to complete this action."
-            }
             invalidate()
         }
     }

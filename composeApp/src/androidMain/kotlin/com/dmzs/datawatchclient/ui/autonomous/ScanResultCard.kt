@@ -48,12 +48,18 @@ internal fun ScanResultCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Security scan", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "Security scan",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.weight(1f))
             if (scanLoading) {
                 Text("…", style = MaterialTheme.typography.labelSmall)
             } else if (onTriggerScan != null) {
-                TextButton(onClick = onTriggerScan) { Text(stringResource(R.string.scan_run), style = MaterialTheme.typography.labelSmall) }
+                TextButton(onClick = onTriggerScan) {
+                    Text(stringResource(R.string.scan_run), style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
         if (scanResult != null) {
@@ -74,10 +80,17 @@ internal fun ScanResultCard(
                 Spacer(Modifier.weight(1f))
                 if (scanResult.findings.isNotEmpty()) {
                     if (onCreateFixPrd != null) {
-                        TextButton(onClick = onCreateFixPrd) { Text(stringResource(R.string.scan_fix_prd), style = MaterialTheme.typography.labelSmall) }
+                        TextButton(onClick = onCreateFixPrd) {
+                            Text(stringResource(R.string.scan_fix_prd), style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                     if (onProposeRules != null) {
-                        TextButton(onClick = onProposeRules) { Text(stringResource(R.string.scan_propose_rules), style = MaterialTheme.typography.labelSmall) }
+                        TextButton(onClick = onProposeRules) {
+                            Text(
+                                stringResource(R.string.scan_propose_rules),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
             }
@@ -85,7 +98,12 @@ internal fun ScanResultCard(
                 scanResult.findings.forEach { finding -> FindingRow(finding) }
             }
         } else if (!scanLoading) {
-            Text(stringResource(R.string.scan_no_result), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                stringResource(R.string.scan_no_result),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
         }
     }
 
@@ -93,8 +111,20 @@ internal fun ScanResultCard(
         androidx.compose.material3.AlertDialog(
             onDismissRequest = onDismissProposedRules,
             title = { Text(stringResource(R.string.scan_proposed_rules_title)) },
-            text = { Text(proposedRules.text.ifBlank { proposedRules.diff ?: "" }, style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
-            confirmButton = { TextButton(onClick = onDismissProposedRules) { Text(stringResource(R.string.action_close)) } },
+            text = {
+                Text(
+                    proposedRules.text.ifBlank {
+                        proposedRules.diff ?: ""
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = onDismissProposedRules,
+                ) { Text(stringResource(R.string.action_close)) }
+            },
             dismissButton = null,
         )
     }
@@ -102,13 +132,17 @@ internal fun ScanResultCard(
 
 @Composable
 private fun VerdictBadge(verdict: String) {
-    val (color, label) = when (verdict.lowercase()) {
-        "pass" -> Color(0xFF10B981) to stringResource(R.string.scan_verdict_pass)
-        "warn" -> Color(0xFFF59E0B) to stringResource(R.string.scan_verdict_warn)
-        else -> Color(0xFFEF4444) to stringResource(R.string.scan_verdict_fail)
-    }
+    val (color, label) =
+        when (verdict.lowercase()) {
+            "pass" -> Color(0xFF10B981) to stringResource(R.string.scan_verdict_pass)
+            "warn" -> Color(0xFFF59E0B) to stringResource(R.string.scan_verdict_warn)
+            else -> Color(0xFFEF4444) to stringResource(R.string.scan_verdict_fail)
+        }
     Box(
-        Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
+        Modifier.background(
+            color.copy(alpha = 0.18f),
+            RoundedCornerShape(4.dp),
+        ).padding(horizontal = 6.dp, vertical = 1.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
@@ -116,19 +150,29 @@ private fun VerdictBadge(verdict: String) {
 
 @Composable
 private fun FindingRow(finding: ScanFindingDto) {
-    val severityColor = when (finding.severity.lowercase()) {
-        "error" -> Color(0xFFEF4444)
-        "warning" -> Color(0xFFF59E0B)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val severityColor =
+        when (finding.severity.lowercase()) {
+            "error" -> Color(0xFFEF4444)
+            "warning" -> Color(0xFFF59E0B)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 2.dp, bottom = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Text(finding.severity.take(4).uppercase(), style = MaterialTheme.typography.labelSmall, color = severityColor, modifier = Modifier.padding(top = 1.dp))
+        Text(
+            finding.severity.take(4).uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = severityColor,
+            modifier = Modifier.padding(top = 1.dp),
+        )
         Column {
-            Text("${finding.file}${finding.line?.let { ":$it" } ?: ""}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "${finding.file}${finding.line?.let { ":$it" } ?: ""}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(finding.message, style = MaterialTheme.typography.bodySmall, maxLines = 2)
         }
     }

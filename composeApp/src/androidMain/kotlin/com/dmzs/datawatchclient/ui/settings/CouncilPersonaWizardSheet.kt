@@ -41,16 +41,17 @@ import kotlinx.coroutines.launch
 fun CouncilPersonaWizardSheet(
     onDismiss: () -> Unit,
     onSave: (name: String, prompt: String, description: String, assistBackend: String?) -> Unit,
-    existingPersona: CouncilPersonaForEdit? = null,   // null = create mode
+    existingPersona: CouncilPersonaForEdit? = null, // null = create mode
 ) {
-    val stepKeys = listOf(
-        R.string.council_wizard_step_focus,
-        R.string.council_wizard_step_stance,
-        R.string.council_wizard_step_tone,
-        R.string.council_wizard_step_antipatterns,
-        R.string.council_wizard_step_examples,
-    )
-    val totalPages = 6  // 5 steps + final tune page
+    val stepKeys =
+        listOf(
+            R.string.council_wizard_step_focus,
+            R.string.council_wizard_step_stance,
+            R.string.council_wizard_step_tone,
+            R.string.council_wizard_step_antipatterns,
+            R.string.council_wizard_step_examples,
+        )
+    val totalPages = 6 // 5 steps + final tune page
     val pagerState = rememberPagerState(pageCount = { totalPages })
     val scope = rememberCoroutineScope()
 
@@ -65,18 +66,19 @@ fun CouncilPersonaWizardSheet(
         if (existingPersona != null) {
             personaName = existingPersona.name
             personaDescription = existingPersona.description
-            answers[0] = existingPersona.prompt  // fallback: put full prompt in step 1
+            answers[0] = existingPersona.prompt // fallback: put full prompt in step 1
         }
     }
 
-    val assembledPrompt = buildString {
-        val labels = listOf("Focus", "Stance", "Tone", "Pushback", "Examples")
-        answers.forEachIndexed { i, ans ->
-            if (ans.isNotBlank()) {
-                appendLine("${labels[i]}: $ans")
+    val assembledPrompt =
+        buildString {
+            val labels = listOf("Focus", "Stance", "Tone", "Pushback", "Examples")
+            answers.forEachIndexed { i, ans ->
+                if (ans.isNotBlank()) {
+                    appendLine("${labels[i]}: $ans")
+                }
             }
-        }
-    }.trim()
+        }.trim()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -92,9 +94,10 @@ fun CouncilPersonaWizardSheet(
             // Progress bar
             LinearProgressIndicator(
                 progress = { (pagerState.currentPage + 1).toFloat() / totalPages },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
             )
             Spacer(Modifier.height(8.dp))
 
@@ -185,9 +188,10 @@ fun CouncilPersonaWizardSheet(
                         OutlinedTextField(
                             value = editablePrompt,
                             onValueChange = { editablePrompt = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
                             label = { Text(stringResource(R.string.council_wizard_draft_label)) },
                             minLines = 6,
                         )

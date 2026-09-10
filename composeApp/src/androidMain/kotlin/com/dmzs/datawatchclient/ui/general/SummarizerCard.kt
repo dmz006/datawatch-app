@@ -15,8 +15,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.dmzs.datawatchclient.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +23,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -34,7 +34,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Settings → General / Session — session response summarizer controls.
@@ -59,9 +58,10 @@ public fun SummarizerCard() {
     LaunchedEffect(Unit) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-            ?: profiles.firstOrNull { it.enabled }
-            ?: return@LaunchedEffect
+        val profile =
+            profiles.firstOrNull { it.id == activeId && it.enabled }
+                ?: profiles.firstOrNull { it.enabled }
+                ?: return@LaunchedEffect
         val transport = ServiceLocator.transportFor(profile)
         transport.fetchConfig().onSuccess { cfg ->
             val sess = cfg.raw["session"] as? JsonObject
@@ -75,19 +75,21 @@ public fun SummarizerCard() {
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         PwaSectionTitle("Session Summarizer", docsAnchor = "session-summarizer")
 
         // Toggle row
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -109,8 +111,9 @@ public fun SummarizerCard() {
                     scope.launch {
                         val profiles = ServiceLocator.profileRepository.observeAll().first()
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                            ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                        val profile =
+                            profiles.firstOrNull { it.id == activeId && it.enabled }
+                                ?: profiles.firstOrNull { it.enabled } ?: return@launch
                         ServiceLocator.transportFor(profile).writeConfig(
                             buildJsonObject { put("session.summarizer.enabled", JsonPrimitive(checked)) },
                         )
@@ -122,9 +125,10 @@ public fun SummarizerCard() {
         // LLM picker — only shown when enabled
         if (enabled) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -137,9 +141,10 @@ public fun SummarizerCard() {
                     llmRef.ifBlank { "— select —" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clickable(enabled = ollamaLlms.isNotEmpty()) { llmPickerExpanded = true }
-                        .padding(4.dp),
+                    modifier =
+                        Modifier
+                            .clickable(enabled = ollamaLlms.isNotEmpty()) { llmPickerExpanded = true }
+                            .padding(4.dp),
                 )
                 DropdownMenu(
                     expanded = llmPickerExpanded,
@@ -154,8 +159,9 @@ public fun SummarizerCard() {
                                 scope.launch {
                                     val profiles = ServiceLocator.profileRepository.observeAll().first()
                                     val activeId = ServiceLocator.activeServerStore.get()
-                                    val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: profiles.firstOrNull { it.enabled } ?: return@launch
+                                    val profile =
+                                        profiles.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: profiles.firstOrNull { it.enabled } ?: return@launch
                                     ServiceLocator.transportFor(profile).writeConfig(
                                         buildJsonObject { put("session.summarizer.llm_ref", JsonPrimitive(name)) },
                                     )
@@ -186,9 +192,10 @@ public fun SummarizerCard() {
 
             // Test row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (testResult != null) {
@@ -210,8 +217,9 @@ public fun SummarizerCard() {
                             scope.launch {
                                 val profiles = ServiceLocator.profileRepository.observeAll().first()
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-                                    ?: profiles.firstOrNull { it.enabled }
+                                val profile =
+                                    profiles.firstOrNull { it.id == activeId && it.enabled }
+                                        ?: profiles.firstOrNull { it.enabled }
                                 if (profile == null) {
                                     testResult = "No active server"
                                     isTesting = false

@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -54,13 +53,15 @@ public fun TailscaleSettingsCard() {
     var saveStatus by remember { mutableStateOf("") }
     var loadError by remember { mutableStateOf<String?>(null) }
 
-    suspend fun resolveTransport() = run {
-        val profiles = ServiceLocator.profileRepository.observeAll().first()
-        val activeId = ServiceLocator.activeServerStore.get()
-        val profile = profiles.firstOrNull { it.id == activeId && it.enabled }
-            ?: profiles.firstOrNull { it.enabled }
-        profile?.let { ServiceLocator.transportFor(it) }
-    }
+    suspend fun resolveTransport() =
+        run {
+            val profiles = ServiceLocator.profileRepository.observeAll().first()
+            val activeId = ServiceLocator.activeServerStore.get()
+            val profile =
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            profile?.let { ServiceLocator.transportFor(it) }
+        }
 
     fun load() {
         scope.launch {
@@ -144,7 +145,10 @@ public fun TailscaleSettingsCard() {
                 label = { Text(stringResource(R.string.tailscale_authkey_label)) },
                 placeholder = {
                     if (authKeyHasValue) {
-                        Text(stringResource(R.string.tailscale_authkey_placeholder), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.tailscale_authkey_placeholder),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -159,7 +163,10 @@ public fun TailscaleSettingsCard() {
                 label = { Text(stringResource(R.string.tailscale_apikey_label)) },
                 placeholder = {
                     if (apiKeyHasValue) {
-                        Text(stringResource(R.string.tailscale_apikey_placeholder), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.tailscale_apikey_placeholder),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -171,23 +178,27 @@ public fun TailscaleSettingsCard() {
             Button(onClick = {
                 scope.launch {
                     val transport = resolveTransport() ?: return@launch
-                    val patch = buildJsonObject {
-                        put("tailscale.enabled", JsonPrimitive(enabled))
-                        if (coordinatorUrl.isNotBlank()) {
-                            put("tailscale.coordinator_url", JsonPrimitive(coordinatorUrl))
+                    val patch =
+                        buildJsonObject {
+                            put("tailscale.enabled", JsonPrimitive(enabled))
+                            if (coordinatorUrl.isNotBlank()) {
+                                put("tailscale.coordinator_url", JsonPrimitive(coordinatorUrl))
+                            }
+                            if (image.isNotBlank()) {
+                                put("tailscale.image", JsonPrimitive(image))
+                            }
+                            if (authKey.isNotBlank()) {
+                                put("tailscale.auth_key", JsonPrimitive(authKey))
+                            }
+                            if (apiKey.isNotBlank()) {
+                                put("tailscale.api_key", JsonPrimitive(apiKey))
+                            }
                         }
-                        if (image.isNotBlank()) {
-                            put("tailscale.image", JsonPrimitive(image))
-                        }
-                        if (authKey.isNotBlank()) {
-                            put("tailscale.auth_key", JsonPrimitive(authKey))
-                        }
-                        if (apiKey.isNotBlank()) {
-                            put("tailscale.api_key", JsonPrimitive(apiKey))
-                        }
-                    }
                     transport.writeConfig(patch).fold(
-                        onSuccess = { saveStatus = "Saved"; load() },
+                        onSuccess = {
+                            saveStatus = "Saved"
+                            load()
+                        },
                         onFailure = { saveStatus = it.message ?: "Error" },
                     )
                 }

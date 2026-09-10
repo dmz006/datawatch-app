@@ -61,12 +61,16 @@ internal fun GuardrailLibraryCard() {
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.filter { it.enabled }.firstOrNull()
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                        }
+                    } ?: return@runCatching
             val transport = ServiceLocator.transportFor(sp)
 
             val libraryResult = transport.listGuardrailLibrary()
@@ -93,11 +97,12 @@ internal fun GuardrailLibraryCard() {
     if (!visible) return
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         // ── Section 1: Guardrail Library (collapsible) ──────────────────────
         Row(
@@ -115,8 +120,12 @@ internal fun GuardrailLibraryCard() {
             ) {
                 Icon(
                     if (libraryExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = if (libraryExpanded)
-                        stringResource(R.string.guardrail_library_title) else stringResource(R.string.guardrail_library_browse),
+                    contentDescription =
+                        if (libraryExpanded) {
+                            stringResource(R.string.guardrail_library_title)
+                        } else {
+                            stringResource(R.string.guardrail_library_browse)
+                        },
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -166,12 +175,16 @@ internal fun GuardrailLibraryCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp)
                                     .updateGuardrailProfile(updated.id, updated)
                                     .onSuccess { saved ->
@@ -185,12 +198,16 @@ internal fun GuardrailLibraryCard() {
                         scope.launch {
                             runCatching {
                                 val activeId = ServiceLocator.activeServerStore.get()
-                                val sp = ServiceLocator.profileRepository.observeAll()
-                                    .first { list -> list.any { it.enabled } }
-                                    .let { list ->
-                                        if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                        else list.firstOrNull { it.id == activeId && it.enabled }
-                                    } ?: return@runCatching
+                                val sp =
+                                    ServiceLocator.profileRepository.observeAll()
+                                        .first { list -> list.any { it.enabled } }
+                                        .let { list ->
+                                            if (activeId == null) {
+                                                list.filter { it.enabled }.firstOrNull()
+                                            } else {
+                                                list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        } ?: return@runCatching
                                 ServiceLocator.transportFor(sp)
                                     .deleteGuardrailProfile(id)
                                     .onSuccess {
@@ -212,19 +229,24 @@ internal fun GuardrailLibraryCard() {
                 scope.launch {
                     runCatching {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val sp = ServiceLocator.profileRepository.observeAll()
-                            .first { list -> list.any { it.enabled } }
-                            .let { list ->
-                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
-                                else list.firstOrNull { it.id == activeId && it.enabled }
-                            } ?: return@runCatching
-                        val newProfile = GuardrailProfileDto(
-                            id = "",
-                            name = "",
-                            guardrails = emptyList(),
-                            blockOn = emptyList(),
-                            warnOn = emptyList(),
-                        )
+                        val sp =
+                            ServiceLocator.profileRepository.observeAll()
+                                .first { list -> list.any { it.enabled } }
+                                .let { list ->
+                                    if (activeId == null) {
+                                        list.filter { it.enabled }.firstOrNull()
+                                    } else {
+                                        list.firstOrNull { it.id == activeId && it.enabled }
+                                    }
+                                } ?: return@runCatching
+                        val newProfile =
+                            GuardrailProfileDto(
+                                id = "",
+                                name = "",
+                                guardrails = emptyList(),
+                                blockOn = emptyList(),
+                                warnOn = emptyList(),
+                            )
                         ServiceLocator.transportFor(sp)
                             .createGuardrailProfile(newProfile)
                             .onSuccess { created ->
@@ -244,9 +266,10 @@ internal fun GuardrailLibraryCard() {
 @Composable
 private fun GuardrailLibraryItemRow(item: GuardrailLibraryItemDto) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -266,15 +289,17 @@ private fun GuardrailLibraryItemRow(item: GuardrailLibraryItemDto) {
 
 @Composable
 private fun GuardrailKindBadge(kind: String) {
-    val (bg, fg) = when (kind.lowercase()) {
-        "block" -> Color(0xFFEF4444) to Color(0xFFEF4444)
-        "warn" -> Color(0xFFF59E0B) to Color(0xFFF59E0B)
-        else -> Color(0xFF10B981) to Color(0xFF10B981)
-    }
+    val (bg, fg) =
+        when (kind.lowercase()) {
+            "block" -> Color(0xFFEF4444) to Color(0xFFEF4444)
+            "warn" -> Color(0xFFF59E0B) to Color(0xFFF59E0B)
+            else -> Color(0xFF10B981) to Color(0xFF10B981)
+        }
     Box(
-        modifier = Modifier
-            .background(bg.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .background(bg.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
             kind.ifEmpty { "check" },
@@ -303,10 +328,11 @@ private fun GuardrailProfileRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         // ── Profile header row ──────────────────────────────────────────────
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onToggleExpand)
-                .padding(vertical = 4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpand)
+                    .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -335,9 +361,10 @@ private fun GuardrailProfileRow(
         // ── Inline editor ───────────────────────────────────────────────────
         if (isExpanded) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp, top = 4.dp, bottom = 4.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, top = 4.dp, bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Name field
@@ -388,11 +415,12 @@ private fun GuardrailProfileRow(
                 }
 
                 // Block on (only from selected guardrails or all if library empty)
-                val availableForBlockWarn = if (library.isEmpty()) {
-                    editGuardrailsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                } else {
-                    editGuardrails.toList()
-                }
+                val availableForBlockWarn =
+                    if (library.isEmpty()) {
+                        editGuardrailsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    } else {
+                        editGuardrails.toList()
+                    }
 
                 if (availableForBlockWarn.isNotEmpty()) {
                     Text(
@@ -444,18 +472,19 @@ private fun GuardrailProfileRow(
                 ) {
                     FilledTonalButton(
                         onClick = {
-                            val resolvedGuardrails = if (library.isEmpty()) {
-                                editGuardrailsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                            } else {
-                                editGuardrails.toList()
-                            }
+                            val resolvedGuardrails =
+                                if (library.isEmpty()) {
+                                    editGuardrailsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                                } else {
+                                    editGuardrails.toList()
+                                }
                             onSave(
                                 profile.copy(
                                     name = editName,
                                     guardrails = resolvedGuardrails,
                                     blockOn = editBlockOn.toList(),
                                     warnOn = editWarnOn.toList(),
-                                )
+                                ),
                             )
                         },
                         modifier = Modifier.weight(1f),
@@ -465,9 +494,10 @@ private fun GuardrailProfileRow(
                     Spacer(modifier = Modifier.width(4.dp))
                     OutlinedButton(
                         onClick = { onDelete(profile.id) },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error,
-                        ),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
                     ) {
                         Icon(
                             Icons.Filled.Delete,

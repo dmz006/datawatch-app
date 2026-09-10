@@ -31,30 +31,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
-import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -80,6 +73,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -99,14 +94,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.dmzs.datawatchclient.R
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
-import com.dmzs.datawatchclient.ui.common.AlertsBellAction
-import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.CurrentStatusDto
+import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
+import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaStatePill
@@ -165,9 +161,10 @@ public fun SessionsScreen(
     // first-poll lag that made sessions feel stale on resume.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     androidx.compose.runtime.DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) vm.refresh()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) vm.refresh()
+            }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
@@ -229,7 +226,13 @@ public fun SessionsScreen(
                             Icon(
                                 if (toolbarExpanded) Icons.Filled.Close else Icons.Filled.Search,
                                 contentDescription =
-                                    if (toolbarExpanded) stringResource(R.string.sessions_filter_collapse) else stringResource(R.string.sessions_filter_expand),
+                                    if (toolbarExpanded) {
+                                        stringResource(
+                                            R.string.sessions_filter_collapse,
+                                        )
+                                    } else {
+                                        stringResource(R.string.sessions_filter_expand)
+                                    },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -302,8 +305,9 @@ public fun SessionsScreen(
                 doneCount = state.doneCount,
                 visibleDoneCount = state.visibleDoneCount,
                 onStateFilterChange = vm::setStateFilter,
-                historyAllSelected = state.historySessionIds.isNotEmpty() &&
-                    selectedIds.containsAll(state.historySessionIds),
+                historyAllSelected =
+                    state.historySessionIds.isNotEmpty() &&
+                        selectedIds.containsAll(state.historySessionIds),
                 onSelectAllHistory = {
                     val histIds = state.historySessionIds.toSet()
                     selectedIds = if (selectedIds.containsAll(histIds)) emptySet() else histIds
@@ -312,9 +316,10 @@ public fun SessionsScreen(
                 selectMode = selectionMode,
                 selectedCount = selectedIds.size,
                 onSelectAllInactive = {
-                    val doneIds = state.visibleSessions.filter {
-                        it.state == SessionState.Completed || it.state == SessionState.Killed || it.state == SessionState.Error
-                    }.map { it.id }.toSet()
+                    val doneIds =
+                        state.visibleSessions.filter {
+                            it.state == SessionState.Completed || it.state == SessionState.Killed || it.state == SessionState.Error
+                        }.map { it.id }.toSet()
                     selectedIds = if (selectedIds.containsAll(doneIds)) emptySet() else selectedIds + doneIds
                 },
                 onCancelSelection = { selectedIds = emptySet() },
@@ -578,10 +583,16 @@ private fun SessionsToolbar(
                     trailingIcon = {
                         if (filterText.isNotEmpty()) {
                             IconButton(onClick = { onFilterTextChange("") }) {
-                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.sessions_clear_filter))
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.sessions_clear_filter),
+                                )
                             }
                         } else {
-                            IconButton(onClick = { onFilterTextChange(""); onCollapse() }) {
+                            IconButton(onClick = {
+                                onFilterTextChange("")
+                                onCollapse()
+                            }) {
                                 Icon(
                                     Icons.Filled.Close,
                                     contentDescription = stringResource(R.string.sessions_collapse_toolbar),
@@ -594,10 +605,21 @@ private fun SessionsToolbar(
                 )
                 OutlinedButton(
                     onClick = { llmExpanded = !llmExpanded },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 4.dp,
+                        ),
                 ) {
-                    Text(stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1), style = MaterialTheme.typography.labelSmall)
-                    Icon(if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, modifier = Modifier.size(12.dp))
+                    Text(
+                        stringResource(R.string.llm_filter_btn_tip, backendCounts.size + 1),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                    Icon(
+                        if (llmExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                    )
                 }
             }
             // State filter chips always visible when toolbar is expanded
@@ -605,12 +627,13 @@ private fun SessionsToolbar(
             val stateFilterActiveLabel = stringResource(R.string.session_filter_active)
             val stateFilterWaitingLabel = stringResource(R.string.session_filter_waiting)
             val stateFilterDoneLabel = stringResource(R.string.session_filter_done)
-            val stateChips = listOf(
-                Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
-                Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
-                Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
-                Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
-            )
+            val stateChips =
+                listOf(
+                    Triple(SessionsViewModel.SessionStateFilter.ALL, stateFilterAllLabel, -1),
+                    Triple(SessionsViewModel.SessionStateFilter.ACTIVE, stateFilterActiveLabel, activeCount),
+                    Triple(SessionsViewModel.SessionStateFilter.WAITING, stateFilterWaitingLabel, waitingCount),
+                    Triple(SessionsViewModel.SessionStateFilter.DONE, stateFilterDoneLabel, doneCount),
+                )
             LazyRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
@@ -619,7 +642,12 @@ private fun SessionsToolbar(
                     FilterChip(
                         selected = stateFilter == filter,
                         onClick = { onStateFilterChange(filter) },
-                        label = { Text(if (count >= 0) "$label ($count)" else label, style = MaterialTheme.typography.labelSmall) },
+                        label = {
+                            Text(
+                                if (count >= 0) "$label ($count)" else label,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                         colors = FilterChipDefaults.filterChipColors(),
                     )
                 }
@@ -674,7 +702,11 @@ private fun SessionsToolbar(
                     if (showHistory && onSelectAllHistory != null) {
                         OutlinedButton(
                             onClick = onSelectAllHistory,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
                         ) {
                             Text(
                                 if (historyAllSelected) "☑ None" else "☑ All",
@@ -692,7 +724,10 @@ private fun SessionsToolbar(
                                 vertical = 4.dp,
                             ),
                     ) {
-                        Text(stringResource(R.string.sessions_sort_prefix, sortOrder.label), style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            stringResource(R.string.sessions_sort_prefix, sortOrder.label),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
                     DropdownMenu(
                         expanded = sortMenuOpen,
@@ -725,16 +760,21 @@ private fun SessionsToolbar(
         // PWA parity: action bar when in select mode
         if (selectMode) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .padding(horizontal = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
             ) {
                 OutlinedButton(
                     onClick = onSelectAllInactive,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 4.dp,
+                        ),
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
@@ -745,7 +785,11 @@ private fun SessionsToolbar(
                 OutlinedButton(
                     onClick = onDeleteSelected,
                     enabled = selectedCount > 0,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 4.dp,
+                        ),
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
@@ -756,7 +800,11 @@ private fun SessionsToolbar(
                 }
                 OutlinedButton(
                     onClick = onCancelSelection,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 4.dp,
+                        ),
                 ) {
                     Text(
                         "Done",
@@ -836,9 +884,10 @@ private fun SessionRow(
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     val colors = LocalDatawatchColors.current
     val timeLabel = relativeTimeLabel(session.lastActivityAt.toEpochMilliseconds())
-    val isDoneState = session.state == SessionState.Completed ||
-        session.state == SessionState.Killed ||
-        session.state == SessionState.Error
+    val isDoneState =
+        session.state == SessionState.Completed ||
+            session.state == SessionState.Killed ||
+            session.state == SessionState.Error
 
     Column(
         modifier =
@@ -995,7 +1044,11 @@ private fun SessionRow(
             if (!session.lastResponse.isNullOrBlank()) {
                 TextButton(
                     onClick = { responseOpen = true },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 6.dp,
+                            vertical = 0.dp,
+                        ),
                     modifier = Modifier.height(20.dp),
                 ) {
                     Icon(
@@ -1077,7 +1130,11 @@ private fun SessionRow(
             ) {
                 TextButton(
                     onClick = { summaryExpanded = !summaryExpanded },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 4.dp,
+                            vertical = 0.dp,
+                        ),
                     modifier = Modifier.height(24.dp),
                 ) {
                     Icon(
@@ -1150,7 +1207,11 @@ private fun SessionRow(
                                     }
                                 }
                             },
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp,
+                                ),
                         ) {
                             Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1160,7 +1221,10 @@ private fun SessionRow(
                             CurrentStatusSheet(
                                 status = currentStatusText!!,
                                 statusLong = currentStatusLongText,
-                                onDismiss = { currentStatusOpen = false; currentStatusLongText = null },
+                                onDismiss = {
+                                    currentStatusOpen = false
+                                    currentStatusLongText = null
+                                },
                                 onResummarize = onResummarize,
                             )
                         }
@@ -1399,7 +1463,15 @@ private fun ServerPickerTitle(
             modifier = Modifier.clickable(onClick = onToggle).padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(if (allMode) stringResource(R.string.sessions_all_servers) else (active?.displayName ?: stringResource(R.string.sessions_no_server)))
+            Text(
+                if (allMode) {
+                    stringResource(
+                        R.string.sessions_all_servers,
+                    )
+                } else {
+                    (active?.displayName ?: stringResource(R.string.sessions_no_server))
+                },
+            )
             Icon(
                 Icons.Filled.ArrowDropDown,
                 contentDescription = stringResource(R.string.sessions_switch_server),
@@ -1600,18 +1672,28 @@ internal fun LastResponseSheet(
             .ifBlank { response }
     val context = androidx.compose.ui.platform.LocalContext.current
     var isSpeaking by remember { mutableStateOf(false) }
-    val tts = remember {
-        var instance: android.speech.tts.TextToSpeech? = null
-        instance = android.speech.tts.TextToSpeech(context) { status ->
-            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
-                instance?.language = java.util.Locale.getDefault()
-            }
+    val tts =
+        remember {
+            var instance: android.speech.tts.TextToSpeech? = null
+            instance =
+                android.speech.tts.TextToSpeech(context) { status ->
+                    if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                        instance?.language = java.util.Locale.getDefault()
+                    }
+                }
+            instance
         }
-        instance
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
     }
-    DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
 
-    ModalBottomSheet(onDismissRequest = { tts?.stop(); onDismiss() }, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = {
+        tts?.stop()
+        onDismiss()
+    }, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier
@@ -1666,16 +1748,26 @@ internal fun CurrentStatusSheet(
     var displayStatus by remember { mutableStateOf(status) }
     var displayLong by remember { mutableStateOf(statusLong) }
     val scope = rememberCoroutineScope()
-    val tts = remember {
-        var instance: android.speech.tts.TextToSpeech? = null
-        instance = android.speech.tts.TextToSpeech(context) { s ->
-            if (s == android.speech.tts.TextToSpeech.SUCCESS) instance?.language = java.util.Locale.getDefault()
+    val tts =
+        remember {
+            var instance: android.speech.tts.TextToSpeech? = null
+            instance =
+                android.speech.tts.TextToSpeech(context) { s ->
+                    if (s == android.speech.tts.TextToSpeech.SUCCESS) instance?.language = java.util.Locale.getDefault()
+                }
+            instance
         }
-        instance
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
     }
-    DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
 
-    ModalBottomSheet(onDismissRequest = { tts?.stop(); onDismiss() }, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = {
+        tts?.stop()
+        onDismiss()
+    }, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1702,8 +1794,13 @@ internal fun CurrentStatusSheet(
                 }
                 IconButton(onClick = {
                     val text = if (expanded && displayLong != null) displayLong!! else displayStatus
-                    if (isSpeaking) { tts?.stop(); isSpeaking = false }
-                    else { isSpeaking = true; tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs") }
+                    if (isSpeaking) {
+                        tts?.stop()
+                        isSpeaking = false
+                    } else {
+                        isSpeaking = true
+                        tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "cs")
+                    }
                 }) {
                     Icon(
                         if (isSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
@@ -1769,30 +1866,35 @@ internal fun QuickCommandsSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var saved by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var systemCmds by remember { mutableStateOf<List<com.dmzs.datawatchclient.transport.QuickCommandItem>>(emptyList()) }
+    var systemCmds by remember {
+        mutableStateOf<List<com.dmzs.datawatchclient.transport.QuickCommandItem>>(
+            emptyList(),
+        )
+    }
     var customText by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
         saved = fetchSavedCommands()
         systemCmds = fetchSystemCommands()
     }
     // Hard-coded fallback list used when server doesn't expose quick_commands (pre-datawatch#28 daemons).
-    val fallbackSystemCmds = listOf(
-        com.dmzs.datawatchclient.transport.QuickCommandItem("approve", "yes"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("reject", "no"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("continue", "continue"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("skip", "skip"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("quit", "/exit"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("Enter", "\n"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("ESC", ""),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("Ctrl-b", ""),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("↑", "[A"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("↓", "[B"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("→", "[C"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("←", "[D"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("PgUp", "[5~"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("PgDn", "[6~"),
-        com.dmzs.datawatchclient.transport.QuickCommandItem("Tab", "	"),
-    )
+    val fallbackSystemCmds =
+        listOf(
+            com.dmzs.datawatchclient.transport.QuickCommandItem("approve", "yes"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("reject", "no"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("continue", "continue"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("skip", "skip"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("quit", "/exit"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("Enter", "\n"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("ESC", ""),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("Ctrl-b", ""),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("↑", "[A"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("↓", "[B"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("→", "[C"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("←", "[D"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("PgUp", "[5~"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("PgDn", "[6~"),
+            com.dmzs.datawatchclient.transport.QuickCommandItem("Tab", "	"),
+        )
     val effectiveSystemCmds = systemCmds.ifEmpty { fallbackSystemCmds }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
@@ -1881,100 +1983,116 @@ internal fun QuickCommandsSheet(
                     value = customText,
                     onValueChange = { customText = it },
                     placeholder = {
-                        Text(if (recording) stringResource(R.string.sessions_listening) else stringResource(R.string.sessions_reply_hint))
+                        Text(
+                            if (recording) {
+                                stringResource(
+                                    R.string.sessions_listening,
+                                )
+                            } else {
+                                stringResource(R.string.sessions_reply_hint)
+                            },
+                        )
                     },
                     singleLine = true,
                     enabled = !recording,
                     modifier = Modifier.weight(1f),
                 )
-                if (whisperConfigured) IconButton(
-                    onClick = {
-                        if (recording) {
-                            val r = recorder ?: return@IconButton
-                            recorder = null
-                            val captured = r.stop() ?: return@IconButton
-                            transcribing = true
-                            scope.launch {
-                                val activeId =
-                                    com.dmzs.datawatchclient.di.ServiceLocator
-                                        .activeServerStore.get()
-                                val profiles =
-                                    com.dmzs.datawatchclient.di.ServiceLocator
-                                        .profileRepository.observeAll().first()
-                                val profile =
-                                    profiles.firstOrNull { it.id == activeId && it.enabled }
-                                        ?: profiles.firstOrNull { it.enabled }
-                                if (profile != null) {
-                                    com.dmzs.datawatchclient.di.ServiceLocator
-                                        .transportFor(profile)
-                                        .transcribeAudio(
-                                            audio = captured.first,
-                                            audioMime = captured.second,
-                                            sessionId = sessionId,
-                                            autoExec = false,
-                                        ).fold(
-                                            onSuccess = { result ->
-                                                customText =
-                                                    (customText + " " + result.transcript)
-                                                        .trim()
-                                            },
-                                            onFailure = { err ->
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    "Transcribe failed on ${profile.displayName}: " +
-                                                        "${err.message ?: err::class.simpleName}",
-                                                    android.widget.Toast.LENGTH_LONG,
-                                                ).show()
-                                            },
-                                        )
-                                }
-                                transcribing = false
-                            }
-                        } else {
-                            val granted =
-                                androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context,
-                                    android.Manifest.permission.RECORD_AUDIO,
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            if (granted) {
-                                val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
-                                runCatching { r.start() }
-                                    .onSuccess { recorder = r }
-                                    .onFailure { e ->
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Recording failed: ${e.message ?: e::class.simpleName}",
-                                            android.widget.Toast.LENGTH_SHORT,
-                                        ).show()
-                                    }
-                            } else {
-                                micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                            }
-                        }
-                    },
-                    enabled = !transcribing,
-                ) {
-                    if (transcribing) {
-                        CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.padding(4.dp),
-                        )
-                    } else {
-                        Icon(
+                if (whisperConfigured) {
+                    IconButton(
+                        onClick = {
                             if (recording) {
-                                Icons.Filled.Stop
+                                val r = recorder ?: return@IconButton
+                                recorder = null
+                                val captured = r.stop() ?: return@IconButton
+                                transcribing = true
+                                scope.launch {
+                                    val activeId =
+                                        com.dmzs.datawatchclient.di.ServiceLocator
+                                            .activeServerStore.get()
+                                    val profiles =
+                                        com.dmzs.datawatchclient.di.ServiceLocator
+                                            .profileRepository.observeAll().first()
+                                    val profile =
+                                        profiles.firstOrNull { it.id == activeId && it.enabled }
+                                            ?: profiles.firstOrNull { it.enabled }
+                                    if (profile != null) {
+                                        com.dmzs.datawatchclient.di.ServiceLocator
+                                            .transportFor(profile)
+                                            .transcribeAudio(
+                                                audio = captured.first,
+                                                audioMime = captured.second,
+                                                sessionId = sessionId,
+                                                autoExec = false,
+                                            ).fold(
+                                                onSuccess = { result ->
+                                                    customText =
+                                                        (customText + " " + result.transcript)
+                                                            .trim()
+                                                },
+                                                onFailure = { err ->
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        "Transcribe failed on ${profile.displayName}: " +
+                                                            "${err.message ?: err::class.simpleName}",
+                                                        android.widget.Toast.LENGTH_LONG,
+                                                    ).show()
+                                                },
+                                            )
+                                    }
+                                    transcribing = false
+                                }
                             } else {
-                                Icons.Filled.Mic
-                            },
-                            contentDescription =
-                                if (recording) stringResource(R.string.sessions_stop_recording) else stringResource(R.string.sessions_voice_reply),
-                            tint =
-                                if (recording) {
-                                    MaterialTheme.colorScheme.error
+                                val granted =
+                                    androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context,
+                                        android.Manifest.permission.RECORD_AUDIO,
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (granted) {
+                                    val r = com.dmzs.datawatchclient.voice.VoiceRecorder(context)
+                                    runCatching { r.start() }
+                                        .onSuccess { recorder = r }
+                                        .onFailure { e ->
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Recording failed: ${e.message ?: e::class.simpleName}",
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
                                 } else {
-                                    MaterialTheme.colorScheme.primary
+                                    micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                }
+                            }
+                        },
+                        enabled = !transcribing,
+                    ) {
+                        if (transcribing) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.padding(4.dp),
+                            )
+                        } else {
+                            Icon(
+                                if (recording) {
+                                    Icons.Filled.Stop
+                                } else {
+                                    Icons.Filled.Mic
                                 },
-                        )
+                                contentDescription =
+                                    if (recording) {
+                                        stringResource(
+                                            R.string.sessions_stop_recording,
+                                        )
+                                    } else {
+                                        stringResource(R.string.sessions_voice_reply)
+                                    },
+                                tint =
+                                    if (recording) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.primary
+                                    },
+                            )
+                        }
                     }
                 }
                 IconButton(

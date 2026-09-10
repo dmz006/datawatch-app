@@ -49,8 +49,9 @@ public fun CostRatesCard() {
     fun load() {
         scope.launch {
             val activeId = ServiceLocator.activeServerStore.get()
-            val profile = ServiceLocator.profileRepository.observeAll().first()
-                .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
+            val profile =
+                ServiceLocator.profileRepository.observeAll().first()
+                    .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
             ServiceLocator.transportFor(profile).getCostRates().fold(
                 onSuccess = { dto ->
                     rates = dto.rates
@@ -144,16 +145,21 @@ public fun CostRatesCard() {
                 Button(onClick = {
                     scope.launch {
                         val activeId = ServiceLocator.activeServerStore.get()
-                        val profile = ServiceLocator.profileRepository.observeAll().first()
-                            .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
-                        val newRates = rates.keys.associateWith { n ->
-                            CostRateDto(
-                                inPerK = editedIn[n]?.toDoubleOrNull(),
-                                outPerK = editedOut[n]?.toDoubleOrNull(),
-                            )
-                        }
+                        val profile =
+                            ServiceLocator.profileRepository.observeAll().first()
+                                .firstOrNull { it.id == activeId && it.enabled } ?: return@launch
+                        val newRates =
+                            rates.keys.associateWith { n ->
+                                CostRateDto(
+                                    inPerK = editedIn[n]?.toDoubleOrNull(),
+                                    outPerK = editedOut[n]?.toDoubleOrNull(),
+                                )
+                            }
                         ServiceLocator.transportFor(profile).saveCostRates(newRates).fold(
-                            onSuccess = { saveStatus = "Saved"; load() },
+                            onSuccess = {
+                                saveStatus = "Saved"
+                                load()
+                            },
                             onFailure = { saveStatus = it.message ?: "Error" },
                         )
                     }

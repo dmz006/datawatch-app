@@ -111,10 +111,11 @@ public fun DatawatchToastHost(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .wrapContentWidth(Alignment.End)
-            .padding(end = 12.dp, bottom = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.End)
+                .padding(end = 12.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.End,
     ) {
@@ -127,25 +128,27 @@ public fun DatawatchToastHost(
         //   "[Claude] Connection lost"    → "Connection lost"
         //   "[opencode] Error: timeout"   → "Error: timeout"
         //   "Connection lost"             → "Connection lost"  (no change)
-        val dedupedToasts = remember(toasts) {
-            val map = linkedMapOf<Pair<String, String>, Pair<ToastMessage, Int>>()
-            toasts.forEachIndexed { _, t ->
-                val key = stripPrefix(t.message) to t.detail
-                val existing = map[key]
-                if (existing == null) {
-                    map[key] = t to 1
-                } else {
-                    // Promote showReconnect if any duplicate carries it.
-                    val merged = if (t.showReconnect && !existing.first.showReconnect) {
-                        existing.first.copy(showReconnect = true)
+        val dedupedToasts =
+            remember(toasts) {
+                val map = linkedMapOf<Pair<String, String>, Pair<ToastMessage, Int>>()
+                toasts.forEachIndexed { _, t ->
+                    val key = stripPrefix(t.message) to t.detail
+                    val existing = map[key]
+                    if (existing == null) {
+                        map[key] = t to 1
                     } else {
-                        existing.first
+                        // Promote showReconnect if any duplicate carries it.
+                        val merged =
+                            if (t.showReconnect && !existing.first.showReconnect) {
+                                existing.first.copy(showReconnect = true)
+                            } else {
+                                existing.first
+                            }
+                        map[key] = merged to (existing.second + 1)
                     }
-                    map[key] = merged to (existing.second + 1)
                 }
+                map.values.toList()
             }
-            map.values.toList()
-        }
         dedupedToasts.forEachIndexed { idx, (toast, count) ->
             DatawatchToastItem(
                 toast = toast,
@@ -164,18 +167,20 @@ public fun LiveDot(modifier: Modifier = Modifier) {
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
         targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "live-dot-alpha",
     )
     Box(
-        modifier = modifier
-            .size(8.dp)
-            .drawBehind {
-                drawCircle(color = Color(0xFF10B981), alpha = alpha)
-            },
+        modifier =
+            modifier
+                .size(8.dp)
+                .drawBehind {
+                    drawCircle(color = Color(0xFF10B981), alpha = alpha)
+                },
     )
 }
 
@@ -191,13 +196,15 @@ private fun DatawatchToastItem(
     Card(
         modifier = Modifier.fillMaxWidth(0.75f),
         shape = RoundedCornerShape(6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (toast.isError) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (toast.isError) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Row(
@@ -257,5 +264,4 @@ private fun DatawatchToastItem(
  * - `"[opencode] Error: timeout"` → `"Error: timeout"`
  * - `"Connection lost"` → `"Connection lost"` (no change)
  */
-internal fun stripPrefix(message: String): String =
-    message.replace(Regex("""^\[[^\]]+]\s*"""), "")
+internal fun stripPrefix(message: String): String = message.replace(Regex("""^\[[^\]]+]\s*"""), "")

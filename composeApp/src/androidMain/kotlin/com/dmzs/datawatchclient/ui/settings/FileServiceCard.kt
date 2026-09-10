@@ -62,19 +62,24 @@ public fun FileServiceCard() {
 
     suspend fun reload() {
         activeTransport()?.getFileServiceMeta()
-            ?.onSuccess { m -> meta = m; loadError = null; rootInput = m.root }
+            ?.onSuccess { m ->
+                meta = m
+                loadError = null
+                rootInput = m.root
+            }
             ?.onFailure { loadError = it.message }
     }
 
     LaunchedEffect(Unit) { reload() }
 
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            selectedFileUri = uri
-            selectedFileName = uri.lastPathSegment?.substringAfterLast('/') ?: "file"
-            if (uploadPath.isBlank()) uploadPath = selectedFileName
+    val filePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                selectedFileUri = uri
+                selectedFileName = uri.lastPathSegment?.substringAfterLast('/') ?: "file"
+                if (uploadPath.isBlank()) uploadPath = selectedFileName
+            }
         }
-    }
 
     Box(
         Modifier
@@ -84,25 +89,31 @@ public fun FileServiceCard() {
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PwaSectionTitle(stringResource(R.string.file_service_title), docsAnchor = "file-service", modifier = Modifier.weight(1f))
+                PwaSectionTitle(
+                    stringResource(R.string.file_service_title),
+                    docsAnchor = "file-service",
+                    modifier = Modifier.weight(1f),
+                )
                 IconButton(onClick = { scope.launch { reload() } }) {
                     Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
                 }
             }
 
             when {
-                loadError != null -> Text(
-                    loadError!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                meta == null -> Text(
-                    stringResource(R.string.common_loading),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                loadError != null ->
+                    Text(
+                        loadError!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                meta == null ->
+                    Text(
+                        stringResource(R.string.common_loading),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 else -> {
                     val m = meta!!
 
@@ -138,15 +149,26 @@ public fun FileServiceCard() {
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(stringResource(R.string.file_service_discussions), style = MaterialTheme.typography.bodySmall)
-                        Text("${m.discussions.size}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.file_service_discussions),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            "${m.discussions.size}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(stringResource(R.string.file_service_peers), style = MaterialTheme.typography.bodySmall)
-                        Text("${m.peers.size}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "${m.peers.size}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
 
                     // File upload section
@@ -165,7 +187,10 @@ public fun FileServiceCard() {
                             onClick = { filePicker.launch("*/*") },
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text(if (selectedFileName.isBlank()) "Choose File" else selectedFileName, style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                if (selectedFileName.isBlank()) "Choose File" else selectedFileName,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
                         }
                         OutlinedTextField(
                             value = uploadPath,
@@ -206,7 +231,15 @@ public fun FileServiceCard() {
                         Text(
                             it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (it.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            color =
+                                if (it.startsWith(
+                                        "Error",
+                                    )
+                                ) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }

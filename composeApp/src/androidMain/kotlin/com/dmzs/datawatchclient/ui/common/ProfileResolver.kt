@@ -42,9 +42,12 @@ public fun interface ProfileResolver {
                 val activeId = ServiceLocator.activeServerStore.get()
                 val profiles = ServiceLocator.profileRepository.observeAll().first()
                 val profile =
-                    if (activeId == null) profiles.firstOrNull { it.enabled }
-                    else profiles.firstOrNull { it.id == activeId && it.enabled }
-                        ?: profiles.firstOrNull { it.enabled }
+                    if (activeId == null) {
+                        profiles.firstOrNull { it.enabled }
+                    } else {
+                        profiles.firstOrNull { it.id == activeId && it.enabled }
+                            ?: profiles.firstOrNull { it.enabled }
+                    }
                 profile?.let { it to ServiceLocator.transportFor(it) }
             }
     }

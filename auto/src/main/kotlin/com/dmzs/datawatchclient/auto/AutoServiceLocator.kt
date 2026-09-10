@@ -63,10 +63,11 @@ public object AutoServiceLocator {
 
     private var _tokenVault: TokenVault? = null
     private val tokenVault: TokenVault
-        get() = _tokenVault ?: run {
-            val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
-            TokenVault(ctx).also { _tokenVault = it }
-        }
+        get() =
+            _tokenVault ?: run {
+                val ctx = requireNotNull(appContext) { "AutoServiceLocator not init()ed" }
+                TokenVault(ctx).also { _tokenVault = it }
+            }
 
     private var _httpClient: HttpClient? = null
     private var _trustAllClient: HttpClient? = null

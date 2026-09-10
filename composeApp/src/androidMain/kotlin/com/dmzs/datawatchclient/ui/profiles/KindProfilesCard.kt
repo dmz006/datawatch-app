@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.transport.dto.AgentSettingsDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
@@ -35,8 +34,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 /**
  * Shared list-plus-delete-plus-smoke card for F10 profile kinds
@@ -296,7 +293,12 @@ internal fun ProfileEditDialog(
                         value = claudeKeySecret,
                         onValueChange = { claudeKeySecret = it },
                         label = { Text(stringResource(R.string.profile_claude_key_secret_label)) },
-                        placeholder = { Text(stringResource(R.string.profile_claude_key_secret_ph), style = MaterialTheme.typography.labelSmall) },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.profile_claude_key_secret_ph),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -304,7 +306,12 @@ internal fun ProfileEditDialog(
                         value = opencodeUrl,
                         onValueChange = { opencodeUrl = it },
                         label = { Text(stringResource(R.string.profile_ollama_url_label)) },
-                        placeholder = { Text(stringResource(R.string.profile_ollama_url_ph), style = MaterialTheme.typography.labelSmall) },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.profile_ollama_url_ph),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     )
@@ -312,7 +319,12 @@ internal fun ProfileEditDialog(
                         value = opencodeModel,
                         onValueChange = { opencodeModel = it },
                         label = { Text(stringResource(R.string.profile_ollama_model_label)) },
-                        placeholder = { Text(stringResource(R.string.profile_ollama_model_ph), style = MaterialTheme.typography.labelSmall) },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.profile_ollama_model_ph),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     )
@@ -320,7 +332,12 @@ internal fun ProfileEditDialog(
                         value = opencodeModels,
                         onValueChange = { opencodeModels = it },
                         label = { Text(stringResource(R.string.profile_ollama_models_label)) },
-                        placeholder = { Text(stringResource(R.string.profile_ollama_models_ph), style = MaterialTheme.typography.labelSmall) },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.profile_ollama_models_ph),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     )
@@ -341,31 +358,44 @@ internal fun ProfileEditDialog(
                 onClick = {
                     val n = nameInput.trim()
                     if (n.isBlank()) return@TextButton
-                    val modelsList = opencodeModels.split(",")
-                        .map { it.trim() }.filter { it.isNotBlank() }
-                    val agentSettingsObj = kotlinx.serialization.json.buildJsonObject {
-                        if (claudeKeySecret.isNotBlank()) put("claude_auth_key_secret", JsonPrimitive(claudeKeySecret.trim()))
-                        if (opencodeUrl.isNotBlank()) put("opencode_ollama_url", JsonPrimitive(opencodeUrl.trim()))
-                        if (opencodeModel.isNotBlank()) put("opencode_model", JsonPrimitive(opencodeModel.trim()))
-                        if (modelsList.isNotEmpty()) put("opencode_models", JsonArray(modelsList.map { JsonPrimitive(it) }))
-                    }
-                    val body = kotlinx.serialization.json.buildJsonObject {
-                        existing?.forEach { (k, v) ->
-                            when (k) {
-                                "name" -> put(k, JsonPrimitive(n))
-                                "description" -> put(k, JsonPrimitive(description.trim()))
-                                "agent_settings" -> if (kind == "project") put(k, agentSettingsObj) else put(k, v)
-                                else -> put(k, v)
+                    val modelsList =
+                        opencodeModels.split(",")
+                            .map { it.trim() }.filter { it.isNotBlank() }
+                    val agentSettingsObj =
+                        kotlinx.serialization.json.buildJsonObject {
+                            if (claudeKeySecret.isNotBlank()) {
+                                put(
+                                    "claude_auth_key_secret",
+                                    JsonPrimitive(claudeKeySecret.trim()),
+                                )
+                            }
+                            if (opencodeUrl.isNotBlank()) put("opencode_ollama_url", JsonPrimitive(opencodeUrl.trim()))
+                            if (opencodeModel.isNotBlank()) put("opencode_model", JsonPrimitive(opencodeModel.trim()))
+                            if (modelsList.isNotEmpty()) {
+                                put(
+                                    "opencode_models",
+                                    JsonArray(modelsList.map { JsonPrimitive(it) }),
+                                )
                             }
                         }
-                        if (existing == null || !existing.containsKey("name")) put("name", JsonPrimitive(n))
-                        if (existing == null || !existing.containsKey("description")) {
-                            if (description.isNotBlank()) put("description", JsonPrimitive(description.trim()))
+                    val body =
+                        kotlinx.serialization.json.buildJsonObject {
+                            existing?.forEach { (k, v) ->
+                                when (k) {
+                                    "name" -> put(k, JsonPrimitive(n))
+                                    "description" -> put(k, JsonPrimitive(description.trim()))
+                                    "agent_settings" -> if (kind == "project") put(k, agentSettingsObj) else put(k, v)
+                                    else -> put(k, v)
+                                }
+                            }
+                            if (existing == null || !existing.containsKey("name")) put("name", JsonPrimitive(n))
+                            if (existing == null || !existing.containsKey("description")) {
+                                if (description.isNotBlank()) put("description", JsonPrimitive(description.trim()))
+                            }
+                            if (kind == "project" && (existing == null || !existing.containsKey("agent_settings"))) {
+                                if (agentSettingsObj.isNotEmpty()) put("agent_settings", agentSettingsObj)
+                            }
                         }
-                        if (kind == "project" && (existing == null || !existing.containsKey("agent_settings"))) {
-                            if (agentSettingsObj.isNotEmpty()) put("agent_settings", agentSettingsObj)
-                        }
-                    }
                     onSave(n, body)
                 },
                 enabled = nameInput.isNotBlank(),

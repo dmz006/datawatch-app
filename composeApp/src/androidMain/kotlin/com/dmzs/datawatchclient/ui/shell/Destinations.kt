@@ -17,8 +17,10 @@ public object Destinations {
     public const val Home: String = "home"
     public const val SessionDetail: String = "sessions/{sessionId}?isNew={isNew}"
 
-    public fun sessionDetail(sessionId: String, isNew: Boolean = false): String =
-        "sessions/$sessionId?isNew=$isNew"
+    public fun sessionDetail(
+        sessionId: String,
+        isNew: Boolean = false,
+    ): String = "sessions/$sessionId?isNew=$isNew"
 
     public const val NewSession: String = "sessions/new"
 
@@ -31,6 +33,7 @@ public object Destinations {
         public const val Channels: String = "home/channels"
         public const val Stats: String = "home/stats"
         public const val Settings: String = "home/settings"
+
         /** BL303 parity with PWA alpha.71 ⊞ Dashboard tab. */
         public const val Dashboard: String = "home/dashboard"
     }

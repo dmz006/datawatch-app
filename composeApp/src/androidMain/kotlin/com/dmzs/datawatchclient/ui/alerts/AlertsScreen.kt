@@ -41,8 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,18 +53,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
-import com.dmzs.datawatchclient.ui.common.DocsLinkAction
-import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.domain.Alert
 import com.dmzs.datawatchclient.domain.AlertSeverity
-import com.dmzs.datawatchclient.domain.ServerProfile
-import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.ui.common.DocsLinkAction
+import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 
 /**
  * Alerts tab — matches PWA `renderAlertsView` (app.js:5516) structure:
@@ -122,11 +120,12 @@ public fun AlertsScreen(
 
             // PWA-style primary tab row — always visible regardless of sort mode.
             TabRow(
-                selectedTabIndex = when (state.selectedTab) {
-                    AlertsViewModel.Tab.Active -> 0
-                    AlertsViewModel.Tab.Historical -> 1
-                    AlertsViewModel.Tab.System -> 2
-                },
+                selectedTabIndex =
+                    when (state.selectedTab) {
+                        AlertsViewModel.Tab.Active -> 0
+                        AlertsViewModel.Tab.Historical -> 1
+                        AlertsViewModel.Tab.System -> 2
+                    },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Tab(
@@ -154,7 +153,9 @@ public fun AlertsScreen(
                     onClick = { vm.selectTab(AlertsViewModel.Tab.System) },
                     text = {
                         Text(
-                            "${stringResource(R.string.alerts_system_tab_label)} (${state.system.sumOf { it.alerts.size }})",
+                            "${stringResource(
+                                R.string.alerts_system_tab_label,
+                            )} (${state.system.sumOf { it.alerts.size }})",
                             style = MaterialTheme.typography.labelMedium,
                         )
                     },
@@ -169,29 +170,36 @@ public fun AlertsScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // Row 1: 🔔 N alerts + sort + ✕ + 🔕 + ↻
                     val totalCount = state.chipCounts[AlertsViewModel.ChipFilter.All] ?: 0
-                    val sortLabel = if (state.sortMode == AlertsViewModel.SortMode.BySession) {
-                        "⏷ ${stringResource(R.string.alert_sort_session)}"
-                    } else {
-                        "🕒 ${stringResource(R.string.alert_sort_chrono)}"
-                    }
+                    val sortLabel =
+                        if (state.sortMode == AlertsViewModel.SortMode.BySession) {
+                            "⏷ ${stringResource(R.string.alert_sort_session)}"
+                        } else {
+                            "🕒 ${stringResource(R.string.alert_sort_chrono)}"
+                        }
                     val dwBorder = Color(0xFF2D3148)
                     val controlShape = RoundedCornerShape(6.dp)
+
                     @Composable
-                    fun ControlBtn(label: String, onClick: () -> Unit) {
+                    fun ControlBtn(
+                        label: String,
+                        onClick: () -> Unit,
+                    ) {
                         Box(
-                            modifier = Modifier
-                                .border(1.dp, dwBorder, controlShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, controlShape)
-                                .clickable(onClick = onClick)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier =
+                                Modifier
+                                    .border(1.dp, dwBorder, controlShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, controlShape)
+                                    .clickable(onClick = onClick)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
                         ) {
                             Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
@@ -203,9 +211,11 @@ public fun AlertsScreen(
                         )
                         ControlBtn(sortLabel) {
                             vm.setSortMode(
-                                if (state.sortMode == AlertsViewModel.SortMode.BySession)
+                                if (state.sortMode == AlertsViewModel.SortMode.BySession) {
                                     AlertsViewModel.SortMode.Chronological
-                                else AlertsViewModel.SortMode.BySession,
+                                } else {
+                                    AlertsViewModel.SortMode.BySession
+                                },
                             )
                         }
                         ControlBtn("✕", vm::dismissAll)
@@ -215,34 +225,51 @@ public fun AlertsScreen(
                     HorizontalDivider(color = dwBorder.copy(alpha = 0.5f))
                     // Row 2: chips with emoji + ×N counts
                     Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        modifier =
+                            Modifier
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         AlertsViewModel.ChipFilter.entries.forEach { chip ->
                             val count = state.chipCounts[chip] ?: 0
-                            val chipLabel = when (chip) {
-                                AlertsViewModel.ChipFilter.All -> "${stringResource(R.string.alert_chip_all)} ×$count"
-                                AlertsViewModel.ChipFilter.Prompt -> "🟡 ${stringResource(R.string.alert_chip_prompt)} ×$count"
-                                AlertsViewModel.ChipFilter.Error -> "🔴 ${stringResource(R.string.alert_chip_error)} ×$count"
-                                AlertsViewModel.ChipFilter.Warn -> "🟠 ${stringResource(R.string.alert_chip_warn)} ×$count"
-                                AlertsViewModel.ChipFilter.Info -> "⚪ ${stringResource(R.string.alert_chip_info)} ×$count"
-                            }
-                            val chipBorderColor = when (chip) {
-                                AlertsViewModel.ChipFilter.Prompt, AlertsViewModel.ChipFilter.Warn -> Color(0xFFF59E0B)
-                                AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            val chipLabel =
+                                when (chip) {
+                                    AlertsViewModel.ChipFilter.All -> "${stringResource(
+                                        R.string.alert_chip_all,
+                                    )} ×$count"
+                                    AlertsViewModel.ChipFilter.Prompt -> "🟡 ${stringResource(
+                                        R.string.alert_chip_prompt,
+                                    )} ×$count"
+                                    AlertsViewModel.ChipFilter.Error -> "🔴 ${stringResource(
+                                        R.string.alert_chip_error,
+                                    )} ×$count"
+                                    AlertsViewModel.ChipFilter.Warn -> "🟠 ${stringResource(
+                                        R.string.alert_chip_warn,
+                                    )} ×$count"
+                                    AlertsViewModel.ChipFilter.Info -> "⚪ ${stringResource(
+                                        R.string.alert_chip_info,
+                                    )} ×$count"
+                                }
+                            val chipBorderColor =
+                                when (chip) {
+                                    AlertsViewModel.ChipFilter.Prompt, AlertsViewModel.ChipFilter.Warn ->
+                                        Color(
+                                            0xFFF59E0B,
+                                        )
+                                    AlertsViewModel.ChipFilter.Error -> Color(0xFFEF4444)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             val isSelected = state.chipFilter == chip
                             val chipBg = if (isSelected) chipBorderColor else MaterialTheme.colorScheme.surfaceVariant
                             val chipFg = if (isSelected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface
                             Box(
-                                modifier = Modifier
-                                    .border(1.dp, chipBorderColor, RoundedCornerShape(10.dp))
-                                    .background(chipBg, RoundedCornerShape(10.dp))
-                                    .clickable { vm.setChipFilter(chip) }
-                                    .padding(horizontal = 10.dp, vertical = 3.dp),
+                                modifier =
+                                    Modifier
+                                        .border(1.dp, chipBorderColor, RoundedCornerShape(10.dp))
+                                        .background(chipBg, RoundedCornerShape(10.dp))
+                                        .clickable { vm.setChipFilter(chip) }
+                                        .padding(horizontal = 10.dp, vertical = 3.dp),
                             ) {
                                 Text(chipLabel, fontSize = 12.sp, color = chipFg)
                             }
@@ -252,11 +279,17 @@ public fun AlertsScreen(
                     OutlinedTextField(
                         value = state.searchQuery,
                         onValueChange = vm::setSearch,
-                        placeholder = { Text(stringResource(R.string.alert_search_ph), style = MaterialTheme.typography.bodySmall) },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.alert_search_ph),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        },
                         singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
                         textStyle = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -335,7 +368,6 @@ public fun AlertsScreen(
             }
         }
     }
-
 }
 
 /**
@@ -358,34 +390,56 @@ private fun AlertsTopBar(
         title = {
             Box {
                 Row(
-                    modifier = Modifier
-                        .clickable(onClick = { pickerOpen = !pickerOpen })
-                        .padding(end = 4.dp),
+                    modifier =
+                        Modifier
+                            .clickable(onClick = { pickerOpen = !pickerOpen })
+                            .padding(end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        if (state.allServersMode) stringResource(R.string.sessions_all_servers)
-                        else (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server)),
+                        if (state.allServersMode) {
+                            stringResource(R.string.sessions_all_servers)
+                        } else {
+                            (state.activeProfile?.displayName ?: stringResource(R.string.sessions_no_server))
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sessions_switch_server))
+                    Icon(
+                        Icons.Filled.ArrowDropDown,
+                        contentDescription = stringResource(R.string.sessions_switch_server),
+                    )
                 }
                 DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
                     if (state.allProfiles.size > 1) {
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(stringResource(R.string.sessions_all_servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                    if (state.allServersMode) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        stringResource(R.string.sessions_all_servers),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    if (state.allServersMode) {
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            "Active",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
                                 }
                             },
-                            onClick = { onSelectAll(); pickerOpen = false },
+                            onClick = {
+                                onSelectAll()
+                                pickerOpen = false
+                            },
                         )
                         HorizontalDivider()
                     }
                     if (state.allProfiles.isEmpty()) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.sessions_no_servers)) }, onClick = { pickerOpen = false }, enabled = false)
+                        DropdownMenuItem(text = {
+                            Text(stringResource(R.string.sessions_no_servers))
+                        }, onClick = { pickerOpen = false }, enabled = false)
                     } else {
                         state.allProfiles.forEach { p ->
                             DropdownMenuItem(
@@ -394,12 +448,25 @@ private fun AlertsTopBar(
                                         AlertsStatusDot(enabled = p.enabled)
                                         Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                                             Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
-                                            Text(p.baseUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(
+                                                p.baseUrl,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
                                         }
-                                        if (p.id == state.activeProfile?.id) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
+                                        if (p.id == state.activeProfile?.id) {
+                                            Icon(
+                                                Icons.Filled.Check,
+                                                "Active",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
                                     }
                                 },
-                                onClick = { onSelectProfile(p.id); pickerOpen = false },
+                                onClick = {
+                                    onSelectProfile(p.id)
+                                    pickerOpen = false
+                                },
                             )
                         }
                     }
@@ -416,9 +483,10 @@ private fun AlertsTopBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
     )
 }
 
@@ -445,29 +513,34 @@ private fun AlertGroupCard(
     val cardShape = RoundedCornerShape(6.dp)
     // PWA session card: border:1px solid var(--border); border-radius:6px; margin-bottom:10px
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-            .border(1.dp, dwBorder, cardShape)
-            .background(MaterialTheme.colorScheme.surface, cardShape)
-            .pointerInput(group.sessionId) {
-                if (group.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET) return@pointerInput
-                var dx = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { dx = 0f },
-                    onDragEnd = { if (dx < -swipeThresholdPx) onDismiss() },
-                    onDragCancel = { dx = 0f },
-                ) { _, delta -> dx += delta }
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+                .border(1.dp, dwBorder, cardShape)
+                .background(MaterialTheme.colorScheme.surface, cardShape)
+                .pointerInput(group.sessionId) {
+                    if (group.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET) return@pointerInput
+                    var dx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dx = 0f },
+                        onDragEnd = { if (dx < -swipeThresholdPx) onDismiss() },
+                        onDragCancel = { dx = 0f },
+                    ) { _, delta -> dx += delta }
+                },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Session header: ▼/▶ | name | state | [auto] count · last HH:MM:SS
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggleExpand)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onToggleExpand)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -505,12 +578,13 @@ private fun AlertGroupCard(
                 // right-aligned: count [· 🟡 N] · last HH:MM:SS (matches PWA margin-left:auto)
                 Spacer(modifier = Modifier.weight(1f))
                 val lastTs = group.alerts.firstOrNull()?.createdAt
-                val promptCount = group.alerts.count { a ->
-                    group.state == SessionState.Waiting ||
-                        a.type.contains("input", ignoreCase = true) ||
-                        a.type == "needs_input" || a.type == "input_needed" ||
-                        Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(a.title)
-                }
+                val promptCount =
+                    group.alerts.count { a ->
+                        group.state == SessionState.Waiting ||
+                            a.type.contains("input", ignoreCase = true) ||
+                            a.type == "needs_input" || a.type == "input_needed" ||
+                            Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(a.title)
+                    }
                 val countText = "${group.alerts.size} alert${if (group.alerts.size == 1) "" else "s"}"
                 val promptHint = if (promptCount > 0) " · 🟡 $promptCount" else ""
                 val lastText = if (lastTs != null) " · last ${formatAlertTime(lastTs)}" else ""
@@ -557,10 +631,11 @@ private fun AlertCard(
     sessionState: SessionState? = null,
 ) {
     // Prompt: waiting_input session OR type contains "input" OR title matches PWA regex.
-    val isPromptType = sessionState == SessionState.Waiting ||
-        alert.type.contains("input", ignoreCase = true) ||
-        alert.type == "needs_input" || alert.type == "input_needed" ||
-        Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(alert.title)
+    val isPromptType =
+        sessionState == SessionState.Waiting ||
+            alert.type.contains("input", ignoreCase = true) ||
+            alert.type == "needs_input" || alert.type == "input_needed" ||
+            Regex("\\b(needs input|prompt|waiting)\\b", RegexOption.IGNORE_CASE).containsMatchIn(alert.title)
     val isError = alert.severity == AlertSeverity.Error
 
     // Badge text, bg, text color — matches PWA kindBadge logic
@@ -596,19 +671,21 @@ private fun AlertCard(
     // PWA: margin:4px 0; border-radius:0 4px 4px 0 (left flat, right rounded)
     val alertCardShape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .background(bgColor, alertCardShape),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .background(bgColor, alertCardShape),
     ) {
         // Left border — 3dp colored (no radius on left side)
         Box(modifier = Modifier.width(3.dp).background(borderColor)) {
             Spacer(modifier = Modifier.fillMaxSize())
         }
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
             // Badge + time + title in one Row (matches PWA flex row)
             Row(
@@ -616,9 +693,10 @@ private fun AlertCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .background(badgeBg, RoundedCornerShape(3.dp))
-                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                    modifier =
+                        Modifier
+                            .background(badgeBg, RoundedCornerShape(3.dp))
+                            .padding(horizontal = 6.dp, vertical = 1.dp),
                 ) {
                     Text(
                         badgeText,
@@ -657,9 +735,11 @@ private fun AlertCard(
                 OutlinedButton(
                     onClick = onQuickReply,
                     modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 10.dp, vertical = 2.dp,
-                    ),
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 10.dp,
+                            vertical = 2.dp,
+                        ),
                 ) {
                     Text(stringResource(R.string.alerts_quick_reply_ph), fontSize = 11.sp)
                 }
@@ -669,9 +749,11 @@ private fun AlertCard(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(
                         onClick = onMarkRead,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 6.dp, vertical = 2.dp,
-                        ),
+                        contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 6.dp,
+                                vertical = 2.dp,
+                            ),
                     ) {
                         Text("✓", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -59,11 +58,15 @@ import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
 internal fun DocsLinkAction(docsPath: String) {
     val profiles by ServiceLocator.profileRepository.observeAll().collectAsState(initial = emptyList())
     val activeId by ServiceLocator.activeServerStore.observe().collectAsState(initial = null)
-    val activeProfile = remember(profiles, activeId) {
-        val enabled = profiles.filter { it.enabled }
-        if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) enabled.firstOrNull()
-        else (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())
-    }
+    val activeProfile =
+        remember(profiles, activeId) {
+            val enabled = profiles.filter { it.enabled }
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                enabled.firstOrNull()
+            } else {
+                (enabled.firstOrNull { it.id == activeId } ?: enabled.firstOrNull())
+            }
+        }
     val baseUrl = activeProfile?.baseUrl
     val allowSelfSigned = activeProfile?.trustAnchorSha256 == ServiceLocator.TRUST_ALL_SENTINEL
     var showDocs by remember { mutableStateOf(false) }
@@ -71,9 +74,10 @@ internal fun DocsLinkAction(docsPath: String) {
     if (baseUrl != null) {
         val url = "$baseUrl/diagrams.html#docs/$docsPath"
         Box(
-            modifier = Modifier
-                .clickable { showDocs = true }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier =
+                Modifier
+                    .clickable { showDocs = true }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -98,32 +102,40 @@ internal fun DocsLinkAction(docsPath: String) {
  * dimmed when 0, gray when muted. Clicking toggles [AlertDockChannel].
  */
 @Composable
-internal fun AlertsBellAction(alertsBadge: Int, alertsMuted: Boolean = false) {
-    val (bg, border, alpha) = when {
-        alertsMuted -> Triple(
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            0.55f,
-        )
-        alertsBadge > 0 -> Triple(
-            Color(0xFF60A5FA).copy(alpha = 0.18f),
-            Color(0xFF60A5FA),
-            1f,
-        )
-        else -> Triple(
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            0.55f,
-        )
-    }
+internal fun AlertsBellAction(
+    alertsBadge: Int,
+    alertsMuted: Boolean = false,
+) {
+    val (bg, border, alpha) =
+        when {
+            alertsMuted ->
+                Triple(
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    0.55f,
+                )
+            alertsBadge > 0 ->
+                Triple(
+                    Color(0xFF60A5FA).copy(alpha = 0.18f),
+                    Color(0xFF60A5FA),
+                    1f,
+                )
+            else ->
+                Triple(
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    0.55f,
+                )
+        }
     val label = if (alertsMuted) "🔕 muted" else "🔔 $alertsBadge"
     Box(
-        modifier = Modifier
-            .clickable { AlertDockChannel.toggle() }
-            .background(color = bg, shape = RoundedCornerShape(10.dp))
-            .border(width = 1.dp, color = border.copy(alpha = alpha), shape = RoundedCornerShape(10.dp))
-            .padding(horizontal = 8.dp, vertical = 2.dp)
-            .graphicsLayer { this.alpha = alpha },
+        modifier =
+            Modifier
+                .clickable { AlertDockChannel.toggle() }
+                .background(color = bg, shape = RoundedCornerShape(10.dp))
+                .border(width = 1.dp, color = border.copy(alpha = alpha), shape = RoundedCornerShape(10.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .graphicsLayer { this.alpha = alpha },
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -148,38 +160,46 @@ internal fun ReachabilityDot(
     onRetry: () -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
-    val color = when (reachable) {
-        true -> Color(0xFF10B981)
-        false -> Color(0xFFEF4444)
-        null -> Color(0xFFF59E0B)
-    }
-    val description = when (reachable) {
-        true -> stringResource(R.string.sessions_server_online)
-        false -> stringResource(R.string.sessions_server_unreachable)
-        null -> stringResource(R.string.sessions_probing)
-    }
+    val color =
+        when (reachable) {
+            true -> Color(0xFF10B981)
+            false -> Color(0xFFEF4444)
+            null -> Color(0xFFF59E0B)
+        }
+    val description =
+        when (reachable) {
+            true -> stringResource(R.string.sessions_server_online)
+            false -> stringResource(R.string.sessions_server_unreachable)
+            null -> stringResource(R.string.sessions_probing)
+        }
     val infinite = rememberInfiniteTransition(label = "probe-pulse")
     val scale by infinite.animateFloat(
         initialValue = 1f,
         targetValue = if (reachable == null) 1.4f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(900),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "probe-pulse-scale",
     )
     Box(
-        modifier = Modifier
-            .padding(start = 8.dp)
-            .size(24.dp)
-            .clickable(onClick = { sheetOpen = true }),
+        modifier =
+            Modifier
+                .padding(start = 8.dp)
+                .size(24.dp)
+                .clickable(onClick = { sheetOpen = true }),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             color = color,
-            modifier = Modifier
-                .size(12.dp)
-                .graphicsLayer { scaleX = scale; scaleY = scale },
+            modifier =
+                Modifier
+                    .size(12.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
             shape = CircleShape,
         ) {}
     }
@@ -192,8 +212,9 @@ internal fun ReachabilityDot(
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(description, style = MaterialTheme.typography.titleMedium)
-                val relLabel = lastProbeEpochMs?.let { relativeTimeLabel(it) }
-                    ?: stringResource(R.string.sessions_never)
+                val relLabel =
+                    lastProbeEpochMs?.let { relativeTimeLabel(it) }
+                        ?: stringResource(R.string.sessions_never)
                 Text(
                     "Last successful probe: $relLabel",
                     style = MaterialTheme.typography.bodyMedium,
@@ -201,7 +222,10 @@ internal fun ReachabilityDot(
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 OutlinedButton(
-                    onClick = { onRetry(); sheetOpen = false },
+                    onClick = {
+                        onRetry()
+                        sheetOpen = false
+                    },
                     modifier = Modifier.padding(top = 16.dp),
                 ) { Text(stringResource(R.string.sessions_retry_now)) }
             }
@@ -225,9 +249,10 @@ internal fun SingleServerPickerTitle(
 ) {
     Box {
         Row(
-            modifier = Modifier
-                .clickable(onClick = onToggle)
-                .padding(horizontal = 4.dp),
+            modifier =
+                Modifier
+                    .clickable(onClick = onToggle)
+                    .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(active?.displayName ?: stringResource(R.string.sessions_no_server))
@@ -251,9 +276,10 @@ internal fun SingleServerPickerTitle(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 HeaderProfileDot(enabled = p.enabled)
                                 Column(
-                                    modifier = Modifier
-                                        .padding(start = 12.dp)
-                                        .weight(1f),
+                                    modifier =
+                                        Modifier
+                                            .padding(start = 12.dp)
+                                            .weight(1f),
                                 ) {
                                     Text(p.displayName, style = MaterialTheme.typography.bodyMedium)
                                     Text(

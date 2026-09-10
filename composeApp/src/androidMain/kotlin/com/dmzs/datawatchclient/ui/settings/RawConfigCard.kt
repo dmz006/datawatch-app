@@ -77,10 +77,11 @@ internal fun RawConfigCard() {
                             }
                             ServiceLocator.transportFor(profile).fetchConfig().fold(
                                 onSuccess = { cfg ->
-                                    rawJson = PRETTY_JSON.encodeToString(
-                                        JsonObject.serializer(),
-                                        JsonObject(cfg.raw),
-                                    )
+                                    rawJson =
+                                        PRETTY_JSON.encodeToString(
+                                            JsonObject.serializer(),
+                                            JsonObject(cfg.raw),
+                                        )
                                     editing = true
                                     error = null
                                 },
@@ -171,4 +172,8 @@ internal fun RawConfigCard() {
     }
 }
 
-private val PRETTY_JSON = Json { prettyPrint = true; ignoreUnknownKeys = true }
+private val PRETTY_JSON =
+    Json {
+        prettyPrint = true
+        ignoreUnknownKeys = true
+    }

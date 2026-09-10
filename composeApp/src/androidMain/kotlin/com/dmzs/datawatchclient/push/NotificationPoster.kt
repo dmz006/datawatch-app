@@ -111,35 +111,45 @@ public class NotificationPoster(private val context: Context) {
         )
     }
 
-    private fun buildPlayLongAction(sessionId: String, @Suppress("UNUSED_PARAMETER") title: String): NotificationCompat.Action {
+    private fun buildPlayLongAction(
+        sessionId: String,
+        @Suppress("UNUSED_PARAMETER") title: String,
+    ): NotificationCompat.Action {
         // On the phone, "Play" opens the app to the session — there's no phone-side
         // TTS playback.  The car head unit gets its own Play via CarAppExtender.addAction()
         // (which fires the car service and navigates to LastOutputDetailScreen with TTS).
-        val pi = PendingIntent.getActivity(
-            context,
-            sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
-            Intent(Intent.ACTION_VIEW, Uri.parse("dwclient://session/$sessionId")).apply {
-                setPackage(context.packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                setClass(context, MainActivity::class.java)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val pi =
+            PendingIntent.getActivity(
+                context,
+                sessionId.hashCode() xor PLAY_LONG_REQUEST_CODE_SALT,
+                Intent(Intent.ACTION_VIEW, Uri.parse("dwclient://session/$sessionId")).apply {
+                    setPackage(context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    setClass(context, MainActivity::class.java)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         return NotificationCompat.Action.Builder(R.drawable.ic_notif_play, "Play", pi).build()
     }
 
-    private fun buildQuickReplyAction(sessionId: String, label: String, text: String): NotificationCompat.Action {
-        val intent = Intent(context, ReplyBroadcastReceiver::class.java).apply {
-            action = ReplyBroadcastReceiver.ACTION_QUICK_REPLY
-            putExtra(ReplyBroadcastReceiver.EXTRA_SESSION_ID, sessionId)
-            putExtra(ReplyBroadcastReceiver.EXTRA_REPLY_TEXT, text)
-        }
-        val pi = PendingIntent.getBroadcast(
-            context,
-            (sessionId + label).hashCode() xor QUICK_REPLY_REQUEST_CODE_SALT,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+    private fun buildQuickReplyAction(
+        sessionId: String,
+        label: String,
+        text: String,
+    ): NotificationCompat.Action {
+        val intent =
+            Intent(context, ReplyBroadcastReceiver::class.java).apply {
+                action = ReplyBroadcastReceiver.ACTION_QUICK_REPLY
+                putExtra(ReplyBroadcastReceiver.EXTRA_SESSION_ID, sessionId)
+                putExtra(ReplyBroadcastReceiver.EXTRA_REPLY_TEXT, text)
+            }
+        val pi =
+            PendingIntent.getBroadcast(
+                context,
+                (sessionId + label).hashCode() xor QUICK_REPLY_REQUEST_CODE_SALT,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         return NotificationCompat.Action.Builder(R.drawable.ic_stat_dw, label, pi).build()
     }
 
@@ -188,22 +198,24 @@ public class NotificationPoster(private val context: Context) {
      * in the car. CarAppExtender does not support RemoteInput, so "Reply" navigates to
      * VoiceRecordingScreen in the car app instead of using Android's built-in voice input.
      */
-    private fun buildCarAppExtender(
-        event: Event,
-    ): androidx.car.app.notification.CarAppExtender {
+    private fun buildCarAppExtender(event: Event): androidx.car.app.notification.CarAppExtender {
         // Shared helper: PendingIntent that routes to DatawatchMessagingService.onNewIntent()
         // with optional boolean extras controlling which screen to open.
-        fun carServicePi(requestCodeSalt: Int, vararg extras: Pair<String, Boolean>): android.app.PendingIntent {
-            val intent = android.content.Intent().apply {
-                setClassName(
-                    context.packageName,
-                    "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
-                )
-                action = android.content.Intent.ACTION_VIEW
-                putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
-                putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
-                extras.forEach { (k, v) -> putExtra(k, v) }
-            }
+        fun carServicePi(
+            requestCodeSalt: Int,
+            vararg extras: Pair<String, Boolean>,
+        ): android.app.PendingIntent {
+            val intent =
+                android.content.Intent().apply {
+                    setClassName(
+                        context.packageName,
+                        "com.dmzs.datawatchclient.auto.messaging.DatawatchMessagingService",
+                    )
+                    action = android.content.Intent.ACTION_VIEW
+                    putExtra(EXTRA_CAR_SESSION_ID, event.sessionId)
+                    putExtra(EXTRA_CAR_SESSION_TITLE, event.title)
+                    extras.forEach { (k, v) -> putExtra(k, v) }
+                }
             return android.app.PendingIntent.getService(
                 context,
                 event.sessionId.hashCode() xor requestCodeSalt,
@@ -224,8 +236,16 @@ public class NotificationPoster(private val context: Context) {
             .setContentText(event.body)
             .setImportance(androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH)
             .setContentIntent(carServicePi(CAR_TAP_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
-            .addAction(R.drawable.ic_notif_play, "Play", carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true))
-            .addAction(R.drawable.ic_notif_reply, "Reply", carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true))
+            .addAction(
+                R.drawable.ic_notif_play,
+                "Play",
+                carServicePi(PLAY_LONG_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_PLAY_LONG to true),
+            )
+            .addAction(
+                R.drawable.ic_notif_reply,
+                "Reply",
+                carServicePi(CAR_VOICE_REPLY_REQUEST_CODE_SALT, EXTRA_CAR_AUTO_VOICE_REPLY to true),
+            )
             .build()
     }
 
@@ -235,8 +255,10 @@ public class NotificationPoster(private val context: Context) {
         /** Intent extras read by the car app's [onNewIntent] to navigate to a session. */
         public const val EXTRA_CAR_SESSION_ID: String = "dw.car.session_id"
         public const val EXTRA_CAR_SESSION_TITLE: String = "dw.car.session_title"
+
         /** When true, [AutoSessionDetailScreen] auto-plays the long output on load. */
         public const val EXTRA_CAR_AUTO_PLAY_LONG: String = "dw.car.auto_play_long"
+
         /** When true, [DatawatchMessagingService] pushes [VoiceRecordingScreen] after the session screen. */
         public const val EXTRA_CAR_AUTO_VOICE_REPLY: String = "dw.car.auto_voice_reply"
 

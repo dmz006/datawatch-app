@@ -47,7 +47,10 @@ public fun SecretsStatusCard() {
             ServiceLocator.profileRepository.observeAll().first()
                 .firstOrNull { it.id == activeId && it.enabled } ?: return@LaunchedEffect
         ServiceLocator.transportFor(profile).getSecretsStatus().fold(
-            onSuccess = { s -> status = s; error = null },
+            onSuccess = { s ->
+                status = s
+                error = null
+            },
             onFailure = { err -> error = err.message ?: err::class.simpleName },
         )
     }
@@ -55,10 +58,11 @@ public fun SecretsStatusCard() {
     val s = status ?: return // hide while loading or on error
 
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (s.activeBackend == "vault") {

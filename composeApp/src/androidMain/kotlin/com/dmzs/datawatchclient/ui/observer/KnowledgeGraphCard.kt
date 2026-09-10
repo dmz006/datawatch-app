@@ -80,7 +80,10 @@ internal fun KnowledgeGraphCard() {
                     scope.launch {
                         queryBanner = null
                         transport()?.queryKg(queryEntity.trim())
-                            ?.onSuccess { result -> triples = result; queried = true }
+                            ?.onSuccess { result ->
+                                triples = result
+                                queried = true
+                            }
                             ?.onFailure { queryBanner = it.message }
                     }
                 },
@@ -89,7 +92,12 @@ internal fun KnowledgeGraphCard() {
         }
 
         queryBanner?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
 
         if (queried) {
@@ -117,10 +125,32 @@ internal fun KnowledgeGraphCard() {
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(s, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-                        Text(p, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = FontFamily.Monospace)
-                        Text(o, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-                        ts?.let { Text(it.take(10), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Text(
+                            s,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            p,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                        Text(
+                            o,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.weight(1f),
+                        )
+                        ts?.let {
+                            Text(
+                                it.take(10),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -139,12 +169,31 @@ internal fun KnowledgeGraphCard() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("Subject") }, singleLine = true, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = predicate, onValueChange = { predicate = it }, label = { Text("Predicate") }, singleLine = true, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = obj, onValueChange = { obj = it }, label = { Text("Object") }, singleLine = true, modifier = Modifier.weight(1f))
+            OutlinedTextField(value = subject, onValueChange = {
+                subject = it
+            }, label = { Text("Subject") }, singleLine = true, modifier = Modifier.weight(1f))
+            OutlinedTextField(value = predicate, onValueChange = {
+                predicate = it
+            }, label = { Text("Predicate") }, singleLine = true, modifier = Modifier.weight(1f))
+            OutlinedTextField(value = obj, onValueChange = {
+                obj = it
+            }, label = { Text("Object") }, singleLine = true, modifier = Modifier.weight(1f))
         }
         addBanner?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = if (it.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    if (it.startsWith(
+                            "Error",
+                        )
+                    ) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
         OutlinedButton(
             onClick = {
@@ -154,7 +203,9 @@ internal fun KnowledgeGraphCard() {
                     transport()?.addKgTriple(subject.trim(), predicate.trim(), obj.trim())
                         ?.onSuccess {
                             addBanner = "Triple added"
-                            subject = ""; predicate = ""; obj = ""
+                            subject = ""
+                            predicate = ""
+                            obj = ""
                             if (queryEntity.isNotBlank()) {
                                 transport()?.queryKg(queryEntity.trim())
                                     ?.onSuccess { result -> triples = result }

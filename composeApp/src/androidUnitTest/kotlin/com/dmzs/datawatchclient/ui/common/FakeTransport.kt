@@ -12,12 +12,13 @@ import io.mockk.mockk
  * just the methods they care about. The fake-by-hand approach was
  * too much surface area for marginal value.
  */
-internal fun fakeTransport(): TransportClient = mockk(relaxed = true) {
-    // MockK relaxed mode cannot auto-construct Result<T> (Kotlin value class boxing
-    // edge-case). Pre-stub methods that return Result<T> and are called as side-effects
-    // by VMs under test so they don't throw inside a viewModelScope.launch block.
-    coEvery { getSessionTelemetry(any()) } returns Result.failure(RuntimeException("not configured"))
-}
+internal fun fakeTransport(): TransportClient =
+    mockk(relaxed = true) {
+        // MockK relaxed mode cannot auto-construct Result<T> (Kotlin value class boxing
+        // edge-case). Pre-stub methods that return Result<T> and are called as side-effects
+        // by VMs under test so they don't throw inside a viewModelScope.launch block.
+        coEvery { getSessionTelemetry(any()) } returns Result.failure(RuntimeException("not configured"))
+    }
 
 /** Convenience: build a [ProfileResolver] backed by a relaxed mockk transport. */
 internal fun fakeResolver(

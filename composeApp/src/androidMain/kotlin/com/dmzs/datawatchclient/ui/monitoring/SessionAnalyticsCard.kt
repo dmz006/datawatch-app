@@ -44,25 +44,30 @@ public fun SessionAnalyticsCard() {
     LaunchedEffect(rangeDays) {
         val profiles = ServiceLocator.profileRepository.observeAll().first()
         val activeId = ServiceLocator.activeServerStore.get()
-        val profile = if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
-            profiles.firstOrNull { it.enabled }
-        } else {
-            profiles.firstOrNull { it.id == activeId && it.enabled }
-                ?: profiles.firstOrNull { it.enabled }
-        }
+        val profile =
+            if (activeId == ActiveServerStore.SENTINEL_ALL_SERVERS) {
+                profiles.firstOrNull { it.enabled }
+            } else {
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            }
         profile?.let {
             ServiceLocator.transportFor(it).getAnalytics(rangeDays)
-                .onSuccess { d -> data = d; banner = null }
+                .onSuccess { d ->
+                    data = d
+                    banner = null
+                }
                 .onFailure { e -> banner = e.message }
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(12.dp),
     ) {
         PwaSectionTitle("Session Analytics", docsAnchor = "session-analytics")
 
@@ -115,11 +120,12 @@ public fun SessionAnalyticsCard() {
             val errors = bucket.failed + bucket.killed
             val ok = bucket.sessionCount - errors
             val errPct = if (bucket.sessionCount > 0) errors.toFloat() / bucket.sessionCount else 0f
-            val barColor = when {
-                errPct > 0.20f -> Color(0xFFEF4444)
-                errPct > 0.05f -> Color(0xFFF59E0B)
-                else -> Color(0xFF10B981)
-            }
+            val barColor =
+                when {
+                    errPct > 0.20f -> Color(0xFFEF4444)
+                    errPct > 0.05f -> Color(0xFFF59E0B)
+                    else -> Color(0xFF10B981)
+                }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -149,16 +155,18 @@ public fun SessionAnalyticsCard() {
                 )
                 val barFraction = if (maxTotal > 0) bucket.sessionCount.toFloat() / maxTotal else 0f
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(8.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(8.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(barFraction)
-                            .background(barColor),
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(barFraction)
+                                .background(barColor),
                     )
                 }
             }

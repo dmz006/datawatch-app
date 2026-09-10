@@ -106,36 +106,42 @@ internal fun NewPrdDialog(
     val backendDefaultLabel = stringResource(R.string.new_prd_backend_default)
 
     /** Model names for the currently-selected backend (empty = hide field). */
-    val modelsForBackend: List<String> = when {
-        backend.startsWith("opencode") -> availableModels["opencode"].orEmpty()
-        else -> availableModels[backend].orEmpty()
-    }
+    val modelsForBackend: List<String> =
+        when {
+            backend.startsWith("opencode") -> availableModels["opencode"].orEmpty()
+            else -> availableModels[backend].orEmpty()
+        }
 
     val usingProfile = profile.isNotEmpty() && profile != "__dir__"
 
     // Auto-infer type from spec
     LaunchedEffect(spec) {
         val lower = spec.lowercase()
-        prdType = when {
-            lower.containsAny("code", "test", "refactor", "build", "fix", "implement") -> "software"
-            lower.containsAny("research", "analyze", "study") -> "research"
-            lower.containsAny("deploy", "restart", "migrate", "monitor") -> "operational"
-            spec.isBlank() -> "software"
-            else -> "personal"
-        }
+        prdType =
+            when {
+                lower.containsAny("code", "test", "refactor", "build", "fix", "implement") -> "software"
+                lower.containsAny("research", "analyze", "study") -> "research"
+                lower.containsAny("deploy", "restart", "migrate", "monitor") -> "operational"
+                spec.isBlank() -> "software"
+                else -> "personal"
+            }
     }
 
     // Load remote data
     LaunchedEffect(Unit) {
         runCatching {
             val activeId = ServiceLocator.activeServerStore.get()
-            val sp = ServiceLocator.profileRepository.observeAll()
-                .first { list -> list.any { it.enabled } }
-                .let { list ->
-                    if (activeId == null) list.firstOrNull { it.enabled }
-                    else list.firstOrNull { it.id == activeId && it.enabled }
-                        ?: list.firstOrNull { it.enabled }
-                } ?: return@runCatching
+            val sp =
+                ServiceLocator.profileRepository.observeAll()
+                    .first { list -> list.any { it.enabled } }
+                    .let { list ->
+                        if (activeId == null) {
+                            list.firstOrNull { it.enabled }
+                        } else {
+                            list.firstOrNull { it.id == activeId && it.enabled }
+                                ?: list.firstOrNull { it.enabled }
+                        }
+                    } ?: return@runCatching
             val transport = ServiceLocator.transportFor(sp)
 
             coroutineScope {
@@ -147,9 +153,10 @@ internal fun NewPrdDialog(
 
                 backendsD.await().onSuccess { view -> backendOptions = view.llm }
                 projectD.await().onSuccess { list ->
-                    projectProfiles = list.mapNotNull { obj ->
-                        (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
-                    }
+                    projectProfiles =
+                        list.mapNotNull { obj ->
+                            (obj["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                        }
                 }
                 val models = mutableMapOf<String, List<String>>()
                 ollamaD.await().onSuccess { if (it.isNotEmpty()) models["ollama"] = it }
@@ -157,9 +164,10 @@ internal fun NewPrdDialog(
                 // Fetch opencode models from the live API for grouped display + default pre-select.
                 val openCodeResp = transport.fetchOpenCodeModels()
                 openCodeResp.onSuccess { resp ->
-                    val groups = resp.models
-                        .groupBy { it.providerLabel.ifBlank { it.provider } }
-                        .mapValues { (_, list) -> list.map { it.id } }
+                    val groups =
+                        resp.models
+                            .groupBy { it.providerLabel.ifBlank { it.provider } }
+                            .mapValues { (_, list) -> list.map { it.id } }
                     openCodeModelGroups = groups
                     openCodeDefaultModel = resp.defaultModel
                     val allIds = resp.models.map { it.id }.filter { it.isNotBlank() }
@@ -167,11 +175,12 @@ internal fun NewPrdDialog(
                 }.onFailure {
                     // Fall back to LLM-registry models if /api/opencode/models is unavailable.
                     llmsD.await().onSuccess { llmList ->
-                        val opencodeMods = llmList
-                            .filter { it.enabled && it.kind.startsWith("opencode") }
-                            .flatMap { entry -> entry.models.map { p -> p.model } + listOf(entry.model) }
-                            .filter { it.isNotBlank() }
-                            .distinct()
+                        val opencodeMods =
+                            llmList
+                                .filter { it.enabled && it.kind.startsWith("opencode") }
+                                .flatMap { entry -> entry.models.map { p -> p.model } + listOf(entry.model) }
+                                .filter { it.isNotBlank() }
+                                .distinct()
                         if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
                     }
                 }
@@ -188,9 +197,10 @@ internal fun NewPrdDialog(
         title = { Text("Launch Automaton") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 // ── Template strip ───────────────────────────────────────────
                 Surface(
@@ -207,7 +217,10 @@ internal fun NewPrdDialog(
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = { onBrowseTemplates(); onDismiss() }) {
+                        TextButton(onClick = {
+                            onBrowseTemplates()
+                            onDismiss()
+                        }) {
                             Text("Browse")
                         }
                     }
@@ -220,7 +233,12 @@ internal fun NewPrdDialog(
                     value = spec,
                     onValueChange = { spec = it },
                     label = { Text("What do you want to accomplish?") },
-                    placeholder = { Text("Add a CACHE column to /api/stats… or describe your goal", style = MaterialTheme.typography.bodySmall) },
+                    placeholder = {
+                        Text(
+                            "Add a CACHE column to /api/stats… or describe your goal",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
                     minLines = 4,
                     maxLines = 8,
                     modifier = Modifier.fillMaxWidth(),
@@ -245,7 +263,10 @@ internal fun NewPrdDialog(
                             listOf("software", "research", "operational", "personal").forEach { t ->
                                 DropdownMenuItem(
                                     text = { Text(t) },
-                                    onClick = { prdType = t; prdTypeMenuOpen = false },
+                                    onClick = {
+                                        prdType = t
+                                        prdTypeMenuOpen = false
+                                    },
                                 )
                             }
                         }
@@ -278,12 +299,18 @@ internal fun NewPrdDialog(
                     DropdownMenu(expanded = profileMenuOpen, onDismissRequest = { profileMenuOpen = false }) {
                         DropdownMenuItem(
                             text = { Text("— project directory (local checkout) —") },
-                            onClick = { profile = "__dir__"; profileMenuOpen = false },
+                            onClick = {
+                                profile = "__dir__"
+                                profileMenuOpen = false
+                            },
                         )
                         projectProfiles.forEach { p ->
                             DropdownMenuItem(
                                 text = { Text(p) },
-                                onClick = { profile = p; profileMenuOpen = false },
+                                onClick = {
+                                    profile = p
+                                    profileMenuOpen = false
+                                },
                             )
                         }
                     }
@@ -294,11 +321,12 @@ internal fun NewPrdDialog(
                     val dirDisplayText = selectedDir.ifBlank { "~/" }
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-                            .clickable { dirPickerOpen = true },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+                                .clickable { dirPickerOpen = true },
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                             Text(
@@ -331,12 +359,18 @@ internal fun NewPrdDialog(
                         DropdownMenu(expanded = backendMenuOpen, onDismissRequest = { backendMenuOpen = false }) {
                             DropdownMenuItem(
                                 text = { Text(inheritLabel) },
-                                onClick = { backend = ""; backendMenuOpen = false },
+                                onClick = {
+                                    backend = ""
+                                    backendMenuOpen = false
+                                },
                             )
                             backendOptions.forEach { b ->
                                 DropdownMenuItem(
                                     text = { Text(b) },
-                                    onClick = { backend = b; backendMenuOpen = false },
+                                    onClick = {
+                                        backend = b
+                                        backendMenuOpen = false
+                                    },
                                 )
                             }
                         }
@@ -361,7 +395,10 @@ internal fun NewPrdDialog(
                                 .forEach { e ->
                                     DropdownMenuItem(
                                         text = { Text(if (e.isEmpty()) inheritLabel else e) },
-                                        onClick = { effort = e; effortMenuOpen = false },
+                                        onClick = {
+                                            effort = e
+                                            effortMenuOpen = false
+                                        },
                                     )
                                 }
                         }
@@ -393,7 +430,10 @@ internal fun NewPrdDialog(
                             DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
                                 DropdownMenuItem(
                                     text = { Text(backendDefaultLabel) },
-                                    onClick = { model = ""; modelMenuOpen = false },
+                                    onClick = {
+                                        model = ""
+                                        modelMenuOpen = false
+                                    },
                                 )
                                 if (showGroups) {
                                     openCodeModelGroups.forEach { (groupLabel, models) ->
@@ -411,7 +451,10 @@ internal fun NewPrdDialog(
                                         models.forEach { m ->
                                             DropdownMenuItem(
                                                 text = { Text("  $m") },
-                                                onClick = { model = m; modelMenuOpen = false },
+                                                onClick = {
+                                                    model = m
+                                                    modelMenuOpen = false
+                                                },
                                             )
                                         }
                                     }
@@ -419,7 +462,10 @@ internal fun NewPrdDialog(
                                     modelsForBackend.forEach { m ->
                                         DropdownMenuItem(
                                             text = { Text(m) },
-                                            onClick = { model = m; modelMenuOpen = false },
+                                            onClick = {
+                                                model = m
+                                                modelMenuOpen = false
+                                            },
                                         )
                                     }
                                 }
@@ -443,10 +489,11 @@ internal fun NewPrdDialog(
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { advancedOpen = !advancedOpen }
-                        .padding(vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { advancedOpen = !advancedOpen }
+                            .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -507,7 +554,10 @@ internal fun NewPrdDialog(
                     }
                     // Settings link
                     TextButton(
-                        onClick = { onOpenSettings(); onDismiss() },
+                        onClick = {
+                            onOpenSettings()
+                            onDismiss()
+                        },
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
                         Text(
@@ -521,29 +571,30 @@ internal fun NewPrdDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val req = if (!usingProfile) {
-                        NewPrdRequestDto(
-                            name = "",
-                            title = title.trim().ifBlank { null },
-                            spec = spec.trim().ifBlank { null },
-                            projectDir = selectedDir.ifBlank { null },
-                            backend = backend.ifBlank { null },
-                            effort = effort.ifBlank { null },
-                            model = model.ifBlank { null },
-                            type = prdType.ifBlank { null },
-                            guidedMode = if (guidedMode) true else null,
-                        )
-                    } else {
-                        NewPrdRequestDto(
-                            name = "",
-                            title = title.trim().ifBlank { null },
-                            spec = spec.trim().ifBlank { null },
-                            projectProfile = profile,
-                            clusterProfile = null,
-                            type = prdType.ifBlank { null },
-                            guidedMode = if (guidedMode) true else null,
-                        )
-                    }
+                    val req =
+                        if (!usingProfile) {
+                            NewPrdRequestDto(
+                                name = "",
+                                title = title.trim().ifBlank { null },
+                                spec = spec.trim().ifBlank { null },
+                                projectDir = selectedDir.ifBlank { null },
+                                backend = backend.ifBlank { null },
+                                effort = effort.ifBlank { null },
+                                model = model.ifBlank { null },
+                                type = prdType.ifBlank { null },
+                                guidedMode = if (guidedMode) true else null,
+                            )
+                        } else {
+                            NewPrdRequestDto(
+                                name = "",
+                                title = title.trim().ifBlank { null },
+                                spec = spec.trim().ifBlank { null },
+                                projectProfile = profile,
+                                clusterProfile = null,
+                                type = prdType.ifBlank { null },
+                                guidedMode = if (guidedMode) true else null,
+                            )
+                        }
                     onCreate(req)
                 },
                 enabled = spec.isNotBlank(),
@@ -566,5 +617,4 @@ internal fun NewPrdDialog(
     }
 }
 
-private fun String.containsAny(vararg keywords: String): Boolean =
-    keywords.any { this.contains(it, ignoreCase = true) }
+private fun String.containsAny(vararg keywords: String): Boolean = keywords.any { this.contains(it, ignoreCase = true) }

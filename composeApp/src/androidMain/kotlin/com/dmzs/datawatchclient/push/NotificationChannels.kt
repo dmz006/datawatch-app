@@ -16,6 +16,7 @@ public object NotificationChannels {
     public const val COMPLETED: String = "dw.completed"
     public const val RATE_LIMITED: String = "dw.rate_limited"
     public const val ERROR: String = "dw.error"
+
     // "dw.fg.min" uses IMPORTANCE_MIN (no status-bar icon, silent section in drawer).
     // The old "dw.foreground" channel was IMPORTANCE_LOW (showed persistent icon) — using a
     // new ID so existing installs pick up the quieter channel on next service start.

@@ -69,21 +69,30 @@ internal fun TemplatesTab(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.templates, key = { it.id }) { tmpl ->
-                    TemplateRow(tmpl, onUse = { instantiateTemplate = tmpl }, onEdit = { editTemplate = tmpl }, onDelete = { deleteTarget = tmpl })
+                    TemplateRow(tmpl, onUse = {
+                        instantiateTemplate = tmpl
+                    }, onEdit = { editTemplate = tmpl }, onDelete = { deleteTarget = tmpl })
                 }
             }
         }
     }
 
     if (createOpen) {
-        CreateEditTemplateSheet(template = null, onDismiss = onCreateDismiss, onSave = { req -> vm.createTemplate(req); onCreateDismiss() })
+        CreateEditTemplateSheet(template = null, onDismiss = onCreateDismiss, onSave = {
+                req ->
+            vm.createTemplate(req)
+            onCreateDismiss()
+        })
     }
     editTemplate?.let { tmpl ->
         CreateEditTemplateSheet(
             template = tmpl,
             onDismiss = { editTemplate = null },
             onSave = { req ->
-                vm.updateTemplate(tmpl.id, UpdateTemplateRequestDto(req.title, req.spec, req.type, req.tags, req.description))
+                vm.updateTemplate(
+                    tmpl.id,
+                    UpdateTemplateRequestDto(req.title, req.spec, req.type, req.tags, req.description),
+                )
                 editTemplate = null
             },
         )
@@ -92,7 +101,10 @@ internal fun TemplatesTab(
         InstantiateTemplateDialog(
             template = tmpl,
             onDismiss = { instantiateTemplate = null },
-            onInstantiate = { req -> vm.instantiateTemplate(tmpl.id, req) { _ -> }; instantiateTemplate = null },
+            onInstantiate = { req ->
+                vm.instantiateTemplate(tmpl.id, req) { _ -> }
+                instantiateTemplate = null
+            },
         )
     }
     deleteTarget?.let { tmpl ->
@@ -100,11 +112,18 @@ internal fun TemplatesTab(
             onDismissRequest = { deleteTarget = null },
             title = { Text(stringResource(R.string.tmpl_delete_confirm)) },
             confirmButton = {
-                TextButton(onClick = { vm.deleteTemplate(tmpl.id); deleteTarget = null }) {
+                TextButton(onClick = {
+                    vm.deleteTemplate(tmpl.id)
+                    deleteTarget = null
+                }) {
                     Text(stringResource(R.string.action_delete))
                 }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { deleteTarget = null },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -117,11 +136,12 @@ private fun TemplateRow(
     onDelete: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .pwaCard()
-            .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .pwaCard()
+                .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -141,11 +161,19 @@ private fun TemplateRow(
                             .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(4.dp))
                             .padding(horizontal = 4.dp, vertical = 1.dp),
                     ) {
-                        Text(type, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text(
+                            type,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
                     }
                 }
                 template.tags.take(3).forEach { tag ->
-                    Text("#$tag", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "#$tag",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             template.description?.takeIf { it.isNotBlank() }?.let { desc ->
@@ -159,7 +187,11 @@ private fun TemplateRow(
             }
         }
         TextButton(onClick = onUse) { Text(stringResource(R.string.tmpl_use)) }
-        IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
-        IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete)) }
+        IconButton(
+            onClick = onEdit,
+        ) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit)) }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+        }
     }
 }
