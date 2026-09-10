@@ -145,6 +145,12 @@ public fun SessionsScreen(
     LaunchedEffect(state.stateFilter, state.backendFilter, state.filterText, state.showHistory) {
         selectedIds = emptySet()
     }
+    var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
+    // Search / filter / sort toolbar is collapsed by default — user
+    // 2026-04-24 (dmz006/datawatch#23). The top-app-bar search icon
+    // toggles this. Stays implicitly "expanded" when filter text or
+    // history are active so typed queries / visible state aren't hidden.
+    var toolbarExpanded by remember { mutableStateOf(false) }
     val pendingFilter by SessionsNavChannel.pendingFilter.collectAsState()
     LaunchedEffect(pendingFilter) {
         val f = pendingFilter ?: return@LaunchedEffect
@@ -152,12 +158,6 @@ public fun SessionsScreen(
         SessionsNavChannel.consume()
         toolbarExpanded = true
     }
-    var bulkDeleteConfirmOpen by remember { mutableStateOf(false) }
-    // Search / filter / sort toolbar is collapsed by default — user
-    // 2026-04-24 (dmz006/datawatch#23). The top-app-bar search icon
-    // toggles this. Stays implicitly "expanded" when filter text or
-    // history are active so typed queries / visible state aren't hidden.
-    var toolbarExpanded by remember { mutableStateOf(false) }
 
     // BL-T14-1: Refresh on every ON_RESUME so sessions are current immediately
     // after screen unlock, app foreground, or returning from another screen.
