@@ -10,6 +10,8 @@ import com.dmzs.datawatchclient.transport.dto.ObserverPeersDto
 import com.dmzs.datawatchclient.transport.dto.ObserverStatsDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorEdgeDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto
+import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphListItemDto
+import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphsListDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorNodeDto
 import com.dmzs.datawatchclient.transport.dto.PluginDto
 import com.dmzs.datawatchclient.transport.dto.PluginsDto
@@ -168,9 +170,15 @@ class MonitoringViewModelTests {
                     nodes = listOf(OrchestratorNodeDto(id = "n1", status = "running")),
                     edges = listOf(OrchestratorEdgeDto(from = "n1", to = "n2")),
                 )
+            coEvery { t.getOrchestratorGraphsList() } returns
+                Result.success(
+                    OrchestratorGraphsListDto(
+                        graphs = listOf(OrchestratorGraphListItemDto(id = "g1", prdIds = listOf("prd1"))),
+                    ),
+                )
             coEvery { t.orchestratorGraph("g1") } returns Result.success(graph)
             val vm = OrchestratorGraphViewModel(r)
-            vm.refresh("g1")
+            vm.refresh("prd1")
             assertEquals(graph, vm.state.value.graph)
         }
 
@@ -178,9 +186,15 @@ class MonitoringViewModelTests {
     fun `orchestrator graph banner on failure`() =
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()
-            coEvery { t.orchestratorGraph(any()) } returns Result.failure(RuntimeException("404"))
+            coEvery { t.getOrchestratorGraphsList() } returns
+                Result.success(
+                    OrchestratorGraphsListDto(
+                        graphs = listOf(OrchestratorGraphListItemDto(id = "g1", prdIds = listOf("prd1"))),
+                    ),
+                )
+            coEvery { t.orchestratorGraph("g1") } returns Result.failure(RuntimeException("404"))
             val vm = OrchestratorGraphViewModel(r)
-            vm.refresh("g1")
+            vm.refresh("prd1")
             assertNull(vm.state.value.graph)
             assertNotNull(vm.state.value.banner)
         }

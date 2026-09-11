@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.97] — 2026-09-10
+
+### Fixed
+- Phone automata detail: "Graph" button now finds orchestrator graphs even when the server stores full UUIDs in `prd_ids` but returns short IDs for PRDs (and vice versa) — match is now prefix-aware so short-vs-full ID format differences no longer cause "No orchestrator graph found" false negatives
+- Phone automata detail: "No orchestrator graph found" message now explains the feature and how to link a PRD in the Automata settings tab
+
 ## [1.0.96] — 2026-09-10
 
 ### Fixed
