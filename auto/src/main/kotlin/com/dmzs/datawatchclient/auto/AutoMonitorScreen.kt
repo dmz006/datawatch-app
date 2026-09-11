@@ -347,29 +347,24 @@ private fun addDetailRows(
             Row.Builder().setTitle("Disk").addText("${fmt(diskUsed)} / ${fmt(diskTotal)}").build(),
         )
     }
-    // GPU utilization bar — shown whenever util% or a GPU name is reported.
+    // GPU — single row with util% on line 1 and VRAM on line 2 (keeps ItemList ≤ 6).
+    // Show whenever any GPU data is available, even if util% is missing.
     val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
-    if (s.gpuName != null || gpuUtilInt != null) {
+    val vramTotal = s.gpuMemTotalMb
+    val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
+    if (hasGpu) {
         val name = s.gpuName ?: "GPU"
         val tempSuffix = s.gpuTemp?.let { " · ${it.toInt()}°C" } ?: ""
         val utilLine = gpuUtilInt?.let { "${progressBar(it)}$tempSuffix" } ?: tempSuffix.ifBlank { "—" }
-        items.addItem(Row.Builder().setTitle(name).addText(utilLine).build())
-    }
-    // GPU VRAM bar — separate row when VRAM data is available.
-    val vramTotal = s.gpuMemTotalMb
-    if (vramTotal != null && vramTotal > 0) {
-        val used = s.gpuMemUsedMb ?: 0L
-        val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
-        items.addItem(
-            Row.Builder()
-                .setTitle("GPU VRAM")
-                .addText(
-                    "${progressBar(
-                        vramPct,
-                    )}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
-                )
-                .build(),
-        )
+        val rowBuilder = Row.Builder().setTitle(name).addText(utilLine)
+        if (vramTotal != null && vramTotal > 0) {
+            val used = s.gpuMemUsedMb ?: 0L
+            val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
+            rowBuilder.addText(
+                "VRAM ${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+            )
+        }
+        items.addItem(rowBuilder.build())
     }
     val (sesTotal, sesRunning, sesWaiting) = sessionCounts ?: Triple(s.sessionsTotal, s.sessionsRunning, s.sessionsWaiting)
     items.addItem(
