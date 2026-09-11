@@ -178,9 +178,19 @@ public class OrchestratorGraphViewModel(
             }
             val matchingId =
                 listResult.getOrNull()?.graphs
-                    ?.firstOrNull { prdId in it.prdIds }?.id
+                    ?.firstOrNull { graph ->
+                        // Match by exact ID or by UUID prefix/suffix in case the server
+                        // stores full UUIDs in prd_ids but returns short IDs from the
+                        // PRD endpoint (or vice versa).
+                        graph.prdIds.any { id ->
+                            id == prdId || id.startsWith("$prdId-") || prdId.startsWith("$id-")
+                        }
+                    }?.id
             if (matchingId == null) {
-                _state.value = UiState(banner = "No orchestrator graph found for this automaton")
+                _state.value = UiState(
+                    banner = "No orchestrator graph found for this automaton. " +
+                        "Create one in the Automata settings tab and add this PRD's ID.",
+                )
                 return@launch
             }
             transport.orchestratorGraph(matchingId).fold(
