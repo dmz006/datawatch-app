@@ -347,22 +347,36 @@ private fun addDetailRows(
             Row.Builder().setTitle("Disk").addText("${fmt(diskUsed)} / ${fmt(diskTotal)}").build(),
         )
     }
-    // GPU — single row with util% on line 1 and VRAM on line 2 (keeps ItemList ≤ 6).
-    // Show whenever any GPU data is available, even if util% is missing.
+    // GPU — single row (keeps ItemList ≤ 6).
+    // Line 1: util% bar when available; otherwise the VRAM bar (so there's always a bar visible).
+    // Line 2: VRAM bar + sizes, only added as a second line when util% is also on line 1.
     val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
     val vramTotal = s.gpuMemTotalMb
     val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
     if (hasGpu) {
         val name = s.gpuName ?: "GPU"
         val tempSuffix = s.gpuTemp?.let { " · ${it.toInt()}°C" } ?: ""
-        val utilLine = gpuUtilInt?.let { "${progressBar(it)}$tempSuffix" } ?: tempSuffix.ifBlank { "—" }
-        val rowBuilder = Row.Builder().setTitle(name).addText(utilLine)
-        if (vramTotal != null && vramTotal > 0) {
+        val rowBuilder = Row.Builder().setTitle(name)
+        if (gpuUtilInt != null) {
+            // Util% available: util bar on line 1, VRAM bar on line 2.
+            rowBuilder.addText("${progressBar(gpuUtilInt)}$tempSuffix")
+            if (vramTotal != null && vramTotal > 0) {
+                val used = s.gpuMemUsedMb ?: 0L
+                val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
+                rowBuilder.addText(
+                    "VRAM ${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+                )
+            }
+        } else if (vramTotal != null && vramTotal > 0) {
+            // No util%: promote VRAM bar to line 1 so there's always something to see.
             val used = s.gpuMemUsedMb ?: 0L
             val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
             rowBuilder.addText(
-                "VRAM ${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+                "${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}$tempSuffix",
             )
+        } else {
+            // Name or temp only.
+            rowBuilder.addText(tempSuffix.ifBlank { "—" })
         }
         items.addItem(rowBuilder.build())
     }

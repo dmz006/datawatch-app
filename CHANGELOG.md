@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.99] — 2026-09-11
+
+### Fixed
+- Android Auto monitor: when the server reports VRAM data but no GPU compute utilization (`gpu_util_pct`/`gpu_pct` absent), the VRAM progress bar is now promoted to line 1 of the GPU row so there is always a visible bar — previously the row showed `"—"` on line 1 and the VRAM bar was on line 2, making it look like GPU tracking was missing
+
 ## [1.0.98] — 2026-09-11
 
 ### Fixed
