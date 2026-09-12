@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-09-12
+
+### Fixed
+- Automata page: `listBackends()` and `listClaudePermissionModes()` now run in parallel with `listPrds()` instead of sequentially; a slow or missing endpoint no longer adds its full timeout to the page load time
+- Stats monitor: `fetchWebSearchStats()` now runs in parallel with `listSessions()` so a missing or slow web-search endpoint does not delay the stats refresh cycle
+
 ## [1.1.0] — 2026-09-12
 
 ### Added
