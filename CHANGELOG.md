@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.1.3] — 2026-09-12
+
+### Fixed
+- Automata: `listAutomataTypes` now correctly unwraps the `{"types":[...]}` envelope introduced in server v8.25.3 (was deserializing as bare array → parse error)
+- Automata: `PrdTaskVerificationDto.issues` changed from `List<PrdVerificationIssueDto>` to `List<String>` to match server v8.25.3 response shape
+- Transport: Ktor `ContentConvertException` (wraps `JsonConvertException`) is now caught explicitly so DTO shape mismatches show as a parse error rather than "Server unreachable"
+
 ## [1.1.2] — 2026-09-12
 
 ### Fixed

@@ -678,7 +678,8 @@ public data class PrdVerificationIssueDto(
 public data class PrdTaskVerificationDto(
     val summary: String? = null,
     val severity: String? = null,
-    val issues: List<PrdVerificationIssueDto> = emptyList(),
+    // Server v8.25.3+ sends issues as plain strings; PrdVerificationIssueDto kept for compat.
+    val issues: List<String> = emptyList(),
 )
 
 @Serializable
@@ -754,6 +755,12 @@ public data class AutomataTypeDto(
     val label: String = "",
     val description: String? = null,
     val color: String? = null,
+)
+
+// Server wraps the list: GET /api/autonomous/types → {"types":[...]}
+@Serializable
+internal data class AutomataTypesResponseDto(
+    val types: List<AutomataTypeDto> = emptyList(),
 )
 
 @Serializable
