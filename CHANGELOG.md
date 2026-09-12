@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-09-12
+
+### Fixed
+- CI: resolve ktlint violations in `AutonomousViewModel` and `StatsViewModel` uncovered by gradle cache bust from the v1.1.1 parallel refactor (property naming, multiline expression formatting, line length)
+- CI: fix `AutonomousViewModelTest` NullPointerException — add missing `listBackends` and `listClaudePermissionModes` stubs to the transport-failure test now that those calls run unconditionally in parallel
+
 ## [1.1.1] — 2026-09-12
 
 ### Fixed
