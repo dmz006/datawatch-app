@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.0.100] — 2026-09-12
+
+### Fixed
+- Phone stats screen (Observer tab): GPU util bar condition now uses the merged `gpuUtilPct ?: gpuPct` value consistently, matching the same VRAM-already-visible behavior; GPU VRAM bar was already showing correctly on phone
+
 ## [1.0.99] — 2026-09-11
 
 ### Fixed
