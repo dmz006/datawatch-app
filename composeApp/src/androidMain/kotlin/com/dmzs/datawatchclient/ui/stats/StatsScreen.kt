@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.transport.dto.StatsDto
+import com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -98,6 +99,7 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
         if (it.envelopes.isNotEmpty()) EnvelopesCard(it.envelopes)
         if (it.backends.isNotEmpty()) BackendHealthCard(it.backends)
     }
+    state.webSearchStats?.takeIf { it.enabled }?.let { WebSearchCard(it) }
 }
 
 // ---------- New v4.1.0 observer cards ----------
@@ -840,6 +842,24 @@ private fun formatUptime(seconds: Long): String {
         if (d > 0) append("${d}d ")
         if (h > 0 || d > 0) append("${h}h ")
         append("${m}m")
+    }
+}
+
+@Composable
+private fun WebSearchCard(ws: WebSearchStatsDto) {
+    PwaCardContainer {
+        PwaSectionTitle(stringResource(R.string.stats_section_web_search))
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            ws.provider?.let { MonoRow(stringResource(R.string.stats_row_ws_provider), it) }
+            ws.url?.let { MonoRow(stringResource(R.string.stats_row_ws_url), it) }
+            ws.engine?.let { MonoRow(stringResource(R.string.stats_row_ws_engine), it) }
+            MonoRow(stringResource(R.string.stats_row_ws_results), ws.numResults.toString())
+            MonoRow(stringResource(R.string.stats_row_ws_queries), ws.queriesTotal.toString())
+            if (ws.errorsTotal > 0) {
+                MonoRow(stringResource(R.string.stats_row_ws_errors), ws.errorsTotal.toString())
+            }
+            ws.lastQueryAt?.let { MonoRow(stringResource(R.string.stats_row_ws_last_query), it) }
+        }
     }
 }
 

@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-12
+
+### Added
+- **Android Auto loading splash**: Shows "Connecting to datawatch…" with a spinner while the app is establishing its first connection; replaces the blank screen that appeared before data arrived
+- **Automata spec expand/collapse**: Spec text truncated to 280 characters with "show full" / "collapse" toggle links (#166)
+- **Automata cancel button audit**: Cancel button now shown for all non-terminal automata states (was allowlist; now denylist matching server spec v8.25.0)
+- **Automata task rows**: Per-story task list with status colour, session chip (tap → jump to session), error panel, verification summary, and retry button for failed/blocked tasks (#166, v8.23.0)
+- **Automata planning backend picker**: Separate execution vs. planning backend fields in LLM override dialog; planning backend limited to ollama/openwebui backends (v8.20.0, v8.25.0)
+- **Web Search settings panel**: New "Web Search" section in Settings → LLM tab exposing `web_search.*` config keys (v8.22.0)
+- **Web Search monitor card**: Stats screen now shows a Web Search card when `web_search.enabled = true` via `GET /api/web_search/stats`; displays provider, URL, engine, query counts, and last-query timestamp (#164)
+- **i18n**: All new UI strings localised to de/es/fr/ja (#167)
+
+### Fixed
+- Automata reset task: `POST /api/autonomous/prds/{id}/reset_task` wired up to "↺ Retry" button; VM refreshes after success
+
 ## [1.0.100] — 2026-09-12
 
 ### Fixed

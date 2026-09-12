@@ -1157,4 +1157,24 @@
     <string name="council_persona_none">Keine benutzerdefinierten Personas</string>
     <string name="council_persona_name_required">Name erforderlich</string>
     <string name="council_persona_delete_confirm_title">%1$s löschen?</string>
+
+    <!-- ── v1.1.0 parity additions ── -->
+    <string name="automata_sg_progress">Fortschritt</string>
+    <string name="automata_sg_decomposed">Zerlegt</string>
+    <string name="automata_sg_stories">Stories</string>
+    <string name="automata_sg_tasks">Aufgaben</string>
+    <string name="automata_sg_no_stories">Noch keine Stories — Zerlegung läuft…</string>
+    <string name="automata_spec_show_full">vollständig anzeigen</string>
+    <string name="automata_spec_hide">einklappen</string>
+    <string name="automata_actions_view_sessions">Sitzungen anzeigen</string>
+    <string name="prd_detail_planning_backend">Planungs-Backend (Zerlegungs-LLM)</string>
+    <string name="automata_task_retry">↺ Wiederholen</string>
+    <string name="stats_section_web_search">Websuche</string>
+    <string name="stats_row_ws_provider">Anbieter</string>
+    <string name="stats_row_ws_url">URL</string>
+    <string name="stats_row_ws_engine">Suchmaschine</string>
+    <string name="stats_row_ws_results">Ergebnisse pro Abfrage</string>
+    <string name="stats_row_ws_queries">Abfragen gesamt</string>
+    <string name="stats_row_ws_errors">Fehler</string>
+    <string name="stats_row_ws_last_query">Letzte Abfrage</string>
 </resources>

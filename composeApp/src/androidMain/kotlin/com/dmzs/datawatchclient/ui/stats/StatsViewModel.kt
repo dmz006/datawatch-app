@@ -6,6 +6,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
+import com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto
 import com.dmzs.datawatchclient.transport.ws.StatsHub
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,7 @@ public class StatsViewModel : ViewModel() {
          * omits the key.
          */
         val maxSessions: Int? = null,
+        val webSearchStats: WebSearchStatsDto? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -106,6 +108,7 @@ public class StatsViewModel : ViewModel() {
             val sessionsTotal = sessionsList.size
             val sessionsRunning = sessionsList.count { it.state == SessionState.Running }
             val sessionsWaiting = sessionsList.count { it.state == SessionState.Waiting }
+            val webSearchStats = transport.fetchWebSearchStats().getOrNull()
             transport.stats().fold(
                 onSuccess = { dto ->
                     // Override the stats-reported counts when the session
@@ -130,6 +133,7 @@ public class StatsViewModel : ViewModel() {
                             banner = null,
                             serverName = profile.displayName,
                             maxSessions = maxSessions,
+                            webSearchStats = webSearchStats,
                         )
                     ServiceLocator.refreshHomeWidgets()
                 },

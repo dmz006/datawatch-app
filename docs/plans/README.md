@@ -360,6 +360,11 @@ or retracted rather than scheduled.
 | #156 | ✅ Settings → Automata: verifier diff max bytes setting (BL366 v8.16.0) | v1.0.88 |
 | #157 | ✅ Settings → Automata: default quality gates settings block (BL367 v8.17.0) | v1.0.88 |
 | #158 | ✅ Session input: 📷 image attachment button (PWA v8.19.0) | v1.0.88 |
+| #163 | ⚠️ Story count truncation — server-side list endpoint issue; app displays whatever the server sends; no app fix possible | deferred to server |
+| #164 | ✅ Web Search monitor card: `GET /api/web_search/stats`, shown when `enabled=true` | v1.1.0 |
+| #166 | ✅ Automata parity v8.25.0: spec expand/collapse, cancel button audit (denylist), task rows with session chip/error/verification/retry, planning backend picker | v1.1.0 |
+| #167 | ✅ i18n: new strings for v1.1.0 features in all 5 locale files | v1.1.0 |
+| BL-graph | Automata detail "Graph" button: add per-story execution graph visualisation in PrdDetailDialog (status bars per story, timeline). Deferred — requires async observer envelope fetching per story; complex. Implement when e2e PRD workflow GH issues arrive. | backlog |
 
 ---
 

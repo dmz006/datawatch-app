@@ -76,6 +76,9 @@ public interface TransportClient {
     /** GET /api/stats. */
     public suspend fun stats(): Result<StatsDto>
 
+    /** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
+    public suspend fun fetchWebSearchStats(): Result<com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto>
+
     /**
      * GET /api/observer/stats — richer observer payload that carries
      * the eBPF status block + cluster nodes (datawatch v4.4.0+ /
@@ -491,6 +494,12 @@ public interface TransportClient {
         prdId: String,
         hard: Boolean = false,
     ): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task (v8.23.0). */
+    public suspend fun resetPrdTask(
+        prdId: String,
+        taskId: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
 
     // ---- v0.63.0 BL221 Phase 4: Type registry + Guided Mode + Skills ----
 

@@ -240,6 +240,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun fetchWebSearchStats(): Result<com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto> =
+        request {
+            client.get("${profile.baseUrl}/api/web_search/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun observerStats(): Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto> =
         request {
             client.get("${profile.baseUrl}/api/observer/stats") {
@@ -1053,6 +1060,18 @@ public class RestTransport(
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 if (hard) parameter("hard", "true")
             }.body<Unit>()
+        }
+
+    override suspend fun resetPrdTask(
+        prdId: String,
+        taskId: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/reset_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.PrdTaskResetRequestDto(taskId = taskId))
+            }.body()
         }
 
     // ---- v0.63.0 Type registry ----

@@ -1157,4 +1157,24 @@
     <string name="council_persona_none">Aucun persona personnalisé</string>
     <string name="council_persona_name_required">Nom requis</string>
     <string name="council_persona_delete_confirm_title">Supprimer %1$s ?</string>
+
+    <!-- ── v1.1.0 parity additions ── -->
+    <string name="automata_sg_progress">Progression</string>
+    <string name="automata_sg_decomposed">Décomposé</string>
+    <string name="automata_sg_stories">histoires</string>
+    <string name="automata_sg_tasks">tâches</string>
+    <string name="automata_sg_no_stories">Aucune histoire encore — décomposition en cours…</string>
+    <string name="automata_spec_show_full">afficher tout</string>
+    <string name="automata_spec_hide">réduire</string>
+    <string name="automata_actions_view_sessions">Voir les sessions</string>
+    <string name="prd_detail_planning_backend">Backend de planification (LLM de décomposition)</string>
+    <string name="automata_task_retry">↺ Réessayer</string>
+    <string name="stats_section_web_search">Recherche web</string>
+    <string name="stats_row_ws_provider">Fournisseur</string>
+    <string name="stats_row_ws_url">URL</string>
+    <string name="stats_row_ws_engine">Moteur de recherche</string>
+    <string name="stats_row_ws_results">Résultats par requête</string>
+    <string name="stats_row_ws_queries">Total des requêtes</string>
+    <string name="stats_row_ws_errors">Erreurs</string>
+    <string name="stats_row_ws_last_query">Dernière requête</string>
 </resources>

@@ -420,7 +420,8 @@ public fun AutonomousScreen(
                     openPrdId = null
                 },
                 onDecompose = { vm.decompose(id) },
-                onSetLlm = { backend, effort, model -> vm.setLlm(id, backend, effort, model) },
+                onSetLlm = { backend, effort, model, dp -> vm.setLlm(id, backend, effort, model, dp) },
+                onResetTask = { prdId, taskId -> vm.resetTask(prdId, taskId) },
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },

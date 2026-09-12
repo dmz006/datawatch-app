@@ -288,14 +288,31 @@ public class AutonomousViewModel(
         backend: String,
         effort: String,
         model: String,
+        decompositionProfile: String = "",
     ) {
         val body =
             buildJsonObject {
                 if (backend.isNotBlank()) put("backend", JsonPrimitive(backend))
                 if (effort.isNotBlank()) put("effort", JsonPrimitive(effort))
                 if (model.isNotBlank()) put("model", JsonPrimitive(model))
+                if (decompositionProfile.isNotBlank()) put("decomposition_profile", JsonPrimitive(decompositionProfile))
+                put("actor", JsonPrimitive("operator"))
             }
         prdOp("Set LLM") { it.prdAction(prdId, "set_llm", body) }
+    }
+
+    public fun resetTask(prdId: String, taskId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.resetPrdTask(prdId, taskId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(
+                        banner = "Reset task failed — ${err.message ?: err::class.simpleName}",
+                    )
+                },
+            )
+        }
     }
 
     public fun runPrd(prdId: String) {

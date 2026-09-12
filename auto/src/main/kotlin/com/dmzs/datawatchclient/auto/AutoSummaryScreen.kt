@@ -11,6 +11,7 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -42,6 +43,7 @@ import kotlinx.coroutines.launch
  * ADR-0031 Play-compliance: static ListTemplate only, no free-form text input.
  */
 public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
+    private var isFirstLoad: Boolean = true
     private var running: Int = 0
     private var waiting: Int = 0
     private var blocked: Int = 0
@@ -86,6 +88,10 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private suspend fun pollLoop() {
         while (scope.isActive) {
             refresh()
+            if (isFirstLoad) {
+                isFirstLoad = false
+                invalidate()
+            }
             val newHash =
                 listOf(
                     running, waiting, blocked, total, error,
@@ -172,6 +178,14 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     override fun onGetTemplate(): Template {
+        if (isFirstLoad) {
+            return MessageTemplate.Builder("Connecting to datawatch…")
+                .setLoading(true)
+                .setTitle("datawatch")
+                .setHeaderAction(Action.APP_ICON)
+                .build()
+        }
+
         fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
 
         val listBuilder = ItemList.Builder()
