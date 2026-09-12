@@ -82,23 +82,27 @@ public class AutonomousViewModel(
 
     // Lazy to avoid touching ServiceLocator at VM construction time — tests stub the
     // resolver but don't init ServiceLocator (no Android appContext available).
+    @Suppress("ktlint:standard:property-naming")
     private val _allProfiles: StateFlow<List<ServerProfile>> by lazy {
         ServiceLocator.profileRepository.observeAll()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     }
 
+    @Suppress("ktlint:standard:property-naming")
     private val _activeId: StateFlow<String?> by lazy {
         ServiceLocator.activeServerStore.observe()
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     }
 
+    @Suppress("ktlint:standard:property-naming")
     private val _allServersMode: StateFlow<Boolean> by lazy {
         _activeId.map { it == ActiveServerStore.SENTINEL_ALL_SERVERS }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
     }
 
+    @Suppress("ktlint:standard:property-naming")
     private val _computedActiveProfile: StateFlow<ServerProfile?> by lazy {
         combine(_allProfiles, _activeId) { profiles, storedId ->
             val enabled = profiles.filter { it.enabled }
@@ -175,20 +179,22 @@ public class AutonomousViewModel(
                 }
             // Fetch PRD list and auxiliary data in parallel so slow/missing
             // backends or permission-modes endpoints don't block the list.
-            val (prdsResult, backendsResult, permModesResult) = coroutineScope {
-                val prds = async { transport.listPrds() }
-                val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
-                val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
-                Triple(prds.await(), backends.await(), permModes.await())
-            }
+            val (prdsResult, backendsResult, permModesResult) =
+                coroutineScope {
+                    val prds = async { transport.listPrds() }
+                    val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
+                    val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
+                    Triple(prds.await(), backends.await(), permModes.await())
+                }
             prdsResult.fold(
                 onSuccess = { dto ->
-                    _state.value = UiState(
-                        loading = false,
-                        prds = dto.prds,
-                        backends = backendsResult,
-                        permissionModes = permModesResult,
-                    )
+                    _state.value =
+                        UiState(
+                            loading = false,
+                            prds = dto.prds,
+                            backends = backendsResult,
+                            permissionModes = permModesResult,
+                        )
                 },
                 onFailure = { err ->
                     _state.value =
@@ -238,7 +244,9 @@ public class AutonomousViewModel(
                     loading = false,
                     prds = merged.toList(),
                     prdProfileNames = nameMap.toMap(),
-                    banner = if (errors.isEmpty()) null else "Some servers unreachable: " + errors.take(3).joinToString("; "),
+                    banner =
+                        if (errors.isEmpty()) null
+                        else "Some servers unreachable: " + errors.take(3).joinToString("; "),
                 )
         }
     }
@@ -316,9 +324,10 @@ public class AutonomousViewModel(
             transport.resetPrdTask(prdId, taskId).fold(
                 onSuccess = { refresh() },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(
-                        banner = "Reset task failed — ${err.message ?: err::class.simpleName}",
-                    )
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Reset task failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -449,7 +458,11 @@ public class AutonomousViewModel(
             transport.triggerScan(prdId).fold(
                 onSuccess = { _state.value = _state.value.copy(scanLoading = false, scanResult = it) },
                 onFailure = { err ->
-                    _state.value = _state.value.copy(scanLoading = false, banner = "Scan failed — ${err.message ?: err::class.simpleName}")
+                    _state.value =
+                        _state.value.copy(
+                            scanLoading = false,
+                            banner = "Scan failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -466,9 +479,11 @@ public class AutonomousViewModel(
                     refresh()
                     onSuccess(prd.id)
                 },
-                onFailure = {
-                        err ->
-                    _state.value = _state.value.copy(banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}")
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Fix PRD failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -479,9 +494,11 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.proposeRules(prdId).fold(
                 onSuccess = { _state.value = _state.value.copy(proposedRules = it) },
-                onFailure = {
-                        err ->
-                    _state.value = _state.value.copy(banner = "Propose rules failed — ${err.message ?: err::class.simpleName}")
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Propose rules failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -561,9 +578,11 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.registerAutomataType(req).fold(
                 onSuccess = { loadAutomataTypes() },
-                onFailure = {
-                        err ->
-                    _state.value = _state.value.copy(banner = "Create type failed — ${err.message ?: err::class.simpleName}")
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Create type failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -574,9 +593,11 @@ public class AutonomousViewModel(
             val (_, transport) = resolver.resolve() ?: return@launch
             transport.deleteAutomataType(id).fold(
                 onSuccess = { loadAutomataTypes() },
-                onFailure = {
-                        err ->
-                    _state.value = _state.value.copy(banner = "Delete type failed — ${err.message ?: err::class.simpleName}")
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Delete type failed — ${err.message ?: err::class.simpleName}",
+                        )
                 },
             )
         }
@@ -585,6 +606,7 @@ public class AutonomousViewModel(
     // Cached active profile id for synchronous watch-toggle calls. Lazy to avoid
     // touching ServiceLocator at VM construction time (tests stub the resolver but
     // don't init ServiceLocator).
+    @Suppress("ktlint:standard:property-naming")
     private val _activeProfileId: StateFlow<String?> by lazy {
         ServiceLocator.activeProfileFlow()
             .flatMapLatest { profile -> flowOf(profile?.id) }
