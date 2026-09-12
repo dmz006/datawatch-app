@@ -173,13 +173,22 @@ public class AutonomousViewModel(
                     _state.value = UiState(loading = false, banner = "No enabled server.")
                     return@launch
                 }
-            transport.listPrds().fold(
+            // Fetch PRD list and auxiliary data in parallel so slow/missing
+            // backends or permission-modes endpoints don't block the list.
+            val (prdsResult, backendsResult, permModesResult) = coroutineScope {
+                val prds = async { transport.listPrds() }
+                val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
+                val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
+                Triple(prds.await(), backends.await(), permModes.await())
+            }
+            prdsResult.fold(
                 onSuccess = { dto ->
-                    val backends =
-                        transport.listBackends()
-                            .getOrNull()?.llm.orEmpty()
-                    val permModes = transport.listClaudePermissionModes().getOrElse { emptyList() }
-                    _state.value = UiState(loading = false, prds = dto.prds, backends = backends, permissionModes = permModes)
+                    _state.value = UiState(
+                        loading = false,
+                        prds = dto.prds,
+                        backends = backendsResult,
+                        permissionModes = permModesResult,
+                    )
                 },
                 onFailure = { err ->
                     _state.value =
