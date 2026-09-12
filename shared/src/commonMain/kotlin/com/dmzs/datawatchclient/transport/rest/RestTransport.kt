@@ -1080,7 +1080,7 @@ public class RestTransport(
         request {
             client.get("${profile.baseUrl}/api/autonomous/types") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.AutomataTypesResponseDto>().types
         }
 
     override suspend fun registerAutomataType(req: com.dmzs.datawatchclient.transport.dto.AutomataTypeRequestDto): Result<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> =
@@ -3130,6 +3130,20 @@ public class RestTransport(
             // reachability flag or show "server unreachable", which misled
             // both user and debugger when backends/channels DTOs drifted
             // from the shipped PWA shape.
+            println(
+                "RestTransport: parse error for ${profile.baseUrl}: " +
+                    "${e::class.simpleName}: ${e.message}",
+            )
+            Result.failure(
+                TransportError.ServerError(
+                    status = 0,
+                    message = "Unexpected response shape — ${e.message ?: e::class.simpleName}",
+                ),
+            )
+        } catch (e: io.ktor.serialization.ContentConvertException) {
+            // Ktor wraps JSON deserialization failures in ContentConvertException
+            // (not SerializationException), so a DTO shape mismatch was previously
+            // falling through to the Throwable handler and showing "Server unreachable".
             println(
                 "RestTransport: parse error for ${profile.baseUrl}: " +
                     "${e::class.simpleName}: ${e.message}",
