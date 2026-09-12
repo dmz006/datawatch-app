@@ -685,16 +685,20 @@ private fun SystemStatisticsCard(s: StatsDto) {
                 )
             }
 
-            // GPU util — render when a GPU name was reported or util came in.
-            if (s.gpuName != null || s.gpuUtilPct != null || s.gpuPct != null) {
-                val gpuPct = s.gpuUtilPct ?: s.gpuPct
+            // GPU util — render when util% or GPU name is reported.
+            // When util% is absent but VRAM data exists, skip the util bar here and
+            // let the VRAM block below act as the primary GPU bar.
+            val gpuUtilPct = s.gpuUtilPct ?: s.gpuPct
+            val vramTotal = s.gpuMemTotalMb
+            if (s.gpuName != null || gpuUtilPct != null) {
                 val tempSuffix = s.gpuTemp?.let { " · ${"%.0f".format(it)}°C" } ?: ""
                 val gpuSub = s.gpuName?.plus(tempSuffix) ?: tempSuffix.ifBlank { null }
-                UsageBar("GPU", gpuPct, gpuSub)
+                UsageBar("GPU", gpuUtilPct, gpuSub)
             }
 
-            // GPU VRAM — separate bar per PWA layout.
-            val vramTotal = s.gpuMemTotalMb
+            // GPU VRAM — shown as a bar.
+            // When util% was absent (no GPU bar above), use label "GPU VRAM" so
+            // the user always sees a GPU bar when the server reports memory data.
             if (vramTotal != null && vramTotal > 0) {
                 val usedMb = s.gpuMemUsedMb ?: 0L
                 val pct = (usedMb.toDouble() / vramTotal.toDouble()) * 100.0
