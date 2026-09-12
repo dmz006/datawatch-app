@@ -263,6 +263,19 @@ public object ConfigFieldSchemas {
                 ),
         )
 
+    public val WebSearch: ConfigSection =
+        ConfigSection(
+            id = "lc_websearch",
+            title = "Web Search",
+            fields =
+                listOf(
+                    Toggle("web_search.enabled", "Enable web search (SearXNG)"),
+                    TextField("web_search.url", "SearXNG URL", "http://searxng.example.com:3001"),
+                    TextField("web_search.engine", "Search engine", "bing"),
+                    NumberField("web_search.num_results", "Results per query", "10"),
+                ),
+        )
+
     // ---- Comms tab ----
 
     public val WebServer: ConfigSection =

@@ -654,6 +654,8 @@ public data class PrdDto(
     @SerialName("guided_mode") val guidedMode: Boolean = false,
     val skills: List<String> = emptyList(),
     val decisions: List<DecisionDto>? = null,
+    /** v8.20.0: headless planning LLM (ollama/openwebui only). Empty = use daemon default. */
+    @SerialName("decomposition_profile") val decompositionProfile: String? = null,
 )
 
 @Serializable
@@ -662,6 +664,33 @@ public data class DecisionDto(
     val kind: String? = null,
     val actor: String? = null,
     val note: String? = null,
+)
+
+@Serializable
+public data class PrdVerificationIssueDto(
+    val file: String? = null,
+    val line: Int? = null,
+    val severity: String = "",
+    val message: String = "",
+)
+
+@Serializable
+public data class PrdTaskVerificationDto(
+    val summary: String? = null,
+    val severity: String? = null,
+    val issues: List<PrdVerificationIssueDto> = emptyList(),
+)
+
+@Serializable
+public data class PrdTaskDto(
+    val id: String = "",
+    val task: String = "",
+    /** pending | in_progress | complete | failed | blocked */
+    val status: String = "",
+    @SerialName("session_id") val sessionId: String? = null,
+    val error: String? = null,
+    val verification: PrdTaskVerificationDto? = null,
+    @SerialName("retry_count") val retryCount: Int = 0,
 )
 
 @Serializable
@@ -674,6 +703,7 @@ public data class PrdStoryDto(
     val files: List<String> = emptyList(),
     @SerialName("files_touched") val filesTouched: List<String> = emptyList(),
     @SerialName("execution_profile") val executionProfile: String? = null,
+    val tasks: List<PrdTaskDto> = emptyList(),
 )
 
 /**
@@ -705,6 +735,13 @@ public data class NewPrdRequestDto(
 @Serializable
 public data class NewPrdResponseDto(
     val id: String = "",
+)
+
+/** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task. */
+@Serializable
+public data class PrdTaskResetRequestDto(
+    @SerialName("task_id") val taskId: String,
+    val actor: String = "operator",
 )
 
 // ============================================================
@@ -1874,4 +1911,17 @@ public data class WebPushRegistrationDto(
 @Serializable
 public data class WebPushRegistrationsDto(
     val registrations: List<WebPushRegistrationDto> = emptyList(),
+)
+
+/** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
+@Serializable
+public data class WebSearchStatsDto(
+    val enabled: Boolean = false,
+    val provider: String? = null,
+    val url: String? = null,
+    val engine: String? = null,
+    @SerialName("num_results") val numResults: Int = 10,
+    @SerialName("web_search_queries_total") val queriesTotal: Long = 0,
+    @SerialName("web_search_errors_total") val errorsTotal: Long = 0,
+    @SerialName("web_search_last_query_at") val lastQueryAt: String? = null,
 )

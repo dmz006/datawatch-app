@@ -369,6 +369,9 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.LlmRtk,
                                 )
+                                com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
+                                    com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.WebSearch,
+                                )
                                 // Container Workers (cfg.agents)
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Agents,

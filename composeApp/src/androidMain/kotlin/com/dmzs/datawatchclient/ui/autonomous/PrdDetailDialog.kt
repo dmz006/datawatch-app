@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
+import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
@@ -78,7 +79,8 @@ internal fun PrdDetailDialog(
     onApprove: () -> Unit,
     onReject: (String) -> Unit,
     onDecompose: () -> Unit,
-    onSetLlm: (backend: String, effort: String, model: String) -> Unit,
+    onSetLlm: (backend: String, effort: String, model: String, decompositionProfile: String) -> Unit,
+    onResetTask: ((prdId: String, taskId: String) -> Unit)? = null,
     onRun: () -> Unit,
     onCancel: () -> Unit,
     onRequestRevision: (note: String) -> Unit,
@@ -97,7 +99,7 @@ internal fun PrdDetailDialog(
     val status = prd.status
     val canReview = status == "needs_review" || status == "revisions_asked"
     val canEdit = status != "running"
-    val isCancellable = status in setOf("running", "draft", "approved", "needs_review", "revisions_asked", "decomposing", "planning")
+    val isCancellable = status !in setOf("cancelled", "completed", "done", "rejected", "failed", "archived")
 
     var selectedTab by remember { mutableStateOf(0) }
     var rejectOpen by remember { mutableStateOf(false) }
@@ -199,9 +201,11 @@ internal fun PrdDetailDialog(
                         }
                     }
 
-                    // Spec snippet
+                    // Spec snippet with expand/collapse
                     prd.spec?.takeIf { it.isNotBlank() }?.let { fullSpec ->
-                        val snippet = if (fullSpec.length > 280) fullSpec.take(280) + "…" else fullSpec
+                        var specExpanded by remember { mutableStateOf(false) }
+                        val isLong = fullSpec.length > 280
+                        val displaySpec = if (specExpanded || !isLong) fullSpec else fullSpec.take(280)
                         val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
                         Box(
                             modifier =
@@ -217,11 +221,24 @@ internal fun PrdDetailDialog(
                                     }
                                     .padding(start = 8.dp),
                         ) {
-                            Text(
-                                snippet,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column {
+                                Text(
+                                    displaySpec,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (isLong) {
+                                    Text(
+                                        if (specExpanded) stringResource(R.string.automata_spec_hide)
+                                        else stringResource(R.string.automata_spec_show_full),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .padding(top = 2.dp)
+                                            .clickable { specExpanded = !specExpanded },
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -439,6 +456,9 @@ internal fun PrdDetailDialog(
                                         onEdit = { editingStory = story },
                                         onEditFiles = { editingFilesFor = story },
                                         conflicts = conflicts,
+                                        prdId = prd.id,
+                                        prdStatus = status,
+                                        onResetTask = onResetTask,
                                     )
                                 }
                             }
@@ -546,10 +566,11 @@ internal fun PrdDetailDialog(
             currentBackend = prd.backend.orEmpty(),
             currentEffort = prd.effort.orEmpty(),
             currentModel = prd.model.orEmpty(),
+            currentDecompositionProfile = prd.decompositionProfile.orEmpty(),
             backends = backends,
             onDismiss = { llmOpen = false },
-            onSave = { b, e, m ->
-                onSetLlm(b, e, m)
+            onSave = { b, e, m, dp ->
+                onSetLlm(b, e, m, dp)
                 llmOpen = false
             },
         )
@@ -649,15 +670,23 @@ private fun LlmOverrideDialog(
     currentBackend: String,
     currentEffort: String,
     currentModel: String,
+    currentDecompositionProfile: String = "",
     backends: List<String>,
     onDismiss: () -> Unit,
-    onSave: (backend: String, effort: String, model: String) -> Unit,
+    onSave: (backend: String, effort: String, model: String, decompositionProfile: String) -> Unit,
 ) {
     var backend by remember { mutableStateOf(currentBackend) }
     var effort by remember { mutableStateOf(currentEffort) }
     var model by remember { mutableStateOf(currentModel) }
+    var decompositionProfile by remember { mutableStateOf(currentDecompositionProfile) }
     var backendMenuOpen by remember { mutableStateOf(false) }
     var effortMenuOpen by remember { mutableStateOf(false) }
+    var planningMenuOpen by remember { mutableStateOf(false) }
+
+    // Planning backend must be ollama or openwebui (headless /api/ask only)
+    val planningBackends = backends.filter { b ->
+        b.contains("ollama", ignoreCase = true) || b.contains("openwebui", ignoreCase = true)
+    }
 
     val inheritLabel = stringResource(R.string.new_prd_inherit)
     AlertDialog(
@@ -687,6 +716,35 @@ private fun LlmOverrideDialog(
                                 backend = b
                                 backendMenuOpen = false
                             })
+                        }
+                    }
+                }
+                // Planning backend — ollama/openwebui only (v8.20.0)
+                if (planningBackends.isNotEmpty()) {
+                    ExposedDropdownMenuBox(
+                        expanded = planningMenuOpen,
+                        onExpandedChange = { planningMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = decompositionProfile.ifEmpty { inheritLabel },
+                            onValueChange = {},
+                            label = { Text(stringResource(R.string.prd_detail_planning_backend)) },
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = planningMenuOpen) },
+                        )
+                        DropdownMenu(expanded = planningMenuOpen, onDismissRequest = { planningMenuOpen = false }) {
+                            DropdownMenuItem(text = { Text(inheritLabel) }, onClick = {
+                                decompositionProfile = ""
+                                planningMenuOpen = false
+                            })
+                            planningBackends.forEach { b ->
+                                DropdownMenuItem(text = { Text(b) }, onClick = {
+                                    decompositionProfile = b
+                                    planningMenuOpen = false
+                                })
+                            }
                         }
                     }
                 }
@@ -725,7 +783,9 @@ private fun LlmOverrideDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(backend, effort, model) }) { Text(stringResource(R.string.action_save)) }
+            TextButton(onClick = { onSave(backend, effort, model, decompositionProfile) }) {
+                Text(stringResource(R.string.action_save))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
@@ -826,6 +886,9 @@ private fun StoryRow(
     onEdit: () -> Unit,
     onEditFiles: () -> Unit,
     conflicts: Map<String, List<String>> = emptyMap(),
+    prdId: String = "",
+    prdStatus: String = "",
+    onResetTask: ((prdId: String, taskId: String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -907,6 +970,113 @@ private fun StoryRow(
                         }
                     }
                 }
+                // Task list — v8.23.0 parity
+                if (story.tasks.isNotEmpty()) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    story.tasks.forEach { task ->
+                        TaskRow(
+                            task = task,
+                            prdId = prdId,
+                            prdStatus = prdStatus,
+                            onResetTask = onResetTask,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskRow(
+    task: PrdTaskDto,
+    prdId: String,
+    prdStatus: String,
+    onResetTask: ((prdId: String, taskId: String) -> Unit)?,
+) {
+    val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus == "running"
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .background(
+                if (task.status == "failed") Color(0xFF7C2D12).copy(alpha = 0.08f)
+                else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                RoundedCornerShape(4.dp),
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                task.task.ifBlank { task.id },
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            // Status indicator
+            val statusColor = when (task.status) {
+                "complete" -> Color(0xFF10B981)
+                "in_progress" -> Color(0xFF3B82F6)
+                "failed" -> Color(0xFFEF4444)
+                "blocked" -> Color(0xFFF59E0B)
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Text(
+                task.status.replace('_', ' '),
+                style = MaterialTheme.typography.labelSmall,
+                color = statusColor,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+        // Session chip
+        task.sessionId?.takeIf { it.isNotBlank() }?.let { sid ->
+            Text(
+                "→ ${sid.take(8)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.clickable {
+                    SessionsNavChannel.jumpTo(sid)
+                }.padding(top = 2.dp),
+            )
+        }
+        // Error panel
+        task.error?.takeIf { it.isNotBlank() }?.let { err ->
+            Surface(
+                color = Color(0xFF7C2D12).copy(alpha = 0.12f),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                Text(
+                    err,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFEF4444),
+                    modifier = Modifier.padding(6.dp),
+                )
+            }
+        }
+        // Verification summary
+        task.verification?.let { v ->
+            v.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                val ok = v.severity?.lowercase() !in listOf("error", "high", "critical")
+                Text(
+                    "✓ $summary",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (ok) Color(0xFF10B981) else Color(0xFFF59E0B),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        // Retry button
+        if (canRetry && onResetTask != null) {
+            TextButton(
+                onClick = { onResetTask(prdId, task.id) },
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                Text(
+                    "↺ Retry",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFF59E0B),
+                )
             }
         }
     }

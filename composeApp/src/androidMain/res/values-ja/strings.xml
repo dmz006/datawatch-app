@@ -1157,4 +1157,24 @@
     <string name="council_persona_none">カスタムペルソナなし</string>
     <string name="council_persona_name_required">名前が必要です</string>
     <string name="council_persona_delete_confirm_title">%1$sを削除しますか?</string>
+
+    <!-- ── v1.1.0 parity additions ── -->
+    <string name="automata_sg_progress">進捗</string>
+    <string name="automata_sg_decomposed">分解済み</string>
+    <string name="automata_sg_stories">ストーリー</string>
+    <string name="automata_sg_tasks">タスク</string>
+    <string name="automata_sg_no_stories">ストーリーはまだありません — 分解中…</string>
+    <string name="automata_spec_show_full">全文表示</string>
+    <string name="automata_spec_hide">折りたたむ</string>
+    <string name="automata_actions_view_sessions">セッションを表示</string>
+    <string name="prd_detail_planning_backend">計画バックエンド（分解LLM）</string>
+    <string name="automata_task_retry">↺ 再試行</string>
+    <string name="stats_section_web_search">ウェブ検索</string>
+    <string name="stats_row_ws_provider">プロバイダー</string>
+    <string name="stats_row_ws_url">URL</string>
+    <string name="stats_row_ws_engine">検索エンジン</string>
+    <string name="stats_row_ws_results">クエリあたりの結果数</string>
+    <string name="stats_row_ws_queries">総クエリ数</string>
+    <string name="stats_row_ws_errors">エラー</string>
+    <string name="stats_row_ws_last_query">最終クエリ</string>
 </resources>
