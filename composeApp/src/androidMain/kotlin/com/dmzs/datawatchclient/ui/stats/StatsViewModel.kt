@@ -106,11 +106,12 @@ public class StatsViewModel : ViewModel() {
             // a full poll cycle; the list is the authoritative source.
             // Pull it here alongside stats so the card never shows 0
             // when there are live sessions (2026-04-22 user report).
-            val (sessionsList, webSearchStatsResult) = coroutineScope {
-                val sessions = async { transport.listSessions().getOrNull().orEmpty() }
-                val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
-                sessions.await() to webSearch.await()
-            }
+            val (sessionsList, webSearchStatsResult) =
+                coroutineScope {
+                    val sessions = async { transport.listSessions().getOrNull().orEmpty() }
+                    val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
+                    sessions.await() to webSearch.await()
+                }
             val sessionsTotal = sessionsList.size
             val sessionsRunning = sessionsList.count { it.state == SessionState.Running }
             val sessionsWaiting = sessionsList.count { it.state == SessionState.Waiting }

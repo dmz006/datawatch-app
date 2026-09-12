@@ -61,6 +61,8 @@ class AutonomousViewModelTest {
         runTest(testDispatcher) {
             val (t, r) = fakeResolver()
             coEvery { t.listPrds() } returns Result.failure(RuntimeException("boom"))
+            coEvery { t.listBackends() } returns noBackends
+            coEvery { t.listClaudePermissionModes() } returns noPermModes
             val vm = AutonomousViewModel(r)
 
             vm.refresh()
