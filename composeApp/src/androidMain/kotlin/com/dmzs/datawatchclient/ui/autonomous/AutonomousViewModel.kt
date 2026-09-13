@@ -284,6 +284,21 @@ public class AutonomousViewModel(
         }
     }
 
+    /**
+     * Fetches the full PRD detail (all stories) and patches it into the prds list.
+     * The list endpoint can truncate stories[]; the detail endpoint is authoritative (#163).
+     */
+    public fun fetchFullPrd(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.getPrd(prdId).onSuccess { full ->
+                _state.value = _state.value.copy(
+                    prds = _state.value.prds.map { if (it.id == prdId) full else it },
+                )
+            }
+        }
+    }
+
     public fun approve(prdId: String) {
         prdOp("Approve") { it.prdAction(prdId, "approve") }
     }

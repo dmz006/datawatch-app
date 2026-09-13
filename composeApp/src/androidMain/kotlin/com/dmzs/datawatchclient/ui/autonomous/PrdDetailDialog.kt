@@ -33,6 +33,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -113,12 +114,14 @@ internal fun PrdDetailDialog(
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
     var graphOpen by remember { mutableStateOf(false) }
 
+    val showProgressTab = status == "running" || status == "decomposing"
     val tabs =
-        listOf(
-            stringResource(R.string.prd_tab_overview),
-            stringResource(R.string.prd_tab_stories),
-            stringResource(R.string.prd_tab_decisions),
-        )
+        buildList {
+            add(stringResource(R.string.prd_tab_overview))
+            add(stringResource(R.string.prd_tab_stories))
+            add(stringResource(R.string.prd_tab_decisions))
+            if (showProgressTab) add(stringResource(R.string.automata_sg_progress))
+        }
 
     Scaffold(
         topBar = {
@@ -484,6 +487,75 @@ internal fun PrdDetailDialog(
                                         style = MaterialTheme.typography.bodySmall,
                                         modifier = Modifier.padding(vertical = 2.dp),
                                     )
+                                }
+                            }
+                        }
+                        3 -> {
+                            // Progress tab — per-story task completion bars (#166)
+                            val totalStories = prd.stories.size
+                            val totalTasks = prd.stories.sumOf { it.tasks.size }
+                            val doneTasks = prd.stories.sumOf { s ->
+                                s.tasks.count { it.status in setOf("complete", "completed", "done") }
+                            }
+                            val decomposed = totalStories > 0
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            ) {
+                                Text(
+                                    if (decomposed) "✓ ${stringResource(R.string.automata_sg_decomposed)}" else "… ${stringResource(R.string.automata_sg_decomposed)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (decomposed) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    "$totalStories ${stringResource(R.string.automata_sg_stories)}  ·  $totalTasks ${stringResource(R.string.automata_sg_tasks)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (prd.stories.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.automata_sg_no_stories),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                prd.stories.forEach { story ->
+                                    val storyTotal = story.tasks.size
+                                    val storyDone = story.tasks.count { it.status in setOf("complete", "completed", "done") }
+                                    val fraction = if (storyTotal > 0) storyDone.toFloat() / storyTotal else 0f
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                        ) {
+                                            Text(
+                                                story.title.ifBlank { story.id },
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.weight(1f),
+                                            )
+                                            Text(
+                                                "$storyDone/$storyTotal",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        LinearProgressIndicator(
+                                            progress = { fraction },
+                                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                            color = when (story.status.lowercase()) {
+                                                "complete" -> Color(0xFF10B981)
+                                                "in_progress" -> Color(0xFF3B82F6)
+                                                "failed" -> Color(0xFFEF4444)
+                                                else -> MaterialTheme.colorScheme.primary
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -918,6 +918,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun getPrd(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/prds/$prdId") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun createPrd(request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto): Result<String> {
         val req = request
         return request {
@@ -1892,6 +1899,13 @@ public class RestTransport(
                 setBody(mapOf("enabled" to enabled))
             }
             Unit
+        }
+
+    override suspend fun getComputeNodeDetail(name: String): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes/${name.replace(" ", "%20")}/detail") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
         }
 
     override suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>> =
