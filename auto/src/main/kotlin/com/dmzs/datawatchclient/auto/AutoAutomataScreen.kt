@@ -180,35 +180,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .setImage(dotIcon)
                         .addText(subtitle)
                         .setOnClickListener {
-                            when {
-                                // Review/running/terminal → PrdActionScreen for approve/stop/delete
-                                isReview || isTerminal ->
-                                    screenManager.push(
-                                        PrdActionScreen(
-                                            carContext,
-                                            prd.id,
-                                            prd.name.ifBlank { prd.id },
-                                            status = prd.status,
-                                            automataName = prd.name.ifBlank { prd.id },
-                                        ),
-                                    )
-                                // Running/active → PrdActionScreen (Stop + Sessions)
-                                isActive ->
-                                    screenManager.push(
-                                        PrdActionScreen(
-                                            carContext,
-                                            prd.id,
-                                            prd.name.ifBlank { prd.id },
-                                            status = prd.status,
-                                            automataName = prd.name.ifBlank { prd.id },
-                                        ),
-                                    )
-                                // Idle/other → filtered session list
-                                else ->
-                                    screenManager.push(
-                                        AutoSessionListScreen(carContext, automataId = prd.name.ifBlank { prd.id }),
-                                    )
-                            }
+                            // All states → full PRD detail (overview, stories, actions)
+                            screenManager.push(AutoPrdDetailScreen(carContext, prd.id))
                         }
                         .build(),
                 )
