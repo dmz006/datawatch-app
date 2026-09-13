@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-13
+
+### Added
+- Android Auto: **full PRD detail screen** — tapping any automaton in the Automata list now opens `AutoPrdDetailScreen`, a TTS-readable `MessageTemplate` showing status, story progress arc, active story + current running task, pending stories, most recent decision, and spec snippet; auto-polls every 15 s for live updates
+- Android Auto: **Stories list screen** (`AutoPrdStoriesScreen`) — reachable via the "Stories" action strip button on the PRD detail; one row per story with status marker, task counts (done/total/failed), and the running task description
+- Android Auto: contextual actions (Approve/Reject, Stop, Delete) are present directly on the PRD detail screen so no extra navigation step is needed to act on a plan that requires review or is running
+
 ## [1.2.1] — 2026-09-13
 
 ### Fixed
