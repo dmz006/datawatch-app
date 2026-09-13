@@ -17,6 +17,7 @@ import com.dmzs.datawatchclient.Version
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,8 @@ public class AutoMonitorScreen(
         // Live session counts (total, running, waiting) — supplemented from listSessions()
         // because the server's /api/stats often returns sessions_* as 0.
         val sessionCounts: Triple<Int, Int, Int>? = null,
+        // GPU util% from /api/compute/nodes/{name}/detail — server v8.25.3+ removed it from /api/stats.
+        val gpuDetail: ComputeNodeDetailDto? = null,
     )
 
     init {
@@ -111,9 +114,14 @@ public class AutoMonitorScreen(
                 val statsResult = transport.stats()
                 val liveSessions = transport.listSessions().getOrNull()
                 val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
+                val gpuDetail = runCatching {
+                    transport.listComputeNodes().getOrNull()
+                        ?.firstOrNull { it.enabled }
+                        ?.let { transport.getComputeNodeDetail(it.name).getOrNull() }
+                }.getOrNull()
                 val result =
                     statsResult.fold(
-                        onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts) },
+                        onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts, gpuDetail = gpuDetail) },
                         onFailure = { err ->
                             ServerRow(
                                 forcedProfile,
@@ -140,8 +148,13 @@ public class AutoMonitorScreen(
                             val statsResult = transport.stats()
                             val liveSessions = transport.listSessions().getOrNull()
                             val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
+                            val gpuDetail = runCatching {
+                                transport.listComputeNodes().getOrNull()
+                                    ?.firstOrNull { it.enabled }
+                                    ?.let { transport.getComputeNodeDetail(it.name).getOrNull() }
+                            }.getOrNull()
                             statsResult.fold(
-                                onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts) },
+                                onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts, gpuDetail = gpuDetail) },
                                 onFailure = { err ->
                                     ServerRow(
                                         p,
@@ -211,7 +224,7 @@ public class AutoMonitorScreen(
                     } else {
                         { screenManager.push(AutoSessionListScreen(carContext)) }
                     }
-                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts)
+                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts, gpuDetail = rows[0].gpuDetail)
             } else {
                 items.addItem(
                     Row.Builder()
@@ -228,7 +241,7 @@ public class AutoMonitorScreen(
                     when {
                         row.error != null -> "offline — ${row.error}"
                         s == null -> "loading…"
-                        else -> buildServerSummary(s, row.sessionCounts)
+                        else -> buildServerSummary(s, row.sessionCounts, row.gpuDetail)
                     }
                 val titleColor = if (row.error != null) CarColor.RED else CarColor.GREEN
                 items.addItem(
@@ -304,6 +317,7 @@ private fun addDetailRows(
     s: StatsDto,
     onSessionsClick: (() -> Unit)? = null,
     sessionCounts: Triple<Int, Int, Int>? = null,
+    gpuDetail: ComputeNodeDetailDto? = null,
 ) {
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
@@ -351,6 +365,7 @@ private fun addDetailRows(
     // Line 1: util% bar when available; otherwise the VRAM bar (so there's always a bar visible).
     // Line 2: VRAM bar + sizes, only added as a second line when util% is also on line 1.
     val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
+        ?: gpuDetail?.gpu?.firstOrNull()?.utilPct?.toInt()
     val vramTotal = s.gpuMemTotalMb
     val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
     if (hasGpu) {
@@ -397,6 +412,7 @@ private fun addDetailRows(
 private fun buildServerSummary(
     s: StatsDto,
     sessionCounts: Triple<Int, Int, Int>? = null,
+    gpuDetail: ComputeNodeDetailDto? = null,
 ): String {
     val parts = mutableListOf<String>()
     val load1 = s.cpuLoad1
@@ -416,6 +432,7 @@ private fun buildServerSummary(
         s.memPct?.let { parts += "Mem ${"%.0f".format(it)}%" }
     }
     val gpuSummaryPct = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
+        ?: gpuDetail?.gpu?.firstOrNull()?.utilPct?.toInt()
     gpuSummaryPct?.let { parts += "GPU $it%" }
     val totalSessions = sessionCounts?.first ?: s.sessionsTotal
     if (totalSessions > 0) parts += "${totalSessions}s"

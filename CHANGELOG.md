@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-09-13
+
+### Fixed
+- Android Auto: GPU utilisation bar and percentage now display correctly with server v8.25.3+, which moved `gpu_util_pct` out of `/api/stats` into `/api/compute/nodes/{name}/detail`; the monitor screen now fetches the first enabled compute node's detail after each stats poll and falls back to it when `StatsDto.gpuUtilPct` is null (#170)
+
 ## [1.2.0] — 2026-09-13
 
 ### Added
