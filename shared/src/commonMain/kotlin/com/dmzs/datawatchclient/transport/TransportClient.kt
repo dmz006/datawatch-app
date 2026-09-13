@@ -437,6 +437,9 @@ public interface TransportClient {
     /** GET /api/autonomous/prds — list PRDs (issue #11–13). */
     public suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto>
 
+    /** GET /api/autonomous/prds/{id} — fetch a single PRD with full stories list (#163). */
+    public suspend fun getPrd(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
     /** POST /api/autonomous/prds — create a new PRD (issue #11). */
     public suspend fun createPrd(request: com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto): Result<String>
 
@@ -988,6 +991,9 @@ public interface TransportClient {
 
     /** PATCH /api/compute/nodes/{name}/enabled — enable or disable a compute node. */
     public suspend fun toggleComputeNodeEnabled(name: String, enabled: Boolean): Result<Unit>
+
+    /** GET /api/compute/nodes/{name}/detail — live CPU/mem/GPU stats (v8.25.3+, #168). */
+    public suspend fun getComputeNodeDetail(name: String): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto>
 
     /** GET /api/observer/peers/free — list observer peers not yet bound to any compute node. */
     public suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>>

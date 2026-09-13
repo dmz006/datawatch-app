@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-09-13
+
+### Added
+- Automata PRD detail: **Progress tab** (visible when status is `running` or `decomposing`) — shows decompose indicator, total story/task counts, and per-story completion progress bars
+- Observatory: **Peer Resources card** above the federated peers list — shows live CPU%, mem used/total, GPU util%, temp (colour-coded at 60°C/80°C), power W, and VRAM per observer peer with a bound compute node; refreshes every 8 s (#168)
+- Transport: `getPrd(id)` — fetches full single-PRD detail; called when opening PRD detail to ensure `stories[]` is never truncated from the list endpoint (#163)
+- Transport: `getComputeNodeDetail(name)` — `GET /api/compute/nodes/{name}/detail` for live GPU/CPU/mem stats (#168)
+- i18n: 14 new string keys for Observatory peer resources + compute node stats (`obs_peer_resources`, `obs_cn_*`, `obs_peer_no_peers`) matching datawatch v8.25.3–v8.25.4 (#169)
+
 ## [1.1.3] — 2026-09-12
 
 ### Fixed

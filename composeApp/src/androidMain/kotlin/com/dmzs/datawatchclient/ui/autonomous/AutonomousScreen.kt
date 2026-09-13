@@ -112,9 +112,13 @@ public fun AutonomousScreen(
     var pickerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Keep detailPrd alive through exit animation so slide-out doesn't flash blank
+    // Keep detailPrd alive through exit animation so slide-out doesn't flash blank.
+    // Also trigger a full-PRD fetch when a detail opens so stories[] is never truncated (#163).
     LaunchedEffect(openPrdId, state.prds) {
-        if (openPrdId != null) detailPrd = state.prds.firstOrNull { it.id == openPrdId }
+        if (openPrdId != null) {
+            detailPrd = state.prds.firstOrNull { it.id == openPrdId }
+            vm.fetchFullPrd(openPrdId!!)
+        }
     }
 
     LaunchedEffect(Unit) {

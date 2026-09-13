@@ -1020,6 +1020,42 @@ public data class DeclaredCapacityDto(
     @SerialName("max_concurrent_models") val maxConcurrentModels: Int = 10,
 )
 
+// GET /api/compute/nodes/{name}/detail — live stats (v8.25.3+, #168)
+@Serializable
+public data class ComputeNodeGpuStatDto(
+    val name: String = "",
+    val vendor: String = "",
+    @SerialName("util_pct") val utilPct: Double = 0.0,
+    @SerialName("mem_used_bytes") val memUsedBytes: Long = 0,
+    @SerialName("mem_total_bytes") val memTotalBytes: Long = 0,
+    @SerialName("power_w") val powerW: Double = 0.0,
+    @SerialName("temp_c") val tempC: Double = 0.0,
+)
+
+@Serializable
+public data class ComputeNodeCpuStatDto(
+    val pct: Double = 0.0,
+    val cores: Int = 0,
+    @SerialName("load1") val load1: Double = 0.0,
+)
+
+@Serializable
+public data class ComputeNodeMemStatDto(
+    val pct: Double = 0.0,
+    @SerialName("used_bytes") val usedBytes: Long = 0,
+    @SerialName("total_bytes") val totalBytes: Long = 0,
+)
+
+@Serializable
+public data class ComputeNodeDetailDto(
+    val cpu: ComputeNodeCpuStatDto? = null,
+    val mem: ComputeNodeMemStatDto? = null,
+    val gpu: List<ComputeNodeGpuStatDto> = emptyList(),
+    @SerialName("cpu_pct") val cpuPct: Double? = null,
+    @SerialName("mem_pct") val memPct: Double? = null,
+    @SerialName("sampled_at_unix_ms") val sampledAtUnixMs: Long = 0,
+)
+
 @Serializable
 public data class ComputeNodeDto(
     val name: String,

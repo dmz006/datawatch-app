@@ -1370,4 +1370,20 @@
     <string name="encryption_cross">✗</string>
     <string name="encryption_encrypted_label">enc</string>
     <string name="encryption_exists_label">exists</string>
+
+    <!-- Observatory peer resources + compute node stats (v8.25.3–v8.25.4, #168 #169) -->
+    <string name="obs_peer_resources">Peer Resources</string>
+    <string name="obs_cn_card_title">Compute Node</string>
+    <string name="obs_cn_no_data">no live data</string>
+    <string name="obs_cn_no_data_long">No live data — observer peer not pushing or compute node has no monitoring endpoint configured.</string>
+    <string name="obs_cn_node_cpu">Node CPU</string>
+    <string name="obs_cn_node_mem">Node Mem</string>
+    <string name="obs_cn_gpu_util">util</string>
+    <string name="obs_cn_gpu_temp">temp</string>
+    <string name="obs_cn_gpu_power">power</string>
+    <string name="obs_cn_gpu_vram">VRAM</string>
+    <string name="obs_cn_ollama_label">Ollama</string>
+    <string name="obs_cn_ollama_cpu">ollama CPU</string>
+    <string name="obs_cn_ollama_rss">ollama RSS</string>
+    <string name="obs_peer_no_peers">no peers registered</string>
 </resources>

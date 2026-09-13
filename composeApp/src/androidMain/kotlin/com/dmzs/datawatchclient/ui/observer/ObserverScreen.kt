@@ -93,6 +93,7 @@ public fun ObserverScreen(
                 com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
                 com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()
                 com.dmzs.datawatchclient.ui.monitoring.ClusterNodesCard()
+                com.dmzs.datawatchclient.ui.monitoring.PeerResourcesCard()
                 com.dmzs.datawatchclient.ui.monitoring.FederatedPeersCard()
                 com.dmzs.datawatchclient.ui.monitoring.PluginsCard()
                 com.dmzs.datawatchclient.ui.about.McpChannelCard()
