@@ -8,6 +8,20 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-13
+
+### Added
+- Android Auto: **Story detail screen** — tapping any story in the Stories list opens a TTS-readable `MessageTemplate` with the story description, per-task status markers (✓ done / ◉ running / ✗ failed / ○ pending), task count summary, and files touched; "Approve" button when the parent plan is in review; "Reset Task" button for the first failed task
+- Android Auto: **Story-level task reset** — failed tasks can be reset directly from the story detail screen via POST `/api/autonomous/prds/{id}/reset_task`
+- Android Auto: **Full lifecycle on PRD detail** — "Run" button for plans in `approved` state; "Decompose" button for `pending`/`idle` plans; previously only Stop/Approve/Reject/Delete were reachable
+- Android Auto voice: **Approve plan by voice** — "approve my plan" / "approve automata" / "approve the plan" → approves the first plan awaiting review and speaks a confirmation; `APPROVE_GATE` also now executes instead of saying "use the screen"
+- Android Auto voice: **Stop plan by voice** — "stop my plan" / "cancel automata" / "stop automata" → cancels the first running plan and speaks a confirmation
+- Android Auto voice: **Read plan by voice** — "read my plan" / "what is my plan doing" / "tell me about my automata" / "plan status" → speaks status, story progress, active story, and current running task for all active plans; `LIST_AUTOMATA` now executes the same spoken summary
+- Tests: 24 new unit tests for PRD detail body builder, story detail body builder, story row builder, and all new voice command phrases (254 total)
+
+### Changed
+- Android Auto: story rows in the Stories list are now tappable (previously read-only)
+
 ## [1.3.0] — 2026-09-13
 
 ### Added

@@ -365,6 +365,10 @@ or retracted rather than scheduled.
 | #166 | ✅ Automata parity v8.25.0: spec expand/collapse, cancel button audit (denylist), task rows with session chip/error/verification/retry, planning backend picker | v1.1.0 |
 | #167 | ✅ i18n: new strings for v1.1.0 features in all 5 locale files | v1.1.0 |
 | BL-graph | Automata detail "Graph" button: add per-story execution graph visualisation in PrdDetailDialog (status bars per story, timeline). Deferred — requires async observer envelope fetching per story; complex. Implement when e2e PRD workflow GH issues arrive. | backlog |
+| v1.2.0 | ✅ Android Auto: full PRD view (`getPrd()` single-fetch, stories list `AutoPrdStoriesScreen`, voices status summary) | v1.2.0 |
+| v1.2.1 | ✅ GPU util% regression fix — `getComputeNodeDetail()` fallback when server v8.25.3 removes `gpu_util_pct` from `/api/stats` | v1.2.1 |
+| v1.3.0 | ✅ Android Auto: `AutoPrdDetailScreen` — full TTS-readable PRD detail with status, progress arc, active story, pending list, decisions, spec; contextual lifecycle actions; Stories action strip | v1.3.0 |
+| v1.4.0 | ✅ Android Auto: story-level navigation (`AutoPrdStoriesScreen` clickable rows → `AutoStoryDetailScreen`); Approve/Reset-Task per story; Run/Decompose lifecycle actions on PRD detail; APPROVE_PLAN / STOP_PLAN / READ_PLAN voice commands with real server execution; APPROVE_GATE + LIST_AUTOMATA execution wired. Plan: `docs/plans/2026-09-13-auto-prd-story-task-management.md` | v1.4.0 |
 
 ---
 

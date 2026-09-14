@@ -78,9 +78,12 @@ public class VoiceStatusScreen(
                     }
                     VoiceCommand.COST_REPORT -> "Cost reporting is coming soon."
                     VoiceCommand.MEMORY_RECALL -> "Memory recall is coming soon."
+                    VoiceCommand.APPROVE_GATE, VoiceCommand.APPROVE_PLAN ->
+                        buildApproveFirstPlanResponse()
+                    VoiceCommand.STOP_PLAN -> buildStopFirstPlanResponse()
+                    VoiceCommand.READ_PLAN, VoiceCommand.LIST_AUTOMATA ->
+                        buildReadPlanResponse()
                     VoiceCommand.CREATE_SESSION,
-                    VoiceCommand.APPROVE_GATE,
-                    VoiceCommand.LIST_AUTOMATA,
                     VoiceCommand.PAUSE_SESSION,
                     VoiceCommand.KILL_SESSION,
                     VoiceCommand.SWITCH_SERVER,

@@ -23,6 +23,12 @@ public enum class VoiceCommand {
     SWITCH_SERVER,
     COST_REPORT,
     MEMORY_RECALL,
+
+    // PRD/Automata lifecycle commands
+    APPROVE_PLAN,   // approve the first PRD awaiting review
+    STOP_PLAN,      // cancel/stop the first running PRD
+    READ_PLAN,      // read out the status of the first active PRD
+
     UNKNOWN,
 }
 
@@ -46,6 +52,26 @@ public fun parseVoiceCommandFull(input: String): ParsedVoiceCommand {
     // Server-name routing: "status of Trent", "Trent status"
     val serverName = extractServerName(lower)
     return when {
+        // PRD/plan lifecycle — checked before generic "approve" / "cancel" to avoid shadowing
+        lower.contains("approve") && (
+            lower.contains("plan") || lower.contains("automata") || lower.contains("automaton") ||
+                lower.contains("my plan") || lower.contains("the plan")
+            ) ->
+            ParsedVoiceCommand(VoiceCommand.APPROVE_PLAN, serverName)
+
+        (lower.contains("stop") || lower.contains("cancel")) && (
+            lower.contains("plan") || lower.contains("automata") || lower.contains("automaton") ||
+                lower.contains("my plan") || lower.contains("the plan")
+            ) ->
+            ParsedVoiceCommand(VoiceCommand.STOP_PLAN, serverName)
+
+        (lower.contains("read") || lower.contains("what is") || lower.contains("what's") ||
+            lower.contains("tell me about") || lower.contains("status of my") ||
+            lower.contains("how is my plan") || lower.contains("plan status")) && (
+            lower.contains("plan") || lower.contains("automata") || lower.contains("automaton")
+            ) ->
+            ParsedVoiceCommand(VoiceCommand.READ_PLAN, serverName)
+
         lower.contains("create session") || lower.contains("new session") ||
             lower.contains("start session") ->
             ParsedVoiceCommand(VoiceCommand.CREATE_SESSION, serverName)
@@ -246,8 +272,102 @@ public suspend fun buildWhatFailedReport(): String {
     }.getOrElse { "Error building report." }
 }
 
+/**
+ * Finds the first PRD in a review state and approves it.
+ * Returns a spoken confirmation or an explanation of why nothing was approved.
+ */
+public suspend fun buildApproveFirstPlanResponse(): String =
+    runCatching {
+        val profile =
+            run {
+                val activeId = AutoServiceLocator.activeServerStore.get()
+                val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            } ?: return@runCatching "No enabled server configured."
+        val transport = AutoServiceLocator.transportFor(profile)
+        val dto = transport.listPrds().getOrNull() ?: return@runCatching "Could not reach ${profile.displayName}."
+        val reviewStatuses = setOf("needs_review", "awaiting_review", "revisions_asked")
+        val prd = dto.prds.firstOrNull { it.status.lowercase() in reviewStatuses }
+            ?: return@runCatching "No plan is currently waiting for approval on ${profile.displayName}."
+        val name = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
+        transport.prdAction(prd.id, "approve").fold(
+            onSuccess = { "Approved: $name" },
+            onFailure = { err -> "Approve failed: ${err.message ?: err::class.simpleName}" },
+        )
+    }.getOrElse { "Error approving plan." }
+
+/**
+ * Finds the first running PRD and cancels it.
+ */
+public suspend fun buildStopFirstPlanResponse(): String =
+    runCatching {
+        val profile =
+            run {
+                val activeId = AutoServiceLocator.activeServerStore.get()
+                val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            } ?: return@runCatching "No enabled server configured."
+        val transport = AutoServiceLocator.transportFor(profile)
+        val dto = transport.listPrds().getOrNull() ?: return@runCatching "Could not reach ${profile.displayName}."
+        val runningStatuses = setOf("running", "active")
+        val prd = dto.prds.firstOrNull { it.status.lowercase() in runningStatuses }
+            ?: return@runCatching "No plan is currently running on ${profile.displayName}."
+        val name = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
+        transport.prdAction(prd.id, "cancel").fold(
+            onSuccess = { "Stopped: $name" },
+            onFailure = { err -> "Stop failed: ${err.message ?: err::class.simpleName}" },
+        )
+    }.getOrElse { "Error stopping plan." }
+
+/**
+ * Builds a spoken summary of the first active PRD — status, progress, and what's running now.
+ */
+public suspend fun buildReadPlanResponse(): String =
+    runCatching {
+        val profile =
+            run {
+                val activeId = AutoServiceLocator.activeServerStore.get()
+                val profiles = AutoServiceLocator.profileRepository.observeAll().first()
+                profiles.firstOrNull { it.id == activeId && it.enabled }
+                    ?: profiles.firstOrNull { it.enabled }
+            } ?: return@runCatching "No enabled server configured."
+        val transport = AutoServiceLocator.transportFor(profile)
+        val dto = transport.listPrds().getOrNull() ?: return@runCatching "Could not reach ${profile.displayName}."
+        val terminalStatuses = setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
+        val activePrds = dto.prds.filter { it.status.lowercase() !in terminalStatuses }
+        if (activePrds.isEmpty()) return@runCatching "No active plans on ${profile.displayName}."
+        buildString {
+            append("${activePrds.size} active plan${if (activePrds.size > 1) "s" else ""}. ")
+            activePrds.take(3).forEach { prd ->
+                val name = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
+                val totalStories = prd.stories.size
+                val doneStatuses = setOf("complete", "completed", "done")
+                val doneSt = prd.stories.count { it.status.lowercase() in doneStatuses }
+                val activeStory = prd.stories.firstOrNull { it.status == "in_progress" || it.status == "awaiting_approval" }
+                append("$name is ${prd.status}")
+                if (totalStories > 0) append(", $doneSt of $totalStories stories done")
+                activeStory?.let { s ->
+                    if (s.status == "awaiting_approval") {
+                        append(", waiting for approval on: ${s.title.take(SPOKEN_PLAN_TITLE)}")
+                    } else {
+                        append(", working on: ${s.title.take(SPOKEN_PLAN_TITLE)}")
+                        s.tasks.firstOrNull { it.status == "in_progress" }?.let { t ->
+                            append(" — ${t.task.take(SPOKEN_TASK_CHARS)}")
+                        }
+                    }
+                }
+                append(". ")
+            }
+            if (activePrds.size > 3) append("And ${activePrds.size - 3} more.")
+        }
+    }.getOrElse { "Error reading plan status." }
+
 private const val PCT_MULTIPLIER: Int = 100
 private const val SPOKEN_SUMMARY_CHARS: Int = 80
+private const val SPOKEN_PLAN_TITLE: Int = 40
+private const val SPOKEN_TASK_CHARS: Int = 60
 
 public data class StatusSummary(
     val serverName: String,

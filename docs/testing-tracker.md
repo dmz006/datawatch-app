@@ -77,6 +77,14 @@ gets two levels of validation:
 | Auto | Monitor Sessions row tappable in single-server mode | No | No | v1.0.28 | Requires DHU + 1 enabled server | Tap Sessions row; verify pushes session list screen |
 | Auto | About screen check-for-update (Update button appears only when available) | No | No | v1.0.28 | Requires DHU + datawatch server supporting /api/update/check | Verify Update button absent when up-to-date; appears when update_available returned |
 | Auto | Automata list colored dot icons + progress bar | No | No | v1.0.28 | Requires DHU + running automata | Verify red dot on awaiting_approval, green otherwise; progress bar matches story completion % |
+| Auto | `AutoPrdDetailScreen` — TTS body (status, progress arc, active story, pending list, spec snippet) | Yes | No | v1.3.0 | `AutoPrdDetailBodyTest` — 11 unit tests covering `buildDetailBody()` pure function | No DHU test yet |
+| Auto | `AutoPrdDetailScreen` — lifecycle actions (Approve/Reject/Stop/Run/Decompose/Delete) | No | No | v1.3.0 | Requires DHU + PRD in each lifecycle state | Tap each button; verify toast + screen pop |
+| Auto | `AutoPrdStoriesScreen` — story list with per-story status, task count, click → story detail | Yes | No | v1.4.0 | `AutoStoryDetailBodyTest` — row builder tests (`buildStoryRow`, `buildTasksLine`, `buildStoryDetail`) | No DHU navigation test yet |
+| Auto | `AutoStoryDetailScreen` — TTS body (description, task markers, files, error detail) | Yes | No | v1.4.0 | `AutoStoryDetailBodyTest` — 11 unit tests covering `buildStoryBody()` | No DHU test yet |
+| Auto | `AutoStoryDetailScreen` — Approve + Reset Task action buttons | No | No | v1.4.0 | Requires DHU + PRD in needs_review state with a failed task | Tap Approve; verify toast + pop; tap Reset Task; verify toast |
+| Auto | Voice APPROVE_PLAN — "approve my plan" / "approve automata" → POST /api/prds/{id}/approve | Yes | No | v1.4.0 | `VoiceCommandTest` — 3 phrase tests; execution wired in `VoiceStatusScreen` | No live-server voice test yet |
+| Auto | Voice STOP_PLAN — "stop my plan" / "cancel automata" → POST /api/prds/{id}/cancel | Yes | No | v1.4.0 | `VoiceCommandTest` — 3 phrase tests; execution wired in `VoiceStatusScreen` | No live-server voice test yet |
+| Auto | Voice READ_PLAN — "read my plan" / "plan status" → spoken PRD summary | Yes | No | v1.4.0 | `VoiceCommandTest` — 5 phrase tests; `buildReadPlanResponse()` returns spoken summary | No DHU TTS test yet |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.
