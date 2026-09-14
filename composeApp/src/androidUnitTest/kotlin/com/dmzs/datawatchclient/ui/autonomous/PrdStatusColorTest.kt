@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 class PrdStatusColorTest {
     private val green = Color(0xFF10B981) // DwSuccess — PWA var(--success)
-    private val accentPurple = Color(0xFF7C3AED) // PWA var(--accent) — approved
+    private val accentPurple = Color(0xFF8B5CF6) // BL28: raised from 7C3AED for WCAG AA — approved
     private val amber = Color(0xFFF59E0B)
     private val red = Color(0xFFEF4444)
     private val purple = Color(0xFFA855F7)

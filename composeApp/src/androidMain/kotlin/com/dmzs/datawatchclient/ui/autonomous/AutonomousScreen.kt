@@ -1092,7 +1092,7 @@ internal fun LifecycleStrip(
     onCancel: (() -> Unit)? = null,
 ) {
     val dw = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current
-    val accent = MaterialTheme.colorScheme.primary // #7C3AED = var(--accent)
+    val accent = MaterialTheme.colorScheme.primary // #8B5CF6 = var(--accent)
     val success = dw.success // #10B981 = var(--success)
     val statusLower = status.lowercase()
     val isDanger = statusLower in setOf("rejected", "cancelled", "blocked", "archived")
@@ -1296,7 +1296,7 @@ internal fun prdStateRank(status: String): Int =
 internal fun prdStatusColor(status: String): Color =
     when (status.lowercase()) {
         "running" -> Color(0xFF10B981)
-        "approved" -> Color(0xFF7C3AED)
+        "approved" -> Color(0xFF8B5CF6)
         "needs_review", "revisions_asked", "awaiting_approval" -> Color(0xFFF59E0B)
         "blocked", "rejected" -> Color(0xFFEF4444)
         "decomposing" -> Color(0xFFA855F7)
@@ -1425,7 +1425,7 @@ private fun AutonomousTab(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val accent = MaterialTheme.colorScheme.primary // #7C3AED = var(--accent)
+    val accent = MaterialTheme.colorScheme.primary // #8B5CF6 = var(--accent)
     val activeBg = Color(0xFF60A5FA).copy(alpha = 0.12f) // rgba(96,165,250,0.12) = active tint
     Box(
         contentAlignment = Alignment.Center,
