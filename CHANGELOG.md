@@ -8,6 +8,18 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-09-14
+
+### Added
+- **BL30 — Android Auto task-level lifecycle parity:**
+  - **`AutoTaskDetailScreen`** (new, depth 5): full task detail — spec, status, error, verification summary, retry count; "Requeue" (`POST …/requeue_task`) and "Cancel Task" (`POST …/cancel_task`) actions
+  - **`AutoPrdStoriesScreen` stateful story-detail mode** (depth 4): tapping a story row now shows story detail in-place (no extra push), with per-task rows; each task row pushes `AutoTaskDetailScreen`; ActionStrip exposes "Approve", "Reset Task", and "Cancel Story" (`POST …/cancel_story`) directly from story detail
+  - Navigation depth freed: Home→Automata→PRDDetail (depth 3) → StoriesAndDetail (depth 4, stateful) → TaskDetail (depth 5)
+
+### Changed
+- `AutoStoryDetailScreen.buildStoryBody`: failed tasks now show retry count; completed tasks show verification summary — "✓ [summary]" under the task marker
+- `AutoPrdStoriesScreen`: story rows tap into stateful story-detail mode rather than pushing a separate `AutoStoryDetailScreen`; `buildStoryRow` / `buildStoryDetail` / `buildTasksLine` static methods preserved for callers and tests
+
 ## [1.7.0] — 2026-09-14
 
 ### Added

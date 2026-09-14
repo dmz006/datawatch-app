@@ -77,6 +77,11 @@ class NavigationGraphTest {
         assertNotNull(cls)
     }
 
+    @Test fun `AutoTaskDetailScreen class exists`() {
+        val cls = Class.forName("com.dmzs.datawatchclient.auto.AutoTaskDetailScreen")
+        assertNotNull(cls)
+    }
+
     @Test fun `AutoSummaryScreen constructor parameter count`() {
         val cls = Class.forName("com.dmzs.datawatchclient.auto.AutoSummaryScreen")
         // Primary constructor takes carContext: CarContext
