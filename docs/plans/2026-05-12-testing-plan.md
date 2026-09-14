@@ -585,9 +585,9 @@ fi
 
 ---
 
-## T15 — Dashboard Tab (BL303 Parity)
+## T15 — Dashboard Tab (BL35 Parity)
 
-**Goal:** Verify the new ⊞ Dashboard bottom-nav tab (added 2026-05-16 in BL303 parity sprint) renders correctly and polls live data.
+**Goal:** Verify the new ⊞ Dashboard bottom-nav tab (added 2026-05-16 in BL35 parity sprint, formerly BL303) renders correctly and polls live data.
 
 | Story | Description | Steps | Expected | Status | Notes |
 |-------|-------------|-------|----------|--------|-------|
