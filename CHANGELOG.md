@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.9.1] — 2026-09-14
+
+### Fixed
+- **BL32 — PRD compute stats**: Replaced verbose `SessionStatsCards` in Overview tab with a compact `PrdRunningSessionCard` placed in the PRD header (before the tab strip), matching the PWA layout. Card shows `[running]` badge + session ID, task name, CPU %, system RAM bar (from `ComputeNodeDetailDto.mem`), and GPU util/temp/power bar (from `ComputeNodeDetailDto.gpu[0]`) with color-coded `LinearProgressIndicator`
+- **BL32 — GPU stats auto-resolve**: `SessionStatsViewModel` now auto-resolves `computeNodeRef` from `listSessions()` on first poll if not provided externally via `updateComputeNodeRef()` — fixes missing GPU/RAM data in PRD context where no `Session` object is passed in
+
 ## [1.9.0] — 2026-09-14
 
 ### Added

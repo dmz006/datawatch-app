@@ -30,6 +30,7 @@ public class SessionStatsViewModel(
     private val cpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     private val rssBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     @Volatile private var computeNodeRef: String? = null
+    @Volatile private var computeNodeRefResolved = false
 
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
@@ -38,6 +39,7 @@ public class SessionStatsViewModel(
 
     public fun updateComputeNodeRef(ref: String?) {
         computeNodeRef = ref
+        computeNodeRefResolved = true
     }
 
     public fun startPolling() {
@@ -58,6 +60,13 @@ public class SessionStatsViewModel(
 
     private suspend fun fetchEnvelopes() {
         val (_, transport) = resolver.resolve() ?: return
+        // Auto-resolve computeNodeRef from session list on first poll if not provided externally
+        if (!computeNodeRefResolved) {
+            transport.listSessions().getOrNull()?.firstOrNull { it.id == sessionId }?.let { session ->
+                computeNodeRef = session.computeNodeRef
+            }
+            computeNodeRefResolved = true
+        }
         transport.getSessionEnvelopes(sessionId).onSuccess { envelopes ->
             val env =
                 envelopes.firstOrNull { it.kind == "session" }

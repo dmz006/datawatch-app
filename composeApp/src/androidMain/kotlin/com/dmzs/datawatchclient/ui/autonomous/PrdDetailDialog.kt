@@ -34,6 +34,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -66,7 +67,6 @@ import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.dmzs.datawatchclient.ui.sessions.SessionStatsCards
 import com.dmzs.datawatchclient.ui.sessions.SessionStatsViewModel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 
@@ -260,6 +260,14 @@ internal fun PrdDetailDialog(
                     // Lifecycle strip
                     LifecycleStrip(status)
 
+                    // Compact running-session card (compute stats) — shown before tabs when a task is active
+                    val activeTask = prd.stories.flatMap { it.tasks }.firstOrNull { it.status == "in_progress" }
+                    val activeSessionId = activeTask?.sessionId
+                    if (activeSessionId != null) {
+                        Spacer(Modifier.height(6.dp))
+                        PrdRunningSessionCard(sessionId = activeSessionId, taskName = activeTask.task)
+                    }
+
                     // Terminal-state hint
                     if (status in listOf("done", "aborted", "failed", "archived")) {
                         Spacer(Modifier.height(8.dp))
@@ -432,15 +440,6 @@ internal fun PrdDetailDialog(
                                 },
                             ) {
                                 Text(stringResource(R.string.prd_view_sessions))
-                            }
-                            // Compute stats for the active task's session
-                            val activeSessionId = prd.stories
-                                .flatMap { it.tasks }
-                                .firstOrNull { it.status == "in_progress" }
-                                ?.sessionId
-                            if (activeSessionId != null) {
-                                Spacer(Modifier.height(4.dp))
-                                PrdLiveStatsSection(sessionId = activeSessionId)
                             }
                         }
                         1 -> {
@@ -1578,18 +1577,104 @@ private fun EditFilesDialog(
     )
 }
 
-/** Live compute stats for the PRD's currently in-progress task session — no scroll wrapper. */
+/** Compact inline card showing live CPU/RAM/GPU for the in-progress session — matches PWA PRD detail header. */
 @Composable
-private fun PrdLiveStatsSection(sessionId: String) {
+private fun PrdRunningSessionCard(sessionId: String, taskName: String) {
     val vm: SessionStatsViewModel =
         viewModel(
             factory = viewModelFactory { initializer { SessionStatsViewModel(sessionId) } },
-            key = "prd-stats-$sessionId",
+            key = "prd-compact-$sessionId",
         )
-    val sparkState by vm.state.collectAsState()
+    val state by vm.state.collectAsState()
     androidx.compose.runtime.DisposableEffect(sessionId) {
         vm.startPolling()
         onDispose { vm.stopPolling() }
     }
-    SessionStatsCards(sparkState = sparkState)
+
+    val envelope = state.envelope
+    val detail = state.computeNodeDetail
+
+    androidx.compose.material3.Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // Badge + session short-id
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF3B82F6).copy(alpha = 0.18f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                ) {
+                    Text("running", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
+                }
+                Text(
+                    sessionId.take(8),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // Task name
+            if (taskName.isNotBlank()) {
+                Text(
+                    taskName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            // CPU row
+            val cpuPct = envelope?.cpuPct ?: 0.0
+            if (envelope != null) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("CPU", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("%.1f%%".format(cpuPct), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            // RAM bar — system RAM from compute node
+            detail?.mem?.let { mem ->
+                if (mem.totalBytes > 0) {
+                    val usedGb = mem.usedBytes / 1_073_741_824.0
+                    val totalGb = mem.totalBytes / 1_073_741_824.0
+                    val fraction = (mem.usedBytes.toFloat() / mem.totalBytes).coerceIn(0f, 1f)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("RAM", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("%.1f GB / %.1f GB".format(usedGb, totalGb), style = MaterialTheme.typography.labelSmall)
+                    }
+                    LinearProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFF8B5CF6),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+            }
+            // GPU bar — util + temp + power from remote compute node
+            detail?.gpu?.firstOrNull()?.let { gpu ->
+                val gpuFraction = (gpu.utilPct / 100.0).toFloat().coerceIn(0f, 1f)
+                val gpuColor = when {
+                    gpu.utilPct >= 90 -> Color(0xFFEF4444)
+                    gpu.utilPct >= 70 -> Color(0xFFF59E0B)
+                    else -> Color(0xFF10B981)
+                }
+                val gpuLabel = buildString {
+                    append("%.0f%%".format(gpu.utilPct))
+                    if (gpu.tempC > 0) append(" ${gpu.tempC.toInt()}°C")
+                    if (gpu.powerW > 0) append(" ${gpu.powerW.toInt()}W")
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("GPU", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(gpuLabel, style = MaterialTheme.typography.labelSmall, color = gpuColor)
+                }
+                LinearProgressIndicator(
+                    progress = { gpuFraction },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = gpuColor,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
+        }
+    }
 }
