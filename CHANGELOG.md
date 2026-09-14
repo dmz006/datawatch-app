@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-09-14
+
+### Added
+- **BL32 — GPU / compute stats parity with PWA:**
+  - **Session Stats tab**: `HostCard` now shows `gpuPct` / GPU VRAM from the eBPF envelope when non-zero (local-process GPU for sessions without a compute node ref)
+  - **Session Stats tab**: `ComputeNodeCard` now shows GPU name (e.g. "NVIDIA THOR") above per-GPU util/temp/power/VRAM rows; adds Ollama CPU % and RSS rows from new `ComputeNodeDetailDto.ollamaStats` field
+  - **PRD detail (Automata → Overview tab)**: live compute stats panel shown when an in-progress task has a sessionId — displays HostCard (CPU/RSS/net/GPU) via `PrdLiveStatsSection` and `SessionStatsCards`
+  - `SprintStatusDto` extended with `automata`, `sprintId`, `status`, `taskId`, `title` — Sprint/Automata card in Status sub-tab now renders these fields rather than an empty JSON dump
+  - `ComputeNodeOllamaDto` added to DTOs; `ComputeNodeDetailDto` gains `ollamaStats: ComputeNodeOllamaDto?` field
+  - `SessionStatsCards` extracted as `internal` composable from `SessionStatsPanel` — safe to embed in `LazyColumn` items without nested-scroll issues
+
 ## [1.8.0] — 2026-09-14
 
 ### Added

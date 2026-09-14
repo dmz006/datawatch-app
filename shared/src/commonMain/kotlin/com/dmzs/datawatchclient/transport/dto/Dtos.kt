@@ -319,6 +319,12 @@ public data class StatEnvelopeDto(
 public data class SprintStatusDto(
     val name: String = "",
     val progress: String = "",
+    // v8.x fields sent by server sprint status
+    val automata: String = "",
+    @SerialName("sprint_id") val sprintId: String = "",
+    val status: String = "",
+    @SerialName("task_id") val taskId: String = "",
+    val title: String = "",
 )
 
 @Serializable
@@ -1071,6 +1077,12 @@ public data class ComputeNodeMemStatDto(
 )
 
 @Serializable
+public data class ComputeNodeOllamaDto(
+    @SerialName("cpu_pct") val cpuPct: Double = 0.0,
+    @SerialName("rss_bytes") val rssBytes: Long = 0,
+)
+
+@Serializable
 public data class ComputeNodeDetailDto(
     val cpu: ComputeNodeCpuStatDto? = null,
     val mem: ComputeNodeMemStatDto? = null,
@@ -1078,6 +1090,7 @@ public data class ComputeNodeDetailDto(
     @SerialName("cpu_pct") val cpuPct: Double? = null,
     @SerialName("mem_pct") val memPct: Double? = null,
     @SerialName("sampled_at_unix_ms") val sampledAtUnixMs: Long = 0,
+    @SerialName("ollama_stats") val ollamaStats: ComputeNodeOllamaDto? = null,
 )
 
 @Serializable

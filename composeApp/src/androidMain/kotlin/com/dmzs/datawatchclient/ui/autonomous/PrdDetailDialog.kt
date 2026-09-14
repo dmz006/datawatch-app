@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +63,11 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.dmzs.datawatchclient.ui.sessions.SessionStatsCards
+import com.dmzs.datawatchclient.ui.sessions.SessionStatsViewModel
 import com.dmzs.datawatchclient.ui.shell.SessionsNavChannel
 
 private val EFFORT_OPTIONS = listOf("", "low", "medium", "high", "max", "quick", "normal", "thorough")
@@ -426,6 +432,15 @@ internal fun PrdDetailDialog(
                                 },
                             ) {
                                 Text(stringResource(R.string.prd_view_sessions))
+                            }
+                            // Compute stats for the active task's session
+                            val activeSessionId = prd.stories
+                                .flatMap { it.tasks }
+                                .firstOrNull { it.status == "in_progress" }
+                                ?.sessionId
+                            if (activeSessionId != null) {
+                                Spacer(Modifier.height(4.dp))
+                                PrdLiveStatsSection(sessionId = activeSessionId)
                             }
                         }
                         1 -> {
@@ -1561,4 +1576,20 @@ private fun EditFilesDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
+}
+
+/** Live compute stats for the PRD's currently in-progress task session — no scroll wrapper. */
+@Composable
+private fun PrdLiveStatsSection(sessionId: String) {
+    val vm: SessionStatsViewModel =
+        viewModel(
+            factory = viewModelFactory { initializer { SessionStatsViewModel(sessionId) } },
+            key = "prd-stats-$sessionId",
+        )
+    val sparkState by vm.state.collectAsState()
+    androidx.compose.runtime.DisposableEffect(sessionId) {
+        vm.startPolling()
+        onDispose { vm.stopPolling() }
+    }
+    SessionStatsCards(sparkState = sparkState)
 }
