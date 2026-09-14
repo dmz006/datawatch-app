@@ -128,4 +128,46 @@ class VoiceCommandTest {
         assertEquals(VoiceCommand.MEMORY_RECALL, parsed.command)
         assertTrue(parsed.topic?.contains("auth") == true, "topic: ${parsed.topic}")
     }
+
+    // ---- PRD/plan lifecycle voice commands ----
+
+    @Test fun `approve my plan maps to APPROVE_PLAN`() =
+        assertEquals(VoiceCommand.APPROVE_PLAN, parseVoiceCommand("approve my plan"))
+
+    @Test fun `approve automata maps to APPROVE_PLAN`() =
+        assertEquals(VoiceCommand.APPROVE_PLAN, parseVoiceCommand("approve automata"))
+
+    @Test fun `approve the plan maps to APPROVE_PLAN`() =
+        assertEquals(VoiceCommand.APPROVE_PLAN, parseVoiceCommand("approve the plan"))
+
+    @Test fun `stop my plan maps to STOP_PLAN`() =
+        assertEquals(VoiceCommand.STOP_PLAN, parseVoiceCommand("stop my plan"))
+
+    @Test fun `cancel automata maps to STOP_PLAN`() =
+        assertEquals(VoiceCommand.STOP_PLAN, parseVoiceCommand("cancel automata"))
+
+    @Test fun `stop automata maps to STOP_PLAN`() =
+        assertEquals(VoiceCommand.STOP_PLAN, parseVoiceCommand("stop automata"))
+
+    @Test fun `what is my plan doing maps to READ_PLAN`() =
+        assertEquals(VoiceCommand.READ_PLAN, parseVoiceCommand("what is my plan doing"))
+
+    @Test fun `read my plan maps to READ_PLAN`() =
+        assertEquals(VoiceCommand.READ_PLAN, parseVoiceCommand("read my plan"))
+
+    @Test fun `tell me about my automata maps to READ_PLAN`() =
+        assertEquals(VoiceCommand.READ_PLAN, parseVoiceCommand("tell me about my automata"))
+
+    @Test fun `plan status maps to READ_PLAN`() =
+        assertEquals(VoiceCommand.READ_PLAN, parseVoiceCommand("plan status"))
+
+    @Test fun `how is my plan maps to READ_PLAN`() =
+        assertEquals(VoiceCommand.READ_PLAN, parseVoiceCommand("how is my plan going"))
+
+    // APPROVE_PLAN must not shadow plain "approve gate"
+    @Test fun `approve gate still maps to APPROVE_GATE`() =
+        assertEquals(VoiceCommand.APPROVE_GATE, parseVoiceCommand("approve gate"))
+
+    @Test fun `approve guardrail still maps to APPROVE_GATE`() =
+        assertEquals(VoiceCommand.APPROVE_GATE, parseVoiceCommand("approve guardrail"))
 }

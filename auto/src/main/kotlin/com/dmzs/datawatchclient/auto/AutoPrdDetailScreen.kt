@@ -164,6 +164,9 @@ public class AutoPrdDetailScreen(
             val isReview = statusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
             val isTerminal = statusLower in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
 
+            val isApproved = statusLower == "approved"
+            val isPending = statusLower in setOf("pending", "decomposing", "idle", "")
+
             when {
                 isReview -> {
                     templateBuilder.addAction(
@@ -187,6 +190,25 @@ public class AutoPrdDetailScreen(
                             .setTitle("Stop")
                             .setBackgroundColor(CarColor.RED)
                             .setOnClickListener { fire("cancel") }
+                            .build(),
+                    )
+                }
+                isApproved -> {
+                    // Approved but not running yet — let the driver kick it off
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Run")
+                            .setBackgroundColor(CarColor.GREEN)
+                            .setOnClickListener { fire("run") }
+                            .build(),
+                    )
+                }
+                isPending -> {
+                    // Newly created — needs decomposition before it can run
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Decompose")
+                            .setOnClickListener { fire("decompose") }
                             .build(),
                     )
                 }
@@ -220,7 +242,7 @@ public class AutoPrdDetailScreen(
         return templateBuilder.build()
     }
 
-    private companion object {
+    internal companion object {
         const val POLL_MS = 15_000L
         const val MAX_TITLE = 40
         const val MAX_STORY_TITLE = 52

@@ -16,11 +16,13 @@ import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 /**
  * Stories list for a PRD in Android Auto.
  *
- * One row per story: status marker + title as the row title; task summary
- * (count done/total, running task description) as the body text. Read-only —
- * all actions are on the parent [AutoPrdDetailScreen].
+ * One row per story: status marker + title; task summary on the second line.
+ * Tapping a row pushes [AutoStoryDetailScreen] for the full TTS-readable
+ * story detail with approve / reset-task actions.
  *
  * Reached from AutoPrdDetailScreen via the "Stories" action strip button.
+ * Navigation depth: Home→Automata→PRDDetail→StoriesList is level 4; the story
+ * detail pushed from here is level 5 (the Car App Library max).
  */
 public class AutoPrdStoriesScreen(
     carContext: CarContext,
@@ -39,7 +41,12 @@ public class AutoPrdStoriesScreen(
             )
         } else {
             prd.stories.forEachIndexed { idx, story ->
-                items.addItem(buildStoryRow(idx + 1, story))
+                val row = buildStoryRow(idx + 1, story) {
+                    screenManager.push(
+                        AutoStoryDetailScreen(carContext, prd.id, prd.status, story),
+                    )
+                }
+                items.addItem(row)
             }
         }
 
@@ -51,7 +58,7 @@ public class AutoPrdStoriesScreen(
             .build()
     }
 
-    private companion object {
+    internal companion object {
         private val DONE_STATUSES = setOf("complete", "completed", "done")
         const val MAX_TITLE_CHARS = 50
         const val MAX_TASK_CHARS = 55
@@ -60,6 +67,7 @@ public class AutoPrdStoriesScreen(
         fun buildStoryRow(
             position: Int,
             story: PrdStoryDto,
+            onClick: (() -> Unit)? = null,
         ): Row {
             val marker = when (story.status) {
                 "complete", "completed", "done" -> "✓"
@@ -78,10 +86,10 @@ public class AutoPrdStoriesScreen(
             val detailLine = buildStoryDetail(story)
             val taskLine = buildTasksLine(story)
 
-            val rowBuilder = Row.Builder()
-                .setTitle(colored(titleText, statusColor))
+            val rowBuilder = Row.Builder().setTitle(colored(titleText, statusColor))
             if (detailLine.isNotBlank()) rowBuilder.addText(detailLine)
             if (taskLine.isNotBlank() && taskLine != detailLine) rowBuilder.addText(taskLine)
+            onClick?.let { rowBuilder.setOnClickListener(it) }
             return rowBuilder.build()
         }
 
