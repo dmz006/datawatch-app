@@ -715,6 +715,19 @@ class RestTransportTest {
             assertEquals("/api/compute/nodes/my-node/detail", server.takeRequest().path)
         }
 
+    // BL33 — per-guardrail block approval
+
+    @Test
+    fun `approveGuardrailBlockPostsToCorrectUrl`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            val result = transport.approveGuardrailBlock("sess-abc", "sast-scan")
+            assertTrue(result.isSuccess, "expected success, got ${result.exceptionOrNull()}")
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/sessions/sess-abc/guardrail/sast-scan/approve", req.path)
+        }
+
     @Test
     fun `getComputeNodeDetail multi-gpu returns all gpu entries`() =
         runTest {

@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-09-14
+
+### Added
+- **BL33 — Per-guardrail approval in Android Auto:** `BlockDetailsScreen` now shows per-verdict approve actions rather than a single "Approve Gate" that cleared all blocks at once
+  - **Single block:** `MessageTemplate` with "Approve [guardrail-name]" button targeting only that verdict via `POST /api/sessions/{id}/guardrail/{name}/approve`
+  - **Multiple blocks:** `ListTemplate` with one tappable row per blocked verdict (tap = approve that specific guardrail); ActionStrip carries "Listen" + "Approve All" for bulk override
+- Transport: `approveGuardrailBlock(sessionId, guardrailName): Result<Unit>` added to `TransportClient` and `RestTransport` — calls `POST /api/sessions/{id}/guardrail/{name}/approve` (datawatch#153)
+- `GuardrailTtsBuilder.friendlyName` promoted to `internal` so `BlockDetailsScreen` can use it for button labels
+- Tests: `RestTransportTest.approveGuardrailBlockPostsToCorrectUrl` verifies URL path and HTTP method
+
+### Changed
+- `BlockDetailsScreen` "Approve Gate" replaced with targeted per-guardrail approve; "Approve All" moved to ActionStrip of the multi-block `ListTemplate`
+
 ## [1.6.0] — 2026-09-14
 
 ### Added
