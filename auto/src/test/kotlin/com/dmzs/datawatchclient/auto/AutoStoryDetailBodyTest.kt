@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.auto
 
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
+import com.dmzs.datawatchclient.transport.dto.PrdTaskVerificationDto
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContains
 import kotlin.test.assertTrue
@@ -119,5 +120,54 @@ class AutoStoryDetailBodyTest {
         val story = PrdStoryDto(id = "s1", title = "Story", status = "in_progress", tasks = tasks)
         val line = AutoPrdStoriesScreen.buildTasksLine(story)
         assertContains(line, "▶ Build the thing")
+    }
+
+    @Test
+    fun `failed task with retries shows retry count`() {
+        val tasks = listOf(
+            PrdTaskDto(id = "t1", task = "Run migration", status = "failed", error = "timeout", retryCount = 2),
+        )
+        val body = AutoStoryDetailScreen.buildStoryBody(makeStory(tasks = tasks))
+        assertContains(body, "Retries: 2")
+    }
+
+    @Test
+    fun `completed task with verification shows summary`() {
+        val verification = PrdTaskVerificationDto(summary = "All assertions passed", severity = "low")
+        val tasks = listOf(
+            PrdTaskDto(id = "t1", task = "Write tests", status = "complete", verification = verification),
+        )
+        val body = AutoStoryDetailScreen.buildStoryBody(makeStory(tasks = tasks))
+        assertContains(body, "All assertions passed")
+    }
+
+    @Test
+    fun `AutoTaskDetailScreen body contains status and task spec`() {
+        val task = PrdTaskDto(id = "t1", task = "Deploy to staging", status = "failed", error = "connection refused")
+        val body = AutoTaskDetailScreen.buildTaskBody(task)
+        assertContains(body, "Status: failed")
+        assertContains(body, "Deploy to staging")
+        assertContains(body, "Error:")
+        assertContains(body, "connection refused")
+    }
+
+    @Test
+    fun `AutoTaskDetailScreen body shows retry count`() {
+        val task = PrdTaskDto(id = "t1", task = "Run tests", status = "failed", retryCount = 3)
+        val body = AutoTaskDetailScreen.buildTaskBody(task)
+        assertContains(body, "Retries: 3")
+    }
+
+    @Test
+    fun `AutoTaskDetailScreen body shows verification issues`() {
+        val v = PrdTaskVerificationDto(
+            summary = "Tests pass",
+            issues = listOf("No type annotations", "Missing docstring"),
+        )
+        val task = PrdTaskDto(id = "t1", task = "Write handler", status = "complete", verification = v)
+        val body = AutoTaskDetailScreen.buildTaskBody(task)
+        assertContains(body, "Verification:")
+        assertContains(body, "Tests pass")
+        assertContains(body, "No type annotations")
     }
 }

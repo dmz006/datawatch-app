@@ -22,16 +22,17 @@ import kotlinx.coroutines.launch
 /**
  * Full story detail for Android Auto — TTS-readable via Car Assistant.
  *
- * Shows the story's description, per-task status (✓/◉/✗/○), files touched,
- * and provides:
- *  - "Approve" when the parent PRD is in `needs_review` / `revisions_asked` /
- *    `awaiting_review` — approves the PRD at the server level, which advances
- *    the awaiting-approval story.
- *  - "Reset Task" when a task has `failed` status — resets the first failed
- *    task via POST /api/autonomous/prds/{id}/reset_task.
+ * BL30 note: the primary navigation flow now goes through the stateful
+ * [AutoPrdStoriesScreen] (depth 4), which shows story detail inline and
+ * pushes [AutoTaskDetailScreen] (depth 5) for per-task actions. This class
+ * is retained for its [buildStoryBody] logic and for any caller that still
+ * needs a standalone story-detail screen at depth 5.
  *
- * Navigation depth note: this is always at depth 5 (the Car App Library max):
- * Home → Automata → PRD Detail → Stories → Story Detail. No further push allowed.
+ * Shows the story's description, per-task status (✓/◉/✗/○), files touched,
+ * retry counts, and verification summaries; provides:
+ *  - "Approve" when the parent PRD is in `needs_review` / `revisions_asked` /
+ *    `awaiting_review` — approves the PRD at the server level.
+ *  - "Reset Task" when a task has `failed` status.
  */
 public class AutoStoryDetailScreen(
     carContext: CarContext,
@@ -173,6 +174,16 @@ public class AutoStoryDetailScreen(
                         // Show error for failed tasks
                         task.error?.takeIf { it.isNotBlank() && task.status == "failed" }?.let { err ->
                             appendLine("  Error: ${err.take(80)}")
+                        }
+                        // Show retry count for failed tasks that have been retried
+                        if (task.status == "failed" && task.retryCount > 0) {
+                            appendLine("  Retries: ${task.retryCount}")
+                        }
+                        // Show verification summary for completed tasks
+                        if (task.status in DONE_STATUSES) {
+                            task.verification?.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                                appendLine("  ✓ ${summary.take(70)}")
+                            }
                         }
                     }
                     val done = story.tasks.count { it.status in DONE_STATUSES }
