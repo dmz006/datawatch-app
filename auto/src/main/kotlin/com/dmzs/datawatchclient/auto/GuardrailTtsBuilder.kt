@@ -38,7 +38,7 @@ internal object GuardrailTtsBuilder {
         }.trim().ifEmpty { "All guardrails passed." }
     }
 
-    private fun friendlyName(guardrail: String): String =
+    internal fun friendlyName(guardrail: String): String =
         when (guardrail) {
             "sast-scan" -> "Security scan"
             "secrets-scan" -> "Secrets scan"

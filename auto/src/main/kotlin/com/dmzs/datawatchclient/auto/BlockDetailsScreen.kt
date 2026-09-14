@@ -12,7 +12,10 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -25,7 +28,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Shows all active guardrail block verdicts for a session with Approve and Kill actions.
+ * BL33 — per-guardrail approval on the Block Details screen.
+ *
+ * Single block  → MessageTemplate: "Approve [name]" button per blocked verdict.
+ * Multiple blocks → ListTemplate: one tappable row per block (tap = approve that guardrail);
+ *                   ActionStrip carries "Listen" + "Approve All" for bulk override.
+ *
+ * Endpoint: POST /api/sessions/{id}/guardrail/{name}/approve (datawatch#153).
  */
 public class BlockDetailsScreen(
     carContext: CarContext,
@@ -85,56 +94,140 @@ public class BlockDetailsScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val body = buildVerdictBody()
+        val blocks = verdicts.filter { it.outcome == "block" }.ifEmpty { verdicts }
+        return if (blocks.size == 1) {
+            buildSingleBlockTemplate(blocks.first())
+        } else {
+            buildMultiBlockTemplate(blocks)
+        }
+    }
 
-        val voiceIcon =
-            CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
-            ).build()
-
-        val actionStrip =
+    // MessageTemplate: single block — one targeted "Approve [name]" button + "Kill Session"
+    private fun buildSingleBlockTemplate(verdict: GuardrailVerdictDto): Template {
+        val name = GuardrailTtsBuilder.friendlyName(verdict.guardrail)
+        val body = "⚠ $name\n${verdict.summary.take(SUMMARY_CHARS)}"
+        val listenActionStrip =
             ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Listen")
-                        .setIcon(voiceIcon)
-                        .setOnClickListener { speakWithFocus(body) }
-                        .build(),
-                )
+                .addAction(listenAction(body))
                 .build()
-
         return MessageTemplate.Builder(body)
             .setTitle("$sessionName · Blocked")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(actionStrip)
+            .setActionStrip(listenActionStrip)
             .addAction(
                 Action.Builder()
-                    .setTitle("Approve Gate")
+                    .setTitle("Approve $name")
                     .setBackgroundColor(CarColor.GREEN)
-                    .setOnClickListener { onApproveGate() }
+                    .setOnClickListener { onApproveGuardrail(verdict.guardrail) }
                     .build(),
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Kill Session")
-                    .setOnClickListener {
-                        CarToast.makeText(carContext, "Kill — use session detail", CarToast.LENGTH_SHORT).show()
-                        screenManager.pop()
-                    }
+                    .setOnClickListener { showKillToast() }
                     .build(),
             )
             .build()
     }
 
-    private fun buildVerdictBody(): String {
-        if (verdicts.isEmpty()) return "No active blocks"
-        return verdicts
-            .filter { it.outcome == "block" }
-            .ifEmpty { verdicts }
-            .joinToString("\n\n") { verdict ->
-                "⚠ ${verdict.guardrail}\n${verdict.summary.take(SUMMARY_CHARS)}"
+    // ListTemplate: multiple blocks — tap any row to approve that specific guardrail;
+    // ActionStrip carries "Listen" + "Approve All" for bulk override.
+    private fun buildMultiBlockTemplate(blocks: List<GuardrailVerdictDto>): Template {
+        val ttsText = GuardrailTtsBuilder.buildAllVerdicts(blocks)
+        val itemList =
+            ItemList.Builder()
+                .apply {
+                    blocks.take(MAX_LIST_ROWS).forEach { verdict ->
+                        val name = GuardrailTtsBuilder.friendlyName(verdict.guardrail)
+                        addItem(
+                            Row.Builder()
+                                .setTitle("⚠ $name")
+                                .addText(verdict.summary.take(SUMMARY_CHARS))
+                                .setOnClickListener { onApproveGuardrail(verdict.guardrail) }
+                                .build(),
+                        )
+                    }
+                }
+                .build()
+        val actionStrip =
+            ActionStrip.Builder()
+                .addAction(listenAction(ttsText))
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Approve All")
+                        .setBackgroundColor(CarColor.GREEN)
+                        .setOnClickListener { onApproveAll() }
+                        .build(),
+                )
+                .build()
+        return ListTemplate.Builder()
+            .setTitle("$sessionName · ${blocks.size} Blocks — tap to approve")
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(actionStrip)
+            .setSingleList(itemList)
+            .build()
+    }
+
+    private fun listenAction(text: String): Action =
+        Action.Builder()
+            .setTitle("Listen")
+            .setIcon(
+                CarIcon.Builder(
+                    IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+                ).build(),
+            )
+            .setOnClickListener { speakWithFocus(text) }
+            .build()
+
+    private fun onApproveGuardrail(guardrailName: String) {
+        scope.launch {
+            runCatching {
+                val profile = resolveActiveProfile() ?: return@runCatching
+                AutoServiceLocator.transportFor(profile).approveGuardrailBlock(sessionId, guardrailName).fold(
+                    onSuccess = {
+                        CarToast.makeText(
+                            carContext,
+                            "Approved: ${GuardrailTtsBuilder.friendlyName(guardrailName)}",
+                            CarToast.LENGTH_SHORT,
+                        ).show()
+                        screenManager.pop()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Approve failed: ${err.message?.take(ERROR_MSG_CHARS)}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
             }
-            .take(BODY_CHAR_LIMIT)
+        }
+    }
+
+    private fun onApproveAll() {
+        scope.launch {
+            runCatching {
+                val profile = resolveActiveProfile() ?: return@runCatching
+                AutoServiceLocator.transportFor(profile).runSessionGuardrail(sessionId).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "All gates approved", CarToast.LENGTH_SHORT).show()
+                        screenManager.pop()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Approve All failed: ${err.message?.take(ERROR_MSG_CHARS)}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+            }
+        }
+    }
+
+    private fun showKillToast() {
+        CarToast.makeText(carContext, "Kill — use session detail", CarToast.LENGTH_SHORT).show()
+        screenManager.pop()
     }
 
     private fun speakWithFocus(text: String) {
@@ -159,30 +252,10 @@ public class BlockDetailsScreen(
         focusRequest = null
     }
 
-    private fun onApproveGate() {
-        scope.launch {
-            runCatching {
-                val profile = resolveActiveProfile() ?: return@runCatching
-                AutoServiceLocator.transportFor(profile).runSessionGuardrail(sessionId).fold(
-                    onSuccess = {
-                        CarToast.makeText(carContext, "Gate approval submitted", CarToast.LENGTH_SHORT).show()
-                        screenManager.pop()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Approve failed: ${err.message?.take(ERROR_MSG_CHARS)}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-            }
-        }
-    }
-
     private companion object {
         const val BODY_CHAR_LIMIT = 500
         const val SUMMARY_CHARS = 120
         const val ERROR_MSG_CHARS = 40
+        const val MAX_LIST_ROWS = 6
     }
 }

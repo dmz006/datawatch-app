@@ -93,6 +93,8 @@ gets two levels of validation:
 | Android | **BL28 — DwAccent contrast** (#7C3AED→#8B5CF6) | Yes | No | v1.5.1 | `PrdStatusColorTest.approved maps to teal` (constant updated); visual audit of all 7 affected composables | WCAG AA 4.93:1 on DwBg; Wear+Auto already passed |
 | Android | **BL32 — Session stats remote GPU** (compute node detail) | Yes | No | v1.6.0 | `RestTransportTest.getComputeNodeDetailFetchesGpuStats` + `…MultiGpu`; `ComputeNodeCard` shows util/temp/power/VRAM from `/api/compute/nodes/{ref}/detail` | Requires session with bound compute node to validate |
 | Android | **BL32 — Multi-GPU index prefix** (PeerResourcesCard) | Yes | No | v1.6.0 | Visual — "GPU 1 util / GPU 2 util" chips on dual-GPU observer peer | Single-GPU: no prefix (unchanged) |
+| Auto | **BL33 — Per-guardrail approve** (BlockDetailsScreen single) | Yes | No | v1.7.0 | `RestTransportTest.approveGuardrailBlockPostsToCorrectUrl`; single block → MessageTemplate "Approve [name]" button | Requires blocked session on real Auto hardware |
+| Auto | **BL33 — Per-guardrail approve** (BlockDetailsScreen multi) | Yes | No | v1.7.0 | Compile + GuardrailTtsBuilderTest; multi-block → ListTemplate rows + "Approve All" ActionStrip | Requires ≥2 blocked guardrails to validate |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.

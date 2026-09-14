@@ -1325,6 +1325,9 @@ public interface TransportClient {
     /** POST /api/sessions/{id}/guardrail — run guardrail against session project dir. */
     public suspend fun runSessionGuardrail(sessionId: String): Result<com.dmzs.datawatchclient.transport.dto.GuardrailRunResultDto>
 
+    /** POST /api/sessions/{id}/guardrail/{name}/approve — operator-override a single blocked verdict (datawatch#153). */
+    public suspend fun approveGuardrailBlock(sessionId: String, guardrailName: String): Result<Unit>
+
     // ---- Smoke Progress (BL303 S4, issue #128) ----
 
     /**

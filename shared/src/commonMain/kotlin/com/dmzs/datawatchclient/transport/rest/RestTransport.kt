@@ -2853,6 +2853,14 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun approveGuardrailBlock(sessionId: String, guardrailName: String): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/sessions/$sessionId/guardrail/${guardrailName.replace(" ", "%20")}/approve") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
     override suspend fun getSmokeProgress(): Result<com.dmzs.datawatchclient.transport.dto.SmokeProgressDto?> =
         request {
             val response = client.get("${profile.baseUrl}/api/smoke/progress") {
