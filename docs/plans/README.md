@@ -232,6 +232,13 @@ to land pre-1.0.
 | BL19 | ❄️ FROZEN — Local-LLM orchestration — in-app PRD/HLD authoring + Ollama backend + task fire-off | Frozen 2026-05-04 per user direction. No ADR, no schedule. Revisit only when user explicitly unfreezes. |
 | BL21 | Signal device-linking (`/api/link/*` + QR SSE) | Needs QR rendering from SSE frames + paired-state persistence. Server issue: [datawatch#31](https://github.com/dmz006/datawatch/issues/31). |
 
+### Unscheduled backlog
+
+| ID | Title | Notes |
+|----|-------|-------|
+| BL28 | Text contrast: dark-purple on black backgrounds — all surfaces | Full audit + fix across Android phone, Wear OS, and Android Auto. Identify every color token/usage that renders dark purple (or otherwise low-contrast) on dark/black backgrounds; replace with higher-contrast equivalents in a single pass. Target WCAG AA (4.5:1 minimum) for body and label text on dark surfaces. Scope: (1) composeApp MaterialTheme tokens + hardcoded colors in individual composables, (2) Wear OS theme + composable colors in WearMainActivity, (3) Android Auto CarColor slots and ActionStrip entries. Acceptance: no dark-purple text visible on black/near-black background in any of the three surfaces. |
+| BL29 | PRD full lifecycle management — phone + Auto + iOS + server API audit | Desired app capabilities: edit/modify disposition text (title, spec), edit/modify individual stories (title, description), cancel an individual story or task, restart (requeue) a task for re-execution, stop/start/pause a running disposition, and restart a disposition with updated content. Steps: (1) server API audit — identify which actions have existing endpoints vs. require new ones; file server-side issues in dmz006/datawatch for any new/modified endpoints; (2) PWA parity audit — check what the PWA exposes today and file gaps as GH issues in dmz006/datawatch-app so they are tracked independently; (3) Android phone — extend AutonomousScreen / PrdDetailDialog to surface all confirmed-available actions; (4) Android Auto — extend AutoPrdDetailScreen / AutoStoryDetailScreen beyond current Approve/Reject/Stop/Run/Decompose/Reset-Task; (5) iOS — match phone capabilities in AutomataView and detail screens. Note: app work on steps 3–5 should not begin until server confirms endpoint availability. New transport methods in TransportClient will be required for any novel endpoints. |
+
 ### Parking lot (waiting on upstream / user gesture)
 
 | ID | Title | Waiting on |
