@@ -67,8 +67,6 @@ public fun SessionStatsPanel(
         sessionStatsVm.updateComputeNodeRef(session?.computeNodeRef)
     }
 
-    val envelope: StatEnvelopeDto? = sparkState.envelope
-
     Column(
         modifier =
             modifier
@@ -77,57 +75,75 @@ public fun SessionStatsPanel(
                 .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        // Host card — always shown
-        HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples)
+        SessionStatsCards(
+            sparkState = sparkState,
+            session = session,
+            onNavigateToComputeTab = onNavigateToComputeTab,
+            onNavigateToLlmTab = onNavigateToLlmTab,
+        )
+    }
+}
 
-        // Container card — conditional on envelope.container != null
-        val containerInfo =
-            envelope?.container
-                ?: if (envelope?.containerId?.isNotBlank() == true) {
-                    ContainerInfoDto(
-                        containerId = envelope.containerId ?: "",
-                        image = envelope.image ?: "",
-                    )
-                } else {
-                    null
-                }
-        if (containerInfo != null) {
-            ContainerCard(containerInfo)
-        }
+/** Cards-only version — no scroll wrapper, safe to embed in a LazyColumn item or Column. */
+@Composable
+internal fun SessionStatsCards(
+    sparkState: SessionStatsViewModel.UiState,
+    session: Session? = null,
+    onNavigateToComputeTab: (() -> Unit)? = null,
+    onNavigateToLlmTab: (() -> Unit)? = null,
+) {
+    val envelope: StatEnvelopeDto? = sparkState.envelope
 
-        // ComputeNode card — conditional on session.computeNodeRef != null
-        if (session?.computeNodeRef?.isNotBlank() == true) {
-            ComputeNodeCard(
-                computeNodeRef = session.computeNodeRef!!,
-                gpuPct = envelope?.gpuPct ?: 0.0,
-                gpuMemBytes = envelope?.gpuMemBytes ?: 0L,
-                detail = sparkState.computeNodeDetail,
-                onNavigate = onNavigateToComputeTab,
-            )
-        }
+    // Host card — always shown
+    HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples)
 
-        // LLM card — conditional on session.llmRef != null
-        if (session?.llmRef?.isNotBlank() == true) {
-            LlmCard(
-                llmRef = session.llmRef!!,
-                backendFamily = session.backend,
-                onNavigate = onNavigateToLlmTab,
-            )
-        }
-
-        if (envelope == null && containerInfo == null &&
-            session?.computeNodeRef.isNullOrBlank() && session?.llmRef.isNullOrBlank()
-        ) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(48.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    stringResource(R.string.session_detail_stats_no_data),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    // Container card — conditional on envelope.container != null
+    val containerInfo =
+        envelope?.container
+            ?: if (envelope?.containerId?.isNotBlank() == true) {
+                ContainerInfoDto(
+                    containerId = envelope.containerId ?: "",
+                    image = envelope.image ?: "",
                 )
+            } else {
+                null
             }
+    if (containerInfo != null) {
+        ContainerCard(containerInfo)
+    }
+
+    // ComputeNode card — conditional on session.computeNodeRef != null
+    if (session?.computeNodeRef?.isNotBlank() == true) {
+        ComputeNodeCard(
+            computeNodeRef = session.computeNodeRef!!,
+            gpuPct = envelope?.gpuPct ?: 0.0,
+            gpuMemBytes = envelope?.gpuMemBytes ?: 0L,
+            detail = sparkState.computeNodeDetail,
+            onNavigate = onNavigateToComputeTab,
+        )
+    }
+
+    // LLM card — conditional on session.llmRef != null
+    if (session?.llmRef?.isNotBlank() == true) {
+        LlmCard(
+            llmRef = session.llmRef!!,
+            backendFamily = session.backend,
+            onNavigate = onNavigateToLlmTab,
+        )
+    }
+
+    if (envelope == null && containerInfo == null &&
+        session?.computeNodeRef.isNullOrBlank() && session?.llmRef.isNullOrBlank()
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                stringResource(R.string.session_detail_stats_no_data),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -225,6 +241,13 @@ private fun HostCard(
                 if (env2.netRxBps > 0) StatRow("$netLabel ↓", "${formatBytes(env2.netRxBps)}/s")
                 if (env2.netTxBps > 0) StatRow("$netLabel ↑", "${formatBytes(env2.netTxBps)}/s")
             }
+            val gpuPct2 = env2.gpuPct ?: 0.0
+            val gpuMem2 = env2.gpuMemBytes ?: 0L
+            if (gpuPct2 > 0.0 || gpuMem2 > 0L) {
+                Spacer(Modifier.height(4.dp))
+                if (gpuPct2 > 0.0) StatRow(stringResource(R.string.stats_field_gpu), "%.1f%%".format(gpuPct2))
+                if (gpuMem2 > 0L) StatRow(stringResource(R.string.obs_cn_gpu_vram), formatBytes(gpuMem2))
+            }
         }
     }
 }
@@ -263,6 +286,14 @@ private fun ComputeNodeCard(
                 // Remote compute node GPU detail — obs_cn_gpu_* keys, multi-GPU indexed
                 detail.gpu.forEachIndexed { idx, gpu ->
                     val prefix = if (detail.gpu.size > 1) "GPU ${idx + 1} " else ""
+                    if (gpu.name.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            gpu.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     StatRow("$prefix${stringResource(R.string.obs_cn_gpu_util)}", "%.1f%%".format(gpu.utilPct))
                     if (gpu.tempC > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_temp)}", "${gpu.tempC.toInt()} °C")
                     if (gpu.powerW > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_power)}", "${gpu.powerW.toInt()} W")
@@ -270,6 +301,18 @@ private fun ComputeNodeCard(
                     val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
                     if (vramTotalGb > 0) {
                         StatRow("$prefix${stringResource(R.string.obs_cn_gpu_vram)}", "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB")
+                    }
+                }
+                detail.ollamaStats?.let { ollama ->
+                    if (ollama.cpuPct > 0.0 || ollama.rssBytes > 0L) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Ollama",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (ollama.cpuPct > 0.0) StatRow("Ollama CPU", "%.1f%%".format(ollama.cpuPct))
+                        if (ollama.rssBytes > 0L) StatRow("Ollama RSS", formatBytes(ollama.rssBytes))
                     }
                 }
             } else {

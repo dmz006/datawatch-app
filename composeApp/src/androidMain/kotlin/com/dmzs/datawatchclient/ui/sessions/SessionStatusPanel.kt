@@ -206,19 +206,41 @@ private fun timeAgo(elapsedMs: Long): String =
 
 @Composable
 private fun SprintCard(sprint: SprintStatusDto) {
-    val prettyJson =
-        remember(sprint) {
-            Json { prettyPrint = true }.encodeToString(SprintStatusDto.serializer(), sprint)
-        }
     StatusCard(title = stringResource(R.string.status_card_sprint)) {
-        SelectionContainer {
+        val heading = when {
+            sprint.title.isNotBlank() -> sprint.title
+            sprint.name.isNotBlank() -> sprint.name
+            else -> null
+        }
+        if (sprint.automata.isNotBlank()) {
+            Text(sprint.automata, style = MaterialTheme.typography.bodySmall)
+        }
+        if (heading != null) {
+            Spacer(Modifier.height(2.dp))
             Text(
-                prettyJson,
+                heading,
                 style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()),
             )
+        }
+        if (sprint.status.isNotBlank()) StatusRow("Status", sprint.status)
+        if (sprint.sprintId.isNotBlank()) StatusRow("ID", sprint.sprintId.take(8))
+        if (sprint.taskId.isNotBlank()) StatusRow("Task", sprint.taskId.take(8))
+        if (sprint.automata.isBlank() && heading == null && sprint.status.isBlank()) {
+            // Fallback: raw JSON for unknown sprint shapes
+            val json = remember { Json { prettyPrint = true } }
+            val prettyJson = remember(sprint) {
+                json.encodeToString(SprintStatusDto.serializer(), sprint)
+            }
+            SelectionContainer {
+                Text(
+                    prettyJson,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()),
+                )
+            }
         }
     }
 }
