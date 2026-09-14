@@ -315,6 +315,12 @@
     <string name="prd_detail_reject_title">Reject Automaton?</string>
     <string name="prd_detail_reject_reason_label">Reason (required)</string>
     <string name="prd_detail_revise_title">Request revisions</string>
+    <string name="prd_detail_approve_note_label">Note (optional)</string>
+    <string name="prd_detail_cancel_story_title">Cancel story?</string>
+    <string name="prd_detail_cancel_task_title">Cancel task?</string>
+    <string name="prd_detail_cancel_reason_label">Reason (optional)</string>
+    <string name="prd_detail_edit_task_title">Edit task spec</string>
+    <string name="prd_detail_task_spec_label">Task spec</string>
     <string name="prd_detail_revise_label">What needs revision?</string>
     <string name="prd_detail_set_llm_title">Set LLM override</string>
     <string name="prd_detail_edit_prd_title">Edit Automaton</string>

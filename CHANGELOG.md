@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-14
+
+### Added
+- **PRD full lifecycle management** (BL29): cancel individual stories or tasks, requeue completed/cancelled tasks for re-run, edit task spec before approval, and approve with an optional note — all from the PRD detail dialog on Android phone
+- Transport: 4 new `TransportClient` methods — `cancelPrdStory`, `cancelPrdTask`, `requeuePrdTask`, `editPrdTask` — backed by datawatch v8.27.0 endpoints
+- Dtos: `PrdStoryCancelRequestDto`, `PrdTaskCancelRequestDto`, `EditTaskRequestDto`; added `force: Boolean` to `PrdTaskResetRequestDto` for requeue
+- Tests: 5 new `RestTransportAutonomousTest` unit tests for all new transport methods
+
+### Changed
+- Approve button in PRD detail dialog now opens a confirmation sheet with an optional note field; inline one-tap approve on the list card is unchanged
+- TaskRow: "Retry" reachable for failed/blocked tasks; "Re-run" reachable for complete/cancelled tasks; "Edit" shown during `needs_review`/`revisions_asked`; "Cancel" for active tasks
+- StoryRow: "Cancel" button shown for non-terminal stories (when prd is editable)
+
 ## [1.4.0] — 2026-09-13
 
 ### Added

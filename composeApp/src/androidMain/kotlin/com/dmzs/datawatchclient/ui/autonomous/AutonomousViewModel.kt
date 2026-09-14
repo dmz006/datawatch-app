@@ -299,8 +299,13 @@ public class AutonomousViewModel(
         }
     }
 
-    public fun approve(prdId: String) {
-        prdOp("Approve") { it.prdAction(prdId, "approve") }
+    public fun approve(prdId: String, note: String? = null) {
+        if (note.isNullOrBlank()) {
+            prdOp("Approve") { it.prdAction(prdId, "approve") }
+        } else {
+            val body = buildJsonObject { put("note", JsonPrimitive(note)) }
+            prdOp("Approve") { it.prdAction(prdId, "approve", body) }
+        }
     }
 
     public fun reject(
@@ -342,6 +347,66 @@ public class AutonomousViewModel(
                     _state.value =
                         _state.value.copy(
                             banner = "Reset task failed — ${err.message ?: err::class.simpleName}",
+                        )
+                },
+            )
+        }
+    }
+
+    public fun requeueTask(prdId: String, taskId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.requeuePrdTask(prdId, taskId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Requeue task failed — ${err.message ?: err::class.simpleName}",
+                        )
+                },
+            )
+        }
+    }
+
+    public fun cancelStory(prdId: String, storyId: String, reason: String? = null) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.cancelPrdStory(prdId, storyId, reason).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Cancel story failed — ${err.message ?: err::class.simpleName}",
+                        )
+                },
+            )
+        }
+    }
+
+    public fun cancelTask(prdId: String, taskId: String, reason: String? = null) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.cancelPrdTask(prdId, taskId, reason).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Cancel task failed — ${err.message ?: err::class.simpleName}",
+                        )
+                },
+            )
+        }
+    }
+
+    public fun editTask(prdId: String, taskId: String, newSpec: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.editPrdTask(prdId, taskId, newSpec).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value =
+                        _state.value.copy(
+                            banner = "Edit task failed — ${err.message ?: err::class.simpleName}",
                         )
                 },
             )

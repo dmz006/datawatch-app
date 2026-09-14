@@ -504,6 +504,33 @@ public interface TransportClient {
         taskId: String,
     ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
 
+    /** POST /api/autonomous/prds/{id}/reset_task with force=true — requeue any task regardless of status (v8.27.0). */
+    public suspend fun requeuePrdTask(
+        prdId: String,
+        taskId: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
+    /** POST /api/autonomous/prds/{id}/cancel_story — cancel a story without cancelling the PRD (v8.27.0). */
+    public suspend fun cancelPrdStory(
+        prdId: String,
+        storyId: String,
+        reason: String? = null,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
+    /** POST /api/autonomous/prds/{id}/cancel_task — cancel a task without cancelling the story (v8.27.0). */
+    public suspend fun cancelPrdTask(
+        prdId: String,
+        taskId: String,
+        reason: String? = null,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
+    /** POST /api/autonomous/prds/{id}/edit_task — rewrite a task's spec (BL191). */
+    public suspend fun editPrdTask(
+        prdId: String,
+        taskId: String,
+        newSpec: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
     // ---- v0.63.0 BL221 Phase 4: Type registry + Guided Mode + Skills ----
 
     /** GET /api/autonomous/types — list registered automata types. */
