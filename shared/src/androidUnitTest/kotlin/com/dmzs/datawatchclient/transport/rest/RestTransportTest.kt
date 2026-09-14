@@ -681,4 +681,59 @@ class RestTransportTest {
             assertTrue(raw["telegram"].toString().contains("\"***\""))
             assertEquals("/api/config", server.takeRequest().path)
         }
+
+    // BL32 — compute node GPU detail (session stats remote-node GPU parity)
+
+    @Test
+    fun `getComputeNodeDetail fetches correct URL and parses gpu list`() =
+        runTest {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "gpu": [
+                        {"index": 0, "name": "RTX 4090", "util_pct": 78.5,
+                         "mem_used_bytes": 10737418240, "mem_total_bytes": 25769803776,
+                         "power_w": 320.0, "temp_c": 72.0}
+                      ],
+                      "cpu": {"pct": 45.0, "cores": 16},
+                      "mem": {"used_bytes": 17179869184, "total_bytes": 68719476736}
+                    }
+                    """.trimIndent(),
+                ),
+            )
+            val result = transport.getComputeNodeDetail("my-node")
+            assertTrue(result.isSuccess, "expected success, got ${result.exceptionOrNull()}")
+            val dto = result.getOrThrow()
+            assertEquals(1, dto.gpu.size)
+            val gpu = dto.gpu.first()
+            assertEquals(78.5, gpu.utilPct, 0.01)
+            assertEquals(320.0, gpu.powerW, 0.01)
+            assertEquals(72.0, gpu.tempC, 0.01)
+            assertEquals(10737418240L, gpu.memUsedBytes)
+            assertEquals(25769803776L, gpu.memTotalBytes)
+            assertEquals("/api/compute/nodes/my-node/detail", server.takeRequest().path)
+        }
+
+    @Test
+    fun `getComputeNodeDetail multi-gpu returns all gpu entries`() =
+        runTest {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "gpu": [
+                        {"index": 0, "util_pct": 55.0, "mem_used_bytes": 0, "mem_total_bytes": 0, "power_w": 200.0, "temp_c": 65.0},
+                        {"index": 1, "util_pct": 90.0, "mem_used_bytes": 0, "mem_total_bytes": 0, "power_w": 350.0, "temp_c": 82.0}
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+            )
+            val result = transport.getComputeNodeDetail("dual-gpu")
+            val dto = result.getOrThrow()
+            assertEquals(2, dto.gpu.size)
+            assertEquals(55.0, dto.gpu[0].utilPct, 0.01)
+            assertEquals(90.0, dto.gpu[1].utilPct, 0.01)
+        }
 }

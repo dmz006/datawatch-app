@@ -157,10 +157,11 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                // GPU chips
-                detail.gpu.forEach { gpu ->
+                // GPU chips — prefix with "GPU N " when node has multiple GPUs
+                detail.gpu.forEachIndexed { gpuIdx, gpu ->
+                    val gpuPrefix = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1} " else ""
                     StatChip(
-                        label = stringResource(R.string.obs_cn_gpu_util),
+                        label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_util)}",
                         value = "${gpu.utilPct.toInt()}%",
                         color = Color(0xFF3B82F6),
                     )
@@ -170,13 +171,13 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
                         else -> Color(0xFF10B981)
                     }
                     StatChip(
-                        label = stringResource(R.string.obs_cn_gpu_temp),
+                        label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_temp)}",
                         value = "${gpu.tempC.toInt()}°C",
                         color = tempColor,
                     )
                     if (gpu.powerW > 0) {
                         StatChip(
-                            label = stringResource(R.string.obs_cn_gpu_power),
+                            label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_power)}",
                             value = "${gpu.powerW.toInt()} W",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -185,7 +186,7 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
                     val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
                     if (vramTotalGb > 0) {
                         StatChip(
-                            label = stringResource(R.string.obs_cn_gpu_vram),
+                            label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_vram)}",
                             value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

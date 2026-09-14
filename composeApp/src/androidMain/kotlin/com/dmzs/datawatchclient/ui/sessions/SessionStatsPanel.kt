@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.Session
+import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.ContainerInfoDto
 import com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
@@ -59,6 +61,10 @@ public fun SessionStatsPanel(
     DisposableEffect(sessionId) {
         sessionStatsVm.startPolling()
         onDispose { sessionStatsVm.stopPolling() }
+    }
+
+    LaunchedEffect(session?.computeNodeRef) {
+        sessionStatsVm.updateComputeNodeRef(session?.computeNodeRef)
     }
 
     val envelope: StatEnvelopeDto? = sparkState.envelope
@@ -95,6 +101,7 @@ public fun SessionStatsPanel(
                 computeNodeRef = session.computeNodeRef!!,
                 gpuPct = envelope?.gpuPct ?: 0.0,
                 gpuMemBytes = envelope?.gpuMemBytes ?: 0L,
+                detail = sparkState.computeNodeDetail,
                 onNavigate = onNavigateToComputeTab,
             )
         }
@@ -244,6 +251,7 @@ private fun ComputeNodeCard(
     computeNodeRef: String,
     gpuPct: Double,
     gpuMemBytes: Long,
+    detail: ComputeNodeDetailDto? = null,
     onNavigate: (() -> Unit)?,
 ) {
     val dw = LocalDatawatchColors.current
@@ -251,8 +259,24 @@ private fun ComputeNodeCard(
         PwaSectionTitle(stringResource(R.string.stats_card_compute_node))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             StatRow(stringResource(R.string.stats_card_compute_node), computeNodeRef)
-            if (gpuPct > 0.0) StatRow(stringResource(R.string.stats_field_gpu), "%.1f%%".format(gpuPct))
-            if (gpuMemBytes > 0) StatRow("GPU Mem", formatBytes(gpuMemBytes))
+            if (detail != null && detail.gpu.isNotEmpty()) {
+                // Remote compute node GPU detail — obs_cn_gpu_* keys, multi-GPU indexed
+                detail.gpu.forEachIndexed { idx, gpu ->
+                    val prefix = if (detail.gpu.size > 1) "GPU ${idx + 1} " else ""
+                    StatRow("$prefix${stringResource(R.string.obs_cn_gpu_util)}", "%.1f%%".format(gpu.utilPct))
+                    if (gpu.tempC > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_temp)}", "${gpu.tempC.toInt()} °C")
+                    if (gpu.powerW > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_power)}", "${gpu.powerW.toInt()} W")
+                    val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
+                    val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
+                    if (vramTotalGb > 0) {
+                        StatRow("$prefix${stringResource(R.string.obs_cn_gpu_vram)}", "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB")
+                    }
+                }
+            } else {
+                // Fallback: envelope GPU stats (local process monitor)
+                if (gpuPct > 0.0) StatRow(stringResource(R.string.stats_field_gpu), "%.1f%%".format(gpuPct))
+                if (gpuMemBytes > 0) StatRow(stringResource(R.string.obs_cn_gpu_vram), formatBytes(gpuMemBytes))
+            }
             if (onNavigate != null) {
                 Spacer(Modifier.height(4.dp))
                 Text(

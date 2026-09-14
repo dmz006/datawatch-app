@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
 import com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.Job
@@ -23,15 +24,21 @@ public class SessionStatsViewModel(
         val cpuSamples: List<Float> = emptyList(),
         val rssSamples: List<Float> = emptyList(),
         val envelope: StatEnvelopeDto? = null,
+        val computeNodeDetail: ComputeNodeDetailDto? = null,
     )
 
     private val cpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     private val rssBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
+    @Volatile private var computeNodeRef: String? = null
 
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
     private var pollJob: Job? = null
+
+    public fun updateComputeNodeRef(ref: String?) {
+        computeNodeRef = ref
+    }
 
     public fun startPolling() {
         if (pollJob?.isActive == true) return
@@ -58,11 +65,13 @@ public class SessionStatsViewModel(
                     ?: return
             push(cpuBuf, env.cpuPct.toFloat())
             push(rssBuf, env.rssBytes.toFloat())
+            val detail = computeNodeRef?.let { transport.getComputeNodeDetail(it).getOrNull() }
             _state.value =
                 UiState(
                     cpuSamples = cpuBuf.toList(),
                     rssSamples = rssBuf.toList(),
                     envelope = env,
+                    computeNodeDetail = detail,
                 )
         }
     }
