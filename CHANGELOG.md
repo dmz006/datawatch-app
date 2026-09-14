@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-09-14
+
+### Changed
+- **Contrast (BL28):** Raise `DwAccent` from `#7C3AED` (Violet-700, ~3.7:1 on dark bg — WCAG AA fail) to `#8B5CF6` (Violet-500, ~4.93:1 — WCAG AA pass); fixes dark-purple text across status badges, plugin/peer kind chips, orchestrator graph nodes, and the Matrix splash iris
+- `DwAccent2` (`#A855F7`, ~5.3:1) was already passing and is unchanged
+
 ## [1.5.0] — 2026-09-14
 
 ### Added

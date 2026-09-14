@@ -90,6 +90,7 @@ gets two levels of validation:
 | Android | **BL29 — Requeue task** (force=true reset) from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.requeuePrdTaskPostsResetTaskWithForceTrue` | |
 | Android | **BL29 — Edit task spec** from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.editPrdTaskPostsTaskIdAndNewSpec` | Only shown during needs_review/revisions_asked |
 | Android | **BL29 — Approve with note** from PRD detail dialog | No | No | v1.5.0 | Approve dialog opens note field; note passed to server via prdAction "approve" body | |
+| Android | **BL28 — DwAccent contrast** (#7C3AED→#8B5CF6) | Yes | No | v1.5.1 | `PrdStatusColorTest.approved maps to teal` (constant updated); visual audit of all 7 affected composables | WCAG AA 4.93:1 on DwBg; Wear+Auto already passed |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.

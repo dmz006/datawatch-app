@@ -131,7 +131,7 @@ private fun ObserverBadge(s: ObserverSummaryDto) {
         modifier =
             Modifier
                 .background(
-                    Color(0xFF7C3AED).copy(alpha = 0.18f),
+                    Color(0xFF8B5CF6).copy(alpha = 0.18f),
                     RoundedCornerShape(6.dp),
                 )
                 .padding(horizontal = 6.dp, vertical = 1.dp),
@@ -139,7 +139,7 @@ private fun ObserverBadge(s: ObserverSummaryDto) {
         Text(
             parts.joinToString(" · "),
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF7C3AED),
+            color = Color(0xFF8B5CF6),
         )
     }
 }

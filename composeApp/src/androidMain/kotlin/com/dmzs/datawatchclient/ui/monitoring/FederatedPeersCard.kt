@@ -255,7 +255,7 @@ private fun ShapeBadge(shape: String) {
     val s = shape.lowercase()
     val (label, color) =
         when (s) {
-            "agent" -> "agent" to Color(0xFF7C3AED)
+            "agent" -> "agent" to Color(0xFF8B5CF6)
             "cluster" -> "cluster" to Color(0xFF10B981)
             "standalone" -> "standalone" to Color(0xFF3B82F6)
             else -> (s.ifBlank { "—" }) to MaterialTheme.colorScheme.onSurfaceVariant

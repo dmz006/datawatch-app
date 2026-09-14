@@ -108,7 +108,7 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
             // Shape badge (reused from FederatedPeersCard pattern)
             val shape = (peer.hostInfo?.shape ?: peer.shape).ifBlank { "—" }
             val shapeColor = when (shape) {
-                "agent" -> Color(0xFF7C3AED)
+                "agent" -> Color(0xFF8B5CF6)
                 "cluster" -> Color(0xFF10B981)
                 "standalone" -> Color(0xFF3B82F6)
                 else -> MaterialTheme.colorScheme.onSurfaceVariant

@@ -106,7 +106,7 @@ private fun PluginRow(plugin: PluginDto) {
 private fun KindBadge(kind: String) {
     val (label, color) =
         when (kind.lowercase()) {
-            "native" -> "native" to Color(0xFF7C3AED)
+            "native" -> "native" to Color(0xFF8B5CF6)
             else -> "subprocess" to Color(0xFF3B82F6)
         }
     Box(
