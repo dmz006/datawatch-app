@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-09-14
+
+### Added
+- **GPU display parity (BL32):** Session stats "Compute Node" card now fetches `/api/compute/nodes/{ref}/detail` for the bound compute node and shows per-GPU util%, temp (°C), power (W), and VRAM (used/total GB) using the same `obs_cn_*` locale keys as the observer card; falls back to the stats-envelope `gpuPct`/`gpuMemBytes` fields when no detail is available
+- `SessionStatsViewModel.updateComputeNodeRef()` — new public method to supply the session's `compute_node_ref` to the polling loop; called by `SessionStatsPanel` via `LaunchedEffect`
+- Multi-GPU index prefix in `PeerResourcesCard`: when a peer's compute node has ≥ 2 GPUs, chips are labeled "GPU 1 util", "GPU 2 util", etc. (single-GPU nodes unchanged)
+- Tests: 2 new `RestTransportTest` cases for `getComputeNodeDetail` — single-GPU full stat parse + multi-GPU entry count
+
+### Changed
+- Session stats fallback GPU label ("GPU Mem") now uses `obs_cn_gpu_vram` string key for consistency with the observer card
+
 ## [1.5.1] — 2026-09-14
 
 ### Changed
