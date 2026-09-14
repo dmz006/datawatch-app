@@ -738,11 +738,35 @@ public data class NewPrdResponseDto(
     val id: String = "",
 )
 
-/** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task. */
+/** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task; force=true requeues any task (v8.27.0). */
 @Serializable
 public data class PrdTaskResetRequestDto(
     @SerialName("task_id") val taskId: String,
     val actor: String = "operator",
+    val force: Boolean = false,
+)
+
+/** POST /api/autonomous/prds/{id}/cancel_story — skip a story without cancelling the PRD (v8.27.0). */
+@Serializable
+public data class PrdStoryCancelRequestDto(
+    @SerialName("story_id") val storyId: String,
+    val actor: String = "operator",
+    val reason: String? = null,
+)
+
+/** POST /api/autonomous/prds/{id}/cancel_task — skip a task without cancelling the story (v8.27.0). */
+@Serializable
+public data class PrdTaskCancelRequestDto(
+    @SerialName("task_id") val taskId: String,
+    val actor: String = "operator",
+    val reason: String? = null,
+)
+
+/** POST /api/autonomous/prds/{id}/edit_task — rewrite a task's spec before approval (BL191). */
+@Serializable
+public data class EditTaskRequestDto(
+    @SerialName("task_id") val taskId: String,
+    @SerialName("new_spec") val newSpec: String,
 )
 
 // ============================================================

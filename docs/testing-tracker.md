@@ -18,7 +18,7 @@ gets two levels of validation:
 | Shared | `RestTransport` 5xx → ServerError | Yes | No | 1 | androidUnitTest | `serverErrorMapsTo5xxType` |
 | Shared | `RestTransport` 429 → RateLimited | Yes | No | 1 | androidUnitTest | `rateLimitedMapsTo429Type` |
 | Shared | `RestTransport` network error → Unreachable | Yes | No | 1 | androidUnitTest | `networkUnreachableMapsToUnreachable` |
-| Shared | `RestTransport` PRD/channel/backend CRUD | Yes | No | FF | androidUnitTest + MockWebServer | `RestTransportAutonomousTest` — 23 tests: listPrds, createPrd (dir+profile), prdAction (approve/reject/decompose/set_llm), editStory, editFiles, patchPrd, deletePrd (soft+hard), listBackends (obj+string shapes, filters enabled=false+shell), listChannels (wrapped+bare), createChannel, deleteChannel, setChannelEnabled, listOllamaModels, listOpenWebUiModels |
+| Shared | `RestTransport` PRD/channel/backend CRUD | Yes | No | FF | androidUnitTest + MockWebServer | `RestTransportAutonomousTest` — 28 tests: listPrds, createPrd (dir+profile), prdAction (approve/reject/decompose/set_llm), editStory, editFiles, patchPrd, deletePrd (soft+hard), listBackends (obj+string shapes, filters enabled=false+shell), listChannels (wrapped+bare), createChannel, deleteChannel, setChannelEnabled, listOllamaModels, listOpenWebUiModels, cancelPrdStory (with+without reason), cancelPrdTask, requeuePrdTask (force=true), editPrdTask |
 | Shared | `ServerProfileRepository` CRUD | Yes | No | 1 | androidUnitTest (JdbcSqliteDriver in-memory) | 9 tests: upsert+observe, idempotent replace, delete, delete non-existent, empty list, touchLastSeen, touchLastSeen unknown, enabled flag round-trip, ordering by last_seen_ts DESC |
 | Shared | `SessionRepository` upsert + observe | Yes | No | 1 | androidUnitTest (JdbcSqliteDriver + PRAGMA foreign_keys=ON) | 9 tests: upsert+observe, replace, profile isolation, replaceAll atomic+empty, setMuted true+false, ordering, FK cascade delete |
 | Android | SQLCipher open + key unwrap | No | No | 1 | | Phase 4 androidTest — needs instrumented runner |
@@ -85,6 +85,11 @@ gets two levels of validation:
 | Auto | Voice APPROVE_PLAN — "approve my plan" / "approve automata" → POST /api/prds/{id}/approve | Yes | No | v1.4.0 | `VoiceCommandTest` — 3 phrase tests; execution wired in `VoiceStatusScreen` | No live-server voice test yet |
 | Auto | Voice STOP_PLAN — "stop my plan" / "cancel automata" → POST /api/prds/{id}/cancel | Yes | No | v1.4.0 | `VoiceCommandTest` — 3 phrase tests; execution wired in `VoiceStatusScreen` | No live-server voice test yet |
 | Auto | Voice READ_PLAN — "read my plan" / "plan status" → spoken PRD summary | Yes | No | v1.4.0 | `VoiceCommandTest` — 5 phrase tests; `buildReadPlanResponse()` returns spoken summary | No DHU TTS test yet |
+| Android | **BL29 — Cancel story** from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.cancelPrdStoryPostsStoryIdAndReason` + UI confirm dialog | Validated manually on emulator against datawatch v8.27.0 |
+| Android | **BL29 — Cancel task** from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.cancelPrdTaskPostsTaskIdAndReason` | |
+| Android | **BL29 — Requeue task** (force=true reset) from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.requeuePrdTaskPostsResetTaskWithForceTrue` | |
+| Android | **BL29 — Edit task spec** from PRD detail dialog | Yes | No | v1.5.0 | `RestTransportAutonomousTest.editPrdTaskPostsTaskIdAndNewSpec` | Only shown during needs_review/revisions_asked |
+| Android | **BL29 — Approve with note** from PRD detail dialog | No | No | v1.5.0 | Approve dialog opens note field; note passed to server via prdAction "approve" body | |
 
 Update this table with each PR that lands a feature. Don't mark `Validated=Yes` based on
 unit tests alone.

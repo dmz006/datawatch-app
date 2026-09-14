@@ -1081,6 +1081,57 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun requeuePrdTask(
+        prdId: String,
+        taskId: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/reset_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.PrdTaskResetRequestDto(taskId = taskId, force = true))
+            }.body()
+        }
+
+    override suspend fun cancelPrdStory(
+        prdId: String,
+        storyId: String,
+        reason: String?,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/cancel_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.PrdStoryCancelRequestDto(storyId = storyId, reason = reason))
+            }.body()
+        }
+
+    override suspend fun cancelPrdTask(
+        prdId: String,
+        taskId: String,
+        reason: String?,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/cancel_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.PrdTaskCancelRequestDto(taskId = taskId, reason = reason))
+            }.body()
+        }
+
+    override suspend fun editPrdTask(
+        prdId: String,
+        taskId: String,
+        newSpec: String,
+    ): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/edit_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(com.dmzs.datawatchclient.transport.dto.EditTaskRequestDto(taskId = taskId, newSpec = newSpec))
+            }.body()
+        }
+
     // ---- v0.63.0 Type registry ----
 
     override suspend fun listAutomataTypes(): Result<List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto>> =

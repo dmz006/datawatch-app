@@ -77,7 +77,7 @@ internal fun PrdDetailDialog(
     backends: List<String> = emptyList(),
     permissionModes: List<String> = emptyList(),
     onDismiss: () -> Unit,
-    onApprove: () -> Unit,
+    onApprove: (note: String?) -> Unit,
     onReject: (String) -> Unit,
     onDecompose: () -> Unit,
     onSetLlm: (backend: String, effort: String, model: String, decompositionProfile: String) -> Unit,
@@ -89,6 +89,10 @@ internal fun PrdDetailDialog(
     onDelete: () -> Unit,
     onEditStory: (storyId: String, newTitle: String?, newDescription: String?) -> Unit,
     onEditFiles: (storyId: String, files: List<String>) -> Unit,
+    onCancelStory: ((storyId: String, reason: String?) -> Unit)? = null,
+    onCancelTask: ((taskId: String, reason: String?) -> Unit)? = null,
+    onRequeueTask: ((taskId: String) -> Unit)? = null,
+    onEditTask: ((taskId: String, newSpec: String) -> Unit)? = null,
     automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
@@ -113,6 +117,8 @@ internal fun PrdDetailDialog(
     var editingStory: PrdStoryDto? by remember { mutableStateOf(null) }
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
     var graphOpen by remember { mutableStateOf(false) }
+    var approveOpen by remember { mutableStateOf(false) }
+    var approveNote by remember { mutableStateOf("") }
 
     val showProgressTab = status == "running" || status == "decomposing"
     val tabs =
@@ -275,8 +281,8 @@ internal fun PrdDetailDialog(
                             if (canReview) {
                                 FilledTonalButton(
                                     onClick = {
-                                        onApprove()
-                                        onDismiss()
+                                        approveNote = ""
+                                        approveOpen = true
                                     },
                                     modifier = Modifier.weight(1f),
                                     colors =
@@ -462,6 +468,10 @@ internal fun PrdDetailDialog(
                                         prdId = prd.id,
                                         prdStatus = status,
                                         onResetTask = onResetTask,
+                                        onCancelStory = onCancelStory?.let { cb -> { r -> cb(story.id, r) } },
+                                        onCancelTask = onCancelTask,
+                                        onRequeueTask = onRequeueTask,
+                                        onEditTask = onEditTask,
                                     )
                                 }
                             }
@@ -566,6 +576,34 @@ internal fun PrdDetailDialog(
     }
 
     // ── Sub-dialogs ────────────────────────────────────────────────────────
+
+    if (approveOpen) {
+        AlertDialog(
+            onDismissRequest = { approveOpen = false },
+            title = { Text(stringResource(R.string.action_approve)) },
+            text = {
+                OutlinedTextField(
+                    value = approveNote,
+                    onValueChange = { approveNote = it },
+                    label = { Text(stringResource(R.string.prd_detail_approve_note_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 4,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onApprove(approveNote.trim().takeIf { it.isNotBlank() })
+                        approveOpen = false
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.action_approve), color = Color(0xFF10B981)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { approveOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
 
     if (rejectOpen) {
         AlertDialog(
@@ -961,8 +999,14 @@ private fun StoryRow(
     prdId: String = "",
     prdStatus: String = "",
     onResetTask: ((prdId: String, taskId: String) -> Unit)? = null,
+    onCancelStory: ((reason: String?) -> Unit)? = null,
+    onCancelTask: ((taskId: String, reason: String?) -> Unit)? = null,
+    onRequeueTask: ((taskId: String) -> Unit)? = null,
+    onEditTask: ((taskId: String, newSpec: String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var cancelStoryOpen by remember { mutableStateOf(false) }
+    var cancelStoryReason by remember { mutableStateOf("") }
 
     Column(
         modifier =
@@ -1039,6 +1083,16 @@ private fun StoryRow(
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
+                            val storyIsActive = story.status !in setOf("complete", "cancelled", "rejected")
+                            if (onCancelStory != null && storyIsActive) {
+                                TextButton(onClick = { cancelStoryReason = ""; cancelStoryOpen = true }) {
+                                    Text(
+                                        stringResource(R.string.action_cancel),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1051,11 +1105,41 @@ private fun StoryRow(
                             prdId = prdId,
                             prdStatus = prdStatus,
                             onResetTask = onResetTask,
+                            onCancelTask = onCancelTask?.let { cb -> { r -> cb(task.id, r) } },
+                            onRequeueTask = onRequeueTask?.let { cb -> { cb(task.id) } },
+                            onEditTask = onEditTask?.let { cb -> { spec -> cb(task.id, spec) } },
                         )
                     }
                 }
             }
         }
+    }
+
+    if (cancelStoryOpen && onCancelStory != null) {
+        AlertDialog(
+            onDismissRequest = { cancelStoryOpen = false },
+            title = { Text(stringResource(R.string.prd_detail_cancel_story_title)) },
+            text = {
+                OutlinedTextField(
+                    value = cancelStoryReason,
+                    onValueChange = { cancelStoryReason = it },
+                    label = { Text(stringResource(R.string.prd_detail_cancel_reason_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onCancelStory(cancelStoryReason.trim().takeIf { it.isNotBlank() })
+                        cancelStoryOpen = false
+                    },
+                ) { Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { cancelStoryOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
+            },
+        )
     }
 }
 
@@ -1065,8 +1149,20 @@ private fun TaskRow(
     prdId: String,
     prdStatus: String,
     onResetTask: ((prdId: String, taskId: String) -> Unit)?,
+    onCancelTask: ((reason: String?) -> Unit)? = null,
+    onRequeueTask: (() -> Unit)? = null,
+    onEditTask: ((newSpec: String) -> Unit)? = null,
 ) {
     val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus == "running"
+    val canRequeue = task.status in setOf("complete", "cancelled")
+    val canCancel = task.status !in setOf("complete", "cancelled", "failed")
+    val canEdit = prdStatus in setOf("needs_review", "revisions_asked")
+
+    var cancelTaskOpen by remember { mutableStateOf(false) }
+    var cancelTaskReason by remember { mutableStateOf("") }
+    var editTaskOpen by remember { mutableStateOf(false) }
+    var editTaskSpec by remember { mutableStateOf(task.task) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1138,19 +1234,98 @@ private fun TaskRow(
                 )
             }
         }
-        // Retry button
-        if (canRetry && onResetTask != null) {
-            TextButton(
-                onClick = { onResetTask(prdId, task.id) },
-                modifier = Modifier.padding(top = 2.dp),
-            ) {
-                Text(
-                    "↺ Retry",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFF59E0B),
-                )
+        // Action buttons row
+        val hasActions = (canRetry && onResetTask != null) || (canRequeue && onRequeueTask != null) ||
+            (canCancel && onCancelTask != null) || (canEdit && onEditTask != null)
+        if (hasActions) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                if (canRetry && onResetTask != null) {
+                    TextButton(onClick = { onResetTask(prdId, task.id) }) {
+                        Text("↺ Retry", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF59E0B))
+                    }
+                }
+                if (canRequeue && onRequeueTask != null) {
+                    TextButton(onClick = { onRequeueTask() }) {
+                        Text("↺ Re-run", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
+                    }
+                }
+                if (canEdit && onEditTask != null) {
+                    TextButton(onClick = { editTaskSpec = task.task; editTaskOpen = true }) {
+                        Text(
+                            stringResource(R.string.action_edit),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+                if (canCancel && onCancelTask != null) {
+                    TextButton(onClick = { cancelTaskReason = ""; cancelTaskOpen = true }) {
+                        Text(
+                            stringResource(R.string.action_cancel),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             }
         }
+    }
+
+    if (cancelTaskOpen && onCancelTask != null) {
+        AlertDialog(
+            onDismissRequest = { cancelTaskOpen = false },
+            title = { Text(stringResource(R.string.prd_detail_cancel_task_title)) },
+            text = {
+                OutlinedTextField(
+                    value = cancelTaskReason,
+                    onValueChange = { cancelTaskReason = it },
+                    label = { Text(stringResource(R.string.prd_detail_cancel_reason_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onCancelTask(cancelTaskReason.trim().takeIf { it.isNotBlank() })
+                        cancelTaskOpen = false
+                    },
+                ) { Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { cancelTaskOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
+            },
+        )
+    }
+
+    if (editTaskOpen && onEditTask != null) {
+        AlertDialog(
+            onDismissRequest = { editTaskOpen = false },
+            title = { Text(stringResource(R.string.prd_detail_edit_task_title)) },
+            text = {
+                OutlinedTextField(
+                    value = editTaskSpec,
+                    onValueChange = { editTaskSpec = it },
+                    label = { Text(stringResource(R.string.prd_detail_task_spec_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 8,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (editTaskSpec.isNotBlank()) {
+                            onEditTask(editTaskSpec.trim())
+                            editTaskOpen = false
+                        }
+                    },
+                    enabled = editTaskSpec.isNotBlank(),
+                ) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editTaskOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
     }
 }
 

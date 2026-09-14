@@ -415,8 +415,8 @@ public fun AutonomousScreen(
                 backends = state.backends,
                 permissionModes = state.permissionModes,
                 onDismiss = { openPrdId = null },
-                onApprove = {
-                    vm.approve(id)
+                onApprove = { note ->
+                    vm.approve(id, note)
                     openPrdId = null
                 },
                 onReject = { reason ->
@@ -431,14 +431,14 @@ public fun AutonomousScreen(
                 onRequestRevision = { note -> vm.requestRevision(id, note) },
                 onEditPrd = { title, spec, pm -> vm.editPrd(id, title, spec, pm) },
                 onDelete = { vm.hardDeletePrd(id) },
-                onEditStory = {
-                        storyId,
-                        newTitle,
-                        newDescription,
-                    ->
+                onEditStory = { storyId, newTitle, newDescription ->
                     vm.editStory(id, storyId, newTitle, newDescription)
                 },
                 onEditFiles = { storyId, files -> vm.editFiles(id, storyId, files) },
+                onCancelStory = { storyId, reason -> vm.cancelStory(id, storyId, reason) },
+                onCancelTask = { taskId, reason -> vm.cancelTask(id, taskId, reason) },
+                onRequeueTask = { taskId -> vm.requeueTask(id, taskId) },
+                onEditTask = { taskId, newSpec -> vm.editTask(id, taskId, newSpec) },
                 automataTypes = state.automataTypes,
                 onSetType = { type -> vm.setPrdType(id, type) },
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },

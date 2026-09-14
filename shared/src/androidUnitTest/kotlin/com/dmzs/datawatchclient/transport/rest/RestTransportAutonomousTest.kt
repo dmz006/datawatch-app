@@ -433,4 +433,79 @@ class RestTransportAutonomousTest {
             val body = sent.body.readUtf8()
             assertTrue(body.contains("\"enabled\":false"), body)
         }
+
+    // ── cancelPrdStory (v8.27.0) ─────────────────────────────────────────────
+
+    @Test
+    fun cancelPrdStoryPostsStoryIdAndReason() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"prd-1","status":"running"}"""))
+            val res = transport.cancelPrdStory("prd-1", "s1", reason = "no longer needed")
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("POST", sent.method)
+            assertEquals("/api/autonomous/prds/prd-1/cancel_story", sent.path)
+            val body = sent.body.readUtf8()
+            assertTrue(body.contains("\"story_id\":\"s1\""), body)
+            assertTrue(body.contains("\"reason\":\"no longer needed\""), body)
+        }
+
+    @Test
+    fun cancelPrdStoryOmitsNullReason() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"prd-1","status":"running"}"""))
+            val res = transport.cancelPrdStory("prd-1", "s1", reason = null)
+            assertTrue(res.isSuccess)
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(body.contains("\"story_id\":\"s1\""), body)
+            assertTrue(!body.contains("\"reason\""), body)
+        }
+
+    // ── cancelPrdTask (v8.27.0) ──────────────────────────────────────────────
+
+    @Test
+    fun cancelPrdTaskPostsTaskIdAndReason() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"prd-1","status":"running"}"""))
+            val res = transport.cancelPrdTask("prd-1", "t1", reason = "skip this")
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("POST", sent.method)
+            assertEquals("/api/autonomous/prds/prd-1/cancel_task", sent.path)
+            val body = sent.body.readUtf8()
+            assertTrue(body.contains("\"task_id\":\"t1\""), body)
+            assertTrue(body.contains("\"reason\":\"skip this\""), body)
+        }
+
+    // ── requeuePrdTask (v8.27.0) ─────────────────────────────────────────────
+
+    @Test
+    fun requeuePrdTaskPostsResetTaskWithForceTrue() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"prd-1","status":"running"}"""))
+            val res = transport.requeuePrdTask("prd-1", "t1")
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("POST", sent.method)
+            assertEquals("/api/autonomous/prds/prd-1/reset_task", sent.path)
+            val body = sent.body.readUtf8()
+            assertTrue(body.contains("\"task_id\":\"t1\""), body)
+            assertTrue(body.contains("\"force\":true"), body)
+        }
+
+    // ── editPrdTask (BL191) ──────────────────────────────────────────────────
+
+    @Test
+    fun editPrdTaskPostsTaskIdAndNewSpec() =
+        runTest {
+            server.enqueue(jsonResponse("""{"id":"prd-1","status":"needs_review"}"""))
+            val res = transport.editPrdTask("prd-1", "t1", newSpec = "Use repository pattern instead")
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("POST", sent.method)
+            assertEquals("/api/autonomous/prds/prd-1/edit_task", sent.path)
+            val body = sent.body.readUtf8()
+            assertTrue(body.contains("\"task_id\":\"t1\""), body)
+            assertTrue(body.contains("\"new_spec\":\"Use repository pattern instead\""), body)
+        }
 }
