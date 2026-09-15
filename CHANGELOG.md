@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.9.2] — 2026-09-14
+
+### Fixed
+- **CI**: `VoiceCommandProcessor` detekt `MagicNumber` violations (magic `3` in plan-summary spoken loop) — extracted `MAX_SPOKEN_PLANS = 3` constant; pre-existing lint failure blocking CI since BL30
+
 ## [1.9.1] — 2026-09-14
 
 ### Fixed
