@@ -290,4 +290,84 @@ class AlertsViewModelTest {
         val active = all.filter { matchesChip(AlertsViewModel.ChipFilter.All, it) }
         assertEquals(2, active.size)
     }
+
+    // ── Sprint 27 — Active / Historical / System tab separation ────────────
+
+    @Test
+    fun `UiState selectedTab defaults to Active`() {
+        val state = AlertsViewModel.UiState()
+        assertEquals(AlertsViewModel.Tab.Active, state.selectedTab)
+    }
+
+    @Test
+    fun `active tab receives only isActive groups`() {
+        val activeGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s1",
+            session = runningSession("s1"),
+            alerts = listOf(alert("a1")),
+        )
+        val historicalGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s2",
+            session = terminalSession("s2"),
+            alerts = listOf(alert("a2")),
+        )
+        val state = AlertsViewModel.UiState(
+            active = listOf(activeGroup),
+            historical = listOf(historicalGroup),
+        )
+        assertTrue(state.active.all { it.isActive })
+        assertFalse(state.historical.any { it.isActive })
+    }
+
+    @Test
+    fun `system tab groups carry SYSTEM_BUCKET sessionId`() {
+        val sysGroup = AlertsViewModel.AlertGroup(
+            sessionId = AlertsViewModel.AlertGroup.SYSTEM_BUCKET,
+            session = null,
+            alerts = listOf(alert("sys1")),
+        )
+        val state = AlertsViewModel.UiState(system = listOf(sysGroup))
+        assertTrue(state.system.all { it.sessionId == AlertsViewModel.AlertGroup.SYSTEM_BUCKET })
+    }
+
+    @Test
+    fun `active and historical tabs are independent — switching tab does not affect other tab alerts`() {
+        val aGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s1",
+            session = runningSession("s1"),
+            alerts = listOf(alert("a1")),
+        )
+        val hGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s2",
+            session = terminalSession("s2"),
+            alerts = listOf(alert("a2"), alert("a3")),
+        )
+        val state = AlertsViewModel.UiState(active = listOf(aGroup), historical = listOf(hGroup))
+        assertEquals(1, state.active.flatMap { it.alerts }.size)
+        assertEquals(2, state.historical.flatMap { it.alerts }.size)
+        // Switching which tab is selected changes display but not underlying data
+        val stateOnHistorical = state.copy(selectedTab = AlertsViewModel.Tab.Historical)
+        assertEquals(1, stateOnHistorical.active.flatMap { it.alerts }.size)
+        assertEquals(2, stateOnHistorical.historical.flatMap { it.alerts }.size)
+    }
+
+    @Test
+    fun `count only sums active tab groups not historical or system`() {
+        val activeGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s1",
+            session = runningSession("s1"),
+            alerts = listOf(alert("a1"), alert("a2")),
+        )
+        val historicalGroup = AlertsViewModel.AlertGroup(
+            sessionId = "s2",
+            session = terminalSession("s2"),
+            alerts = listOf(alert("a3"), alert("a4"), alert("a5")),
+        )
+        val state = AlertsViewModel.UiState(
+            active = listOf(activeGroup),
+            historical = listOf(historicalGroup),
+        )
+        // UiState.count = sum of active groups' alert sizes
+        assertEquals(2, state.count)
+    }
 }
