@@ -1450,6 +1450,15 @@ private fun SessionRowContent(
                         fontFamily = FontFamily.Monospace)
                 }
             }
+            // B31: session snapshot — show current activity one line below title
+            if (item.lastLine.isNotBlank()) {
+                Text(
+                    item.lastLine.take(36),
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                )
+            }
         }
         if (abbrev.isNotEmpty()) {
             Text(

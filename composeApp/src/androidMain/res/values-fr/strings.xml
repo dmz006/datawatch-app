@@ -1071,7 +1071,16 @@
     <string name="status_no_focus">Aucun focus actif</string>
     <string name="status_no_sprint">Aucune donnée de sprint</string>
     <string name="status_no_tests">Aucune donnée de test</string>
+    <string name="status_tests_no_signal">Aucun signal de test · payload hook tests=… attendu</string>
     <string name="status_no_git">Aucune donnée git</string>
+    <string name="status_git_no_state">Aucun état git · payload hook git=… attendu</string>
+    <string name="stats_card_host_with_backend">Stats backend — %1$s</string>
+    <string name="voice_cmd_confirm_title">Envoyer à datawatch ?</string>
+    <string name="voice_cmd_confirm_send">Envoyer</string>
+    <string name="voice_cmd_confirm_cancel">Annuler</string>
+    <string name="voice_cmd_session_label">Session : %1$s</string>
+    <string name="voice_cmd_no_session">Aucune session active trouvée</string>
+    <string name="voice_cmd_sent">Envoyé</string>
     <string name="status_hooks_alive">Hooks actifs</string>
     <string name="status_hooks_stale">Hooks obsolètes</string>
     <string name="status_hooks_missing">Hooks manquants</string>

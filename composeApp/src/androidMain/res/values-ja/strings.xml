@@ -1071,7 +1071,16 @@
     <string name="status_no_focus">アクティブなフォーカスなし</string>
     <string name="status_no_sprint">スプリントデータなし</string>
     <string name="status_no_tests">テストデータなし</string>
+    <string name="status_tests_no_signal">テスト信号なし · フックペイロード tests=… 必要</string>
     <string name="status_no_git">Gitデータなし</string>
+    <string name="status_git_no_state">Git状態なし · フックペイロード git=… 必要</string>
+    <string name="stats_card_host_with_backend">バックエンド統計 — %1$s</string>
+    <string name="voice_cmd_confirm_title">datawatchに送信しますか？</string>
+    <string name="voice_cmd_confirm_send">送信</string>
+    <string name="voice_cmd_confirm_cancel">キャンセル</string>
+    <string name="voice_cmd_session_label">セッション: %1$s</string>
+    <string name="voice_cmd_no_session">アクティブなセッションが見つかりません</string>
+    <string name="voice_cmd_sent">送信済み</string>
     <string name="status_hooks_alive">フック有効</string>
     <string name="status_hooks_stale">フック古い</string>
     <string name="status_hooks_missing">フック未設定</string>
