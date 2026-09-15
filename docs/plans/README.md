@@ -399,8 +399,8 @@ PWA parity through alpha.23c was closed at v0.86.0. Alpha.31–alpha.36 follow-o
 in Sprints 24–29 above (7 open issues, no external blockers).
 
 Remaining pre-v1.0 work after Sprints 24–29:
-- Sprint 23 test debt (4 ViewModelTests for toggleWatch/watchedIds/watchedAlertCount/BottomNavBar) — deferred, see B31 hold
 - alpha.35a UnifiedPush topic taxonomy (council/error/algorithm events) — awaiting operator confirmation from parent project
 - B31 HOLD (Wear snapshot + voice) — user evaluating whether existing Auto scope counts as done
+- Sprint 23 fully shipped v1.11.0 (UI bell icons + WatchedAutomataStoreTest + AlertsViewModelTest watch filter)
 
 See `docs/parity-status.md` for the parity matrix.

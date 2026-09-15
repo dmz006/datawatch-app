@@ -186,3 +186,4 @@ unit tests alone.
 | Phone | `SessionDetailScreen` TopAppBar watch toggle — reflects `watchedIds` StateFlow | No | No | 23 | Manual — open session detail, tap bell, verify state syncs with list | Sprint 23 |
 | Phone | `AutonomousScreen` PRD row bell icon — `watchedAutomataIds` + `toggleWatchAutomata` | No | No | 23 | Manual — Automata tab, tap bell on PRD row | Sprint 23 |
 | Shared | `AlertsViewModelTest` watchedAlertCount filter logic — 4 tests | Yes | Yes | 23 | JVM unit test | watchedBadge() mirrors VM combine logic |
+| Shared | `WatchedAutomataStoreTest` — 6 tests (empty default, add/remove, profile isolation, flow emit) | Yes | Yes | 23 | JVM unit test | Mirrors WatchedSessionsStoreTest; FakeSharedPreferences extracted to shared helper |

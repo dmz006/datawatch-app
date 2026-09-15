@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **Backlog items BL368/BL369**: Session Status tab and Stats sub-tab parity gaps with PWA documented in plans/README (TESTS/GIT placeholder cards, sprint JSON block, focus null-state, backend/node names in headers, inline sparklines on stat rows).
 
 ### Tests
+- **`WatchedAutomataStoreTest`** — 6 tests: empty default, setWatched add/remove, profile isolation, flow emits initial state, flow emits on change. Extracted `FakeSharedPreferences` to shared test helper (`FakeSharedPreferences.kt`) used by both store test classes.
 - **`AlertsViewModelTest`** — 4 new tests for `watchedAlertCount` filter logic: fallback to total count when no sessions watched; filters to watched session only; excludes unwatched sessions; zero when watched session has no alerts.
 
 ## [1.10.0] — 2026-09-14

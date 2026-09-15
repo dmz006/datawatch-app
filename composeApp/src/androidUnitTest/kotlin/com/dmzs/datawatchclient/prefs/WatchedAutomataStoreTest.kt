@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.prefs
 
 import android.content.Context
-import android.content.SharedPreferences
 import app.cash.turbine.test
 import io.mockk.every
 import io.mockk.mockk
@@ -18,26 +17,19 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * Unit tests for [WatchedSessionsStore].
- *
- * Uses a [FakeSharedPreferences] backed by an in-memory map so tests run on
- * the JVM without Robolectric.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
-class WatchedSessionsStoreTest {
+class WatchedAutomataStoreTest {
     private val dispatcher = UnconfinedTestDispatcher()
 
-    private lateinit var fakePrefs: FakeSharedPreferences
-    private lateinit var store: WatchedSessionsStore
+    private lateinit var store: WatchedAutomataStore
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        fakePrefs = FakeSharedPreferences()
+        val fakePrefs = FakeSharedPreferences()
         val ctx = mockk<Context>()
         every { ctx.getSharedPreferences(any(), any()) } returns fakePrefs
-        store = WatchedSessionsStore(ctx)
+        store = WatchedAutomataStore(ctx)
     }
 
     @AfterTest
@@ -52,36 +44,36 @@ class WatchedSessionsStoreTest {
 
     @Test
     fun `setWatched_true_addsToSet`() {
-        store.setWatched("p1", "sess-1", true)
-        assertTrue(store.isWatched("p1", "sess-1"))
-        assertEquals(setOf("sess-1"), store.watchedIds("p1"))
+        store.setWatched("p1", "prd-1", true)
+        assertTrue(store.isWatched("p1", "prd-1"))
+        assertEquals(setOf("prd-1"), store.watchedIds("p1"))
     }
 
     @Test
     fun `setWatched_false_removesFromSet`() {
-        store.setWatched("p1", "sess-1", true)
-        store.setWatched("p1", "sess-1", false)
-        assertFalse(store.isWatched("p1", "sess-1"))
+        store.setWatched("p1", "prd-1", true)
+        store.setWatched("p1", "prd-1", false)
+        assertFalse(store.isWatched("p1", "prd-1"))
         assertTrue(store.watchedIds("p1").isEmpty())
     }
 
     @Test
     fun `profileIsolation_separateSetsPerProfile`() {
-        store.setWatched("p1", "sess-1", true)
-        store.setWatched("p2", "sess-2", true)
+        store.setWatched("p1", "prd-A", true)
+        store.setWatched("p2", "prd-B", true)
 
-        assertTrue(store.isWatched("p1", "sess-1"))
-        assertFalse(store.isWatched("p1", "sess-2"))
-        assertFalse(store.isWatched("p2", "sess-1"))
-        assertTrue(store.isWatched("p2", "sess-2"))
+        assertTrue(store.isWatched("p1", "prd-A"))
+        assertFalse(store.isWatched("p1", "prd-B"))
+        assertFalse(store.isWatched("p2", "prd-A"))
+        assertTrue(store.isWatched("p2", "prd-B"))
     }
 
     @Test
     fun `watchedFlow_emitsInitialState`() =
         runTest {
-            store.setWatched("p1", "sess-A", true)
+            store.setWatched("p1", "prd-X", true)
             store.watchedFlow("p1").test {
-                assertEquals(setOf("sess-A"), awaitItem())
+                assertEquals(setOf("prd-X"), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -90,14 +82,12 @@ class WatchedSessionsStoreTest {
     fun `watchedFlow_emitsOnChange`() =
         runTest {
             store.watchedFlow("p1").test {
-                assertEquals(emptySet(), awaitItem()) // initial
-                store.setWatched("p1", "sess-X", true)
-                assertEquals(setOf("sess-X"), awaitItem())
-                store.setWatched("p1", "sess-X", false)
+                assertEquals(emptySet(), awaitItem())
+                store.setWatched("p1", "prd-Y", true)
+                assertEquals(setOf("prd-Y"), awaitItem())
+                store.setWatched("p1", "prd-Y", false)
                 assertEquals(emptySet(), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
 }
-
-// FakeSharedPreferences is defined in FakeSharedPreferences.kt (same package).
