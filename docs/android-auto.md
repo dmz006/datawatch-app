@@ -1,6 +1,6 @@
 # Android Auto — architecture + in-car test guide
 
-*Last updated 2026-05-31 for v1.0.35+.*
+*Last updated 2026-09-15 for v1.16.0.*
 
 ## What ships in the APK
 
@@ -9,14 +9,16 @@ The `:auto` module is bundled into the `composeApp` APK via
 `publicTrack` flavor. The `CarAppService` + manifest metadata merge
 automatically — no separate Auto APK.
 
-`minCarApiLevel = 2`. Category: `MESSAGING`.
+`minCarApiLevel = 2`. Category: `MESSAGING` (ADR-0049; switched from IOT in v1.16.0 to resolve Play Console policy warnings about CarAppExtender Reply/Play actions). All detail screens show `[You]`/`[datawatch]` conversation context. Phone notifications use `MessagingStyle`. See `docs/decisions/0049-auto-messaging-category.md`.
 
 ---
 
 ## Navigation architecture
 
-All screens use `ListTemplate` or `MessageTemplate` only (ADR-0031 Play
-compliance). No free-form UI.
+All screens use `ListTemplate` or `MessageTemplate` only (ADR-0049 / ADR-0031 Play
+compliance). No free-form UI. Session/PRD/story/task detail screens show a
+`[You]`/`[datawatch]` conversation body before any reply flow (MESSAGING category
+requirement).
 
 ```
 AutoSummaryScreen (home)

@@ -14,4 +14,13 @@
     <string name="auto_voice_status_errors">%dエラー</string>
     <string name="auto_voice_status_cpu">CPU %d%%</string>
     <string name="auto_voice_status_mem">メモリ %d%%</string>
+
+    <!-- BL388: conversation participant labels for Auto detail screens -->
+    <string name="auto_conv_you">[あなた]</string>
+    <string name="auto_conv_datawatch">[datawatch]</string>
+    <string name="auto_conv_story">ストーリー</string>
+    <string name="auto_conv_plan">プラン</string>
+    <string name="auto_action_update">更新</string>
+    <string name="auto_action_tasks">タスク</string>
+    <string name="auto_action_play_overview">概要を再生</string>
 </resources>

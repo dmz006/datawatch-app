@@ -15,4 +15,13 @@
     <string name="auto_voice_status_errors">%d errors</string>
     <string name="auto_voice_status_cpu">CPU %d%%</string>
     <string name="auto_voice_status_mem">Memory %d%%</string>
+
+    <!-- BL388: conversation participant labels for Auto detail screens -->
+    <string name="auto_conv_you">[You]</string>
+    <string name="auto_conv_datawatch">[datawatch]</string>
+    <string name="auto_conv_story">Story</string>
+    <string name="auto_conv_plan">Plan</string>
+    <string name="auto_action_update">Update</string>
+    <string name="auto_action_tasks">Tasks</string>
+    <string name="auto_action_play_overview">Play Overview</string>
 </resources>

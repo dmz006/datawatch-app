@@ -7,7 +7,7 @@
 [dmz006/datawatch](https://github.com/dmz006/datawatch), the daemon that bridges
 AI coding sessions (Claude Code, Aider, etc.) to messaging platforms.
 
-**Current release: v1.15.0 (2026-09-15).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.27.0+` (`v8.9.5+` for baseline; `v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, Android Automotive OS, and iOS with comprehensive testing and Play Store integration. Now in closed testing on the Play Store.
+**Current release: v1.16.0 (2026-09-15).** **Status:** [General Availability](https://github.com/dmz006/datawatch-app/releases/latest). Pairs with `datawatch v8.27.0+` (`v8.9.5+` for baseline; `v8.8.3+` for Chrome integration). **Production-ready** — full platform parity across Android phone, Wear OS, Android Automotive OS, and iOS with comprehensive testing and Play Store integration. Now in closed testing on the Play Store.
 
 ---
 
@@ -159,7 +159,7 @@ Surfaces available on AAOS: **Sessions**, **Alerts** (grouped by session, inline
 
 - Android phone / tablet / foldable (minSdk 29 — Android 10 — target 35; two-pane layout on ≥ 600 dp)
 - Wear OS 3+ (minSdk 30)
-- Android Auto (Messaging category — runs on any Auto-enabled head unit)
+- Android Auto (MESSAGING category — conversation-context screens + MessagingStyle notifications; ADR-0049)
 - iOS 16.0+ (iPhone and iPad; SwiftUI native; Keychain + Secure Enclave; Face ID / Touch ID)
 
 ## Install
