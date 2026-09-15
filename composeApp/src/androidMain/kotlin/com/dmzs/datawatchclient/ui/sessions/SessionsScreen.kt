@@ -46,6 +46,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
@@ -1006,6 +1008,19 @@ private fun SessionRow(
                 }
                 IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.sessions_move_down))
+                }
+            }
+            if (!reorderMode && !selectionMode) {
+                IconButton(
+                    onClick = onWatchToggle,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
+                        contentDescription = stringResource(if (isWatched) R.string.session_watch_on else R.string.session_watch_off),
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isWatched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
                 }
             }
         }

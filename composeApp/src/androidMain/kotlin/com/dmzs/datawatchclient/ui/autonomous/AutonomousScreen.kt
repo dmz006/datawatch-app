@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -91,6 +93,7 @@ public fun AutonomousScreen(
 ) {
     val state by vm.state.collectAsState()
     val pinnedIds by vm.pinnedAutomataIds.collectAsState()
+    val watchedAutomataIds by vm.watchedAutomataIds.collectAsState()
     val reachable by vm.reachable.collectAsState()
     val lastProbeEpochMs by vm.lastProbeEpochMs.collectAsState()
     val alertsState by alertsVm.state.collectAsState()
@@ -245,7 +248,7 @@ public fun AutonomousScreen(
                 }
                 when (currentTab) {
                     0 ->
-                        PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, onOpenPrd = {
+                        PrdsBody(state, pinnedIds, filterOpen, includeTemplates, statusFilter, typeFilter, selectMode = selectMode, historyOn = historyOn, watchedAutomataIds = watchedAutomataIds, onOpenPrd = {
                             if (!selectMode) openPrdId = it
                         }, onStatusFilter = {
                             statusFilter = it
@@ -257,6 +260,8 @@ public fun AutonomousScreen(
                             vm.toggleSelection(it)
                         }, onTogglePin = {
                             vm.togglePin(it)
+                        }, onWatchToggleAutomata = {
+                            vm.toggleWatchAutomata(it)
                         }, onRequestCancel = {
                             vm.requestCancel(it)
                         }, onApprove = {
@@ -487,12 +492,14 @@ private fun PrdsBody(
     typeFilter: String? = null,
     selectMode: Boolean = false,
     historyOn: Boolean = false,
+    watchedAutomataIds: Set<String> = emptySet(),
     onOpenPrd: (String) -> Unit,
     onStatusFilter: (String?) -> Unit,
     onIncludeTemplates: (Boolean) -> Unit,
     onTypeFilter: (String?) -> Unit = {},
     onToggleSelect: (String) -> Unit = {},
     onTogglePin: (String) -> Unit = {},
+    onWatchToggleAutomata: (String) -> Unit = {},
     onRequestCancel: (String) -> Unit = {},
     onApprove: (String) -> Unit = {},
     onPlan: (String) -> Unit = {},
@@ -627,9 +634,11 @@ private fun PrdsBody(
                         pinned = prd.id in pinnedIds,
                         selectMode = selectMode,
                         serverName = state.prdProfileNames[prd.id],
+                        isWatched = prd.id in watchedAutomataIds,
                         onClick = { onOpenPrd(prd.id) },
                         onLongClick = { onToggleSelect(prd.id) },
                         onTogglePin = { onTogglePin(prd.id) },
+                        onWatchToggle = { onWatchToggleAutomata(prd.id) },
                         onCancel = { onRequestCancel(prd.id) },
                         onApprove = { onApprove(prd.id) },
                         onPlan = { onPlan(prd.id) },
@@ -651,9 +660,11 @@ private fun PrdRow(
     pinned: Boolean = false,
     selectMode: Boolean = false,
     serverName: String? = null,
+    isWatched: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     onTogglePin: () -> Unit = {},
+    onWatchToggle: () -> Unit = {},
     onCancel: () -> Unit = {},
     onApprove: () -> Unit = {},
     onPlan: () -> Unit = {},
@@ -979,6 +990,19 @@ private fun PrdRow(
                             }
                         }
                     }
+                }
+            }
+            if (!selectMode) {
+                IconButton(
+                    onClick = onWatchToggle,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
+                        contentDescription = stringResource(if (isWatched) R.string.automata_watch_on else R.string.automata_watch_off),
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isWatched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
                 }
             }
         }

@@ -370,4 +370,47 @@ class AlertsViewModelTest {
         // UiState.count = sum of active groups' alert sizes
         assertEquals(2, state.count)
     }
+
+    // ---- watchedAlertCount filter logic (Sprint 23 #116) ----
+    // The VM computes: if watchedIds.isEmpty() → count; else → active.filter { in watchedIds }.sumOf { alerts.size }
+    // These tests verify that logic in isolation.
+
+    private fun watchedBadge(state: AlertsViewModel.UiState, watchedIds: Set<String>): Int =
+        if (watchedIds.isEmpty()) {
+            state.count
+        } else {
+            state.active.filter { it.sessionId in watchedIds }.sumOf { it.alerts.size }
+        }
+
+    @Test
+    fun `watchedAlertCount falls back to total count when no sessions watched`() {
+        val g1 = AlertsViewModel.AlertGroup(sessionId = "s1", session = runningSession("s1"), alerts = listOf(alert("a1"), alert("a2")))
+        val g2 = AlertsViewModel.AlertGroup(sessionId = "s2", session = runningSession("s2"), alerts = listOf(alert("a3")))
+        val state = AlertsViewModel.UiState(active = listOf(g1, g2))
+        assertEquals(3, watchedBadge(state, emptySet()))
+    }
+
+    @Test
+    fun `watchedAlertCount counts only watched session alerts`() {
+        val g1 = AlertsViewModel.AlertGroup(sessionId = "s1", session = runningSession("s1"), alerts = listOf(alert("a1"), alert("a2")))
+        val g2 = AlertsViewModel.AlertGroup(sessionId = "s2", session = runningSession("s2"), alerts = listOf(alert("a3")))
+        val state = AlertsViewModel.UiState(active = listOf(g1, g2))
+        assertEquals(2, watchedBadge(state, setOf("s1")))
+    }
+
+    @Test
+    fun `watchedAlertCount excludes unwatched sessions`() {
+        val g1 = AlertsViewModel.AlertGroup(sessionId = "s1", session = runningSession("s1"), alerts = listOf(alert("a1")))
+        val g2 = AlertsViewModel.AlertGroup(sessionId = "s2", session = runningSession("s2"), alerts = listOf(alert("a2"), alert("a3"), alert("a4")))
+        val state = AlertsViewModel.UiState(active = listOf(g1, g2))
+        assertEquals(3, watchedBadge(state, setOf("s2")))
+    }
+
+    @Test
+    fun `watchedAlertCount is zero when watched session has no alerts`() {
+        val g1 = AlertsViewModel.AlertGroup(sessionId = "s1", session = runningSession("s1"), alerts = listOf(alert("a1")))
+        val g2 = AlertsViewModel.AlertGroup(sessionId = "s2", session = runningSession("s2"), alerts = emptyList())
+        val state = AlertsViewModel.UiState(active = listOf(g1, g2))
+        assertEquals(0, watchedBadge(state, setOf("s2")))
+    }
 }
