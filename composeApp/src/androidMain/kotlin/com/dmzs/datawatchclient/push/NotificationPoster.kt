@@ -71,13 +71,23 @@ public class NotificationPoster(private val context: Context) {
                 .setContentIntent(deepLinkIntent(event.sessionId))
 
         if (event.type == Event.Type.InputNeeded) {
-            // BigTextStyle (not MessagingStyle) so the phone notification fires
-            // contentIntent on body-tap.  MessagingStyle intercepts the tap to
-            // open the inline RemoteInput panel on many Android OEM skins,
-            // preventing the app from opening.  The car head unit gets its full
-            // messaging experience from CarAppExtender regardless of base style.
-            // CATEGORY_MESSAGE keeps the car host categorisation correct.
-            builder.setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
+            // MessagingStyle satisfies Play Store MESSAGING category requirements.
+            // Samsung/OEM body-tap may open the inline reply panel — this is correct
+            // messaging UX. The car head unit is unaffected: CarAppExtender overrides
+            // the base notification style entirely on the head unit.
+            val selfPerson = androidx.core.app.Person.Builder()
+                .setName("Me")
+                .setImportant(true)
+                .build()
+            val senderPerson = androidx.core.app.Person.Builder()
+                .setName(event.title)
+                .build()
+            builder.setStyle(
+                NotificationCompat.MessagingStyle(selfPerson)
+                    .setConversationTitle(event.title)
+                    .setGroupConversation(false)
+                    .addMessage(event.body, System.currentTimeMillis(), senderPerson),
+            )
             builder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
             builder.addAction(buildPlayLongAction(event.sessionId, event.title))
             builder.addAction(buildReplyAction(event.sessionId))
