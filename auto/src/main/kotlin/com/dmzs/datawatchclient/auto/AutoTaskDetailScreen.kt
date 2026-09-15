@@ -134,12 +134,15 @@ public class AutoTaskDetailScreen(
 
         fun buildTaskBody(task: PrdTaskDto): String =
             buildString {
-                appendLine("Status: ${task.status.ifBlank { "unknown" }}")
-                if (task.retryCount > 0) appendLine("Retries: ${task.retryCount}")
+                // Conversation format: [You] = task instruction, [datawatch] = result/status
+                appendLine("[You]: ${task.task.take(MAX_TITLE)}")
                 appendLine()
 
-                appendLine("Task:")
-                appendLine(task.task)
+                val dwResponse = buildString {
+                    append("Status: ${task.status.ifBlank { "unknown" }}")
+                    if (task.retryCount > 0) append("  ·  Retries: ${task.retryCount}")
+                }
+                appendLine("[datawatch]: $dwResponse")
 
                 task.error?.takeIf { it.isNotBlank() && task.status == "failed" }?.let { err ->
                     appendLine()
