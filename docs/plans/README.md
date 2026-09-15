@@ -54,6 +54,12 @@ Release batches:
 
 ## Open — alpha.31–alpha.36 follow-on (Sprints 24–29)
 
+**Status as of v1.9.4 (2026-09-14):**
+- Sprints 24, 25, 26, 27, 29 — code **shipped** during v1.x BL arc; unit tests completed in v1.9.4
+- Sprint 28 (UnifiedPush) — **blocked on datawatch#39**; transport stubs exist; receiver/tier manager not yet implemented
+- Completion plan: `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
+- Sprint 28 plan: `docs/plans/2026-09-14-sprint28-unifiedpush.md`
+
 Issues filed under epic #94. Ordered by dependency: Automata (24) and Stats (25) are independent; Status tab (26) builds on Stats; Alerts tabs (27) are parallel; UnifiedPush (28) is independent; Sessions filter (29) is independent.
 
 ### Sprint 24 — Automata browse redesign (#117 / alpha.31)
