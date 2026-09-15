@@ -340,7 +340,7 @@ public suspend fun buildReadPlanResponse(): String =
         if (activePrds.isEmpty()) return@runCatching "No active plans on ${profile.displayName}."
         buildString {
             append("${activePrds.size} active plan${if (activePrds.size > 1) "s" else ""}. ")
-            activePrds.take(3).forEach { prd ->
+            activePrds.take(MAX_SPOKEN_PLANS).forEach { prd ->
                 val name = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
                 val totalStories = prd.stories.size
                 val doneStatuses = setOf("complete", "completed", "done")
@@ -360,7 +360,7 @@ public suspend fun buildReadPlanResponse(): String =
                 }
                 append(". ")
             }
-            if (activePrds.size > 3) append("And ${activePrds.size - 3} more.")
+            if (activePrds.size > MAX_SPOKEN_PLANS) append("And ${activePrds.size - MAX_SPOKEN_PLANS} more.")
         }
     }.getOrElse { "Error reading plan status." }
 
@@ -368,6 +368,7 @@ private const val PCT_MULTIPLIER: Int = 100
 private const val SPOKEN_SUMMARY_CHARS: Int = 80
 private const val SPOKEN_PLAN_TITLE: Int = 40
 private const val SPOKEN_TASK_CHARS: Int = 60
+private const val MAX_SPOKEN_PLANS: Int = 3
 
 public data class StatusSummary(
     val serverName: String,
