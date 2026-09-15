@@ -330,45 +330,53 @@ public class AutoSessionDetailScreen(
         return templateBuilder.build()
     }
 
-    /** Body text: the most relevant content for the current session state. */
+    /** Body text: conversation-formatted exchange between user and datawatch session. */
     private fun buildBody(): String {
         if (isLoading) return "Loading…"
         if (error != null) return "Error: $error"
-        val main =
+        val body = buildString {
             when (sessionState) {
-                SessionState.Running ->
-                    currentStatus?.takeIf { it.isNotBlank() }
-                        ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
-                        ?: "Running…"
-                SessionState.Waiting, SessionState.RateLimited ->
-                    // promptContext overrides lastPrompt per server spec: it's the pre-processed
-                    // last ~4 lines of conversation, not the raw LLM prompt string.
-                    promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                SessionState.Waiting, SessionState.RateLimited -> {
+                    // promptContext overrides lastPrompt per server spec.
+                    val prompt = promptContext?.lines()?.firstOrNull { it.isNotBlank() }
                         ?: lastPrompt?.takeIf { it.isNotBlank() }
                         ?: lastSummaryLong?.takeIf { it.isNotBlank() }
                         ?: lastResponse?.takeIf { it.isNotBlank() }
-                        ?: "Waiting for your input"
-                SessionState.Completed, SessionState.Killed, SessionState.Error ->
-                    lastResponse?.takeIf { it.isNotBlank() }
-                        ?: "Session ${sessionState.name.lowercase()}"
-                else ->
-                    buildString {
-                        telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { appendLine("▶ $it") }
-                        currentStatus?.let { appendLine(it) }
-                    }.trim().ifEmpty { sessionState.name }
-            }
-        // Append automata/sprint context so the user knows which plan this session belongs to.
-        val sprint = telemetry?.sprint
-        val automataCtx =
-            if (!sprint?.automataId.isNullOrBlank()) {
-                buildString {
-                    append("\n\n⟫ ${sprint?.automata?.takeIf { it.isNotBlank() } ?: "Automata"}")
-                    sprint?.task?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                    if (prompt != null) appendLine("[You]: $prompt")
+                    appendLine("[datawatch]: Input needed — tap Voice Reply to respond")
                 }
-            } else {
-                ""
+                SessionState.Running -> {
+                    val prompt = lastPrompt?.lines()?.firstOrNull { it.isNotBlank() }
+                        ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                    if (prompt != null) appendLine("[You]: $prompt")
+                    val status = currentStatus?.takeIf { it.isNotBlank() }
+                        ?: telemetry?.currentTask?.takeIf { it.isNotBlank() }?.let { "▶ $it" }
+                        ?: "Running…"
+                    append("[datawatch]: $status")
+                }
+                SessionState.Completed, SessionState.Killed, SessionState.Error -> {
+                    val prompt = lastPrompt?.lines()?.firstOrNull { it.isNotBlank() }
+                        ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                    if (prompt != null) appendLine("[You]: $prompt")
+                    val response = lastResponse?.takeIf { it.isNotBlank() }
+                        ?: "Session ${sessionState.name.lowercase()}"
+                    append("[datawatch]: $response")
+                }
+                else -> {
+                    val task = telemetry?.currentTask?.takeIf { it.isNotBlank() }
+                    val status = currentStatus?.takeIf { it.isNotBlank() }
+                    if (task != null) appendLine("▶ $task")
+                    if (status != null) append(status) else append(sessionState.name)
+                }
             }
-        return (main + automataCtx).take(BODY_CHAR_LIMIT)
+            // Sprint/automata context so the user knows which plan this session belongs to.
+            val sprint = telemetry?.sprint
+            if (!sprint?.automataId.isNullOrBlank()) {
+                append("\n\n⟫ ${sprint?.automata?.takeIf { it.isNotBlank() } ?: "Automata"}")
+                sprint?.task?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+            }
+        }
+        return body.trim().take(BODY_CHAR_LIMIT)
     }
 
     /** Returns the automata ID from session telemetry, or empty string if none. */
