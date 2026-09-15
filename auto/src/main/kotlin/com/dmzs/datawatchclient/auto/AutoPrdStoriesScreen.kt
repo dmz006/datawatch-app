@@ -90,12 +90,20 @@ public class AutoPrdStoriesScreen(
     private fun buildStoryDetailTemplate(story: PrdStoryDto): ListTemplate {
         val items = ItemList.Builder()
 
-        // Story overview row (not tappable — informational header)
+        // Story overview row (not tappable — conversation-format header)
+        // [You]: story title (what was requested) / [datawatch]: description + status
         val overviewBuilder = Row.Builder()
-            .setTitle("${statusMarker(story.status)} ${story.title.take(MAX_TITLE_CHARS)}")
-        story.description?.takeIf { it.isNotBlank() }
-            ?.let { overviewBuilder.addText(it.take(MAX_DESC_CHARS)) }
-        overviewBuilder.addText(buildStoryStatusLine(story))
+            .setTitle("[You]: ${story.title.take(MAX_TITLE_CHARS)}")
+        val dwResponse = buildString {
+            story.description?.takeIf { it.isNotBlank() }
+                ?.let { append(it.take(MAX_DESC_CHARS)) }
+            val statusLine = buildStoryStatusLine(story)
+            if (statusLine.isNotBlank()) {
+                if (isNotEmpty()) append("  ·  ")
+                append(statusLine)
+            }
+        }.ifBlank { buildStoryStatusLine(story) }
+        overviewBuilder.addText("[datawatch]: $dwResponse")
         items.addItem(overviewBuilder.build())
 
         // Task rows — each pushes AutoTaskDetailScreen (depth 5)
