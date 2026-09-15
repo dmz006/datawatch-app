@@ -553,47 +553,29 @@ Per-session and per-automaton "Watch" toggle. Default = OFF (opt-out). App-side 
 
 ---
 
-### Sprint 24 — alpha.31 Automata browse redesign + alert dock shrink (issue #117) ⏳ PLANNED
+### Sprint 24 — alpha.31 Automata browse redesign + alert dock shrink ✅ SHIPPED (v1.x BL arc)
 
-**Issue**: #117 | **Target version**: v0.94.0/172 | **Server ref**: alpha.31
+**Issue**: #117 | **Shipped in:** v1.x BL arc | **Server ref**: alpha.31
+**Plan:** `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Automata list: pin button per row (📌/📍); persist `pinned_automata: Set<id>` per profile | ⏳ | SharedPreferences or new DB table |
-| Automata list: sort order — pinned → state-rank (waiting/needs_review → blocked → running → planning → done) → last-activity desc | ⏳ | |
-| Automata list: inline `Open` / `Cancel` / `Approve` buttons per card | ⏳ | `Approve` highlighted amber when `needs_review`/`revisions_asked`/`waiting_input` |
-| Automata list: bigger cards (more padding, larger title, last-activity timestamp top-right) | ⏳ | |
-| `AlertDockOverlay`: shrink `width(260.dp)` → `widthIn(max = 260.dp)` on narrow screens | ⏳ | Use `min(260dp, screenWidth - 16dp)` |
-| Locale (12 keys): `automata_action_*` (open/pause/resume/cancel/approve/pin + _tip variants) (5 bundles) | ⏳ | From server `locales/*.json` |
-| Version bump 0.94.0/172 | ⏳ | |
+Code exists in `AutonomousScreen.kt`: `pinnedAutomataIds`, pin button (📌/📍), state-ranked sort,
+inline Open/Cancel/Approve actions, alert dock widthIn constraint. Locale keys present.
 
-**Tests required**:
-- [ ] `AutomataViewModelTest`: pinned automata sort before unpinned
-- [ ] `AutomataViewModelTest`: approve action only enabled when status allows
-- [ ] `AlertDockOverlayTest`: max-width respects screen width
+**Tests remaining** (tracked in completion plan):
+- [ ] `AutonomousViewModelTest`: pinned sort order, approve-action gate, cancel-action gate
 
 ---
 
-### Sprint 25 — alpha.32 Per-session Stats redesign (issue #118) ⏳ PLANNED
+### Sprint 25 — alpha.32 Per-session Stats redesign ✅ SHIPPED (v1.x BL arc)
 
-**Issue**: #118 | **Target version**: v0.95.0/173 | **Server ref**: alpha.32
+**Issue**: #118 | **Shipped in:** v1.x BL arc | **Server ref**: alpha.32
+**Plan:** `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
 
-Per-session Stats sub-tab: single card → sectioned cards (Host, Container, ComputeNode, LLM).
+`SessionStatsPanel.kt` (443 lines): HostCard (always), ContainerCard (conditional on containerInfo),
+ComputeNodeCard (conditional on computeNodeRef), LlmCard (conditional on llmRef). Locale keys present.
 
-| Task | Status | Notes |
-|------|--------|-------|
-| `SessionStatsPanel` or `SessionDetailScreen` Stats tab: sectioned cards layout | ⏳ | Host always; Container/ComputeNode/LLM conditional |
-| Host card: CPU + RSS rows, threads, FDs, net (already have data; just re-layout) | ⏳ | Sparklines: show numbers without trend line (no chart lib) |
-| Container card: render only when `env.container_id` present | ⏳ | `containerInfo` DTO field |
-| ComputeNode card: render when `sess.compute_node_ref` present; GPU stats; click→Compute panel | ⏳ | Already have `computeNode` from alpha.24 |
-| LLM card: render when `sess.llm_ref` present; backend family; click→LLM panel | ⏳ | `backendFamily` from alpha.27 |
-| Locale: `stats_card_*`, `stats_field_*`, `stats_open_*`, `stats_llm_more_soon` (5 bundles) | ⏳ | Pull from server `locales/*.json` |
-| Version bump 0.95.0/173 | ⏳ | |
-
-**Tests required**:
-- [ ] `SessionStatsPanelTest`: Container card hidden when `container_id` null
-- [ ] `SessionStatsPanelTest`: ComputeNode card hidden when `compute_node_ref` null
-- [ ] `SessionStatsPanelTest`: LLM card hidden when `llm_ref` null
+**Tests remaining** (tracked in completion plan):
+- [ ] `SessionStatsPanelTest`: conditional card visibility per null field
 
 ---
 
@@ -658,56 +640,58 @@ These server-side issues from `dmz006/datawatch` directly affect mobile client b
 
 ## Sprints 26–30 — v1.0.0 Update Arc
 
-### Sprint 26 — Identity + Algorithm endpoints + LLM UX (~v0.96.0/174)
+### Sprint 26 — Status 4th sub-tab + HookHealthPill + statusTabBadge ✅ SHIPPED (v1.x BL arc)
 
-**Blocker**: datawatch#40 (Identity), datawatch#41 (Algorithm)
+**Issue**: #119 | **Shipped in:** v1.x BL arc | **Server ref**: alpha.33
+**Plan:** `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
 
-- Wire IdentityCard to GET/POST /api/identity
-- Wire AlgorithmModeCard to GET/POST /api/algorithm/advance + abort
-- Add RestTransport methods: getIdentity(), setIdentity(), algorithmList(), algorithmAdvance(), algorithmAbort()
-- Add DTOs: IdentityDto, AlgorithmStateDto, AlgorithmHistoryDto
-- Fix LLM enable UX (#46): graceful warning for kinds with no adapter (not error modal)
-- Locale (5 bundles): identity_*, algorithm_*, llm_enable_no_adapter_warning
-- Tests: Dto round-trips, RestTransport methods, IdentityCardViewModelTest, AlgorithmModeCardViewModelTest
-- Version: 0.96.0/174
+`SessionStatusPanel.kt` (461 lines) + `SessionStatusViewModel.kt`: 4th sub-tab in session detail,
+`statusTabBadge` (🟢/🟠/⚪ by board.state), `HookHealthPill` (alive/stale/missing), 5s polling
+while tab active, polling stops on lifecycle destroy. Locale keys present.
 
-### Sprint 27 — Evals + Council endpoints (~v0.97.0/175)
+**Tests remaining** (tracked in completion plan):
+- [ ] `SessionStatusViewModelTest`: statusTabBadge states, HookHealthPill labels, polling lifecycle
 
-**Blocker**: datawatch#42 (Evals), datawatch#43 (Council)
+### Sprint 27 — Ollama marketplace dialog + Alerts Active/Historical/System tabs ✅ SHIPPED (v1.x BL arc)
 
-- Wire EvalsCard to GET /api/evals
-- Wire CouncilCard to GET /api/council
-- Add RestTransport: evalsList(), evalsGetRun(), councilList()
-- Add DTOs: EvalRunDto, CouncilSessionDto
-- Locale (5 bundles): evals_*, council_*
-- Tests: Dto round-trips, RestTransport methods, EvalsCardViewModelTest, CouncilCardViewModelTest
-- Version: 0.97.0/175
+**Issue**: #120 | **Shipped in:** v1.x BL arc | **Server ref**: alpha.34
+**Plan:** `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
 
-### Sprint 28 — UnifiedPush Tier 1 micro-distributor (~v0.98.0/176)
+`OllamaMarketplaceDialog` in `ComputeNodesCard.kt`: catalog search (case-insensitive), installed state
+check (✓ tag row), pull progress (task ID match). `AlertsScreen.kt`: Active/Historical/System tabs with
+independent chip+sort+search filter state per tab. Locale keys present.
 
-**Blocker**: datawatch#39 (UnifiedPush provider)
+**Tests remaining** (tracked in completion plan):
+- [ ] `OllamaMarketplaceTest`: search filter, installed state, pull progress
+- [ ] `AlertsViewModelTest` (extend): Active/Historical/System tab filter independence
 
-- Implement UnifiedPushMicroDistributor: /.well-known/unifiedpush + POST /api/push/register
-- Wire into UnifiedPushSseService: switch from polling to push receipt
-- Doze-aware keepalive for Tier 1 delivery (no high battery drain)
-- Tier 2 fallback: Signal comm relay (already wired)
-- Tier 3 fallback: Doze-aware NtfyFallbackService (new pause logic)
-- UI: Settings > Comms > Push section showing current tier (1/2/3) + endpoint status
-- Locale (5 bundles): push_tier_*, push_status_*, push_endpoint_*, push_register_*
-- Tests: UnifiedPushRegistrationTest, PushTierFallbackTest, NtfyFallbackDozeTest
-- Version: 0.98.0/176
+### Sprint 28 — UnifiedPush Tier 1 micro-distributor ⏳ BLOCKED (datawatch#39)
 
-### Sprint 29 — Test plan execution + debt payoff (~v0.99.0/177)
+**Target version:** v2.0.0 (minor — new transport surface)
+**Plan:** `docs/plans/2026-09-14-sprint28-unifiedpush.md`
 
-**Goal**: Execute T15–T18 of new test plan; write all 18 deferred unit tests (Sprints 17–22 backlog).
+Transport stubs exist (`TransportClient.registerPush`, `RestTransport` POST /api/push/register,
+`PushRegistrationDto`). `PushNotificationsCard.kt` shows WebPush only — UnifiedPush receiver
+and tier manager NOT yet implemented.
 
-- Execute T15 (new endpoints) — requires Sprints 26–27 complete + server endpoints shipped
-- Execute T16 (UnifiedPush) — requires Sprint 28 complete + datawatch#39 shipped
-- Execute T18 (test debt) — write TS-326–TS-343: 18 unit tests
-- Retry T13 decompose (TS-232–241) when datawatch#48 fixed
-- Execute T17 parity audit including LLM UX (#46), locale (#47), token auth
-- Update cookbook.md with final test results
-- Version: 0.99.0/177
+**Remaining work** (tracked in Sprint 28 plan):
+- [ ] Phase 1: `UnifiedPushReceiver.kt`, `PushTierManager.kt`, AndroidManifest.xml, dependency
+- [ ] Phase 2: `PushNotificationsCard` tier display + 8 locale keys
+- [ ] Phase 3: Server integration (BLOCKED on datawatch#39)
+- [ ] Phase 4: Unit tests (UnifiedPushReceiverTest, PushTierManagerTest, RestTransportTest)
+- [ ] Phase 5: docs/transports.md UnifiedPush section
+
+### Sprint 29 — Collapsible LLM section + State filter buttons in sessions list ✅ SHIPPED (v1.x BL arc)
+
+**Issue**: #122 | **Shipped in:** v1.x BL arc | **Server ref**: alpha.36
+**Plan:** `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
+
+`SessionsScreen.kt`: `llmExpanded` toggle (▸ collapse/expand backend-family badge row),
+`llm_filter_btn_tip` locale key, LLM filter button label shows count of active backend filters,
+State filter highlights on non-ALL selection. Locale keys present.
+
+**Tests remaining** (tracked in completion plan):
+- [ ] `SessionsViewModelTest`: llmExpanded toggle, LLM filter label count, State filter highlight
 
 ### Sprint 30 — Dashboard hooks + v1.0.0 release (~v1.0.0/178)
 
