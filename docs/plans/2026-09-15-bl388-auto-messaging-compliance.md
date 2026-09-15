@@ -256,37 +256,41 @@ Option B: embed navigation inside the existing `AutoStoryDetailScreen` ActionStr
 **Test addition**: `AutoTaskDetailBodyTest` — test conversation-format body for each task status
 (in_progress, complete, failed with error).
 
-### Phase 6 — NotificationPoster: MessagingStyle evaluation [Planned]
+### Phase 6 — NotificationPoster: MessagingStyle (Option B — decided 2026-09-15) [Planned]
 
-**Current state**: `BigTextStyle` with the following documented reason (line 74-80 of `NotificationPoster.kt`):
+**Decision**: Switch `BigTextStyle` → `MessagingStyle`, keep the existing phone-side `RemoteInput`
+reply action intact.
 
-> MessagingStyle intercepts the tap to open the inline RemoteInput panel on many Android OEM
-> skins, preventing the app from opening. The car head unit gets its full messaging experience
-> from CarAppExtender regardless.
+**Rationale**: The car experience is unaffected — `CarAppExtender` fully overrides the base
+notification style on the head unit. On Samsung/OEM skins, body-tap may open the inline reply
+panel rather than launching the app; this is acceptable and semantically correct for a messaging
+notification. The inline reply routes to `ReplyBroadcastReceiver` the same as today.
 
-**Evaluation steps**:
+**Implementation** — in `NotificationPoster.post()`, replace the `InputNeeded` style lines:
 
-1. Test whether `MessagingStyle` still intercepts body tap on current Android 13/14/15 OEM skins
-   (Samsung, Pixel). If tap behavior is now consistent (opens app, not inline-reply), switch.
-2. If body-tap is still intercepted: keep `BigTextStyle` but add `CATEGORY_MESSAGE` and
-   evaluate whether adding `.setConversationTitle(sessionTitle)` to MessagingStyle would
-   satisfy the Play Store checker while still routing taps correctly.
-3. Fallback: if the Play Store warning is ONLY about the Auto category + VoiceRecordingScreen
-   (and not the phone notification style), `BigTextStyle` may be fine as-is once the category
-   change and Phase 2-5 are in place.
+```kotlin
+// Replace:
+builder.setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
+builder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
 
-**Decision gate**: run the phases 1-5 release first (v1.16.0), wait for Play Console feedback.
-If "Message functionality" warning clears, Phase 6 is not needed. If it persists, implement
-full `MessagingStyle`.
+// With:
+val selfPerson = androidx.core.app.Person.Builder().setName("Me").setImportant(true).build()
+val senderPerson = androidx.core.app.Person.Builder().setName(event.title).build()
+builder.setStyle(
+    NotificationCompat.MessagingStyle(selfPerson)
+        .setConversationTitle(event.title)
+        .setGroupConversation(false)
+        .addMessage(event.body, System.currentTimeMillis(), senderPerson)
+)
+builder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
+```
 
-**If MessagingStyle is implemented**:
-- `NotificationPoster.buildInputNeededNotification()`:
-  - Create a `Person` object: `Person.Builder().setName(sessionTitle).build()`
-  - Build `MessagingStyle(person)` with a single `Message(event.body, System.currentTimeMillis(), person)`
-  - Add `setGroupConversation(false)` (single session = single conversation, not a group chat)
-  - Keep `addAction(buildPlayLongAction)`, `addAction(buildReplyAction)`, `extend(buildCarAppExtender)`
-  - Verify tap behavior on Samsung Galaxy S24 (the problematic OEM) — if it still intercepts,
-    add `android:windowSoftInputMode` handling or accept the trade-off.
+All three actions remain unchanged: `buildPlayLongAction`, `buildReplyAction` (with `RemoteInput`),
+`extend(buildCarAppExtender)`.
+
+**Comment to replace** at line 74-80: remove the "not MessagingStyle because OEM intercepts tap"
+rationale and replace with: "MessagingStyle for OS categorisation; on Samsung/OEM skins body-tap
+opens inline reply panel (correct messaging UX). Car head unit unaffected — CarAppExtender overrides."
 
 ### Phase 7 — Category switch + manifest [Planned]
 
@@ -323,23 +327,19 @@ full `MessagingStyle`.
 
 ---
 
-## Design Decisions Requiring Explicit Approval
+## Design Decisions (all locked 2026-09-15)
 
-Before implementing, confirm with user:
+1. **Spec update via voice** — ✅ IN SCOPE for v1.16.0. Verify `prdAction("update", body)`
+   server API before coding; if endpoint absent show CarToast "Update not supported" and skip.
 
-1. **Spec update via voice** — Phase 3 optional "Update" action on PRD overview. In scope for
-   v1.16.0 or deferred? (Requires transport to support `prdAction("update", body)` — verify server
-   API first.)
+2. **Task list screen** — ✅ Option A: new `AutoStoryTasksListScreen` dedicated screen.
 
-2. **Task list screen** — Phase 5 Option A (new `AutoStoryTasksListScreen`) vs Option B (in-place
-   Next/Prev navigation). Default: Option A.
+3. **MessagingStyle for phone notifications** — ✅ Option B: switch to `MessagingStyle`, keep
+   `RemoteInput` inline reply. Body-tap may open inline reply panel on Samsung/OEM — accepted
+   as correct messaging UX. Car unaffected.
 
-3. **MessagingStyle for phone notifications** — Phase 6 defer-and-evaluate vs implement upfront.
-   Default: defer, evaluate after v1.16.0 Play Console feedback.
-
-4. **ConversationItem / MessagingTemplate** — if Car App Library version supports it, migrate
-   `AutoSessionDetailScreen` to use proper `ConversationItem` rows vs keep `MessageTemplate` body
-   with structured text. Default: structured `MessageTemplate` body (safe, widely supported).
+4. **ConversationItem / MessagingTemplate** — `MessageTemplate` with structured conversation-format
+   body text. No `ConversationItem` migration (version gate risk; plain text is widely supported).
 
 ---
 
@@ -359,7 +359,7 @@ Before implementing, confirm with user:
 | `AutoStoryDetailScreen` | `AutoStoryDetailBodyTest` | Story conversation format |
 | `AutoTaskDetailScreen` | — | `AutoTaskDetailBodyTest` (new file) |
 | `AutoStoryTasksListScreen` | — | New unit test |
-| `NotificationPoster` | — | MessagingStyle test (Phase 6, conditional) |
+| `NotificationPoster` | — | `MessagingStyleTest` — verify `MessagingStyle` body, `Person` names, single `Message` with correct text/timestamp/sender (Phase 6) |
 
 ---
 
