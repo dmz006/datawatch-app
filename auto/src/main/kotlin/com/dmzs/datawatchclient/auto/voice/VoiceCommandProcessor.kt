@@ -28,6 +28,7 @@ public enum class VoiceCommand {
     APPROVE_PLAN,   // approve the first PRD awaiting review
     STOP_PLAN,      // cancel/stop the first running PRD
     READ_PLAN,      // read out the status of the first active PRD
+    PRD_UPDATE,     // update spec of the focused PRD via voice transcript
 
     UNKNOWN,
 }
@@ -64,6 +65,18 @@ public fun parseVoiceCommandFull(input: String): ParsedVoiceCommand {
                 lower.contains("my plan") || lower.contains("the plan")
             ) ->
             ParsedVoiceCommand(VoiceCommand.STOP_PLAN, serverName)
+
+        (lower.contains("update") || lower.contains("change spec") || lower.contains("revise spec") ||
+            lower.contains("modify spec") || lower.contains("update spec") ||
+            lower.contains("update plan spec") || lower.contains("change plan spec")) && (
+            lower.contains("plan") || lower.contains("spec") || lower.contains("automata") ||
+                lower.contains("automaton")
+            ) ->
+            ParsedVoiceCommand(
+                VoiceCommand.PRD_UPDATE,
+                serverName,
+                extractTopic(lower, "update", "change", "revise", "modify"),
+            )
 
         (lower.contains("read") || lower.contains("what is") || lower.contains("what's") ||
             lower.contains("tell me about") || lower.contains("status of my") ||

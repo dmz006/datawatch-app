@@ -50,6 +50,7 @@ public class VoiceRecordingScreen(
     carContext: CarContext,
     private val sessionId: String,
     private val sessionTitle: String,
+    private val prdId: String? = null,
 ) : Screen(carContext) {
     private sealed class State {
         object Listening : State()
@@ -198,8 +199,9 @@ public class VoiceRecordingScreen(
             CarIcon.Builder(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
+        val screenTitle = if (prdId != null) "$sessionTitle · Update Spec" else "$sessionTitle · Voice"
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
-            .setTitle("$sessionTitle · Voice")
+            .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
             .setActionStrip(
                 ActionStrip.Builder()
@@ -362,21 +364,26 @@ public class VoiceRecordingScreen(
                         CarToast.makeText(carContext, "No active server", CarToast.LENGTH_SHORT).show()
                         return@runCatching
                     }
-                AutoServiceLocator.transportFor(profile)
-                    .replyToSession(sessionId, "$transcript\r")
-                    .fold(
-                        onSuccess = {
-                            CarToast.makeText(carContext, "Sent", CarToast.LENGTH_SHORT).show()
-                            screenManager.pop()
-                        },
-                        onFailure = { err ->
-                            CarToast.makeText(
-                                carContext,
-                                "Send failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
-                                CarToast.LENGTH_LONG,
-                            ).show()
-                        },
-                    )
+                val transport = AutoServiceLocator.transportFor(profile)
+                val result = if (prdId != null) {
+                    transport.patchPrd(prdId, spec = transcript)
+                } else {
+                    transport.replyToSession(sessionId, "$transcript\r")
+                }
+                result.fold(
+                    onSuccess = {
+                        val msg = if (prdId != null) "Spec updated" else "Sent"
+                        CarToast.makeText(carContext, msg, CarToast.LENGTH_SHORT).show()
+                        screenManager.pop()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Send failed: ${err.message?.take(ERROR_MSG_CHARS) ?: "unknown"}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
             }
         }
     }

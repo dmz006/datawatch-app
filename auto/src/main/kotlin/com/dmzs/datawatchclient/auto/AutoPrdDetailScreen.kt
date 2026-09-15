@@ -223,20 +223,35 @@ public class AutoPrdDetailScreen(
                 }
             }
 
+            val stripBuilder = ActionStrip.Builder()
             if (currentPrd.stories.isNotEmpty()) {
-                templateBuilder.setActionStrip(
-                    ActionStrip.Builder()
-                        .addAction(
-                            Action.Builder()
-                                .setTitle("Stories")
-                                .setOnClickListener {
-                                    screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd))
-                                }
-                                .build(),
-                        )
+                stripBuilder.addAction(
+                    Action.Builder()
+                        .setTitle("Stories")
+                        .setOnClickListener {
+                            screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd))
+                        }
                         .build(),
                 )
             }
+            // "Update" lets the driver dictate a spec change via voice — PRD_UPDATE flow.
+            stripBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Update")
+                    .setOnClickListener {
+                        CarToast.makeText(carContext, "Speak spec update…", CarToast.LENGTH_SHORT).show()
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = prdName,
+                                prdId = prdId,
+                            ),
+                        )
+                    }
+                    .build(),
+            )
+            templateBuilder.setActionStrip(stripBuilder.build())
         }
 
         return templateBuilder.build()
@@ -264,8 +279,12 @@ public class AutoPrdDetailScreen(
                     it.status.lowercase() !in DONE_STATUSES && it.status != "in_progress" && it.status != "awaiting_approval" && it.status != "rejected"
                 }
 
-                // Status line
-                appendLine("Status: ${prd.status.ifBlank { "unknown" }}")
+                // Conversation header: spec as [You] (what was requested), status as [datawatch]
+                prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
+                    appendLine("[You]: ${spec.take(MAX_SPEC_CHARS)}${if (spec.length > MAX_SPEC_CHARS) "…" else ""}")
+                }
+                appendLine("[datawatch]: ${prd.status.ifBlank { "unknown" }}")
+                appendLine()
 
                 // Progress arc
                 if (totalStories > 0) {
@@ -295,13 +314,6 @@ public class AutoPrdDetailScreen(
 
                 // Most recent decision
                 prd.decisions?.lastOrNull()?.let { appendDecision(it) }
-
-                // Spec snippet
-                prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                    appendLine("Spec:")
-                    append(spec.take(MAX_SPEC_CHARS))
-                    if (spec.length > MAX_SPEC_CHARS) append("…")
-                }
             }.trimEnd()
 
         private fun StringBuilder.appendActiveStory(story: PrdStoryDto) {
