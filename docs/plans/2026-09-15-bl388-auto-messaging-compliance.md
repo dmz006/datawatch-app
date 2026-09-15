@@ -101,9 +101,18 @@ Actions at every level where Auto policy permits:
    kept. Samsung/OEM body-tap opens inline reply panel — accepted as correct messaging UX.
    Car head unit unaffected (CarAppExtender overrides base style entirely).
 
-4. **ConversationItem / MessagingTemplate** — ❌ Not used. Keep `MessageTemplate` with
-   structured `[You]`/`[datawatch]` body text. Version-gate risk not worth it;
-   plain text is widely supported across all head units.
+4. **ConversationItem** — ❌ Not used anywhere. Reason corrected 2026-09-15: `ConversationItem`
+   and `CarMessage` ARE present in Car App Library 1.7.0 (already our dependency — no version
+   gate). However, `ConversationItem` is wrong for this app's UX:
+   - It renders as a message-inbox row (last message preview, sender name, unread badge)
+   - `AutoSessionListScreen` is a **status monitor**, not a message inbox — it needs colored
+     status dots, state text, urgency sort, and progress bars
+   - `ItemList` cannot mix `Row` and `ConversationItem` — switching would drop all status
+     signals from the list
+   - The Play Store compliance requirement is met by showing conversation context on the
+     **detail** screen before the reply flow, not by using `ConversationItem` on the list
+   Keep `Row`-based `ListTemplate` for all list screens. Keep `MessageTemplate` with structured
+   `[You]`/`[datawatch]` body text for all detail screens.
 
 ---
 
