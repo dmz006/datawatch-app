@@ -78,7 +78,7 @@ public class UnifiedPushSseService : Service() {
                 prefs.getString(key, null) ?: UUID.randomUUID().toString().also {
                     prefs.edit().putString(key, it).apply()
                 }
-            // Register this device as a push receiver — fire-and-forget.
+            // Register this device as a push receiver.
             runCatching {
                 transport.registerPush(
                     PushRegistrationDto(
@@ -86,7 +86,8 @@ public class UnifiedPushSseService : Service() {
                         clientId = clientId,
                     ),
                 )
-            }
+            }.onSuccess { PushTierManager.notifyRegistered() }
+                .onFailure { PushTierManager.notifyFailed() }
             // Subscribe and collect events indefinitely.
             val job =
                 scope.launch {

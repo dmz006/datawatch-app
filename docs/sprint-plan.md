@@ -624,13 +624,13 @@ These server-side issues from `dmz006/datawatch` directly affect mobile client b
 
 | Issue | Title | Mobile Impact | Mobile Sprint | Status |
 |-------|-------|---------------|---------------|--------|
-| datawatch#40 | GET/POST /api/identity | IdentityCard.kt stub until endpoint exists | Sprint 26 | ⏳ Waiting on server |
-| datawatch#41 | GET/POST /api/algorithm | AlgorithmModeCard.kt stub until endpoint exists | Sprint 26 | ⏳ Waiting on server |
-| datawatch#42 | GET /api/evals | EvalsCard.kt stub until endpoint exists | Sprint 27 | ⏳ Waiting on server |
-| datawatch#43 | GET /api/council | CouncilCard.kt stub until endpoint exists | Sprint 27 | ⏳ Waiting on server |
-| datawatch#39 | UnifiedPush server-side provider + ntfy SSE | Tier 1 push registration/delivery path blocked | Sprint 28 | ⏳ Waiting on server |
-| datawatch#48 | Decompose timeout api/ask ~300s | Blocks T13 autonomous testing (TS-232–241) | Sprint 29 testing | ⏳ Open — awaiting fix |
-| datawatch#46 | LLM enable fails for auto-created entries | Mobile shows error modal on enable; should be graceful warning | Sprint 26 | ⏳ Needs UX fix |
+| datawatch#40 | GET/POST /api/identity | IdentityCard.kt stub until endpoint exists | Sprint 26 | ✅ Server shipped — mobile card fully implemented |
+| datawatch#41 | GET/POST /api/algorithm | AlgorithmModeCard.kt stub until endpoint exists | Sprint 26 | ✅ Server shipped — mobile card fully implemented |
+| datawatch#42 | GET /api/evals | EvalsCard.kt stub until endpoint exists | Sprint 27 | ✅ Server shipped — mobile card fully implemented |
+| datawatch#43 | GET /api/council | CouncilCard.kt stub until endpoint exists | Sprint 27 | ✅ Server shipped — mobile card fully implemented |
+| datawatch#39 | UnifiedPush server-side provider + ntfy SSE | Tier 1 push registration/delivery path | Sprint 28 | ✅ Server shipped — `PushTierManager` + tier display shipped v1.10.0 |
+| datawatch#48 | Decompose timeout api/ask ~300s | Blocks T13 autonomous testing (TS-232–241) | Sprint 29 testing | ✅ Server shipped |
+| datawatch#46 | LLM enable fails for auto-created entries | Mobile shows error modal on enable; should be graceful warning | Sprint 26 | ✅ Fixed v1.10.0 — amber warning for unsupported kinds |
 | datawatch#47 | llm_in_use_collapsed locale template vars | Server-side fix applied; mobile not affected | T17 verify | ✅ Server fixed |
 | datawatch#38 | DUPLICATE of #39 — close | — | — | 🔒 **Close as duplicate** |
 | datawatch#32 | PWA i18n (DE/ES/FR/JA) | No mobile action — mobile ships 5 locales | T17 check | 📋 Monitor |
@@ -665,21 +665,17 @@ independent chip+sort+search filter state per tab. Locale keys present.
 - [ ] `OllamaMarketplaceTest`: search filter, installed state, pull progress
 - [ ] `AlertsViewModelTest` (extend): Active/Historical/System tab filter independence
 
-### Sprint 28 — UnifiedPush Tier 1 micro-distributor ⏳ BLOCKED (datawatch#39)
+### Sprint 28 — UnifiedPush SSE tier display ✅ SHIPPED (v1.10.0)
 
-**Target version:** v2.0.0 (minor — new transport surface)
-**Plan:** `docs/plans/2026-09-14-sprint28-unifiedpush.md`
+**Shipped version:** v1.10.0 | **Plan:** `docs/plans/2026-09-14-sprint28-unifiedpush.md`
 
-Transport stubs exist (`TransportClient.registerPush`, `RestTransport` POST /api/push/register,
-`PushRegistrationDto`). `PushNotificationsCard.kt` shows WebPush only — UnifiedPush receiver
-and tier manager NOT yet implemented.
+`PushTierManager` singleton (StateFlow&lt;AlertTier&gt;) updated by `UnifiedPushSseService.reconcile()` on
+successful `registerPush` call (datawatch#39 server endpoints now live). `AlertTierDetector.isUnifiedPushActive()`
+wired to PushTierManager. `PushNotificationsCard` shows live tier badge: 🟢 UnifiedPush SSE / 🟠 Comm channel /
+muted Background SSE. 4 locale keys in all 5 bundles. 8 unit tests.
 
-**Remaining work** (tracked in Sprint 28 plan):
-- [ ] Phase 1: `UnifiedPushReceiver.kt`, `PushTierManager.kt`, AndroidManifest.xml, dependency
-- [ ] Phase 2: `PushNotificationsCard` tier display + 8 locale keys
-- [ ] Phase 3: Server integration (BLOCKED on datawatch#39)
-- [ ] Phase 4: Unit tests (UnifiedPushReceiverTest, PushTierManagerTest, RestTransportTest)
-- [ ] Phase 5: docs/transports.md UnifiedPush section
+**Also shipped in v1.10.0:**
+- datawatch#46: LLM enable unsupported-kind → amber warning instead of red error (`LlmRegistryCard`)
 
 ### Sprint 29 — Collapsible LLM section + State filter buttons in sessions list ✅ SHIPPED (v1.x BL arc)
 

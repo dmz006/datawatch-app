@@ -8,6 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-09-14
+
+### Added
+- **Sprint 28 — UnifiedPush SSE tier display**: `PushTierManager` singleton (`StateFlow<AlertTier>`) updated by `UnifiedPushSseService` on registration success/failure (datawatch#39 server endpoints now live). `AlertTierDetector.isUnifiedPushActive()` wired to `PushTierManager` — previously a hardcoded stub. `PushNotificationsCard` shows live delivery tier badge: green (UnifiedPush SSE), amber (comm channel), muted (background SSE fallback). Locale keys added to all 5 bundles (EN/DE/ES/FR/JA): `push_tier_header`, `push_tier_1_label`, `push_tier_2_label`, `push_tier_3_label`.
+
+### Fixed
+- **LLM enable graceful warning** (datawatch#46): toggling enable on auto-created LLM entries with unsupported kinds (aider, gemini, goose, shell) now shows an amber warning banner instead of a red error banner. Network/auth failures still show red error.
+
+### Tests
+- **`PushTierManagerTest`** — 5 tests: initial Background, notifyRegistered → UnifiedPush, notifyFailed resets, double-register stays, notifyFailed when Background is no-op
+- **`AlertTierDetectorLogicTest`** — 3 tests: isUnifiedPushActive mirrors PushTierManager state correctly
+- **`LlmEnableWarningTest`** — 6 tests: unsupported/auto-created/kind → warning routing; network/auth/empty → error routing
+
 ## [1.9.4] — 2026-09-14
 
 ### Tests

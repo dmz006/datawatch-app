@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,8 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.push.AlertTier
+import com.dmzs.datawatchclient.push.PushTierManager
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.WebPushRegistrationDto
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -44,6 +49,7 @@ internal fun PushNotificationsCard() {
     var endpointInput by remember { mutableStateOf("") }
     var registering by remember { mutableStateOf(false) }
     var testBusy by remember { mutableStateOf(false) }
+    val deliveryTier by PushTierManager.tier.collectAsState()
 
     suspend fun transport(): TransportClient? {
         val id = ServiceLocator.activeServerStore.get()
@@ -73,7 +79,44 @@ internal fun PushNotificationsCard() {
             }
         }
 
-        // Status badge
+        // Delivery tier row
+        val (tierLabel, tierColor, tierBg) = when (deliveryTier) {
+            AlertTier.UnifiedPush -> Triple(
+                stringResource(R.string.push_tier_1_label),
+                Color(0xFF10B981),
+                Color(0xFF10B981).copy(alpha = 0.12f),
+            )
+            AlertTier.CommChannel -> Triple(
+                stringResource(R.string.push_tier_2_label),
+                Color(0xFFF59E0B),
+                Color(0xFFF59E0B).copy(alpha = 0.12f),
+            )
+            AlertTier.Background -> Triple(
+                stringResource(R.string.push_tier_3_label),
+                MaterialTheme.colorScheme.onSurfaceVariant,
+                MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = tierBg,
+            modifier = Modifier.padding(bottom = 6.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    stringResource(R.string.push_tier_header),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(tierLabel, style = MaterialTheme.typography.labelSmall, color = tierColor)
+            }
+        }
+
+        // WebPush endpoint status badge
         val active = registrations.isNotEmpty()
         Surface(
             shape = MaterialTheme.shapes.small,

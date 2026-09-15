@@ -56,7 +56,7 @@ Release batches:
 
 **Status as of v1.9.4 (2026-09-14):**
 - Sprints 24, 25, 26, 27, 29 — code **shipped** during v1.x BL arc; unit tests completed in v1.9.4
-- Sprint 28 (UnifiedPush) — **blocked on datawatch#39**; transport stubs exist; receiver/tier manager not yet implemented
+- Sprint 28 (UnifiedPush SSE tier display) — **shipped v1.10.0**; `PushTierManager` + `AlertTierDetector` wired; `PushNotificationsCard` shows live tier badge; datawatch#39 server endpoints live
 - Completion plan: `docs/plans/2026-09-14-sprints-24-27-29-completion.md`
 - Sprint 28 plan: `docs/plans/2026-09-14-sprint28-unifiedpush.md`
 

@@ -160,6 +160,10 @@ unit tests alone.
 | Phone | UnifiedPush SSE subscription + reconnect backoff | No | No | 28 | Manual — disconnect server; verify 1s→2s→…→30s reconnect | |
 | Phone | Push registration (`POST /api/push/register`) on service start | No | No | 28 | Manual — check logcat for registration on app start | |
 | Phone | Priority ≥ 4 event → `PRIORITY_HIGH` heads-up notification + deep-link | No | No | 28 | Manual — trigger waiting_input event | |
+| Phone | `PushTierManager` — tier StateFlow: Background→UnifiedPush on register, reset on fail | Yes | No | 28 | `PushTierManagerTest` — 5 tests | S28 |
+| Phone | `AlertTierDetector.isUnifiedPushActive()` wired to `PushTierManager` | Yes | No | 28 | `AlertTierDetectorLogicTest` — 3 tests | S28 |
+| Phone | `PushNotificationsCard` delivery tier badge (green/amber/muted) | No | No | 28 | Manual — Settings → Push Notifications; verify tier badge color matches active tier | S28 |
+| Phone | LLM enable unsupported-kind → amber warning (not red error) | Yes | No | 26 | `LlmEnableWarningTest` — 6 tests; manual: toggle aider/gemini/goose/shell LLM | datawatch#46 |
 | Phone | `SessionsViewModel.backendCounts` computed property | Yes | No | 29 | `SessionsViewModelTest` — 6 tests: empty when no backend, count per name, omit null/blank, sorted alphabetically, N backends → N+1 chip label | S29 |
 | Phone | `SessionsViewModel.stateFilter` default + filter enum | Yes | No | 29 | `SessionsViewModelTest` — stateFilter defaults ALL, backendFilter defaults null, showHistory defaults false, non-ALL differs from ALL | S29 |
 | Phone | `LlmConfigCard` per-node model pairs display (up to 3 before collapse) | No | No | 30 | Manual — LLM row with models[] configured | |

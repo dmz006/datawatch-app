@@ -99,6 +99,7 @@ public fun LlmRegistryCard() {
     var computeNodes by remember { mutableStateOf<List<ComputeNodeDto>>(emptyList()) }
     var migrationStatus by remember { mutableStateOf<MigrationStatusDto?>(null) }
     var banner by remember { mutableStateOf<String?>(null) }
+    var warningBanner by remember { mutableStateOf<String?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedLlm by remember { mutableStateOf<LlmRegistryEntryDto?>(null) }
     var llmToDelete by remember { mutableStateOf<LlmRegistryEntryDto?>(null) }
@@ -182,6 +183,14 @@ public fun LlmRegistryCard() {
                 color = MaterialTheme.colorScheme.error,
             )
         }
+        warningBanner?.let {
+            Text(
+                it,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFF59E0B),
+            )
+        }
         if (loading) {
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.Center) {
                 CircularProgressIndicator()
@@ -202,11 +211,21 @@ public fun LlmRegistryCard() {
                         scope.launch {
                             resolveActiveTransport()?.enableLlm(llm.name, enabled)?.fold(
                                 onSuccess = {
+                                    warningBanner = null
                                     refreshTick++
                                     onDone()
                                 },
-                                onFailure = {
-                                    banner = "Toggle failed — ${it.message ?: it::class.simpleName}"
+                                onFailure = { err ->
+                                    val msg = err.message ?: err::class.simpleName ?: ""
+                                    if (msg.contains("unsupported", ignoreCase = true) ||
+                                        msg.contains("auto-created", ignoreCase = true) ||
+                                        msg.contains("kind", ignoreCase = true)
+                                    ) {
+                                        warningBanner = "This LLM type doesn't support enable/disable — it remains available for session selection"
+                                        banner = null
+                                    } else {
+                                        banner = "Toggle failed — $msg"
+                                    }
                                     onDone()
                                 },
                             )
