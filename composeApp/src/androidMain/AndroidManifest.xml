@@ -33,6 +33,10 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
+            <!-- BL34: App Actions — SEND_MESSAGE BII for "Ok Google, send [cmd] to datawatch" -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -50,6 +54,18 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:scheme="dwclient" android:host="session"/>
+            </intent-filter>
+        </activity>
+
+        <!-- BL34: VoiceCommandActivity — receives VOICE_SEND intent from App Actions shortcut -->
+        <activity
+            android:name=".voice.VoiceCommandActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.DatawatchClient">
+            <intent-filter>
+                <action android:name="com.dmzs.datawatchclient.action.VOICE_SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
 
