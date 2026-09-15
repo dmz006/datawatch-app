@@ -8,6 +8,12 @@ on:
 permissions:
   contents: write
 
+# Serialize Play Store uploads — concurrent edits cause "Edit deleted/expired" failures.
+# cancel-in-progress: false so a queued older tag doesn't kill a newer one mid-flight.
+concurrency:
+  group: play-store-release
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
