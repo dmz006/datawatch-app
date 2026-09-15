@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.14.2] — 2026-09-15
+
+### Fixed
+- **SQLCipher 16KB page alignment**: Upgraded `net.zetetic:sqlcipher-android` from `4.5.6` to `4.19.0`. The 4.5.6 native `.so` files were not 16KB ELF-segment-aligned, causing Play Store to report 0 supported devices for all form factors when targeting Android 15/16 (SDK 36). v4.19.0 ships 16KB-aligned libraries.
+
 ## [1.14.1] — 2026-09-15
 
 ### Fixed
