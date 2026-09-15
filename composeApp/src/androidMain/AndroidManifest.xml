@@ -33,10 +33,8 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
-            <!-- BL34: App Actions — SEND_MESSAGE BII for "Ok Google, send [cmd] to datawatch" -->
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts"/>
+            <!-- BL34: App Actions shortcuts.xml disabled pending Actions on Google ToS acceptance.
+                 Re-enable by restoring android.app.shortcuts meta-data pointing to @xml/shortcuts. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

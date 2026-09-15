@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.15.0] — 2026-09-15
+
+### Changed
+- **App Actions disabled pending ToS**: Removed `android.app.shortcuts` meta-data from `AndroidManifest.xml` so the AAB no longer contains an "actions resource". This unblocks Play Store publishing without requiring Actions on Google ToS acceptance. The `VoiceCommandActivity` and `shortcuts.xml` remain in the codebase — re-enable by restoring the `<meta-data>` line once ToS is accepted in the Actions Console or Play Console.
+
 ## [1.14.2] — 2026-09-15
 
 ### Fixed
