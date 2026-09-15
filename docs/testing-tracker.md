@@ -182,3 +182,7 @@ unit tests alone.
 | Phone+Auto | Waiting-input notification (phone + Auto voice reply) | No | No | 33 | Manual — transition session to Waiting; verify heads-up + Auto "Voice Reply" action launches VoiceRecordingScreen | composeApp+auto |
 | Shared | `RestTransport.uploadImageAttachment` — multipart upload + path extraction | No | No | 34 | `RestTransportTest` — mock `/api/files` POST returning `{"path":"/abs/path"}` | Closes #158; `deleteFile` also needs mock DELETE test |
 | Phone | `ReplyComposer` image attach — gallery pick → upload → thumbnail chip → send `[image:<path>]` | No | No | 34 | Manual — open session detail, tap 📷, pick image, verify chip appears + send appends `[image:…]` suffix | Cleanup `deleteFile` on `DisposableEffect` also needs verification |
+| Phone | Session row bell icon (🔔/🔕) — toggles watch; hidden in reorder/select mode | No | No | 23 | Manual — session list, tap bell, verify badge updates | Sprint 23 |
+| Phone | `SessionDetailScreen` TopAppBar watch toggle — reflects `watchedIds` StateFlow | No | No | 23 | Manual — open session detail, tap bell, verify state syncs with list | Sprint 23 |
+| Phone | `AutonomousScreen` PRD row bell icon — `watchedAutomataIds` + `toggleWatchAutomata` | No | No | 23 | Manual — Automata tab, tap bell on PRD row | Sprint 23 |
+| Shared | `AlertsViewModelTest` watchedAlertCount filter logic — 4 tests | Yes | Yes | 23 | JVM unit test | watchedBadge() mirrors VM combine logic |

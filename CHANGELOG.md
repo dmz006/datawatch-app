@@ -8,6 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-09-15
+
+### Added
+- **Sprint 23 — Watch toggle opt-out**: Bell icon (`🔔`/`🔕`) rendered in session list row header (hidden in reorder/select mode). Watch toggle `IconButton` in `SessionDetailScreen` TopAppBar actions — taps `SessionsViewModel.toggleWatch()` and reflects live `watchedIds` StateFlow. Bell icon in `AutonomousScreen` `PrdRow` (hidden in select mode) — taps `AutonomousViewModel.toggleWatchAutomata()` and reflects live `watchedAutomataIds` StateFlow. Locale strings (`session_watch_on/off`, `automata_watch_on/off`) already existed in all 5 bundles.
+- **Backlog items BL368/BL369**: Session Status tab and Stats sub-tab parity gaps with PWA documented in plans/README (TESTS/GIT placeholder cards, sprint JSON block, focus null-state, backend/node names in headers, inline sparklines on stat rows).
+
+### Tests
+- **`AlertsViewModelTest`** — 4 new tests for `watchedAlertCount` filter logic: fallback to total count when no sessions watched; filters to watched session only; excludes unwatched sessions; zero when watched session has no alerts.
+
 ## [1.10.0] — 2026-09-14
 
 ### Added

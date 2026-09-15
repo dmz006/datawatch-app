@@ -36,6 +36,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -382,6 +384,16 @@ public fun SessionDetailScreen(
                     com.dmzs.datawatchclient.ui.common.AlertsBellAction(
                         alertsBadge = alertsState.watchedAlertCount,
                     )
+                    val sessionsVm: SessionsViewModel = viewModel()
+                    val watchedIds by sessionsVm.watchedIds.collectAsState()
+                    val isWatched = sessionId in watchedIds
+                    IconButton(onClick = { sessionsVm.toggleWatch(sessionId) }) {
+                        Icon(
+                            if (isWatched) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
+                            contentDescription = stringResource(if (isWatched) R.string.session_watch_on else R.string.session_watch_off),
+                            tint = if (isWatched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        )
+                    }
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(14.dp))
                     Box(
                         modifier =
