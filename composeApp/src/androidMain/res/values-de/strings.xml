@@ -1105,6 +1105,10 @@
     <string name="push_registered">Push-Benachrichtigungen registriert</string>
     <string name="push_failed">Push-Registrierung fehlgeschlagen — erneuter Versuch</string>
     <string name="push_notification_channel">datawatch Alarme</string>
+    <string name="push_tier_header">Push-Zustellung:</string>
+    <string name="push_tier_1_label">UnifiedPush SSE (aktiv)</string>
+    <string name="push_tier_2_label">Comm-Kanal (aktiv)</string>
+    <string name="push_tier_3_label">Hintergrund-SSE (Fallback)</string>
 
     <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
     <string name="llm_models_tab">Modelle</string>

@@ -7,7 +7,7 @@ import android.content.Context
  *
  * | Tier | Mechanism | Notes |
  * |------|-----------|-------|
- * | [AlertTier.UnifiedPush] | First-party UnifiedPush provider | Placeholder — server issue #38 not yet shipped |
+ * | [AlertTier.UnifiedPush] | First-party UnifiedPush SSE provider | Active when [PushTierManager] reports registered |
  * | [AlertTier.CommChannel] | Configured comm channel (Signal) | Active when a comm channel webhook is set |
  * | [AlertTier.Background]  | [NtfyFallbackService] SSE stream | Baseline fallback |
  *
@@ -18,8 +18,7 @@ public enum class AlertTier { UnifiedPush, CommChannel, Background }
 
 public object AlertTierDetector {
     public fun resolve(context: Context): AlertTier {
-        // Tier 1: check if UnifiedPush is registered (placeholder — always false until
-        // dmz006/datawatch#38 ships the server-side SSE + UnifiedPush endpoints).
+        // Tier 1: UnifiedPush SSE registered (datawatch#39 server-side provider shipped).
         if (isUnifiedPushActive()) return AlertTier.UnifiedPush
         // Tier 2: check if any comm channel is configured.
         if (hasCommChannelConfigured(context)) return AlertTier.CommChannel
@@ -27,8 +26,8 @@ public object AlertTierDetector {
         return AlertTier.Background
     }
 
-    /** Returns true once UnifiedPush distributor registration is supported. */
-    private fun isUnifiedPushActive(): Boolean = false
+    /** Returns true when [UnifiedPushSseService] has successfully registered this device. */
+    internal fun isUnifiedPushActive(): Boolean = PushTierManager.tier.value == AlertTier.UnifiedPush
 
     private fun hasCommChannelConfigured(context: Context): Boolean {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)

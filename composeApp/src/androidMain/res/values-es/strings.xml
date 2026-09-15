@@ -1105,6 +1105,10 @@
     <string name="push_registered">Notificaciones push registradas</string>
     <string name="push_failed">Error en registro push — reintentando</string>
     <string name="push_notification_channel">alertas datawatch</string>
+    <string name="push_tier_header">Entrega push:</string>
+    <string name="push_tier_1_label">UnifiedPush SSE (activo)</string>
+    <string name="push_tier_2_label">Canal de comm (activo)</string>
+    <string name="push_tier_3_label">SSE en segundo plano (reserva)</string>
 
     <!-- ── Sprint 30 i18n — LLM multi-node + session management (v0.99.0) ── -->
     <string name="llm_models_tab">Modelos</string>
