@@ -83,6 +83,7 @@ public class VoiceStatusScreen(
                     VoiceCommand.STOP_PLAN -> buildStopFirstPlanResponse()
                     VoiceCommand.READ_PLAN, VoiceCommand.LIST_AUTOMATA ->
                         buildReadPlanResponse()
+                    VoiceCommand.PRD_UPDATE -> "Open the plan detail screen to update the spec via voice."
                     VoiceCommand.CREATE_SESSION,
                     VoiceCommand.PAUSE_SESSION,
                     VoiceCommand.KILL_SESSION,

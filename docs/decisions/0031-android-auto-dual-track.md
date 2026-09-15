@@ -1,7 +1,7 @@
 # ADR-0031 — Android Auto Dual-Track
 
 ## Status
-Accepted (revised 2026-09-14 — category changed to OTHER)
+Superseded by ADR-0049 (2026-09-15). Category is now MESSAGING (see ADR-0049 for full rationale).
 
 ## Context
 Android Auto's Driver Distraction Guidelines prohibit the full datawatch UI in a public Play Store release, requiring a separate internal build for passenger use.

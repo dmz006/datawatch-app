@@ -8,6 +8,22 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-09-15
+
+### Added
+- **BL388 — Android Auto MESSAGING Compliance**: Resolves Play Console policy warnings "Auto App Quality Guidelines: Message functionality" and "In-App Messaging Functionality". ADR-0049 supersedes ADR-0031.
+  - **Conversation body on all detail screens**: Session detail, PRD detail, story detail (via `AutoPrdStoriesScreen`), and task detail (`AutoTaskDetailScreen`) now show a `[You]:`/`[datawatch]:` conversation exchange — visible before any reply or voice-update flow.
+  - **PRD voice spec update**: "Update" ActionStrip button on `AutoPrdDetailScreen` opens `VoiceRecordingScreen` (prdId mode) — speaks a spec update, sent via `patchPrd(spec=transcript)`. `VoiceCommand.PRD_UPDATE` added to `VoiceCommandProcessor`.
+  - **`MessagingStyle` notifications**: `NotificationPoster` switches from `BigTextStyle` → `NotificationCompat.MessagingStyle` (selfPerson="Me", senderPerson=event.title) for `InputNeeded` events. `RemoteInput` reply action retained. Car head unit unaffected (CarAppExtender overrides base style).
+  - **Manifest category**: `androidx.car.app.category.IOT` → `androidx.car.app.category.MESSAGING`.
+  - **Locale gate**: 7 new string keys (`auto_conv_you`, `auto_conv_datawatch`, `auto_conv_story`, `auto_conv_plan`, `auto_action_update`, `auto_action_tasks`, `auto_action_play_overview`) added to all 5 locale files (EN/DE/ES/FR/JA).
+
+### Locale
+- Added to all 5 bundles (EN/DE/ES/FR/JA): `auto_conv_you`, `auto_conv_datawatch`, `auto_conv_story`, `auto_conv_plan`, `auto_action_update`, `auto_action_tasks`, `auto_action_play_overview`.
+
+### Reuse audit
+- No third-party libraries added. `androidx.core.app.Person` is part of `androidx.core:core` (already a transitive dependency). `NotificationCompat.MessagingStyle` is in the existing `androidx.core:core` dependency.
+
 ## [1.15.0] — 2026-09-15
 
 ### Changed
