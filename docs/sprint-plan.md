@@ -527,29 +527,29 @@ shared/.../Version.kt: VERSION = "X.Y.Z" + VERSION_CODE = N
 
 ---
 
-### Sprint 23 — Watch toggle opt-out (issue #116) ⏳ PLANNED
+### Sprint 23 — Watch toggle opt-out (issue #116) ✅ SHIPPED (v1.11.0)
 
-**Issue**: #116 | **Target version**: v0.93.0/171
+**Issue**: #116 | **Shipped**: v1.11.0 (2026-09-15)
 
-Per-session and per-automaton "Watch" toggle. Default = OFF (opt-out). App-side filter only — no daemon change. Persists per-server-profile in local DB (new `watched_sessions` + `watched_automata` tables or flags).
+Per-session and per-automaton "Watch" toggle. Default = OFF (opt-out). App-side filter only — no daemon change. Persists per-server-profile in SharedPreferences (`WatchedSessionsStore` / `WatchedAutomataStore`).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| DB migration: `watched_sessions` set per profile (or boolean flag on `sessions` table) | ⏳ | New SQLDelight migration file |
-| `SessionRepository`: `setWatched(id, watched)` + `isWatched(id)` | ⏳ | |
-| Sessions list: per-row Watch toggle icon (🔔/🔕); default = unwatched | ⏳ | |
-| Session detail: header-bar Watch toggle | ⏳ | |
-| Automata list: per-row Watch toggle | ⏳ | |
-| Automata detail: Watch toggle | ⏳ | |
-| Alert dock / `AlertsViewModel`: filter out alerts from unwatched sessions | ⏳ | Core filtering logic |
-| `BottomNavBar` badge: count only watched-session alerts | ⏳ | |
-| Locale: `session_watch_toggle`, `session_watch_on`, `session_watch_off` (5 bundles) | ⏳ | |
-| Version bump 0.93.0/171 | ⏳ | |
+| `WatchedSessionsStore` + `WatchedAutomataStore` SharedPreferences stores | ✅ | Pre-existing; `watchedFlow()` + `setWatched()` + `isWatched()` |
+| `SessionsViewModel.watchedIds` + `toggleWatch()` | ✅ | Pre-existing |
+| `AutonomousViewModel.watchedAutomataIds` + `toggleWatchAutomata()` | ✅ | Pre-existing |
+| Sessions list: per-row Watch toggle icon (🔔/🔕); hidden in reorder/select | ✅ | v1.11.0 — `SessionsScreen.kt` |
+| Session detail: TopAppBar Watch toggle | ✅ | v1.11.0 — `SessionDetailScreen.kt` |
+| Automata list: per-row Watch toggle | ✅ | v1.11.0 — `AutonomousScreen.kt` PrdRow |
+| Alert dock / `AlertsViewModel`: filter out alerts from unwatched sessions | ✅ | `watchedAlertCount` pre-existing |
+| `BottomNavBar` badge: count only watched-session alerts | ✅ | `alertsBadge = alertsState.watchedAlertCount` pre-existing |
+| Locale: `session_watch_toggle/on/off`, `automata_watch_toggle/on/off` (5 bundles) | ✅ | Pre-existing in all 5 bundles |
 
-**Tests required**:
-- [ ] `SessionRepositoryTest`: `setWatched` + `isWatched` round-trip
-- [ ] `AlertsViewModelTest`: unwatched session alerts excluded from active/count
-- [ ] `SessionsViewModelTest`: Watch toggle state persists across VM recreation
+**Tests**:
+- ✅ `WatchedSessionsStoreTest` — 6 tests: empty default, add/remove, profile isolation, flow emit (pre-existing)
+- ✅ `WatchedAutomataStoreTest` — 6 tests: same coverage for automata store (v1.11.0)
+- ✅ `AlertsViewModelTest` — 4 tests: watchedAlertCount filter logic (v1.11.0)
+- ✅ `BottomNavBadgeTest` — 9 tests: badge label/dim logic (pre-existing, Sprint 22)
 
 ---
 
