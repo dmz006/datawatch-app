@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.9.4] — 2026-09-14
+
+### Tests
+- **Sprint 24 — Automata pin/sort/action tests**: `PrdActionGateTest` — 10 tests for approve gate (needs_review/awaiting_approval/revisions_asked) and cancel gate (completed/cancelled/rejected/archived/running); `PrdSortTest` — 3 tests: pinned before unpinned, needs_review before running, terminal after active (`PrdStatusColorTest.kt`, same package as `AutonomousScreen`)
+- **Sprint 25 — SessionStatsPanel conditional card tests**: `SessionStatsPanelTest` — 14 tests verifying container card hidden when envelope null/blank containerId, shown when container object or non-blank containerId; ComputeNode/LLM card conditional on `computeNodeRef`/`llmRef` non-blank; no-data state triggers correctly
+- **Sprint 26 — statusTabBadge tests**: `StatusTabBadgeTest` — 7 tests: running→🟢, waiting→🟠, waiting_input→🟠, null board→⚪, idle→⚪, hookHealth irrelevant to badge computation (appended to `SessionStatusViewModelTest.kt`)
+- **Sprint 27 — OllamaMarketplace + AlertsViewModel tab tests**: `OllamaMarketplaceTest` — 12 tests for catalog search filter (case-insensitive), isInstalled via fullModel key, pull task progress lookup; `AlertsViewModelTest` extended with 5 tests for Active/Historical/System tab separation and filter independence
+- **Sprint 29 — SessionsViewModel UiState tests**: `SessionsViewModelTest` — 11 tests: backendCounts empty/count-per-name/omit-null+blank/sorted-alphabetically/N→N+1 label; stateFilter/backendFilter/showHistory defaults; SessionStateFilter enum coverage
+
+### Documentation
+- `docs/sprint-plan.md`: Sprints 26 (StatusPanel + HookHealthPill), 27 (OllamaMarketplace + Alerts tabs), 28 (UnifiedPush ⏳ blocked), 29 (SessionsScreen llmExpanded + State filter) updated to reflect shipped/blocked status
+- `docs/plans/2026-09-14-sprints-24-27-29-completion.md`: new completion plan for test+doc sweep
+- `docs/plans/2026-09-14-sprint28-unifiedpush.md`: new Sprint 28 UnifiedPush integration plan (blocked on datawatch#39)
+- `docs/testing-tracker.md`: rows added for Sprints 24–27, 29
+
 ## [1.9.3] — 2026-09-14
 
 ### Fixed

@@ -140,25 +140,28 @@ unit tests alone.
 | Shared | `watchedAlertCount_reflectsWatchedSessions` | Yes | No | 24 | `AlertsViewModelTest` | |
 | Shared | `bottomNavBar_selectedTabMatchesRoute` | Yes | No | 24 | `BottomNavBarTest` | |
 | Phone | `PrdRow` pin button + DataStore persistence | No | No | 24 | `AutonomousViewModelTest` — pin/unpin state; DataStore write not mocked | |
-| Phone | Automata sort order (pinned → state-rank → last-activity) | No | No | 24 | `AutonomousViewModelTest` | |
-| Phone | `PrdRow` inline Open/Cancel/Approve actions + confirm modal | No | No | 24 | `AutonomousViewModelTest` — cancel confirm: `requestCancelId` set/cleared | |
+| Phone | Automata sort order (pinned → state-rank → last-activity) | Yes | No | 24 | `PrdSortTest` — pinned-before-unpinned, needs_review-before-running, terminal-after-active | S24 BL293 |
+| Phone | `PrdRow` inline Open/Cancel/Approve actions + confirm modal | Yes | No | 24 | `PrdActionGateTest` — 10 tests: approve gate (needs_review/awaiting_approval/revisions_asked); cancel gate (running/completed/cancelled/rejected/archived) | S24 BL293 |
 | Phone | `TransportClient.approveAutomaton` + `cancelAutomaton` REST | No | No | 24 | `RestTransportAutonomousTest` | POST /api/prds/{id}/approve + /cancel |
 | Phone | `SessionsListFilterBar` LLM collapsible + State collapsible | No | No | 24 | Manual — live session list with mixed backends/states | |
 | Phone | `SessionStatsPanel` Host card (CPU sparkline + RSS sparkline) | No | No | 25 | Manual — Stats tab on a running session | 60-sample Canvas sparkline |
-| Phone | `SessionStatsPanel` Container card (conditional) | No | No | 25 | Manual — session with `envelope.container != null` | |
-| Phone | `SessionStatsPanel` ComputeNode card + nav link | No | No | 25 | Manual — session with `computeNodeRef` set | |
-| Phone | `SessionStatsPanel` LLM card + nav link | No | No | 25 | Manual — session with `llmRef` set | |
+| Phone | `SessionStatsPanel` Container card (conditional) | Yes | No | 25 | `SessionStatsPanelTest` — 5 tests: null envelope, blank containerId, non-blank containerId, container object present, hidden when blank | S25 |
+| Phone | `SessionStatsPanel` ComputeNode card + nav link | Yes | No | 25 | `SessionStatsPanelTest` — 3 tests: null ref, blank ref, non-blank ref shown | S25 |
+| Phone | `SessionStatsPanel` LLM card + nav link | Yes | No | 25 | `SessionStatsPanelTest` — 3 tests: null llmRef, blank llmRef, non-blank shown; plus no-data-state tests | S25 |
 | Phone | Session detail "Status" 4th tab — 5 s poll lifecycle | Yes | No | 26 | `SessionStatusViewModelTest` — 5 tests: fetchStatus success, failure, no-profile, stopPolling, tests-card data | |
 | Phone | Status board Current Focus / Sprint / Tests / Git cards | No | No | 26 | Manual — Status tab on active claude-code session | Conditional on non-null board fields |
+| Phone | `statusTabBadge` (🟢/🟠/⚪ by board.state) | Yes | No | 26 | `StatusTabBadgeTest` — 7 tests: running→🟢, waiting→🟠, waiting_input→🟠, null→⚪, unknown→⚪, hookHealth irrelevant to badge, hookHealth readable from board | S26 |
 | Phone | Hook health pill (alive/stale/missing) | No | No | 26 | Manual — inspect board.hookHealth value | |
 | Phone | Hook auto-install Snackbar (claude-code session start) | No | No | 26 | Manual — start new claude-code session | |
 | Phone | `ComputeNodeEditScreen` Ollama models sub-section + marketplace | No | No | 27 | Manual — edit an ollama-kind compute node | |
-| Phone | Ollama marketplace pull progress poll (2 s) | No | No | 27 | Manual — pull a model from marketplace | |
-| Phone | `AlertsScreen` Active / Historical / System tabs + per-tab state persistence | No | No | 27 | Manual — switch tabs; verify filter+sort+search restored | |
+| Phone | Ollama marketplace search filter + isInstalled + pull progress | Yes | No | 27 | `OllamaMarketplaceTest` — 12 tests: empty search, substring case-insensitive, uppercase match, no match, empty catalog; isInstalled true/false; fullModel name:tag composition; pull task lookup/null/completed | S27 |
+| Phone | `AlertsScreen` Active / Historical / System tabs + per-tab state persistence | Yes | No | 27 | `AlertsViewModelTest` — 5 new tests: UiState.selectedTab default, active-contains-only-isActive, system-has-SYSTEM_BUCKET, tab independence, count sums active only | S27 |
 | Phone | `TransportClient.getOllamaCatalog` + `pullOllamaModel` REST | No | No | 27 | `RestTransportTest` | GET catalog + POST pull |
 | Phone | UnifiedPush SSE subscription + reconnect backoff | No | No | 28 | Manual — disconnect server; verify 1s→2s→…→30s reconnect | |
 | Phone | Push registration (`POST /api/push/register`) on service start | No | No | 28 | Manual — check logcat for registration on app start | |
 | Phone | Priority ≥ 4 event → `PRIORITY_HIGH` heads-up notification + deep-link | No | No | 28 | Manual — trigger waiting_input event | |
+| Phone | `SessionsViewModel.backendCounts` computed property | Yes | No | 29 | `SessionsViewModelTest` — 6 tests: empty when no backend, count per name, omit null/blank, sorted alphabetically, N backends → N+1 chip label | S29 |
+| Phone | `SessionsViewModel.stateFilter` default + filter enum | Yes | No | 29 | `SessionsViewModelTest` — stateFilter defaults ALL, backendFilter defaults null, showHistory defaults false, non-ALL differs from ALL | S29 |
 | Phone | `LlmConfigCard` per-node model pairs display (up to 3 before collapse) | No | No | 30 | Manual — LLM row with models[] configured | |
 | Phone | Add/Edit LLM panel per-node model table (add/remove rows) | No | No | 30 | Manual — add LLM with compute node | |
 | Phone | `LlmDetailDrawer` Models tab + In-use tab (pagination 5/10/50) | No | No | 30 | Manual — open LLM detail drawer | |

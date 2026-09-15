@@ -19,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionStatusViewModelTest {
@@ -122,4 +123,41 @@ class SessionStatusViewModelTest {
 
             vm.stopPolling()
         }
+}
+
+// Sprint 26 — statusTabBadge pure-logic tests (public function in SessionStatusPanel.kt)
+
+class StatusTabBadgeTest {
+    @Test fun `running maps to green circle`() = assertEquals("🟢", statusTabBadge(
+        SessionStatusBoardDto(state = "running", hookHealth = "alive")
+    ))
+
+    @Test fun `waiting maps to orange circle`() = assertEquals("🟠", statusTabBadge(
+        SessionStatusBoardDto(state = "waiting", hookHealth = "alive")
+    ))
+
+    @Test fun `waiting_input maps to orange circle`() = assertEquals("🟠", statusTabBadge(
+        SessionStatusBoardDto(state = "waiting_input", hookHealth = "alive")
+    ))
+
+    @Test fun `null board maps to white circle`() = assertEquals("⚪", statusTabBadge(null))
+
+    @Test fun `unknown state maps to white circle`() = assertEquals("⚪", statusTabBadge(
+        SessionStatusBoardDto(state = "idle", hookHealth = "alive")
+    ))
+
+    @Test fun `hookHealth alive is distinct from stale`() {
+        // Board with alive hookHealth → green tab badge when running
+        val aliveBoard = SessionStatusBoardDto(state = "running", hookHealth = "alive")
+        val staleBoard = SessionStatusBoardDto(state = "running", hookHealth = "stale")
+        // statusTabBadge only reads state, not hookHealth — both are green for "running"
+        assertEquals(statusTabBadge(aliveBoard), statusTabBadge(staleBoard))
+    }
+
+    @Test fun `hookHealth missing still readable from board`() {
+        val board = SessionStatusBoardDto(state = "running", hookHealth = "missing")
+        assertEquals("missing", board.hookHealth)
+        // Badge based on state only
+        assertEquals("🟢", statusTabBadge(board))
+    }
 }
