@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        BL34 — Google Assistant App Actions (SEND_MESSAGE BII).
+        "Ok Google, send [command] to datawatch" or
+        "Ok Google, tell datawatch [command]" opens VoiceCommandActivity
+        with a driver-safe confirmation screen before sending.
+    -->
+    <capability android:name="actions.intent.SEND_MESSAGE">
+        <intent
+            android:action="com.dmzs.datawatchclient.action.VOICE_SEND"
+            android:targetPackage="com.dmzs.datawatchclient"
+            android:targetClass="com.dmzs.datawatchclient.voice.VoiceCommandActivity">
+            <parameter
+                android:name="message.text"
+                android:key="command"/>
+            <parameter
+                android:name="message.recipient.name"
+                android:key="sessionName"/>
+        </intent>
+    </capability>
+
+</shortcuts>

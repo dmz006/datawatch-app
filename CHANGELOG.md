@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-09-15
+
+### Added
+- **BL34 — Google Assistant App Actions**: "Ok Google, send [command] to datawatch" or "Ok Google, tell datawatch [command]" launches `VoiceCommandActivity` — a driver-safe confirmation screen showing the command text, resolved target session name (running/waiting), and Send/Cancel buttons. Never auto-sends. Routes to last-active session by recency; if a session name is spoken it matches against `session.name`. `SEND_MESSAGE` BII capability registered in `res/xml/shortcuts.xml`; `VoiceCommandActivity` declared in `AndroidManifest.xml` with `VOICE_SEND` intent action. Locale strings (`voice_cmd_*`) added to all 5 bundles. GH#148.
+
 ## [1.12.0] — 2026-09-15
 
 ### Added
