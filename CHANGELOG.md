@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.9.3] — 2026-09-14
+
+### Tests
+- **Sprint 17 test debt**: `DtoRoundTripTest` backendFamily fallback + `SessionMapperTest` backendFamily→backend confirmed; tracker updated
+- **Sprint 18 test debt**: `ObserverPeersByNodeDtoTest` + `MetaPeersDtoTest` confirmed; `MonitoringViewModelTests` — `groupByNode` toggle fetches by-node data and sets `byNode`/`unbound` state
+- **Sprint 19 test debt**: `RestTransportAutonomousTest` — `patchProjectAgentSettings` PATCH path, URL-encoding spaces in project name, JSON body round-trip
+- **Sprint 20 test debt**: `AlertDockChannelTest` — 6 tests covering open/close/toggle state machine and mute-is-caller-local contract
+- **Sprint 21 test debt**: `AlertsComplicationTest` — text format `"!N"`, content description, `(0,0,0)` DataItem-absent fallback, DataMap key alignment; `AlertsTileTest` — `hasData=false` fallback, health states (red/amber/green); `WearSyncAlertsTest` — `ALERTS_PATH` constant, writer keys ⊇ reader keys, business invariants
+- **Sprint 22 test debt**: `BottomNavBadgeTest` — 9 tests for badge label/dim pure logic extracted from `BottomNavBar`; `AlertsViewModelTest` suite confirmed
+
 ## [1.9.2] — 2026-09-14
 
 ### Fixed
