@@ -310,8 +310,8 @@ internal suspend fun resolveActiveProfile(): ServerProfile? {
 }
 
 /**
- * ForegroundCarColorSpan is not allowed in MESSAGING category templates —
- * crashes with IllegalArgumentException on render. Return plain CarText;
+ * ForegroundCarColorSpan is not reliably supported across Car App Library template types —
+ * crashes with IllegalArgumentException on some head units. Return plain CarText;
  * status is conveyed via emoji/symbols already present in the text.
  */
 internal fun colored(

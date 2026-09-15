@@ -10,6 +10,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [1.9.3] — 2026-09-14
 
+### Fixed
+- **Android Auto — Play Store compliance**: Changed `CarAppService` category from `MESSAGING` to `OTHER` in `AndroidManifest.xml`. Play Store flagged version 393 for failing messaging quality guidelines (no `MessagingTemplate` root screen, no conversation history). `CarAppExtender` Play/Reply notification action buttons continue to work with `category.OTHER`; only loss is Gearhead messaging-inbox auto-readout on phone connect (explicit "Play" TTS button is the primary path). ADR-0031 updated.
+
 ### Tests
 - **Sprint 17 test debt**: `DtoRoundTripTest` backendFamily fallback + `SessionMapperTest` backendFamily→backend confirmed; tracker updated
 - **Sprint 18 test debt**: `ObserverPeersByNodeDtoTest` + `MetaPeersDtoTest` confirmed; `MonitoringViewModelTests` — `groupByNode` toggle fetches by-node data and sets `byNode`/`unbound` state
