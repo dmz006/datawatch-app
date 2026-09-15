@@ -14,7 +14,12 @@
             android:foregroundServiceType="dataSync">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService"/>
-                <category android:name="androidx.car.app.category.MESSAGING"/>
+                <!-- OTHER, not MESSAGING: Play Store messaging-quality guidelines require
+                     MessagingTemplate root + conversation history which this app does not
+                     implement. Our app is a terminal/AI session monitor, not a messaging
+                     app. CarAppExtender notifications (Play/Reply buttons) work with both
+                     categories (ADR-0031 rev 2026-09-14). -->
+                <category android:name="androidx.car.app.category.OTHER"/>
             </intent-filter>
         </service>
     </application>

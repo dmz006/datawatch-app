@@ -264,8 +264,8 @@ public class AutoMonitorScreen(
             }
         }
 
-        // ActionStrip on ListTemplate in MESSAGING category must be icon-only — titled strip
-        // actions cause a "can't do that while driving" validation error on some head units.
+        // Car App Library driving validator requires icon-only ActionStrip on ListTemplate —
+        // titled strip actions cause "can't do that while driving" on some head units.
         // Sessions navigation is also reachable via the "Sessions" row in addDetailRows().
         fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
         val actionStrip =

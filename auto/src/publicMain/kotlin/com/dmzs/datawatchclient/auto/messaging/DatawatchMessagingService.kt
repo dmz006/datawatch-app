@@ -23,20 +23,23 @@ private const val CAR_AUTO_PLAY_LONG_EXTRA = "dw.car.auto_play_long"
 private const val CAR_AUTO_VOICE_REPLY_EXTRA = "dw.car.auto_voice_reply"
 
 /**
- * Public Android Auto Messaging-template service per ADR-0031.
- * Play-compliant: TTS inbound, voice reply, no free-form UI, no terminal.
+ * Public Android Auto Car App Library service — category.OTHER per ADR-0031 rev 2026-09-14.
  *
- * Opens [AutoSummaryScreen] as the root hub — shows session counts,
- * server vitals inline, and last completed task. ActionStrip exposes
- * About (info icon) and Monitor. Sessions and Automata are in the list.
+ * Originally declared as category.MESSAGING; changed to category.OTHER after Play Store review
+ * flagged that we don't implement MessagingTemplate (our app is a terminal/AI session monitor,
+ * not a messaging app). CarAppExtender notifications (Play/Reply action buttons) continue to
+ * work with category.OTHER.
+ *
+ * Opens [AutoSummaryScreen] as the root hub — shows session counts, server vitals inline,
+ * and last completed task. ActionStrip exposes About and Monitor. Sessions and Automata
+ * are in the list.
  *
  * Navigation routing:
  *   contentIntent tap → Gearhead HOST routes to Session.onNewIntent()
  *   addAction() button → Android fires startService() → onStartCommand()
  *
  * Both paths delegate to [navigateFromIntent] so logic stays in one place.
- * [activeSession] holds the bound session so onStartCommand() can reach
- * its CarContext and ScreenManager.
+ * [activeSession] holds the bound session so onStartCommand() can reach its CarContext.
  */
 public class DatawatchMessagingService : CarAppService() {
     // Retained while the session is alive so onStartCommand() can access
