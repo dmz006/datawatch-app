@@ -14,11 +14,11 @@
             android:foregroundServiceType="dataSync">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService"/>
-                <!-- IOT (Internet of Things) is the correct Play Store category for a
-                     monitoring/terminal app. No template prescription — any Car App Library
-                     template works. MESSAGING was rejected for not implementing MessageTemplate
-                     semantics; OTHER is not a valid Play Store category string. -->
-                <category android:name="androidx.car.app.category.IOT"/>
+                <!-- MESSAGING category required for CarAppExtender Reply/Play notification
+                     actions. Conversation context ([You]/[datawatch]) is shown on every
+                     detail screen before any reply flow. MessagingStyle on phone
+                     notifications. ADR-0049 supersedes ADR-0031. -->
+                <category android:name="androidx.car.app.category.MESSAGING"/>
             </intent-filter>
         </service>
     </application>
