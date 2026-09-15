@@ -8,6 +8,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import com.dmzs.datawatchclient.transport.dto.AgentSettingsDto
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -507,5 +508,43 @@ class RestTransportAutonomousTest {
             val body = sent.body.readUtf8()
             assertTrue(body.contains("\"task_id\":\"t1\""), body)
             assertTrue(body.contains("\"new_spec\":\"Use repository pattern instead\""), body)
+        }
+
+    // ── patchProjectAgentSettings (Sprint 19 / alpha.28 #243) ───────────────
+
+    @Test
+    fun patchProjectAgentSettingsPatches200() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            val settings = AgentSettingsDto(
+                opencodeModel = "codellama",
+                opencodeModels = listOf("codellama", "mistral"),
+            )
+            val res = transport.patchProjectAgentSettings("my-project", settings)
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("PATCH", sent.method)
+            assertEquals("/api/profiles/projects/my-project/agent-settings", sent.path)
+        }
+
+    @Test
+    fun patchProjectAgentSettingsEncodesSpaceInName() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            val res = transport.patchProjectAgentSettings("my project", AgentSettingsDto())
+            assertTrue(res.isSuccess, "${res.exceptionOrNull()}")
+            val sent = server.takeRequest()
+            assertEquals("/api/profiles/projects/my%20project/agent-settings", sent.path)
+        }
+
+    @Test
+    fun patchProjectAgentSettingsSendsJsonBody() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            val settings = AgentSettingsDto(opencodeModels = listOf("llama3", "phi3"))
+            transport.patchProjectAgentSettings("proj", settings)
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(body.contains("\"opencode_models\""), body)
+            assertTrue(body.contains("\"llama3\""), body)
         }
 }

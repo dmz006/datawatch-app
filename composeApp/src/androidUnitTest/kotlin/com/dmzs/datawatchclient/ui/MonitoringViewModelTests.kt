@@ -7,6 +7,7 @@ import com.dmzs.datawatchclient.transport.dto.ObserverHostDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerHostDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeersDto
+import com.dmzs.datawatchclient.transport.dto.ObserverPeersByNodeDto
 import com.dmzs.datawatchclient.transport.dto.ObserverStatsDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorEdgeDto
 import com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto
@@ -80,6 +81,49 @@ class MonitoringViewModelTests {
 
             vm.setFilter(FederatedPeersViewModel.Filter.Agent)
             assertEquals(FederatedPeersViewModel.Filter.Agent, vm.state.value.filter)
+        }
+
+    @Test
+    fun `groupByNode toggle fetches by-node data and sets state`() =
+        runTest(testDispatcher) {
+            // Sprint 18 test-debt: setGroupByNode(true) must flip state flag
+            // and populate byNode / unbound from getObserverPeersByNode().
+            val (t, r) = fakeResolver()
+            coEvery { t.observerPeers() } returns
+                Result.success(ObserverPeersDto(peers = emptyList()))
+            coEvery { t.getObserverPeersByNode() } returns
+                Result.success(
+                    ObserverPeersByNodeDto(
+                        byNode = mapOf("gpu-node-1" to listOf(ObserverPeerDto(name = "p1", shape = "standalone"))),
+                        unbound = listOf(ObserverPeerDto(name = "orphan", shape = "agent")),
+                    ),
+                )
+
+            val vm = FederatedPeersViewModel(r)
+            assertEquals(false, vm.state.value.groupByNode)
+
+            vm.setGroupByNode(true)
+            assertEquals(true, vm.state.value.groupByNode)
+            assertEquals(1, vm.state.value.byNode.size)
+            assertEquals("p1", vm.state.value.byNode["gpu-node-1"]?.first()?.name)
+            assertEquals(1, vm.state.value.unbound.size)
+        }
+
+    @Test
+    fun `groupByNode toggle off clears flag but keeps data`() =
+        runTest(testDispatcher) {
+            val (t, r) = fakeResolver()
+            coEvery { t.observerPeers() } returns Result.success(ObserverPeersDto(peers = emptyList()))
+            coEvery { t.getObserverPeersByNode() } returns
+                Result.success(ObserverPeersByNodeDto(byNode = mapOf("n" to listOf(ObserverPeerDto(name = "x", shape = "standalone"))), unbound = emptyList()))
+
+            val vm = FederatedPeersViewModel(r)
+            vm.setGroupByNode(true)
+            assertEquals(true, vm.state.value.groupByNode)
+
+            // Toggle off — flag flips, data still in state (no clear on toggle-off by design)
+            vm.setGroupByNode(false)
+            assertEquals(false, vm.state.value.groupByNode)
         }
 
     @Test
