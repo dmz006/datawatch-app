@@ -94,8 +94,8 @@ internal fun SessionStatsCards(
 ) {
     val envelope: StatEnvelopeDto? = sparkState.envelope
 
-    // Host card — always shown
-    HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples)
+    // Host card — always shown; backend name wired in for BL369 header
+    HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, session?.backend)
 
     // Container card — conditional on envelope.container != null
     val containerInfo =
@@ -149,14 +149,54 @@ internal fun SessionStatsCards(
 }
 
 @Composable
+private fun StatRowWithSparkline(
+    label: String,
+    value: String,
+    samples: List<Float>,
+    sparkColor: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (samples.size >= 2) {
+                Sparkline(
+                    samples = samples,
+                    color = sparkColor,
+                    modifier = Modifier.size(width = 56.dp, height = 14.dp),
+                )
+            }
+            Text(
+                value,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            )
+        }
+    }
+}
+
+@Composable
 private fun HostCard(
     env: StatEnvelopeDto?,
     cpuSamples: List<Float>,
     rssSamples: List<Float>,
+    backend: String? = null,
 ) {
     val dw = LocalDatawatchColors.current
+    // BL369: include backend name in section header when available
+    val hostTitle = if (!backend.isNullOrBlank()) {
+        stringResource(R.string.stats_card_host_with_backend, backend.uppercase())
+    } else {
+        stringResource(R.string.stats_card_host)
+    }
     SectionCard {
-        PwaSectionTitle(stringResource(R.string.stats_card_host))
+        PwaSectionTitle(hostTitle)
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -196,9 +236,21 @@ private fun HostCard(
                     modifier = Modifier.weight(1f).padding(start = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    StatRow(stringResource(R.string.stats_field_cpu), "%.1f%%".format(cpuPct))
+                    // BL369: inline sparklines alongside CPU/RSS values
+                    val cpuPct2 = env?.cpuPct ?: 0.0
+                    StatRowWithSparkline(
+                        label = stringResource(R.string.stats_field_cpu),
+                        value = "%.1f%%".format(cpuPct2),
+                        samples = cpuSamples,
+                        sparkColor = dw.success,
+                    )
                     val rssBytes = env?.rssBytes ?: 0L
-                    StatRow(stringResource(R.string.stats_field_rss), formatBytes(rssBytes))
+                    StatRowWithSparkline(
+                        label = stringResource(R.string.stats_field_rss),
+                        value = formatBytes(rssBytes),
+                        samples = rssSamples,
+                        sparkColor = dw.accent2,
+                    )
                     if ((env?.threads ?: 0) > 0) {
                         StatRow(
                             stringResource(R.string.stats_field_threads),
@@ -213,25 +265,6 @@ private fun HostCard(
                         StatRow(stringResource(R.string.stats_field_pid), pidLabel)
                     }
                 }
-            }
-
-            if (cpuSamples.size >= 2) {
-                Text(
-                    stringResource(R.string.stats_field_cpu),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Sparkline(samples = cpuSamples, color = dw.success, modifier = Modifier.fillMaxWidth().height(36.dp))
-                Spacer(Modifier.height(8.dp))
-            }
-            if (rssSamples.size >= 2) {
-                Text(
-                    stringResource(R.string.stats_field_rss),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Sparkline(samples = rssSamples, color = dw.accent2, modifier = Modifier.fillMaxWidth().height(36.dp))
-                Spacer(Modifier.height(8.dp))
             }
 
             val env2 = env ?: return@Column
@@ -278,10 +311,11 @@ private fun ComputeNodeCard(
     onNavigate: (() -> Unit)?,
 ) {
     val dw = LocalDatawatchColors.current
+    // BL369: node name in section header ("COMPUTE NODE — DATAWATCH")
+    val nodeTitle = "${stringResource(R.string.stats_card_compute_node)} — ${computeNodeRef.uppercase()}"
     SectionCard {
-        PwaSectionTitle(stringResource(R.string.stats_card_compute_node))
+        PwaSectionTitle(nodeTitle)
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            StatRow(stringResource(R.string.stats_card_compute_node), computeNodeRef)
             if (detail != null && detail.gpu.isNotEmpty()) {
                 // Remote compute node GPU detail — obs_cn_gpu_* keys, multi-GPU indexed
                 detail.gpu.forEachIndexed { idx, gpu ->

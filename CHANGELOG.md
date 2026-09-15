@@ -8,6 +8,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-09-15
+
+### Added
+- **BL368 — Session Status tab parity with PWA**: Always shows TESTS and GIT cards even when `board.tests`/`board.git` are null — placeholder text "no test signal yet" / "no git state" with hook-payload hints; Sprint raw JSON block now rendered alongside structured rows (not only as fallback when all fields blank); `FocusCard` shows "—" placeholder when `board.currentFocus` is null/empty rather than hiding the card.
+- **BL369 — Stats sub-tab parity with PWA**: `HostCard` section header now includes backend name ("BACKEND STATS — OPENCODE-DOCKER") when `session.backend` is set. CPU and RSS sparklines rendered inline with their stat rows (`StatRowWithSparkline`) — compact 56×14 dp sparkline in the right side of the row. `ComputeNode` section header now includes node name ("COMPUTE NODE — DATAWATCH") removing the redundant `StatRow` below.
+- **B31 — Wear session snapshot**: `lastLine` (current activity) now shown as a third subtitle line on each session row in the Wear sessions page, giving at-a-glance context without opening the detail popup.
+- **BL34 — Google Assistant App Actions**: "Ok Google, send [command] to datawatch" launches `VoiceCommandActivity` — confirmation screen showing the command, resolved target session, and Send/Cancel buttons (never auto-sends). `SEND_MESSAGE` BII declared in `shortcuts.xml`. Routes to last-active session by default; matches by name if spoken. All 5 locale bundles updated with `voice_cmd_*` keys.
+
+### Locale
+- Added to all 5 bundles (EN/DE/ES/FR/JA): `status_tests_no_signal`, `status_git_no_state`, `stats_card_host_with_backend`, `voice_cmd_confirm_title`, `voice_cmd_confirm_send`, `voice_cmd_confirm_cancel`, `voice_cmd_session_label`, `voice_cmd_no_session`, `voice_cmd_sent`.
+
 ## [1.11.0] — 2026-09-15
 
 ### Added

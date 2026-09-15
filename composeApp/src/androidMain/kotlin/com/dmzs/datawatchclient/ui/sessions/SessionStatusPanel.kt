@@ -94,10 +94,27 @@ public fun SessionStatusPanel(
         HookHealthPill(hookHealth = board.hookHealth, onClick = vm::refreshStatus)
         Spacer(Modifier.height(4.dp))
 
-        board.currentFocus?.let { FocusCard(it, board.lastEvent, board.idleSince) }
+        // BL368: always show all four cards; use placeholder text when data is null
+        FocusCard(board.currentFocus, board.lastEvent, board.idleSince)
         board.sprint?.let { SprintCard(it) }
-        board.tests?.let { TestsCard(it.passing, it.failing, it.total) }
-        board.git?.let { GitCard(it.branch, it.uncommitted, it.ahead) }
+        val tests = board.tests
+        if (tests != null) {
+            TestsCard(tests.passing, tests.failing, tests.total)
+        } else {
+            PlaceholderCard(
+                title = stringResource(R.string.status_card_tests),
+                hint = stringResource(R.string.status_tests_no_signal),
+            )
+        }
+        val git = board.git
+        if (git != null) {
+            GitCard(git.branch, git.uncommitted, git.ahead)
+        } else {
+            PlaceholderCard(
+                title = stringResource(R.string.status_card_git),
+                hint = stringResource(R.string.status_git_no_state),
+            )
+        }
 
         // BL303 Telemetry: task tree, progress, guardrail verdicts
         uiState.telemetry?.let { telem ->
@@ -108,16 +125,6 @@ public fun SessionStatusPanel(
                 if (sprint.automata.isNotBlank() && sprint.name.isNotBlank()) {
                     TelemetrySprintBreadcrumb(sprint)
                 }
-            }
-        }
-
-        if (board.currentFocus == null && board.sprint == null && board.tests == null && board.git == null) {
-            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    stringResource(R.string.status_no_focus),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }
@@ -161,13 +168,32 @@ private fun HookHealthPill(
 }
 
 @Composable
+private fun PlaceholderCard(title: String, hint: String) {
+    StatusCard(title = title) {
+        Text(
+            hint,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun FocusCard(
-    focus: String,
+    focus: String?,
     lastEvent: LastEventDto?,
     idleSince: Long?,
 ) {
     val dw = LocalDatawatchColors.current
     StatusCard(title = stringResource(R.string.status_card_focus)) {
+        if (focus.isNullOrBlank()) {
+            Text(
+                "—",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@StatusCard
+        }
         Text(focus, style = MaterialTheme.typography.bodySmall)
         if (lastEvent != null) {
             val parts = listOfNotNull(lastEvent.event, lastEvent.tool).filter { it.isNotBlank() }
@@ -226,21 +252,20 @@ private fun SprintCard(sprint: SprintStatusDto) {
         if (sprint.status.isNotBlank()) StatusRow("Status", sprint.status)
         if (sprint.sprintId.isNotBlank()) StatusRow("ID", sprint.sprintId.take(8))
         if (sprint.taskId.isNotBlank()) StatusRow("Task", sprint.taskId.take(8))
-        if (sprint.automata.isBlank() && heading == null && sprint.status.isBlank()) {
-            // Fallback: raw JSON for unknown sprint shapes
-            val json = remember { Json { prettyPrint = true } }
-            val prettyJson = remember(sprint) {
-                json.encodeToString(SprintStatusDto.serializer(), sprint)
-            }
-            SelectionContainer {
-                Text(
-                    prettyJson,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()),
-                )
-            }
+        // BL368: always show raw JSON alongside structured rows
+        val json = remember { Json { prettyPrint = true } }
+        val prettyJson = remember(sprint) {
+            json.encodeToString(SprintStatusDto.serializer(), sprint)
+        }
+        Spacer(Modifier.height(4.dp))
+        SelectionContainer {
+            Text(
+                prettyJson,
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()),
+            )
         }
     }
 }
