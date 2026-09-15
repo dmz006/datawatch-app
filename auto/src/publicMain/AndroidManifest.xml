@@ -14,11 +14,11 @@
             android:foregroundServiceType="dataSync">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService"/>
-                <!-- MESSAGING is the only Play Store-accepted category for apps that provide
-                     CarAppExtender notification actions (Play/Reply buttons). The Play Store
-                     upload API accepts MESSAGING without enforcing MessagingTemplate usage
-                     at the binary level — v1.9.2 was published successfully with this category. -->
-                <category android:name="androidx.car.app.category.MESSAGING"/>
+                <!-- IOT (Internet of Things) is the correct Play Store category for a
+                     monitoring/terminal app. No template prescription — any Car App Library
+                     template works. MESSAGING was rejected for not implementing MessageTemplate
+                     semantics; OTHER is not a valid Play Store category string. -->
+                <category android:name="androidx.car.app.category.IOT"/>
             </intent-filter>
         </service>
     </application>

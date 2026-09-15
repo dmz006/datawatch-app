@@ -8,10 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.14.1] — 2026-09-15
+
+### Fixed
+- **Auto — Play Store car app category**: Changed `CarAppService` intent-filter category to `androidx.car.app.category.IOT`. `MESSAGING` was rejected by Play Store for not implementing `MessageTemplate` semantics; `OTHER` is not a valid Play Store category string. `IOT` is the correct category for a monitoring/terminal app — no template prescription, accepted by Play Store.
+
 ## [1.14.0] — 2026-09-15
 
 ### Fixed
-- **Auto — Play Store car app category**: Reverted `CarAppService` intent-filter category from `androidx.car.app.category.OTHER` (not a Play Store-accepted value) back to `androidx.car.app.category.MESSAGING`. The Play Store API accepts `MESSAGING` without enforcing MessagingTemplate usage at binary level; `OTHER` caused 403 rejections for all builds since v1.9.3.
+- **Auto — Play Store car app category**: Reverted `CarAppService` intent-filter category from `androidx.car.app.category.OTHER` (not a Play Store-accepted value) back to `androidx.car.app.category.MESSAGING`. (Superseded by v1.14.1 — MESSAGING itself is also rejected.)
 
 ## [1.13.0] — 2026-09-15
 
