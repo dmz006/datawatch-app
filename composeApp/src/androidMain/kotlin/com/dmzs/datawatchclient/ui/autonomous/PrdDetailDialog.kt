@@ -48,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -473,20 +474,22 @@ internal fun PrdDetailDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 prd.stories.forEach { story ->
-                                    StoryRow(
-                                        story = story,
-                                        canEdit = canEdit,
-                                        onEdit = { editingStory = story },
-                                        onEditFiles = { editingFilesFor = story },
-                                        conflicts = conflicts,
-                                        prdId = prd.id,
-                                        prdStatus = status,
-                                        onResetTask = onResetTask,
-                                        onCancelStory = onCancelStory?.let { cb -> { r -> cb(story.id, r) } },
-                                        onCancelTask = onCancelTask,
-                                        onRequeueTask = onRequeueTask,
-                                        onEditTask = onEditTask,
-                                    )
+                                    key(story.id) {
+                                        StoryRow(
+                                            story = story,
+                                            canEdit = canEdit,
+                                            onEdit = { editingStory = story },
+                                            onEditFiles = { editingFilesFor = story },
+                                            conflicts = conflicts,
+                                            prdId = prd.id,
+                                            prdStatus = status,
+                                            onResetTask = onResetTask,
+                                            onCancelStory = onCancelStory?.let { cb -> { r -> cb(story.id, r) } },
+                                            onCancelTask = onCancelTask,
+                                            onRequeueTask = onRequeueTask,
+                                            onEditTask = onEditTask,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1032,6 +1035,14 @@ private fun StoryRow(
                 .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         // Always-visible header row: title + chevron + status pill
+        // Effective status: if story claims "completed" but tasks are still active, show actual task state.
+        val activeTaskStatuses = setOf("running", "in_progress", "verifying", "running_tests")
+        val hasActiveTasks = story.tasks.any { it.status in activeTaskStatuses }
+        val effectiveStatus = if (story.status.lowercase() in setOf("completed", "complete") && hasActiveTasks) {
+            story.tasks.firstOrNull { it.status in activeTaskStatuses }?.status ?: story.status
+        } else {
+            story.status
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 story.title.ifBlank { story.id },
@@ -1045,7 +1056,7 @@ private fun StoryRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 6.dp),
             )
-            StoryStatusPill(story.status)
+            StoryStatusPill(effectiveStatus)
         }
 
         // Expandable body: description + files + edit buttons
@@ -1158,6 +1169,7 @@ private fun StoryRow(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun TaskRow(
     task: PrdTaskDto,
     prdId: String,
@@ -1194,20 +1206,33 @@ private fun TaskRow(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
-            // Status indicator
-            val statusColor = when (task.status) {
-                "complete" -> Color(0xFF10B981)
-                "in_progress" -> Color(0xFF3B82F6)
-                "failed" -> Color(0xFFEF4444)
-                "blocked" -> Color(0xFFF59E0B)
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            // Status icon + color — matches PWA task status mapping
+            val (statusIcon, statusColor) = when (task.status) {
+                "running", "in_progress" -> "▶" to Color(0xFF3B82F6)
+                "verifying" -> "⟳" to Color(0xFF8B5CF6)
+                "running_tests" -> "🧪" to Color(0xFF06B6D4)
+                "complete", "completed" -> "✓" to Color(0xFF10B981)
+                "failed" -> "✗" to Color(0xFFEF4444)
+                "blocked" -> "✗" to Color(0xFFF59E0B)
+                "cancelled", "canceled" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+                "pending" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+                else -> "" to MaterialTheme.colorScheme.onSurfaceVariant
             }
             Text(
-                task.status.replace('_', ' '),
+                "$statusIcon ${task.status.replace('_', ' ')}".trimStart(),
                 style = MaterialTheme.typography.labelSmall,
                 color = statusColor,
                 modifier = Modifier.padding(start = 4.dp),
             )
+        }
+        // files_touched chips (B102 parity — uncommitted + non-git files written by task session)
+        if (task.filesTouched.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                task.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
+            }
         }
         // Session chip
         task.sessionId?.takeIf { it.isNotBlank() }?.let { sid ->
