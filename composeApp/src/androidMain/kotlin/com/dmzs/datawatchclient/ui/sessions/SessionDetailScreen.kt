@@ -108,6 +108,7 @@ public fun SessionDetailScreen(
     sessionId: String,
     onBack: () -> Unit,
     isNew: Boolean = false,
+    openInStatusMode: Boolean = false,
     onNavigateToSettings: ((tab: String) -> Unit)? = null,
     vm: SessionDetailViewModel =
         viewModel(
@@ -242,7 +243,7 @@ public fun SessionDetailScreen(
     }
     // statsMode is now a sub-tab inside Status (G6 — PWA alpha.36 gate).
     // statusMode = top-level Status tab active; statusSubStats = inner Stats sub-tab.
-    var statusMode by remember { mutableStateOf(false) }
+    var statusMode by remember { mutableStateOf(openInStatusMode) }
     var statusSubStats by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(chatMode) {
         modePrefs.edit().putBoolean("chat_mode", chatMode).apply()
