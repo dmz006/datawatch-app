@@ -129,6 +129,10 @@ public fun AutonomousScreen(
     LaunchedEffect(openPrdId) {
         if (openPrdId != null) vm.startPrdLiveUpdates(openPrdId!!) else vm.stopPrdLiveUpdates()
     }
+    // #184: fetch orchestrator DAG graph when detail opens; clear when closed.
+    LaunchedEffect(openPrdId) {
+        if (openPrdId != null) vm.fetchPrdGraph(openPrdId!!) else vm.clearPrdGraph()
+    }
 
     LaunchedEffect(Unit) {
         vm.refresh()
@@ -456,6 +460,8 @@ public fun AutonomousScreen(
                 onSetSkills = { skills -> vm.setPrdSkills(id, skills) },
                 onCloneTemplate = { vm.clonePrdToTemplate(id) },
                 onOpenFile = { path -> vm.openFileViewer(path, prd.projectDir) },
+                prdGraph = state.prdGraph,
+                prdGraphLoading = state.prdGraphLoading,
             )
         }
     }
