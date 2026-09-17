@@ -87,6 +87,9 @@ public class AutonomousViewModel(
         val activeProfile: ServerProfile? = null,
         /** prdId → profile displayName; populated only in all-servers mode. */
         val prdProfileNames: Map<String, String> = emptyMap(),
+        /** Orchestrator DAG graph for the currently-open PRD (#184). */
+        val prdGraph: com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto? = null,
+        val prdGraphLoading: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -308,6 +311,28 @@ public class AutonomousViewModel(
                 )
             }
         }
+    }
+
+    public fun fetchPrdGraph(prdId: String) {
+        _state.value = _state.value.copy(prdGraphLoading = true, prdGraph = null)
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: run {
+                _state.value = _state.value.copy(prdGraphLoading = false)
+                return@launch
+            }
+            transport.orchestratorGraph(prdId).fold(
+                onSuccess = { graph ->
+                    _state.value = _state.value.copy(prdGraph = graph, prdGraphLoading = false)
+                },
+                onFailure = {
+                    _state.value = _state.value.copy(prdGraph = null, prdGraphLoading = false)
+                },
+            )
+        }
+    }
+
+    public fun clearPrdGraph() {
+        _state.value = _state.value.copy(prdGraph = null, prdGraphLoading = false)
     }
 
     public fun approve(prdId: String, note: String? = null) {

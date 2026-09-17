@@ -320,6 +320,9 @@
     <string name="prd_tab_stories">Stories</string>
     <string name="prd_tab_decisions">Decisions</string>
     <string name="prd_tab_decisions_empty">No decisions logged yet.</string>
+    <string name="prd_tab_graph">Graph</string>
+    <string name="prd_tab_graph_empty">No dependency graph available for this PRD.</string>
+    <string name="prd_tab_graph_loading">Loading graph…</string>
     <string name="prd_tab_scan">Scan</string>
     <string name="prd_detail_reject_title">Reject Automaton?</string>
     <string name="prd_detail_reject_reason_label">Reason (required)</string>

@@ -106,6 +106,8 @@ internal fun PrdDetailDialog(
     onSetSkills: ((List<String>) -> Unit)? = null,
     onCloneTemplate: (() -> Unit)? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
+    prdGraph: com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto? = null,
+    prdGraphLoading: Boolean = false,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -134,6 +136,7 @@ internal fun PrdDetailDialog(
             add(stringResource(R.string.prd_tab_overview))
             add(stringResource(R.string.prd_tab_stories))
             add(stringResource(R.string.prd_tab_decisions))
+            add(stringResource(R.string.prd_tab_graph))
             if (showProgressTab) add(stringResource(R.string.automata_sg_progress))
         }
 
@@ -521,6 +524,38 @@ internal fun PrdDetailDialog(
                             }
                         }
                         3 -> {
+                            // Graph tab — orchestrator DAG (#184)
+                            when {
+                                prdGraphLoading -> {
+                                    androidx.compose.material3.CircularProgressIndicator(
+                                        modifier = androidx.compose.ui.Modifier
+                                            .padding(24.dp)
+                                            .align(androidx.compose.ui.Alignment.CenterHorizontally),
+                                    )
+                                    Text(
+                                        stringResource(R.string.prd_tab_graph_loading),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                prdGraph == null || prdGraph.nodes.isEmpty() -> {
+                                    Text(
+                                        stringResource(R.string.prd_tab_graph_empty),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                else -> {
+                                    PrdDagCanvas(
+                                        graph = prdGraph,
+                                        modifier = androidx.compose.ui.Modifier
+                                            .fillMaxWidth()
+                                            .height(400.dp),
+                                    )
+                                }
+                            }
+                        }
+                        4 -> {
                             // Progress tab — per-story task completion bars (#166)
                             val totalStories = prd.stories.size
                             val totalTasks = prd.stories.sumOf { it.tasks.size }
