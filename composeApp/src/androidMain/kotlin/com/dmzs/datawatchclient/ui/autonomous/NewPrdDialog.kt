@@ -37,6 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.dto.MemoryHarvestDto
+import com.dmzs.datawatchclient.transport.dto.MemorySeedDto
 import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.ui.files.FilePickerDialog
 import com.dmzs.datawatchclient.ui.files.PickerMode
@@ -93,6 +95,11 @@ internal fun NewPrdDialog(
     var scanEnabled by remember { mutableStateOf(true) }
     var rulesEnabled by remember { mutableStateOf(true) }
     var storyApproval by remember { mutableStateOf(false) }
+    // Memory lifecycle (#175/#176)
+    var memorySeedEnabled by remember { mutableStateOf(false) }
+    var memoryHarvestEnabled by remember { mutableStateOf(false) }
+    var memoryHarvestPromoteTo by remember { mutableStateOf("story-shared") }
+    var harvestPromoMenuOpen by remember { mutableStateOf(false) }
 
     // Remote data
     var projectProfiles by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -552,6 +559,45 @@ internal fun NewPrdDialog(
                         )
                         Switch(checked = storyApproval, onCheckedChange = { storyApproval = it })
                     }
+                    // Memory seed toggle (#175)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.new_prd_memory_seed), style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.new_prd_memory_seed_hint), style = MaterialTheme.typography.labelSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = memorySeedEnabled, onCheckedChange = { memorySeedEnabled = it })
+                    }
+                    // Memory harvest toggle + promote_to picker (#175)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.new_prd_memory_harvest), style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.new_prd_memory_harvest_hint), style = MaterialTheme.typography.labelSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = memoryHarvestEnabled, onCheckedChange = { memoryHarvestEnabled = it })
+                    }
+                    if (memoryHarvestEnabled) {
+                        Box {
+                            OutlinedTextField(
+                                value = memoryHarvestPromoteTo,
+                                onValueChange = {},
+                                label = { Text(stringResource(R.string.new_prd_memory_promote_to)) },
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp).clickable { harvestPromoMenuOpen = true },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = harvestPromoMenuOpen) },
+                            )
+                            DropdownMenu(expanded = harvestPromoMenuOpen, onDismissRequest = { harvestPromoMenuOpen = false }) {
+                                listOf("session-local", "story-shared", "prd-shared", "project-shared").forEach { scope ->
+                                    DropdownMenuItem(text = { Text(scope) }, onClick = { memoryHarvestPromoteTo = scope; harvestPromoMenuOpen = false })
+                                }
+                            }
+                        }
+                    }
                     // Settings link
                     TextButton(
                         onClick = {
@@ -571,6 +617,8 @@ internal fun NewPrdDialog(
         confirmButton = {
             TextButton(
                 onClick = {
+                    val memorySeed = if (memorySeedEnabled) MemorySeedDto(enabled = true) else null
+                    val memoryHarvest = if (memoryHarvestEnabled) MemoryHarvestDto(enabled = true, promoteTo = memoryHarvestPromoteTo) else null
                     val req =
                         if (!usingProfile) {
                             NewPrdRequestDto(
@@ -583,6 +631,8 @@ internal fun NewPrdDialog(
                                 model = model.ifBlank { null },
                                 type = prdType.ifBlank { null },
                                 guidedMode = if (guidedMode) true else null,
+                                memorySeed = memorySeed,
+                                memoryHarvest = memoryHarvest,
                             )
                         } else {
                             NewPrdRequestDto(
@@ -593,6 +643,8 @@ internal fun NewPrdDialog(
                                 clusterProfile = null,
                                 type = prdType.ifBlank { null },
                                 guidedMode = if (guidedMode) true else null,
+                                memorySeed = memorySeed,
+                                memoryHarvest = memoryHarvest,
                             )
                         }
                     onCreate(req)

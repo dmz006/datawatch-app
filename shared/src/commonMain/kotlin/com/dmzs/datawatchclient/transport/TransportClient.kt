@@ -432,6 +432,30 @@ public interface TransportClient {
         tags: List<String> = emptyList(),
     ): Result<kotlinx.serialization.json.JsonObject>
 
+    // ---- v8.29.0 BL385 scoped memory endpoints ----
+
+    /**
+     * GET /api/memory/scopes/recall — search memories in a specific scope context.
+     * Supports prd_id / story_id to scope results to a PRD or story context.
+     */
+    public suspend fun scopesRecall(
+        query: String,
+        projectDir: String? = null,
+        prdId: String? = null,
+        storyId: String? = null,
+        n: Int = 20,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto>>
+
+    /** POST /api/memory/scopes/save — write a memory to a named scope. */
+    public suspend fun scopesSave(
+        scope: String,
+        text: String,
+        projectDir: String? = null,
+        prdId: String? = null,
+        storyId: String? = null,
+        role: String? = null,
+    ): Result<Unit>
+
     // ---- v0.38.0 autonomous PRD lifecycle (datawatch BL191) ----
 
     /** GET /api/autonomous/prds — list PRDs (issue #11–13). */

@@ -90,6 +90,12 @@ public class AutonomousViewModel(
         /** Orchestrator DAG graph for the currently-open PRD (#184). */
         val prdGraph: com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto? = null,
         val prdGraphLoading: Boolean = false,
+        /** BL386 — memory_report for the open PRD; null until loaded or if not available. */
+        val memoryReport: String? = null,
+        val memoryReportLoading: Boolean = false,
+        /** BL383/385 — scoped memory recall results for the open PRD (#183). */
+        val memoryRecallResults: List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto> = emptyList(),
+        val memoryRecallLoading: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -333,6 +339,71 @@ public class AutonomousViewModel(
 
     public fun clearPrdGraph() {
         _state.value = _state.value.copy(prdGraph = null, prdGraphLoading = false)
+    }
+
+    /** BL386 — load the auto-generated memory report for a completed PRD. */
+    public fun fetchMemoryReport(prdId: String) {
+        _state.value = _state.value.copy(memoryReportLoading = true, memoryReport = null)
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: run {
+                _state.value = _state.value.copy(memoryReportLoading = false)
+                return@launch
+            }
+            transport.getPrdMemoryReport(prdId).fold(
+                onSuccess = { report ->
+                    _state.value = _state.value.copy(memoryReport = report, memoryReportLoading = false)
+                },
+                onFailure = {
+                    _state.value = _state.value.copy(memoryReport = null, memoryReportLoading = false)
+                },
+            )
+        }
+    }
+
+    public fun clearMemoryReport() {
+        _state.value = _state.value.copy(memoryReport = null, memoryReportLoading = false)
+    }
+
+    /** BL385/#183 — search scoped memories for the open PRD. */
+    public fun recallPrdMemory(prdId: String, query: String, projectDir: String?) {
+        if (query.isBlank()) return
+        _state.value = _state.value.copy(memoryRecallLoading = true, memoryRecallResults = emptyList())
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: run {
+                _state.value = _state.value.copy(memoryRecallLoading = false)
+                return@launch
+            }
+            transport.scopesRecall(query = query, projectDir = projectDir, prdId = prdId).fold(
+                onSuccess = { results ->
+                    _state.value = _state.value.copy(memoryRecallResults = results, memoryRecallLoading = false)
+                },
+                onFailure = {
+                    _state.value = _state.value.copy(memoryRecallResults = emptyList(), memoryRecallLoading = false)
+                },
+            )
+        }
+    }
+
+    public fun clearMemoryRecall() {
+        _state.value = _state.value.copy(memoryRecallResults = emptyList(), memoryRecallLoading = false)
+    }
+
+    /** BL386 — hard-delete with memory strategy. */
+    public fun hardDeletePrdWithMemory(
+        prdId: String,
+        memoryStrategy: String,
+        archiveRoleFilter: List<String> = emptyList(),
+        archiveToScope: String? = null,
+    ) {
+        prdOp("Delete") {
+            it.deletePrd(
+                prdId = prdId,
+                hard = true,
+                memoryStrategy = memoryStrategy.takeIf { s -> s != "keep" },
+                archiveRoleFilter = archiveRoleFilter.takeIf { it.isNotEmpty() },
+                archiveToScope = archiveToScope,
+            )
+        }
     }
 
     public fun approve(prdId: String, note: String? = null) {

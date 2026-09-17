@@ -33,7 +33,10 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.RadioButton
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -108,6 +111,16 @@ internal fun PrdDetailDialog(
     onOpenFile: ((path: String) -> Unit)? = null,
     prdGraph: com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto? = null,
     prdGraphLoading: Boolean = false,
+    /** BL386 — null = not yet loaded; empty = none available. */
+    memoryReport: String? = null,
+    memoryReportLoading: Boolean = false,
+    onFetchMemoryReport: (() -> Unit)? = null,
+    /** BL385/#183 — scoped recall results for this PRD. */
+    memoryRecallResults: List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto> = emptyList(),
+    memoryRecallLoading: Boolean = false,
+    onRecallMemory: ((query: String) -> Unit)? = null,
+    /** BL386 — delete with memory strategy (keep/purge/archive). */
+    onDeleteWithMemory: ((strategy: String, roleFilter: List<String>, archiveToScope: String?) -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -129,6 +142,12 @@ internal fun PrdDetailDialog(
     var graphOpen by remember { mutableStateOf(false) }
     var approveOpen by remember { mutableStateOf(false) }
     var approveNote by remember { mutableStateOf("") }
+    // Memory strategy on delete (#175)
+    var memoryStrategy by remember { mutableStateOf("keep") }
+    var memoryArchiveRoles by remember { mutableStateOf("") }
+    var memoryArchiveScope by remember { mutableStateOf("project-shared") }
+    // Memory recall (#183)
+    var recallQuery by remember { mutableStateOf("") }
 
     val showProgressTab = status == "running" || status == "decomposing"
     val tabs =
@@ -438,6 +457,36 @@ internal fun PrdDetailDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+
+                            // ── BL387 Memory stats tile ──────────────────────
+                            val hasMemStats = (prd.prdSharedCount ?: 0) > 0 ||
+                                (prd.storySharedCount ?: 0) > 0 ||
+                                (prd.sessionLocalCount ?: 0) > 0
+                            if (hasMemStats) {
+                                PrdMemoryStatsTile(prd)
+                            }
+
+                            // ── BL386 Memory report section ──────────────────
+                            val isTerminalForReport = status in setOf("completed", "complete", "done", "archived")
+                            if (isTerminalForReport && onFetchMemoryReport != null) {
+                                PrdMemoryReportSection(
+                                    report = memoryReport,
+                                    loading = memoryReportLoading,
+                                    onFetch = onFetchMemoryReport,
+                                )
+                            }
+
+                            // ── BL385/#183 Memory recall search card ─────────
+                            if (onRecallMemory != null) {
+                                PrdMemoryRecallCard(
+                                    query = recallQuery,
+                                    onQueryChange = { recallQuery = it },
+                                    onSearch = { onRecallMemory(recallQuery) },
+                                    results = memoryRecallResults,
+                                    loading = memoryRecallLoading,
+                                )
+                            }
+
                             TextButton(
                                 onClick = {
                                     SessionsNavChannel.jumpTo(prd.name)
@@ -760,15 +809,56 @@ internal fun PrdDetailDialog(
             onDismissRequest = { deleteConfirmOpen = false },
             title = { Text(stringResource(R.string.prd_detail_delete_title)) },
             text = {
-                Text(
-                    stringResource(R.string.prd_detail_delete_body, prd.title ?: prd.name),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.prd_detail_delete_body, prd.title ?: prd.name),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (onDeleteWithMemory != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.prd_delete_memory_strategy),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        listOf("keep", "purge", "archive").forEach { strategy ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().clickable { memoryStrategy = strategy },
+                            ) {
+                                RadioButton(selected = memoryStrategy == strategy, onClick = { memoryStrategy = strategy })
+                                Text(
+                                    when (strategy) {
+                                        "keep" -> stringResource(R.string.prd_delete_memory_keep)
+                                        "purge" -> stringResource(R.string.prd_delete_memory_purge)
+                                        else -> stringResource(R.string.prd_delete_memory_archive)
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                        if (memoryStrategy == "archive") {
+                            OutlinedTextField(
+                                value = memoryArchiveRoles,
+                                onValueChange = { memoryArchiveRoles = it },
+                                label = { Text(stringResource(R.string.prd_delete_memory_archive_roles)) },
+                                placeholder = { Text(stringResource(R.string.prd_delete_memory_archive_roles_hint)) },
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                maxLines = 2,
+                            )
+                        }
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete()
+                        if (onDeleteWithMemory != null && memoryStrategy != "keep") {
+                            val roles = memoryArchiveRoles.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                            onDeleteWithMemory(memoryStrategy, roles, if (memoryStrategy == "archive") memoryArchiveScope else null)
+                        } else {
+                            onDelete()
+                        }
                         deleteConfirmOpen = false
                         onDismiss()
                     },
@@ -1764,6 +1854,180 @@ private fun PrdRunningSessionCard(sessionId: String, taskName: String) {
                     color = gpuColor,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+// ── BL387 Memory stats tile ──────────────────────────────────────────────────
+
+@Composable
+private fun PrdMemoryStatsTile(prd: PrdDto) {
+    val counts = listOfNotNull(
+        prd.prdSharedCount?.takeIf { it > 0 }?.let { stringResource(R.string.memory_scope_prd_shared) to it },
+        prd.storySharedCount?.takeIf { it > 0 }?.let { stringResource(R.string.memory_scope_story_shared) to it },
+        prd.sessionLocalCount?.takeIf { it > 0 }?.let { stringResource(R.string.memory_scope_session_local) to it },
+    )
+    if (counts.isEmpty()) return
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.small,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                stringResource(R.string.prd_memory_stats),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                counts.forEach { (label, count) ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            count.toString(),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── BL386 Memory report section ──────────────────────────────────────────────
+
+@Composable
+private fun PrdMemoryReportSection(
+    report: String?,
+    loading: Boolean,
+    onFetch: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable {
+                if (report != null) expanded = !expanded else onFetch()
+            },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                stringResource(R.string.prd_memory_report),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            if (loading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            } else {
+                Text(
+                    if (expanded) stringResource(R.string.prd_memory_report_hide)
+                    else stringResource(R.string.prd_memory_report_show),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (expanded && report != null) {
+            Spacer(Modifier.height(4.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    report,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+// ── BL385/#183 Memory recall search card ─────────────────────────────────────
+
+@Composable
+private fun PrdMemoryRecallCard(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    results: List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto>,
+    loading: Boolean,
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                placeholder = { Text(stringResource(R.string.prd_memory_recall_hint)) },
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                label = { Text(stringResource(R.string.prd_memory_recall)) },
+            )
+            TextButton(onClick = onSearch, enabled = query.isNotBlank() && !loading) {
+                if (loading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                else Text(stringResource(R.string.prd_memory_recall_search))
+            }
+        }
+        if (!loading && query.isNotBlank() && results.isEmpty()) {
+            Text(
+                stringResource(R.string.prd_memory_recall_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        results.forEach { entry ->
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        entry.scope?.let { scope ->
+                            Box(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                            ) {
+                                Text(
+                                    scope.replace("-", "‑"),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+                        entry.role?.let { role ->
+                            Text(
+                                role,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        entry.score?.let { score ->
+                            Text(
+                                "%.2f".format(score),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        entry.text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
