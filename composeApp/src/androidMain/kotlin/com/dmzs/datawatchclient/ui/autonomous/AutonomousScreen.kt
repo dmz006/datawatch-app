@@ -522,16 +522,22 @@ private fun PrdsBody(
                     )
                 })
             }
+            // Active group (always visible by default in list)
             items(
                 listOf(
+                    "draft",
+                    "planning",
                     "needs_review",
-                    "revisions_asked",
                     "approved",
-                    "decomposing",
                     "running",
-                    "complete",
-                    "rejected",
+                    "blocked",
+                    "completed",
+                    // History group (only shown when historyOn=true)
+                    "revisions_asked",
+                    "decomposing",
                     "cancelled",
+                    "rejected",
+                    "archived",
                 ),
             ) { s ->
                 val statusColor = prdStatusColor(s)
@@ -589,8 +595,9 @@ private fun PrdsBody(
             style = MaterialTheme.typography.bodySmall,
         )
     }
-    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false
-    val terminalStatuses = setOf("completed", "complete", "cancelled", "canceled", "rejected", "archived")
+    // PWA _AUTOMATA_ACTIVE_STATUSES — terminal statuses hidden when historyOn=false.
+    // "completed" moved to active group (v8.33.29 / #180): shown by default like "running".
+    val terminalStatuses = setOf("cancelled", "canceled", "rejected", "archived")
     val visible =
         state.prds
             .filter { prd ->
@@ -1313,7 +1320,9 @@ internal fun prdStateRank(status: String): Int =
         "decomposing", "planning" -> 2
         "approved" -> 3
         "draft" -> 4
-        "cancelled", "rejected", "completed", "complete", "archived" -> 10
+        // completed shown by default (v8.33.29 / #180) — sorted after active, before terminal
+        "completed", "complete" -> 6
+        "cancelled", "canceled", "rejected", "archived" -> 10
         else -> 5
     }
 
@@ -1323,8 +1332,9 @@ internal fun prdStatusColor(status: String): Color =
         "approved" -> Color(0xFF8B5CF6)
         "needs_review", "revisions_asked", "awaiting_approval" -> Color(0xFFF59E0B)
         "blocked", "rejected" -> Color(0xFFEF4444)
-        "decomposing" -> Color(0xFFA855F7)
-        "draft", "complete", "completed", "cancelled" -> Color(0xFF94A3B8)
+        "decomposing", "planning" -> Color(0xFFA855F7)
+        "complete", "completed" -> Color(0xFF059669)
+        "draft", "cancelled", "canceled", "archived" -> Color(0xFF94A3B8)
         else -> Color(0xFF94A3B8)
     }
 

@@ -692,12 +692,13 @@ public data class PrdTaskVerificationDto(
 public data class PrdTaskDto(
     val id: String = "",
     val task: String = "",
-    /** pending | in_progress | complete | failed | blocked */
+    /** pending | in_progress | complete | failed | blocked | verifying | running_tests | cancelled */
     val status: String = "",
     @SerialName("session_id") val sessionId: String? = null,
     val error: String? = null,
     val verification: PrdTaskVerificationDto? = null,
     @SerialName("retry_count") val retryCount: Int = 0,
+    @SerialName("files_touched") val filesTouched: List<String> = emptyList(),
 )
 
 @Serializable
