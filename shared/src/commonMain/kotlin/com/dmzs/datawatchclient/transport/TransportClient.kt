@@ -496,7 +496,14 @@ public interface TransportClient {
     public suspend fun deletePrd(
         prdId: String,
         hard: Boolean = false,
+        /** v8.30.0 BL386: keep | purge | archive */
+        memoryStrategy: String? = null,
+        archiveRoleFilter: List<String>? = null,
+        archiveToScope: String? = null,
     ): Result<Unit>
+
+    /** GET /api/autonomous/prds/{id}/memory-report — fetch/generate PRD memory report (v8.30.0). */
+    public suspend fun getPrdMemoryReport(prdId: String): Result<String>
 
     /** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task (v8.23.0). */
     public suspend fun resetPrdTask(

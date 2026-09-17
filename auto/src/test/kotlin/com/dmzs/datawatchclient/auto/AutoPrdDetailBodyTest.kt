@@ -41,7 +41,7 @@ class AutoPrdDetailBodyTest {
     @Test
     fun `body includes status line`() {
         val body = AutoPrdDetailScreen.buildDetailBody(makePrd(status = "running"))
-        assertContains(body, "Status: running")
+        assertContains(body, "[datawatch]: running")
     }
 
     @Test
@@ -113,8 +113,7 @@ class AutoPrdDetailBodyTest {
     @Test
     fun `spec snippet included`() {
         val body = AutoPrdDetailScreen.buildDetailBody(makePrd(spec = "Build a REST API"))
-        assertContains(body, "Spec:")
-        assertContains(body, "Build a REST API")
+        assertContains(body, "[You]: Build a REST API")
     }
 
     @Test

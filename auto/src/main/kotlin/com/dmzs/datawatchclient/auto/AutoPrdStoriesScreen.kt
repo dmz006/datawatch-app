@@ -5,6 +5,7 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
@@ -60,6 +61,11 @@ public class AutoPrdStoriesScreen(
 
     // ---- stories-list mode ----
 
+    private fun listLimit(): Int = runCatching {
+        carContext.getCarService(ConstraintManager::class.java)
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+    }.getOrElse { MAX_ROWS_FALLBACK }
+
     private fun buildStoriesListTemplate(): ListTemplate {
         val items = ItemList.Builder()
         if (prd.stories.isEmpty()) {
@@ -70,11 +76,22 @@ public class AutoPrdStoriesScreen(
                     .build(),
             )
         } else {
-            prd.stories.forEachIndexed { idx, story ->
+            val max = listLimit()
+            val visible = prd.stories.take((max - 1).coerceAtLeast(1))
+            val overflow = prd.stories.size - visible.size
+            visible.forEachIndexed { idx, story ->
                 items.addItem(buildStoryRow(idx + 1, story) {
                     selectedStory = story
                     invalidate()
                 })
+            }
+            if (overflow > 0) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… $overflow more stories")
+                        .addText("Showing top ${visible.size}")
+                        .build(),
+                )
             }
         }
         val prdTitle = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
@@ -106,11 +123,22 @@ public class AutoPrdStoriesScreen(
         overviewBuilder.addText("[datawatch]: $dwResponse")
         items.addItem(overviewBuilder.build())
 
-        // Task rows — each pushes AutoTaskDetailScreen (depth 5)
-        story.tasks.forEach { task ->
+        // Task rows — each pushes AutoTaskDetailScreen (depth 5). Reserve 1 slot for the overview row.
+        val taskMax = (listLimit() - 1).coerceAtLeast(1)
+        val visibleTasks = story.tasks.take(taskMax)
+        val taskOverflow = story.tasks.size - visibleTasks.size
+        visibleTasks.forEach { task ->
             items.addItem(buildTaskRow(task) {
                 screenManager.push(AutoTaskDetailScreen(carContext, prd.id, task))
             })
+        }
+        if (taskOverflow > 0) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("… $taskOverflow more tasks")
+                    .addText("Showing top ${visibleTasks.size}")
+                    .build(),
+            )
         }
 
         // ActionStrip: back-to-stories + lifecycle actions
@@ -295,6 +323,7 @@ public class AutoPrdStoriesScreen(
         private val DONE_STATUSES = setOf("complete", "completed", "done")
         private val REVIEW_STATUSES = setOf("needs_review", "awaiting_review", "revisions_asked")
 
+        const val MAX_ROWS_FALLBACK = 5
         const val MAX_TITLE_CHARS = 50
         const val MAX_TASK_CHARS = 55
         const val MAX_DESC_CHARS = 70

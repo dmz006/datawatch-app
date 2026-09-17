@@ -662,6 +662,16 @@ public data class PrdDto(
     val decisions: List<DecisionDto>? = null,
     /** v8.20.0: headless planning LLM (ollama/openwebui only). Empty = use daemon default. */
     @SerialName("decomposition_profile") val decompositionProfile: String? = null,
+    /** v8.29.0 BL385: prd-shared/story-shared scope counts from server. */
+    @SerialName("prd_shared_count") val prdSharedCount: Int? = null,
+    @SerialName("story_shared_count") val storySharedCount: Int? = null,
+    @SerialName("session_local_count") val sessionLocalCount: Int? = null,
+    /** v8.30.0 BL386: memory lifecycle config. */
+    @SerialName("memory_seed") val memorySeed: MemorySeedDto? = null,
+    @SerialName("memory_harvest") val memoryHarvest: MemoryHarvestDto? = null,
+    /** v8.30.0 BL386: auto-generated learning summary on completion. */
+    @SerialName("memory_report") val memoryReport: String? = null,
+    @SerialName("memory_report_at") val memoryReportAt: String? = null,
 )
 
 @Serializable
@@ -670,6 +680,33 @@ public data class DecisionDto(
     val kind: String? = null,
     val actor: String? = null,
     val note: String? = null,
+)
+
+/** v8.30.0 BL386 — memory seeding config on PRD create/detail. */
+@Serializable
+public data class MemorySeedDto(
+    val enabled: Boolean = false,
+    @SerialName("max_per_scope") val maxPerScope: Int? = null,
+    @SerialName("role_filter") val roleFilter: List<String> = emptyList(),
+    @SerialName("from_archives") val fromArchives: List<MemoryArchiveSourceDto> = emptyList(),
+    @SerialName("from_prds") val fromPrds: List<String> = emptyList(),
+)
+
+@Serializable
+public data class MemoryArchiveSourceDto(
+    @SerialName("prd_id") val prdId: String = "",
+    @SerialName("role_filter") val roleFilter: List<String> = emptyList(),
+    val max: Int? = null,
+)
+
+/** v8.30.0 BL386 — memory harvest config on PRD create/detail. */
+@Serializable
+public data class MemoryHarvestDto(
+    val enabled: Boolean = false,
+    /** session-local | story-shared | prd-shared | project-shared */
+    @SerialName("promote_to") val promoteTo: String = "story-shared",
+    @SerialName("role_filter") val roleFilter: List<String> = emptyList(),
+    val max: Int? = null,
 )
 
 @Serializable
@@ -738,6 +775,8 @@ public data class NewPrdRequestDto(
     @SerialName("guided_mode") val guidedMode: Boolean? = null,
     val skills: List<String>? = null,
     val spec: String? = null,
+    @SerialName("memory_seed") val memorySeed: MemorySeedDto? = null,
+    @SerialName("memory_harvest") val memoryHarvest: MemoryHarvestDto? = null,
 )
 
 @Serializable
