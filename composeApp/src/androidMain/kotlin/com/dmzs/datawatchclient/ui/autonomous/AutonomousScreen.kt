@@ -123,6 +123,10 @@ public fun AutonomousScreen(
             vm.fetchFullPrd(openPrdId!!)
         }
     }
+    // #178: start/stop WS live updates when the detail dialog opens/closes.
+    LaunchedEffect(openPrdId) {
+        if (openPrdId != null) vm.startPrdLiveUpdates(openPrdId!!) else vm.stopPrdLiveUpdates()
+    }
 
     LaunchedEffect(Unit) {
         vm.refresh()

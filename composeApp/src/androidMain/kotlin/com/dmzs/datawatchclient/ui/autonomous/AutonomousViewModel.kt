@@ -13,8 +13,10 @@ import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.RuleProposalDto
 import com.dmzs.datawatchclient.transport.dto.ScanResultDto
+import com.dmzs.datawatchclient.transport.ws.PrdHub
 import com.dmzs.datawatchclient.ui.common.ProfileResolver
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -681,6 +684,41 @@ public class AutonomousViewModel(
                 },
             )
         }
+    }
+
+    // ---- #178: PRD detail live updates via WebSocket ----
+
+    private var prdDetailJob: Job? = null
+
+    /**
+     * Start receiving `prd_update` WS events for [prdId]. Opens a dedicated
+     * WS connection (sentinel subscription) so PrdHub receives frames even
+     * when no session stream is active. Cancels any previous live-update job.
+     */
+    public fun startPrdLiveUpdates(prdId: String) {
+        prdDetailJob?.cancel()
+        prdDetailJob = viewModelScope.launch {
+            val (profile, _) = resolver.resolve() ?: return@launch
+            val wsTransport = ServiceLocator.wsTransportFor(profile)
+            // Keep a WS connection alive so prd_update frames reach PrdHub via WebSocketTransport.
+            // Sentinel subscription id "__autonomous__" triggers no session-specific output;
+            // the server still broadcasts global events (prd_update, stats) to all WS clients.
+            launch { wsTransport.events("__autonomous__").collect { } }
+            // Patch in-place — no full re-render, no flicker, expanded rows preserved.
+            PrdHub.flow
+                .filter { it.id == prdId }
+                .collect { updatedPrd ->
+                    _state.value = _state.value.copy(
+                        prds = _state.value.prds.map { if (it.id == updatedPrd.id) updatedPrd else it },
+                    )
+                }
+        }
+    }
+
+    /** Cancel live updates started by [startPrdLiveUpdates]. Call when PRD detail closes. */
+    public fun stopPrdLiveUpdates() {
+        prdDetailJob?.cancel()
+        prdDetailJob = null
     }
 
     // Cached active profile id for synchronous watch-toggle calls. Lazy to avoid
