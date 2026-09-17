@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.transport.ws
 
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionEvent
+import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.WsFrameDto
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
@@ -136,6 +137,13 @@ public class WebSocketTransport(
                                         tryRouteStatsFrame(dto.data, json)
                                         continue
                                     }
+                                    // #178: prd_update frames are global —
+                                    // route to PrdHub so AutonomousViewModel
+                                    // can patch detail in-place without flicker.
+                                    if (dto.type == "prd_update") {
+                                        tryRoutePrdUpdateFrame(dto.data, json)
+                                        continue
+                                    }
                                     // v0.33.19: trace every inbound frame
                                     // type + count mapped → events, so we
                                     // can see when pane_captures arrive but
@@ -213,6 +221,18 @@ private fun tryRouteStatsFrame(
         val dto = json.decodeFromJsonElement(com.dmzs.datawatchclient.transport.dto.StatsDto.serializer(), data)
         StatsHub.emit(dto)
     }.onFailure { println("WsTransport: failed to parse stats frame: ${it.message}") }
+}
+
+/** Parse a `prd_update` WS frame and forward to [PrdHub] (#178). */
+private fun tryRoutePrdUpdateFrame(
+    data: kotlinx.serialization.json.JsonElement?,
+    json: Json,
+) {
+    if (data == null) return
+    runCatching {
+        val dto = json.decodeFromJsonElement(PrdDto.serializer(), data)
+        PrdHub.emit(dto)
+    }.onFailure { println("WsTransport: failed to parse prd_update frame: ${it.message}") }
 }
 
 // Preserve the old signature for test compatibility (takes sessionId but
