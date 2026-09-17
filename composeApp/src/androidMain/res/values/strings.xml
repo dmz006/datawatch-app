@@ -1409,4 +1409,36 @@
     <string name="obs_cn_ollama_cpu">ollama CPU</string>
     <string name="obs_cn_ollama_rss">ollama RSS</string>
     <string name="obs_peer_no_peers">no peers registered</string>
+
+    <!-- ── BL385–387 Memory lifecycle / scope model (#174 #175 #176 #183) ── -->
+    <!-- Memory stats tile on PRD detail -->
+    <string name="prd_memory_stats">Memory</string>
+    <string name="memory_scope_prd_shared">PRD-shared</string>
+    <string name="memory_scope_story_shared">Story-shared</string>
+    <string name="memory_scope_session_local">Session</string>
+    <!-- Memory report section on PRD detail -->
+    <string name="prd_memory_report">Learning Report</string>
+    <string name="prd_memory_report_show">Show full report</string>
+    <string name="prd_memory_report_hide">Hide</string>
+    <!-- Memory strategy on delete dialog -->
+    <string name="prd_delete_memory_strategy">Memory strategy</string>
+    <string name="prd_delete_memory_keep">Keep</string>
+    <string name="prd_delete_memory_purge">Purge</string>
+    <string name="prd_delete_memory_archive">Archive</string>
+    <string name="prd_delete_memory_archive_roles">Role filter (comma-separated)</string>
+    <string name="prd_delete_memory_archive_roles_hint">e.g. learning, decision</string>
+    <string name="prd_delete_memory_archive_scope">Archive to scope</string>
+    <!-- Memory seed/harvest in NewPrd advanced section -->
+    <string name="new_prd_memory_seed">Seed from prior memory</string>
+    <string name="new_prd_memory_seed_hint">Inject relevant memories at task start</string>
+    <string name="new_prd_memory_harvest">Harvest learnings on completion</string>
+    <string name="new_prd_memory_harvest_hint">Promote memories when PRD finishes</string>
+    <string name="new_prd_memory_promote_to">Promote to scope</string>
+    <string name="new_prd_memory_from_prds">Seed from prior PRDs</string>
+    <string name="new_prd_memory_from_prds_hint">Inherit learnings from selected PRDs at task start</string>
+    <!-- Memory recall search card on PRD detail -->
+    <string name="prd_memory_recall">Memory Recall</string>
+    <string name="prd_memory_recall_hint">Search PRD memories…</string>
+    <string name="prd_memory_recall_empty">No results</string>
+    <string name="prd_memory_recall_search">Search</string>
 </resources>

@@ -133,6 +133,13 @@ public fun AutonomousScreen(
     LaunchedEffect(openPrdId) {
         if (openPrdId != null) vm.fetchPrdGraph(openPrdId!!) else vm.clearPrdGraph()
     }
+    // #183/#175: clear memory state when detail closes.
+    LaunchedEffect(openPrdId) {
+        if (openPrdId == null) {
+            vm.clearMemoryReport()
+            vm.clearMemoryRecall()
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.refresh()
@@ -462,6 +469,15 @@ public fun AutonomousScreen(
                 onOpenFile = { path -> vm.openFileViewer(path, prd.projectDir) },
                 prdGraph = state.prdGraph,
                 prdGraphLoading = state.prdGraphLoading,
+                memoryReport = state.memoryReport,
+                memoryReportLoading = state.memoryReportLoading,
+                onFetchMemoryReport = { vm.fetchMemoryReport(id) },
+                memoryRecallResults = state.memoryRecallResults,
+                memoryRecallLoading = state.memoryRecallLoading,
+                onRecallMemory = { query -> vm.recallPrdMemory(id, query, prd.projectDir) },
+                onDeleteWithMemory = { strategy, roleFilter, archiveToScope ->
+                    vm.hardDeletePrdWithMemory(id, strategy, roleFilter, archiveToScope)
+                },
             )
         }
     }

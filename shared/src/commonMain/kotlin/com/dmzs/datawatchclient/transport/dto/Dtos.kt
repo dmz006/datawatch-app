@@ -757,6 +757,20 @@ public data class PrdStoryDto(
  * collapse: when `project_profile` is set, daemon ignores the
  * `project_dir` / `backend` / `effort` / `model` fields.
  */
+/** v8.29.0 BL385 — entry returned from GET /api/memory/scopes/recall with prd/story context. */
+@Serializable
+public data class ScopedMemoryEntryDto(
+    val id: Long? = null,
+    val text: String = "",
+    val role: String? = null,
+    val score: Float? = null,
+    val scope: String? = null,
+    @SerialName("project_dir") val projectDir: String? = null,
+    @SerialName("prd_id") val prdId: String? = null,
+    @SerialName("story_id") val storyId: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
 @Serializable
 public data class NewPrdRequestDto(
     val name: String = "",

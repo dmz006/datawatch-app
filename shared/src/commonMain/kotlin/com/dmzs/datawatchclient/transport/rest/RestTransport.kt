@@ -911,6 +911,47 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun scopesRecall(
+        query: String,
+        projectDir: String?,
+        prdId: String?,
+        storyId: String?,
+        n: Int,
+    ): Result<List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/memory/scopes/recall") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("q", query)
+                parameter("n", n)
+                if (projectDir != null) parameter("project_dir", projectDir)
+                if (prdId != null) parameter("prd_id", prdId)
+                if (storyId != null) parameter("story_id", storyId)
+            }.body()
+        }
+
+    override suspend fun scopesSave(
+        scope: String,
+        text: String,
+        projectDir: String?,
+        prdId: String?,
+        storyId: String?,
+        role: String?,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/memory/scopes/save") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(kotlinx.serialization.json.buildJsonObject {
+                    put("scope", kotlinx.serialization.json.JsonPrimitive(scope))
+                    put("text", kotlinx.serialization.json.JsonPrimitive(text))
+                    if (projectDir != null) put("project_dir", kotlinx.serialization.json.JsonPrimitive(projectDir))
+                    if (prdId != null) put("prd_id", kotlinx.serialization.json.JsonPrimitive(prdId))
+                    if (storyId != null) put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                    if (role != null) put("role", kotlinx.serialization.json.JsonPrimitive(role))
+                })
+            }.body<Unit>()
+        }
+
     override suspend fun listPrds(): Result<com.dmzs.datawatchclient.transport.dto.PrdListDto> =
         request {
             client.get("${profile.baseUrl}/api/autonomous/prds") {
