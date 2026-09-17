@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -114,6 +115,7 @@ public fun AutonomousScreen(
     var identity by remember { mutableStateOf(IdentityDto()) }
     var pickerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Keep detailPrd alive through exit animation so slide-out doesn't flash blank.
     // Also trigger a full-PRD fetch when a detail opens so stories[] is never truncated (#163).
@@ -453,8 +455,23 @@ public fun AutonomousScreen(
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },
                 onSetSkills = { skills -> vm.setPrdSkills(id, skills) },
                 onCloneTemplate = { vm.clonePrdToTemplate(id) },
+                onOpenFile = { path -> vm.openFileViewer(path, prd.projectDir) },
             )
         }
+    }
+
+    state.fileViewer?.let { fvState ->
+        FileViewerSheet(
+            state = fvState,
+            onDismiss = { vm.closeFileViewer() },
+            onShare = { path ->
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                    data = android.net.Uri.parse(path)
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                runCatching { context.startActivity(intent) }
+            },
+        )
     }
 
     if (identityWizardOpen) {

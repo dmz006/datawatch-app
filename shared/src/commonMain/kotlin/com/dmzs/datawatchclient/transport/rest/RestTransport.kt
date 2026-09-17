@@ -2914,6 +2914,15 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun getFileContent(path: String): Result<String> =
+        request {
+            client.get("${profile.baseUrl}/api/files/download") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("path", path)
+                parameter("inline", "1")
+            }.bodyAsText()
+        }
+
     override suspend fun setFileServiceRoot(path: String): Result<Unit> =
         request {
             client.put("${profile.baseUrl}/api/config") {
