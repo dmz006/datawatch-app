@@ -15,12 +15,13 @@ public object Destinations {
     public fun editServer(profileId: String): String = "servers/edit/$profileId"
 
     public const val Home: String = "home"
-    public const val SessionDetail: String = "sessions/{sessionId}?isNew={isNew}"
+    public const val SessionDetail: String = "sessions/{sessionId}?isNew={isNew}&statusMode={statusMode}"
 
     public fun sessionDetail(
         sessionId: String,
         isNew: Boolean = false,
-    ): String = "sessions/$sessionId?isNew=$isNew"
+        statusMode: Boolean = false,
+    ): String = "sessions/$sessionId?isNew=$isNew&statusMode=$statusMode"
 
     public const val NewSession: String = "sessions/new"
 

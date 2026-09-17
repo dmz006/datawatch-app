@@ -1311,6 +1311,7 @@
     <string name="dash_stat_error">Error</string>
     <string name="dash_stat_done">Done</string>
     <string name="dash_stat_total">Total</string>
+    <string name="dash_expand_session">Open session status dashboard</string>
     <string name="dash_resource_cpu">CPU</string>
     <string name="dash_resource_mem">Mem</string>
     <string name="dash_no_active_sessions">No active sessions</string>

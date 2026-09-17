@@ -240,6 +240,9 @@ private fun Nav(
                 onOpenSession = { id ->
                     navController.navigate(Destinations.sessionDetail(id))
                 },
+                onExpandSession = { id ->
+                    navController.navigate(Destinations.sessionDetail(id, statusMode = true))
+                },
                 onNewSession = { navController.navigate(Destinations.NewSession) },
             )
         }
@@ -282,14 +285,20 @@ private fun Nav(
                         type = androidx.navigation.NavType.BoolType
                         defaultValue = false
                     },
+                    androidx.navigation.navArgument("statusMode") {
+                        type = androidx.navigation.NavType.BoolType
+                        defaultValue = false
+                    },
                 ),
         ) { entry ->
             val id = entry.arguments?.getString("sessionId") ?: return@composable
             val isNew = entry.arguments?.getBoolean("isNew") ?: false
+            val openInStatusMode = entry.arguments?.getBoolean("statusMode") ?: false
             val context = LocalContext.current
             SessionDetailScreen(
                 sessionId = id,
                 isNew = isNew,
+                openInStatusMode = openInStatusMode,
                 onBack = { navController.popBackStack() },
                 onNavigateToSettings = { tab ->
                     context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -310,6 +319,7 @@ private fun HomeShell(
     onAddServer: () -> Unit,
     onEditServer: (String) -> Unit,
     onOpenSession: (String) -> Unit,
+    onExpandSession: (String) -> Unit = {},
     onNewSession: () -> Unit,
 ) {
     val tabNav = rememberNavController()
@@ -463,6 +473,7 @@ private fun HomeShell(
                     composable(Destinations.Tabs.Dashboard) {
                         DashboardScreen(
                             onOpenSession = if (isWide) { id -> selectedSessionId = id } else onOpenSession,
+                            onExpandSession = if (isWide) { id -> selectedSessionId = id } else onExpandSession,
                         )
                     }
                     composable(Destinations.Tabs.Settings) {

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -86,6 +87,7 @@ private val DEFAULT_CARDS = listOf("tree", "ekg", "smoke")
 @Composable
 public fun DashboardScreen(
     onOpenSession: (String) -> Unit = {},
+    onExpandSession: (String) -> Unit = {},
     vm: DashboardViewModel = viewModel(),
     alertsVm: AlertsViewModel = viewModel(),
 ) {
@@ -198,7 +200,7 @@ public fun DashboardScreen(
                     }
                 if (rendered.add(group)) {
                     when (group) {
-                        "constellation" -> ConstellationCard(state.sessions, state.prds, onOpenSession)
+                        "constellation" -> ConstellationCard(state.sessions, state.prds, onOpenSession, onExpandSession)
                         "ekg" -> PulseCard(state.sessions, state.stats)
                         "sparklines" -> SparklineCard(state.analytics)
                         "events" -> RecentEventsCard(state.sessions, onOpenSession)
@@ -221,6 +223,7 @@ private fun ConstellationCard(
     sessions: List<Session>,
     prds: List<PrdDto>,
     onOpenSession: (String) -> Unit,
+    onExpandSession: (String) -> Unit = {},
 ) {
     val dw = LocalDatawatchColors.current
     val running = sessions.filter { it.state == SessionState.Running }
@@ -255,7 +258,7 @@ private fun ConstellationCard(
         } else {
             active.take(8).forEachIndexed { idx, session ->
                 if (idx > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                SessionNodeRow(session, onOpenSession)
+                SessionNodeRow(session, onOpenSession, onExpandSession)
             }
             if (active.size > 8) {
                 Text(
@@ -318,6 +321,7 @@ private fun ConstellationCard(
 private fun SessionNodeRow(
     session: Session,
     onOpenSession: (String) -> Unit,
+    onExpandSession: (String) -> Unit = {},
 ) {
     val dw = LocalDatawatchColors.current
     val stateColor =
@@ -358,6 +362,19 @@ private fun SessionNodeRow(
             style = MaterialTheme.typography.labelSmall,
             color = stateColor,
         )
+        if (session.state == SessionState.Running || session.state == SessionState.Waiting) {
+            IconButton(
+                onClick = { onExpandSession(session.id) },
+                modifier = Modifier.size(24.dp),
+            ) {
+                Icon(
+                    Icons.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.dash_expand_session),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

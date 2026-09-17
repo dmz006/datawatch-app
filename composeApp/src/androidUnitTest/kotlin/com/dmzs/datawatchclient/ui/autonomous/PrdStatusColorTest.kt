@@ -12,6 +12,7 @@ class PrdStatusColorTest {
     private val red = Color(0xFFEF4444)
     private val purple = Color(0xFFA855F7)
     private val grey = Color(0xFF94A3B8)
+    private val completedGreen = Color(0xFF059669) // darker green for completed — #180
 
     @Test fun `running maps to green`() = assertEquals(green, prdStatusColor("running"))
 
@@ -31,9 +32,9 @@ class PrdStatusColorTest {
 
     @Test fun `draft maps to grey`() = assertEquals(grey, prdStatusColor("draft"))
 
-    @Test fun `complete maps to grey`() = assertEquals(grey, prdStatusColor("complete"))
+    @Test fun `complete maps to completed green`() = assertEquals(completedGreen, prdStatusColor("complete"))
 
-    @Test fun `completed maps to grey`() = assertEquals(grey, prdStatusColor("completed"))
+    @Test fun `completed maps to completed green`() = assertEquals(completedGreen, prdStatusColor("completed"))
 
     @Test fun `cancelled maps to grey`() = assertEquals(grey, prdStatusColor("cancelled"))
 
