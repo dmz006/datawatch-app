@@ -1356,6 +1356,13 @@ public interface TransportClient {
     /** GET /api/files/meta — file service metadata. */
     public suspend fun getFileServiceMeta(): Result<com.dmzs.datawatchclient.transport.dto.FileServiceMetaDto>
 
+    /**
+     * GET /api/files/download?path={path}&inline=1 — fetch file content as text
+     * for the inline file viewer (#181). The server enforces session root-path
+     * restriction; callers must pass an absolute path.
+     */
+    public suspend fun getFileContent(path: String): Result<String>
+
     /** PUT /api/config — set the file service root path. */
     public suspend fun setFileServiceRoot(path: String): Result<Unit>
 

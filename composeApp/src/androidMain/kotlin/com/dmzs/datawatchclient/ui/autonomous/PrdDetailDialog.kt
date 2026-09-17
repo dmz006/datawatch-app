@@ -105,6 +105,7 @@ internal fun PrdDetailDialog(
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
     onSetSkills: ((List<String>) -> Unit)? = null,
     onCloneTemplate: (() -> Unit)? = null,
+    onOpenFile: ((path: String) -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -488,6 +489,8 @@ internal fun PrdDetailDialog(
                                             onCancelTask = onCancelTask,
                                             onRequeueTask = onRequeueTask,
                                             onEditTask = onEditTask,
+                                            projectDir = prd.projectDir,
+                                            onOpenFile = onOpenFile,
                                         )
                                     }
                                 }
@@ -1020,6 +1023,8 @@ private fun StoryRow(
     onCancelTask: ((taskId: String, reason: String?) -> Unit)? = null,
     onRequeueTask: ((taskId: String) -> Unit)? = null,
     onEditTask: ((taskId: String, newSpec: String) -> Unit)? = null,
+    projectDir: String? = null,
+    onOpenFile: ((path: String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var cancelStoryOpen by remember { mutableStateOf(false) }
@@ -1077,6 +1082,7 @@ private fun StoryRow(
                     ) {
                         story.files.forEach { f ->
                             val others = conflicts[f]?.filter { it != story.id }.orEmpty()
+                            val resolvedPath = if (f.startsWith("/")) f else "${projectDir?.trimEnd('/').orEmpty()}/$f"
                             FilePill(
                                 name = f,
                                 color = Color(0xFF3B82F6),
@@ -1089,9 +1095,21 @@ private fun StoryRow(
                                     } else {
                                         null
                                     },
+                                onClick = if (onOpenFile != null && isViewable(f)) {
+                                    { onOpenFile(resolvedPath) }
+                                } else null,
                             )
                         }
-                        story.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
+                        story.filesTouched.forEach { f ->
+                            val resolvedPath = if (f.startsWith("/")) f else "${projectDir?.trimEnd('/').orEmpty()}/$f"
+                            FilePill(
+                                name = f,
+                                color = Color(0xFF10B981),
+                                onClick = if (onOpenFile != null && isViewable(f)) {
+                                    { onOpenFile(resolvedPath) }
+                                } else null,
+                            )
+                        }
                     }
                     if (canEdit) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -1133,6 +1151,8 @@ private fun StoryRow(
                             onCancelTask = onCancelTask?.let { cb -> { r -> cb(task.id, r) } },
                             onRequeueTask = onRequeueTask?.let { cb -> { cb(task.id) } },
                             onEditTask = onEditTask?.let { cb -> { spec -> cb(task.id, spec) } },
+                            projectDir = projectDir,
+                            onOpenFile = onOpenFile,
                         )
                     }
                 }
@@ -1178,6 +1198,8 @@ private fun TaskRow(
     onCancelTask: ((reason: String?) -> Unit)? = null,
     onRequeueTask: (() -> Unit)? = null,
     onEditTask: ((newSpec: String) -> Unit)? = null,
+    projectDir: String? = null,
+    onOpenFile: ((path: String) -> Unit)? = null,
 ) {
     val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus == "running"
     val canRequeue = task.status in setOf("complete", "cancelled")
@@ -1231,7 +1253,16 @@ private fun TaskRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                task.filesTouched.forEach { f -> FilePill(f, color = Color(0xFF10B981)) }
+                task.filesTouched.forEach { f ->
+                    val resolvedPath = if (f.startsWith("/")) f else "${projectDir?.trimEnd('/').orEmpty()}/$f"
+                    FilePill(
+                        name = f,
+                        color = Color(0xFF10B981),
+                        onClick = if (onOpenFile != null && isViewable(f)) {
+                            { onOpenFile(resolvedPath) }
+                        } else null,
+                    )
+                }
             }
         }
         // Session chip
@@ -1395,25 +1426,24 @@ private fun FilePill(
     color: Color,
     conflict: Boolean = false,
     conflictNote: String? = null,
+    onClick: (() -> Unit)? = null,
 ) {
     val pillColor = if (conflict) Color(0xFFEF4444) else color
     Column {
         Box(
-            modifier =
-                Modifier.background(
-                    pillColor.copy(alpha = 0.18f),
-                    RoundedCornerShape(6.dp),
-                ).padding(horizontal = 6.dp, vertical = 1.dp),
+            modifier = Modifier
+                .background(pillColor.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 6.dp, vertical = 1.dp),
         ) {
             Text(
                 if (conflict) "⚠ $name" else "📝 $name",
                 style = MaterialTheme.typography.labelSmall,
-                color = pillColor,
+                color = if (onClick != null) pillColor else pillColor,
                 maxLines = 1,
             )
         }
-        conflictNote?.let {
-                note ->
+        conflictNote?.let { note ->
             Text(note, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), maxLines = 1)
         }
     }

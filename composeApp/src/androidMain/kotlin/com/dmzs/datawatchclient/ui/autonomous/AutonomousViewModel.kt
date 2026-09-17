@@ -48,10 +48,18 @@ import kotlinx.serialization.json.put
 public class AutonomousViewModel(
     private val resolver: ProfileResolver = ProfileResolver.Default,
 ) : ViewModel() {
+    public data class FileViewerState(
+        val path: String,
+        val content: String? = null,
+        val loading: Boolean = true,
+        val error: Boolean = false,
+    )
+
     public data class UiState(
         val loading: Boolean = true,
         val prds: List<PrdDto> = emptyList(),
         val banner: String? = null,
+        val fileViewer: FileViewerState? = null,
         /** Backend names from /api/backends — used for LLM dropdowns. */
         val backends: List<String> = emptyList(),
         /** Permission modes from /api/llm/claude/permission_modes (v5.27.5+; empty on older daemons). */
@@ -684,6 +692,43 @@ public class AutonomousViewModel(
                 },
             )
         }
+    }
+
+    // ---- #181: inline file viewer ----
+
+    /**
+     * Fetch [path] content and show the file viewer sheet. If [path] is relative,
+     * it is resolved against [projectDir]. Viewable extensions open inline;
+     * callers should fall back to a share intent for binary files.
+     */
+    public fun openFileViewer(path: String, projectDir: String?) {
+        val absPath = if (path.startsWith("/")) path
+        else "${projectDir?.trimEnd('/').orEmpty()}/$path"
+        _state.value = _state.value.copy(fileViewer = FileViewerState(path = absPath, loading = true))
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: run {
+                _state.value = _state.value.copy(
+                    fileViewer = _state.value.fileViewer?.copy(loading = false, error = true),
+                )
+                return@launch
+            }
+            transport.getFileContent(absPath).fold(
+                onSuccess = { content ->
+                    _state.value = _state.value.copy(
+                        fileViewer = _state.value.fileViewer?.copy(content = content, loading = false),
+                    )
+                },
+                onFailure = {
+                    _state.value = _state.value.copy(
+                        fileViewer = _state.value.fileViewer?.copy(loading = false, error = true),
+                    )
+                },
+            )
+        }
+    }
+
+    public fun closeFileViewer() {
+        _state.value = _state.value.copy(fileViewer = null)
     }
 
     // ---- #178: PRD detail live updates via WebSocket ----
