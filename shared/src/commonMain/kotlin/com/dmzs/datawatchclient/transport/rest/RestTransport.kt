@@ -1061,12 +1061,33 @@ public class RestTransport(
     override suspend fun deletePrd(
         prdId: String,
         hard: Boolean,
+        memoryStrategy: String?,
+        archiveRoleFilter: List<String>?,
+        archiveToScope: String?,
     ): Result<Unit> =
         request {
             client.delete("${profile.baseUrl}/api/autonomous/prds/$prdId") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 if (hard) parameter("hard", "true")
+                if (memoryStrategy != null) {
+                    contentType(ContentType.Application.Json)
+                    val body = kotlinx.serialization.json.buildJsonObject {
+                        put("memory_strategy", kotlinx.serialization.json.JsonPrimitive(memoryStrategy))
+                        archiveRoleFilter?.let {
+                            put("archive_role_filter", kotlinx.serialization.json.JsonArray(it.map { r -> kotlinx.serialization.json.JsonPrimitive(r) }))
+                        }
+                        archiveToScope?.let { put("archive_to_scope", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    }
+                    setBody(body)
+                }
             }.body<Unit>()
+        }
+
+    override suspend fun getPrdMemoryReport(prdId: String): Result<String> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/prds/$prdId/memory-report") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.bodyAsText()
         }
 
     override suspend fun resetPrdTask(
