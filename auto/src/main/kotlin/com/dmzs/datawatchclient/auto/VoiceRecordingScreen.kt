@@ -143,12 +143,19 @@ public class VoiceRecordingScreen(
         )
     }
 
-    override fun onGetTemplate(): Template =
+    override fun onGetTemplate(): Template = try {
         when (val s = state) {
             is State.Listening -> buildListeningTemplate()
             is State.Error -> buildErrorTemplate(s.msg)
             is State.Confirmed -> buildConfirmTemplate(s.transcript)
         }
+    } catch (e: Throwable) {
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+            .setTitle(sessionTitle)
+            .setHeaderAction(Action.BACK)
+            .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { screenManager.pop() }.build())
+            .build()
+    }
 
     private fun buildListeningTemplate(): Template {
         // Live transcription is the primary content — matches text-message voice input.
@@ -177,20 +184,11 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildErrorTemplate(msg: String): Template =
-        // MessageTemplate allows only 1 custom-title action; Cancel goes in the ActionStrip.
+        // 1 addAction only; no ActionStrip (strip actions must be icon-only in MESSAGING
+        // sessions and there is no suitable icon for Cancel — Back button handles dismissal).
         MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Cancel")
-                            .setOnClickListener { screenManager.pop() }
-                            .build(),
-                    )
-                    .build(),
-            )
             .addAction(
                 Action.Builder()
                     .setTitle("Retry")
@@ -205,7 +203,8 @@ public class VoiceRecordingScreen(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
         val screenTitle = if (prdId != null) "$sessionTitle · Update Spec" else "$sessionTitle · Voice"
-        // MessageTemplate allows only 1 custom-title action; Retry shares the ActionStrip with Listen.
+        // ActionStrip actions must be icon-only in the MESSAGING session path.
+        // "Retry" removed from strip (no icon available); Back + re-tap mic icon retries.
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
@@ -213,15 +212,8 @@ public class VoiceRecordingScreen(
                 ActionStrip.Builder()
                     .addAction(
                         Action.Builder()
-                            .setTitle("Listen")
                             .setIcon(voiceIcon)
                             .setOnClickListener { speakWithFocus(transcript) }
-                            .build(),
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Retry")
-                            .setOnClickListener { startListening() }
                             .build(),
                     )
                     .build(),

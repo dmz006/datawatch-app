@@ -132,7 +132,8 @@ public class LastOutputDetailScreen(
                     ActionStrip.Builder()
                         .addAction(
                             Action.Builder()
-                                .setTitle(if (isSpeaking) "Stop" else "Listen")
+                                // Icon-only: titled strip actions trigger the driving validator
+                                // in the MESSAGING session path.
                                 .setIcon(voiceIcon)
                                 .setOnClickListener {
                                     if (isSpeaking) {
