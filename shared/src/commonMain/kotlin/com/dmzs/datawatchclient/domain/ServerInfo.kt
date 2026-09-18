@@ -20,4 +20,6 @@ public data class ServerInfo(
     val sessionCount: Int = 0,
     val serverHost: String? = null,
     val serverPort: Int? = null,
+    /** v8.33.34 — true when a Whisper/voice-transcription backend is wired on the server. */
+    val whisperConfigured: Boolean = false,
 )

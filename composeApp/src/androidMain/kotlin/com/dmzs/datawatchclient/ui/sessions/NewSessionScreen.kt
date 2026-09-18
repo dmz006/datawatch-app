@@ -186,13 +186,7 @@ public fun NewSessionScreen(
         }
         transport.listClaudeModels().onSuccess { claudeModels = it }
         transport.listClaudeEfforts().onSuccess { claudeEfforts = it }
-        transport.fetchConfig().onSuccess { cfg ->
-            whisperConfigured =
-                (cfg.raw["whisper"] as? kotlinx.serialization.json.JsonObject)
-                    ?.get("enabled")
-                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content == "true" }
-                    ?: false
-        }
+        transport.fetchInfo().onSuccess { info -> whisperConfigured = info.whisperConfigured }
     }
     // Reset picks and load models when LLM selection or server changes.
     LaunchedEffect(pickedLlm, selectedProfileId) {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
@@ -29,12 +30,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import android.widget.Toast
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
+import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest
+import kotlinx.coroutines.flow.first
 import com.dmzs.datawatchclient.ui.common.MicAttachableTextField
 import kotlinx.coroutines.launch
 
@@ -44,6 +49,7 @@ fun CouncilPersonaWizardSheet(
     onDismiss: () -> Unit,
     onSave: (name: String, prompt: String, description: String, assistBackend: String?) -> Unit,
     existingPersona: CouncilPersonaForEdit? = null, // null = create mode
+    whisperConfigured: Boolean = false,
 ) {
     val stepKeys =
         listOf(
@@ -58,6 +64,7 @@ fun CouncilPersonaWizardSheet(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
+    var refining by remember { mutableStateOf(false) }
     val answers = remember { mutableStateListOf("", "", "", "", "") }
     var personaName by remember { mutableStateOf(existingPersona?.name ?: "") }
     var personaDescription by remember { mutableStateOf(existingPersona?.description ?: "") }
@@ -127,7 +134,7 @@ fun CouncilPersonaWizardSheet(
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 4,
                             maxLines = 10,
-                            whisperConfigured = false,
+                            whisperConfigured = whisperConfigured,
                         )
 
                         // Backend picker on step 1
@@ -168,16 +175,49 @@ fun CouncilPersonaWizardSheet(
                                 singleLine = true,
                             )
                             Button(
-                                enabled = refineInput.isNotBlank(),
+                                enabled = refineInput.isNotBlank() && !refining,
                                 onClick = {
-                                    Toast.makeText(
-                                        context,
-                                        "AI refinement requires server support — coming soon",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
+                                    refining = true
+                                    scope.launch {
+                                        val stepKey = listOf("focus", "stance", "tone", "pushback", "examples")
+                                            .getOrElse(page) { "focus" }
+                                        val activeId = ServiceLocator.activeServerStore.get()
+                                        val sp = ServiceLocator.profileRepository.observeAll()
+                                            .first { list -> list.any { it.enabled } }
+                                            .let { list ->
+                                                if (activeId == null) list.filter { it.enabled }.firstOrNull()
+                                                else list.firstOrNull { it.id == activeId && it.enabled }
+                                            }
+                                        if (sp != null) {
+                                            ServiceLocator.transportFor(sp)
+                                                .refinePersonaStep(
+                                                    CouncilRefineStepRequest(
+                                                        step = stepKey,
+                                                        currentAnswer = answers[page],
+                                                        instruction = refineInput,
+                                                    ),
+                                                )
+                                                .onSuccess { resp ->
+                                                    answers[page] = resp.refined
+                                                    refineInput = ""
+                                                }
+                                                .onFailure { err ->
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Refine failed: ${err.message}",
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                }
+                                        }
+                                        refining = false
+                                    }
                                 },
                             ) {
-                                Text("→")
+                                if (refining) {
+                                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                                } else {
+                                    Text("→")
+                                }
                             }
                         }
                     }
