@@ -173,13 +173,10 @@ public class SessionDetailViewModel(
                     _messagingBackend.value = it
                 }
             }
-            // Mirror PWA: cfg.whisper.enabled (nested object, boolean).
-            ServiceLocator.transportFor(profile).fetchConfig().onSuccess { cfg ->
-                _whisperConfigured.value =
-                    (cfg.raw["whisper"] as? kotlinx.serialization.json.JsonObject)
-                        ?.get("enabled")
-                        ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content == "true" }
-                        ?: false
+            // Use the dedicated whisper_configured field from GET /api/info (v8.33.34+).
+            // Falls back to false on older servers that don't emit the field.
+            ServiceLocator.transportFor(profile).fetchInfo().onSuccess { info ->
+                if (info.whisperConfigured) _whisperConfigured.value = true
             }
         }
     }

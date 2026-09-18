@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.23.5] — 2026-09-17
+
+### Added
+- **Council persona wizard — AI refinement**: The "→" button in each step of the persona wizard now calls `POST /api/council/personas/refine-step` (datawatch v8.33.35) and replaces the step text with the LLM-refined answer. Shows a spinner while loading; shows an error toast on failure. The instruction field clears on success.
+
+### Fixed
+- **Whisper mic button**: All `MicAttachableTextField` callers now read `whisper_configured` from `GET /api/info` (datawatch v8.33.34) instead of hardcoding `false` or parsing the config blob. The mic icon becomes active for users whose server has a Whisper backend wired. Affected screens: NewSession, SessionDetail send bar, CouncilCard proposal, CouncilPersonaWizard steps.
+
 ## [1.23.4] — 2026-09-17
 
 ### Fixed

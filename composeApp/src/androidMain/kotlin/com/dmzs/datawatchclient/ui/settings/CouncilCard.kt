@@ -77,6 +77,7 @@ internal fun CouncilCard() {
     var showAddWizard by remember { mutableStateOf(false) }
     var editingPersona by remember { mutableStateOf<CouncilPersonaForEdit?>(null) }
     var personaToDelete by remember { mutableStateOf<CouncilPersonaDto?>(null) }
+    var whisperConfigured by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun loadAll() {
@@ -95,6 +96,7 @@ internal fun CouncilCard() {
         t.councilListPersonas().onSuccess { personas = it }
         t.councilListRuns().onSuccess { runs = it }
         t.councilGetConfig().onSuccess { config = it }
+        t.fetchInfo().onSuccess { info -> whisperConfigured = info.whisperConfigured }
     }
 
     fun createPersona(
@@ -349,6 +351,7 @@ internal fun CouncilCard() {
                     editingPersona = null
                 },
                 existingPersona = editingPersona,
+                whisperConfigured = whisperConfigured,
             )
         }
 
@@ -470,7 +473,7 @@ internal fun CouncilCard() {
             label = { Text(stringResource(R.string.council_run_proposal)) },
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             minLines = 2,
-            whisperConfigured = false,
+            whisperConfigured = whisperConfigured,
             onMicClick = null,
         )
         Row(

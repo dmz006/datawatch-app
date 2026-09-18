@@ -2329,6 +2329,17 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun refinePersonaStep(
+        request: com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest,
+    ): Result<com.dmzs.datawatchclient.transport.dto.CouncilRefineStepResponse> =
+        request {
+            client.post("${profile.baseUrl}/api/council/personas/refine-step") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body()
+        }
+
     // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
 
     override suspend fun getCostRates(): Result<com.dmzs.datawatchclient.transport.dto.CostRatesDto> =

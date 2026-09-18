@@ -1545,6 +1545,21 @@ public data class CouncilPersonaCreateDto(
     @SerialName("assist_backend") val assistBackend: String? = null,
 )
 
+/** POST /api/council/personas/refine-step request (v8.33.35). */
+@Serializable
+public data class CouncilRefineStepRequest(
+    val step: String,
+    @SerialName("current_answer") val currentAnswer: String,
+    val instruction: String,
+)
+
+/** POST /api/council/personas/refine-step response (v8.33.35). */
+@Serializable
+public data class CouncilRefineStepResponse(
+    val refined: String,
+    @SerialName("duration_ms") val durationMs: Long = 0,
+)
+
 // ============================================================
 // v0.80.0 — Cost Rates, Routing Rules, Tailscale Mesh (Sprint 11)
 // ============================================================

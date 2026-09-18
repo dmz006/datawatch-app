@@ -96,6 +96,7 @@ internal fun ServerInfoDto.toDomain(): ServerInfo =
         sessionCount = sessionCount,
         serverHost = server?.host,
         serverPort = server?.port,
+        whisperConfigured = whisperConfigured,
     )
 
 internal fun ScheduleDto.toDomain(serverProfileId: String): Schedule =

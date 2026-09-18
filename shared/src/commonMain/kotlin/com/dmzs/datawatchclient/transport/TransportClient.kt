@@ -1173,6 +1173,9 @@ public interface TransportClient {
     /** DELETE /api/council/personas/{name} — delete a custom (non-builtin) persona. */
     public suspend fun deleteCouncilPersona(name: String): Result<Unit>
 
+    /** POST /api/council/personas/refine-step — refine a single wizard step with the server LLM (v8.33.35). */
+    public suspend fun refinePersonaStep(request: com.dmzs.datawatchclient.transport.dto.CouncilRefineStepRequest): Result<com.dmzs.datawatchclient.transport.dto.CouncilRefineStepResponse>
+
     // ---- v0.80.0 Sprint 11: Cost Rates, Routing Rules, Tailscale Mesh ----
 
     /** GET /api/cost/rates — per-backend token cost rates. */

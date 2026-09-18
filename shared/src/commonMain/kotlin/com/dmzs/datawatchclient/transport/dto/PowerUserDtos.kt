@@ -102,6 +102,8 @@ public data class ServerInfoDto(
     @SerialName("messaging_backend") val messagingBackend: String? = null,
     @SerialName("session_count") val sessionCount: Int = 0,
     val server: ServerBindingDto? = null,
+    /** v8.33.34 — true when a Whisper/voice-transcription backend is wired on the server. */
+    @SerialName("whisper_configured") val whisperConfigured: Boolean = false,
 )
 
 @Serializable
