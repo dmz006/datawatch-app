@@ -33,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
+import com.dmzs.datawatchclient.ui.common.relativeTimeLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -214,7 +215,12 @@ private fun PeerRow(peer: ObserverPeerDto) {
                     val effectiveShape = peer.hostInfo?.shape?.takeIf { it.isNotBlank() } ?: peer.shape
                     append(effectiveShape.ifBlank { "—" })
                     peer.version?.takeIf { it.isNotBlank() }?.let { append(" · v$it") }
-                    peer.lastPushAt?.takeIf { it.isNotBlank() }?.let { append(" · pushed $it") }
+                    peer.lastPushAt?.takeIf { it.isNotBlank() }?.let { ts ->
+                        val ageLabel = runCatching {
+                            relativeTimeLabel(kotlinx.datetime.Instant.parse(ts).toEpochMilliseconds())
+                        }.getOrDefault(ts)
+                        append(" · pushed $ageLabel")
+                    }
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
