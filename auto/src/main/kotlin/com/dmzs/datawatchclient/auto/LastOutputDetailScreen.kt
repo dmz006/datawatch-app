@@ -106,7 +106,17 @@ public class LastOutputDetailScreen(
         )
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
+        buildTemplate()
+    } catch (e: Throwable) {
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+            .setTitle(sessionName)
+            .setHeaderAction(Action.BACK)
+            .addAction(Action.Builder().setTitle("Close").setOnClickListener { screenManager.pop() }.build())
+            .build()
+    }
+
+    private fun buildTemplate(): Template {
         val body = shortText?.takeIf { it.isNotBlank() } ?: "No content available"
 
         val voiceIcon =
@@ -151,39 +161,14 @@ public class LastOutputDetailScreen(
                 longText.startsWith(shortText) -> longText.drop(shortText.length).trim()
                 else -> longText.trim()
             }
-        // MessageTemplate allows only 1 custom-title action. When Play Long is available it
-        // becomes the primary button and Close moves to the ActionStrip alongside Listen/Stop.
+        // MessageTemplate allows only 1 custom-title action. When Play Long is available it is
+        // the primary button; Close is always the fallback. Strip stays icon+title only (no
+        // titled-only strip actions) so the driving validator passes on all head units.
         if (!continuation.isNullOrBlank() && continuation.length >= MIN_EXTRA_CHARS) {
             builder.addAction(
                 Action.Builder()
                     .setTitle("Play Long")
                     .setOnClickListener { speakText("Continuing. $continuation") }
-                    .build(),
-            )
-            builder.setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle(if (isSpeaking) "Stop" else "Listen")
-                            .setIcon(voiceIcon)
-                            .setOnClickListener {
-                                if (isSpeaking) {
-                                    tts.stop()
-                                    isSpeaking = false
-                                    abandonAudioFocus()
-                                    invalidate()
-                                } else {
-                                    speakText(body)
-                                }
-                            }
-                            .build(),
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Close")
-                            .setOnClickListener { screenManager.pop() }
-                            .build(),
-                    )
                     .build(),
             )
         } else {

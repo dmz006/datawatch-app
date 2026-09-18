@@ -161,10 +161,21 @@ public class AutoSessionDetailScreen(
         buildTemplate()
     } catch (e: Throwable) {
         // Any uncaught exception from onGetTemplate() disconnects the car session.
-        // Return a safe fallback so the user sees the error instead of being ejected.
+        // Return a safe fallback — must include at least one addAction or build() itself throws.
         MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
             .setTitle(sessionTitle.ifBlank { sessionId })
             .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Retry")
+                    .setOnClickListener {
+                        isLoading = true
+                        error = null
+                        invalidate()
+                        scope.launch { refresh(); isLoading = false; invalidate() }
+                    }
+                    .build(),
+            )
             .build()
     }
 
