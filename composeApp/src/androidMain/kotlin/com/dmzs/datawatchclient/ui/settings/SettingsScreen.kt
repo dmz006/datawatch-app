@@ -86,6 +86,7 @@ import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.common.SingleServerPickerTitle
 import com.dmzs.datawatchclient.ui.compute.ComputeNodesCard
 import com.dmzs.datawatchclient.ui.compute.LlmRegistryCard
+import com.dmzs.datawatchclient.ui.config.ConfigViewerCard
 import com.dmzs.datawatchclient.ui.splash.MatrixLogoAnimated
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
@@ -287,6 +288,7 @@ public fun SettingsScreen(
                                 SecurityCard()
                                 // v0.75.0 S6-3 (#82): Vault/Secrets status.
                                 SecretsStatusCard()
+                                ConfigViewerCard()
                                 RawConfigCard()
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(
                                     com.dmzs.datawatchclient.ui.configfields.ConfigFieldSchemas.Datawatch,
