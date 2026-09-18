@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.23.6] — 2026-09-18
+
+### Fixed
+- **Android Auto — Automata filter loading**: Tapping "Show completed automata" or toggling the "Active/All" strip now immediately shows a loading row instead of holding the stale empty state for the entire network round-trip.
+- **Android Auto — Automata detail crash**: Wrapped `onGetTemplate()` in a try-catch so any exception during template construction (e.g. unexpected DTO shape on a completed automata) returns a safe error screen instead of disconnecting the car session and exiting Android Auto.
+
 ## [1.23.5] — 2026-09-17
 
 ### Added

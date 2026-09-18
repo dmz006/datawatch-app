@@ -140,7 +140,29 @@ public class AutoPrdDetailScreen(
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
+        buildTemplate()
+    } catch (e: Throwable) {
+        // Any exception from onGetTemplate() disconnects the car session.
+        // Return a safe fallback so the user sees an error row instead of getting ejected.
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+            .setTitle("Automata")
+            .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Retry")
+                    .setOnClickListener {
+                        isLoading = true
+                        error = null
+                        invalidate()
+                        scope.launch { load(); invalidate() }
+                    }
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun buildTemplate(): Template {
         val currentPrd = prd
         val body = when {
             isLoading -> "Loading plan details…"
