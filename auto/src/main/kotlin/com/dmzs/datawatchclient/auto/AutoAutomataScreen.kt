@@ -138,6 +138,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .addText("Tap to include completed and past runs")
                         .setOnClickListener {
                             historyOn = true
+                            isLoading = true
                             invalidate()
                             scope.launch { refresh(); invalidate() }
                         }
@@ -214,6 +215,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 .setTitle(if (historyOn) "Active" else "All")
                 .setOnClickListener {
                     historyOn = !historyOn
+                    isLoading = true
                     invalidate()
                     scope.launch {
                         refresh()
