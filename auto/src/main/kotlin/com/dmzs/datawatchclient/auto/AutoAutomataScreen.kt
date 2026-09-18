@@ -128,9 +128,22 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             builder.addItem(
                 Row.Builder()
                     .setTitle(if (error != null) "Error" else "No automata")
-                    .addText(error ?: "No automata configured on $serverName.")
+                    .addText(error ?: "No active automata on $serverName.")
                     .build(),
             )
+            if (error == null && !historyOn) {
+                builder.addItem(
+                    Row.Builder()
+                        .setTitle("Show completed automata")
+                        .addText("Tap to include completed and past runs")
+                        .setOnClickListener {
+                            historyOn = true
+                            invalidate()
+                            scope.launch { refresh(); invalidate() }
+                        }
+                        .build(),
+                )
+            }
             builder.addItem(
                 Row.Builder()
                     .setTitle("⊕ New Automata")
@@ -176,7 +189,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 val dotIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, dotResId)).build()
                 builder.addItem(
                     Row.Builder()
-                        .setTitle(colored(prd.name.ifBlank { prd.id }, titleColor))
+                        .setTitle(colored(prd.title?.takeIf { it.isNotBlank() } ?: prd.name.ifBlank { prd.id }, titleColor))
                         .setImage(dotIcon)
                         .addText(subtitle)
                         .setOnClickListener {
