@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.23.4] — 2026-09-17
+
+### Fixed
+- **Observer — FederatedPeers push age**: Peer rows now show a relative push age ("2m ago") instead of a raw ISO-8601 timestamp. Long timestamps were wrapping inside the name column and inflating row height.
+- **Observer — Compute node filter**: Peer Resources card now includes all compute nodes with a bound observer peer (not just auto-created ones), so manually registered nodes with `datawatch-stats` appear correctly.
+
 ## [1.23.3] — 2026-09-17
 
 ### Fixed
