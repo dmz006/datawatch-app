@@ -203,7 +203,7 @@ private fun PeerRow(peer: ObserverPeerDto) {
         Spacer(Modifier.size(4.dp))
         Canvas(modifier = Modifier.size(8.dp)) { drawCircle(color = staleDotColor) }
         Spacer(Modifier.size(8.dp))
-        Column(modifier = Modifier.padding(end = 8.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
                 peer.name,
                 style = MaterialTheme.typography.bodyMedium,
@@ -220,7 +220,6 @@ private fun PeerRow(peer: ObserverPeerDto) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(Modifier.weight(1f))
         // alpha.24: use compute_node field directly — no second-fetch
         val nodeName = peer.computeNode
         if (nodeName != null) {
