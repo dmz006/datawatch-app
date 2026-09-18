@@ -275,9 +275,20 @@ public class VoiceRecordingScreen(
 
         requestAudioFocus()
 
-        recognizer =
-            SpeechRecognizer.createSpeechRecognizer(appCtx).also { rec ->
-                rec.setRecognitionListener(
+        val rec = try {
+            SpeechRecognizer.createSpeechRecognizer(appCtx)
+        } catch (e: Throwable) {
+            null
+        }
+        if (rec == null) {
+            abandonAudioFocus()
+            state = State.Error("Could not start recognizer — tap Retry")
+            invalidate()
+            return
+        }
+
+        recognizer = rec.also {
+            it.setRecognitionListener(
                     object : RecognitionListener {
                         override fun onResults(results: Bundle) {
                             abandonAudioFocus()
@@ -350,7 +361,7 @@ public class VoiceRecordingScreen(
                         putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 4000)
                         putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500)
                     }
-                rec.startListening(intent)
+                it.startListening(intent)
             }
     }
 

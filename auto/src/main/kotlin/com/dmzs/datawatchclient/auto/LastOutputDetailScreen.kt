@@ -119,9 +119,12 @@ public class LastOutputDetailScreen(
     private fun buildTemplate(): Template {
         val body = shortText?.takeIf { it.isNotBlank() } ?: "No content available"
 
-        val voiceIcon =
+        // ic_auto_chat distinguishes TTS playback from the mic/voice-recording icon
+        // (ic_auto_voice) used in AutoSessionDetailScreen's strip. Same icon on different
+        // screens caused users to expect voice recording here instead of TTS playback.
+        val speakerIcon =
             CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat),
             ).build()
 
         val builder =
@@ -134,7 +137,7 @@ public class LastOutputDetailScreen(
                             Action.Builder()
                                 // Icon-only: titled strip actions trigger the driving validator
                                 // in the MESSAGING session path.
-                                .setIcon(voiceIcon)
+                                .setIcon(speakerIcon)
                                 .setOnClickListener {
                                     if (isSpeaking) {
                                         tts.stop()
