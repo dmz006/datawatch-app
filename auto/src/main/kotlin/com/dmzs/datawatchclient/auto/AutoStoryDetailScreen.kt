@@ -6,6 +6,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -107,6 +108,9 @@ public class AutoStoryDetailScreen(
             .setTitle(story.title.take(MAX_TITLE).ifBlank { "Story" })
             .setHeaderAction(Action.BACK)
 
+        // MessageTemplate allows only 1 custom-title action; when review + failed task both apply,
+        // Reset Task goes in the ActionStrip so Approve stays as the primary button.
+        var resetInStrip: PrdTaskDto? = null
         when {
             isReview -> {
                 builder.addAction(
@@ -116,14 +120,7 @@ public class AutoStoryDetailScreen(
                         .setOnClickListener { fireApprove() }
                         .build(),
                 )
-                firstFailed?.let { task ->
-                    builder.addAction(
-                        Action.Builder()
-                            .setTitle("Reset Task")
-                            .setOnClickListener { fireResetTask(task) }
-                            .build(),
-                    )
-                }
+                if (firstFailed != null) resetInStrip = firstFailed
             }
             firstFailed != null -> {
                 builder.addAction(
@@ -134,6 +131,19 @@ public class AutoStoryDetailScreen(
                         .build(),
                 )
             }
+        }
+        if (resetInStrip != null) {
+            val task = resetInStrip
+            builder.setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Reset Task")
+                            .setOnClickListener { fireResetTask(task) }
+                            .build(),
+                    )
+                    .build(),
+            )
         }
 
         return builder.build()

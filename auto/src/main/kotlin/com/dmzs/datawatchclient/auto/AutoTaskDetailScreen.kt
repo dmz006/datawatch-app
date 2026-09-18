@@ -6,6 +6,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -94,6 +95,9 @@ public class AutoTaskDetailScreen(
             .setTitle(task.task.take(MAX_TITLE).ifBlank { "Task" })
             .setHeaderAction(Action.BACK)
 
+        // MessageTemplate allows only 1 custom-title action; "failed" needs both Requeue and
+        // Cancel Task, so Cancel Task goes in the ActionStrip for that state.
+        var cancelInStrip = false
         when (task.status) {
             "failed" -> {
                 builder.addAction(
@@ -103,13 +107,7 @@ public class AutoTaskDetailScreen(
                         .setOnClickListener { fireRequeue() }
                         .build(),
                 )
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Cancel Task")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fireCancelTask() }
-                        .build(),
-                )
+                cancelInStrip = true
             }
             "pending", "in_progress" -> {
                 builder.addAction(
@@ -120,6 +118,18 @@ public class AutoTaskDetailScreen(
                         .build(),
                 )
             }
+        }
+        if (cancelInStrip) {
+            builder.setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Cancel Task")
+                            .setOnClickListener { fireCancelTask() }
+                            .build(),
+                    )
+                    .build(),
+            )
         }
 
         return builder.build()

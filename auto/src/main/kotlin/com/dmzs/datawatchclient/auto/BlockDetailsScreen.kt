@@ -106,25 +106,27 @@ public class BlockDetailsScreen(
     private fun buildSingleBlockTemplate(verdict: GuardrailVerdictDto): Template {
         val name = GuardrailTtsBuilder.friendlyName(verdict.guardrail)
         val body = "⚠ $name\n${verdict.summary.take(SUMMARY_CHARS)}"
-        val listenActionStrip =
+        // MessageTemplate allows only 1 custom-title action; Kill Session shares the ActionStrip
+        // with the Listen action so Approve can be the single full-width button.
+        val actionStrip =
             ActionStrip.Builder()
                 .addAction(listenAction(body))
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Kill Session")
+                        .setOnClickListener { showKillToast() }
+                        .build(),
+                )
                 .build()
         return MessageTemplate.Builder(body)
             .setTitle("$sessionName · Blocked")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(listenActionStrip)
+            .setActionStrip(actionStrip)
             .addAction(
                 Action.Builder()
                     .setTitle("Approve $name")
                     .setBackgroundColor(CarColor.GREEN)
                     .setOnClickListener { onApproveGuardrail(verdict.guardrail) }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle("Kill Session")
-                    .setOnClickListener { showKillToast() }
                     .build(),
             )
             .build()

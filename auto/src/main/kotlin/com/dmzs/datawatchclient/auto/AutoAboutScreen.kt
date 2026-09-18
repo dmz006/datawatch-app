@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -108,21 +109,23 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
                 .setTitle("datawatch  v${Version.VERSION}")
                 .setHeaderAction(Action.BACK)
         brandIcon(carContext)?.let { templateBuilder.setIcon(it) }
-        templateBuilder
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Reboot")
-                        .setBackgroundColor(CarColor.YELLOW)
-                        .setOnClickListener { onReboot() }
-                        .build(),
-                )
-
-        // Only add Update action when an update is actually available
+        // MessageTemplate allows only 1 custom-title action; Update goes in the ActionStrip.
+        templateBuilder.addAction(
+            Action.Builder()
+                .setTitle("Reboot")
+                .setBackgroundColor(CarColor.YELLOW)
+                .setOnClickListener { onReboot() }
+                .build(),
+        )
         if (updateStatus == UpdateStatus.AVAILABLE) {
-            templateBuilder.addAction(
-                Action.Builder()
-                    .setTitle("Update")
-                    .setOnClickListener { onUpdate() }
+            templateBuilder.setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Update")
+                            .setOnClickListener { onUpdate() }
+                            .build(),
+                    )
                     .build(),
             )
         }
