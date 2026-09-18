@@ -157,12 +157,19 @@ public class AutoSessionDetailScreen(
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
+        buildTemplate()
+    } catch (e: Throwable) {
+        // Any uncaught exception from onGetTemplate() disconnects the car session.
+        // Return a safe fallback so the user sees the error instead of being ejected.
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+            .setTitle(sessionTitle.ifBlank { sessionId })
+            .setHeaderAction(Action.BACK)
+            .build()
+    }
+
+    private fun buildTemplate(): Template {
         val hasBlock = telemetry?.guardrailVerdicts?.any { it.outcome == "block" } == true
-        val isActive =
-            sessionState == SessionState.Running ||
-                sessionState == SessionState.Waiting ||
-                sessionState == SessionState.RateLimited
         val isWaiting = sessionState == SessionState.Waiting || sessionState == SessionState.RateLimited
         val isTerminal =
             sessionState == SessionState.Completed ||
@@ -170,6 +177,7 @@ public class AutoSessionDetailScreen(
                 sessionState == SessionState.Error
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
 
         val templateBuilder =
             MessageTemplate.Builder(buildBody())
@@ -177,6 +185,8 @@ public class AutoSessionDetailScreen(
                 .setHeaderAction(Action.BACK)
 
         // MessageTemplate allows only 1 custom-title action. Secondary actions go in the strip.
+        // Strip actions must be icon-only — titled strip actions trigger the driving validator
+        // on some head units and disconnect the session.
         when {
             hasBlock -> {
                 templateBuilder.addAction(
@@ -201,29 +211,28 @@ public class AutoSessionDetailScreen(
                 }
             }
             isWaiting -> {
-                // Voice Reply is primary when waiting; Play moves to the strip alongside chat history.
+                // Play is the primary titled button; Voice Reply is icon-only in the strip.
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(waitText)
                 val longPlay =
                     lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
                         ?: splitLong
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Voice Reply")
+                    Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
-                            screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
+                            )
                         }.build(),
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
                         .addAction(
-                            Action.Builder().setTitle("Play")
-                                .setOnClickListener {
-                                    CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
-                                    screenManager.push(
-                                        LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
-                                    )
-                                }.build(),
+                            Action.Builder().setIcon(voiceIcon).setOnClickListener {
+                                CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
+                                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            }.build(),
                         )
                         .addAction(
                             Action.Builder().setIcon(chatIcon).setOnClickListener {
@@ -234,32 +243,31 @@ public class AutoSessionDetailScreen(
                 )
             }
             sessionState == SessionState.Running -> {
-                // Voice Reply injects input while running; Play moves to the strip.
+                // Play is the primary titled button; Voice Reply is icon-only in the strip.
                 val playText = currentStatus ?: lastResponse
                 val (shortPlay, longPlay) = splitOutputText(playText)
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Voice Reply")
+                    Action.Builder().setTitle("Play")
                         .setOnClickListener {
-                            CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
-                            screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                            screenManager.push(
+                                LastOutputDetailScreen(
+                                    carContext,
+                                    sessionId,
+                                    sessionTitle,
+                                    shortPlay,
+                                    currentStatusLong ?: longPlay,
+                                ),
+                            )
                         }.build(),
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
                         .addAction(
-                            Action.Builder().setTitle("Play")
-                                .setOnClickListener {
-                                    CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
-                                    screenManager.push(
-                                        LastOutputDetailScreen(
-                                            carContext,
-                                            sessionId,
-                                            sessionTitle,
-                                            shortPlay,
-                                            currentStatusLong ?: longPlay,
-                                        ),
-                                    )
-                                }.build(),
+                            Action.Builder().setIcon(voiceIcon).setOnClickListener {
+                                CarToast.makeText(carContext, "Voice reply…", CarToast.LENGTH_SHORT).show()
+                                screenManager.push(VoiceRecordingScreen(carContext, sessionId, sessionTitle))
+                            }.build(),
                         )
                         .addAction(
                             Action.Builder().setIcon(chatIcon).setOnClickListener {
