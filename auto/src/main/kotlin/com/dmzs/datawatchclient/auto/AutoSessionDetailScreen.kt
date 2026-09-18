@@ -272,7 +272,9 @@ public class AutoSessionDetailScreen(
             isTerminal -> {
                 // Play is primary; Stages or Restart moves to the strip.
                 val (shortResp, longResp) = splitOutputText(lastResponse)
-                val termLong = lastSummaryLong?.takeIf { it.isNotBlank() } ?: longResp
+                // Prefer the actual continuation of lastResponse; lastSummaryLong is a
+                // separately-generated summary and may lag behind the current response.
+                val termLong = longResp ?: lastSummaryLong?.takeIf { it.isNotBlank() }
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
                         .setOnClickListener {
