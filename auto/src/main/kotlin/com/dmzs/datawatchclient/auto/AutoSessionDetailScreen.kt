@@ -176,6 +176,7 @@ public class AutoSessionDetailScreen(
                 .setTitle(sessionTitle.ifBlank { sessionId })
                 .setHeaderAction(Action.BACK)
 
+        // MessageTemplate allows only 1 custom-title action. Secondary actions go in the strip.
         when {
             hasBlock -> {
                 templateBuilder.addAction(
@@ -186,33 +187,26 @@ public class AutoSessionDetailScreen(
                 )
                 val autoId = automataIdFromTelemetry()
                 if (autoId.isNotBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Stages")
-                            .setOnClickListener {
-                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }
+                    templateBuilder.setActionStrip(
+                        ActionStrip.Builder()
+                            .addAction(
+                                Action.Builder().setTitle("Stages")
+                                    .setOnClickListener {
+                                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                                    }
+                                    .build(),
+                            )
                             .build(),
                     )
                 }
             }
             isWaiting -> {
-                // [Play] lets the user hear the prompt. [Reply] opens the quick-reply list.
-                // ActionStrip icon is icon-only — titled strip actions cause a driving-validator
-                // error on some head units (see AutoMonitorScreen comment).
+                // Voice Reply is primary when waiting; Play moves to the strip alongside chat history.
                 val waitText = promptContext ?: lastPrompt ?: lastSummaryLong ?: lastResponse
                 val (shortPlay, splitLong) = splitOutputText(waitText)
                 val longPlay =
                     lastSummaryLong?.takeIf { it.isNotBlank() && it != waitText }
                         ?: splitLong
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Play")
-                        .setOnClickListener {
-                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
-                            screenManager.push(
-                                LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
-                            )
-                        }.build(),
-                )
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
@@ -222,6 +216,15 @@ public class AutoSessionDetailScreen(
                 )
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
+                        .addAction(
+                            Action.Builder().setTitle("Play")
+                                .setOnClickListener {
+                                    CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                                    screenManager.push(
+                                        LastOutputDetailScreen(carContext, sessionId, sessionTitle, shortPlay, longPlay),
+                                    )
+                                }.build(),
+                        )
                         .addAction(
                             Action.Builder().setIcon(chatIcon).setOnClickListener {
                                 screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
@@ -231,25 +234,9 @@ public class AutoSessionDetailScreen(
                 )
             }
             sessionState == SessionState.Running -> {
-                // Play = hear what the AI is doing. Voice Reply injects input while running.
-                // ActionStrip icon-only so driving validator allows it on all head units.
+                // Voice Reply injects input while running; Play moves to the strip.
                 val playText = currentStatus ?: lastResponse
                 val (shortPlay, longPlay) = splitOutputText(playText)
-                templateBuilder.addAction(
-                    Action.Builder().setTitle("Play")
-                        .setOnClickListener {
-                            CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
-                            screenManager.push(
-                                LastOutputDetailScreen(
-                                    carContext,
-                                    sessionId,
-                                    sessionTitle,
-                                    shortPlay,
-                                    currentStatusLong ?: longPlay,
-                                ),
-                            )
-                        }.build(),
-                )
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Voice Reply")
                         .setOnClickListener {
@@ -260,6 +247,21 @@ public class AutoSessionDetailScreen(
                 templateBuilder.setActionStrip(
                     ActionStrip.Builder()
                         .addAction(
+                            Action.Builder().setTitle("Play")
+                                .setOnClickListener {
+                                    CarToast.makeText(carContext, "Loading…", CarToast.LENGTH_SHORT).show()
+                                    screenManager.push(
+                                        LastOutputDetailScreen(
+                                            carContext,
+                                            sessionId,
+                                            sessionTitle,
+                                            shortPlay,
+                                            currentStatusLong ?: longPlay,
+                                        ),
+                                    )
+                                }.build(),
+                        )
+                        .addAction(
                             Action.Builder().setIcon(chatIcon).setOnClickListener {
                                 screenManager.push(AutoReplyListScreen(carContext, sessionId, sessionTitle))
                             }.build(),
@@ -268,7 +270,7 @@ public class AutoSessionDetailScreen(
                 )
             }
             isTerminal -> {
-                // Play shows last response; lastSummaryLong (AI summary) is the long form when available.
+                // Play is primary; Stages or Restart moves to the strip.
                 val (shortResp, longResp) = splitOutputText(lastResponse)
                 val termLong = lastSummaryLong?.takeIf { it.isNotBlank() } ?: longResp
                 templateBuilder.addAction(
@@ -280,25 +282,19 @@ public class AutoSessionDetailScreen(
                             )
                         }.build(),
                 )
-                // For automata sessions, show plan stages so the user can see what completed;
-                // for standalone sessions, offer restart.
                 val autoId = automataIdFromTelemetry()
-                if (autoId.isNotBlank()) {
-                    templateBuilder.addAction(
+                val secondaryAction =
+                    if (autoId.isNotBlank()) {
                         Action.Builder().setTitle("Stages")
                             .setOnClickListener {
                                 CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }
-                            .build(),
-                    )
-                } else {
-                    templateBuilder.addAction(
+                            }.build()
+                    } else {
                         Action.Builder().setTitle("Restart")
-                            .setOnClickListener { onRestart() }
-                            .build(),
-                    )
-                }
+                            .setOnClickListener { onRestart() }.build()
+                    }
+                templateBuilder.setActionStrip(ActionStrip.Builder().addAction(secondaryAction).build())
             }
             else -> {
                 // New / unknown state — Play shows whatever content is available.
@@ -312,15 +308,17 @@ public class AutoSessionDetailScreen(
                             )
                         }.build(),
                 )
-                // Add Stages for automata sessions even in unknown/New state.
                 val autoId = automataIdFromTelemetry()
                 if (autoId.isNotBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Stages")
-                            .setOnClickListener {
-                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
-                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }
+                    templateBuilder.setActionStrip(
+                        ActionStrip.Builder()
+                            .addAction(
+                                Action.Builder().setTitle("Stages")
+                                    .setOnClickListener {
+                                        CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
+                                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                                    }.build(),
+                            )
                             .build(),
                     )
                 }
