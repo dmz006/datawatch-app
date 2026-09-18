@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.23.7] — 2026-09-18
+
+### Fixed
+- **Android Auto — Automata detail actions**: "Reject" moved from `addAction()` to the `ActionStrip` for review-state automata. `MessageTemplate` only allows 1 action with a custom title — adding both Approve and Reject via `addAction` threw "Action list exceeds maximum number of one actions with custom titles" and prevented the detail screen from rendering.
+
 ## [1.23.6] — 2026-09-18
 
 ### Fixed

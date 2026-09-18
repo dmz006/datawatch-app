@@ -189,6 +189,9 @@ public class AutoPrdDetailScreen(
             val isApproved = statusLower == "approved"
             val isPending = statusLower in setOf("pending", "decomposing", "idle", "")
 
+            // MessageTemplate allows only 1 action with a custom title.
+            // Approve/Reject needs both — Approve goes in addAction, Reject in the strip.
+            var rejectInStrip = false
             when {
                 isReview -> {
                     templateBuilder.addAction(
@@ -198,13 +201,7 @@ public class AutoPrdDetailScreen(
                             .setOnClickListener { fire("approve") }
                             .build(),
                     )
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Reject")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fire("reject") }
-                            .build(),
-                    )
+                    rejectInStrip = true
                 }
                 isRunning -> {
                     templateBuilder.addAction(
@@ -216,7 +213,6 @@ public class AutoPrdDetailScreen(
                     )
                 }
                 isApproved -> {
-                    // Approved but not running yet — let the driver kick it off
                     templateBuilder.addAction(
                         Action.Builder()
                             .setTitle("Run")
@@ -226,7 +222,6 @@ public class AutoPrdDetailScreen(
                     )
                 }
                 isPending -> {
-                    // Newly created — needs decomposition before it can run
                     templateBuilder.addAction(
                         Action.Builder()
                             .setTitle("Decompose")
@@ -246,6 +241,15 @@ public class AutoPrdDetailScreen(
             }
 
             val stripBuilder = ActionStrip.Builder()
+            // Reject lives in the strip for review state (1-action limit on MessageTemplate).
+            if (rejectInStrip) {
+                stripBuilder.addAction(
+                    Action.Builder()
+                        .setTitle("Reject")
+                        .setOnClickListener { fire("reject") }
+                        .build(),
+                )
+            }
             if (currentPrd.stories.isNotEmpty()) {
                 stripBuilder.addAction(
                     Action.Builder()
