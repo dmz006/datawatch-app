@@ -177,19 +177,24 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildErrorTemplate(msg: String): Template =
+        // MessageTemplate allows only 1 custom-title action; Cancel goes in the ActionStrip.
         MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .addAction(
-                Action.Builder()
-                    .setTitle("Retry")
-                    .setOnClickListener { startListening() }
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Cancel")
+                            .setOnClickListener { screenManager.pop() }
+                            .build(),
+                    )
                     .build(),
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Cancel")
-                    .setOnClickListener { screenManager.pop() }
+                    .setTitle("Retry")
+                    .setOnClickListener { startListening() }
                     .build(),
             )
             .build()
@@ -200,6 +205,7 @@ public class VoiceRecordingScreen(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
         val screenTitle = if (prdId != null) "$sessionTitle · Update Spec" else "$sessionTitle · Voice"
+        // MessageTemplate allows only 1 custom-title action; Retry shares the ActionStrip with Listen.
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
@@ -212,18 +218,18 @@ public class VoiceRecordingScreen(
                             .setOnClickListener { speakWithFocus(transcript) }
                             .build(),
                     )
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Retry")
+                            .setOnClickListener { startListening() }
+                            .build(),
+                    )
                     .build(),
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Send")
                     .setOnClickListener { onSend(transcript) }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle("Retry")
-                    .setOnClickListener { startListening() }
                     .build(),
             )
             .build()

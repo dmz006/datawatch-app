@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -122,8 +123,7 @@ public class PrdActionScreen(
     }
 
     override fun onGetTemplate(): Template {
-        // MessageTemplate.addAction() renders as full-width buttons — correct pattern for
-        // confirm/cancel dialogs. ActionStrip only allows 1 custom-title action (Car App Library).
+        // MessageTemplate allows only 1 custom-title action; secondary actions go in the ActionStrip.
         val statusLower = status.lowercase()
         val isRunning = statusLower == "running" || statusLower == "active"
         val isTerminal = statusLower in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
@@ -142,9 +142,11 @@ public class PrdActionScreen(
                 .setTitle("Automata")
                 .setHeaderAction(Action.BACK)
 
+        // MessageTemplate allows only 1 custom-title action; secondary actions go in the strip.
+        var sessionsInStrip = false
+        var rejectInStrip = false
         when {
             isRunning -> {
-                // Stop + View Sessions
                 builder.addAction(
                     Action.Builder()
                         .setTitle("Stop")
@@ -152,15 +154,9 @@ public class PrdActionScreen(
                         .setOnClickListener { fire("cancel") }
                         .build(),
                 )
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Sessions")
-                        .setOnClickListener { viewSessions() }
-                        .build(),
-                )
+                sessionsInStrip = true
             }
             isTerminal -> {
-                // Delete + View Sessions
                 builder.addAction(
                     Action.Builder()
                         .setTitle("Delete")
@@ -168,15 +164,9 @@ public class PrdActionScreen(
                         .setOnClickListener { fireDelete() }
                         .build(),
                 )
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Sessions")
-                        .setOnClickListener { viewSessions() }
-                        .build(),
-                )
+                sessionsInStrip = true
             }
             isReview -> {
-                // Approve + Reject
                 builder.addAction(
                     Action.Builder()
                         .setTitle("Approve")
@@ -184,16 +174,9 @@ public class PrdActionScreen(
                         .setOnClickListener { fire("approve") }
                         .build(),
                 )
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Reject")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fire("reject", "rejected from car") }
-                        .build(),
-                )
+                rejectInStrip = true
             }
             else -> {
-                // Unknown status — just offer sessions navigation
                 builder.addAction(
                     Action.Builder()
                         .setTitle("Sessions")
@@ -201,6 +184,26 @@ public class PrdActionScreen(
                         .build(),
                 )
             }
+        }
+        if (sessionsInStrip || rejectInStrip) {
+            val stripBuilder = ActionStrip.Builder()
+            if (sessionsInStrip) {
+                stripBuilder.addAction(
+                    Action.Builder()
+                        .setTitle("Sessions")
+                        .setOnClickListener { viewSessions() }
+                        .build(),
+                )
+            }
+            if (rejectInStrip) {
+                stripBuilder.addAction(
+                    Action.Builder()
+                        .setTitle("Reject")
+                        .setOnClickListener { fire("reject", "rejected from car") }
+                        .build(),
+                )
+            }
+            builder.setActionStrip(stripBuilder.build())
         }
         return builder.build()
     }

@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -132,7 +133,9 @@ public class AutoPrdStagesScreen(
                 .setTitle(prdName.take(MAX_TITLE_CHARS))
                 .setHeaderAction(Action.BACK)
 
+        // MessageTemplate allows only 1 custom-title action; Reject goes in the ActionStrip.
         if (!isLoading && error == null) {
+            var rejectInStrip = false
             when {
                 isReview -> {
                     builder.addAction(
@@ -142,13 +145,7 @@ public class AutoPrdStagesScreen(
                             .setOnClickListener { fire("approve") }
                             .build(),
                     )
-                    builder.addAction(
-                        Action.Builder()
-                            .setTitle("Reject")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fire("reject") }
-                            .build(),
-                    )
+                    rejectInStrip = true
                 }
                 isRunning -> {
                     builder.addAction(
@@ -159,6 +156,18 @@ public class AutoPrdStagesScreen(
                             .build(),
                     )
                 }
+            }
+            if (rejectInStrip) {
+                builder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(
+                            Action.Builder()
+                                .setTitle("Reject")
+                                .setOnClickListener { fire("reject") }
+                                .build(),
+                        )
+                        .build(),
+                )
             }
         }
 
