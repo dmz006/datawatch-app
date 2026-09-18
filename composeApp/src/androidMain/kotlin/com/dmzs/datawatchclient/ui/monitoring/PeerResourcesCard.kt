@@ -28,6 +28,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto
+import com.dmzs.datawatchclient.transport.dto.ComputeNodeDto
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
 import com.dmzs.datawatchclient.ui.common.LiveDot
 import kotlinx.coroutines.delay
@@ -37,7 +38,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Observatory — Peer Resources block (v8.25.3 parity, #168).
- * Shows CPU%, mem, GPU stats per registered observer peer that has a bound compute node.
+ * Shows CPU%, mem, GPU stats per registered observer peer that has a bound compute node,
+ * plus any auto-created local compute nodes (e.g. the server's own "datawatch-stats" node).
  * Refreshes every 8 s while visible.
  */
 @Composable
@@ -52,7 +54,7 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
         }
     }
 
-    if (state.peers.isEmpty() && !state.loading) return
+    if (state.peers.isEmpty() && state.localNodes.isEmpty() && !state.loading) return
 
     Box(
         modifier = Modifier
@@ -73,7 +75,12 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
                 )
                 LiveDot()
             }
-            if (state.peers.isEmpty()) {
+            // Local server compute nodes (auto-created by the daemon, e.g. "datawatch-stats")
+            state.localNodes.forEach { (node, detail) ->
+                LocalNodeRow(node = node, detail = detail)
+            }
+            // Observer-peer bound compute nodes
+            if (state.peers.isEmpty() && state.localNodes.isEmpty()) {
                 Text(
                     stringResource(R.string.obs_peer_no_peers),
                     style = MaterialTheme.typography.bodySmall,
@@ -83,6 +90,68 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
             } else {
                 state.peers.forEach { (peer, detail) ->
                     PeerResourceRow(peer = peer, detail = detail)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(
+                modifier = Modifier.size(10.dp).background(
+                    color = Color(0xFF10B981),
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                ),
+            )
+            Text(node.name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFF3B82F6).copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            ) {
+                Text("local", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6))
+            }
+        }
+        if (detail == null) {
+            Text(
+                stringResource(R.string.obs_cn_no_data),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                detail.cpu?.let { cpu ->
+                    StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${cpu.pct.toInt()}%", color = cpuColor(cpu.pct))
+                } ?: detail.cpuPct?.let { pct ->
+                    StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${pct.toInt()}%", color = cpuColor(pct))
+                }
+                detail.mem?.let { mem ->
+                    val usedGb = mem.usedBytes / 1_073_741_824.0
+                    val totalGb = mem.totalBytes / 1_073_741_824.0
+                    StatChip(label = stringResource(R.string.obs_cn_node_mem), value = "${usedGb.toInt()}/${totalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                detail.gpu.forEachIndexed { gpuIdx, gpu ->
+                    val gpuPrefix = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1} " else ""
+                    StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_util)}", value = "${gpu.utilPct.toInt()}%", color = Color(0xFF3B82F6))
+                    if (gpu.powerW > 0) {
+                        StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_power)}", value = "${gpu.powerW.toInt()} W", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
+                    val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
+                    if (vramTotalGb > 0) {
+                        StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_vram)}", value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }
@@ -239,6 +308,8 @@ public class PeerResourcesViewModel(
     public data class UiState(
         val loading: Boolean = true,
         val peers: List<Pair<ObserverPeerDto, ComputeNodeDetailDto?>> = emptyList(),
+        /** Auto-created local compute nodes (e.g. the server's own "datawatch-stats" node). */
+        val localNodes: List<Pair<ComputeNodeDto, ComputeNodeDetailDto?>> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -247,16 +318,17 @@ public class PeerResourcesViewModel(
     public fun refresh() {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch
-            transport.observerPeers().onSuccess { peersDto ->
-                val peersWithDetails = peersDto.peers.map { peer ->
-                    val detail = peer.computeNode
-                        ?.let { transport.getComputeNodeDetail(it).getOrNull() }
-                    peer to detail
-                }
-                _state.value = UiState(loading = false, peers = peersWithDetails)
-            }.onFailure {
-                _state.value = UiState(loading = false, peers = emptyList())
+            // Peer compute nodes
+            val peersWithDetails = transport.observerPeers().getOrNull()?.peers.orEmpty().map { peer ->
+                val detail = peer.computeNode?.let { transport.getComputeNodeDetail(it).getOrNull() }
+                peer to detail
             }
+            // Auto-created local nodes (e.g. "datawatch-stats") not already shown via a peer
+            val peerNodeNames = peersWithDetails.mapNotNull { (peer, _) -> peer.computeNode }.toSet()
+            val localNodesWithDetails = transport.listComputeNodes().getOrNull().orEmpty()
+                .filter { node -> node.autoCreated && node.name !in peerNodeNames }
+                .map { node -> node to transport.getComputeNodeDetail(node.name).getOrNull() }
+            _state.value = UiState(loading = false, peers = peersWithDetails, localNodes = localNodesWithDetails)
         }
     }
 }

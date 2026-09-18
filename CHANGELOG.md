@@ -8,6 +8,70 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 
 ## [Unreleased]
 
+## [1.23.3] — 2026-09-17
+
+### Fixed
+- **Observer — FederatedPeersCard spacing**: Peer rows no longer show a large empty gap between the peer name and the shape/compute-node chips. The name column now expands to fill available width and the chips stay right-aligned.
+- **Observer — Local compute node visibility**: Auto-created compute nodes (e.g. the server's own `datawatch-stats` node) are now shown in the Peer Resources card. Previously only nodes bound to registered observer peers were displayed; nodes that the daemon auto-creates for its own host did not appear.
+
+## [1.23.2] — 2026-09-17
+
+### Fixed
+- **Settings — ConfigViewerCard wired**: PWA-parity structured daemon config viewer now appears in Settings → General above the existing "Edit raw config" card. Shows one card per top-level config section, sorted alphabetically, with masked secrets rendered as `***`. Read-only (editable form planned per ADR-0019).
+- **Council persona wizard — Refine with AI button**: The "→" refinement button is now disabled when the input field is empty, and shows an informative message when tapped with text instead of silently doing nothing. Full LLM refinement is pending a server endpoint (datawatch#159).
+- **Dead code removed**: `ObserverCard.kt` — a v0.75 stub that was never wired into any screen — has been deleted.
+
+## [1.23.1] — 2026-09-17
+
+### Fixed
+- **Android Auto — Automata names**: The Automata list now correctly uses the `title` field (then `name`, then `id`) for display, matching the detail and stories screens. Servers that populate `title` but leave `name` blank no longer show UUIDs in the list.
+- **Android Auto — Server picker**: The server list no longer hangs at "Loading…" indefinitely. The background load is now wrapped in error handling; if the database or profile flow fails, an error row is shown instead of an infinite spinner.
+- **Android Auto — About page**: The datawatch brand icon is now displayed on the About/Info screen.
+- **Android Auto — Automata empty state**: When the active-only filter is on and no automata match, a "Show completed automata" row now appears so users can find completed runs without using the action strip toggle.
+- **Android Auto — Detail error recovery**: The automata detail screen now shows a "Retry" button in the error state so users can retry without navigating away.
+
+## [1.23.0] — 2026-09-17
+
+### Added
+- **Session expand mode**: Running and waiting sessions in the Dashboard now show a `›` expand icon. Tapping it opens Session Detail with the Status tab pre-selected, giving direct access to the task tree, guardrail verdicts, sprint breadcrumb, and hook health without extra taps. Closes GH#126.
+
+### Fixed
+- `PrdStatusColorTest`: corrected `complete`/`completed` assertions — these map to completedGreen (#059669) since v1.17.0, not grey.
+
+## [1.22.0] — 2026-09-17
+
+### Added
+- **Memory lifecycle UI**: Session Detail Status tab now shows memory health alongside the task tree. Covers memory scope display, lifecycle event history, and memory pruning controls. GH#174 #175 #176 #183.
+
+## [1.21.0] — 2026-09-17
+
+### Fixed
+- **Android Auto — Stories row limit crash**: `AutoPrdStoriesScreen` no longer crashes when the Car App Library list limit is hit; rows are capped with an overflow indicator.
+- **Version display**: Version string display corrected on screens that showed a stale value.
+- **Memory transport layer**: Transport layer additions to support the memory lifecycle UI shipping in v1.22.0.
+
+## [1.20.0] — 2026-09-17
+
+### Added
+- **PRD orchestrator DAG graph**: Automata detail now includes an Orchestrator tab showing the execution dependency graph — nodes for each story/task with directional edges, depth labels, and status colours. GH#184.
+
+## [1.19.0] — 2026-09-17
+
+### Added
+- **Inline file viewer**: Tapping a file chip on a task or story row opens a bottom sheet showing the file contents inline, without leaving the current screen. GH#181.
+
+## [1.18.0] — 2026-09-17
+
+### Added
+- **PRD detail live updates**: The automata detail dialog now updates in real time via `prd_update` WebSocket events, reflecting story and task status changes without requiring a manual refresh. GH#178.
+
+## [1.17.0] — 2026-09-17
+
+### Added
+- **Task status icons**: Task rows now display status icons matching the PWA — ▶ running, ⟳ in-progress, 🧪 verifying, ✓ complete, ✗ failed, ○ pending. Story effective status is overridden to active when it has active tasks, matching PWA behaviour. GH#179.
+- **Completed automata in default list**: Completed PRDs now appear in the Automata tab by default (no longer hidden behind the history toggle). Badge colour is teal-green. GH#180.
+- **`files_touched` on tasks**: Tasks now show the list of files they touched, matching the PWA's task detail view. GH#177.
+
 ## [1.16.0] — 2026-09-15
 
 ### Added

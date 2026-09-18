@@ -253,7 +253,7 @@ iOS client shipped in v1.0.4. The parity standard is **capability match** (what 
 | Dashboard | ✅ | |
 | Server profiles | ✅ | |
 | Biometric lock | ✅ (iOS-only) | |
-| Push notifications | ⏳ | APNs stub exists; blocked on datawatch#107 |
+| Push notifications | ⏳ | APNs stub exists; blocked on datawatch#158 |
 | iPad split-view | ✅ (iOS-only) | |
 
 iOS rows will be added to the per-feature tables above as each gap closes.

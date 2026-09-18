@@ -187,3 +187,18 @@ unit tests alone.
 | Phone | `AutonomousScreen` PRD row bell icon — `watchedAutomataIds` + `toggleWatchAutomata` | No | No | 23 | Manual — Automata tab, tap bell on PRD row | Sprint 23 |
 | Shared | `AlertsViewModelTest` watchedAlertCount filter logic — 4 tests | Yes | Yes | 23 | JVM unit test | watchedBadge() mirrors VM combine logic |
 | Shared | `WatchedAutomataStoreTest` — 6 tests (empty default, add/remove, profile isolation, flow emit) | Yes | Yes | 23 | JVM unit test | Mirrors WatchedSessionsStoreTest; FakeSharedPreferences extracted to shared helper |
+| Phone | Task status icons (▶⟳🧪✓✗○) on task rows — story effective-status override when tasks active | Yes | No | v1.17.0 | `PrdStatusColorTest` — complete/completed map to completedGreen | Manual: open PRD with tasks in each status state; verify icon matches PWA |
+| Phone | Completed PRDs in default list — teal-green badge, `prdStateRank`/`prdStatusColor` updated | Yes | No | v1.17.0 | `PrdStatusColorTest.completedGreen` assertion | Manual: complete a PRD; verify it stays visible in default list with teal badge |
+| Phone | `files_touched` on task rows — file chips in task detail view | No | No | v1.17.0 | No unit test | Manual: open task with files_touched; verify chips render |
+| Phone | PRD detail live updates via `prd_update` WebSocket events | No | No | v1.18.0 | No unit test | Manual: open PRD detail while a story is running; verify status updates without manual refresh |
+| Phone | Inline file viewer — tap file chip → bottom sheet with file contents | No | No | v1.19.0 | No unit test | Manual: tap file chip on task/story row; verify sheet opens with content |
+| Phone | PRD orchestrator DAG graph tab in Automata detail | No | No | v1.20.0 | No unit test | Manual: open PRD with multiple stories/dependencies; verify Orchestrator tab shows graph |
+| Auto | `AutoPrdStoriesScreen` — row limit cap with overflow indicator (no crash at list limit) | Yes | No | v1.21.0 | Compile guard + list-size clamp | DHU: open PRD with many stories; verify no crash |
+| Phone | Memory lifecycle UI — memory scope, event history, pruning controls on Status tab | No | No | v1.22.0 | No unit test | Manual: open Status tab on a session with memory entries; verify memory section present |
+| Phone | Session expand mode — Dashboard `›` icon on running/waiting sessions → Status tab pre-selected | No | No | v1.23.0 | No unit test | Manual: tap `›` on a running session in Dashboard; verify Session Detail opens on Status tab |
+| Auto | Automata display names — `title` field used before `name` and `id` | No | No | v1.23.1 | No unit test | DHU: verify automata list shows real names not UUIDs |
+| Auto | Server picker error state — error row shown when profile load fails (no infinite spinner) | No | No | v1.23.1 | No unit test | DHU: verify server picker resolves or shows error |
+| Auto | About screen brand icon via `brandIcon()` | No | No | v1.23.1 | No unit test | DHU: open About screen; verify logo displayed |
+| Auto | Automata empty state "Show completed" row when active-only filter is on | No | No | v1.23.1 | No unit test | DHU: filter to active; verify "Show completed automata" row appears when list is empty |
+| Auto | PRD detail error retry button | No | No | v1.23.1 | No unit test | DHU: trigger load error; verify Retry button present |
+| Phone | Settings General — `ConfigViewerCard` structured config viewer (one card per section, alphabetical) | No | No | v1.23.2 | No unit test | Manual: Settings → General; verify structured config sections render above raw-config card |
