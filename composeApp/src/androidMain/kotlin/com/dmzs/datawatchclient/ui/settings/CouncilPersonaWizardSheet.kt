@@ -28,8 +28,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
@@ -55,6 +57,7 @@ fun CouncilPersonaWizardSheet(
     val pagerState = rememberPagerState(pageCount = { totalPages })
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current
     val answers = remember { mutableStateListOf("", "", "", "", "") }
     var personaName by remember { mutableStateOf(existingPersona?.name ?: "") }
     var personaDescription by remember { mutableStateOf(existingPersona?.description ?: "") }
@@ -164,7 +167,16 @@ fun CouncilPersonaWizardSheet(
                                 },
                                 singleLine = true,
                             )
-                            Button(onClick = { /* TODO: call LLM refine */ }) {
+                            Button(
+                                enabled = refineInput.isNotBlank(),
+                                onClick = {
+                                    Toast.makeText(
+                                        context,
+                                        "AI refinement requires server support — coming soon",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                            ) {
                                 Text("→")
                             }
                         }
