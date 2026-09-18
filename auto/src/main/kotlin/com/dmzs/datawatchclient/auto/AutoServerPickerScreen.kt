@@ -30,15 +30,14 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
     private var profiles: List<ServerProfile> = emptyList()
     private var activeId: String? = null
     private var isLoading: Boolean = true
+    private var loadError: String? = null
     private var loadJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     init {
         // Eager load so the first onGetTemplate() render has real data.
         scope.launch {
-            profiles = AutoServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
-            activeId = AutoServiceLocator.activeServerStore.get()
-            isLoading = false
+            loadProfiles()
             invalidate()
         }
 
@@ -46,15 +45,10 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     loadJob?.cancel()
-                    loadJob =
-                        scope.launch {
-                            profiles =
-                                AutoServiceLocator.profileRepository.observeAll().first()
-                                    .filter { it.enabled }
-                            activeId = AutoServiceLocator.activeServerStore.get()
-                            isLoading = false
-                            invalidate()
-                        }
+                    loadJob = scope.launch {
+                        loadProfiles()
+                        invalidate()
+                    }
                 }
 
                 override fun onStop(owner: LifecycleOwner) {
@@ -68,6 +62,18 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
         )
     }
 
+    private suspend fun loadProfiles() {
+        try {
+            profiles = AutoServiceLocator.profileRepository.observeAll().first().filter { it.enabled }
+            activeId = AutoServiceLocator.activeServerStore.get()
+            loadError = null
+        } catch (e: Throwable) {
+            loadError = e.message ?: e::class.simpleName ?: "unknown error"
+        } finally {
+            isLoading = false
+        }
+    }
+
     override fun onGetTemplate(): Template {
         val items = ItemList.Builder()
         if (isLoading) {
@@ -75,6 +81,13 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                 Row.Builder()
                     .setTitle("Loading…")
                     .addText("Fetching server list")
+                    .build(),
+            )
+        } else if (loadError != null) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("Failed to load servers")
+                    .addText(loadError ?: "Unknown error")
                     .build(),
             )
         } else if (profiles.isEmpty()) {

@@ -254,6 +254,20 @@ public class AutoPrdDetailScreen(
             templateBuilder.setActionStrip(stripBuilder.build())
         }
 
+        if (!isLoading && error != null) {
+            templateBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Retry")
+                    .setOnClickListener {
+                        isLoading = true
+                        error = null
+                        invalidate()
+                        scope.launch { load(); invalidate() }
+                    }
+                    .build(),
+            )
+        }
+
         return templateBuilder.build()
     }
 

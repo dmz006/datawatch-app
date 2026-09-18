@@ -107,6 +107,8 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
             MessageTemplate.Builder(body)
                 .setTitle("datawatch  v${Version.VERSION}")
                 .setHeaderAction(Action.BACK)
+        brandIcon(carContext)?.let { templateBuilder.setIcon(it) }
+        templateBuilder
                 .addAction(
                     Action.Builder()
                         .setTitle("Reboot")
