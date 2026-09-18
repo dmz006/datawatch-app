@@ -151,6 +151,8 @@ public class LastOutputDetailScreen(
                 longText.startsWith(shortText) -> longText.drop(shortText.length).trim()
                 else -> longText.trim()
             }
+        // MessageTemplate allows only 1 custom-title action. When Play Long is available it
+        // becomes the primary button and Close moves to the ActionStrip alongside Listen/Stop.
         if (!continuation.isNullOrBlank() && continuation.length >= MIN_EXTRA_CHARS) {
             builder.addAction(
                 Action.Builder()
@@ -158,15 +160,40 @@ public class LastOutputDetailScreen(
                     .setOnClickListener { speakText("Continuing. $continuation") }
                     .build(),
             )
+            builder.setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setTitle(if (isSpeaking) "Stop" else "Listen")
+                            .setIcon(voiceIcon)
+                            .setOnClickListener {
+                                if (isSpeaking) {
+                                    tts.stop()
+                                    isSpeaking = false
+                                    abandonAudioFocus()
+                                    invalidate()
+                                } else {
+                                    speakText(body)
+                                }
+                            }
+                            .build(),
+                    )
+                    .addAction(
+                        Action.Builder()
+                            .setTitle("Close")
+                            .setOnClickListener { screenManager.pop() }
+                            .build(),
+                    )
+                    .build(),
+            )
+        } else {
+            builder.addAction(
+                Action.Builder()
+                    .setTitle("Close")
+                    .setOnClickListener { screenManager.pop() }
+                    .build(),
+            )
         }
-
-        // MessageTemplate requires at least one primary action.
-        builder.addAction(
-            Action.Builder()
-                .setTitle("Close")
-                .setOnClickListener { screenManager.pop() }
-                .build(),
-        )
 
         return builder.build()
     }
