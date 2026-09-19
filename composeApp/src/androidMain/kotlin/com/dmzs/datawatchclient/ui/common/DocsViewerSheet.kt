@@ -218,11 +218,16 @@ internal fun DocsViewerSheet(
                                         handler: SslErrorHandler,
                                         error: SslError,
                                     ) {
-                                        // Accepts the main page only — sub-resource SSL errors
-                                        // don't reach this callback; those go through
-                                        // shouldInterceptRequest below where we re-fetch via
-                                        // our trust-all HttpURLConnection.
-                                        handler.proceed()
+                                        // Always cancel — handler.proceed() is a Play Store
+                                        // policy violation (Device and Network Abuse policy).
+                                        // Self-signed certs are handled upstream in
+                                        // shouldInterceptRequest, which re-fetches every HTTPS
+                                        // resource via a profile-scoped trust-all context before
+                                        // the WebView makes any native SSL connection. This
+                                        // callback only fires when that fetch failed or the
+                                        // profile is not marked allowSelfSigned — in either
+                                        // case proceeding would be unsafe.
+                                        handler.cancel()
                                     }
 
                                     override fun shouldInterceptRequest(
