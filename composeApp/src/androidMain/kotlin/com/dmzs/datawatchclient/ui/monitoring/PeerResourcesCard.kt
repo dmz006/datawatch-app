@@ -323,10 +323,12 @@ public class PeerResourcesViewModel(
                 val detail = peer.computeNode?.let { transport.getComputeNodeDetail(it).getOrNull() }
                 peer to detail
             }
-            // Auto-created local nodes (e.g. "datawatch-stats") not already shown via a peer
+            // Auto-created local nodes (e.g. the server's own "datawatch-stats") not already
+            // shown via a peer row. Must use autoCreated, not observerPeer != null: the local
+            // server node has observerPeer == null (it IS the server, not a peer of itself).
             val peerNodeNames = peersWithDetails.mapNotNull { (peer, _) -> peer.computeNode }.toSet()
             val localNodesWithDetails = transport.listComputeNodes().getOrNull().orEmpty()
-                .filter { node -> node.observerPeer != null && node.name !in peerNodeNames }
+                .filter { node -> node.autoCreated && node.name !in peerNodeNames }
                 .map { node -> node to transport.getComputeNodeDetail(node.name).getOrNull() }
             _state.value = UiState(loading = false, peers = peersWithDetails, localNodes = localNodesWithDetails)
         }
