@@ -326,9 +326,14 @@ public class PeerResourcesViewModel(
             // Auto-created local nodes (e.g. the server's own "datawatch-stats") not already
             // shown via a peer row. Must use autoCreated, not observerPeer != null: the local
             // server node has observerPeer == null (it IS the server, not a peer of itself).
-            val peerNodeNames = peersWithDetails.mapNotNull { (peer, _) -> peer.computeNode }.toSet()
+            // Dedup against BOTH the peer's bound computeNode name AND the peer's own name:
+            // a local node named "johnnyjohnny" must be excluded if there is an observer peer
+            // also named "johnnyjohnny", even when that peer's computeNode field differs.
+            val peerExcludes = peersWithDetails
+                .flatMap { (peer, _) -> listOfNotNull(peer.computeNode, peer.name) }
+                .toSet()
             val localNodesWithDetails = transport.listComputeNodes().getOrNull().orEmpty()
-                .filter { node -> node.autoCreated && node.name !in peerNodeNames }
+                .filter { node -> node.autoCreated && node.name !in peerExcludes }
                 .map { node -> node to transport.getComputeNodeDetail(node.name).getOrNull() }
             _state.value = UiState(loading = false, peers = peersWithDetails, localNodes = localNodesWithDetails)
         }
