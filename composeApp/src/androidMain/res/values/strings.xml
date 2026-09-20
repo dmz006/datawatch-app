@@ -580,6 +580,7 @@
     <string name="prd_action_reject">Reject</string>
     <string name="prd_action_request_revision">Request revision</string>
     <string name="prd_btn_clone_template">Clone to Template</string>
+    <string name="prd_btn_reset_to_draft">Reset to Draft</string>
     <string name="prd_btn_clone_template_title">Save this automaton as a reusable template</string>
     <string name="prd_btn_delete">Delete</string>
     <string name="prd_btn_delete_title">Hard-delete the PRD and any descendants</string>
@@ -1272,6 +1273,7 @@
     <string name="automata_spec_hide">collapse</string>
     <string name="automata_actions_view_sessions">View Sessions</string>
     <string name="prd_detail_planning_backend">Planning backend (decompose LLM)</string>
+    <string name="prd_detail_planning_model">Planning model</string>
     <string name="automata_task_retry">↺ Retry</string>
     <!-- Web Search monitor card -->
     <string name="stats_section_web_search">Web Search</string>
