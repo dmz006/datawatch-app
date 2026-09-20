@@ -9,10 +9,13 @@ import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdDto
@@ -54,9 +57,21 @@ public class AutoPrdStoriesScreen(
         )
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val story = selectedStory
-        return if (story == null) buildStoriesListTemplate() else buildStoryDetailTemplate(story)
+        if (story == null) buildStoriesListTemplate() else buildStoryDetailTemplate(story)
+    } catch (e: Throwable) {
+        val prdTitle = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "Automata"
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+            .setTitle(prdTitle)
+            .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle("Close")
+                    .setOnClickListener { screenManager.pop() }
+                    .build(),
+            )
+            .build()
     }
 
     // ---- stories-list mode ----
@@ -141,11 +156,18 @@ public class AutoPrdStoriesScreen(
             )
         }
 
-        // ActionStrip: back-to-stories + lifecycle actions
+        // ActionStrip: back-to-stories + lifecycle actions.
+        // All actions must be icon-only — titled strip actions trigger the driving validator
+        // when the session was started from a MESSAGING notification.
+        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
+        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val monitorIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_monitor)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+
         val stripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("◀ Stories")
+                    .setIcon(sessionsIcon)
                     .setOnClickListener { selectedStory = null; invalidate() }
                     .build(),
             )
@@ -157,7 +179,7 @@ public class AutoPrdStoriesScreen(
         if (isReview && story.status == "awaiting_approval") {
             stripBuilder.addAction(
                 Action.Builder()
-                    .setTitle("Approve")
+                    .setIcon(chatIcon)
                     .setOnClickListener { fireApprove() }
                     .build(),
             )
@@ -165,14 +187,14 @@ public class AutoPrdStoriesScreen(
         if (firstFailed != null) {
             stripBuilder.addAction(
                 Action.Builder()
-                    .setTitle("Reset Task")
+                    .setIcon(monitorIcon)
                     .setOnClickListener { fireResetTask(firstFailed) }
                     .build(),
             )
         }
         stripBuilder.addAction(
             Action.Builder()
-                .setTitle("Cancel Story")
+                .setIcon(closeIcon)
                 .setOnClickListener { fireCancelStory(story) }
                 .build(),
         )
