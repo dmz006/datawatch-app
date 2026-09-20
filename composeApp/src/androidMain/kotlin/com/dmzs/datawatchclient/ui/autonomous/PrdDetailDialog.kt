@@ -1331,10 +1331,28 @@ private fun TaskRow(
     val canCancel = task.status !in setOf("complete", "cancelled", "failed")
     val canEdit = prdStatus in setOf("needs_review", "revisions_asked")
 
+    var expanded by remember { mutableStateOf(false) }
     var cancelTaskOpen by remember { mutableStateOf(false) }
     var cancelTaskReason by remember { mutableStateOf("") }
     var editTaskOpen by remember { mutableStateOf(false) }
     var editTaskSpec by remember { mutableStateOf(task.task) }
+
+    // Status icon + color — matches PWA task status mapping
+    val (statusIcon, statusColor) = when (task.status) {
+        "running", "in_progress" -> "▶" to Color(0xFF3B82F6)
+        "verifying" -> "⟳" to Color(0xFF8B5CF6)
+        "running_tests" -> "🧪" to Color(0xFF06B6D4)
+        "complete", "completed" -> "✓" to Color(0xFF10B981)
+        "failed" -> "✗" to Color(0xFFEF4444)
+        "blocked" -> "✗" to Color(0xFFF59E0B)
+        "cancelled", "canceled" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+        "pending" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
+        else -> "" to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val hasBody = task.filesTouched.isNotEmpty() || !task.sessionId.isNullOrBlank() ||
+        !task.error.isNullOrBlank() || task.verification?.summary?.isNotBlank() == true ||
+        canRetry || canRequeue || canCancel || canEdit
 
     Column(
         modifier = Modifier
@@ -1345,6 +1363,7 @@ private fun TaskRow(
                 else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                 RoundedCornerShape(4.dp),
             )
+            .then(if (hasBody) Modifier.clickable { expanded = !expanded } else Modifier)
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1353,17 +1372,13 @@ private fun TaskRow(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
-            // Status icon + color — matches PWA task status mapping
-            val (statusIcon, statusColor) = when (task.status) {
-                "running", "in_progress" -> "▶" to Color(0xFF3B82F6)
-                "verifying" -> "⟳" to Color(0xFF8B5CF6)
-                "running_tests" -> "🧪" to Color(0xFF06B6D4)
-                "complete", "completed" -> "✓" to Color(0xFF10B981)
-                "failed" -> "✗" to Color(0xFFEF4444)
-                "blocked" -> "✗" to Color(0xFFF59E0B)
-                "cancelled", "canceled" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
-                "pending" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
-                else -> "" to MaterialTheme.colorScheme.onSurfaceVariant
+            if (hasBody) {
+                Text(
+                    if (expanded) "▴" else "▾",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
             }
             Text(
                 "$statusIcon ${task.status.replace('_', ' ')}".trimStart(),
@@ -1372,6 +1387,7 @@ private fun TaskRow(
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
+        AnimatedVisibility(visible = expanded) { Column(modifier = Modifier.padding(top = 4.dp)) {
         // files_touched chips (B102 parity — uncommitted + non-git files written by task session)
         if (task.filesTouched.isNotEmpty()) {
             FlowRow(
@@ -1463,6 +1479,7 @@ private fun TaskRow(
                 }
             }
         }
+        } } // end AnimatedVisibility + inner Column
     }
 
     if (cancelTaskOpen && onCancelTask != null) {

@@ -8,8 +8,10 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.DecisionDto
@@ -240,12 +242,24 @@ public class AutoPrdDetailScreen(
                 }
             }
 
+            // All strip actions must be icon-only (no setTitle) — titled strip actions trigger
+            // the driving validator when the session was started from a MESSAGING notification.
+            val closeIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_close),
+            ).build()
+            val storiesIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions),
+            ).build()
+            val voiceIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+            ).build()
+
             val stripBuilder = ActionStrip.Builder()
             // Reject lives in the strip for review state (1-action limit on MessageTemplate).
             if (rejectInStrip) {
                 stripBuilder.addAction(
                     Action.Builder()
-                        .setTitle("Reject")
+                        .setIcon(closeIcon)
                         .setOnClickListener { fire("reject") }
                         .build(),
                 )
@@ -253,17 +267,17 @@ public class AutoPrdDetailScreen(
             if (currentPrd.stories.isNotEmpty()) {
                 stripBuilder.addAction(
                     Action.Builder()
-                        .setTitle("Stories")
+                        .setIcon(storiesIcon)
                         .setOnClickListener {
                             screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd))
                         }
                         .build(),
                 )
             }
-            // "Update" lets the driver dictate a spec change via voice — PRD_UPDATE flow.
+            // Voice icon — opens VoiceRecordingScreen for a spec update via speech.
             stripBuilder.addAction(
                 Action.Builder()
-                    .setTitle("Update")
+                    .setIcon(voiceIcon)
                     .setOnClickListener {
                         CarToast.makeText(carContext, "Speak spec update…", CarToast.LENGTH_SHORT).show()
                         screenManager.push(
