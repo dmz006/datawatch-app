@@ -8,8 +8,10 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
@@ -97,6 +99,7 @@ public class AutoTaskDetailScreen(
 
         // MessageTemplate allows only 1 custom-title action; "failed" needs both Requeue and
         // Cancel Task, so Cancel Task goes in the ActionStrip for that state.
+        // All strip actions must be icon-only — titled strip actions crash the MESSAGING session.
         var cancelInStrip = false
         when (task.status) {
             "failed" -> {
@@ -119,18 +122,46 @@ public class AutoTaskDetailScreen(
                 )
             }
         }
+
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
+
+        val stripBuilder = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(speakerIcon)
+                    .setOnClickListener {
+                        AutoTts.speak(carContext, task.spec.takeIf { it.isNotBlank() } ?: task.task)
+                    }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(voiceIcon)
+                    .setOnClickListener {
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = taskTitle,
+                                prdId = prdId,
+                                taskId = task.id,
+                            ),
+                        )
+                    }
+                    .build(),
+            )
         if (cancelInStrip) {
-            builder.setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Cancel Task")
-                            .setOnClickListener { fireCancelTask() }
-                            .build(),
-                    )
+            stripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(closeIcon)
+                    .setOnClickListener { fireCancelTask() }
                     .build(),
             )
         }
+        builder.setActionStrip(stripBuilder.build())
 
         return builder.build()
     }
