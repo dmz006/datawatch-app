@@ -728,7 +728,12 @@ public data class PrdTaskVerificationDto(
 @Serializable
 public data class PrdTaskDto(
     val id: String = "",
-    val task: String = "",
+    /** Server sends 'title' (short label); falls back to empty. Use [spec] for the full description. */
+    @SerialName("title") val task: String = "",
+    /** Full task specification text (server field: 'spec'). */
+    val spec: String = "",
+    /** Planned files the task is expected to touch (server field: 'files'). */
+    val files: List<String> = emptyList(),
     /** pending | in_progress | complete | failed | blocked | verifying | running_tests | cancelled */
     val status: String = "",
     @SerialName("session_id") val sessionId: String? = null,

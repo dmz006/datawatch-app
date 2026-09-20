@@ -1151,7 +1151,10 @@ private fun StoryRow(
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    val activeStoryStatuses = remember {
+        setOf("running", "in_progress", "active", "awaiting_approval", "verifying", "running_tests")
+    }
+    var expanded by remember { mutableStateOf(story.status.lowercase() in activeStoryStatuses) }
     var cancelStoryOpen by remember { mutableStateOf(false) }
     var cancelStoryReason by remember { mutableStateOf("") }
 
@@ -1264,6 +1267,62 @@ private fun StoryRow(
                         }
                     }
                 }
+                // Read-only extras: progress + aggregated files_touched + session link (PWA parity)
+                if (!canEdit && story.tasks.isNotEmpty()) {
+                    val total = story.tasks.size
+                    val done = story.tasks.count { it.status in setOf("complete", "completed", "done") }
+                    val activeCount = story.tasks.count { it.status in setOf("verifying", "running_tests") }
+                    val pct = if (total > 0) done * 100 / total else 0
+                    val progressColor = when {
+                        pct == 100 -> Color(0xFF10B981)
+                        activeCount > 0 -> Color(0xFF3B82F6)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            "$done/$total · $pct%${if (activeCount > 0) " · ⟳ $activeCount active" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = 2.dp))
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { pct / 100f },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        color = progressColor,
+                    )
+                    // Aggregated files_touched from all tasks (deduped, capped at 12)
+                    val allTouched = story.tasks.flatMap { it.filesTouched }.distinct().take(12)
+                    if (allTouched.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                "✅ Touched:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            allTouched.forEach { f -> FilePill(name = f, color = Color(0xFF10B981)) }
+                        }
+                    }
+                    // Session link — first task with non-empty session_id
+                    val firstSession = story.tasks.firstOrNull { !it.sessionId.isNullOrBlank() }?.sessionId
+                    firstSession?.let { sid ->
+                        Text(
+                            "→ ${sid.take(8)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.clickable { SessionsNavChannel.jumpTo(sid) }.padding(top = 2.dp, bottom = 2.dp),
+                        )
+                    }
+                }
                 // Task list — v8.23.0 parity
                 if (story.tasks.isNotEmpty()) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -1331,28 +1390,31 @@ private fun TaskRow(
     val canCancel = task.status !in setOf("complete", "cancelled", "failed")
     val canEdit = prdStatus in setOf("needs_review", "revisions_asked")
 
-    var expanded by remember { mutableStateOf(false) }
+    val activeTaskStatuses2 = remember {
+        setOf("running", "in_progress", "verifying", "running_tests", "blocked", "failed")
+    }
+    var expanded by remember { mutableStateOf(task.status.lowercase() in activeTaskStatuses2) }
     var cancelTaskOpen by remember { mutableStateOf(false) }
     var cancelTaskReason by remember { mutableStateOf("") }
     var editTaskOpen by remember { mutableStateOf(false) }
-    var editTaskSpec by remember { mutableStateOf(task.task) }
+    var editTaskSpec by remember { mutableStateOf(task.spec.ifBlank { task.task }) }
 
-    // Status icon + color — matches PWA task status mapping
-    val (statusIcon, statusColor) = when (task.status) {
+    // Status glyph — matches PWA status mapping
+    val (statusGlyph, statusColor) = when (task.status) {
         "running", "in_progress" -> "▶" to Color(0xFF3B82F6)
         "verifying" -> "⟳" to Color(0xFF8B5CF6)
         "running_tests" -> "🧪" to Color(0xFF06B6D4)
         "complete", "completed" -> "✓" to Color(0xFF10B981)
         "failed" -> "✗" to Color(0xFFEF4444)
-        "blocked" -> "✗" to Color(0xFFF59E0B)
+        "blocked" -> "⛔" to Color(0xFFF59E0B)
         "cancelled", "canceled" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
         "pending" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
         else -> "" to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    val hasBody = task.filesTouched.isNotEmpty() || !task.sessionId.isNullOrBlank() ||
-        !task.error.isNullOrBlank() || task.verification?.summary?.isNotBlank() == true ||
-        canRetry || canRequeue || canCancel || canEdit
+    val hasBody = task.spec.isNotBlank() || task.filesTouched.isNotEmpty() || task.files.isNotEmpty() ||
+        !task.sessionId.isNullOrBlank() || !task.error.isNullOrBlank() ||
+        task.verification != null || canRetry || canRequeue || canCancel || canEdit
 
     Column(
         modifier = Modifier
@@ -1366,28 +1428,69 @@ private fun TaskRow(
             .then(if (hasBody) Modifier.clickable { expanded = !expanded } else Modifier)
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
+        // Header: chevron + status glyph + task ID (code) + title
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                task.task.ifBlank { task.id },
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
-            )
             if (hasBody) {
                 Text(
-                    if (expanded) "▴" else "▾",
+                    if (expanded) "▾" else "▸",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp),
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+            }
+            if (statusGlyph.isNotEmpty()) {
+                Text(
+                    statusGlyph,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = statusColor,
+                    modifier = Modifier.padding(end = 4.dp),
                 )
             }
             Text(
-                "$statusIcon ${task.status.replace('_', ' ')}".trimStart(),
+                task.id.take(8),
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 6.dp),
+            )
+            Text(
+                task.task.ifBlank { task.spec.take(80) },
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            Text(
+                task.status.replace('_', ' '),
                 style = MaterialTheme.typography.labelSmall,
                 color = statusColor,
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
         AnimatedVisibility(visible = expanded) { Column(modifier = Modifier.padding(top = 4.dp)) {
+        // Full spec text
+        if (task.spec.isNotBlank()) {
+            Text(
+                task.spec,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        // Planned files (task.files)
+        if (task.files.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    "Files:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                task.files.forEach { f -> FilePill(name = f, color = Color(0xFF3B82F6)) }
+            }
+        }
         // files_touched chips (B102 parity — uncommitted + non-git files written by task session)
         if (task.filesTouched.isNotEmpty()) {
             FlowRow(
@@ -1433,15 +1536,25 @@ private fun TaskRow(
                 )
             }
         }
-        // Verification summary
+        // Verification summary + issues
         task.verification?.let { v ->
+            val ok = v.severity?.lowercase() !in listOf("error", "high", "critical")
+            val verifyColor = if (ok) Color(0xFF10B981) else Color(0xFFF59E0B)
+            val icon = if (ok) "✓" else "✗"
             v.summary?.takeIf { it.isNotBlank() }?.let { summary ->
-                val ok = v.severity?.lowercase() !in listOf("error", "high", "critical")
                 Text(
-                    "✓ $summary",
+                    "$icon $summary",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (ok) Color(0xFF10B981) else Color(0xFFF59E0B),
+                    color = verifyColor,
                     modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            v.issues.forEach { issue ->
+                Text(
+                    "• $issue",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = verifyColor.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(start = 8.dp),
                 )
             }
         }
