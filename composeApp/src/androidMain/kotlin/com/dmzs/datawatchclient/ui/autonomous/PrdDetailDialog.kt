@@ -90,8 +90,13 @@ internal fun PrdDetailDialog(
     onApprove: (note: String?) -> Unit,
     onReject: (String) -> Unit,
     onDecompose: () -> Unit,
-    onSetLlm: (backend: String, effort: String, model: String, decompositionProfile: String) -> Unit,
+    onSetLlm: (backend: String, effort: String, model: String, decompositionProfile: String, decompositionModel: String) -> Unit,
     onResetTask: ((prdId: String, taskId: String) -> Unit)? = null,
+    onResetToDraft: (() -> Unit)? = null,
+    /** Model list from /api/ollama/models — empty = Ollama not configured. */
+    ollamaModels: List<String> = emptyList(),
+    /** Model list from /api/openwebui/models — empty = OpenWebUI not configured. */
+    openWebUiModels: List<String> = emptyList(),
     onRun: () -> Unit,
     onCancel: () -> Unit,
     onRequestRevision: (note: String) -> Unit,
@@ -128,6 +133,7 @@ internal fun PrdDetailDialog(
     val canReview = status == "needs_review" || status == "revisions_asked"
     val canEdit = status != "running"
     val isCancellable = status !in setOf("cancelled", "completed", "done", "rejected", "failed", "archived")
+    val canResetToDraft = status !in setOf("running", "planning", "archived")
 
     var selectedTab by remember { mutableStateOf(0) }
     var rejectOpen by remember { mutableStateOf(false) }
@@ -412,6 +418,18 @@ internal fun PrdDetailDialog(
                             }) {
                                 Text(
                                     stringResource(R.string.prd_btn_clone_template),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+                        if (onResetToDraft != null && canResetToDraft) {
+                            TextButton(onClick = {
+                                onResetToDraft()
+                                onDismiss()
+                            }) {
+                                Text(
+                                    stringResource(R.string.prd_btn_reset_to_draft),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
@@ -781,10 +799,13 @@ internal fun PrdDetailDialog(
             currentEffort = prd.effort.orEmpty(),
             currentModel = prd.model.orEmpty(),
             currentDecompositionProfile = prd.decompositionProfile.orEmpty(),
+            currentDecompositionModel = prd.decompositionModel.orEmpty(),
             backends = backends,
+            ollamaModels = ollamaModels,
+            openWebUiModels = openWebUiModels,
             onDismiss = { llmOpen = false },
-            onSave = { b, e, m, dp ->
-                onSetLlm(b, e, m, dp)
+            onSave = { b, e, m, dp, dm ->
+                onSetLlm(b, e, m, dp, dm)
                 llmOpen = false
             },
         )
@@ -926,21 +947,40 @@ private fun LlmOverrideDialog(
     currentEffort: String,
     currentModel: String,
     currentDecompositionProfile: String = "",
+    currentDecompositionModel: String = "",
     backends: List<String>,
+    ollamaModels: List<String> = emptyList(),
+    openWebUiModels: List<String> = emptyList(),
     onDismiss: () -> Unit,
-    onSave: (backend: String, effort: String, model: String, decompositionProfile: String) -> Unit,
+    onSave: (backend: String, effort: String, model: String, decompositionProfile: String, decompositionModel: String) -> Unit,
 ) {
     var backend by remember { mutableStateOf(currentBackend) }
     var effort by remember { mutableStateOf(currentEffort) }
     var model by remember { mutableStateOf(currentModel) }
     var decompositionProfile by remember { mutableStateOf(currentDecompositionProfile) }
+    var decompositionModel by remember { mutableStateOf(currentDecompositionModel) }
     var backendMenuOpen by remember { mutableStateOf(false) }
     var effortMenuOpen by remember { mutableStateOf(false) }
     var planningMenuOpen by remember { mutableStateOf(false) }
+    var modelMenuOpen by remember { mutableStateOf(false) }
+    var planningModelMenuOpen by remember { mutableStateOf(false) }
 
     // Planning backend must be ollama or openwebui (headless /api/ask only)
     val planningBackends = backends.filter { b ->
         b.contains("ollama", ignoreCase = true) || b.contains("openwebui", ignoreCase = true)
+    }
+
+    // Model list for the currently selected execution backend (empty = show free-text)
+    val execModels = when {
+        backend.contains("ollama", ignoreCase = true) -> ollamaModels
+        backend.contains("openwebui", ignoreCase = true) -> openWebUiModels
+        else -> emptyList()
+    }
+    // Model list for the planning backend
+    val planModels = when {
+        decompositionProfile.contains("ollama", ignoreCase = true) -> ollamaModels
+        decompositionProfile.contains("openwebui", ignoreCase = true) -> openWebUiModels
+        else -> emptyList()
     }
 
     val inheritLabel = stringResource(R.string.new_prd_inherit)
@@ -974,6 +1014,38 @@ private fun LlmOverrideDialog(
                         }
                     }
                 }
+                // Execution model — dropdown for ollama/openwebui, free-text otherwise (BL-AT-2)
+                if (execModels.isNotEmpty()) {
+                    ExposedDropdownMenuBox(
+                        expanded = modelMenuOpen,
+                        onExpandedChange = { modelMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = model.ifEmpty { inheritLabel },
+                            onValueChange = {},
+                            label = { Text(stringResource(R.string.new_prd_model_label)) },
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelMenuOpen) },
+                        )
+                        DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
+                            DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { model = ""; modelMenuOpen = false })
+                            execModels.forEach { m ->
+                                DropdownMenuItem(text = { Text(m) }, onClick = { model = m; modelMenuOpen = false })
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = model,
+                        onValueChange = { model = it },
+                        label = { Text(stringResource(R.string.new_prd_model_label)) },
+                        placeholder = { Text(stringResource(R.string.new_prd_backend_default)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
                 // Planning backend — ollama/openwebui only (v8.20.0)
                 if (planningBackends.isNotEmpty()) {
                     ExposedDropdownMenuBox(
@@ -1002,6 +1074,38 @@ private fun LlmOverrideDialog(
                             }
                         }
                     }
+                    // Planning model — dropdown or free-text depending on planning backend (BL-AT-4)
+                    if (planModels.isNotEmpty()) {
+                        ExposedDropdownMenuBox(
+                            expanded = planningModelMenuOpen,
+                            onExpandedChange = { planningModelMenuOpen = it },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = decompositionModel.ifEmpty { inheritLabel },
+                                onValueChange = {},
+                                label = { Text(stringResource(R.string.prd_detail_planning_model)) },
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = planningModelMenuOpen) },
+                            )
+                            DropdownMenu(expanded = planningModelMenuOpen, onDismissRequest = { planningModelMenuOpen = false }) {
+                                DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { decompositionModel = ""; planningModelMenuOpen = false })
+                                planModels.forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = { decompositionModel = m; planningModelMenuOpen = false })
+                                }
+                            }
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = decompositionModel,
+                            onValueChange = { decompositionModel = it },
+                            label = { Text(stringResource(R.string.prd_detail_planning_model)) },
+                            placeholder = { Text(stringResource(R.string.new_prd_backend_default)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
+                    }
                 }
                 ExposedDropdownMenuBox(
                     expanded = effortMenuOpen,
@@ -1028,17 +1132,10 @@ private fun LlmOverrideDialog(
                         }
                     }
                 }
-                OutlinedTextField(
-                    value = model,
-                    onValueChange = { model = it },
-                    label = { Text("Model (optional)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(backend, effort, model, decompositionProfile) }) {
+            TextButton(onClick = { onSave(backend, effort, model, decompositionProfile, decompositionModel) }) {
                 Text(stringResource(R.string.action_save))
             }
         },

@@ -446,8 +446,11 @@ public fun AutonomousScreen(
                     openPrdId = null
                 },
                 onDecompose = { vm.decompose(id) },
-                onSetLlm = { backend, effort, model, dp -> vm.setLlm(id, backend, effort, model, dp) },
+                onSetLlm = { backend, effort, model, dp, dm -> vm.setLlm(id, backend, effort, model, dp, dm) },
                 onResetTask = { prdId, taskId -> vm.resetTask(prdId, taskId) },
+                onResetToDraft = { vm.resetToDraft(id) },
+                ollamaModels = state.ollamaModels,
+                openWebUiModels = state.openWebUiModels,
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },

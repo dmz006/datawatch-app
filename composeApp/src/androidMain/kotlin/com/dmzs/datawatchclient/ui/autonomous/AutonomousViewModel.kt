@@ -64,6 +64,10 @@ public class AutonomousViewModel(
         val backends: List<String> = emptyList(),
         /** Permission modes from /api/llm/claude/permission_modes (v5.27.5+; empty on older daemons). */
         val permissionModes: List<String> = emptyList(),
+        /** Model names from /api/ollama/models — populated on load; empty when Ollama not configured. */
+        val ollamaModels: List<String> = emptyList(),
+        /** Model IDs from /api/openwebui/models — populated on load; empty when OpenWebUI not configured. */
+        val openWebUiModels: List<String> = emptyList(),
         /** Latest scan result for the open PRD (v0.62.0). */
         val scanResult: ScanResultDto? = null,
         val scanLoading: Boolean = false,
@@ -199,13 +203,23 @@ public class AutonomousViewModel(
                 }
             // Fetch PRD list and auxiliary data in parallel so slow/missing
             // backends or permission-modes endpoints don't block the list.
-            val (prdsResult, backendsResult, permModesResult) =
-                coroutineScope {
-                    val prds = async { transport.listPrds() }
-                    val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
-                    val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
-                    Triple(prds.await(), backends.await(), permModes.await())
-                }
+            val prdsResult: Result<com.dmzs.datawatchclient.transport.dto.PrdListDto>
+            val backendsResult: List<String>
+            val permModesResult: List<String>
+            val ollamaResult: List<String>
+            val openWebUiResult: List<String>
+            coroutineScope {
+                val prds = async { transport.listPrds() }
+                val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
+                val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
+                val ollama = async { transport.listOllamaModels().getOrElse { emptyList() } }
+                val openWebUi = async { transport.listOpenWebUiModels().getOrElse { emptyList() } }
+                prdsResult = prds.await()
+                backendsResult = backends.await()
+                permModesResult = permModes.await()
+                ollamaResult = ollama.await()
+                openWebUiResult = openWebUi.await()
+            }
             prdsResult.fold(
                 onSuccess = { dto ->
                     _state.value =
@@ -214,6 +228,8 @@ public class AutonomousViewModel(
                             prds = dto.prds,
                             backends = backendsResult,
                             permissionModes = permModesResult,
+                            ollamaModels = ollamaResult,
+                            openWebUiModels = openWebUiResult,
                         )
                 },
                 onFailure = { err ->
@@ -433,6 +449,7 @@ public class AutonomousViewModel(
         effort: String,
         model: String,
         decompositionProfile: String = "",
+        decompositionModel: String = "",
     ) {
         val body =
             buildJsonObject {
@@ -440,9 +457,14 @@ public class AutonomousViewModel(
                 if (effort.isNotBlank()) put("effort", JsonPrimitive(effort))
                 if (model.isNotBlank()) put("model", JsonPrimitive(model))
                 if (decompositionProfile.isNotBlank()) put("decomposition_profile", JsonPrimitive(decompositionProfile))
+                if (decompositionModel.isNotBlank()) put("decomposition_model", JsonPrimitive(decompositionModel))
                 put("actor", JsonPrimitive("operator"))
             }
         prdOp("Set LLM") { it.prdAction(prdId, "set_llm", body) }
+    }
+
+    public fun resetToDraft(prdId: String) {
+        prdOp("Reset to draft") { it.prdAction(prdId, "reset_to_draft") }
     }
 
     public fun resetTask(prdId: String, taskId: String) {

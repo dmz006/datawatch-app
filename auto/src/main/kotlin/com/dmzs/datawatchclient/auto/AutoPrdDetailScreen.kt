@@ -191,9 +191,9 @@ public class AutoPrdDetailScreen(
             val isApproved = statusLower == "approved"
             val isPending = statusLower in setOf("pending", "decomposing", "idle", "")
 
-            // MessageTemplate allows only 1 action with a custom title.
-            // Approve/Reject needs both — Approve goes in addAction, Reject in the strip.
-            var rejectInStrip = false
+            // MessageTemplate ActionStrip limit = 2 icon-only actions on MESSAGING path.
+            // Strip is always voice + speaker; lifecycle buttons and story navigation use addAction
+            // (max 2 addActions on MessageTemplate). Reject moves from strip to addAction for review.
             when {
                 isReview -> {
                     templateBuilder.addAction(
@@ -203,7 +203,13 @@ public class AutoPrdDetailScreen(
                             .setOnClickListener { fire("approve") }
                             .build(),
                     )
-                    rejectInStrip = true
+                    templateBuilder.addAction(
+                        Action.Builder()
+                            .setTitle("Reject")
+                            .setBackgroundColor(CarColor.RED)
+                            .setOnClickListener { fire("reject") }
+                            .build(),
+                    )
                 }
                 isRunning -> {
                     templateBuilder.addAction(
@@ -213,6 +219,14 @@ public class AutoPrdDetailScreen(
                             .setOnClickListener { fire("cancel") }
                             .build(),
                     )
+                    if (currentPrd.stories.isNotEmpty()) {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Stories")
+                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
+                                .build(),
+                        )
+                    }
                 }
                 isApproved -> {
                     templateBuilder.addAction(
@@ -222,6 +236,14 @@ public class AutoPrdDetailScreen(
                             .setOnClickListener { fire("run") }
                             .build(),
                     )
+                    if (currentPrd.stories.isNotEmpty()) {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Stories")
+                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
+                                .build(),
+                        )
+                    }
                 }
                 isPending -> {
                     templateBuilder.addAction(
@@ -239,17 +261,30 @@ public class AutoPrdDetailScreen(
                             .setOnClickListener { fireDelete() }
                             .build(),
                     )
+                    if (currentPrd.stories.isNotEmpty()) {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Stories")
+                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
+                                .build(),
+                        )
+                    }
+                }
+                else -> {
+                    if (currentPrd.stories.isNotEmpty()) {
+                        templateBuilder.addAction(
+                            Action.Builder()
+                                .setTitle("Stories")
+                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
+                                .build(),
+                        )
+                    }
                 }
             }
 
+            // Strip: exactly 2 icon-only actions — voice (mic) + speaker (TTS).
             // All strip actions must be icon-only (no setTitle) — titled strip actions trigger
             // the driving validator when the session was started from a MESSAGING notification.
-            val closeIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_close),
-            ).build()
-            val storiesIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions),
-            ).build()
             val voiceIcon = CarIcon.Builder(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
@@ -257,54 +292,33 @@ public class AutoPrdDetailScreen(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker),
             ).build()
 
-            val stripBuilder = ActionStrip.Builder()
-            // Reject lives in the strip for review state (1-action limit on MessageTemplate).
-            if (rejectInStrip) {
-                stripBuilder.addAction(
-                    Action.Builder()
-                        .setIcon(closeIcon)
-                        .setOnClickListener { fire("reject") }
-                        .build(),
-                )
-            }
-            if (currentPrd.stories.isNotEmpty()) {
-                stripBuilder.addAction(
-                    Action.Builder()
-                        .setIcon(storiesIcon)
-                        .setOnClickListener {
-                            screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd))
-                        }
-                        .build(),
-                )
-            }
-            // Voice icon — opens VoiceRecordingScreen for a spec update via speech.
-            stripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(voiceIcon)
-                    .setOnClickListener {
-                        CarToast.makeText(carContext, "Speak spec update…", CarToast.LENGTH_SHORT).show()
-                        screenManager.push(
-                            VoiceRecordingScreen(
-                                carContext,
-                                sessionId = "",
-                                sessionTitle = prdName,
-                                prdId = prdId,
-                            ),
-                        )
-                    }
+            templateBuilder.setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(speakerIcon)
+                            .setOnClickListener {
+                                AutoTts.speak(carContext, currentPrd.spec?.takeIf { it.isNotBlank() } ?: prdName)
+                            }
+                            .build(),
+                    )
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(voiceIcon)
+                            .setOnClickListener {
+                                screenManager.push(
+                                    VoiceRecordingScreen(
+                                        carContext,
+                                        sessionId = "",
+                                        sessionTitle = prdName,
+                                        prdId = prdId,
+                                    ),
+                                )
+                            }
+                            .build(),
+                    )
                     .build(),
             )
-            // Speaker icon — reads the spec aloud via TTS through car speakers.
-            stripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(speakerIcon)
-                    .setOnClickListener {
-                        val specText = currentPrd.spec?.takeIf { it.isNotBlank() } ?: prdName
-                        AutoTts.speak(carContext, specText)
-                    }
-                    .build(),
-            )
-            templateBuilder.setActionStrip(stripBuilder.build())
         }
 
         if (!isLoading && error != null) {
