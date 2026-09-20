@@ -876,6 +876,7 @@ private fun SessionRow(
     var currentStatusOpen by remember { mutableStateOf(false) }
     var currentStatusText by remember { mutableStateOf<String?>(null) }
     var currentStatusLongText by remember { mutableStateOf<String?>(null) }
+    var currentStatusLoading by remember { mutableStateOf(false) }
     var summaryExpanded by remember { mutableStateOf(false) }
     val currentStatusScope = rememberCoroutineScope()
     val noChangeStr = stringResource(R.string.no_change_since_last_refresh)
@@ -1213,22 +1214,37 @@ private fun SessionRow(
                         Spacer(modifier = Modifier.width(4.dp))
                         OutlinedButton(
                             onClick = {
-                                currentStatusScope.launch {
-                                    val dto = fetchCurrentStatus()
-                                    if (dto != null) {
-                                        currentStatusText = if (dto.noChange) noChangeStr else dto.currentStatus
-                                        currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
-                                        currentStatusOpen = true
+                                if (!currentStatusLoading) {
+                                    currentStatusLoading = true
+                                    currentStatusScope.launch {
+                                        try {
+                                            val dto = fetchCurrentStatus()
+                                            if (dto != null) {
+                                                currentStatusText = if (dto.noChange) noChangeStr else dto.currentStatus
+                                                currentStatusLongText = dto.currentStatusLong.takeIf { it.isNotBlank() }
+                                                currentStatusOpen = true
+                                            }
+                                        } finally {
+                                            currentStatusLoading = false
+                                        }
                                     }
                                 }
                             },
+                            enabled = !currentStatusLoading,
                             contentPadding =
                                 androidx.compose.foundation.layout.PaddingValues(
                                     horizontal = 10.dp,
                                     vertical = 4.dp,
                                 ),
                         ) {
-                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
+                            if (currentStatusLoading) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 1.5.dp,
+                                )
+                            } else {
+                                Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(stringResource(R.string.sessions_current_status_btn))
                         }
