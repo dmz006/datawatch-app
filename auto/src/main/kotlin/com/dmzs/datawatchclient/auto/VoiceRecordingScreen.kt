@@ -51,6 +51,10 @@ public class VoiceRecordingScreen(
     private val sessionId: String,
     private val sessionTitle: String,
     private val prdId: String? = null,
+    /** When set, the transcript updates the story description via editStory. */
+    private val storyId: String? = null,
+    /** When set, the transcript updates the task spec via editPrdTask. */
+    private val taskId: String? = null,
 ) : Screen(carContext) {
     private sealed class State {
         object Listening : State()
@@ -202,7 +206,12 @@ public class VoiceRecordingScreen(
             CarIcon.Builder(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
-        val screenTitle = if (prdId != null) "$sessionTitle · Update Spec" else "$sessionTitle · Voice"
+        val screenTitle = when {
+            taskId != null -> "$sessionTitle · Update Task"
+            storyId != null -> "$sessionTitle · Update Story"
+            prdId != null -> "$sessionTitle · Update Spec"
+            else -> "$sessionTitle · Voice"
+        }
         // ActionStrip actions must be icon-only in the MESSAGING session path.
         // "Retry" removed from strip (no icon available); Back + re-tap mic icon retries.
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
@@ -374,14 +383,25 @@ public class VoiceRecordingScreen(
                         return@runCatching
                     }
                 val transport = AutoServiceLocator.transportFor(profile)
-                val result = if (prdId != null) {
-                    transport.patchPrd(prdId, spec = transcript)
-                } else {
-                    transport.replyToSession(sessionId, "$transcript\r")
+                val result = when {
+                    taskId != null && prdId != null ->
+                        transport.editPrdTask(prdId, taskId, transcript)
+                            .map { }
+                    storyId != null && prdId != null ->
+                        transport.editStory(prdId, storyId, newDescription = transcript)
+                    prdId != null ->
+                        transport.patchPrd(prdId, spec = transcript)
+                    else ->
+                        transport.replyToSession(sessionId, "$transcript\r")
                 }
                 result.fold(
                     onSuccess = {
-                        val msg = if (prdId != null) "Spec updated" else "Sent"
+                        val msg = when {
+                            taskId != null -> "Task updated"
+                            storyId != null -> "Story updated"
+                            prdId != null -> "Spec updated"
+                            else -> "Sent"
+                        }
                         CarToast.makeText(carContext, msg, CarToast.LENGTH_SHORT).show()
                         screenManager.pop()
                     },

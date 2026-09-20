@@ -159,45 +159,64 @@ public class AutoPrdStoriesScreen(
         // ActionStrip: back-to-stories + lifecycle actions.
         // All actions must be icon-only — titled strip actions trigger the driving validator
         // when the session was started from a MESSAGING notification.
+        // Max 4 strip actions; voice is priority 2 so it is always included.
         val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
         val monitorIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_monitor)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
 
-        val stripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(sessionsIcon)
-                    .setOnClickListener { selectedStory = null; invalidate() }
-                    .build(),
-            )
-
         val prdStatusLower = prd.status.lowercase()
         val isReview = prdStatusLower in REVIEW_STATUSES
         val firstFailed = story.tasks.firstOrNull { it.status == "failed" }
+        val storyTitle = story.title.take(38).ifBlank { "Story" }
 
-        if (isReview && story.status == "awaiting_approval") {
+        val stripBuilder = ActionStrip.Builder()
+        var stripCount = 0
+
+        // 1. back to stories list
+        stripBuilder.addAction(Action.Builder().setIcon(sessionsIcon).setOnClickListener { selectedStory = null; invalidate() }.build())
+        stripCount++
+
+        // 2. voice update for story spec
+        if (stripCount < MAX_STRIP_ACTIONS) {
             stripBuilder.addAction(
                 Action.Builder()
-                    .setIcon(chatIcon)
-                    .setOnClickListener { fireApprove() }
+                    .setIcon(voiceIcon)
+                    .setOnClickListener {
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = storyTitle,
+                                prdId = prd.id,
+                                storyId = story.id,
+                            ),
+                        )
+                    }
                     .build(),
             )
+            stripCount++
         }
-        if (firstFailed != null) {
-            stripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(monitorIcon)
-                    .setOnClickListener { fireResetTask(firstFailed) }
-                    .build(),
-            )
+
+        // 3. approve (conditional)
+        if (stripCount < MAX_STRIP_ACTIONS && isReview && story.status == "awaiting_approval") {
+            stripBuilder.addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { fireApprove() }.build())
+            stripCount++
         }
-        stripBuilder.addAction(
-            Action.Builder()
-                .setIcon(closeIcon)
-                .setOnClickListener { fireCancelStory(story) }
-                .build(),
-        )
+
+        // 4. reset failed task (conditional)
+        if (stripCount < MAX_STRIP_ACTIONS && firstFailed != null) {
+            stripBuilder.addAction(Action.Builder().setIcon(monitorIcon).setOnClickListener { fireResetTask(firstFailed) }.build())
+            stripCount++
+        }
+
+        // 5. cancel story (if room)
+        if (stripCount < MAX_STRIP_ACTIONS) {
+            stripBuilder.addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { fireCancelStory(story) }.build())
+            @Suppress("UNUSED_VALUE")
+            stripCount++
+        }
 
         return ListTemplate.Builder()
             .setTitle(story.title.take(38).ifBlank { "Story Detail" })
@@ -349,6 +368,7 @@ public class AutoPrdStoriesScreen(
         const val MAX_TITLE_CHARS = 50
         const val MAX_TASK_CHARS = 55
         const val MAX_DESC_CHARS = 70
+        const val MAX_STRIP_ACTIONS = 4
 
         fun buildStoryRow(
             position: Int,

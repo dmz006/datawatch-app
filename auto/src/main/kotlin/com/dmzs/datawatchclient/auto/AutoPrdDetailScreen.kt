@@ -253,6 +253,9 @@ public class AutoPrdDetailScreen(
             val voiceIcon = CarIcon.Builder(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
             ).build()
+            val speakerIcon = CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker),
+            ).build()
 
             val stripBuilder = ActionStrip.Builder()
             // Reject lives in the strip for review state (1-action limit on MessageTemplate).
@@ -288,6 +291,16 @@ public class AutoPrdDetailScreen(
                                 prdId = prdId,
                             ),
                         )
+                    }
+                    .build(),
+            )
+            // Speaker icon — reads the spec aloud via TTS through car speakers.
+            stripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(speakerIcon)
+                    .setOnClickListener {
+                        val specText = currentPrd.spec?.takeIf { it.isNotBlank() } ?: prdName
+                        AutoTts.speak(carContext, specText)
                     }
                     .build(),
             )

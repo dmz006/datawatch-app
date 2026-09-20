@@ -2439,7 +2439,7 @@ private fun ReplyComposer(
                 Icon(
                     Icons.Filled.AddAPhoto,
                     contentDescription = "Attach image",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
