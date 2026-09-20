@@ -1053,6 +1053,9 @@ public interface TransportClient {
     /** GET /api/compute/nodes/{name}/detail — live CPU/mem/GPU stats (v8.25.3+, #168). */
     public suspend fun getComputeNodeDetail(name: String): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto>
 
+    /** GET /api/observer/peers/{name}/stats — live CPU/mem/GPU snapshot for one observer peer. */
+    public suspend fun getObserverPeerStats(name: String): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto>
+
     /** GET /api/observer/peers/free — list observer peers not yet bound to any compute node. */
     public suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>>
 

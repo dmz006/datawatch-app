@@ -89,6 +89,7 @@ public fun ObserverScreen(
                         .padding(innerPadding)
                         .verticalScroll(rememberScrollState()),
             ) {
+                com.dmzs.datawatchclient.ui.monitoring.SystemStatsGridCard()
                 com.dmzs.datawatchclient.ui.stats.StatsScreenContent()
                 com.dmzs.datawatchclient.ui.monitoring.EBpfStatusCard()
                 com.dmzs.datawatchclient.ui.monitoring.EBpfNetworkCard()

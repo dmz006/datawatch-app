@@ -1126,6 +1126,8 @@ public data class ComputeNodeCpuStatDto(
     val pct: Double = 0.0,
     val cores: Int = 0,
     @SerialName("load1") val load1: Double = 0.0,
+    @SerialName("load5") val load5: Double = 0.0,
+    @SerialName("load15") val load15: Double = 0.0,
 )
 
 @Serializable
