@@ -2021,6 +2021,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun getObserverPeerStats(name: String): Result<com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/peers/${name.replace(" ", "%20")}/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun getFreePeers(): Result<List<com.dmzs.datawatchclient.transport.dto.FreeObserverPeerDto>> =
         request {
             client.get("${profile.baseUrl}/api/observer/peers/free") {
