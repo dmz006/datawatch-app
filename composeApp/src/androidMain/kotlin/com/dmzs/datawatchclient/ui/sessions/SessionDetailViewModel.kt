@@ -38,6 +38,8 @@ public class SessionDetailViewModel(
         val session: Session? = null,
         val events: List<SessionEvent> = emptyList(),
         val banner: String? = null,
+        /** Non-error informational message (e.g. image-processing status). Rendered in primary colours. */
+        val infoBanner: String? = null,
         val replying: Boolean = false,
         val killing: Boolean = false,
         val renaming: Boolean = false,
@@ -93,6 +95,7 @@ public class SessionDetailViewModel(
     private val _killing = MutableStateFlow(false)
     private val _renaming = MutableStateFlow(false)
     private val _banner = MutableStateFlow<String?>(null)
+    private val _infoBanner = MutableStateFlow<String?>(null)
     private val _reachable = MutableStateFlow<Boolean?>(null)
     private val _messagingBackend = MutableStateFlow<String?>(null)
     private val _whisperConfigured = MutableStateFlow(false)
@@ -119,6 +122,7 @@ public class SessionDetailViewModel(
             _reachable,
             _messagingBackend,
             _whisperConfigured,
+            _infoBanner,
         ) { args ->
             val session = args[0] as Session?
             val events =
@@ -132,6 +136,7 @@ public class SessionDetailViewModel(
             val reachable = args[7] as Boolean?
             val messagingBackend = args[8] as String?
             val whisperConfigured = args[9] as Boolean
+            val infoBanner = args[10] as String?
             UiState(
                 session = session,
                 events = events,
@@ -139,6 +144,7 @@ public class SessionDetailViewModel(
                 replying = replying,
                 killing = killing,
                 banner = banner,
+                infoBanner = infoBanner,
                 renaming = renaming,
                 reachable = reachable,
                 messagingBackend = messagingBackend,
@@ -297,6 +303,11 @@ public class SessionDetailViewModel(
                         // No additional action needed here; the full re-render path handles #66.
                     }
                     if (isError) wsWasDisconnected = true
+                    // Clear the image-processing info banner on any live server event —
+                    // the session is visibly active so the user no longer needs the hint.
+                    if (!isError && _infoBanner.value != null) {
+                        _infoBanner.value = null
+                    }
                     ServiceLocator.sessionEventRepository.insert(ev)
                     // v0.35.8 — mirror PWA v5.26.49 fix:
                     // bulk-session WS pushes can flip a session to
@@ -344,6 +355,9 @@ public class SessionDetailViewModel(
         if (ok) {
             _replyText.value = ""
             _replying.value = false
+            if (text.contains("[image:")) {
+                _infoBanner.value = IMAGE_PROCESSING_BANNER
+            }
         } else {
             _replying.value = false
             _banner.value = "Reply failed: WS not connected (open session once more)."
@@ -538,6 +552,8 @@ public class SessionDetailViewModel(
         streamJob?.cancel()
     }
 }
+
+private const val IMAGE_PROCESSING_BANNER = "Image sent — processing with vision model…"
 
 private fun Throwable.describe(): String =
     when (this) {

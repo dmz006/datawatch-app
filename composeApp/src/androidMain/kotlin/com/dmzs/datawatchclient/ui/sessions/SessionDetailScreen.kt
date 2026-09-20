@@ -567,6 +567,27 @@ public fun SessionDetailScreen(
                             onDismiss = { responseOpen = false },
                         )
                     }
+                    state.infoBanner?.let { info ->
+                        Surface(color = MaterialTheme.colorScheme.primaryContainer) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                            ) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 1.5.dp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Text(
+                                    info,
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
                     state.banner?.let { banner ->
                         Surface(color = MaterialTheme.colorScheme.errorContainer) {
                             Row(
