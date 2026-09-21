@@ -1322,7 +1322,6 @@ private fun StoryRow(
                 .fillMaxWidth()
                 .padding(vertical = 3.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                .clickable { expanded = !expanded }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         // Always-visible header row: title + chevron + status pill
@@ -1334,7 +1333,8 @@ private fun StoryRow(
         } else {
             story.status
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // clickable on header Row only — prevents file-pill/task-row taps from collapsing the story.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { expanded = !expanded }) {
             Text(
                 story.title.ifBlank { story.id },
                 style = MaterialTheme.typography.bodyMedium,
@@ -1583,11 +1583,15 @@ private fun TaskRow(
                 else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                 RoundedCornerShape(4.dp),
             )
-            .then(if (hasBody) Modifier.clickable { expanded = !expanded } else Modifier)
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         // Header: chevron + status glyph + task ID (code) + title
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // clickable is on the header Row only (not the whole column) — prevents file-pill
+        // taps from propagating to the toggle and also avoids gesture conflicts during scroll.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = if (hasBody) Modifier.clickable { expanded = !expanded } else Modifier,
+        ) {
             if (hasBody) {
                 Text(
                     if (expanded) "▾" else "▸",
