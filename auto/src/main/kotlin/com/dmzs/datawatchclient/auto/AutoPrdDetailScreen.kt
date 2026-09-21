@@ -5,11 +5,15 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -29,13 +33,21 @@ import kotlinx.coroutines.launch
 /**
  * Full PRD detail screen for Android Auto.
  *
- * Shows a TTS-readable overview of the automaton: status, story progress arc,
- * active story + current task, pending stories, most recent decision, and a
- * spec snippet. Contextual actions (Approve/Reject/Stop/Delete) and an action
- * strip "Stories" button that pushes [AutoPrdStoriesScreen].
+ * Uses ListTemplate so all navigation (stories + lifecycle actions) are
+ * row click listeners — driving-safe on the MESSAGING path. MessageTemplate
+ * with addAction() is parked-only on MESSAGING, which blocked the Stories
+ * navigation while driving.
  *
- * Polls every 15s while the screen is visible so progress updates in real time
- * without requiring the user to navigate away and back.
+ * Row layout:
+ *   [0..1] Lifecycle action rows (Approve/Reject/Stop/Run/Decompose) — tappable
+ *   [N]    PRD overview row (status + progress + spec snippet) — not tappable
+ *   [N+1..] Story rows — tappable → AutoStoryDetailScreen
+ *
+ * ActionStrip (2 icon-only, MESSAGING limit):
+ *   slot 1: speaker → TTS reads full PRD body
+ *   slot 2: mic    → VoiceRecordingScreen
+ *
+ * Polls every 15s while visible so progress updates without manual refresh.
  */
 public class AutoPrdDetailScreen(
     carContext: CarContext,
@@ -103,7 +115,8 @@ public class AutoPrdDetailScreen(
                             "${action.replaceFirstChar { it.uppercase() }} sent",
                             CarToast.LENGTH_SHORT,
                         ).show()
-                        screenManager.pop()
+                        load()
+                        invalidate()
                     },
                     onFailure = { err ->
                         CarToast.makeText(
@@ -142,11 +155,14 @@ public class AutoPrdDetailScreen(
         }
     }
 
+    private fun listLimit(): Int = runCatching {
+        carContext.getCarService(ConstraintManager::class.java)
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+    }.getOrElse { MAX_ROWS_FALLBACK }
+
     override fun onGetTemplate(): Template = try {
         buildTemplate()
     } catch (e: Throwable) {
-        // Any exception from onGetTemplate() disconnects the car session.
-        // Return a safe fallback so the user sees an error row instead of getting ejected.
         MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
             .setTitle("Automata")
             .setHeaderAction(Action.BACK)
@@ -165,177 +181,212 @@ public class AutoPrdDetailScreen(
     }
 
     private fun buildTemplate(): Template {
-        val currentPrd = prd
-        val body = when {
-            isLoading -> "Loading plan details…"
-            error != null -> "Error: $error"
-            currentPrd == null -> "Plan not found"
-            else -> buildDetailBody(currentPrd)
+        if (isLoading) {
+            return MessageTemplate.Builder("Loading plan details…")
+                .setTitle("Automata")
+                .setHeaderAction(Action.BACK)
+                .build()
         }
-        val prdName = currentPrd?.let {
-            it.title?.takeIf { t -> t.isNotBlank() }
-                ?: it.name.takeIf { n -> n.isNotBlank() }
-                ?: it.id
-        } ?: "Automata"
-
-        val templateBuilder = MessageTemplate.Builder(body)
-            .setTitle(prdName.take(MAX_TITLE))
+        if (error != null) {
+            return MessageTemplate.Builder("Error: $error")
+                .setTitle("Automata")
+                .setHeaderAction(Action.BACK)
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Retry")
+                        .setOnClickListener {
+                            isLoading = true; error = null; invalidate()
+                            scope.launch { load(); invalidate() }
+                        }
+                        .build(),
+                )
+                .build()
+        }
+        val currentPrd = prd ?: return MessageTemplate.Builder("Plan not found")
+            .setTitle("Automata")
             .setHeaderAction(Action.BACK)
+            .build()
 
-        if (!isLoading && error == null && currentPrd != null) {
-            val statusLower = currentPrd.status.lowercase()
-            val isRunning = statusLower in setOf("running", "active")
-            val isReview = statusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
-            val isTerminal = statusLower in setOf("killed", "completed", "complete", "cancelled", "rejected", "error")
+        return buildListTemplate(currentPrd)
+    }
 
-            val isApproved = statusLower == "approved"
-            val isPending = statusLower in setOf("pending", "decomposing", "idle", "")
+    private fun buildListTemplate(currentPrd: PrdDto): ListTemplate {
+        val prdName = currentPrd.title?.takeIf { it.isNotBlank() }
+            ?: currentPrd.name.takeIf { it.isNotBlank() }
+            ?: currentPrd.id
+        val statusLower = currentPrd.status.lowercase()
+        val isRunning = statusLower in setOf("running", "active")
+        val isReview = statusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
+        val isApproved = statusLower == "approved"
+        val isDraft = statusLower == "draft"
+        val isTerminal = statusLower in setOf("killed", "completed", "complete", "cancelled", "rejected", "error", "done", "failed", "archived")
 
-            // MessageTemplate ActionStrip limit = 2 icon-only actions on MESSAGING path.
-            // Strip is always voice + speaker; lifecycle buttons and story navigation use addAction
-            // (max 2 addActions on MessageTemplate). Reject moves from strip to addAction for review.
-            when {
-                isReview -> {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Approve")
-                            .setBackgroundColor(CarColor.GREEN)
-                            .setOnClickListener { fire("approve") }
-                            .build(),
+        val limit = listLimit()
+        val items = ItemList.Builder()
+        var rowCount = 0
+
+        // ── Lifecycle action rows (row click = driving-safe; addAction is parked-only) ─
+        if (isReview && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("✓ Approve")
+                    .addText("Tap to approve this plan")
+                    .setOnClickListener { fire("approve") }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (isReview && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("✗ Reject")
+                    .addText("Tap to reject this plan")
+                    .setOnClickListener { fire("reject") }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (isRunning && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("◼ Stop")
+                    .addText("Tap to cancel this run")
+                    .setOnClickListener { fire("cancel") }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (isApproved && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("▶ Run")
+                    .addText("Tap to start running this plan")
+                    .setOnClickListener { fire("run") }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (isDraft && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("⟳ Decompose")
+                    .addText("Tap to break this plan into stories")
+                    .setOnClickListener { fire("decompose") }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (isTerminal && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("🗑 Delete")
+                    .addText("Tap to permanently delete this plan")
+                    .setOnClickListener { fireDelete() }
+                    .build(),
+            )
+            rowCount++
+        }
+
+        // ── PRD overview row (not tappable) ──────────────────────────────────────────
+        val totalStories = currentPrd.stories.size
+        val doneStories = currentPrd.stories.count { it.status.lowercase() in DONE_STATUSES }
+        val overviewTitle = buildString {
+            append(currentPrd.status.ifBlank { "unknown" })
+            if (totalStories > 0) {
+                val pct = doneStories * 100 / totalStories
+                append("  ·  $doneStories/$totalStories stories · $pct%")
+            }
+        }
+        val specSnippet = currentPrd.spec?.take(MAX_SPEC_CHARS)?.takeIf { it.isNotBlank() } ?: ""
+        val activeTask = currentPrd.stories.flatMap { it.tasks }.firstOrNull { it.status == "in_progress" }
+        if (rowCount < limit) {
+            val overviewRow = Row.Builder().setTitle(overviewTitle)
+            if (specSnippet.isNotBlank()) overviewRow.addText(specSnippet)
+            if (activeTask != null) overviewRow.addText("▶ ${activeTask.task.take(MAX_TASK_CHARS)}")
+            items.addItem(overviewRow.build())
+            rowCount++
+        }
+
+        // ── Story rows (tappable = driving-safe) ─────────────────────────────────────
+        if (currentPrd.stories.isEmpty() && rowCount < limit) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("No stories yet")
+                    .addText("Plan has not been decomposed")
+                    .build(),
+            )
+            rowCount++
+        } else {
+            val remaining = (limit - rowCount).coerceAtLeast(0)
+            val visible = currentPrd.stories.take(remaining.coerceAtMost(limit - 1))
+            visible.forEachIndexed { idx, story ->
+                if (rowCount < limit) {
+                    items.addItem(
+                        AutoPrdStoriesScreen.buildStoryRow(
+                            position = idx + 1,
+                            story = story,
+                            onClick = {
+                                screenManager.push(
+                                    AutoStoryDetailScreen(carContext, currentPrd.id, currentPrd.status, story),
+                                )
+                            },
+                        ),
                     )
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Reject")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fire("reject") }
-                            .build(),
-                    )
-                }
-                isRunning -> {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Stop")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fire("cancel") }
-                            .build(),
-                    )
-                    if (currentPrd.stories.isNotEmpty()) {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Stories")
-                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
-                                .build(),
-                        )
-                    }
-                }
-                isApproved -> {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Run")
-                            .setBackgroundColor(CarColor.GREEN)
-                            .setOnClickListener { fire("run") }
-                            .build(),
-                    )
-                    if (currentPrd.stories.isNotEmpty()) {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Stories")
-                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
-                                .build(),
-                        )
-                    }
-                }
-                isPending -> {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Decompose")
-                            .setOnClickListener { fire("decompose") }
-                            .build(),
-                    )
-                }
-                isTerminal -> {
-                    templateBuilder.addAction(
-                        Action.Builder()
-                            .setTitle("Delete")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fireDelete() }
-                            .build(),
-                    )
-                    if (currentPrd.stories.isNotEmpty()) {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Stories")
-                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
-                                .build(),
-                        )
-                    }
-                }
-                else -> {
-                    if (currentPrd.stories.isNotEmpty()) {
-                        templateBuilder.addAction(
-                            Action.Builder()
-                                .setTitle("Stories")
-                                .setOnClickListener { screenManager.push(AutoPrdStoriesScreen(carContext, currentPrd)) }
-                                .build(),
-                        )
-                    }
+                    rowCount++
                 }
             }
-
-            // Strip: exactly 2 icon-only actions — voice (mic) + speaker (TTS).
-            // All strip actions must be icon-only (no setTitle) — titled strip actions trigger
-            // the driving validator when the session was started from a MESSAGING notification.
-            val voiceIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
-            ).build()
-            val speakerIcon = CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker),
-            ).build()
-
-            templateBuilder.setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(speakerIcon)
-                            .setOnClickListener {
-                                AutoTts.speak(carContext, currentPrd.spec?.takeIf { it.isNotBlank() } ?: prdName)
-                            }
-                            .build(),
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(voiceIcon)
-                            .setOnClickListener {
-                                screenManager.push(
-                                    VoiceRecordingScreen(
-                                        carContext,
-                                        sessionId = "",
-                                        sessionTitle = prdName,
-                                        prdId = prdId,
-                                    ),
-                                )
-                            }
-                            .build(),
-                    )
-                    .build(),
-            )
+            val overflow = currentPrd.stories.size - visible.size
+            if (overflow > 0 && rowCount < limit) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… $overflow more stories")
+                        .addText("Showing top ${visible.size}")
+                        .build(),
+                )
+                rowCount++
+            }
         }
 
-        if (!isLoading && error != null) {
-            templateBuilder.addAction(
+        // ── ActionStrip: speaker + mic (2 icon-only — MESSAGING limit) ───────────────
+        val speakerIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker),
+        ).build()
+        val voiceIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
+        ).build()
+
+        val actionStrip = ActionStrip.Builder()
+            .addAction(
                 Action.Builder()
-                    .setTitle("Retry")
+                    .setIcon(speakerIcon)
                     .setOnClickListener {
-                        isLoading = true
-                        error = null
-                        invalidate()
-                        scope.launch { load(); invalidate() }
+                        AutoTts.speak(carContext, currentPrd.spec?.takeIf { it.isNotBlank() } ?: prdName)
                     }
                     .build(),
             )
-        }
+            .addAction(
+                Action.Builder()
+                    .setIcon(voiceIcon)
+                    .setOnClickListener {
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = prdName.take(MAX_TITLE),
+                                prdId = prdId,
+                            ),
+                        )
+                    }
+                    .build(),
+            )
+            .build()
 
-        return templateBuilder.build()
+        return ListTemplate.Builder()
+            .setTitle(prdName.take(MAX_TITLE))
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(actionStrip)
+            .build()
     }
 
     internal companion object {
@@ -343,9 +394,10 @@ public class AutoPrdDetailScreen(
         const val MAX_TITLE = 40
         const val MAX_STORY_TITLE = 52
         const val MAX_TASK_CHARS = 62
-        const val MAX_SPEC_CHARS = 220
+        const val MAX_SPEC_CHARS = 120
         const val MAX_PENDING_SHOWN = 4
         const val PROGRESS_WIDTH = 10
+        const val MAX_ROWS_FALLBACK = 6
 
         private val DONE_STATUSES = setOf("complete", "completed", "done")
 
@@ -360,14 +412,12 @@ public class AutoPrdDetailScreen(
                     it.status.lowercase() !in DONE_STATUSES && it.status != "in_progress" && it.status != "awaiting_approval" && it.status != "rejected"
                 }
 
-                // Conversation header: spec as [You] (what was requested), status as [datawatch]
                 prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                    appendLine("[You]: ${spec.take(MAX_SPEC_CHARS)}${if (spec.length > MAX_SPEC_CHARS) "…" else ""}")
+                    appendLine("[You]: ${spec.take(220)}${if (spec.length > 220) "…" else ""}")
                 }
                 appendLine("[datawatch]: ${prd.status.ifBlank { "unknown" }}")
                 appendLine()
 
-                // Progress arc
                 if (totalStories > 0) {
                     val pct = completedStories * 100 / totalStories
                     val filled = (pct * PROGRESS_WIDTH / 100).coerceIn(0, PROGRESS_WIDTH)
@@ -376,13 +426,11 @@ public class AutoPrdDetailScreen(
                 }
                 appendLine()
 
-                // Active story + current task
                 if (activeStory != null) {
                     appendActiveStory(activeStory)
                     appendLine()
                 }
 
-                // Pending stories (up to MAX_PENDING_SHOWN)
                 if (pendingStories.isNotEmpty()) {
                     appendLine("Up next:")
                     pendingStories.take(MAX_PENDING_SHOWN).forEach { s ->
@@ -393,7 +441,6 @@ public class AutoPrdDetailScreen(
                     appendLine()
                 }
 
-                // Most recent decision
                 prd.decisions?.lastOrNull()?.let { appendDecision(it) }
             }.trimEnd()
 
