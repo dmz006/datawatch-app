@@ -3,7 +3,6 @@
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
-import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
@@ -16,16 +15,9 @@ import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 
 /**
  * Stories + story-detail screen for Android Auto. Stateful: starts in
@@ -47,15 +39,6 @@ public class AutoPrdStoriesScreen(
 ) : Screen(carContext) {
 
     private var selectedStory: PrdStoryDto? = null
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
-    init {
-        lifecycle.addObserver(
-            object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) { scope.cancel() }
-            },
-        )
-    }
 
     override fun onGetTemplate(): Template = try {
         val story = selectedStory
@@ -156,31 +139,21 @@ public class AutoPrdStoriesScreen(
             )
         }
 
-        // ActionStrip: back-to-stories + lifecycle actions.
-        // All actions must be icon-only — titled strip actions trigger the driving validator
-        // when the session was started from a MESSAGING notification.
-        // Max 4 strip actions; voice is priority 2 so it is always included.
+        // ActionStrip: MESSAGING path limits ALL templates to 2 icon-only strip actions.
+        // Strip = sessions (back to list) + voice (update story). Approve/reset/cancel
+        // actions require returning to PRD detail — depth 5 is consumed by task detail.
         val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
-        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
-        val monitorIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_monitor)).build()
-        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-
-        val prdStatusLower = prd.status.lowercase()
-        val isReview = prdStatusLower in REVIEW_STATUSES
-        val firstFailed = story.tasks.firstOrNull { it.status == "failed" }
         val storyTitle = story.title.take(38).ifBlank { "Story" }
 
-        val stripBuilder = ActionStrip.Builder()
-        var stripCount = 0
-
-        // 1. back to stories list
-        stripBuilder.addAction(Action.Builder().setIcon(sessionsIcon).setOnClickListener { selectedStory = null; invalidate() }.build())
-        stripCount++
-
-        // 2. voice update for story spec
-        if (stripCount < MAX_STRIP_ACTIONS) {
-            stripBuilder.addAction(
+        val strip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(sessionsIcon)
+                    .setOnClickListener { selectedStory = null; invalidate() }
+                    .build(),
+            )
+            .addAction(
                 Action.Builder()
                     .setIcon(voiceIcon)
                     .setOnClickListener {
@@ -196,32 +169,12 @@ public class AutoPrdStoriesScreen(
                     }
                     .build(),
             )
-            stripCount++
-        }
-
-        // 3. approve (conditional)
-        if (stripCount < MAX_STRIP_ACTIONS && isReview && story.status == "awaiting_approval") {
-            stripBuilder.addAction(Action.Builder().setIcon(chatIcon).setOnClickListener { fireApprove() }.build())
-            stripCount++
-        }
-
-        // 4. reset failed task (conditional)
-        if (stripCount < MAX_STRIP_ACTIONS && firstFailed != null) {
-            stripBuilder.addAction(Action.Builder().setIcon(monitorIcon).setOnClickListener { fireResetTask(firstFailed) }.build())
-            stripCount++
-        }
-
-        // 5. cancel story (if room)
-        if (stripCount < MAX_STRIP_ACTIONS) {
-            stripBuilder.addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { fireCancelStory(story) }.build())
-            @Suppress("UNUSED_VALUE")
-            stripCount++
-        }
+            .build()
 
         return ListTemplate.Builder()
-            .setTitle(story.title.take(38).ifBlank { "Story Detail" })
+            .setTitle(storyTitle.ifBlank { "Story Detail" })
             .setHeaderAction(Action.BACK)
-            .setActionStrip(stripBuilder.build())
+            .setActionStrip(strip)
             .setSingleList(items.build())
             .build()
     }
@@ -266,88 +219,7 @@ public class AutoPrdStoriesScreen(
             }
         }
 
-    // ---- fire actions ----
-
-    private fun fireApprove() {
-        scope.launch {
-            try {
-                val profile = resolveActiveProfile() ?: return@launch
-                AutoServiceLocator.transportFor(profile).prdAction(prd.id, "approve").fold(
-                    onSuccess = {
-                        CarToast.makeText(carContext, "Approved", CarToast.LENGTH_SHORT).show()
-                        screenManager.pop()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Failed: ${err.message ?: err::class.simpleName}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-            } catch (e: Throwable) {
-                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun fireResetTask(task: PrdTaskDto) {
-        scope.launch {
-            try {
-                val profile = resolveActiveProfile() ?: return@launch
-                AutoServiceLocator.transportFor(profile).resetPrdTask(prd.id, task.id).fold(
-                    onSuccess = {
-                        CarToast.makeText(carContext, "Task reset", CarToast.LENGTH_SHORT).show()
-                        selectedStory = null
-                        invalidate()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Reset failed: ${err.message ?: err::class.simpleName}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-            } catch (e: Throwable) {
-                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun fireCancelStory(story: PrdStoryDto) {
-        scope.launch {
-            try {
-                val profile = resolveActiveProfile() ?: return@launch
-                AutoServiceLocator.transportFor(profile).cancelPrdStory(prd.id, story.id).fold(
-                    onSuccess = {
-                        CarToast.makeText(carContext, "Story cancelled", CarToast.LENGTH_SHORT).show()
-                        selectedStory = null
-                        invalidate()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Cancel failed: ${err.message ?: err::class.simpleName}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-            } catch (e: Throwable) {
-                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
-            }
-        }
-    }
-
     // ---- helpers ----
-
-    private fun statusMarker(status: String): String = when (status) {
-        "complete", "completed", "done" -> "✓"
-        "in_progress" -> "◉"
-        "awaiting_approval" -> "⚠"
-        "rejected" -> "✗"
-        else -> "○"
-    }
 
     private fun buildStoryStatusLine(story: PrdStoryDto): String =
         buildString {
@@ -362,13 +234,11 @@ public class AutoPrdStoriesScreen(
 
     internal companion object {
         private val DONE_STATUSES = setOf("complete", "completed", "done")
-        private val REVIEW_STATUSES = setOf("needs_review", "awaiting_review", "revisions_asked")
 
         const val MAX_ROWS_FALLBACK = 5
         const val MAX_TITLE_CHARS = 50
         const val MAX_TASK_CHARS = 55
         const val MAX_DESC_CHARS = 70
-        const val MAX_STRIP_ACTIONS = 4
 
         fun buildStoryRow(
             position: Int,
