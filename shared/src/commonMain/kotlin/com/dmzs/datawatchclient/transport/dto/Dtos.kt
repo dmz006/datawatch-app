@@ -295,6 +295,7 @@ public data class StatEnvelopeDto(
     val id: String = "",
     val kind: String = "",
     val label: String = "",
+    @SerialName("session_id") val sessionId: String? = null,
     @SerialName("root_pid") val rootPid: Int = 0,
     val pids: List<Int> = emptyList(),
     @SerialName("cpu_pct") val cpuPct: Double = 0.0,

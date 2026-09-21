@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.domain.Session
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.AutomataTypeDto
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -100,6 +102,12 @@ public class AutonomousViewModel(
         /** BL383/385 — scoped memory recall results for the open PRD (#183). */
         val memoryRecallResults: List<com.dmzs.datawatchclient.transport.dto.ScopedMemoryEntryDto> = emptyList(),
         val memoryRecallLoading: Boolean = false,
+        /** PRD progress stats — all observer envelopes (keyed by session_id) for per-story CPU/RSS. Updated every 5s while PRD is running/decomposing. */
+        val prdEnvelopes: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto> = emptyList(),
+        /** Live compute node detail for the PRD's active backend (GPU, CPU, Mem). */
+        val prdComputeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto? = null,
+        /** Name of the compute node currently providing stats, for display. */
+        val prdComputeNodeRef: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -852,6 +860,70 @@ public class AutonomousViewModel(
     // ---- #178: PRD detail live updates via WebSocket ----
 
     private var prdDetailJob: Job? = null
+    private var prdProgressJob: Job? = null
+
+    /** Poll /api/observer/envelopes + compute node detail every 5s while PRD is running/decomposing. */
+    public fun startPrdProgressPolling(prdId: String) {
+        prdProgressJob?.cancel()
+        prdProgressJob = viewModelScope.launch {
+            while (true) {
+                val (_, transport) = resolver.resolve() ?: break
+                val prd = _state.value.prds.firstOrNull { it.id == prdId }
+                if (prd == null || prd.status !in setOf("running", "decomposing", "planning")) {
+                    _state.value = _state.value.copy(
+                        prdEnvelopes = emptyList(),
+                        prdComputeNodeDetail = null,
+                        prdComputeNodeRef = null,
+                    )
+                    break
+                }
+                // Fetch all envelopes in parallel with session list for compute node lookup.
+                val envelopesResult: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>
+                val sessionsResult: List<com.dmzs.datawatchclient.domain.Session>
+                coroutineScope {
+                    val envs = async { transport.getAllEnvelopes().getOrElse { emptyList() } }
+                    val sessions = async { transport.listSessions().getOrElse { emptyList() } }
+                    envelopesResult = envs.await()
+                    sessionsResult = sessions.await()
+                }
+                _state.value = _state.value.copy(prdEnvelopes = envelopesResult)
+
+                // Resolve compute node: check active task sessions for compute_node_ref.
+                val taskSessionIds = prd.stories
+                    .flatMap { it.tasks }
+                    .mapNotNull { it.sessionId }
+                    .toSet()
+                var cnRef = sessionsResult.firstOrNull {
+                    (it.fullId in taskSessionIds || it.id in taskSessionIds) && it.computeNodeRef != null
+                }?.computeNodeRef
+                // Fall back to partial/suffix match for short ids stored in task.sessionId.
+                if (cnRef == null && taskSessionIds.isNotEmpty()) {
+                    cnRef = sessionsResult.firstOrNull { s ->
+                        taskSessionIds.any { tid -> s.fullId.endsWith(tid) || tid.endsWith(s.id) }
+                    }?.computeNodeRef
+                }
+                if (cnRef != null) {
+                    val detail = transport.getComputeNodeDetail(cnRef).getOrNull()
+                    _state.value = _state.value.copy(
+                        prdComputeNodeDetail = detail,
+                        prdComputeNodeRef = cnRef,
+                    )
+                }
+                delay(5_000L)
+            }
+        }
+    }
+
+    /** Cancel PRD progress polling. Call when PRD detail closes or status leaves running/decomposing. */
+    public fun stopPrdProgressPolling() {
+        prdProgressJob?.cancel()
+        prdProgressJob = null
+        _state.value = _state.value.copy(
+            prdEnvelopes = emptyList(),
+            prdComputeNodeDetail = null,
+            prdComputeNodeRef = null,
+        )
+    }
 
     /**
      * Start receiving `prd_update` WS events for [prdId]. Opens a dedicated

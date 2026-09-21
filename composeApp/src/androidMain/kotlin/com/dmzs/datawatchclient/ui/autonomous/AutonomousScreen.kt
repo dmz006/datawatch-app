@@ -140,6 +140,10 @@ public fun AutonomousScreen(
             vm.clearMemoryRecall()
         }
     }
+    // Poll observer envelopes + compute node detail while PRD is running/decomposing.
+    LaunchedEffect(openPrdId) {
+        if (openPrdId != null) vm.startPrdProgressPolling(openPrdId!!) else vm.stopPrdProgressPolling()
+    }
 
     LaunchedEffect(Unit) {
         vm.refresh()
@@ -481,6 +485,9 @@ public fun AutonomousScreen(
                 onDeleteWithMemory = { strategy, roleFilter, archiveToScope ->
                     vm.hardDeletePrdWithMemory(id, strategy, roleFilter, archiveToScope)
                 },
+                prdEnvelopes = state.prdEnvelopes,
+                prdComputeNodeDetail = state.prdComputeNodeDetail,
+                prdComputeNodeRef = state.prdComputeNodeRef,
             )
         }
     }

@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.autonomous
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -126,6 +127,12 @@ internal fun PrdDetailDialog(
     onRecallMemory: ((query: String) -> Unit)? = null,
     /** BL386 — delete with memory strategy (keep/purge/archive). */
     onDeleteWithMemory: ((strategy: String, roleFilter: List<String>, archiveToScope: String?) -> Unit)? = null,
+    /** Observer process envelopes — all, keyed by session_id, refreshed every 5s while running. */
+    prdEnvelopes: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto> = emptyList(),
+    /** Live compute node stats (GPU/CPU/Mem) for the PRD's active backend. */
+    prdComputeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto? = null,
+    /** Name of the compute node currently providing stats. */
+    prdComputeNodeRef: String? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -623,13 +630,14 @@ internal fun PrdDetailDialog(
                             }
                         }
                         4 -> {
-                            // Progress tab — per-story task completion bars (#166)
+                            // Progress tab — per-story task completion bars with CPU/RSS annotation
+                            // and compute node resource section (mirrors PWA _renderStatusGraphs).
                             val totalStories = prd.stories.size
                             val totalTasks = prd.stories.sumOf { it.tasks.size }
-                            val doneTasks = prd.stories.sumOf { s ->
-                                s.tasks.count { it.status in setOf("complete", "completed", "done") }
-                            }
                             val decomposed = totalStories > 0
+                            // Build session → envelope lookup for per-story CPU/RSS.
+                            val envelopeBySession = prdEnvelopes.filter { it.sessionId != null }
+                                .associateBy { it.sessionId!! }
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -653,10 +661,20 @@ internal fun PrdDetailDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             } else {
+                                val terminalStates = setOf("completed", "done", "failed", "cancelled", "skipped")
+                                val activeStates = setOf("verifying", "running_tests", "in_progress", "running")
                                 prd.stories.forEach { story ->
                                     val storyTotal = story.tasks.size
-                                    val storyDone = story.tasks.count { it.status in setOf("complete", "completed", "done") }
+                                    val storyDone = story.tasks.count { it.status in terminalStates }
                                     val fraction = if (storyTotal > 0) storyDone.toFloat() / storyTotal else 0f
+                                    val hasActiveTasks = story.tasks.any { it.status in activeStates }
+                                    val effectiveStatus = if (hasActiveTasks) "in_progress" else story.status
+                                    // Per-story CPU/RSS from observer envelopes.
+                                    val storySessionIds = story.tasks.mapNotNull { it.sessionId }.toSet()
+                                    val storyEnvs = storySessionIds.mapNotNull { envelopeBySession[it] }
+                                    val avgCpu = if (storyEnvs.isNotEmpty())
+                                        storyEnvs.sumOf { it.cpuPct } / storyEnvs.size else -1.0
+                                    val totalRssMb = storyEnvs.sumOf { it.rssBytes } / 1_048_576.0
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -665,11 +683,30 @@ internal fun PrdDetailDialog(
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
+                                            val statusDot = when {
+                                                storyDone == storyTotal && storyTotal > 0 -> "✓"
+                                                effectiveStatus == "in_progress" -> "▶"
+                                                else -> "·"
+                                            }
+                                            val dotColor = when {
+                                                storyDone == storyTotal && storyTotal > 0 -> Color(0xFF10B981)
+                                                effectiveStatus == "in_progress" -> Color(0xFF3B82F6)
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                            Text(
+                                                statusDot,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = dotColor,
+                                                modifier = Modifier.padding(end = 4.dp),
+                                            )
                                             Text(
                                                 story.title.ifBlank { story.id },
                                                 style = MaterialTheme.typography.bodySmall,
                                                 modifier = Modifier.weight(1f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
                                             )
                                             Text(
                                                 "$storyDone/$storyTotal",
@@ -680,13 +717,143 @@ internal fun PrdDetailDialog(
                                         LinearProgressIndicator(
                                             progress = { fraction },
                                             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                                            color = when (story.status.lowercase()) {
-                                                "complete" -> Color(0xFF10B981)
-                                                "in_progress" -> Color(0xFF3B82F6)
-                                                "failed" -> Color(0xFFEF4444)
+                                            color = when {
+                                                storyDone == storyTotal && storyTotal > 0 -> Color(0xFF10B981)
+                                                effectiveStatus == "in_progress" -> Color(0xFF3B82F6)
+                                                story.status == "failed" -> Color(0xFFEF4444)
                                                 else -> MaterialTheme.colorScheme.primary
                                             },
                                         )
+                                        // Per-story CPU/RSS annotation from observer envelopes.
+                                        if (avgCpu >= 0 || totalRssMb > 0) {
+                                            val parts = buildList {
+                                                if (avgCpu >= 0) add("CPU ${avgCpu.toInt()}%")
+                                                if (totalRssMb > 0) add("${totalRssMb.toInt()} MB")
+                                            }
+                                            Text(
+                                                parts.joinToString(" · "),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                modifier = Modifier.padding(top = 1.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // ── Compute Node resource section ─────────────────────────────
+                            if (prdComputeNodeDetail != null || prdComputeNodeRef != null) {
+                                Spacer(Modifier.height(10.dp))
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                            RoundedCornerShape(6.dp),
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                ) {
+                                    Column {
+                                        Text(
+                                            buildString {
+                                                append(stringResource(R.string.obs_cn_card_title))
+                                                prdComputeNodeRef?.let { append(" — $it") }
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 6.dp),
+                                        )
+                                        if (prdComputeNodeDetail == null) {
+                                            Text(
+                                                stringResource(R.string.obs_cn_no_data),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            )
+                                        } else {
+                                            androidx.compose.foundation.layout.FlowRow(
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                            ) {
+                                                // Host CPU chip.
+                                                val cpuPct = prdComputeNodeDetail.cpu?.pct ?: prdComputeNodeDetail.cpuPct ?: 0.0
+                                                if (cpuPct > 0) {
+                                                    val cpuColor = when {
+                                                        cpuPct >= 90 -> Color(0xFFEF4444)
+                                                        cpuPct >= 70 -> Color(0xFFF59E0B)
+                                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                    }
+                                                    ComputeChip(
+                                                        label = "${stringResource(R.string.obs_cn_node_cpu)} ${cpuPct.toInt()}%",
+                                                        color = cpuColor,
+                                                    )
+                                                }
+                                                // Host Mem chip.
+                                                val memUsed = prdComputeNodeDetail.mem?.usedBytes ?: 0L
+                                                val memTotal = prdComputeNodeDetail.mem?.totalBytes ?: 0L
+                                                if (memTotal > 0) {
+                                                    val memPct = (memUsed * 100L / memTotal).toInt()
+                                                    val memColor = when {
+                                                        memPct >= 90 -> Color(0xFFEF4444)
+                                                        memPct >= 75 -> Color(0xFFF59E0B)
+                                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                    }
+                                                    ComputeChip(
+                                                        label = "${stringResource(R.string.obs_cn_node_mem)} ${fmtBytes(memUsed)}/${fmtBytes(memTotal)} ($memPct%)",
+                                                        color = memColor,
+                                                    )
+                                                }
+                                                // GPU chips.
+                                                prdComputeNodeDetail.gpu.forEachIndexed { gi, g ->
+                                                    val gpuLabel = if (prdComputeNodeDetail.gpu.size > 1) "GPU $gi" else (g.name.takeIf { it.isNotBlank() } ?: "GPU")
+                                                    if (g.utilPct > 0) {
+                                                        val utilColor = if (g.utilPct >= 80) Color(0xFFEF4444) else Color(0xFF60A5FA)
+                                                        ComputeChip(
+                                                            label = "$gpuLabel ${stringResource(R.string.obs_cn_gpu_util)} ${g.utilPct.toInt()}%",
+                                                            color = utilColor,
+                                                            accent = true,
+                                                        )
+                                                    }
+                                                    if (g.tempC > 0) {
+                                                        val tempColor = when {
+                                                            g.tempC >= 80 -> Color(0xFFEF4444)
+                                                            g.tempC >= 60 -> Color(0xFFF59E0B)
+                                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                        }
+                                                        ComputeChip(
+                                                            label = "$gpuLabel ${g.tempC.toInt()}°C",
+                                                            color = tempColor,
+                                                        )
+                                                    }
+                                                    if (g.memTotalBytes > 0) {
+                                                        val vramPct = (g.memUsedBytes * 100L / g.memTotalBytes).toInt()
+                                                        val vramColor = when {
+                                                            vramPct >= 90 -> Color(0xFFEF4444)
+                                                            vramPct >= 75 -> Color(0xFFF59E0B)
+                                                            else -> Color(0xFF60A5FA)
+                                                        }
+                                                        ComputeChip(
+                                                            label = "${stringResource(R.string.obs_cn_gpu_vram)} ${fmtBytes(g.memUsedBytes)}/${fmtBytes(g.memTotalBytes)} ($vramPct%)",
+                                                            color = vramColor,
+                                                        )
+                                                    }
+                                                }
+                                                // Ollama process chip from envelopes.
+                                                val ollamaEnv = prdEnvelopes.firstOrNull { e ->
+                                                    e.label.lowercase().contains("ollama") ||
+                                                        e.id.lowercase().contains("ollama")
+                                                }
+                                                if (ollamaEnv != null && (ollamaEnv.cpuPct > 0 || ollamaEnv.rssBytes > 0)) {
+                                                    val parts = buildList {
+                                                        if (ollamaEnv.cpuPct > 0) add("CPU ${ollamaEnv.cpuPct.toInt()}%")
+                                                        if (ollamaEnv.rssBytes > 0) add("${fmtBytes(ollamaEnv.rssBytes)} RSS")
+                                                    }
+                                                    ComputeChip(
+                                                        label = "${stringResource(R.string.obs_cn_ollama_label)} ${parts.joinToString(" ")}",
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -2257,5 +2424,27 @@ private fun PrdMemoryRecallCard(
                 }
             }
         }
+    }
+}
+
+// ── Compute resource helpers ────────────────────────────────────────────────
+
+private fun fmtBytes(bytes: Long): String = when {
+    bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
+    bytes >= 1_048_576L -> "${bytes / 1_048_576} MB"
+    bytes >= 1_024L -> "${bytes / 1_024} KB"
+    else -> "$bytes B"
+}
+
+@Composable
+private fun ComputeChip(label: String, color: Color, accent: Boolean = false) {
+    val borderColor = if (accent) Color(0xFF3B82F6).copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    Box(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
