@@ -1317,6 +1317,9 @@ public interface TransportClient {
     // Sprint 35 — observer envelopes per-session (G8)
     public suspend fun getSessionEnvelopes(sessionId: String): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>>
 
+    /** GET /api/observer/envelopes — all process envelopes (no session filter). Used by PRD progress stats. */
+    public suspend fun getAllEnvelopes(): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>>
+
     // ---- Dashboard Cards (alpha.75, issue #132) ----
 
     /** GET /api/dashboard/cards — list dashboard cards. Returns bare array. */

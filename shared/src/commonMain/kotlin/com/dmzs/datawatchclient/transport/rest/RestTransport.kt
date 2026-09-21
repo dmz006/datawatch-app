@@ -2809,6 +2809,13 @@ public class RestTransport(
             }.body()
         }
 
+    override suspend fun getAllEnvelopes(): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/envelopes") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun listDashboardCards(): Result<List<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>> =
         request {
             client.get("${profile.baseUrl}/api/dashboard/cards") {

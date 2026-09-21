@@ -68,23 +68,22 @@ Issues found during live E2E testing (2026-05-20). Ordered roughly by severity.
 - Fix: Added `IdentityWizardSheet` rendering + identity load/save to `AutonomousScreen.kt`.
 - File: `ui/autonomous/AutonomousScreen.kt`
 
-### BL-AT-2: Execution backend model picker — free-text input for backends without model list
+### BL-AT-2: Execution backend model picker — free-text input for backends without model list ✅ FIXED v1.23.26
 - GH #188. Server change: `fix(bugs): model picker shows text input for backends without model list` (commit 27d2195c).
 - PWA shows `<input type="text" placeholder="(backend default)">` for backends without a server model list (goose, claude-code, shell, etc.) instead of hiding the model row.
-- Mobile action: Show a free-text TextField for model when the selected backend has no fetched model list. Pre-populate with `prd.model`. Apply same pattern to per-story and per-task LLM overrides.
+- Fix: `LlmOverrideDialog` shows ExposedDropdownMenu when `execModels` non-empty (ollama/openwebui); free-text TextField otherwise. `AutonomousViewModel` fetches `ollamaModels`/`openWebUiModels` in parallel during refresh.
 - Refs: dmz006/datawatch#4
 
-### BL-AT-3: reset_to_draft available from any non-running status
+### BL-AT-3: reset_to_draft available from any non-running status ✅ FIXED v1.23.26
 - GH #187. Server change: `fix(bugs): reset_to_draft allows any non-running status` (commit 27d2195c).
 - PWA shows "Reset to draft" action for any Automaton not currently running or archived. Mobile may gatekeep on `cancelled` status only.
-- Mobile action: Show reset-to-draft for all statuses except `running`, `planning`, and `archived` — API enforces the rest.
+- Fix: "Reset to Draft" TextButton shown when `status !in {running, planning, archived}`; `AutonomousViewModel.resetToDraft()` sends `reset_to_draft` action.
 - Refs: dmz006/datawatch#4
 
-### BL-AT-4: Automata settings — decomposition_model field for planning backend
+### BL-AT-4: Automata settings — decomposition_model field for planning backend ✅ FIXED v1.23.26
 - GH #186. Server change: `feat(autonomous): add decomposition_model field` (commit 801d1df9).
 - PWA planning backend section now shows a model picker alongside the backend picker. On save, `POST /api/autonomous/prds/{id}/set_llm` includes `decomposition_model`.
-- `GET /api/autonomous/prds/{id}` response now includes `decomposition_model`.
-- Mobile action: Add `decomposition_model` field to `PrdDto` DTO. Add model picker to the Automata LLM settings screen's planning backend section (next to `decomposition_profile` picker).
+- Fix: `decomposition_model: String?` added to `PrdDto`; `setLlm()` takes 5th param; `LlmOverrideDialog` shows planning model row (same dropdown/free-text pattern) next to `decomposition_profile` picker.
 - Refs: dmz006/datawatch#4
 
 ---
