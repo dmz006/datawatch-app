@@ -5,11 +5,17 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
-import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.CarIcon
+import androidx.car.app.model.CarText
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
@@ -21,19 +27,21 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Full story detail for Android Auto — TTS-readable via Car Assistant.
+ * Story detail for Android Auto — depth 4.
  *
- * BL30 note: the primary navigation flow now goes through the stateful
- * [AutoPrdStoriesScreen] (depth 4), which shows story detail inline and
- * pushes [AutoTaskDetailScreen] (depth 5) for per-task actions. This class
- * is retained for its [buildStoryBody] logic and for any caller that still
- * needs a standalone story-detail screen at depth 5.
+ * Uses ListTemplate so all rows (lifecycle actions + tasks) are tappable
+ * via driving-safe row click listeners. MessageTemplate.addAction() is
+ * parked-only on MESSAGING path.
  *
- * Shows the story's description, per-task status (✓/◉/✗/○), files touched,
- * retry counts, and verification summaries; provides:
- *  - "Approve" when the parent PRD is in `needs_review` / `revisions_asked` /
- *    `awaiting_review` — approves the PRD at the server level.
- *  - "Reset Task" when a task has `failed` status.
+ * Row layout:
+ *   [if needs_review]  "✓ Approve" row (tappable)
+ *   [if failed task]   "⟳ Reset task" row (tappable)
+ *   Story overview row (status + description) — display only
+ *   Task rows (tappable) → AutoTaskDetailScreen (depth 5)
+ *
+ * ActionStrip (2 icon-only, MESSAGING limit):
+ *   slot 1: speaker → TTS story summary
+ *   slot 2: mic    → VoiceRecordingScreen (depth 5)
  */
 public class AutoStoryDetailScreen(
     carContext: CarContext,
@@ -98,80 +106,174 @@ public class AutoStoryDetailScreen(
         }
     }
 
+    private fun listLimit(): Int = runCatching {
+        carContext.getCarService(ConstraintManager::class.java)
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+    }.getOrElse { MAX_ROWS_FALLBACK }
+
     override fun onGetTemplate(): Template {
-        val body = buildStoryBody(story)
+        val storyTitle = story.title.take(MAX_TITLE).ifBlank { "Story" }
         val prdStatusLower = prdStatus.lowercase()
         val isReview = prdStatusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
         val firstFailed = story.tasks.firstOrNull { it.status == "failed" }
+        val limit = listLimit()
+        val items = ItemList.Builder()
+        var rowCount = 0
 
-        val builder = MessageTemplate.Builder(body)
-            .setTitle(story.title.take(MAX_TITLE).ifBlank { "Story" })
-            .setHeaderAction(Action.BACK)
-
-        // MessageTemplate allows only 1 custom-title action; when review + failed task both apply,
-        // Reset Task goes in the ActionStrip so Approve stays as the primary button.
-        var resetInStrip: PrdTaskDto? = null
-        when {
-            isReview -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Approve")
-                        .setBackgroundColor(CarColor.GREEN)
-                        .setOnClickListener { fireApprove() }
-                        .build(),
-                )
-                if (firstFailed != null) resetInStrip = firstFailed
-            }
-            firstFailed != null -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Reset Task")
-                        .setBackgroundColor(CarColor.YELLOW)
-                        .setOnClickListener { fireResetTask(firstFailed) }
-                        .build(),
-                )
-            }
-        }
-        if (resetInStrip != null) {
-            val task = resetInStrip
-            builder.setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Reset Task")
-                            .setOnClickListener { fireResetTask(task) }
-                            .build(),
-                    )
+        // Lifecycle action rows — row click is driving-safe
+        if (isReview && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("✓ Approve")
+                    .addText("Tap to approve the full plan")
+                    .setOnClickListener { fireApprove() }
                     .build(),
             )
+            rowCount++
+        }
+        if (firstFailed != null && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("⟳ Reset failed task")
+                    .addText(firstFailed.task.take(MAX_TASK_CHARS))
+                    .setOnClickListener { fireResetTask(firstFailed) }
+                    .build(),
+            )
+            rowCount++
         }
 
-        return builder.build()
+        // Story overview row (not tappable)
+        if (rowCount < limit) {
+            val overviewTitle = buildString {
+                append(story.status.ifBlank { "unknown" })
+                if (story.tasks.isNotEmpty()) {
+                    val done = story.tasks.count { it.status in DONE_STATUSES }
+                    append("  ·  $done/${story.tasks.size} tasks")
+                    val failed = story.tasks.count { it.status == "failed" }
+                    if (failed > 0) append(" · $failed failed")
+                }
+            }
+            val descText = story.description?.take(MAX_DESC_CHARS)?.takeIf { it.isNotBlank() }
+            val row = Row.Builder().setTitle(overviewTitle)
+            if (descText != null) row.addText(descText)
+            items.addItem(row.build())
+            rowCount++
+        }
+
+        // Task rows — each tappable → AutoTaskDetailScreen (depth 5)
+        if (story.tasks.isEmpty() && rowCount < limit) {
+            items.addItem(Row.Builder().setTitle("No tasks").addText("Story has no tasks yet").build())
+            rowCount++
+        } else {
+            val remaining = (limit - rowCount - 1).coerceAtLeast(0) // reserve 1 for overflow
+            val visible = story.tasks.take(remaining)
+            visible.forEachIndexed { idx, task ->
+                if (rowCount < limit) {
+                    items.addItem(buildTaskRow(idx + 1, task))
+                    rowCount++
+                }
+            }
+            val overflow = story.tasks.size - visible.size
+            if (overflow > 0 && rowCount < limit) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… $overflow more tasks")
+                        .addText("Showing top ${visible.size}")
+                        .build(),
+                )
+                rowCount++
+            }
+        }
+
+        // ActionStrip: 2 icon-only (required while driving on MESSAGING path)
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val actionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(speakerIcon)
+                    .setOnClickListener {
+                        AutoTts.speak(carContext, buildStoryBody(story))
+                    }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(voiceIcon)
+                    .setOnClickListener {
+                        // depth 4 → push VoiceRecordingScreen at depth 5 (within limit)
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = storyTitle,
+                                prdId = prdId,
+                                storyId = story.id,
+                            ),
+                        )
+                    }
+                    .build(),
+            )
+            .build()
+
+        return ListTemplate.Builder()
+            .setTitle(storyTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(actionStrip)
+            .build()
+    }
+
+    private fun buildTaskRow(position: Int, task: PrdTaskDto): Row {
+        val marker = when (task.status) {
+            "complete", "completed", "done" -> "✓"
+            "in_progress" -> "◉"
+            "verifying", "running_tests" -> "⟳"
+            "failed" -> "✗"
+            "blocked" -> "⛔"
+            "cancelled", "canceled" -> "○"
+            else -> "○"
+        }
+        val title = "$position. $marker ${task.task.take(MAX_TASK_CHARS)}"
+        val detail = buildString {
+            append(task.status.replace('_', ' '))
+            task.error?.takeIf { it.isNotBlank() && task.status == "failed" }
+                ?.let { append("  ·  ${it.take(60)}") }
+            task.verification?.summary?.takeIf { it.isNotBlank() && task.status in DONE_STATUSES }
+                ?.let { append("  ·  ${it.take(50)}") }
+            if (task.filesTouched.isNotEmpty()) append("  ·  ${task.filesTouched.size} files")
+        }
+        return Row.Builder()
+            .setTitle(CarText.create(title))
+            .addText(detail)
+            .setOnClickListener {
+                screenManager.push(AutoTaskDetailScreen(carContext, prdId, task))
+            }
+            .build()
     }
 
     internal companion object {
         const val MAX_TITLE = 40
-        const val MAX_DESC_CHARS = 250
-        const val MAX_TASK_DESC = 60
+        const val MAX_DESC_CHARS = 120
+        const val MAX_TASK_CHARS = 52
         const val MAX_FILES = 4
+        const val MAX_ROWS_FALLBACK = 6
 
         private val DONE_STATUSES = setOf("complete", "completed", "done")
 
         fun buildStoryBody(story: PrdStoryDto): String =
             buildString {
-                // Status
+                appendLine(story.title.ifBlank { "Story" })
                 appendLine("Status: ${story.status.ifBlank { "unknown" }}")
                 appendLine()
-
-                // Description
                 story.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                    appendLine(desc.take(MAX_DESC_CHARS) + if (desc.length > MAX_DESC_CHARS) "…" else "")
+                    appendLine(desc.take(250) + if (desc.length > 250) "…" else "")
                     appendLine()
                 }
-
-                // Tasks
                 if (story.tasks.isNotEmpty()) {
-                    appendLine("Tasks:")
+                    val done = story.tasks.count { it.status in DONE_STATUSES }
+                    val failed = story.tasks.count { it.status == "failed" }
+                    appendLine("Tasks: $done/${story.tasks.size} done${if (failed > 0) " · $failed failed" else ""}")
                     story.tasks.forEach { task ->
                         val marker = when (task.status) {
                             "complete", "completed", "done" -> "✓"
@@ -179,42 +281,20 @@ public class AutoStoryDetailScreen(
                             "failed" -> "✗"
                             else -> "○"
                         }
-                        val taskLine = "$marker ${task.task.take(MAX_TASK_DESC)}"
-                        appendLine(taskLine)
-                        // Show error for failed tasks
-                        task.error?.takeIf { it.isNotBlank() && task.status == "failed" }?.let { err ->
-                            appendLine("  Error: ${err.take(80)}")
-                        }
-                        // Show retry count for failed tasks that have been retried
-                        if (task.status == "failed" && task.retryCount > 0) {
-                            appendLine("  Retries: ${task.retryCount}")
-                        }
-                        // Show verification summary for completed tasks
-                        if (task.status in DONE_STATUSES) {
-                            task.verification?.summary?.takeIf { it.isNotBlank() }?.let { summary ->
-                                appendLine("  ✓ ${summary.take(70)}")
-                            }
-                        }
+                        appendLine("$marker ${task.task.take(60)}")
+                        task.error?.takeIf { it.isNotBlank() && task.status == "failed" }
+                            ?.let { appendLine("  Error: ${it.take(80)}") }
+                        task.retryCount.takeIf { it > 0 }
+                            ?.let { appendLine("  Retries: $it") }
+                        task.verification?.summary?.takeIf { it.isNotBlank() && task.status in DONE_STATUSES }
+                            ?.let { appendLine("  ✓ ${it.take(70)}") }
                     }
-                    val done = story.tasks.count { it.status in DONE_STATUSES }
-                    val failed = story.tasks.count { it.status == "failed" }
-                    val total = story.tasks.size
-                    appendLine()
-                    val summaryLine = buildString {
-                        append("$done/$total done")
-                        if (failed > 0) append(" · $failed failed")
-                    }
-                    appendLine(summaryLine)
                 }
-
-                // Files touched
                 val files = story.filesTouched.takeIf { it.isNotEmpty() } ?: story.files
                 if (files.isNotEmpty()) {
                     appendLine()
                     appendLine("Files:")
-                    files.take(MAX_FILES).forEach { f ->
-                        appendLine("  ${f.take(60)}")
-                    }
+                    files.take(MAX_FILES).forEach { appendLine("  $it") }
                     val more = files.size - MAX_FILES
                     if (more > 0) appendLine("  … $more more")
                 }
