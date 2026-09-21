@@ -5,11 +5,14 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
-import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.CarText
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -22,13 +25,26 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Full task detail for Android Auto — depth 5 (Car App Library max).
+ * Task detail for Android Auto — depth 5 (Car App Library max).
  *
- * Shows task spec, status, error detail, verification summary, and retry count.
- * Actions: Requeue (requeuePrdTask — force-requeues regardless of status) and
- * Cancel Task (cancelPrdTask). No sub-navigation — this is the leaf node.
+ * Uses ListTemplate so Requeue/Cancel are row click listeners — driving-safe
+ * on MESSAGING path. MessageTemplate.addAction() is parked-only, which means
+ * the user couldn't requeue/cancel a task while driving with the old design.
  *
- * Reached from AutoPrdStoriesScreen story-detail view (depth 4).
+ * At depth 5 (max), VoiceRecordingScreen cannot be pushed (would exceed the
+ * 5-screen limit). The mic ActionStrip icon instead speaks the full task body
+ * via TTS so the user can listen to all details hands-free.
+ *
+ * Row layout:
+ *   [if failed]       "⟳ Requeue task" (tappable)
+ *   [if in_progress]  "✗ Cancel task" (tappable)
+ *   Task detail row   (status + spec + error if any) — display only
+ *   Verification row  (if present) — display only
+ *   Files row         (filesTouched, if any) — display only
+ *
+ * ActionStrip (2 icon-only, MESSAGING limit; no screen push at depth 5):
+ *   slot 1: speaker → TTS task name + status (quick summary)
+ *   slot 2: mic     → TTS full task body including spec, error, verification
  */
 public class AutoTaskDetailScreen(
     carContext: CarContext,
@@ -92,120 +108,160 @@ public class AutoTaskDetailScreen(
         }
     }
 
-    override fun onGetTemplate(): Template {
-        val builder = MessageTemplate.Builder(buildTaskBody(task))
-            .setTitle(task.task.take(MAX_TITLE).ifBlank { "Task" })
-            .setHeaderAction(Action.BACK)
+    private fun listLimit(): Int = runCatching {
+        carContext.getCarService(ConstraintManager::class.java)
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+    }.getOrElse { MAX_ROWS_FALLBACK }
 
-        // MessageTemplate ActionStrip limit = 2 icon-only actions on MESSAGING path.
-        // For failed state: Requeue + Cancel both go in addAction (2 allowed); strip stays at 2.
-        // All strip actions must be icon-only — titled strip actions crash the MESSAGING session.
-        when (task.status) {
-            "failed" -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Requeue")
-                        .setBackgroundColor(CarColor.YELLOW)
-                        .setOnClickListener { fireRequeue() }
-                        .build(),
-                )
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Cancel")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fireCancelTask() }
-                        .build(),
-                )
+    override fun onGetTemplate(): Template {
+        val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
+        val limit = listLimit()
+        val items = ItemList.Builder()
+        var rowCount = 0
+
+        // Lifecycle action rows (driving-safe — row click, not addAction)
+        if (task.status == "failed" && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("⟳ Requeue task")
+                    .addText("Tap to requeue this failed task")
+                    .setOnClickListener { fireRequeue() }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (task.status in setOf("pending", "in_progress") && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("✗ Cancel task")
+                    .addText("Tap to cancel this task")
+                    .setOnClickListener { fireCancelTask() }
+                    .build(),
+            )
+            rowCount++
+        }
+
+        // Task detail row (not tappable)
+        if (rowCount < limit) {
+            val statusLine = buildString {
+                append("Status: ${task.status.replace('_', ' ')}")
+                if (task.retryCount > 0) append("  ·  Retries: ${task.retryCount}")
             }
-            "pending", "in_progress" -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle("Cancel Task")
-                        .setBackgroundColor(CarColor.RED)
-                        .setOnClickListener { fireCancelTask() }
-                        .build(),
-                )
+            val row = Row.Builder()
+                .setTitle(CarText.create(statusLine))
+            task.spec.takeIf { it.isNotBlank() }?.let { row.addText(it.take(MAX_SPEC_CHARS)) }
+            task.error?.takeIf { it.isNotBlank() && task.status == "failed" }
+                ?.let { row.addText("Error: ${it.take(MAX_ERROR_SHORT)}") }
+            items.addItem(row.build())
+            rowCount++
+        }
+
+        // Verification row (not tappable)
+        task.verification?.let { v ->
+            if (rowCount < limit) {
+                val verTitle = buildString {
+                    append("Verification")
+                    v.severity?.takeIf { it.isNotBlank() }?.let { append("  ·  $it") }
+                }
+                val verText = v.summary?.take(MAX_VERIF_CHARS)?.takeIf { it.isNotBlank() }
+                val issueText = v.issues.take(3).joinToString("  ·  ") { it.take(40) }
+                val row = Row.Builder().setTitle(verTitle)
+                if (verText != null) row.addText(verText)
+                if (issueText.isNotBlank()) row.addText(issueText)
+                items.addItem(row.build())
+                rowCount++
             }
         }
 
-        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        // Files touched row (not tappable)
+        if (task.filesTouched.isNotEmpty() && rowCount < limit) {
+            val fileTitle = "${task.filesTouched.size} file${if (task.filesTouched.size == 1) "" else "s"} touched"
+            val fileList = task.filesTouched.take(3).joinToString("  ") { it.substringAfterLast('/') }
+            val more = (task.filesTouched.size - 3).takeIf { it > 0 }
+            items.addItem(
+                Row.Builder()
+                    .setTitle(fileTitle)
+                    .addText(fileList + (more?.let { " … +$it" } ?: ""))
+                    .build(),
+            )
+            rowCount++
+        }
+
+        // ActionStrip: 2 icon-only at depth 5 — no screen push (would exceed limit).
+        // Speaker = quick TTS (name + status); mic = full TTS (spec + verification + files).
         val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
-        val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
+        val micIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val strip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(speakerIcon)
+                    .setOnClickListener {
+                        // Quick: task name + status
+                        AutoTts.speak(carContext, "${task.task}. Status: ${task.status.replace('_', ' ')}.")
+                    }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(micIcon)
+                    .setOnClickListener {
+                        // Full: spec + error + verification (long version for listening while parked)
+                        AutoTts.speak(carContext, buildTaskBody(task))
+                    }
+                    .build(),
+            )
+            .build()
 
-        // Strip: speaker + voice — exactly 2 actions (MessageTemplate MESSAGING-path limit).
-        builder.setActionStrip(
-            ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setIcon(speakerIcon)
-                        .setOnClickListener {
-                            AutoTts.speak(carContext, task.spec.takeIf { it.isNotBlank() } ?: task.task)
-                        }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setIcon(voiceIcon)
-                        .setOnClickListener {
-                            screenManager.push(
-                                VoiceRecordingScreen(
-                                    carContext,
-                                    sessionId = "",
-                                    sessionTitle = taskTitle,
-                                    prdId = prdId,
-                                    taskId = task.id,
-                                ),
-                            )
-                        }
-                        .build(),
-                )
-                .build(),
-        )
-
-        return builder.build()
+        return ListTemplate.Builder()
+            .setTitle(taskTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(strip)
+            .build()
     }
 
     internal companion object {
         const val MAX_TITLE = 52
-        const val MAX_ERROR = 200
-        const val MAX_VERIFICATION_SUMMARY = 150
-        const val MAX_ISSUE = 80
-        const val MAX_ISSUES_SHOWN = 3
+        const val MAX_SPEC_CHARS = 200
+        const val MAX_ERROR_SHORT = 120
+        const val MAX_VERIF_CHARS = 150
+        const val MAX_ROWS_FALLBACK = 6
 
         fun buildTaskBody(task: PrdTaskDto): String =
             buildString {
-                // Conversation format: [You] = task instruction, [datawatch] = result/status
                 appendLine("[You]: ${task.task.take(MAX_TITLE)}")
                 appendLine()
-
                 val dwResponse = buildString {
-                    append("Status: ${task.status.ifBlank { "unknown" }}")
+                    append("Status: ${task.status.replace('_', ' ')}")
                     if (task.retryCount > 0) append("  ·  Retries: ${task.retryCount}")
                 }
                 appendLine("[datawatch]: $dwResponse")
-
+                task.spec.takeIf { it.isNotBlank() }?.let {
+                    appendLine()
+                    appendLine("Spec: ${it.take(300)}")
+                }
                 task.error?.takeIf { it.isNotBlank() && task.status == "failed" }?.let { err ->
                     appendLine()
                     appendLine("Error:")
-                    append(err.take(MAX_ERROR))
-                    if (err.length > MAX_ERROR) append("…")
+                    append(err.take(400))
+                    if (err.length > 400) append("…")
                     appendLine()
                 }
-
                 task.verification?.let { v ->
                     appendLine()
                     appendLine("Verification:")
-                    v.summary?.takeIf { it.isNotBlank() }?.let {
-                        appendLine(it.take(MAX_VERIFICATION_SUMMARY))
-                    }
+                    v.summary?.takeIf { it.isNotBlank() }?.let { appendLine(it.take(200)) }
                     v.severity?.takeIf { it.isNotBlank() }?.let { appendLine("Severity: $it") }
-                    if (v.issues.isNotEmpty()) {
-                        v.issues.take(MAX_ISSUES_SHOWN).forEach { issue ->
-                            appendLine("• ${issue.take(MAX_ISSUE)}")
-                        }
-                        val more = v.issues.size - MAX_ISSUES_SHOWN
-                        if (more > 0) appendLine("… $more more")
-                    }
+                    v.issues.take(5).forEach { appendLine("• ${it.take(80)}") }
+                    val more = v.issues.size - 5
+                    if (more > 0) appendLine("… $more more")
+                }
+                if (task.filesTouched.isNotEmpty()) {
+                    appendLine()
+                    appendLine("Files touched (${task.filesTouched.size}):")
+                    task.filesTouched.take(6).forEach { appendLine("  $it") }
+                    val more = task.filesTouched.size - 6
+                    if (more > 0) appendLine("  … $more more")
                 }
             }.trimEnd()
     }
