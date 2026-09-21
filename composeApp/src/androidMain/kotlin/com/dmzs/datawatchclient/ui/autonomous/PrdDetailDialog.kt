@@ -297,7 +297,17 @@ internal fun PrdDetailDialog(
                     // Lifecycle strip
                     LifecycleStrip(status)
 
-                    // Compact running-session card (compute stats) — shown before tabs when a task is active
+                    // Inline compute stats card — visible for planning/decomposing/running (PWA parity)
+                    if (status in setOf("planning", "decomposing", "running")) {
+                        Spacer(Modifier.height(8.dp))
+                        PrdActiveComputeCard(
+                            status = status,
+                            computeNodeDetail = prdComputeNodeDetail,
+                            computeNodeRef = prdComputeNodeRef,
+                        )
+                    }
+
+                    // Compact running-session card (session link) — shown when a task is active
                     val activeTask = prd.stories.flatMap { it.tasks }.firstOrNull { it.status == "in_progress" }
                     val activeSessionId = activeTask?.sessionId
                     if (activeSessionId != null) {
@@ -741,122 +751,6 @@ internal fun PrdDetailDialog(
                                 }
                             }
 
-                            // ── Compute Node resource section ─────────────────────────────
-                            if (prdComputeNodeDetail != null || prdComputeNodeRef != null) {
-                                Spacer(Modifier.height(10.dp))
-                                androidx.compose.foundation.layout.Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                            RoundedCornerShape(6.dp),
-                                        )
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                                ) {
-                                    Column {
-                                        Text(
-                                            buildString {
-                                                append(stringResource(R.string.obs_cn_card_title))
-                                                prdComputeNodeRef?.let { append(" — $it") }
-                                            },
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(bottom = 6.dp),
-                                        )
-                                        if (prdComputeNodeDetail == null) {
-                                            Text(
-                                                stringResource(R.string.obs_cn_no_data),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            )
-                                        } else {
-                                            androidx.compose.foundation.layout.FlowRow(
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                                            ) {
-                                                // Host CPU chip.
-                                                val cpuPct = prdComputeNodeDetail.cpu?.pct ?: prdComputeNodeDetail.cpuPct ?: 0.0
-                                                if (cpuPct > 0) {
-                                                    val cpuColor = when {
-                                                        cpuPct >= 90 -> Color(0xFFEF4444)
-                                                        cpuPct >= 70 -> Color(0xFFF59E0B)
-                                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                    }
-                                                    ComputeChip(
-                                                        label = "${stringResource(R.string.obs_cn_node_cpu)} ${cpuPct.toInt()}%",
-                                                        color = cpuColor,
-                                                    )
-                                                }
-                                                // Host Mem chip.
-                                                val memUsed = prdComputeNodeDetail.mem?.usedBytes ?: 0L
-                                                val memTotal = prdComputeNodeDetail.mem?.totalBytes ?: 0L
-                                                if (memTotal > 0) {
-                                                    val memPct = (memUsed * 100L / memTotal).toInt()
-                                                    val memColor = when {
-                                                        memPct >= 90 -> Color(0xFFEF4444)
-                                                        memPct >= 75 -> Color(0xFFF59E0B)
-                                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                    }
-                                                    ComputeChip(
-                                                        label = "${stringResource(R.string.obs_cn_node_mem)} ${fmtBytes(memUsed)}/${fmtBytes(memTotal)} ($memPct%)",
-                                                        color = memColor,
-                                                    )
-                                                }
-                                                // GPU chips.
-                                                prdComputeNodeDetail.gpu.forEachIndexed { gi, g ->
-                                                    val gpuLabel = if (prdComputeNodeDetail.gpu.size > 1) "GPU $gi" else (g.name.takeIf { it.isNotBlank() } ?: "GPU")
-                                                    if (g.utilPct > 0) {
-                                                        val utilColor = if (g.utilPct >= 80) Color(0xFFEF4444) else Color(0xFF60A5FA)
-                                                        ComputeChip(
-                                                            label = "$gpuLabel ${stringResource(R.string.obs_cn_gpu_util)} ${g.utilPct.toInt()}%",
-                                                            color = utilColor,
-                                                            accent = true,
-                                                        )
-                                                    }
-                                                    if (g.tempC > 0) {
-                                                        val tempColor = when {
-                                                            g.tempC >= 80 -> Color(0xFFEF4444)
-                                                            g.tempC >= 60 -> Color(0xFFF59E0B)
-                                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                        }
-                                                        ComputeChip(
-                                                            label = "$gpuLabel ${g.tempC.toInt()}°C",
-                                                            color = tempColor,
-                                                        )
-                                                    }
-                                                    if (g.memTotalBytes > 0) {
-                                                        val vramPct = (g.memUsedBytes * 100L / g.memTotalBytes).toInt()
-                                                        val vramColor = when {
-                                                            vramPct >= 90 -> Color(0xFFEF4444)
-                                                            vramPct >= 75 -> Color(0xFFF59E0B)
-                                                            else -> Color(0xFF60A5FA)
-                                                        }
-                                                        ComputeChip(
-                                                            label = "${stringResource(R.string.obs_cn_gpu_vram)} ${fmtBytes(g.memUsedBytes)}/${fmtBytes(g.memTotalBytes)} ($vramPct%)",
-                                                            color = vramColor,
-                                                        )
-                                                    }
-                                                }
-                                                // Ollama process chip from envelopes.
-                                                val ollamaEnv = prdEnvelopes.firstOrNull { e ->
-                                                    e.label.lowercase().contains("ollama") ||
-                                                        e.id.lowercase().contains("ollama")
-                                                }
-                                                if (ollamaEnv != null && (ollamaEnv.cpuPct > 0 || ollamaEnv.rssBytes > 0)) {
-                                                    val parts = buildList {
-                                                        if (ollamaEnv.cpuPct > 0) add("CPU ${ollamaEnv.cpuPct.toInt()}%")
-                                                        if (ollamaEnv.rssBytes > 0) add("${fmtBytes(ollamaEnv.rssBytes)} RSS")
-                                                    }
-                                                    ComputeChip(
-                                                        label = "${stringResource(R.string.obs_cn_ollama_label)} ${parts.joinToString(" ")}",
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -2446,5 +2340,135 @@ private fun ComputeChip(label: String, color: Color, accent: Boolean = false) {
             .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+// ── Inline PRD active compute card (PWA _loadPRDActiveSessionCard parity) ───
+
+@Composable
+private fun PrdActiveComputeCard(
+    status: String,
+    computeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto?,
+    computeNodeRef: String?,
+) {
+    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                drawRect(
+                    color = accent2,
+                    topLeft = Offset.Zero,
+                    size = Size(3.dp.toPx(), size.height),
+                )
+            }
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+            )
+            .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                Text(
+                    when (status) {
+                        "planning", "decomposing" -> "Decomposing PRD..."
+                        "running" -> "Running..."
+                        else -> status
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (computeNodeRef != null) {
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        computeNodeRef,
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                }
+            }
+            if (computeNodeDetail != null) {
+                Spacer(Modifier.height(8.dp))
+                val cpuPct = (computeNodeDetail.cpu?.pct ?: computeNodeDetail.cpuPct ?: 0.0).toFloat()
+                if (cpuPct > 0f) {
+                    PrdResourceBar(
+                        label = "CPU",
+                        valuePct = cpuPct,
+                        valueLabel = "${cpuPct.toInt()}%",
+                        color = when {
+                            cpuPct >= 90f -> Color(0xFFEF4444)
+                            cpuPct >= 70f -> Color(0xFFF59E0B)
+                            else -> Color(0xFF10B981)
+                        },
+                    )
+                }
+                val memUsed = computeNodeDetail.mem?.usedBytes ?: 0L
+                val memTotal = computeNodeDetail.mem?.totalBytes ?: 0L
+                if (memTotal > 0L) {
+                    val memPct = (memUsed * 100L / memTotal).toFloat()
+                    PrdResourceBar(
+                        label = "RAM",
+                        valuePct = memPct,
+                        valueLabel = "${fmtBytes(memUsed)} / ${fmtBytes(memTotal)}",
+                        color = if (memPct >= 85f) Color(0xFFEF4444) else Color(0xFF60A5FA),
+                    )
+                }
+                computeNodeDetail.gpu.forEachIndexed { gi, g ->
+                    val gpuLabel = if (computeNodeDetail.gpu.size > 1) "GPU $gi" else (g.name.takeIf { it.isNotBlank() } ?: "GPU")
+                    if (g.utilPct > 0) {
+                        val utilPct = g.utilPct.toFloat()
+                        val extraLabel = buildString {
+                            append("${utilPct.toInt()}%")
+                            if (g.tempC > 0) append("  ${g.tempC.toInt()}°C")
+                            if (g.powerW > 0) append("  ${g.powerW.toInt()}W")
+                        }
+                        PrdResourceBar(
+                            label = "$gpuLabel util",
+                            valuePct = utilPct,
+                            valueLabel = extraLabel,
+                            color = if (utilPct >= 80f) Color(0xFFEF4444) else Color(0xFF60A5FA),
+                        )
+                    }
+                    if (g.memTotalBytes > 0L) {
+                        val vramPct = (g.memUsedBytes * 100L / g.memTotalBytes).toFloat()
+                        PrdResourceBar(
+                            label = "$gpuLabel VRAM",
+                            valuePct = vramPct,
+                            valueLabel = "${fmtBytes(g.memUsedBytes)} / ${fmtBytes(g.memTotalBytes)}",
+                            color = if (vramPct >= 85f) Color(0xFFEF4444) else Color(0xFF60A5FA),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrdResourceBar(
+    label: String,
+    valuePct: Float,
+    valueLabel: String,
+    color: Color,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(valueLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        LinearProgressIndicator(
+            progress = { (valuePct / 100f).coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(4.dp),
+            color = color,
+            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+        )
     }
 }
