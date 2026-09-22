@@ -154,26 +154,44 @@ public class VoiceRecordingScreen(
             is State.Confirmed -> buildConfirmTemplate(s.transcript)
         }
     } catch (e: Throwable) {
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
             .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { screenManager.pop() }.build())
             .build()
     }
 
     private fun buildListeningTemplate(): Template {
-        // Live transcription is the primary content — matches text-message voice input.
-        // RMS meter removed: Car App Library caps template updates at 5/s so it barely
-        // animates and confuses users who expect a smooth waveform.
         val body =
             when {
                 !micReady -> "Starting microphone…"
                 partialText.isNotBlank() -> partialText.take(PARTIAL_CHARS)
                 else -> "Listening…"
             }
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         return MessageTemplate.Builder(body)
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
+            // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                        AutoTts.speak(carContext, partialText.ifBlank { "Listening" })
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                        recognizer?.cancel(); abandonAudioFocus(); screenManager.pop()
+                    }.build())
+                    .build(),
+            )
             .addAction(
                 Action.Builder()
                     .setTitle("Cancel")
@@ -187,19 +205,22 @@ public class VoiceRecordingScreen(
             .build()
     }
 
-    private fun buildErrorTemplate(msg: String): Template =
-        // 1 addAction only; no ActionStrip (strip actions must be icon-only in MESSAGING
-        // sessions and there is no suitable icon for Cancel — Back button handles dismissal).
-        MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
+    private fun buildErrorTemplate(msg: String): Template {
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        return MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .addAction(
-                Action.Builder()
-                    .setTitle("Retry")
-                    .setOnClickListener { startListening() }
+            // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
                     .build(),
             )
+            .addAction(Action.Builder().setTitle("Retry").setOnClickListener { startListening() }.build())
             .build()
+    }
 
     private fun buildConfirmTemplate(transcript: String): Template {
         val voiceIcon =
@@ -212,8 +233,9 @@ public class VoiceRecordingScreen(
             prdId != null -> "$sessionTitle · Update Spec"
             else -> "$sessionTitle · Voice"
         }
-        // ActionStrip actions must be icon-only in the MESSAGING session path.
-        // "Retry" removed from strip (no icon available); Back + re-tap mic icon retries.
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
+        // Voice = TTS replay; close = cancel without sending. Send button is parked-only.
         return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
@@ -223,6 +245,12 @@ public class VoiceRecordingScreen(
                         Action.Builder()
                             .setIcon(voiceIcon)
                             .setOnClickListener { speakWithFocus(transcript) }
+                            .build(),
+                    )
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(closeIcon)
+                            .setOnClickListener { screenManager.pop() }
                             .build(),
                     )
                     .build(),
