@@ -6,8 +6,10 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
@@ -128,14 +130,27 @@ public class AutoPrdStagesScreen(
         val isReview = statusLower in setOf("needs_review", "revisions_asked", "awaiting_review")
         val isRunning = statusLower == "running" || statusLower == "active"
 
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+
         val builder =
             MessageTemplate.Builder(body)
                 .setTitle(prdName.take(MAX_TITLE_CHARS))
                 .setHeaderAction(Action.BACK)
+                // MessageTemplate requires 2 icon-only ActionStrip actions on MESSAGING path while driving.
+                // Titled addAction() buttons are parked-only and don't affect template acceptance.
+                .setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                            AutoTts.speak(carContext, body)
+                        }.build())
+                        .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                            screenManager.pop()
+                        }.build())
+                        .build(),
+                )
 
-        // MessageTemplate allows only 1 custom-title action; Reject goes in the ActionStrip.
         if (!isLoading && error == null) {
-            var rejectInStrip = false
             when {
                 isReview -> {
                     builder.addAction(
@@ -145,7 +160,12 @@ public class AutoPrdStagesScreen(
                             .setOnClickListener { fire("approve") }
                             .build(),
                     )
-                    rejectInStrip = true
+                    builder.addAction(
+                        Action.Builder()
+                            .setTitle("Reject")
+                            .setOnClickListener { fire("reject") }
+                            .build(),
+                    )
                 }
                 isRunning -> {
                     builder.addAction(
@@ -156,18 +176,6 @@ public class AutoPrdStagesScreen(
                             .build(),
                     )
                 }
-            }
-            if (rejectInStrip) {
-                builder.setActionStrip(
-                    ActionStrip.Builder()
-                        .addAction(
-                            Action.Builder()
-                                .setTitle("Reject")
-                                .setOnClickListener { fire("reject") }
-                                .build(),
-                        )
-                        .build(),
-                )
             }
         }
 

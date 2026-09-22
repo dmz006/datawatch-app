@@ -160,18 +160,25 @@ public class AutoSessionDetailScreen(
     override fun onGetTemplate(): Template = try {
         buildTemplate()
     } catch (e: Throwable) {
-        // Any uncaught exception from onGetTemplate() disconnects the car session.
-        // Return a safe fallback — must include at least one addAction or build() itself throws.
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
             .setTitle(sessionTitle.ifBlank { sessionId })
             .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener {
+                        isLoading = true; error = null; invalidate()
+                        scope.launch { refresh(); isLoading = false; invalidate() }
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
             .addAction(
                 Action.Builder()
                     .setTitle("Retry")
                     .setOnClickListener {
-                        isLoading = true
-                        error = null
-                        invalidate()
+                        isLoading = true; error = null; invalidate()
                         scope.launch { refresh(); isLoading = false; invalidate() }
                     }
                     .build(),
@@ -189,15 +196,18 @@ public class AutoSessionDetailScreen(
 
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val monitorIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_monitor)).build()
+        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
 
         val templateBuilder =
             MessageTemplate.Builder(buildBody())
                 .setTitle(sessionTitle.ifBlank { sessionId })
                 .setHeaderAction(Action.BACK)
 
-        // MessageTemplate allows only 1 custom-title action. Secondary actions go in the strip.
-        // Strip actions must be icon-only — titled strip actions trigger the driving validator
-        // on some head units and disconnect the session.
+        // MessageTemplate requires 2 icon-only ActionStrip actions on MESSAGING path while driving.
+        // Titled ActionStrip actions are rejected while driving; addAction() titled buttons are
+        // parked-only but don't affect template acceptance.
         when {
             hasBlock -> {
                 templateBuilder.addAction(
@@ -207,19 +217,21 @@ public class AutoSessionDetailScreen(
                         .build(),
                 )
                 val autoId = automataIdFromTelemetry()
-                if (autoId.isNotBlank()) {
-                    templateBuilder.setActionStrip(
-                        ActionStrip.Builder()
-                            .addAction(
-                                Action.Builder().setTitle("Stages")
-                                    .setOnClickListener {
-                                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                                    }
-                                    .build(),
-                            )
-                            .build(),
-                    )
+                val secondStripAction = if (autoId.isNotBlank()) {
+                    Action.Builder().setIcon(monitorIcon).setOnClickListener {
+                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                    }.build()
+                } else {
+                    Action.Builder().setIcon(sessionsIcon).setOnClickListener { screenManager.pop() }.build()
                 }
+                templateBuilder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                            AutoTts.speak(carContext, buildBody())
+                        }.build())
+                        .addAction(secondStripAction)
+                        .build(),
+                )
             }
             isWaiting -> {
                 // Play is the primary titled button; Voice Reply is icon-only in the strip.
@@ -289,10 +301,8 @@ public class AutoSessionDetailScreen(
                 )
             }
             isTerminal -> {
-                // Play is primary; Stages or Restart moves to the strip.
+                // Play is primary; Stages or Restart is parked-only addAction.
                 val (shortResp, longResp) = splitOutputText(lastResponse)
-                // Prefer the actual continuation of lastResponse; lastSummaryLong is a
-                // separately-generated summary and may lag behind the current response.
                 val termLong = longResp ?: lastSummaryLong?.takeIf { it.isNotBlank() }
                 templateBuilder.addAction(
                     Action.Builder().setTitle("Play")
@@ -304,18 +314,34 @@ public class AutoSessionDetailScreen(
                         }.build(),
                 )
                 val autoId = automataIdFromTelemetry()
-                val secondaryAction =
-                    if (autoId.isNotBlank()) {
+                if (autoId.isNotBlank()) {
+                    templateBuilder.addAction(
                         Action.Builder().setTitle("Stages")
                             .setOnClickListener {
                                 CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
                                 screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }.build()
-                    } else {
-                        Action.Builder().setTitle("Restart")
-                            .setOnClickListener { onRestart() }.build()
-                    }
-                templateBuilder.setActionStrip(ActionStrip.Builder().addAction(secondaryAction).build())
+                            }.build(),
+                    )
+                } else {
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Restart").setOnClickListener { onRestart() }.build(),
+                    )
+                }
+                val secondStripAction = if (autoId.isNotBlank()) {
+                    Action.Builder().setIcon(monitorIcon).setOnClickListener {
+                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                    }.build()
+                } else {
+                    Action.Builder().setIcon(sessionsIcon).setOnClickListener { screenManager.pop() }.build()
+                }
+                templateBuilder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                            AutoTts.speak(carContext, buildBody())
+                        }.build())
+                        .addAction(secondStripAction)
+                        .build(),
+                )
             }
             else -> {
                 // New / unknown state — Play shows whatever content is available.
@@ -331,18 +357,29 @@ public class AutoSessionDetailScreen(
                 )
                 val autoId = automataIdFromTelemetry()
                 if (autoId.isNotBlank()) {
-                    templateBuilder.setActionStrip(
-                        ActionStrip.Builder()
-                            .addAction(
-                                Action.Builder().setTitle("Stages")
-                                    .setOnClickListener {
-                                        CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
-                                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                                    }.build(),
-                            )
-                            .build(),
+                    templateBuilder.addAction(
+                        Action.Builder().setTitle("Stages")
+                            .setOnClickListener {
+                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
+                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                            }.build(),
                     )
                 }
+                val secondStripAction = if (autoId.isNotBlank()) {
+                    Action.Builder().setIcon(monitorIcon).setOnClickListener {
+                        screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
+                    }.build()
+                } else {
+                    Action.Builder().setIcon(sessionsIcon).setOnClickListener { screenManager.pop() }.build()
+                }
+                templateBuilder.setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                            AutoTts.speak(carContext, buildBody())
+                        }.build())
+                        .addAction(secondStripAction)
+                        .build(),
+                )
             }
         }
 
