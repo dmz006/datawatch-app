@@ -59,8 +59,8 @@ public class AutoMonitorScreen(
         // Live session counts (total, running, waiting) — supplemented from listSessions()
         // because the server's /api/stats often returns sessions_* as 0.
         val sessionCounts: Triple<Int, Int, Int>? = null,
-        // GPU util% from /api/compute/nodes/{name}/detail — server v8.25.3+ removed it from /api/stats.
-        val gpuDetail: ComputeNodeDetailDto? = null,
+        // All enabled compute nodes (name → detail) — v8.25.3+ removed GPU from /api/stats.
+        val computeNodes: List<Pair<String, ComputeNodeDetailDto>> = emptyList(),
     )
 
     init {
@@ -114,19 +114,22 @@ public class AutoMonitorScreen(
                 val statsResult = transport.stats()
                 val liveSessions = transport.listSessions().getOrNull()
                 val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
-                val gpuDetail = runCatching {
+                val computeNodes = runCatching {
                     transport.listComputeNodes().getOrNull()
-                        ?.firstOrNull { it.enabled }
-                        ?.let { transport.getComputeNodeDetail(it.name).getOrNull() }
-                }.getOrNull()
+                        ?.filter { it.enabled }
+                        ?.mapNotNull { node ->
+                            transport.getComputeNodeDetail(node.name).getOrNull()?.let { node.name to it }
+                        } ?: emptyList()
+                }.getOrElse { emptyList() }
                 val result =
                     statsResult.fold(
-                        onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts, gpuDetail = gpuDetail) },
+                        onSuccess = { dto -> ServerRow(forcedProfile, dto, sessionCounts = counts, computeNodes = computeNodes) },
                         onFailure = { err ->
                             ServerRow(
                                 forcedProfile,
                                 error = err.message ?: err::class.simpleName ?: "error",
                                 sessionCounts = counts,
+                                computeNodes = computeNodes,
                             )
                         },
                     )
@@ -148,18 +151,21 @@ public class AutoMonitorScreen(
                             val statsResult = transport.stats()
                             val liveSessions = transport.listSessions().getOrNull()
                             val counts = buildSessionCounts(statsResult.getOrNull(), liveSessions)
-                            val gpuDetail = runCatching {
+                            val computeNodes = runCatching {
                                 transport.listComputeNodes().getOrNull()
-                                    ?.firstOrNull { it.enabled }
-                                    ?.let { transport.getComputeNodeDetail(it.name).getOrNull() }
-                            }.getOrNull()
+                                    ?.filter { it.enabled }
+                                    ?.mapNotNull { node ->
+                                        transport.getComputeNodeDetail(node.name).getOrNull()?.let { node.name to it }
+                                    } ?: emptyList()
+                            }.getOrElse { emptyList() }
                             statsResult.fold(
-                                onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts, gpuDetail = gpuDetail) },
+                                onSuccess = { dto -> ServerRow(p, dto, sessionCounts = counts, computeNodes = computeNodes) },
                                 onFailure = { err ->
                                     ServerRow(
                                         p,
                                         error = err.message ?: err::class.simpleName ?: "error",
                                         sessionCounts = counts,
+                                        computeNodes = computeNodes,
                                     )
                                 },
                             )
@@ -224,7 +230,7 @@ public class AutoMonitorScreen(
                     } else {
                         { screenManager.push(AutoSessionListScreen(carContext)) }
                     }
-                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts, gpuDetail = rows[0].gpuDetail)
+                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts, computeNodes = rows[0].computeNodes)
             } else {
                 items.addItem(
                     Row.Builder()
@@ -241,7 +247,7 @@ public class AutoMonitorScreen(
                     when {
                         row.error != null -> "offline — ${row.error}"
                         s == null -> "loading…"
-                        else -> buildServerSummary(s, row.sessionCounts, row.gpuDetail)
+                        else -> buildServerSummary(s, row.sessionCounts, row.computeNodes)
                     }
                 val titleColor = if (row.error != null) CarColor.RED else CarColor.GREEN
                 items.addItem(
@@ -317,8 +323,10 @@ private fun addDetailRows(
     s: StatsDto,
     onSessionsClick: (() -> Unit)? = null,
     sessionCounts: Triple<Int, Int, Int>? = null,
-    gpuDetail: ComputeNodeDetailDto? = null,
+    computeNodes: List<Pair<String, ComputeNodeDetailDto>> = emptyList(),
 ) {
+    // ItemList max = 6. Fixed rows: CPU(1) + Mem(1) + Disk(0-1) + Sessions(1) = 3-4.
+    // Remaining slots go to compute node rows or GPU row from stats.
     val load1 = s.cpuLoad1
     val cores = s.cpuCores
     val cpuPct =
@@ -356,45 +364,72 @@ private fun addDetailRows(
     items.addItem(Row.Builder().setTitle("Memory").addText(memText).build())
     val diskUsed = s.diskUsed
     val diskTotal = s.diskTotal
-    if (diskUsed != null && diskTotal != null && diskTotal > 0) {
+    val hasDisk = diskUsed != null && diskTotal != null && diskTotal > 0
+    if (hasDisk) {
         items.addItem(
-            Row.Builder().setTitle("Disk").addText("${fmt(diskUsed)} / ${fmt(diskTotal)}").build(),
+            Row.Builder().setTitle("Disk").addText("${fmt(diskUsed!!)} / ${fmt(diskTotal!!)}").build(),
         )
     }
-    // GPU — single row (keeps ItemList ≤ 6).
-    // Line 1: util% bar when available; otherwise the VRAM bar (so there's always a bar visible).
-    // Line 2: VRAM bar + sizes, only added as a second line when util% is also on line 1.
-    val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
-        ?: gpuDetail?.gpu?.firstOrNull()?.utilPct?.toInt()
-    val vramTotal = s.gpuMemTotalMb
-    val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
-    if (hasGpu) {
-        val name = s.gpuName ?: "GPU"
-        val tempSuffix = s.gpuTemp?.let { " · ${it.toInt()}°C" } ?: ""
-        val rowBuilder = Row.Builder().setTitle(name)
-        if (gpuUtilInt != null) {
-            // Util% available: util bar on line 1, VRAM bar on line 2.
-            rowBuilder.addText("${progressBar(gpuUtilInt)}$tempSuffix")
-            if (vramTotal != null && vramTotal > 0) {
+
+    if (computeNodes.isNotEmpty()) {
+        // Show one row per compute node. Cap to keep ItemList ≤ 6 (CPU+Mem+Disk+Sessions = 3-4 fixed).
+        val fixedRows = 3 + (if (hasDisk) 1 else 0)
+        val nodeSlots = (MAX_DETAIL_ROWS - fixedRows).coerceAtLeast(0)
+        computeNodes.take(nodeSlots).forEach { (nodeName, detail) ->
+            val nodeCpuPct = detail.cpuPct?.toInt()
+            val nodeMemPct = detail.memPct?.toInt()
+            val nodeGpu = detail.gpu.firstOrNull()
+            val parts = buildList {
+                nodeCpuPct?.let { add("CPU ${progressBar(it)}") }
+                nodeMemPct?.let { add("Mem ${progressBar(it)}") }
+                nodeGpu?.let { gpu ->
+                    val gpuPct = gpu.utilPct.toInt().takeIf { it > 0 }
+                    if (gpuPct != null) {
+                        add("GPU ${progressBar(gpuPct)}")
+                    } else if (gpu.memTotalBytes > 0) {
+                        val vramPct = (gpu.memUsedBytes * PCT_MULTIPLIER / gpu.memTotalBytes).toInt()
+                        add("VRAM ${progressBar(vramPct)}")
+                    }
+                }
+            }
+            items.addItem(
+                Row.Builder()
+                    .setTitle(nodeName.take(MAX_NODE_TITLE))
+                    .addText(parts.joinToString(" · ").ifBlank { "—" })
+                    .build(),
+            )
+        }
+    } else {
+        // No compute nodes registered — fall back to GPU stats from /api/stats.
+        val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
+        val vramTotal = s.gpuMemTotalMb
+        val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
+        if (hasGpu) {
+            val name = s.gpuName ?: "GPU"
+            val tempSuffix = s.gpuTemp?.let { " · ${it.toInt()}°C" } ?: ""
+            val rowBuilder = Row.Builder().setTitle(name)
+            if (gpuUtilInt != null) {
+                rowBuilder.addText("${progressBar(gpuUtilInt)}$tempSuffix")
+                if (vramTotal != null && vramTotal > 0) {
+                    val used = s.gpuMemUsedMb ?: 0L
+                    val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
+                    rowBuilder.addText(
+                        "VRAM ${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+                    )
+                }
+            } else if (vramTotal != null && vramTotal > 0) {
                 val used = s.gpuMemUsedMb ?: 0L
                 val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
                 rowBuilder.addText(
-                    "VRAM ${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}",
+                    "${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}$tempSuffix",
                 )
+            } else {
+                rowBuilder.addText(tempSuffix.ifBlank { "—" })
             }
-        } else if (vramTotal != null && vramTotal > 0) {
-            // No util%: promote VRAM bar to line 1 so there's always something to see.
-            val used = s.gpuMemUsedMb ?: 0L
-            val vramPct = (used * PCT_MULTIPLIER / vramTotal).toInt()
-            rowBuilder.addText(
-                "${progressBar(vramPct)}  ${fmt(used * VRAM_MEBIBYTES_TO_BYTES)} / ${fmt(vramTotal * VRAM_MEBIBYTES_TO_BYTES)}$tempSuffix",
-            )
-        } else {
-            // Name or temp only.
-            rowBuilder.addText(tempSuffix.ifBlank { "—" })
+            items.addItem(rowBuilder.build())
         }
-        items.addItem(rowBuilder.build())
     }
+
     val (sesTotal, sesRunning, sesWaiting) = sessionCounts ?: Triple(s.sessionsTotal, s.sessionsRunning, s.sessionsWaiting)
     items.addItem(
         Row.Builder()
@@ -403,16 +438,19 @@ private fun addDetailRows(
             .setOnClickListener(onSessionsClick ?: {})
             .build(),
     )
-    if (s.uptimeSeconds > 0) {
+    if (s.uptimeSeconds > 0 && computeNodes.isEmpty()) {
         items.addItem(Row.Builder().setTitle("Uptime").addText(uptime(s.uptimeSeconds)).build())
     }
 }
+
+private const val MAX_DETAIL_ROWS: Int = 6
+private const val MAX_NODE_TITLE: Int = 20
 
 /** Compact one-liner summary for multi-server mode: "CPU 45% · Mem 8.2/16 GB · 3 sessions". */
 private fun buildServerSummary(
     s: StatsDto,
     sessionCounts: Triple<Int, Int, Int>? = null,
-    gpuDetail: ComputeNodeDetailDto? = null,
+    computeNodes: List<Pair<String, ComputeNodeDetailDto>> = emptyList(),
 ): String {
     val parts = mutableListOf<String>()
     val load1 = s.cpuLoad1
@@ -432,8 +470,10 @@ private fun buildServerSummary(
         s.memPct?.let { parts += "Mem ${"%.0f".format(it)}%" }
     }
     val gpuSummaryPct = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
-        ?: gpuDetail?.gpu?.firstOrNull()?.utilPct?.toInt()
+        ?: computeNodes.firstOrNull()?.second?.gpu?.firstOrNull()?.utilPct?.let { it.toInt().takeIf { v -> v > 0 } }
     gpuSummaryPct?.let { parts += "GPU $it%" }
+    val nodeCount = computeNodes.size
+    if (nodeCount > 1) parts += "$nodeCount nodes"
     val totalSessions = sessionCounts?.first ?: s.sessionsTotal
     if (totalSessions > 0) parts += "${totalSessions}s"
     return parts.joinToString(" · ").ifBlank { "no data" }
