@@ -7,7 +7,6 @@ import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
@@ -164,8 +163,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                     carContext.getCarService(ConstraintManager::class.java)
                         .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
                 }.getOrElse { MAX_ROWS_FALLBACK }
-            // Reserve 1 slot for the overflow row.
-            val visible = automata.take((max - 1).coerceAtLeast(1))
+            // Reserve 1 slot for the history-toggle row + 1 for overflow row.
+            val visible = automata.take((max - 2).coerceAtLeast(1))
             val overflow = automata.size - visible.size
             visible.forEach { prd ->
                 val storyPos = activeStoryPosition(prd)
@@ -208,25 +207,25 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
+            // History toggle as a row — driving-safe row click instead of ActionStrip titled action.
+            // ActionStrip titled actions (no icon) are rejected while driving on MESSAGING path.
+            builder.addItem(
+                Row.Builder()
+                    .setTitle(if (historyOn) "◷ Active only" else "◷ Show history")
+                    .addText(if (historyOn) "Tap to hide completed automata" else "Tap to include completed runs")
+                    .setOnClickListener {
+                        historyOn = !historyOn
+                        isLoading = true
+                        invalidate()
+                        scope.launch { refresh(); invalidate() }
+                    }
+                    .build(),
+            )
         }
 
-        val historyAction =
-            Action.Builder()
-                .setTitle(if (historyOn) "Active" else "All")
-                .setOnClickListener {
-                    historyOn = !historyOn
-                    isLoading = true
-                    invalidate()
-                    scope.launch {
-                        refresh()
-                        invalidate()
-                    }
-                }
-                .build()
         return ListTemplate.Builder()
             .setTitle("$serverName Automata")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(ActionStrip.Builder().addAction(historyAction).build())
             .setSingleList(builder.build())
             .build()
     }

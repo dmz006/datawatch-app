@@ -11,7 +11,6 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -178,15 +177,25 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     override fun onGetTemplate(): Template {
+        fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
+
         if (isFirstLoad) {
-            return MessageTemplate.Builder("Connecting to datawatch…")
-                .setLoading(true)
+            // ListTemplate (not MessageTemplate) so MESSAGING-path host accepts it while driving.
+            // MessageTemplate without a 2-icon ActionStrip is rejected on the MESSAGING path.
+            return ListTemplate.Builder()
                 .setTitle("datawatch")
                 .setHeaderAction(Action.APP_ICON)
+                .setLoading(true)
+                .setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_server))
+                            .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }.build())
+                        .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_info))
+                            .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }.build())
+                        .build(),
+                )
                 .build()
         }
-
-        fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
 
         val listBuilder = ItemList.Builder()
         val profile = activeProfile
