@@ -66,6 +66,8 @@ public class NtfyFallbackService : Service() {
     private val client: HttpClient =
         com.dmzs.datawatchclient.transport.createHttpClient()
 
+    private var startForegroundFailed = false
+
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.ensureRegistered(this)
@@ -73,6 +75,7 @@ public class NtfyFallbackService : Service() {
             startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
         } catch (e: Throwable) {
             android.util.Log.w("NtfyFallback", "startForeground failed: ${e.message} — service will stop")
+            startForegroundFailed = true
             stopSelf()
         }
     }
@@ -82,6 +85,8 @@ public class NtfyFallbackService : Service() {
         flags: Int,
         startId: Int,
     ): Int {
+        // If startForeground failed in onCreate, don't restart (avoids crash loop).
+        if (startForegroundFailed) return START_NOT_STICKY
         scope.launch { reconcile() }
         // S10-3: register Doze receiver so the stream pauses on idle
         // and resumes on screen-on / charger / exit-idle.
@@ -154,6 +159,7 @@ public class NtfyFallbackService : Service() {
                 }
                 backoff = 2_000L
             } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.w("NtfyFallback", "subscription error: ${e.message}; retrying in ${backoff}ms")
                 delay(backoff)
                 backoff = (backoff * 2).coerceAtMost(60_000L)
