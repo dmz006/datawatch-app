@@ -39,10 +39,18 @@ public class UnifiedPushSseService : Service() {
     // profile.id → Pair(job, transportSignature) so we can detect profile trust changes
     private val jobs = mutableMapOf<String, Pair<Job, String>>()
 
+    private var startForegroundFailed = false
+
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.ensureRegistered(this)
-        startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
+        try {
+            startForeground(FOREGROUND_NOTIFICATION_ID, foregroundNotification())
+        } catch (e: Throwable) {
+            android.util.Log.w("UnifiedPushSse", "startForeground failed: ${e.message} — service will stop")
+            startForegroundFailed = true
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(
@@ -50,6 +58,8 @@ public class UnifiedPushSseService : Service() {
         flags: Int,
         startId: Int,
     ): Int {
+        // If startForeground failed in onCreate, don't restart (avoids crash loop).
+        if (startForegroundFailed) return START_NOT_STICKY
         scope.launch { reconcile() }
         return START_STICKY
     }
