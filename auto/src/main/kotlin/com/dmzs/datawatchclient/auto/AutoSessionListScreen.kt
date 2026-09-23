@@ -3,6 +3,7 @@
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
@@ -289,11 +290,17 @@ public class AutoSessionListScreen(
             }
         }
         val title = if (automataId != null) "$automataId Sessions" else "$serverName Sessions"
+        val filterIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_filter)).build()
         val filterAction =
             Action.Builder()
-                .setTitle(if (showTerminal) "Active" else "All")
+                .setIcon(filterIcon)
                 .setOnClickListener {
                     showTerminal = !showTerminal
+                    CarToast.makeText(
+                        carContext,
+                        if (showTerminal) "Showing all sessions" else "Active sessions only",
+                        CarToast.LENGTH_SHORT,
+                    ).show()
                     invalidate()
                 }
                 .build()
