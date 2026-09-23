@@ -211,9 +211,13 @@ public class AutoSessionDetailScreen(
         when {
             hasBlock -> {
                 templateBuilder.addAction(
-                    Action.Builder().setTitle("Approve Gate")
+                    Action.Builder().setTitle("Review Gate")
                         .setBackgroundColor(CarColor.GREEN)
-                        .setOnClickListener { onApproveGate() }
+                        .setOnClickListener {
+                            screenManager.push(
+                                BlockDetailsScreen(carContext, sessionId, sessionTitle, guardrailVerdicts),
+                            )
+                        }
                         .build(),
                 )
                 val autoId = automataIdFromTelemetry()
@@ -464,17 +468,6 @@ public class AutoSessionDetailScreen(
                     },
                 )
             }
-        }
-    }
-
-    private fun onApproveGate() {
-        scope.launch {
-            runCatching {
-                val profile = resolveActiveProfile() ?: return@runCatching
-                AutoServiceLocator.transportFor(profile).runSessionGuardrail(sessionId)
-            }
-            refresh()
-            invalidate()
         }
     }
 
