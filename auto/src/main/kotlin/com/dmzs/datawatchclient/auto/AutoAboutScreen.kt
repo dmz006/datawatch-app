@@ -6,8 +6,10 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.Version
@@ -109,7 +111,22 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
                 .setTitle("datawatch  v${Version.VERSION}")
                 .setHeaderAction(Action.BACK)
         brandIcon(carContext)?.let { templateBuilder.setIcon(it) }
-        // MessageTemplate allows only 1 custom-title action; Update goes in the ActionStrip.
+
+        // MESSAGING path requires 2 icon-only ActionStrip actions while driving.
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        templateBuilder.setActionStrip(
+            ActionStrip.Builder()
+                .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                    AutoTts.speak(carContext, body)
+                }.build())
+                .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                    screenManager.pop()
+                }.build())
+                .build(),
+        )
+
+        // Parked-only titled actions — shown by head units when not driving.
         templateBuilder.addAction(
             Action.Builder()
                 .setTitle("Reboot")
@@ -118,14 +135,10 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
                 .build(),
         )
         if (updateStatus == UpdateStatus.AVAILABLE) {
-            templateBuilder.setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setTitle("Update")
-                            .setOnClickListener { onUpdate() }
-                            .build(),
-                    )
+            templateBuilder.addAction(
+                Action.Builder()
+                    .setTitle("Update")
+                    .setOnClickListener { onUpdate() }
                     .build(),
             )
         }
