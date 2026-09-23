@@ -109,9 +109,19 @@ public class LastOutputDetailScreen(
     override fun onGetTemplate(): Template = try {
         buildTemplate()
     } catch (e: Throwable) {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
             .setTitle(sessionName)
             .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                        AutoTts.speak(carContext, "Error: ${e.message ?: e::class.simpleName}")
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
             .addAction(Action.Builder().setTitle("Close").setOnClickListener { screenManager.pop() }.build())
             .build()
     }
@@ -126,6 +136,10 @@ public class LastOutputDetailScreen(
             CarIcon.Builder(
                 IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat),
             ).build()
+        val closeIcon =
+            CarIcon.Builder(
+                IconCompat.createWithResource(carContext, R.drawable.ic_auto_close),
+            ).build()
 
         val builder =
             MessageTemplate.Builder(body)
@@ -135,8 +149,7 @@ public class LastOutputDetailScreen(
                     ActionStrip.Builder()
                         .addAction(
                             Action.Builder()
-                                // Icon-only: titled strip actions trigger the driving validator
-                                // in the MESSAGING session path.
+                                // MESSAGING path requires 2 icon-only ActionStrip actions while driving.
                                 .setIcon(speakerIcon)
                                 .setOnClickListener {
                                     if (isSpeaking) {
@@ -148,6 +161,12 @@ public class LastOutputDetailScreen(
                                         speakText(body)
                                     }
                                 }
+                                .build(),
+                        )
+                        .addAction(
+                            Action.Builder()
+                                .setIcon(closeIcon)
+                                .setOnClickListener { screenManager.pop() }
                                 .build(),
                         )
                         .build(),

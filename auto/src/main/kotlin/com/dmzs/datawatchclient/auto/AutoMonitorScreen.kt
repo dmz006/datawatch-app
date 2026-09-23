@@ -379,25 +379,24 @@ private fun addDetailRows(
             val nodeCpuPct = detail.cpuPct?.toInt()
             val nodeMemPct = detail.memPct?.toInt()
             val nodeGpu = detail.gpu.firstOrNull()
-            val parts = buildList {
+            val rowBuilder = Row.Builder().setTitle(nodeName.take(MAX_NODE_TITLE))
+            val cpuMemParts = buildList {
                 nodeCpuPct?.let { add("CPU ${progressBar(it)}") }
                 nodeMemPct?.let { add("Mem ${progressBar(it)}") }
-                nodeGpu?.let { gpu ->
-                    val gpuPct = gpu.utilPct.toInt().takeIf { it > 0 }
-                    if (gpuPct != null) {
-                        add("GPU ${progressBar(gpuPct)}")
-                    } else if (gpu.memTotalBytes > 0) {
-                        val vramPct = (gpu.memUsedBytes * PCT_MULTIPLIER / gpu.memTotalBytes).toInt()
-                        add("VRAM ${progressBar(vramPct)}")
-                    }
-                }
             }
-            items.addItem(
-                Row.Builder()
-                    .setTitle(nodeName.take(MAX_NODE_TITLE))
-                    .addText(parts.joinToString(" · ").ifBlank { "—" })
-                    .build(),
-            )
+            if (cpuMemParts.isNotEmpty()) {
+                rowBuilder.addText(cpuMemParts.joinToString(" · "))
+            }
+            if (nodeGpu != null) {
+                val gpuParts = buildList {
+                    add("GPU ${progressBar(nodeGpu.utilPct.toInt())}")
+                    if (nodeGpu.tempC > 0) add("${nodeGpu.tempC.toInt()}°C")
+                }
+                rowBuilder.addText(gpuParts.joinToString(" · "))
+            } else if (cpuMemParts.isEmpty()) {
+                rowBuilder.addText("—")
+            }
+            items.addItem(rowBuilder.build())
         }
     } else {
         // No compute nodes registered — fall back to GPU stats from /api/stats.
