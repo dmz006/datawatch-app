@@ -96,6 +96,8 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.storage.observeForProfileAny
+import com.dmzs.datawatchclient.ui.common.DatawatchToastHost
+import com.dmzs.datawatchclient.ui.common.ToastMessage
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.delay
@@ -555,11 +557,14 @@ public fun SessionDetailScreen(
                     }
                 }
 
-                Column(
+                Box(
                     modifier =
                         Modifier
                             .weight(1f)
                             .fillMaxWidth(),
+                ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     if (responseOpen) {
                         LastResponseSheet(
@@ -605,19 +610,6 @@ public fun SessionDetailScreen(
                                 ) { Text(stringResource(R.string.action_dismiss)) }
                             }
                         }
-                    }
-
-                    // Connection banner — shows when the owning profile's transport
-                    // last-probe failed. PWA renders an equivalent strip when WS or
-                    // REST drops; ours doubles as a hint that the live event stream
-                    // is also degraded (REST + WS share the trust-anchor wiring).
-                    // TODO(Sprint 7 S7-polish #101): replace ConnectionBanner with a
-                    //   DatawatchToastHost toast (ToastMessage(showReconnect=true)) so
-                    //   the Reconnect button calls vm.resumeStream() and the toast
-                    //   auto-dismisses when state.reachable turns true. The component
-                    //   is complete in DatawatchToast.kt as of v0.72.0.
-                    if (state.reachable == false) {
-                        ConnectionBanner(onRetry = vm::dismissBanner)
                     }
 
                     // Server-reported chat-mode sessions (output_mode=chat, e.g.
@@ -804,6 +796,40 @@ public fun SessionDetailScreen(
                         )
                     }
                 }
+                // Connecting overlay — covers the black terminal during initial WS handshake.
+                if (state.reachable == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                            Text(
+                                stringResource(R.string.term_connecting),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+                // Connection-lost toast — floats over terminal without layout reflow.
+                if (state.reachable == false) {
+                    DatawatchToastHost(
+                        toasts = listOf(
+                            ToastMessage(
+                                message = stringResource(R.string.session_detail_unreachable_banner),
+                                isError = true,
+                            ),
+                        ),
+                        onDismiss = {},
+                        onReconnect = {},
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    )
+                }
+                } // close Box(weight(1f))
 
                 // Composer in its own layer responding to keyboard insets separately.
                 // In scroll mode the big PgUp/PgDn overlay replaces the composer.
@@ -1316,32 +1342,6 @@ private fun RenameDialog(
     )
 }
 
-/**
- * Top-of-terminal banner that surfaces when the active profile's
- * transport is unreachable. Non-dismissable on purpose — it self-clears
- * the moment a probe succeeds. The Retry button just nudges the VM to
- * drop any sticky error banner so the next refresh repaints cleanly.
- */
-@Composable
-private fun ConnectionBanner(onRetry: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.session_detail_unreachable_banner),
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
-            TextButton(onClick = onRetry) { Text("Retry") }
-        }
-    }
-}
 
 /**
  * Amber strip right above the terminal when the session is

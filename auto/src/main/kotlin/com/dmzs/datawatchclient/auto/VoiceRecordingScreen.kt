@@ -18,7 +18,10 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -165,7 +168,6 @@ public class VoiceRecordingScreen(
                     .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
                     .build(),
             )
-            .addAction(Action.Builder().setTitle("Cancel").setOnClickListener { screenManager.pop() }.build())
             .build()
     }
 
@@ -182,6 +184,7 @@ public class VoiceRecordingScreen(
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
             // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
+            // Titled addAction() is parked-only on MESSAGING path — close is in ActionStrip slot 2.
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
@@ -192,33 +195,23 @@ public class VoiceRecordingScreen(
                     }.build())
                     .build(),
             )
-            .addAction(
-                Action.Builder()
-                    .setTitle("Cancel")
-                    .setOnClickListener {
-                        recognizer?.cancel()
-                        abandonAudioFocus()
-                        screenManager.pop()
-                    }
-                    .build(),
-            )
             .build()
     }
 
     private fun buildErrorTemplate(msg: String): Template {
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        return MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap Retry" })
+        return MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap mic to retry" })
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
             // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
+            // Retry = mic icon (slot 1); titled addAction() is parked-only on MESSAGING path.
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
                     .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
                     .build(),
             )
-            .addAction(Action.Builder().setTitle("Retry").setOnClickListener { startListening() }.build())
             .build()
     }
 
@@ -234,11 +227,29 @@ public class VoiceRecordingScreen(
             else -> "$sessionTitle · Voice"
         }
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
-        // Voice = TTS replay; close = cancel without sending. Send button is parked-only.
-        return MessageTemplate.Builder(transcript.ifBlank { "No transcription" })
+        // ListTemplate so "Send" and "Cancel" are row click listeners — driving-safe.
+        // MessageTemplate.addAction(setTitle) is parked-only on MESSAGING path.
+        val preview = transcript.take(MAX_TRANSCRIPT_PREVIEW).ifBlank { "No transcription" }
+        val itemList = ItemList.Builder()
+            .addItem(
+                Row.Builder()
+                    .setTitle("✓ Send")
+                    .addText(preview)
+                    .setOnClickListener { onSend(transcript) }
+                    .build(),
+            )
+            .addItem(
+                Row.Builder()
+                    .setTitle("✗ Cancel")
+                    .addText("Discard this recording")
+                    .setOnClickListener { screenManager.pop() }
+                    .build(),
+            )
+            .build()
+        return ListTemplate.Builder()
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
+            .setSingleList(itemList)
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(
@@ -253,12 +264,6 @@ public class VoiceRecordingScreen(
                             .setOnClickListener { screenManager.pop() }
                             .build(),
                     )
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle("Send")
-                    .setOnClickListener { onSend(transcript) }
                     .build(),
             )
             .build()
@@ -470,6 +475,7 @@ public class VoiceRecordingScreen(
     private companion object {
         const val ERROR_MSG_CHARS = 40
         const val PARTIAL_CHARS = 200
+        const val MAX_TRANSCRIPT_PREVIEW = 120
 
         fun speechErrorString(error: Int): String =
             when (error) {
