@@ -68,6 +68,10 @@ public class NotificationPoster(private val context: Context) {
                 .setContentText(event.body)
                 .setPriority(importance)
                 .setAutoCancel(true)
+                // Only the first post for a given notification ID sounds/vibrates;
+                // subsequent updates (same session re-waiting, push + poll duplicate)
+                // are silent in-place updates.
+                .setOnlyAlertOnce(true)
                 .setContentIntent(deepLinkIntent(event.sessionId))
 
         if (event.type == Event.Type.InputNeeded) {
