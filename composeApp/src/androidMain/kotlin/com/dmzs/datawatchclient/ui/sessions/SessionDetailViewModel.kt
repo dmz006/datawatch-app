@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -98,8 +99,11 @@ public class SessionDetailViewModel(
     private val _banner = MutableStateFlow<String?>(null)
     private val _infoBanner = MutableStateFlow<String?>(null)
     private val _reachable = MutableStateFlow<Boolean?>(null)
+    private val _contentReady = MutableStateFlow(false)
     private val _messagingBackend = MutableStateFlow<String?>(null)
     private val _whisperConfigured = MutableStateFlow(false)
+
+    public val contentReady: StateFlow<Boolean> = _contentReady.asStateFlow()
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
@@ -232,6 +236,7 @@ public class SessionDetailViewModel(
         streamJob?.cancel()
         streamJob = null
         _reachable.value = null
+        _contentReady.value = false
     }
 
     /**
@@ -259,6 +264,7 @@ public class SessionDetailViewModel(
     private fun startStream(profile: ServerProfile) {
         streamJob?.cancel()
         wsSessionRefreshFired = false
+        _contentReady.value = false
         // Initialize to `true` so the FIRST live event after first connect
         // triggers the resize_term + state-refresh path. Previously this was
         // only sent on reconnect, which meant the server pane stayed at
@@ -334,6 +340,9 @@ public class SessionDetailViewModel(
                     // the session is visibly active so the user no longer needs the hint.
                     if (!isError && _infoBanner.value != null) {
                         _infoBanner.value = null
+                    }
+                    if (!_contentReady.value && ev is SessionEvent.PaneCapture) {
+                        _contentReady.value = true
                     }
                     ServiceLocator.sessionEventRepository.insert(ev)
                     // v0.35.8 — mirror PWA v5.26.49 fix:
