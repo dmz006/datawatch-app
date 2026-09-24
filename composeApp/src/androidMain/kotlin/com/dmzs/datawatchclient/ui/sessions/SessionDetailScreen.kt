@@ -122,6 +122,7 @@ public fun SessionDetailScreen(
         ),
 ) {
     val state by vm.state.collectAsState()
+    val contentReady by vm.contentReady.collectAsState()
     // Mark this session as foreground while the detail screen is
     // composed; NotificationPoster uses this to suppress redundant
     // wake notifications for the session the user is already viewing.
@@ -796,25 +797,10 @@ public fun SessionDetailScreen(
                         )
                     }
                 }
-                // Connecting overlay — covers the black terminal during initial WS handshake.
-                if (state.reachable == null) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                            Text(
-                                stringResource(R.string.term_connecting),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                }
+                // Connecting overlay — datawatch splash covers the black terminal until both
+                // the WS connects (reachable != null) AND the first pane_capture arrives.
+                // Stays up through the full "WS handshake → resize_term → first frame" sequence.
+                SessionLoadingOverlay(visible = state.reachable == null || !contentReady)
                 // Connection-lost toast — floats over terminal without layout reflow.
                 if (state.reachable == false) {
                     DatawatchToastHost(
