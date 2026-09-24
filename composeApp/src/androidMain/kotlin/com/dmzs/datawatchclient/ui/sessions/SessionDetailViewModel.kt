@@ -11,6 +11,7 @@ import com.dmzs.datawatchclient.storage.observeForProfileAny
 import com.dmzs.datawatchclient.transport.TransportError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -102,6 +103,8 @@ public class SessionDetailViewModel(
 
     private var streamJob: Job? = null
     private var profileCache: ServerProfile? = null
+    // Debounce job that delays _reachable → false to absorb transient blips (<3.5s).
+    private var offlineDebounceJob: Job? = null
 
     public val state: StateFlow<UiState> by lazy { buildState() }
 
@@ -167,10 +170,21 @@ public class SessionDetailViewModel(
             // before the first frame from the WS arrives.
             doRefreshFromServer(profile)
             startStream(profile)
-            // Mirror the owning profile's transport reachability into the
-            // VM so the detail screen can render a connection banner.
+            // Mirror the owning profile's transport reachability into the VM.
+            // Only delay the offline transition — online is immediate.
             ServiceLocator.transportFor(profile).isReachable
-                .onEach { _reachable.value = it }
+                .onEach { reachable ->
+                    if (reachable) {
+                        offlineDebounceJob?.cancel()
+                        offlineDebounceJob = null
+                        _reachable.value = true
+                    } else if (offlineDebounceJob?.isActive != true) {
+                        offlineDebounceJob = viewModelScope.launch {
+                            delay(OFFLINE_GRACE_MS)
+                            _reachable.value = false
+                        }
+                    }
+                }
                 .launchIn(viewModelScope)
             // Fetch /api/info once for the messaging-backend badge in
             // the header. Best-effort; silent on failure.
@@ -268,8 +282,21 @@ public class SessionDetailViewModel(
                     // it's connected. REST-based isReachable also writes _reachable
                     // on poll success, so a transient WS blip (while server is still
                     // REST-reachable) correctly recovers to green after the next poll.
+                    // Offline transition is debounced (OFFLINE_GRACE_MS) so brief
+                    // heartbeat blips don't flash the banner; online is immediate.
                     val isError = ev is com.dmzs.datawatchclient.domain.SessionEvent.Error
-                    _reachable.value = !isError
+                    if (isError) {
+                        if (offlineDebounceJob?.isActive != true) {
+                            offlineDebounceJob = viewModelScope.launch {
+                                delay(OFFLINE_GRACE_MS)
+                                _reachable.value = false
+                            }
+                        }
+                    } else {
+                        offlineDebounceJob?.cancel()
+                        offlineDebounceJob = null
+                        _reachable.value = true
+                    }
                     // Sprint 3 S3-2 (#62, #64, #65, #66, #67) — full re-render on reconnect.
                     // When we receive the first live event after a disconnect:
                     //  1. Clear pane-capture dedup so the next frame is treated as a first
@@ -554,6 +581,8 @@ public class SessionDetailViewModel(
 }
 
 private const val IMAGE_PROCESSING_BANNER = "Image sent — processing with vision model…"
+// Grace period before showing the offline banner — absorbs heartbeat blips under ~3.5s.
+private const val OFFLINE_GRACE_MS = 3_500L
 
 private fun Throwable.describe(): String =
     when (this) {
