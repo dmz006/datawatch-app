@@ -4,11 +4,11 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.Header
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.Row
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarIcon
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
@@ -18,17 +18,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Quick-reply list pushed as a separate Screen from [AutoSessionDetailScreen].
+ * Quick-reply screen pushed from [AutoSessionDetailScreen].
  *
- * Using a pushed Screen (instead of an inline template swap) gives the
- * ListTemplate a proper Header + Action.BACK.  Without a Header the Car App
- * Library driving-mode validator on some head units (e.g. Samsung gearhead)
- * rejects the template with a "can't do that while driving" error.
+ * Uses [MessageTemplate] (not ListTemplate) so it can be pushed while driving in
+ * category.MESSAGING. Samsung gearhead blocks pushing a ListTemplate from a
+ * MessageTemplate screen while driving ("task can't be completed while driving").
  *
- * Voice reply is intentionally omitted here — the user can go back and press
- * "Voice Reply" from the session detail.  Omitting it avoids a potential
- * 6-screen-deep push when the stack already contains AutoAutomataScreen and
- * AutoMonitorScreen.
+ * The [MessageTemplate.addAction] buttons (Yes / No) are parked-only in category.MESSAGING.
+ * While driving, use voice reply from the session detail screen instead.
  */
 internal class AutoReplyListScreen(
     carContext: CarContext,
@@ -37,6 +34,7 @@ internal class AutoReplyListScreen(
 ) : Screen(carContext) {
     companion object {
         private const val MAX_TITLE_CHARS = 40
+        private const val MAX_ERR_CHARS = 30
     }
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -52,31 +50,21 @@ internal class AutoReplyListScreen(
     }
 
     override fun onGetTemplate(): Template {
-        val listBuilder = ItemList.Builder()
-
-        listOf(
-            "Yes" to "yes\r",
-            "No" to "no\r",
-            "Continue" to "continue\r",
-            "Stop" to "stop\r",
-            "Enter ⏎" to "\r",
-        ).forEach { (label, text) ->
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle(label)
-                    .setOnClickListener { sendReply(text) }
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        return MessageTemplate.Builder(
+            "Quick replies (tap while parked):\n• Yes   • No   • Continue   • Stop   • Enter ↩\n\nWhile driving, use voice reply.",
+        )
+            .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(MAX_TITLE_CHARS))
+            .setHeaderAction(Action.BACK)
+            .addAction(Action.Builder().setTitle("Yes ↩").setOnClickListener { sendReply("yes\r") }.build())
+            .addAction(Action.Builder().setTitle("No ↩").setOnClickListener { sendReply("no\r") }.build())
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build(),
+                    )
                     .build(),
             )
-        }
-
-        return ListTemplate.Builder()
-            .setHeader(
-                Header.Builder()
-                    .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(MAX_TITLE_CHARS))
-                    .setStartHeaderAction(Action.BACK)
-                    .build(),
-            )
-            .setSingleList(listBuilder.build())
             .build()
     }
 

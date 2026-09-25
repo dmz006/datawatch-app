@@ -8,14 +8,19 @@ import kotlin.test.assertTrue
 /**
  * Source-level regression tests for Android Auto Car App Library template compliance.
  *
- * These tests guard against two classes of driving-safety bugs that require
+ * These tests guard against three classes of driving-safety bugs that require
  * real head-unit testing to discover and are hard to catch in code review:
  *
- * 1. **Template type change on invalidate()**: Samsung gearhead rejects a screen
+ * 1. **ListTemplate pushed from MessageTemplate while driving (category.MESSAGING)**:
+ *    Samsung gearhead blocks pushing a ListTemplate from a MessageTemplate screen
+ *    while driving in category.MESSAGING ("task can't be completed while driving").
+ *    Fixed: VoiceRecordingScreen and AutoReplyListScreen must use MessageTemplate.
+ *
+ * 2. **Template type change on invalidate()**: Samsung gearhead rejects a screen
  *    when `onGetTemplate()` returns a DIFFERENT template type than it returned last
  *    time. Fixed: VoiceRecordingScreen must use one template type for ALL states.
  *
- * 2. **ActionStrip > 2 actions**: Samsung gearhead enforces max 2 ActionStrip
+ * 3. **ActionStrip > 2 actions**: Samsung gearhead enforces max 2 ActionStrip
  *    actions for category.MESSAGING. Fixed: every ActionStrip.Builder block in
  *    every Auto screen must have ≤ 2 `.addAction()` calls.
  *
@@ -28,45 +33,74 @@ class CarTemplateComplianceTest {
     private val srcDir = File("src/main/kotlin/com/dmzs/datawatchclient/auto")
     private val pubSrcDir = File("src/publicMain/kotlin/com/dmzs/datawatchclient/auto")
 
-    // ─── Bug guard 1: VoiceRecordingScreen must use ListTemplate only ──────────
+    // ─── Bug guard 1 + 2: screens pushed from MessageTemplate must use MessageTemplate ──
 
     /**
-     * If VoiceRecordingScreen uses MessageTemplate for ANY state, changing from
-     * MessageTemplate to ListTemplate (or vice versa) on `invalidate()` causes the
-     * host to report "cannot do that action while driving" when the user tries to
-     * send a voice reply. All states must share a single template type.
+     * VoiceRecordingScreen is pushed from AutoSessionDetailScreen (MessageTemplate).
+     * In category.MESSAGING, Samsung gearhead blocks pushing a ListTemplate from a
+     * MessageTemplate screen while driving ("task can't be completed while driving").
+     * VoiceRecordingScreen must use MessageTemplate for all states so it can be pushed
+     * while driving AND so the template type stays constant across invalidate() calls.
      */
     @Test
-    fun `VoiceRecordingScreen must not use MessageTemplate Builder`() {
+    fun `VoiceRecordingScreen must use MessageTemplate not ListTemplate`() {
         val file = File(srcDir, "VoiceRecordingScreen.kt")
         assertTrue(file.exists(), "VoiceRecordingScreen.kt not found at $file")
-        // Strip comments before checking — the fix comments MENTION MessageTemplate to explain why
-        // it was removed; we only care that no actual MessageTemplate.Builder() call exists.
         val sourceNoComments = file.readText()
             .lines()
             .filter { !it.trimStart().startsWith("//") }
             .joinToString("\n")
         assertFalse(
+            sourceNoComments.contains("ListTemplate.Builder()"),
+            "VoiceRecordingScreen must NOT use ListTemplate. In category.MESSAGING, pushing a " +
+                "ListTemplate from a MessageTemplate screen while driving is blocked by Samsung " +
+                "gearhead ('task can't be completed while driving'). Use MessageTemplate throughout.",
+        )
+        assertTrue(
             sourceNoComments.contains("MessageTemplate.Builder("),
-            "VoiceRecordingScreen must use ListTemplate for ALL states (LISTENING, ERROR, CONFIRMED). " +
-                "A MessageTemplate→ListTemplate type change on invalidate() causes " +
-                "'cannot do while driving' on Samsung gearhead.",
+            "VoiceRecordingScreen must use MessageTemplate.Builder() for all states so it is " +
+                "pushable while driving in category.MESSAGING.",
         )
     }
 
     @Test
-    fun `VoiceRecordingScreen has ListTemplate in all three state methods`() {
+    fun `VoiceRecordingScreen has MessageTemplate in all four template-returning paths`() {
         val file = File(srcDir, "VoiceRecordingScreen.kt")
         val source = file.readText()
-        val listTemplateCount = "ListTemplate.Builder()".toRegex().findAll(source).count()
+        val needle = "MessageTemplate.Builder("
+        val count = source.split(needle).size - 1
         assertTrue(
-            listTemplateCount >= 3,
-            "Expected ≥3 ListTemplate.Builder() calls in VoiceRecordingScreen (LISTENING, ERROR, CONFIRMED " +
-                "+ error catch), found $listTemplateCount.",
+            count >= 4,
+            "Expected ≥4 MessageTemplate.Builder() calls in VoiceRecordingScreen " +
+                "(LISTENING, ERROR, CONFIRMED + error catch), found $count.",
         )
     }
 
-    // ─── Bug guard 2: ActionStrip ≤ 2 actions per block ───────────────────────
+    /**
+     * AutoReplyListScreen is also pushed from AutoSessionDetailScreen (MessageTemplate).
+     * Same restriction as VoiceRecordingScreen: must use MessageTemplate to be pushable
+     * while driving in category.MESSAGING.
+     */
+    @Test
+    fun `AutoReplyListScreen must use MessageTemplate not ListTemplate`() {
+        val file = File(srcDir, "AutoReplyListScreen.kt")
+        assertTrue(file.exists(), "AutoReplyListScreen.kt not found at $file")
+        val sourceNoComments = file.readText()
+            .lines()
+            .filter { !it.trimStart().startsWith("//") }
+            .joinToString("\n")
+        assertFalse(
+            sourceNoComments.contains("ListTemplate.Builder()"),
+            "AutoReplyListScreen must NOT use ListTemplate. Pushing ListTemplate from " +
+                "MessageTemplate while driving in category.MESSAGING is blocked by Samsung gearhead.",
+        )
+        assertTrue(
+            sourceNoComments.contains("MessageTemplate.Builder("),
+            "AutoReplyListScreen must use MessageTemplate.Builder() to be pushable while driving.",
+        )
+    }
+
+    // ─── Bug guard 3: ActionStrip ≤ 2 actions per block ───────────────────────
 
     /**
      * Samsung gearhead enforces max 2 ActionStrip actions for category.MESSAGING.
@@ -147,34 +181,6 @@ class CarTemplateComplianceTest {
         }
 
         return violations
-    }
-
-    // ─── Bug guard 3: template types must be consistent per screen ────────────
-
-    /**
-     * Screens that need to change displayed content must call `invalidate()` which
-     * triggers `onGetTemplate()` again. If the method returns different template
-     * TYPES across calls (e.g., MessageTemplate then ListTemplate), the host
-     * rejects the update. Each Screen subclass must return one template type.
-     *
-     * Checks that no screen file mixes ListTemplate.Builder() and MessageTemplate.Builder()
-     * in the same source file, EXCEPT AutoSessionDetailScreen which uses MessageTemplate
-     * for the session body (never changes type within a screen lifecycle).
-     */
-    @Test
-    fun `VoiceRecordingScreen does not mix ListTemplate and MessageTemplate`() {
-        val file = File(srcDir, "VoiceRecordingScreen.kt")
-        val sourceNoComments = file.readText()
-            .lines()
-            .filter { !it.trimStart().startsWith("//") }
-            .joinToString("\n")
-        val hasList = sourceNoComments.contains("ListTemplate.Builder()")
-        val hasMessage = sourceNoComments.contains("MessageTemplate.Builder(")
-        assertFalse(
-            hasList && hasMessage,
-            "VoiceRecordingScreen uses BOTH ListTemplate.Builder() and MessageTemplate.Builder(). " +
-                "This causes template-type change on invalidate() → 'cannot do while driving'.",
-        )
     }
 
     // ─── Structural checks ────────────────────────────────────────────────────

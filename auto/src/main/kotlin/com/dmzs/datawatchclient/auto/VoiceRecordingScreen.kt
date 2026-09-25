@@ -18,9 +18,7 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.Row
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -158,22 +156,12 @@ public class VoiceRecordingScreen(
     } catch (e: Throwable) {
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        // Always ListTemplate so the template type never changes between states on invalidate().
-        // A MessageTemplate→ListTemplate switch on invalidate() causes "cannot do while driving"
-        // on strict head units (Samsung gearhead).
-        ListTemplate.Builder()
+        // MessageTemplate — all states use MessageTemplate so the type never changes on invalidate().
+        // In category.MESSAGING, pushing a ListTemplate from a MessageTemplate screen is blocked
+        // by Samsung gearhead ("task can't be completed while driving"); MessageTemplate pushes work.
+        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName ?: "Unknown error"}")
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .setSingleList(
-                ItemList.Builder()
-                    .addItem(
-                        Row.Builder()
-                            .setTitle("⚠ Error")
-                            .addText(e.message ?: e::class.simpleName ?: "Unknown error")
-                            .build(),
-                    )
-                    .build(),
-            )
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
@@ -192,30 +180,25 @@ public class VoiceRecordingScreen(
             }
         val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        // ListTemplate (not MessageTemplate) so the template type stays constant across all states.
-        // Changing from MessageTemplate→ListTemplate on invalidate() causes "cannot do while driving"
-        // on Samsung gearhead — the host pre-validates on push and rejects a type change.
-        return ListTemplate.Builder()
+        // MessageTemplate so this screen can be pushed while driving in category.MESSAGING.
+        // Samsung gearhead blocks pushing a ListTemplate from a MessageTemplate screen while
+        // driving ("task can't be completed while driving"). All four template-returning paths
+        // use MessageTemplate so the type is constant across invalidate() calls.
+        return MessageTemplate.Builder("🎤 $statusText")
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .setSingleList(
-                ItemList.Builder()
-                    .addItem(
-                        Row.Builder()
-                            .setTitle("🎤 Listening")
-                            .addText(statusText)
-                            .build(),
-                    )
-                    .build(),
-            )
             .setActionStrip(
                 ActionStrip.Builder()
-                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
-                        AutoTts.speak(carContext, partialText.ifBlank { "Listening" })
-                    }.build())
-                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
-                        recognizer?.cancel(); abandonAudioFocus(); screenManager.pop()
-                    }.build())
+                    .addAction(
+                        Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                            AutoTts.speak(carContext, partialText.ifBlank { "Listening" })
+                        }.build(),
+                    )
+                    .addAction(
+                        Action.Builder().setIcon(closeIcon).setOnClickListener {
+                            recognizer?.cancel(); abandonAudioFocus(); screenManager.pop()
+                        }.build(),
+                    )
                     .build(),
             )
             .build()
@@ -224,20 +207,10 @@ public class VoiceRecordingScreen(
     private fun buildErrorTemplate(msg: String): Template {
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        // ListTemplate keeps the template type constant (see buildListeningTemplate comment).
-        return ListTemplate.Builder()
+        // MessageTemplate — see buildListeningTemplate for the driving-mode rationale.
+        return MessageTemplate.Builder("⚠ ${msg.ifEmpty { "Could not hear" }}\n\nTap mic icon to retry")
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            .setSingleList(
-                ItemList.Builder()
-                    .addItem(
-                        Row.Builder()
-                            .setTitle("⚠ ${msg.ifEmpty { "Could not hear" }}")
-                            .addText("Tap mic icon to retry")
-                            .build(),
-                    )
-                    .build(),
-            )
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
@@ -248,56 +221,35 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildConfirmTemplate(transcript: String): Template {
-        val voiceIcon =
-            CarIcon.Builder(
-                IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice),
-            ).build()
+        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         val screenTitle = when {
             taskId != null -> "$sessionTitle · Update Task"
             storyId != null -> "$sessionTitle · Update Story"
             prdId != null -> "$sessionTitle · Update Spec"
             else -> "$sessionTitle · Voice"
         }
-        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        // ListTemplate so "Send" and "Cancel" are row click listeners — driving-safe.
-        // MessageTemplate.addAction(setTitle) is parked-only on MESSAGING path.
         val preview = transcript.take(MAX_TRANSCRIPT_PREVIEW).ifBlank { "No transcription" }
-        val itemList = ItemList.Builder()
-            .addItem(
-                Row.Builder()
-                    .setTitle("✓ Send")
-                    .addText(preview)
-                    .setOnClickListener { onSend(transcript) }
-                    .build(),
-            )
-            .addItem(
-                Row.Builder()
-                    .setTitle("✗ Cancel")
-                    .addText("Discard this recording")
-                    .setOnClickListener { screenManager.pop() }
-                    .build(),
-            )
-            .build()
-        return ListTemplate.Builder()
+        // MessageTemplate — see buildListeningTemplate for the driving-mode rationale.
+        // ActionStrip: chat = Send (driving-safe icon), voice = re-record, close = cancel.
+        // addAction() "Send" and "Retry" are parked-only (MessageTemplate.addAction is always
+        // parked-only in category.MESSAGING), giving labeled buttons when parked for clarity.
+        return MessageTemplate.Builder("✓ $preview")
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
-            .setSingleList(itemList)
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(
-                        Action.Builder()
-                            .setIcon(voiceIcon)
-                            .setOnClickListener { speakWithFocus(transcript) }
-                            .build(),
+                        Action.Builder().setIcon(chatIcon).setOnClickListener { onSend(transcript) }.build(),
                     )
                     .addAction(
-                        Action.Builder()
-                            .setIcon(closeIcon)
-                            .setOnClickListener { screenManager.pop() }
-                            .build(),
+                        Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build(),
                     )
                     .build(),
             )
+            .addAction(Action.Builder().setTitle("Send").setOnClickListener { onSend(transcript) }.build())
+            .addAction(Action.Builder().setTitle("Retry").setOnClickListener { startListening() }.build())
             .build()
     }
 
