@@ -194,6 +194,7 @@ class CarTemplateComplianceTest {
             "AutoSessionDetailScreen.kt",
             "AutoAutomataScreen.kt",
             "AutoPrdDetailScreen.kt",
+            "AutoPrdStoriesScreen.kt",
             "AutoStoryDetailScreen.kt",
             "AutoTaskDetailScreen.kt",
             "VoiceRecordingScreen.kt",
