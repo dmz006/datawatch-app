@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
  *    time. Fixed: VoiceRecordingScreen must use one template type for ALL states.
  *
  * 2. **ActionStrip > 2 actions**: Samsung gearhead enforces max 2 ActionStrip
- *    actions even for category.OTHER. Fixed: every ActionStrip.Builder block in
+ *    actions for category.MESSAGING. Fixed: every ActionStrip.Builder block in
  *    every Auto screen must have ≤ 2 `.addAction()` calls.
  *
  * Tests parse source files directly — no CarContext or emulator required.
@@ -69,7 +69,7 @@ class CarTemplateComplianceTest {
     // ─── Bug guard 2: ActionStrip ≤ 2 actions per block ───────────────────────
 
     /**
-     * Samsung gearhead enforces max 2 ActionStrip actions for category.OTHER.
+     * Samsung gearhead enforces max 2 ActionStrip actions for category.MESSAGING.
      * Three actions produce "action list exceeded maximum number of two actions"
      * and make the screen unusable while driving.
      *
