@@ -1027,9 +1027,7 @@ private fun LlmOverrideDialog(
     var planningModelMenuOpen by remember { mutableStateOf(false) }
 
     // Planning backend must be ollama or openwebui (headless /api/ask only)
-    val planningBackends = backends.filter { b ->
-        b.contains("ollama", ignoreCase = true) || b.contains("openwebui", ignoreCase = true)
-    }
+    val planningBackends = backends
 
     // Model list for the currently selected execution backend (empty = show free-text)
     val execModels = when {

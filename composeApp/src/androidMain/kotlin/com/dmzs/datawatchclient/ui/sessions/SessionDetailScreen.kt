@@ -80,6 +80,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -123,6 +124,10 @@ public fun SessionDetailScreen(
 ) {
     val state by vm.state.collectAsState()
     val contentReady by vm.contentReady.collectAsState()
+    // Once the first pane_capture arrives the overlay should never come back,
+    // even if pauseStream() resets contentReady to false during back-navigation.
+    var hadContent by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(contentReady) { if (contentReady) hadContent = true }
     // Mark this session as foreground while the detail screen is
     // composed; NotificationPoster uses this to suppress redundant
     // wake notifications for the session the user is already viewing.
@@ -562,7 +567,8 @@ public fun SessionDetailScreen(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .clipToBounds(),
                 ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -800,7 +806,7 @@ public fun SessionDetailScreen(
                 // Connecting overlay — datawatch splash covers the black terminal until both
                 // the WS connects (reachable != null) AND the first pane_capture arrives.
                 // Stays up through the full "WS handshake → resize_term → first frame" sequence.
-                SessionLoadingOverlay(visible = state.reachable == null || !contentReady)
+                SessionLoadingOverlay(visible = !hadContent && (state.reachable == null || !contentReady))
                 // Connection-lost toast — floats over terminal without layout reflow.
                 if (state.reachable == false) {
                     DatawatchToastHost(
@@ -812,7 +818,7 @@ public fun SessionDetailScreen(
                         ),
                         onDismiss = {},
                         onReconnect = {},
-                        modifier = Modifier.align(Alignment.BottomEnd),
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
                     )
                 }
                 } // close Box(weight(1f))
