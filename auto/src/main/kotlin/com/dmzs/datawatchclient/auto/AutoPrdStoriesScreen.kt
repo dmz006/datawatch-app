@@ -44,16 +44,27 @@ public class AutoPrdStoriesScreen(
         val story = selectedStory
         if (story == null) buildStoriesListTemplate() else buildStoryDetailTemplate(story)
     } catch (e: Throwable) {
+        // Keep ListTemplate on error to avoid template-type change on invalidate() in MESSAGING category.
         val prdTitle = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "Automata"
-        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
-            .setTitle(prdTitle)
-            .setHeaderAction(Action.BACK)
-            .addAction(
-                Action.Builder()
+        val errItems = ItemList.Builder()
+            .addItem(
+                Row.Builder()
+                    .setTitle("Error")
+                    .addText(e.message ?: e::class.simpleName ?: "Unknown error")
+                    .build(),
+            )
+            .addItem(
+                Row.Builder()
                     .setTitle("Close")
+                    .addText("Tap to go back")
                     .setOnClickListener { screenManager.pop() }
                     .build(),
             )
+            .build()
+        ListTemplate.Builder()
+            .setTitle(prdTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 

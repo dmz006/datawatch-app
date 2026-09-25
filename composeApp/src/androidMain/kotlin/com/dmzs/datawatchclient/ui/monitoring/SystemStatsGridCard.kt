@@ -62,7 +62,7 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .pwaCard(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -76,15 +76,23 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
                 )
                 LiveDot()
             }
-            state.local?.let { LocalSystemCard(it) }
-            state.peers.forEach { (peer, detail) -> PeerSystemCard(peer, detail) }
+            state.local?.let { local ->
+                LocalSystemCard(local)
+                if (state.peers.isNotEmpty()) {
+                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                }
+            }
+            state.peers.forEachIndexed { idx, (peer, detail) ->
+                if (idx > 0) androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                PeerSystemCard(peer, detail)
+            }
         }
     }
 }
 
 @Composable
 private fun LocalSystemCard(stats: StatsDto) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -157,7 +165,7 @@ private fun sysGridDotColor(lastPushAt: String?): Color {
 private fun PeerSystemCard(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?) {
     val dotColor = sysGridDotColor(peer.lastPushAt)
 
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -250,26 +258,26 @@ private fun PeerSystemCard(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?)
 
 @Composable
 private fun StatBar(label: String, pct: Float, valueLabel: String, color: Color) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 label,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 valueLabel,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
         LinearProgressIndicator(
             progress = { pct },
-            modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
             color = color,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )

@@ -59,12 +59,12 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -98,7 +98,7 @@ public fun PeerResourcesCard(vm: PeerResourcesViewModel = viewModel()) {
 
 @Composable
 private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -110,7 +110,7 @@ private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
                     shape = androidx.compose.foundation.shape.CircleShape,
                 ),
             )
-            Text(node.name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            Text(node.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Box(
                 modifier = Modifier
                     .background(Color(0xFF3B82F6).copy(alpha = 0.18f), RoundedCornerShape(8.dp))
@@ -122,35 +122,53 @@ private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
         if (detail == null) {
             Text(
                 stringResource(R.string.obs_cn_no_data),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+                modifier = Modifier.padding(start = 16.dp, top = 6.dp),
             )
         } else {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                detail.cpu?.let { cpu ->
-                    StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${cpu.pct.toInt()}%", color = cpuColor(cpu.pct))
-                } ?: detail.cpuPct?.let { pct ->
-                    StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${pct.toInt()}%", color = cpuColor(pct))
-                }
-                detail.mem?.let { mem ->
-                    val usedGb = mem.usedBytes / 1_073_741_824.0
-                    val totalGb = mem.totalBytes / 1_073_741_824.0
-                    StatChip(label = stringResource(R.string.obs_cn_node_mem), value = "${usedGb.toInt()}/${totalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                detail.gpu.forEachIndexed { gpuIdx, gpu ->
-                    val gpuPrefix = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1} " else ""
-                    StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_util)}", value = "${gpu.utilPct.toInt()}%", color = Color(0xFF3B82F6))
-                    if (gpu.powerW > 0) {
-                        StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_power)}", value = "${gpu.powerW.toInt()} W", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // CPU + Memory row
+            val hasCpu = detail.cpu != null || detail.cpuPct != null
+            val hasMem = detail.mem != null
+            if (hasCpu || hasMem) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    detail.cpu?.let { cpu ->
+                        StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${cpu.pct.toInt()}%", color = cpuColor(cpu.pct))
+                    } ?: detail.cpuPct?.let { pct ->
+                        StatChip(label = stringResource(R.string.obs_cn_node_cpu), value = "${pct.toInt()}%", color = cpuColor(pct))
                     }
-                    val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
-                    val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
-                    if (vramTotalGb > 0) {
-                        StatChip(label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_vram)}", value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    detail.mem?.let { mem ->
+                        val usedGb = mem.usedBytes / 1_073_741_824.0
+                        val totalGb = mem.totalBytes / 1_073_741_824.0
+                        StatChip(label = stringResource(R.string.obs_cn_node_mem), value = "${usedGb.toInt()}/${totalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            // One row per GPU
+            detail.gpu.forEachIndexed { gpuIdx, gpu ->
+                val gpuLabel = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1}" else "GPU"
+                val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
+                val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp)) {
+                    Text(
+                        gpuLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        StatChip(label = stringResource(R.string.obs_cn_gpu_util), value = "${gpu.utilPct.toInt()}%", color = Color(0xFF3B82F6))
+                        if (gpu.powerW > 0) {
+                            StatChip(label = stringResource(R.string.obs_cn_gpu_power), value = "${gpu.powerW.toInt()} W", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (vramTotalGb > 0) {
+                            StatChip(label = stringResource(R.string.obs_cn_gpu_vram), value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -160,7 +178,7 @@ private fun LocalNodeRow(node: ComputeNodeDto, detail: ComputeNodeDetailDto?) {
 
 @Composable
 private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -173,8 +191,8 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
                     shape = CircleShape,
                 ),
             )
-            Text(peer.name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            // Shape badge (reused from FederatedPeersCard pattern)
+            Text(peer.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            // Shape badge
             val shape = (peer.hostInfo?.shape ?: peer.shape).ifBlank { "—" }
             val shapeColor = when (shape) {
                 "agent" -> Color(0xFF8B5CF6)
@@ -193,72 +211,89 @@ private fun PeerResourceRow(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?
         if (detail == null) {
             Text(
                 stringResource(R.string.obs_cn_no_data),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+                modifier = Modifier.padding(start = 16.dp, top = 6.dp),
             )
         } else {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                // CPU chip
-                detail.cpu?.let { cpu ->
-                    StatChip(
-                        label = stringResource(R.string.obs_cn_node_cpu),
-                        value = "${cpu.pct.toInt()}%",
-                        color = cpuColor(cpu.pct),
-                    )
-                } ?: detail.cpuPct?.let { pct ->
-                    StatChip(
-                        label = stringResource(R.string.obs_cn_node_cpu),
-                        value = "${pct.toInt()}%",
-                        color = cpuColor(pct),
-                    )
+            // CPU + Memory row
+            val hasCpu = detail.cpu != null || detail.cpuPct != null
+            val hasMem = detail.mem != null
+            if (hasCpu || hasMem) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    detail.cpu?.let { cpu ->
+                        StatChip(
+                            label = stringResource(R.string.obs_cn_node_cpu),
+                            value = "${cpu.pct.toInt()}%",
+                            color = cpuColor(cpu.pct),
+                        )
+                    } ?: detail.cpuPct?.let { pct ->
+                        StatChip(
+                            label = stringResource(R.string.obs_cn_node_cpu),
+                            value = "${pct.toInt()}%",
+                            color = cpuColor(pct),
+                        )
+                    }
+                    detail.mem?.let { mem ->
+                        val usedGb = mem.usedBytes / 1_073_741_824.0
+                        val totalGb = mem.totalBytes / 1_073_741_824.0
+                        StatChip(
+                            label = stringResource(R.string.obs_cn_node_mem),
+                            value = "${usedGb.toInt()}/${totalGb.toInt()} GB",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                // Mem chip
-                detail.mem?.let { mem ->
-                    val usedGb = mem.usedBytes / 1_073_741_824.0
-                    val totalGb = mem.totalBytes / 1_073_741_824.0
-                    StatChip(
-                        label = stringResource(R.string.obs_cn_node_mem),
-                        value = "${usedGb.toInt()}/${totalGb.toInt()} GB",
+            }
+            // One row per GPU with all GPU stats
+            detail.gpu.forEachIndexed { gpuIdx, gpu ->
+                val gpuLabel = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1}" else "GPU"
+                val tempColor = when {
+                    gpu.tempC >= 80 -> Color(0xFFEF4444)
+                    gpu.tempC >= 60 -> Color(0xFFF59E0B)
+                    else -> Color(0xFF10B981)
+                }
+                val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
+                val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp)) {
+                    Text(
+                        gpuLabel,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-                // GPU chips — prefix with "GPU N " when node has multiple GPUs
-                detail.gpu.forEachIndexed { gpuIdx, gpu ->
-                    val gpuPrefix = if (detail.gpu.size > 1) "GPU ${gpuIdx + 1} " else ""
-                    StatChip(
-                        label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_util)}",
-                        value = "${gpu.utilPct.toInt()}%",
-                        color = Color(0xFF3B82F6),
-                    )
-                    val tempColor = when {
-                        gpu.tempC >= 80 -> Color(0xFFEF4444)
-                        gpu.tempC >= 60 -> Color(0xFFF59E0B)
-                        else -> Color(0xFF10B981)
-                    }
-                    StatChip(
-                        label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_temp)}",
-                        value = "${gpu.tempC.toInt()}°C",
-                        color = tempColor,
-                    )
-                    if (gpu.powerW > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         StatChip(
-                            label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_power)}",
-                            value = "${gpu.powerW.toInt()} W",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            label = stringResource(R.string.obs_cn_gpu_util),
+                            value = "${gpu.utilPct.toInt()}%",
+                            color = Color(0xFF3B82F6),
                         )
-                    }
-                    val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
-                    val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
-                    if (vramTotalGb > 0) {
-                        StatChip(
-                            label = "$gpuPrefix${stringResource(R.string.obs_cn_gpu_vram)}",
-                            value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (gpu.tempC > 0) {
+                            StatChip(
+                                label = stringResource(R.string.obs_cn_gpu_temp),
+                                value = "${gpu.tempC.toInt()}°C",
+                                color = tempColor,
+                            )
+                        }
+                        if (gpu.powerW > 0) {
+                            StatChip(
+                                label = stringResource(R.string.obs_cn_gpu_power),
+                                value = "${gpu.powerW.toInt()} W",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (vramTotalGb > 0) {
+                            StatChip(
+                                label = stringResource(R.string.obs_cn_gpu_vram),
+                                value = "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
