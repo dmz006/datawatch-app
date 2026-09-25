@@ -20,7 +20,6 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -159,9 +158,22 @@ public class VoiceRecordingScreen(
     } catch (e: Throwable) {
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName}")
+        // Always ListTemplate so the template type never changes between states on invalidate().
+        // A MessageTemplate→ListTemplate switch on invalidate() causes "cannot do while driving"
+        // on strict head units (Samsung gearhead).
+        ListTemplate.Builder()
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
+            .setSingleList(
+                ItemList.Builder()
+                    .addItem(
+                        Row.Builder()
+                            .setTitle("⚠ Error")
+                            .addText(e.message ?: e::class.simpleName ?: "Unknown error")
+                            .build(),
+                    )
+                    .build(),
+            )
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
@@ -172,7 +184,7 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildListeningTemplate(): Template {
-        val body =
+        val statusText =
             when {
                 !micReady -> "Starting microphone…"
                 partialText.isNotBlank() -> partialText.take(PARTIAL_CHARS)
@@ -180,11 +192,22 @@ public class VoiceRecordingScreen(
             }
         val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        return MessageTemplate.Builder(body)
+        // ListTemplate (not MessageTemplate) so the template type stays constant across all states.
+        // Changing from MessageTemplate→ListTemplate on invalidate() causes "cannot do while driving"
+        // on Samsung gearhead — the host pre-validates on push and rejects a type change.
+        return ListTemplate.Builder()
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
-            // Titled addAction() is parked-only on MESSAGING path — close is in ActionStrip slot 2.
+            .setSingleList(
+                ItemList.Builder()
+                    .addItem(
+                        Row.Builder()
+                            .setTitle("🎤 Listening")
+                            .addText(statusText)
+                            .build(),
+                    )
+                    .build(),
+            )
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
@@ -201,11 +224,20 @@ public class VoiceRecordingScreen(
     private fun buildErrorTemplate(msg: String): Template {
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        return MessageTemplate.Builder(msg.ifEmpty { "Could not hear — tap mic to retry" })
+        // ListTemplate keeps the template type constant (see buildListeningTemplate comment).
+        return ListTemplate.Builder()
             .setTitle(sessionTitle)
             .setHeaderAction(Action.BACK)
-            // 2-icon ActionStrip required on MessageTemplate for MESSAGING-path while driving.
-            // Retry = mic icon (slot 1); titled addAction() is parked-only on MESSAGING path.
+            .setSingleList(
+                ItemList.Builder()
+                    .addItem(
+                        Row.Builder()
+                            .setTitle("⚠ ${msg.ifEmpty { "Could not hear" }}")
+                            .addText("Tap mic icon to retry")
+                            .build(),
+                    )
+                    .build(),
+            )
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build())
