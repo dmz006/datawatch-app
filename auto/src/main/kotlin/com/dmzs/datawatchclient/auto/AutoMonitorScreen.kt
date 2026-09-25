@@ -306,6 +306,7 @@ public class AutoMonitorScreen(
 }
 
 private const val PROGRESS_BAR_WIDTH: Int = 10
+private const val NODE_BAR_WIDTH: Int = 6
 
 /** Renders a compact progress bar: "▓▓▓░░░░░░░ 28%" (10 wide). */
 private fun progressBar(
@@ -325,81 +326,57 @@ private fun addDetailRows(
     sessionCounts: Triple<Int, Int, Int>? = null,
     computeNodes: List<Pair<String, ComputeNodeDetailDto>> = emptyList(),
 ) {
-    // ItemList max = 6. Fixed rows: CPU(1) + Mem(1) + Disk(0-1) + Sessions(1) = 3-4.
-    // Remaining slots go to compute node rows or GPU row from stats.
-    val load1 = s.cpuLoad1
-    val cores = s.cpuCores
-    val cpuPct =
-        when {
-            load1 != null && cores != null && cores > 0 -> (load1 / cores * PCT_MULTIPLIER).toInt()
-            s.cpuPct != null -> s.cpuPct!!.toInt()
-            else -> null
-        }
-    val cpuText =
-        when {
-            cpuPct != null && load1 != null && cores != null && cores > 0 ->
-                // Avoid .format() on a string containing the progress bar's literal '%' —
-                // java.util.Formatter would parse it as a duplicate flag specifier and crash.
-                "${progressBar(cpuPct)}  load ${"%.2f".format(load1)} · $cores cores"
-            cpuPct != null -> progressBar(cpuPct)
-            else -> "—"
-        }
-    items.addItem(Row.Builder().setTitle("CPU").addText(cpuText).build())
-    val memUsed = s.memUsed
-    val memTotal = s.memTotal
-    val memPct =
-        when {
-            memUsed != null && memTotal != null && memTotal > 0 ->
-                (memUsed * PCT_MULTIPLIER / memTotal).toInt()
-            s.memPct != null -> s.memPct!!.toInt()
-            else -> null
-        }
-    val memText =
-        when {
-            memPct != null && memUsed != null && memTotal != null && memTotal > 0 ->
-                "${progressBar(memPct)}  ${fmt(memUsed)} / ${fmt(memTotal)}"
-            memPct != null -> progressBar(memPct)
-            else -> "—"
-        }
-    items.addItem(Row.Builder().setTitle("Memory").addText(memText).build())
-    val diskUsed = s.diskUsed
-    val diskTotal = s.diskTotal
-    val hasDisk = diskUsed != null && diskTotal != null && diskTotal > 0
-    if (hasDisk) {
-        items.addItem(
-            Row.Builder().setTitle("Disk").addText("${fmt(diskUsed!!)} / ${fmt(diskTotal!!)}").build(),
-        )
-    }
-
+    // ItemList max = 6. Sessions takes 1 slot.
+    // Compute nodes: up to 5 tiles when present (host CPU/Mem/Disk replaced by node tiles).
+    // No nodes: host CPU + Mem + Disk(optional) + GPU(optional) + Uptime.
     if (computeNodes.isNotEmpty()) {
-        // Show one row per compute node. Cap to keep ItemList ≤ 6 (CPU+Mem+Disk+Sessions = 3-4 fixed).
-        val fixedRows = 3 + (if (hasDisk) 1 else 0)
-        val nodeSlots = (MAX_DETAIL_ROWS - fixedRows).coerceAtLeast(0)
-        computeNodes.take(nodeSlots).forEach { (nodeName, detail) ->
-            val nodeCpuPct = detail.cpuPct?.toInt()
-            val nodeMemPct = detail.memPct?.toInt()
-            val nodeGpu = detail.gpu.firstOrNull()
-            val rowBuilder = Row.Builder().setTitle(nodeName.take(MAX_NODE_TITLE))
-            val cpuMemParts = buildList {
-                nodeCpuPct?.let { add("CPU ${progressBar(it)}") }
-                nodeMemPct?.let { add("Mem ${progressBar(it)}") }
-            }
-            if (cpuMemParts.isNotEmpty()) {
-                rowBuilder.addText(cpuMemParts.joinToString(" · "))
-            }
-            if (nodeGpu != null) {
-                val gpuParts = buildList {
-                    add("GPU ${progressBar(nodeGpu.utilPct.toInt())}")
-                    if (nodeGpu.tempC > 0) add("${nodeGpu.tempC.toInt()}°C")
-                }
-                rowBuilder.addText(gpuParts.joinToString(" · "))
-            } else if (cpuMemParts.isEmpty()) {
-                rowBuilder.addText("—")
-            }
-            items.addItem(rowBuilder.build())
+        computeNodes.take(MAX_DETAIL_ROWS - 1).forEach { (nodeName, detail) ->
+            items.addItem(buildComputeNodeRow(nodeName, detail))
         }
     } else {
-        // No compute nodes registered — fall back to GPU stats from /api/stats.
+        val load1 = s.cpuLoad1
+        val cores = s.cpuCores
+        val cpuPct =
+            when {
+                load1 != null && cores != null && cores > 0 -> (load1 / cores * PCT_MULTIPLIER).toInt()
+                s.cpuPct != null -> s.cpuPct!!.toInt()
+                else -> null
+            }
+        val cpuText =
+            when {
+                cpuPct != null && load1 != null && cores != null && cores > 0 ->
+                    "${progressBar(cpuPct)}  load ${"%.2f".format(load1)} · $cores cores"
+                cpuPct != null -> progressBar(cpuPct)
+                else -> "—"
+            }
+        items.addItem(Row.Builder().setTitle("CPU").addText(cpuText).build())
+        val memUsed = s.memUsed
+        val memTotal = s.memTotal
+        val memPct =
+            when {
+                memUsed != null && memTotal != null && memTotal > 0 ->
+                    (memUsed * PCT_MULTIPLIER / memTotal).toInt()
+                s.memPct != null -> s.memPct!!.toInt()
+                else -> null
+            }
+        val memText =
+            when {
+                memPct != null && memUsed != null && memTotal != null && memTotal > 0 ->
+                    "${progressBar(memPct)}  ${fmt(memUsed)} / ${fmt(memTotal)}"
+                memPct != null -> progressBar(memPct)
+                else -> "—"
+            }
+        items.addItem(Row.Builder().setTitle("Memory").addText(memText).build())
+        val diskUsed = s.diskUsed
+        val diskTotal = s.diskTotal
+        if (diskUsed != null && diskTotal != null && diskTotal > 0) {
+            val diskPct = (diskUsed * PCT_MULTIPLIER / diskTotal).toInt()
+            items.addItem(
+                Row.Builder().setTitle("Disk")
+                    .addText("${progressBar(diskPct)}  ${fmt(diskUsed)} / ${fmt(diskTotal)}")
+                    .build(),
+            )
+        }
         val gpuUtilInt = s.gpuUtilPct?.toInt() ?: s.gpuPct?.toInt()
         val vramTotal = s.gpuMemTotalMb
         val hasGpu = s.gpuName != null || gpuUtilInt != null || (vramTotal != null && vramTotal > 0)
@@ -427,6 +404,9 @@ private fun addDetailRows(
             }
             items.addItem(rowBuilder.build())
         }
+        if (s.uptimeSeconds > 0) {
+            items.addItem(Row.Builder().setTitle("Uptime").addText(uptime(s.uptimeSeconds)).build())
+        }
     }
 
     val (sesTotal, sesRunning, sesWaiting) = sessionCounts ?: Triple(s.sessionsTotal, s.sessionsRunning, s.sessionsWaiting)
@@ -437,9 +417,58 @@ private fun addDetailRows(
             .setOnClickListener(onSessionsClick ?: {})
             .build(),
     )
-    if (s.uptimeSeconds > 0 && computeNodes.isEmpty()) {
-        items.addItem(Row.Builder().setTitle("Uptime").addText(uptime(s.uptimeSeconds)).build())
+}
+
+private fun buildComputeNodeRow(nodeName: String, detail: ComputeNodeDetailDto): Row {
+    val rowBuilder = Row.Builder().setTitle(nodeName.take(MAX_NODE_TITLE))
+
+    // Line 1: CPU (with load/cores if available) · Mem (with used/total bytes if available)
+    val line1 = buildString {
+        val cpu = detail.cpu
+        val cpuPct = cpu?.pct?.toInt() ?: detail.cpuPct?.toInt()
+        if (cpuPct != null) {
+            append("CPU ${progressBar(cpuPct, NODE_BAR_WIDTH)}")
+            if (cpu != null && cpu.load1 > 0 && cpu.cores > 0) {
+                append(" ${"%.1f".format(cpu.load1)}·${cpu.cores}c")
+            }
+        }
+        val mem = detail.mem
+        val memPct = mem?.pct?.toInt() ?: detail.memPct?.toInt()
+        if (memPct != null) {
+            if (isNotEmpty()) append("  ·  ")
+            append("Mem ${progressBar(memPct, NODE_BAR_WIDTH)}")
+            if (mem != null && mem.totalBytes > 0) {
+                append("  ${fmt(mem.usedBytes)} / ${fmt(mem.totalBytes)}")
+            }
+        }
     }
+    if (line1.isNotEmpty()) rowBuilder.addText(line1)
+
+    // Line 2: GPU util + VRAM used/total + temp + power; Ollama RSS if present
+    val line2 = buildString {
+        val gpus = detail.gpu
+        if (gpus.isNotEmpty()) {
+            val g = gpus.first()
+            val label = if (g.name.isNotBlank() && !g.name.equals("GPU", ignoreCase = true)) g.name.take(12) else "GPU"
+            append("$label ${progressBar(g.utilPct.toInt(), NODE_BAR_WIDTH)}")
+            if (g.memTotalBytes > 0) {
+                val vramPct = (g.memUsedBytes * PCT_MULTIPLIER / g.memTotalBytes).toInt()
+                append("  ${progressBar(vramPct, NODE_BAR_WIDTH)}  ${fmt(g.memUsedBytes)} / ${fmt(g.memTotalBytes)}")
+            }
+            if (g.tempC > 0) append("  ${g.tempC.toInt()}°C")
+            if (g.powerW > 0) append("  ${g.powerW.toInt()}W")
+            if (gpus.size > 1) append("  +${gpus.size - 1} GPU")
+        }
+        val ollama = detail.ollamaStats
+        if (ollama != null && ollama.rssBytes > 0) {
+            if (isNotEmpty()) append("  ·  ")
+            append("ollama ${fmt(ollama.rssBytes)}")
+        }
+    }
+    if (line2.isNotEmpty()) rowBuilder.addText(line2)
+    else if (line1.isEmpty()) rowBuilder.addText("—")
+
+    return rowBuilder.build()
 }
 
 private const val MAX_DETAIL_ROWS: Int = 6
