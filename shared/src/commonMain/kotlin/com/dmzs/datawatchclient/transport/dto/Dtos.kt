@@ -790,6 +790,7 @@ public data class NewPrdRequestDto(
     val effort: String? = null,
     val model: String? = null,
     @SerialName("decomposition_profile") val decompositionProfile: String? = null,
+    @SerialName("decomposition_model") val decompositionModel: String? = null,
     /** claude-code per-PRD permission mode (v5.27.5+). Most-specific-wins: task > PRD > session default. */
     @SerialName("permission_mode") val permissionMode: String? = null,
     /** v0.63.0: PRD type, guided mode, skills. */

@@ -98,6 +98,10 @@ internal fun PrdDetailDialog(
     ollamaModels: List<String> = emptyList(),
     /** Model list from /api/openwebui/models — empty = OpenWebUI not configured. */
     openWebUiModels: List<String> = emptyList(),
+    /** Flat model ID list from /api/opencode/models — empty when unavailable. */
+    openCodeModels: List<String> = emptyList(),
+    /** Grouped opencode models: providerLabel → model IDs. */
+    openCodeModelGroups: Map<String, List<String>> = emptyMap(),
     onRun: () -> Unit,
     onCancel: () -> Unit,
     onRequestRevision: (note: String) -> Unit,
@@ -864,6 +868,8 @@ internal fun PrdDetailDialog(
             backends = backends,
             ollamaModels = ollamaModels,
             openWebUiModels = openWebUiModels,
+            openCodeModels = openCodeModels,
+            openCodeModelGroups = openCodeModelGroups,
             onDismiss = { llmOpen = false },
             onSave = { b, e, m, dp, dm ->
                 onSetLlm(b, e, m, dp, dm)
@@ -1012,6 +1018,8 @@ private fun LlmOverrideDialog(
     backends: List<String>,
     ollamaModels: List<String> = emptyList(),
     openWebUiModels: List<String> = emptyList(),
+    openCodeModels: List<String> = emptyList(),
+    openCodeModelGroups: Map<String, List<String>> = emptyMap(),
     onDismiss: () -> Unit,
     onSave: (backend: String, effort: String, model: String, decompositionProfile: String, decompositionModel: String) -> Unit,
 ) {
@@ -1026,21 +1034,25 @@ private fun LlmOverrideDialog(
     var modelMenuOpen by remember { mutableStateOf(false) }
     var planningModelMenuOpen by remember { mutableStateOf(false) }
 
-    // Planning backend must be ollama or openwebui (headless /api/ask only)
     val planningBackends = backends
 
-    // Model list for the currently selected execution backend (empty = show free-text)
+    // Model list for the currently selected execution backend
     val execModels = when {
         backend.contains("ollama", ignoreCase = true) -> ollamaModels
         backend.contains("openwebui", ignoreCase = true) -> openWebUiModels
+        backend.startsWith("opencode", ignoreCase = true) -> openCodeModels
         else -> emptyList()
     }
+    val execIsOpenCode = backend.startsWith("opencode", ignoreCase = true) && openCodeModelGroups.isNotEmpty()
+
     // Model list for the planning backend
     val planModels = when {
         decompositionProfile.contains("ollama", ignoreCase = true) -> ollamaModels
         decompositionProfile.contains("openwebui", ignoreCase = true) -> openWebUiModels
+        decompositionProfile.startsWith("opencode", ignoreCase = true) -> openCodeModels
         else -> emptyList()
     }
+    val planIsOpenCode = decompositionProfile.startsWith("opencode", ignoreCase = true) && openCodeModelGroups.isNotEmpty()
 
     val inheritLabel = stringResource(R.string.new_prd_inherit)
     AlertDialog(
@@ -1073,7 +1085,7 @@ private fun LlmOverrideDialog(
                         }
                     }
                 }
-                // Execution model — dropdown for ollama/openwebui, free-text otherwise (BL-AT-2)
+                // Execution model — dropdown for ollama/openwebui/opencode, free-text otherwise
                 if (execModels.isNotEmpty()) {
                     ExposedDropdownMenuBox(
                         expanded = modelMenuOpen,
@@ -1090,8 +1102,21 @@ private fun LlmOverrideDialog(
                         )
                         DropdownMenu(expanded = modelMenuOpen, onDismissRequest = { modelMenuOpen = false }) {
                             DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { model = ""; modelMenuOpen = false })
-                            execModels.forEach { m ->
-                                DropdownMenuItem(text = { Text(m) }, onClick = { model = m; modelMenuOpen = false })
+                            if (execIsOpenCode) {
+                                openCodeModelGroups.forEach { (groupLabel, groupModels) ->
+                                    DropdownMenuItem(
+                                        text = { Text(groupLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary) },
+                                        onClick = {},
+                                        enabled = false,
+                                    )
+                                    groupModels.forEach { m ->
+                                        DropdownMenuItem(text = { Text("  $m") }, onClick = { model = m; modelMenuOpen = false })
+                                    }
+                                }
+                            } else {
+                                execModels.forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = { model = m; modelMenuOpen = false })
+                                }
                             }
                         }
                     }
@@ -1133,7 +1158,7 @@ private fun LlmOverrideDialog(
                             }
                         }
                     }
-                    // Planning model — dropdown or free-text depending on planning backend (BL-AT-4)
+                    // Planning model — dropdown or free-text depending on planning backend
                     if (planModels.isNotEmpty()) {
                         ExposedDropdownMenuBox(
                             expanded = planningModelMenuOpen,
@@ -1150,8 +1175,21 @@ private fun LlmOverrideDialog(
                             )
                             DropdownMenu(expanded = planningModelMenuOpen, onDismissRequest = { planningModelMenuOpen = false }) {
                                 DropdownMenuItem(text = { Text(inheritLabel) }, onClick = { decompositionModel = ""; planningModelMenuOpen = false })
-                                planModels.forEach { m ->
-                                    DropdownMenuItem(text = { Text(m) }, onClick = { decompositionModel = m; planningModelMenuOpen = false })
+                                if (planIsOpenCode) {
+                                    openCodeModelGroups.forEach { (groupLabel, groupModels) ->
+                                        DropdownMenuItem(
+                                            text = { Text(groupLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary) },
+                                            onClick = {},
+                                            enabled = false,
+                                        )
+                                        groupModels.forEach { m ->
+                                            DropdownMenuItem(text = { Text("  $m") }, onClick = { decompositionModel = m; planningModelMenuOpen = false })
+                                        }
+                                    }
+                                } else {
+                                    planModels.forEach { m ->
+                                        DropdownMenuItem(text = { Text(m) }, onClick = { decompositionModel = m; planningModelMenuOpen = false })
+                                    }
                                 }
                             }
                         }
