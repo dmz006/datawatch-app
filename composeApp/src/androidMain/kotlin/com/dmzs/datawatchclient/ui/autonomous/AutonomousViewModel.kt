@@ -70,6 +70,10 @@ public class AutonomousViewModel(
         val ollamaModels: List<String> = emptyList(),
         /** Model IDs from /api/openwebui/models — populated on load; empty when OpenWebUI not configured. */
         val openWebUiModels: List<String> = emptyList(),
+        /** Flat model ID list from /api/opencode/models — populated on load; empty when unavailable. */
+        val openCodeModels: List<String> = emptyList(),
+        /** Grouped opencode models: providerLabel → model IDs. */
+        val openCodeModelGroups: Map<String, List<String>> = emptyMap(),
         /** Latest scan result for the open PRD (v0.62.0). */
         val scanResult: ScanResultDto? = null,
         val scanLoading: Boolean = false,
@@ -216,17 +220,27 @@ public class AutonomousViewModel(
             val permModesResult: List<String>
             val ollamaResult: List<String>
             val openWebUiResult: List<String>
+            var openCodeModelsResult: List<String> = emptyList()
+            var openCodeGroupsResult: Map<String, List<String>> = emptyMap()
             coroutineScope {
                 val prds = async { transport.listPrds() }
                 val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
                 val permModes = async { transport.listClaudePermissionModes().getOrElse { emptyList() } }
                 val ollama = async { transport.listOllamaModels().getOrElse { emptyList() } }
                 val openWebUi = async { transport.listOpenWebUiModels().getOrElse { emptyList() } }
+                val openCode = async { transport.fetchOpenCodeModels() }
                 prdsResult = prds.await()
                 backendsResult = backends.await()
                 permModesResult = permModes.await()
                 ollamaResult = ollama.await()
                 openWebUiResult = openWebUi.await()
+                openCode.await().onSuccess { resp ->
+                    val groups = resp.models
+                        .groupBy { it.providerLabel.ifBlank { it.provider } }
+                        .mapValues { (_, list) -> list.map { it.id } }
+                    openCodeGroupsResult = groups
+                    openCodeModelsResult = resp.models.map { it.id }.filter { it.isNotBlank() }
+                }
             }
             prdsResult.fold(
                 onSuccess = { dto ->
@@ -238,6 +252,8 @@ public class AutonomousViewModel(
                             permissionModes = permModesResult,
                             ollamaModels = ollamaResult,
                             openWebUiModels = openWebUiResult,
+                            openCodeModels = openCodeModelsResult,
+                            openCodeModelGroups = openCodeGroupsResult,
                         )
                 },
                 onFailure = { err ->

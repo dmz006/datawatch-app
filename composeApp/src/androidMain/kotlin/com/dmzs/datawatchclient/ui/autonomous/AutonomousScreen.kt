@@ -455,6 +455,8 @@ public fun AutonomousScreen(
                 onResetToDraft = { vm.resetToDraft(id) },
                 ollamaModels = state.ollamaModels,
                 openWebUiModels = state.openWebUiModels,
+                openCodeModels = state.openCodeModels,
+                openCodeModelGroups = state.openCodeModelGroups,
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },

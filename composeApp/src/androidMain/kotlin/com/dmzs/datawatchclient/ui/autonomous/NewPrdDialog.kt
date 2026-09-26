@@ -88,6 +88,10 @@ internal fun NewPrdDialog(
     var effortMenuOpen by remember { mutableStateOf(false) }
     var model by remember { mutableStateOf("") }
     var modelMenuOpen by remember { mutableStateOf(false) }
+    var planningBackend by remember { mutableStateOf("") }
+    var planningBackendMenuOpen by remember { mutableStateOf(false) }
+    var planningModel by remember { mutableStateOf("") }
+    var planningModelMenuOpen by remember { mutableStateOf(false) }
 
     // Advanced section
     var advancedOpen by remember { mutableStateOf(false) }
@@ -118,6 +122,14 @@ internal fun NewPrdDialog(
             backend.startsWith("opencode") -> availableModels["opencode"].orEmpty()
             else -> availableModels[backend].orEmpty()
         }
+
+    /** Model names for the currently-selected planning backend. */
+    val planModelsForBackend: List<String> =
+        when {
+            planningBackend.startsWith("opencode") -> availableModels["opencode"].orEmpty()
+            else -> availableModels[planningBackend].orEmpty()
+        }
+    val planIsOpenCode = planningBackend.startsWith("opencode", ignoreCase = true) && openCodeModelGroups.isNotEmpty()
 
     val usingProfile = profile.isNotEmpty() && profile != "__dir__"
 
@@ -198,6 +210,7 @@ internal fun NewPrdDialog(
 
     // Clear model when backend changes to one with no known model list
     LaunchedEffect(backend) { if (modelsForBackend.isEmpty()) model = "" }
+    LaunchedEffect(planningBackend) { if (planModelsForBackend.isEmpty()) planningModel = "" }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -490,6 +503,80 @@ internal fun NewPrdDialog(
                             }
                         }
                     }
+
+                    // ── Planning backend dropdown ────────────────────────────
+                    ExposedDropdownMenuBox(
+                        expanded = planningBackendMenuOpen,
+                        onExpandedChange = { planningBackendMenuOpen = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = planningBackend.ifEmpty { inheritLabel },
+                            onValueChange = {},
+                            label = { Text(stringResource(R.string.prd_detail_planning_backend)) },
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = planningBackendMenuOpen) },
+                        )
+                        DropdownMenu(expanded = planningBackendMenuOpen, onDismissRequest = { planningBackendMenuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text(inheritLabel) },
+                                onClick = { planningBackend = ""; planningBackendMenuOpen = false },
+                            )
+                            backendOptions.forEach { b ->
+                                DropdownMenuItem(
+                                    text = { Text(b) },
+                                    onClick = { planningBackend = b; planningBackendMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+
+                    // ── Planning model dropdown ──────────────────────────────
+                    if (planModelsForBackend.isNotEmpty()) {
+                        ExposedDropdownMenuBox(
+                            expanded = planningModelMenuOpen,
+                            onExpandedChange = { planningModelMenuOpen = it },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = planningModel.ifEmpty { inheritLabel },
+                                onValueChange = {},
+                                label = { Text(stringResource(R.string.prd_detail_planning_model)) },
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = planningModelMenuOpen) },
+                            )
+                            DropdownMenu(expanded = planningModelMenuOpen, onDismissRequest = { planningModelMenuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(inheritLabel) },
+                                    onClick = { planningModel = ""; planningModelMenuOpen = false },
+                                )
+                                if (planIsOpenCode) {
+                                    openCodeModelGroups.forEach { (groupLabel, groupModels) ->
+                                        DropdownMenuItem(
+                                            text = { Text(groupLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary) },
+                                            onClick = {},
+                                            enabled = false,
+                                        )
+                                        groupModels.forEach { m ->
+                                            DropdownMenuItem(
+                                                text = { Text("  $m") },
+                                                onClick = { planningModel = m; planningModelMenuOpen = false },
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    planModelsForBackend.forEach { m ->
+                                        DropdownMenuItem(
+                                            text = { Text(m) },
+                                            onClick = { planningModel = m; planningModelMenuOpen = false },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // ── Advanced section ─────────────────────────────────────────
@@ -629,6 +716,8 @@ internal fun NewPrdDialog(
                                 backend = backend.ifBlank { null },
                                 effort = effort.ifBlank { null },
                                 model = model.ifBlank { null },
+                                decompositionProfile = planningBackend.ifBlank { null },
+                                decompositionModel = planningModel.ifBlank { null },
                                 type = prdType.ifBlank { null },
                                 guidedMode = if (guidedMode) true else null,
                                 memorySeed = memorySeed,
