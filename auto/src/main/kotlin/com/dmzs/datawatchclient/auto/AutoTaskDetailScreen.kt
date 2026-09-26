@@ -113,7 +113,22 @@ public class AutoTaskDetailScreen(
             .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
     }.getOrElse { MAX_ROWS_FALLBACK }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
+        buildTemplate()
+    } catch (e: Throwable) {
+        val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: e::class.simpleName ?: "Unknown error").build())
+            .addItem(Row.Builder().setTitle("Close").addText("Tap to go back").setOnClickListener { screenManager.pop() }.build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle(taskTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
+            .build()
+    }
+
+    private fun buildTemplate(): Template {
         val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
         val limit = listLimit()
         val items = ItemList.Builder()
