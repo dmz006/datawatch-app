@@ -111,7 +111,24 @@ public class AutoStoryDetailScreen(
             .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
     }.getOrElse { MAX_ROWS_FALLBACK }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
+        buildTemplate()
+    } catch (e: Throwable) {
+        // Keep ListTemplate on error — same pattern as AutoPrdDetailScreen.
+        // An uncaught exception here manifests as "can't do that while driving" on Samsung gearhead.
+        val storyTitle = story.title.take(MAX_TITLE).ifBlank { "Story" }
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: e::class.simpleName ?: "Unknown error").build())
+            .addItem(Row.Builder().setTitle("Close").addText("Tap to go back").setOnClickListener { screenManager.pop() }.build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle(storyTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
+            .build()
+    }
+
+    private fun buildTemplate(): Template {
         val storyTitle = story.title.take(MAX_TITLE).ifBlank { "Story" }
         val prdStatusLower = prdStatus.lowercase()
         val isReview = prdStatusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
