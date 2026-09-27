@@ -313,7 +313,6 @@ public class AutoMonitorScreen(
 }
 
 private const val PROGRESS_BAR_WIDTH: Int = 10
-private const val NODE_BAR_WIDTH: Int = 10  // expanded from 6 — each metric now on its own line
 
 /** Renders a compact progress bar: "▓▓▓░░░░░░░ 28%" (10 wide). */
 private fun progressBar(
@@ -342,15 +341,15 @@ private fun addDetailRows(
             nodeRows += buildComputeNodeRows(nodeDto, detail)
         }
 
-        // Disk row from server-level StatsDto — shown once after all node rows.
+        // Disk is server-level only — the compute-node detail API does not expose per-node
+        // disk usage. One "Server Disk" row covers the whole server after all node rows.
         val diskRow = buildDiskRow(s)
 
-        // Budget: 5 slots before Sessions. Fill node rows first, then disk if space.
+        // Budget: 5 slots before Sessions. Reserve 1 for disk if available.
         val budget = MAX_DETAIL_ROWS - 1
         val nodeSlots = if (diskRow != null) budget - 1 else budget
         nodeRows.take(nodeSlots).forEach { items.addItem(it) }
-        if (diskRow != null && nodeRows.size < budget) items.addItem(diskRow)
-        else if (diskRow != null) items.addItem(diskRow) // still add if it fits
+        if (diskRow != null) items.addItem(diskRow)
     } else {
         // No compute nodes: legacy flat rows (CPU, Mem, Disk, GPU, Uptime).
         val load1 = s.cpuLoad1
@@ -532,14 +531,14 @@ private fun buildComputeNodeRows(nodeDto: ComputeNodeDto, detail: ComputeNodeDet
     return rows
 }
 
-/** Disk row from server-level StatsDto — null when no disk data available. */
+/** Server-level disk row — API does not expose per-node disk; one row covers the whole server. */
 private fun buildDiskRow(s: StatsDto): Row? {
     val diskUsed = s.diskUsed ?: return null
     val diskTotal = s.diskTotal ?: return null
     if (diskTotal <= 0) return null
     val diskPct = (diskUsed * PCT_MULTIPLIER / diskTotal).toInt()
     val builder = Row.Builder()
-        .setTitle("Disk")
+        .setTitle("Server Disk")
         .addText("${progressBar(diskPct)}  ${fmt(diskUsed)} / ${fmt(diskTotal)}")
     if (s.swapTotal > 0) {
         val swapPct = (s.swapUsed * PCT_MULTIPLIER / s.swapTotal).toInt()

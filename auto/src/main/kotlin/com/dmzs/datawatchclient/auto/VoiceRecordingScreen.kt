@@ -223,7 +223,6 @@ public class VoiceRecordingScreen(
     private fun buildConfirmTemplate(transcript: String): Template {
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
-        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         val screenTitle = when {
             taskId != null -> "$sessionTitle · Update Task"
             storyId != null -> "$sessionTitle · Update Story"
@@ -231,25 +230,25 @@ public class VoiceRecordingScreen(
             else -> "$sessionTitle · Voice"
         }
         val preview = transcript.take(MAX_TRANSCRIPT_PREVIEW).ifBlank { "No transcription" }
-        // MessageTemplate — see buildListeningTemplate for the driving-mode rationale.
-        // ActionStrip: chat = Send (driving-safe icon), voice = re-record, close = cancel.
-        // addAction() "Send" and "Retry" are parked-only (MessageTemplate.addAction is always
-        // parked-only in category.MESSAGING), giving labeled buttons when parked for clarity.
-        return MessageTemplate.Builder("✓ $preview")
+        // MESSAGING category driving-mode constraint: Samsung gearhead enforces ≤2 total actions
+        // (ActionStrip + addAction combined). Using .addAction() here would push the total past 2
+        // and trigger "can't do that while driving." ActionStrip must be icon-only (no setTitle)
+        // while driving. BACK header acts as cancel — no third action needed.
+        //
+        // Layout: body = transcript + tap-guide. ActionStrip: ✉ = send, 🎤 = re-record.
+        return MessageTemplate.Builder("\"$preview\"\n\nTap ✉ to send  ·  tap 🎤 to re-record  ·  ← to cancel")
             .setTitle(screenTitle)
             .setHeaderAction(Action.BACK)
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(
-                        Action.Builder().setIcon(chatIcon).setTitle("Send").setOnClickListener { onSend(transcript) }.build(),
+                        Action.Builder().setIcon(chatIcon).setOnClickListener { onSend(transcript) }.build(),
                     )
                     .addAction(
-                        Action.Builder().setIcon(closeIcon).setTitle("Cancel").setOnClickListener { screenManager.pop() }.build(),
+                        Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build(),
                     )
                     .build(),
             )
-            .addAction(Action.Builder().setTitle("Send").setOnClickListener { onSend(transcript) }.build())
-            .addAction(Action.Builder().setTitle("Retry").setOnClickListener { startListening() }.build())
             .build()
     }
 
