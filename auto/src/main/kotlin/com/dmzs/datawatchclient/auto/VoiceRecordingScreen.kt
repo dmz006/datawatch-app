@@ -241,10 +241,10 @@ public class VoiceRecordingScreen(
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(
-                        Action.Builder().setIcon(chatIcon).setOnClickListener { onSend(transcript) }.build(),
+                        Action.Builder().setIcon(chatIcon).setTitle("Send").setOnClickListener { onSend(transcript) }.build(),
                     )
                     .addAction(
-                        Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build(),
+                        Action.Builder().setIcon(closeIcon).setTitle("Cancel").setOnClickListener { screenManager.pop() }.build(),
                     )
                     .build(),
             )
