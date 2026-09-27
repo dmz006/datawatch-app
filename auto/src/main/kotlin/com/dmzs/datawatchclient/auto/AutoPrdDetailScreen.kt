@@ -222,31 +222,23 @@ public class AutoPrdDetailScreen(
             .build()
     }
 
-    /** 2-icon ActionStrip for story detail mode: sessions (back to list) + mic. */
+    /** 2-icon ActionStrip for story detail mode: speaker (TTS) + close (back to list). */
     private fun buildStoryActionStrip(story: PrdStoryDto, storyTitle: String): ActionStrip {
-        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
-        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         return ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setIcon(sessionsIcon)
-                    .setOnClickListener { selectedStory = null; invalidate() }
+                    .setIcon(speakerIcon)
+                    .setOnClickListener {
+                        AutoTts.speak(carContext, AutoStoryDetailScreen.buildStoryBody(story))
+                    }
                     .build(),
             )
             .addAction(
                 Action.Builder()
-                    .setIcon(voiceIcon)
-                    .setOnClickListener {
-                        screenManager.push(
-                            VoiceRecordingScreen(
-                                carContext,
-                                sessionId = "",
-                                sessionTitle = storyTitle,
-                                prdId = prdId,
-                                storyId = story.id,
-                            ),
-                        )
-                    }
+                    .setIcon(closeIcon)
+                    .setOnClickListener { selectedStory = null; invalidate() }
                     .build(),
             )
             .build()
