@@ -11,7 +11,6 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -20,6 +19,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.DecisionDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
+import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,19 +32,28 @@ import kotlinx.coroutines.launch
 /**
  * Full PRD detail screen for Android Auto — always returns ListTemplate.
  *
- * All states (loading, error, normal) use ListTemplate so the MESSAGING-path
- * host never sees a template without its required 2-icon ActionStrip. Using
- * MessageTemplate for intermediate states caused "cannot do while driving"
- * because the host rejected templates that lacked a compliant ActionStrip.
+ * All states (loading, error, normal, story detail) use ListTemplate so the
+ * MESSAGING-path host never sees a template-type change across invalidate().
  *
- * Row layout (normal state):
+ * Story detail is handled IN-PLACE via [selectedStory] — no new screen push.
+ * Tapping a story row sets [selectedStory] and calls invalidate(); the sessions
+ * icon in the ActionStrip returns to PRD overview mode the same way. This
+ * avoids the Samsung gearhead "can't do that while driving" rejection that
+ * occurred when pushing [AutoStoryDetailScreen] as a new screen.
+ *
+ * Row layout — PRD overview mode:
  *   Lifecycle action rows (Approve/Stop/Run/Decompose) — tappable, driving-safe
  *   PRD overview row (status + progress + spec snippet) — display only
- *   Story rows — tappable → AutoStoryDetailScreen (depth 4)
+ *   Story rows — tappable → enters story-detail mode in-place
+ *
+ * Row layout — story detail mode:
+ *   Lifecycle rows (Approve, Reset Task) — tappable
+ *   Story overview row (status + description) — display only
+ *   Task rows — tappable → AutoTaskDetailScreen (depth 4)
  *
  * ActionStrip (2 icon-only, MESSAGING limit — required on ALL templates):
- *   slot 1: speaker → TTS reads full PRD body
- *   slot 2: mic    → VoiceRecordingScreen
+ *   PRD mode:   slot 1 = speaker (TTS),        slot 2 = mic (VoiceRecordingScreen)
+ *   Story mode: slot 1 = sessions (back to list), slot 2 = mic (VoiceRecordingScreen)
  */
 public class AutoPrdDetailScreen(
     carContext: CarContext,
@@ -57,6 +66,9 @@ public class AutoPrdDetailScreen(
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastHash = -1
+
+    /** Non-null when the user has tapped a story row — renders story detail in-place. */
+    private var selectedStory: PrdStoryDto? = null
 
     init {
         scope.launch { load(); invalidate() }
@@ -78,7 +90,9 @@ public class AutoPrdDetailScreen(
     private suspend fun pollLoop() {
         while (scope.isActive) {
             load()
-            val newHash = prd.hashCode() xor (error?.hashCode() ?: 0)
+            // Keep selectedStory in sync with fresh server data.
+            selectedStory = selectedStory?.id?.let { id -> prd?.stories?.firstOrNull { it.id == id } }
+            val newHash = prd.hashCode() xor (error?.hashCode() ?: 0) xor (selectedStory?.hashCode() ?: 0)
             if (newHash != lastHash) {
                 lastHash = newHash
                 invalidate()
@@ -152,13 +166,37 @@ public class AutoPrdDetailScreen(
         }
     }
 
+    private fun fireResetTask(task: PrdTaskDto) {
+        scope.launch {
+            try {
+                val profile = resolveActiveProfile() ?: return@launch
+                AutoServiceLocator.transportFor(profile).resetPrdTask(prdId, task.id).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Task reset", CarToast.LENGTH_SHORT).show()
+                        load()
+                        invalidate()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Reset failed: ${err.message ?: err::class.simpleName}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+            } catch (e: Throwable) {
+                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun listLimit(): Int = runCatching {
         carContext.getCarService(ConstraintManager::class.java)
             .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
     }.getOrElse { MAX_ROWS_FALLBACK }
 
-    /** 2-icon ActionStrip required on ALL templates on MESSAGING path while driving. */
-    private fun buildActionStrip(prdName: String): ActionStrip {
+    /** 2-icon ActionStrip for PRD overview mode: speaker + mic. */
+    private fun buildPrdActionStrip(prdName: String): ActionStrip {
         val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         return ActionStrip.Builder()
@@ -184,6 +222,36 @@ public class AutoPrdDetailScreen(
             .build()
     }
 
+    /** 2-icon ActionStrip for story detail mode: sessions (back to list) + mic. */
+    private fun buildStoryActionStrip(story: PrdStoryDto, storyTitle: String): ActionStrip {
+        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
+        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
+        return ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(sessionsIcon)
+                    .setOnClickListener { selectedStory = null; invalidate() }
+                    .build(),
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(voiceIcon)
+                    .setOnClickListener {
+                        screenManager.push(
+                            VoiceRecordingScreen(
+                                carContext,
+                                sessionId = "",
+                                sessionTitle = storyTitle,
+                                prdId = prdId,
+                                storyId = story.id,
+                            ),
+                        )
+                    }
+                    .build(),
+            )
+            .build()
+    }
+
     override fun onGetTemplate(): Template = try {
         buildTemplate()
     } catch (e: Throwable) {
@@ -199,7 +267,7 @@ public class AutoPrdDetailScreen(
             .setTitle("Automata")
             .setHeaderAction(Action.BACK)
             .setSingleList(items)
-            .setActionStrip(buildActionStrip("Automata"))
+            .setActionStrip(buildPrdActionStrip("Automata"))
             .build()
     }
 
@@ -207,7 +275,14 @@ public class AutoPrdDetailScreen(
         val prdName = prd?.title?.takeIf { it.isNotBlank() }
             ?: prd?.name?.takeIf { it.isNotBlank() }
             ?: "Plan"
-        val strip = buildActionStrip(prdName)
+
+        // Story detail mode — in-place, no screen push.
+        val story = selectedStory
+        if (story != null && prd != null) {
+            return buildStoryDetailTemplate(story, prdName)
+        }
+
+        val strip = buildPrdActionStrip(prdName)
         val limit = listLimit()
         val items = ItemList.Builder()
 
@@ -299,7 +374,7 @@ public class AutoPrdDetailScreen(
             rowCount++
         }
 
-        // Story rows — tappable, push AutoStoryDetailScreen (depth 4)
+        // Story rows — tappable; tap → story detail in-place (no screen push)
         if (currentPrd.stories.isEmpty() && rowCount < limit) {
             items.addItem(Row.Builder().setTitle("No stories yet").addText("Plan not yet decomposed").build())
             rowCount++
@@ -313,9 +388,8 @@ public class AutoPrdDetailScreen(
                             position = idx + 1,
                             story = story,
                             onClick = {
-                                screenManager.push(
-                                    AutoStoryDetailScreen(carContext, currentPrd.id, currentPrd.status, story),
-                                )
+                                selectedStory = story
+                                invalidate()
                             },
                         ),
                     )
@@ -330,11 +404,112 @@ public class AutoPrdDetailScreen(
         }
     }
 
+    /** Renders story detail in-place within this screen (no new screen push). */
+    private fun buildStoryDetailTemplate(story: PrdStoryDto, prdName: String): Template {
+        val storyTitle = story.title.take(MAX_TITLE).ifBlank { "Story" }
+        val strip = buildStoryActionStrip(story, storyTitle)
+        val limit = listLimit()
+        val items = ItemList.Builder()
+        var rowCount = 0
+
+        // Lifecycle rows
+        val prdStatusLower = (prd?.status ?: "").lowercase()
+        val isReview = prdStatusLower in setOf("needs_review", "awaiting_review", "revisions_asked")
+        val firstFailed = story.tasks.firstOrNull { it.status == "failed" }
+
+        if (isReview && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder().setTitle("✓ Approve").addText("Tap to approve the full plan")
+                    .setOnClickListener { fire("approve") }.build(),
+            )
+            rowCount++
+        }
+        if (firstFailed != null && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder().setTitle("⟳ Reset failed task").addText(firstFailed.task.take(MAX_TASK_CHARS))
+                    .setOnClickListener { fireResetTask(firstFailed) }.build(),
+            )
+            rowCount++
+        }
+
+        // Story overview row (not tappable)
+        if (rowCount < limit) {
+            val overviewTitle = buildString {
+                append(story.status.ifBlank { "unknown" })
+                if (story.tasks.isNotEmpty()) {
+                    val done = story.tasks.count { it.status in DONE_STATUSES }
+                    append("  ·  $done/${story.tasks.size} tasks")
+                    val failed = story.tasks.count { it.status == "failed" }
+                    if (failed > 0) append(" · $failed failed")
+                }
+            }
+            val row = Row.Builder().setTitle(overviewTitle)
+            story.description?.take(MAX_DESC_CHARS)?.takeIf { it.isNotBlank() }?.let { row.addText(it) }
+            items.addItem(row.build())
+            rowCount++
+        }
+
+        // Task rows — tappable → AutoTaskDetailScreen (depth 4)
+        if (story.tasks.isEmpty() && rowCount < limit) {
+            items.addItem(Row.Builder().setTitle("No tasks").addText("Story has no tasks yet").build())
+        } else {
+            val remaining = (limit - rowCount - 1).coerceAtLeast(0)
+            val visible = story.tasks.take(remaining)
+            visible.forEachIndexed { idx, task ->
+                if (rowCount < limit) {
+                    items.addItem(buildStoryTaskRow(idx + 1, task))
+                    rowCount++
+                }
+            }
+            val overflow = story.tasks.size - visible.size
+            if (overflow > 0 && rowCount < limit) {
+                items.addItem(
+                    Row.Builder().setTitle("… $overflow more tasks")
+                        .addText("Showing top ${visible.size}").build(),
+                )
+            }
+        }
+
+        return ListTemplate.Builder()
+            .setTitle(storyTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(strip)
+            .build()
+    }
+
+    private fun buildStoryTaskRow(position: Int, task: PrdTaskDto): Row {
+        val marker = when (task.status) {
+            "complete", "completed", "done" -> "✓"
+            "in_progress" -> "◉"
+            "verifying", "running_tests" -> "⟳"
+            "failed" -> "✗"
+            "blocked" -> "⛔"
+            "cancelled", "canceled" -> "○"
+            else -> "○"
+        }
+        val title = "$position. $marker ${task.task.take(MAX_TASK_CHARS)}"
+        val detail = buildString {
+            append(task.status.replace('_', ' '))
+            task.error?.takeIf { it.isNotBlank() && task.status == "failed" }
+                ?.let { append("  ·  ${it.take(60)}") }
+            if (task.filesTouched.isNotEmpty()) append("  ·  ${task.filesTouched.size} files")
+        }
+        return Row.Builder()
+            .setTitle(title)
+            .addText(detail)
+            .setOnClickListener {
+                screenManager.push(AutoTaskDetailScreen(carContext, prdId, task))
+            }
+            .build()
+    }
+
     internal companion object {
         const val POLL_MS = 15_000L
         const val MAX_TITLE = 40
         const val MAX_STORY_TITLE = 52
         const val MAX_TASK_CHARS = 62
+        const val MAX_DESC_CHARS = 120
         const val MAX_SPEC_CHARS = 120
         const val MAX_PENDING_SHOWN = 4
         const val PROGRESS_WIDTH = 10
