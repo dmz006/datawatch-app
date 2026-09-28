@@ -4,10 +4,14 @@ package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
-import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -24,25 +28,17 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * PRD detail screen — MESSAGING-category-safe read-only reader.
+ * PRD entry screen — ListTemplate showing selectable rows.
  *
- * Samsung gearhead rejects ListTemplate in MESSAGING category while driving and also
- * rejects any push of a ListTemplate from a MessageTemplate-based screen. This screen
- * uses MessageTemplate exclusively so it can be reached from any MESSAGING-path parent.
+ * Row 0: "Overview" — PRD status summary → [AutoPrdSummaryScreen] (MessageTemplate, depth 3)
+ * Rows 1..N: Story rows → [AutoPrdStoriesScreen] opened to that story's detail (depth 3)
  *
- * Navigation is index-based; no new screen pushes occur here:
- *   - storyIndex == -1  →  PRD overview (status + story list as body text)
- *   - storyIndex >= 0   →  story detail (story + task list as body text)
- *
- * ActionStrip (always 2 icon-only actions — Samsung MESSAGING cap):
- *   Slot 1: speaker (TTS reads current body)
- *   Slot 2: sessions (advance — overview→story0, storyN→storyN+1, last→overview)
- *
- * BACK header action pops the screen back to the automata list.
- * The close icon in story mode returns to overview (storyIndex = -1).
- *
- * No action buttons (approve/reject/run) — stripped for driving compliance.
- * Re-add action buttons only after in-car browsing is verified stable.
+ * Samsung MESSAGING category notes:
+ *   - ListTemplate is safe here; it is pushed FROM AutoAutomataScreen (also ListTemplate).
+ *   - The only child pushes are ListTemplate (AutoPrdStoriesScreen) and
+ *     MessageTemplate (AutoPrdSummaryScreen) — both allowed from ListTemplate.
+ *   - ActionStrip: 1 icon-only action (speaker TTS) — well within the 2-action cap.
+ *   - Template type is always ListTemplate — no type change on invalidate().
  */
 public class AutoPrdDetailScreen(
     carContext: CarContext,
@@ -55,9 +51,6 @@ public class AutoPrdDetailScreen(
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastHash = -1
-
-    /** -1 = PRD overview; 0..N-1 = story at that index. */
-    private var storyIndex: Int = -1
 
     init {
         scope.launch { load(); invalidate() }
@@ -79,10 +72,7 @@ public class AutoPrdDetailScreen(
     private suspend fun pollLoop() {
         while (scope.isActive) {
             load()
-            // If stories shrink below current index, reset to overview.
-            val stories = prd?.stories ?: emptyList()
-            if (storyIndex >= stories.size) storyIndex = -1
-            val newHash = prd.hashCode() xor (error?.hashCode() ?: 0) xor storyIndex
+            val newHash = prd.hashCode() xor (error?.hashCode() ?: 0)
             if (newHash != lastHash) {
                 lastHash = newHash
                 invalidate()
@@ -105,146 +95,125 @@ public class AutoPrdDetailScreen(
         }
     }
 
-    // ── Template building ──────────────────────────────────────────────────
-
     override fun onGetTemplate(): Template = try {
-        val stories = prd?.stories ?: emptyList()
-        val title = when {
-            isLoading -> "Loading…"
-            storyIndex in stories.indices ->
-                "[${storyIndex + 1}/${stories.size}] ${stories[storyIndex].title.take(MAX_TITLE)}"
-            else ->
-                prd?.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Plan"
+        val prdTitle = prd?.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Plan"
+        val items = ItemList.Builder()
+        when {
+            isLoading -> items.addItem(Row.Builder().setTitle("Loading…").addText("Fetching plan…").build())
+            error != null -> items.addItem(Row.Builder().setTitle("Error").addText(error ?: "").build())
+            else -> buildRows(items)
         }
-        MessageTemplate.Builder(buildBody())
-            .setTitle(title)
+        val speakerIcon = CarIcon.Builder(
+            IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)
+        ).build()
+        ListTemplate.Builder()
+            .setTitle(prdTitle)
             .setHeaderAction(Action.BACK)
-            .setActionStrip(buildActionStrip())
-            .build()
-    } catch (e: Throwable) {
-        // Fallback — always MessageTemplate so MESSAGING host accepts it.
-        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
-        MessageTemplate.Builder("Error: ${e.message ?: e::class.simpleName ?: "Unknown error"}")
-            .setTitle("Plan")
-            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
             .setActionStrip(
                 ActionStrip.Builder()
-                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {}.build())
-                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(speakerIcon)
+                            .setOnClickListener {
+                                prd?.let { p ->
+                                    val done = p.stories.count { it.status.lowercase() in DONE_STATUSES }
+                                    AutoTts.speak(
+                                        carContext,
+                                        "${p.title}. Status: ${p.status}. $done of ${p.stories.size} stories done.",
+                                    )
+                                }
+                            }
+                            .build(),
+                    )
                     .build(),
             )
             .build()
-    }
-
-    /**
-     * 2-icon ActionStrip — MESSAGING driving cap.
-     *
-     * Overview mode: speaker (TTS) + sessions (enter story 0)
-     * Story mode:    speaker (TTS) + sessions (next story; last → back to overview)
-     */
-    private fun buildActionStrip(): ActionStrip {
-        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
-        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
-        val stories = prd?.stories ?: emptyList()
-        return ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(speakerIcon)
-                    .setOnClickListener { AutoTts.speak(carContext, buildBody()) }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(sessionsIcon)
-                    .setOnClickListener {
-                        storyIndex = when {
-                            stories.isEmpty() -> -1
-                            storyIndex < 0 -> 0
-                            storyIndex < stories.size - 1 -> storyIndex + 1
-                            else -> -1 // past last story → back to overview
-                        }
-                        invalidate()
-                    }
-                    .build(),
-            )
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("Plan")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 
-    // ── Body text builders ─────────────────────────────────────────────────
-
-    private fun buildBody(): String = when {
-        isLoading -> "Loading plan…"
-        error != null -> "Error: $error"
-        prd == null -> "Plan not found."
-        storyIndex in (prd?.stories ?: emptyList()).indices -> buildStoryBody()
-        else -> buildOverviewBody()
-    }
-
-    private fun buildOverviewBody(): String {
-        val p = prd ?: return "No data."
+    private fun buildRows(items: ItemList.Builder) {
+        val p = prd ?: return
         val stories = p.stories
-        // Keep body short — MessageTemplate has a ~320-char effective limit on some hosts.
-        // Stories list comes first so it's never truncated by a long spec.
-        // Spec is omitted here; it's available via TTS (speaker icon).
-        return buildString {
-            val done = stories.count { it.status.lowercase() in DONE_STATUSES }
-            append("${p.status}  ·  $done/${stories.size} done\n\n")
-            if (stories.isEmpty()) {
-                append("No stories yet.\nTap ← to go back.")
-            } else {
-                stories.take(MAX_STORY_LIST).forEachIndexed { i, s ->
-                    val m = storyMarker(s.status)
-                    append("$m ${i + 1}. ${s.title.take(MAX_STORY_TITLE)}\n")
-                }
-                if (stories.size > MAX_STORY_LIST) append("… ${stories.size - MAX_STORY_LIST} more\n")
-                append("\nTap sessions ▶ to read story 1")
-            }
+        val done = stories.count { it.status.lowercase() in DONE_STATUSES }
+
+        // Overview row — selectable, shows PRD spec/description on tap.
+        items.addItem(
+            Row.Builder()
+                .setTitle("Overview")
+                .addText("${p.status}  ·  $done/${stories.size} done")
+                .setOnClickListener { screenManager.push(AutoPrdSummaryScreen(carContext, p)) }
+                .build(),
+        )
+
+        if (stories.isEmpty()) {
+            items.addItem(
+                Row.Builder().setTitle("No stories yet").addText("Check back after planning completes.").build(),
+            )
+            return
+        }
+
+        val listMax = runCatching {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        }.getOrElse { MAX_ROWS_FALLBACK }
+
+        // Reserve 1 slot for overview and 1 for the overflow row.
+        val visible = stories.take((listMax - 2).coerceAtLeast(1))
+        val overflow = stories.size - visible.size
+
+        visible.forEachIndexed { idx, story ->
+            items.addItem(buildStoryRow(idx + 1, story, p))
+        }
+        if (overflow > 0) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("… $overflow more stories")
+                    .addText("Showing top ${visible.size}")
+                    .build(),
+            )
         }
     }
 
-    private fun buildStoryBody(): String {
-        val stories = prd?.stories ?: return "No data."
-        val story = stories.getOrNull(storyIndex) ?: return "Story not found."
-        val tasks = story.tasks
-        val hasNext = storyIndex < stories.size - 1
-        // Keep body short — MessageTemplate body limit ~320 chars on some hosts.
-        return buildString {
-            val done = tasks.count { it.status.lowercase() in DONE_STATUSES }
-            val running = tasks.count { it.status.lowercase() in setOf("in_progress", "running", "active") }
-            val failed = tasks.count { it.status.lowercase() == "failed" }
-            append("${story.status}  ·  $done/${tasks.size} tasks")
-            if (running > 0) append("  ·  $running running")
-            if (failed > 0) append("  ·  $failed failed")
-            append("\n")
-            if (tasks.isNotEmpty()) {
-                tasks.take(MAX_TASK_LIST).forEach { t ->
-                    val m = taskMarker(t.status)
-                    append("$m ${t.task.take(MAX_TASK_CHARS)}\n")
-                }
-                if (tasks.size > MAX_TASK_LIST) append("… ${tasks.size - MAX_TASK_LIST} more\n")
-            }
-            append("\nTap sessions ▶ ${if (hasNext) "story ${storyIndex + 2}" else "back to overview"}")
+    private fun buildStoryRow(num: Int, story: PrdStoryDto, prd: PrdDto): Row {
+        val marker = storyMarker(story.status)
+        val taskDone = story.tasks.count { it.status.lowercase() in DONE_STATUSES }
+        val color = when (story.status.lowercase()) {
+            "awaiting_approval", "needs_review" -> CarColor.RED
+            "in_progress", "running", "active" -> CarColor.GREEN
+            else -> CarColor.DEFAULT
         }
+        return Row.Builder()
+            .setTitle(colored("$marker $num. ${story.title.take(MAX_STORY_TITLE)}", color))
+            .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks")
+            .setOnClickListener {
+                // Open AutoPrdStoriesScreen directly to this story's detail view.
+                screenManager.push(AutoPrdStoriesScreen(carContext, prd, story))
+            }
+            .build()
     }
 
     internal companion object {
         const val POLL_MS = 15_000L
         const val MAX_TITLE = 30
         const val MAX_STORY_TITLE = 36
-        const val MAX_TASK_CHARS = 55
-        const val MAX_DESC_CHARS = 300
-        const val MAX_SPEC_CHARS = 200
-        const val MAX_STORY_LIST = 12
-        const val MAX_TASK_LIST = 15
+        const val MAX_ROWS_FALLBACK = 5
 
-        private val DONE_STATUSES = setOf("complete", "completed", "done")
+        val DONE_STATUSES = setOf("complete", "completed", "done")
 
         fun storyMarker(status: String): String = when (status.lowercase()) {
             "complete", "completed", "done" -> "✓"
             "running", "active", "in_progress" -> "◉"
             "failed", "error" -> "✗"
-            "needs_review", "awaiting_review" -> "?"
+            "needs_review", "awaiting_review", "awaiting_approval" -> "⚠"
             else -> "○"
         }
 
@@ -252,26 +221,7 @@ public class AutoPrdDetailScreen(
             "complete", "completed", "done" -> "✓"
             "in_progress" -> "◉"
             "failed", "error" -> "✗"
-            "verifying", "running_tests" -> "⟳"
-            "blocked" -> "⛔"
             else -> "○"
-        }
-
-        /** Legacy helper used by [AutoPrdStoriesScreen] — returns body text for a story. */
-        fun buildStoryBody(story: PrdStoryDto): String {
-            val tasks = story.tasks
-            return buildString {
-                append("${story.status}")
-                if (tasks.isNotEmpty()) {
-                    val done = tasks.count { it.status.lowercase() in DONE_STATUSES }
-                    append("  ·  $done/${tasks.size} tasks")
-                }
-                story.description?.takeIf { it.isNotBlank() }?.let { append("\n\n${it.take(400)}") }
-                if (tasks.isNotEmpty()) {
-                    append("\n\nTasks:\n")
-                    tasks.forEach { t -> append("${taskMarker(t.status)} ${t.task.take(MAX_TASK_CHARS)}\n") }
-                }
-            }
         }
     }
 }
