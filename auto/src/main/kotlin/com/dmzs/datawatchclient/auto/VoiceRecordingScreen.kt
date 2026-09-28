@@ -221,19 +221,18 @@ public class VoiceRecordingScreen(
     }
 
     private fun buildConfirmTemplate(transcript: String): Template {
-        val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
+        val sendIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_send)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val preview = transcript.take(MAX_TRANSCRIPT_PREVIEW).ifBlank { "No transcription" }
         // MESSAGING category driving-mode constraint: Samsung gearhead enforces ≤2 total actions.
-        // Action instructions go in the TITLE (most prominent text) so the user sees them immediately.
-        // ActionStrip: ✉ (chat) = send, 🎤 (voice) = re-record. BACK header = cancel.
+        // ActionStrip: → (send) = send, 🎤 (voice) = re-record. BACK header = cancel.
         return MessageTemplate.Builder("\"$preview\"")
-            .setTitle("Tap ✉ to send  ·  🎤 to re-record  ·  ← cancel")
+            .setTitle("Tap → to send  ·  🎤 to re-record  ·  ← cancel")
             .setHeaderAction(Action.BACK)
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(
-                        Action.Builder().setIcon(chatIcon).setOnClickListener { onSend(transcript) }.build(),
+                        Action.Builder().setIcon(sendIcon).setOnClickListener { onSend(transcript) }.build(),
                     )
                     .addAction(
                         Action.Builder().setIcon(voiceIcon).setOnClickListener { startListening() }.build(),
