@@ -38,8 +38,9 @@ public class SessionStatsViewModel(
 
     private var pollJob: Job? = null
 
-    public fun updateComputeNodeRef(ref: String?) {
+    public fun updateComputeNodeRef(ref: String?, backendFamily: String? = null) {
         computeNodeRef = ref
+        if (backendFamily != null) this.backendFamily = backendFamily
         computeNodeRefResolved = true
     }
 
