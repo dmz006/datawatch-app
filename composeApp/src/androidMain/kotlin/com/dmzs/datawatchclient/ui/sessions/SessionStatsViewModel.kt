@@ -30,6 +30,7 @@ public class SessionStatsViewModel(
     private val cpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     private val rssBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     @Volatile private var computeNodeRef: String? = null
+    @Volatile private var backendFamily: String? = null
     @Volatile private var computeNodeRefResolved = false
 
     private val _state = MutableStateFlow(UiState())
@@ -64,13 +65,24 @@ public class SessionStatsViewModel(
         if (!computeNodeRefResolved) {
             transport.listSessions().getOrNull()?.firstOrNull { it.id == sessionId }?.let { session ->
                 computeNodeRef = session.computeNodeRef
+                backendFamily = session.backend
             }
             computeNodeRefResolved = true
         }
-        transport.getSessionEnvelopes(sessionId).onSuccess { envelopes ->
+        // Use getAllEnvelopes (no session_id filter) — the server groups envelopes by
+        // backend/container, never by individual session. Match the PWA's two-step
+        // approach: session-kind first (exact id), then backend-kind by backend_family.
+        transport.getAllEnvelopes().onSuccess { envelopes ->
+            val bf = backendFamily
             val env =
-                envelopes.firstOrNull { it.kind == "session" }
-                    ?: envelopes.firstOrNull()
+                envelopes.firstOrNull { it.kind == "session" && it.id == "session:$sessionId" }
+                    ?: if (bf != null) {
+                        envelopes.firstOrNull {
+                            it.kind == "backend" && (it.id == "backend:$bf" || it.id == "backend:$bf-docker")
+                        }
+                    } else {
+                        null
+                    }
                     ?: return
             push(cpuBuf, env.cpuPct.toFloat())
             push(rssBuf, env.rssBytes.toFloat())
