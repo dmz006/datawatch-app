@@ -98,6 +98,38 @@ public class AutoMonitorScreen(
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val MAX_ROWS: Int = 5
+
+        /** Deduplicate compute nodes to one entry per unique physical host (by address hostname). */
+        fun deduplicateComputeNodes(
+            nodes: List<Pair<ComputeNodeDto, ComputeNodeDetailDto>>,
+        ): List<Pair<ComputeNodeDto, ComputeNodeDetailDto>> =
+            nodes
+                .groupBy { (dto, _) ->
+                    try { java.net.URL(dto.address).host } catch (_: Exception) { dto.address }
+                }
+                .values
+                .map { group ->
+                    // Prefer a node that has a bound observer peer (richer live data).
+                    group.maxByOrNull { (dto, _) -> if (dto.observerPeer != null) 1 else 0 } ?: group.first()
+                }
+                .sortedBy { (dto, _) -> dto.name }
+
+        /** One-liner summary shown on the per-host row in the monitor list. */
+        fun buildNodeSummary(nodeDto: ComputeNodeDto, detail: ComputeNodeDetailDto): String {
+            val parts = mutableListOf<String>()
+            val cpuPct = detail.cpu?.pct?.toInt() ?: detail.cpuPct?.toInt()
+            cpuPct?.let { parts += "CPU $it%" }
+            val memPct = detail.mem?.pct?.toInt() ?: detail.memPct?.toInt()
+            memPct?.let { parts += "Mem $it%" }
+            val gpuPct = detail.gpu.firstOrNull()?.utilPct?.toInt()
+            gpuPct?.let { parts += "GPU $it%" }
+            if (gpuPct == null) {
+                val diskPct = detail.disk.maxByOrNull { it.totalBytes }?.pct?.toInt()
+                    ?: detail.diskPct?.toInt()
+                diskPct?.let { parts += "Disk $it%" }
+            }
+            return parts.joinToString(" · ").ifBlank { nodeDto.name }
+        }
     }
 
     private suspend fun pollLoop() {
@@ -221,23 +253,47 @@ public class AutoMonitorScreen(
                     .build(),
             )
         } else if (rows.size == 1) {
-            // Single-server: full detail rows, no profile header row (Car App Library
-            // caps ItemList at 6; detail rows alone can reach 6: CPU+Mem+Disk+GPU+Sessions+Uptime).
+            // Single-server: if compute nodes are present, show one clickable row per unique
+            // physical host so each machine gets its own full-detail card.  When there are no
+            // compute nodes fall back to the existing flat addDetailRows() layout.
             val row = rows[0]
             val s = row.stats
-            if (s != null) {
-                // forcedProfile = non-null means this is a depth-3 Monitor2 screen (multi-server drill-down).
-                // Pop self before pushing SessionList so the path stays within the 5-screen limit.
-                val onSessions: () -> Unit =
-                    if (forcedProfile != null) {
-                        {
-                            screenManager.pop()
-                            screenManager.push(AutoSessionListScreen(carContext))
-                        }
-                    } else {
-                        { screenManager.push(AutoSessionListScreen(carContext)) }
+            val onSessions: () -> Unit =
+                if (forcedProfile != null) {
+                    {
+                        screenManager.pop()
+                        screenManager.push(AutoSessionListScreen(carContext))
                     }
-                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = rows[0].sessionCounts, computeNodes = rows[0].computeNodes)
+                } else {
+                    { screenManager.push(AutoSessionListScreen(carContext)) }
+                }
+            val uniqueNodes = deduplicateComputeNodes(row.computeNodes)
+            if (uniqueNodes.isNotEmpty()) {
+                // One row per unique physical host — tap opens AutoComputeNodeDetailScreen.
+                uniqueNodes.take(MAX_ROWS - 1).forEach { (nodeDto, detail) ->
+                    items.addItem(
+                        Row.Builder()
+                            .setTitle(nodeDto.name)
+                            .addText(buildNodeSummary(nodeDto, detail))
+                            .setOnClickListener {
+                                screenManager.push(AutoComputeNodeDetailScreen(carContext, nodeDto, detail))
+                            }
+                            .build(),
+                    )
+                }
+                // Sessions row always last.
+                val (sesTotal, sesRunning, sesWaiting) =
+                    row.sessionCounts ?: Triple(s?.sessionsTotal ?: 0, s?.sessionsRunning ?: 0, s?.sessionsWaiting ?: 0)
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("Sessions")
+                        .addText("$sesTotal total · $sesRunning run · $sesWaiting wait")
+                        .setOnClickListener(onSessions)
+                        .build(),
+                )
+            } else if (s != null) {
+                // No compute nodes — flat detail rows (existing behaviour).
+                addDetailRows(items, s, onSessionsClick = onSessions, sessionCounts = row.sessionCounts, computeNodes = emptyList())
             } else {
                 items.addItem(
                     Row.Builder()
