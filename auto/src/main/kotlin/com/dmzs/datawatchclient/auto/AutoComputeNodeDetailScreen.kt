@@ -110,6 +110,15 @@ public class AutoComputeNodeDetailScreen(
             if (g.memTotalBytes > 0) {
                 val vramPct = (g.memUsedBytes * PCT_MULTIPLIER / g.memTotalBytes).toInt()
                 builder.addText("VRAM ${progressBar(vramPct)}  ${fmt(g.memUsedBytes)} / ${fmt(g.memTotalBytes)}")
+            } else {
+                // Jetson/unified memory: GPU shares system RAM — show shared pool
+                val sysMem = detail.mem
+                if (sysMem != null && sysMem.totalBytes > 0) {
+                    val uPct = sysMem.pct.toInt()
+                    builder.addText("Unified ${progressBar(uPct)}  ${fmt(sysMem.usedBytes)} / ${fmt(sysMem.totalBytes)}")
+                } else {
+                    builder.addText("VRAM: unified (shared)")
+                }
             }
             items.addItem(builder.build())
         }
@@ -117,12 +126,14 @@ public class AutoComputeNodeDetailScreen(
         // Fall back to hardware spec GPU info if no live GPU data
         if (detail.gpu.isEmpty()) {
             val spec = nodeDto.hardwareSpec
+            val cap = nodeDto.declaredCapacity
             if (spec != null && (spec.gpuModel != null || spec.gpuCount > 0)) {
                 val label = buildString {
                     spec.gpuModel?.let { append(it.take(MAX_GPU_TITLE)) } ?: append("GPU")
                     if (spec.gpuCount > 1) append(" ×${spec.gpuCount}")
                 }
-                items.addItem(Row.Builder().setTitle(label).addText("No live data").build())
+                val vramNote = cap?.gpuMemGb?.takeIf { it > 0 }?.let { "${it} GB VRAM · no live stats" } ?: "No live stats"
+                items.addItem(Row.Builder().setTitle(label).addText(vramNote).build())
             }
         }
 
