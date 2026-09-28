@@ -172,9 +172,14 @@ public class NtfyFallbackService : Service() {
             runCatching { Json { ignoreUnknownKeys = true }.decodeFromString(NtfyMessage.serializer(), line) }
                 .getOrNull() ?: return
         if (msg.event != "message") return
+        // Use the first tag (server puts session ID there, same as SSE path).
+        // Fall back to parsing session ID from title, then the topic (stable per
+        // server — NOT msg.id which is unique per message and would create a separate
+        // Android notification for every event instead of updating the existing one).
         val sessionId =
-            msg.title?.substringAfter("session ")?.substringBefore(" ")?.takeIf { it.isNotBlank() }
-                ?: msg.id
+            msg.tags.firstOrNull { it.isNotBlank() }
+                ?: msg.title?.substringAfter("session ")?.substringBefore(" ")?.takeIf { it.isNotBlank() }
+                ?: msg.topic.ifBlank { "system" }
         NotificationPoster(applicationContext).post(
             NotificationPoster.Event(
                 sessionId = sessionId,
@@ -211,6 +216,7 @@ public class NtfyFallbackService : Service() {
         val title: String? = null,
         val message: String? = null,
         @SerialName("priority") val priority: Int = 3,
+        val tags: List<String> = emptyList(),
     )
 
     public companion object {

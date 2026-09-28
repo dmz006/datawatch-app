@@ -9,6 +9,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import com.dmzs.datawatchclient.MainActivity
 import com.dmzs.datawatchclient.R
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Builds and posts notifications for incoming push events.
@@ -36,6 +37,25 @@ public class NotificationPoster(private val context: Context) {
     public fun post(event: Event) {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) return
+
+        // Cross-service dedup: SSE and ntfy both fire for the same server event.
+        // If the same (notifId + body hash) was posted within DEDUP_WINDOW_MS, drop
+        // the duplicate silently instead of re-alerting for the same content.
+        val notifId = notificationIdFor(event.sessionId)
+        val dedupeKey = notifId.toLong().shl(32) or (event.body.hashCode().toLong() and 0xFFFFFFFFL)
+        val nowMs = System.currentTimeMillis()
+        val lastMs = recentlyPosted[dedupeKey] ?: 0L
+        if (nowMs - lastMs < DEDUP_WINDOW_MS) {
+            android.util.Log.d("NotificationPoster", "deduped repeat for ${event.sessionId}")
+            return
+        }
+        recentlyPosted[dedupeKey] = nowMs
+        // Evict stale entries occasionally to avoid unbounded growth.
+        if (recentlyPosted.size > 256) {
+            val cutoff = nowMs - DEDUP_WINDOW_MS
+            recentlyPosted.entries.removeIf { it.value < cutoff }
+        }
+
         // Active-session suppression — skip notifications for a
         // session the user is already looking at in the foreground.
         // Matches PWA behaviour where no bell rings for the visible
@@ -101,7 +121,7 @@ public class NotificationPoster(private val context: Context) {
         }
 
         try {
-            nm.notify(notificationIdFor(event.sessionId), builder.build())
+            nm.notify(notifId, builder.build())
         } catch (e: SecurityException) {
             // POST_NOTIFICATIONS not granted on Android 13+; surface to logcat only.
             android.util.Log.w("NotificationPoster", "post denied: ${e.message}")
@@ -284,6 +304,12 @@ public class NotificationPoster(private val context: Context) {
         private const val CAR_TAP_REQUEST_CODE_SALT: Int = 0x4341_5220
         private const val PLAY_LONG_REQUEST_CODE_SALT: Int = 0x504C_4C47
         private const val CAR_VOICE_REPLY_REQUEST_CODE_SALT: Int = 0x5652_5059
+
+        // Cross-service dedup window — SSE and ntfy fire independently for the same
+        // server event. This prevents double-alerting within a 30-second window for
+        // the same (notificationId + body content) pair.
+        private const val DEDUP_WINDOW_MS: Long = 30_000L
+        private val recentlyPosted = ConcurrentHashMap<Long, Long>() // dedupeKey -> lastPostMs
 
         public fun notificationIdFor(sessionId: String): Int = ID_BASE + (sessionId.hashCode() and 0x0F_FFFF)
     }
