@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -151,6 +152,8 @@ public fun Modifier.pwaStateEdge(state: SessionState): Modifier {
 public fun Modifier.pwaCard(): Modifier {
     val dw = LocalDatawatchColors.current
     return this
+        // clip FIRST so pwaStateEdge's drawBehind rect is also rounded at the corners
+        .clip(RoundedCornerShape(12.dp))
         .background(color = dw.bg2, shape = RoundedCornerShape(12.dp))
         .border(
             width = 1.dp,
