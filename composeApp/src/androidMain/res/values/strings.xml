@@ -128,6 +128,9 @@
     <string name="stats_card_compute_node">Compute Node</string>
     <string name="stats_card_llm">LLM</string>
     <string name="stats_field_cpu">CPU</string>
+    <string name="stats_field_load">Load avg</string>
+    <string name="stats_field_cores">Cores</string>
+    <string name="stats_field_ram">RAM</string>
     <string name="stats_field_rss">RSS</string>
     <string name="stats_field_threads">Threads</string>
     <string name="stats_field_fds">FDs</string>

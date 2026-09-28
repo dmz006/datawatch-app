@@ -316,8 +316,74 @@ private fun ComputeNodeCard(
     SectionCard {
         PwaSectionTitle(nodeTitle)
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+
+            // ── CPU + RAM ring (mirrors HostCard layout; from detail.cpu / detail.mem) ──
+            val cpuPct = detail?.cpu?.pct ?: detail?.cpuPct ?: 0.0
+            val memPct = detail?.mem?.pct ?: detail?.memPct ?: 0.0
+            if (cpuPct > 0.0 || memPct > 0.0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val cpuFraction = (cpuPct / 100.0).toFloat().coerceIn(0f, 1f)
+                    val cpuColor =
+                        when {
+                            cpuPct >= 90 -> MaterialTheme.colorScheme.error
+                            cpuPct >= 70 -> dw.warning
+                            else -> dw.success
+                        }
+                    Box(modifier = Modifier.size(72.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { 1f },
+                            modifier = Modifier.size(72.dp),
+                            color = dw.bg3,
+                            strokeWidth = 6.dp,
+                            trackColor = Color.Transparent,
+                        )
+                        CircularProgressIndicator(
+                            progress = { cpuFraction },
+                            modifier = Modifier.size(72.dp),
+                            color = cpuColor,
+                            strokeWidth = 6.dp,
+                            trackColor = Color.Transparent,
+                        )
+                        Text(
+                            "%.0f%%".format(cpuPct),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = cpuColor,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f).padding(start = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        detail?.cpu?.let { cpu ->
+                            StatRow(stringResource(R.string.stats_field_cpu), "%.1f%%".format(cpu.pct))
+                            if (cpu.load1 > 0.0 || cpu.load5 > 0.0) {
+                                StatRow(
+                                    stringResource(R.string.stats_field_load),
+                                    "%.2f  %.2f  %.2f".format(cpu.load1, cpu.load5, cpu.load15),
+                                )
+                            }
+                            if (cpu.cores > 0) StatRow(stringResource(R.string.stats_field_cores), cpu.cores.toString())
+                        }
+                        detail?.mem?.let { mem ->
+                            if (mem.totalBytes > 0L) {
+                                StatRow(
+                                    stringResource(R.string.stats_field_ram),
+                                    "${formatBytes(mem.usedBytes)} / ${formatBytes(mem.totalBytes)}",
+                                )
+                            } else if (memPct > 0.0) {
+                                StatRow(stringResource(R.string.stats_field_ram), "%.1f%%".format(memPct))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── GPU detail ──
             if (detail != null && detail.gpu.isNotEmpty()) {
-                // Remote compute node GPU detail — obs_cn_gpu_* keys, multi-GPU indexed
                 detail.gpu.forEachIndexed { idx, gpu ->
                     val prefix = if (detail.gpu.size > 1) "GPU ${idx + 1} " else ""
                     if (gpu.name.isNotBlank()) {
@@ -337,23 +403,26 @@ private fun ComputeNodeCard(
                         StatRow("$prefix${stringResource(R.string.obs_cn_gpu_vram)}", "${vramUsedGb.toInt()}/${vramTotalGb.toInt()} GB")
                     }
                 }
-                detail.ollamaStats?.let { ollama ->
-                    if (ollama.cpuPct > 0.0 || ollama.rssBytes > 0L) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Ollama",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (ollama.cpuPct > 0.0) StatRow("Ollama CPU", "%.1f%%".format(ollama.cpuPct))
-                        if (ollama.rssBytes > 0L) StatRow("Ollama RSS", formatBytes(ollama.rssBytes))
-                    }
-                }
-            } else {
-                // Fallback: envelope GPU stats (local process monitor)
+            } else if (cpuPct == 0.0 && memPct == 0.0) {
+                // Fallback to envelope GPU stats only when no live detail at all
                 if (gpuPct > 0.0) StatRow(stringResource(R.string.stats_field_gpu), "%.1f%%".format(gpuPct))
                 if (gpuMemBytes > 0) StatRow(stringResource(R.string.obs_cn_gpu_vram), formatBytes(gpuMemBytes))
             }
+
+            // ── Ollama stats ──
+            detail?.ollamaStats?.let { ollama ->
+                if (ollama.cpuPct > 0.0 || ollama.rssBytes > 0L) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Ollama",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (ollama.cpuPct > 0.0) StatRow("Ollama CPU", "%.1f%%".format(ollama.cpuPct))
+                    if (ollama.rssBytes > 0L) StatRow("Ollama RSS", formatBytes(ollama.rssBytes))
+                }
+            }
+
             if (onNavigate != null) {
                 Spacer(Modifier.height(4.dp))
                 Text(
