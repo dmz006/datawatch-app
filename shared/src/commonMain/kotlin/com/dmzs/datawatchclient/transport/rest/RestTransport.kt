@@ -2799,6 +2799,7 @@ public class RestTransport(
         }
 
     // Sprint 35 — observer envelopes per-session (G8)
+    // API returns {"envelopes":[...]} wrapper, not a bare array
     override suspend fun getSessionEnvelopes(
         sessionId: String,
     ): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>> =
@@ -2806,14 +2807,14 @@ public class RestTransport(
             client.get("${profile.baseUrl}/api/observer/envelopes") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 parameter("session_id", sessionId)
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.EnvelopesResponseDto>().envelopes
         }
 
     override suspend fun getAllEnvelopes(): Result<List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>> =
         request {
             client.get("${profile.baseUrl}/api/observer/envelopes") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
-            }.body()
+            }.body<com.dmzs.datawatchclient.transport.dto.EnvelopesResponseDto>().envelopes
         }
 
     override suspend fun listDashboardCards(): Result<List<com.dmzs.datawatchclient.transport.dto.DashboardCardDto>> =
