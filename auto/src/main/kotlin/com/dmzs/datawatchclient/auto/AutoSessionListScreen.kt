@@ -194,7 +194,7 @@ public class AutoSessionListScreen(
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         fun dotIcon(row: SessionRow): CarIcon {
             val resId =
                 when {
@@ -304,11 +304,20 @@ public class AutoSessionListScreen(
                     invalidate()
                 }
                 .build()
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle(title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(ActionStrip.Builder().addAction(filterAction).build())
             .setSingleList(builder.build())
+            .build()
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("Sessions")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 

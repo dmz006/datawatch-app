@@ -103,7 +103,7 @@ public class AutoPrdStagesScreen(
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val body =
             when {
                 isLoading -> "Loading plan stages…"
@@ -179,7 +179,18 @@ public class AutoPrdStagesScreen(
             }
         }
 
-        return builder.build()
+        builder.build()
+    } catch (e: Throwable) {
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        MessageTemplate.Builder("Error: ${e.message ?: "Unknown"}")
+            .setTitle(prdName.take(MAX_TITLE_CHARS))
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
+            .build()
     }
 
     private companion object {

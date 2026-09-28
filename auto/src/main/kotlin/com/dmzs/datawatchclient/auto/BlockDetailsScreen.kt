@@ -53,7 +53,7 @@ public class BlockDetailsScreen(
         )
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val blocks = verdicts.filter { it.outcome == "block" }.ifEmpty { verdicts }
         val ttsText = GuardrailTtsBuilder.buildAllVerdicts(blocks)
 
@@ -86,7 +86,7 @@ public class BlockDetailsScreen(
                 }
             }.build()
 
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle("$sessionName · ${blocks.size} $blockWord")
             .setHeaderAction(Action.BACK)
             .setActionStrip(
@@ -100,6 +100,15 @@ public class BlockDetailsScreen(
                     .build(),
             )
             .setSingleList(itemList)
+            .build()
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle(sessionName)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 

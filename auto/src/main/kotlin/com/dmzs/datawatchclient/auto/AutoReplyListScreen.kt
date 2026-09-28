@@ -49,9 +49,9 @@ internal class AutoReplyListScreen(
         )
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        return MessageTemplate.Builder(
+        MessageTemplate.Builder(
             "Quick replies (tap while parked):\n• Yes   • No   • Continue   • Stop   • Enter ↩\n\nWhile driving, use voice reply.",
         )
             .setTitle(sessionTitle.ifBlank { "Quick Reply" }.take(MAX_TITLE_CHARS))
@@ -65,6 +65,13 @@ internal class AutoReplyListScreen(
                     )
                     .build(),
             )
+            .build()
+    } catch (e: Throwable) {
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        MessageTemplate.Builder("Error: ${e.message ?: "Unknown"}")
+            .setTitle("Quick Reply")
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(ActionStrip.Builder().addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build()).build())
             .build()
     }
 

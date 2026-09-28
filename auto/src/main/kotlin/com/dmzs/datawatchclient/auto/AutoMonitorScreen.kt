@@ -235,7 +235,7 @@ public class AutoMonitorScreen(
             else -> null
         }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val items = ItemList.Builder()
         val rows = serverRows
         if (isLoading) {
@@ -359,11 +359,20 @@ public class AutoMonitorScreen(
                 )
                 .build()
         val title = if (rows.size == 1) rows[0].profile.displayName else "datawatch ${Version.VERSION}"
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle(title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setSingleList(items.build())
+            .build()
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("Monitor")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 }

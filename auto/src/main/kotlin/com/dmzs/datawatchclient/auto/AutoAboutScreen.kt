@@ -88,7 +88,7 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
         invalidate()
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val updateLine =
             when (updateStatus) {
                 UpdateStatus.CHECKING -> "\n⟳ Checking for updates…"
@@ -143,7 +143,14 @@ public class AutoAboutScreen(carContext: CarContext) : Screen(carContext) {
             )
         }
 
-        return templateBuilder.build()
+        templateBuilder.build()
+    } catch (e: Throwable) {
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        MessageTemplate.Builder("Error: ${e.message ?: "Unknown"}")
+            .setTitle("About")
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(ActionStrip.Builder().addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build()).build())
+            .build()
     }
 
     private fun onReboot() {

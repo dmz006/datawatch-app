@@ -177,6 +177,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     override fun onGetTemplate(): Template {
+        return try {
         fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
 
         if (isFirstLoad) {
@@ -297,12 +298,22 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 )
                 .build()
 
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle(if (error != null) "$title · $error" else title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(actionStrip)
             .setSingleList(listBuilder.build())
             .build()
+        } catch (e: Throwable) {
+            val errItems = ItemList.Builder()
+                .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+                .build()
+            ListTemplate.Builder()
+                .setTitle("datawatch")
+                .setHeaderAction(Action.APP_ICON)
+                .setSingleList(errItems)
+                .build()
+        }
     }
 }
 

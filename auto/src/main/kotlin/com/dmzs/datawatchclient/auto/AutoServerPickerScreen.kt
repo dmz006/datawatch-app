@@ -74,7 +74,7 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val items = ItemList.Builder()
         if (isLoading) {
             items.addItem(
@@ -122,10 +122,19 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                 )
             }
         }
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle("Active server")
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
+            .build()
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("Active server")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 

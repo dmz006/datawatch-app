@@ -114,7 +114,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         }
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = try {
         val builder = ItemList.Builder()
 
         if (isLoading) {
@@ -225,11 +225,20 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             )
             .build()
 
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setTitle("$serverName Automata")
             .setHeaderAction(Action.BACK)
             .setSingleList(builder.build())
             .setActionStrip(actionStrip)
+            .build()
+    } catch (e: Throwable) {
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("Automata")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
             .build()
     }
 
