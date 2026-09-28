@@ -16,6 +16,7 @@ import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.dmzs.datawatchclient.transport.dto.DecisionDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import kotlinx.coroutines.CoroutineScope
@@ -223,5 +224,72 @@ public class AutoPrdDetailScreen(
             "failed", "error" -> "✗"
             else -> "○"
         }
+
+        private const val MAX_SPEC_CHARS = 200
+        private const val MAX_PENDING_PREVIEW = 4
+
+        fun buildDetailBody(prd: PrdDto): String = buildString {
+            appendLine("[datawatch]: ${prd.status}")
+            appendLine()
+
+            val stories = prd.stories
+            if (stories.isNotEmpty()) {
+                val total = stories.size
+                val done = stories.count { it.status.lowercase() in DONE_STATUSES }
+                val pct = (done * 100 / total)
+                appendLine("$done/$total stories done  ($pct%)")
+                appendLine()
+            }
+
+            val spec = prd.spec
+            if (!spec.isNullOrBlank()) {
+                val snippet = if (spec.length > MAX_SPEC_CHARS) spec.take(MAX_SPEC_CHARS) + "…" else spec
+                appendLine("[You]: $snippet")
+                appendLine()
+            }
+
+            val active = stories.firstOrNull {
+                it.status.lowercase() in setOf("in_progress", "running", "active", "awaiting_approval", "needs_review", "awaiting_review")
+            }
+            if (active != null) {
+                val prefix = when (active.status.lowercase()) {
+                    "awaiting_approval", "needs_review", "awaiting_review" -> "⚠"
+                    else -> "◉"
+                }
+                appendLine("$prefix Active: ${active.title}")
+
+                if (active.status.lowercase() in setOf("awaiting_approval", "needs_review", "awaiting_review")) {
+                    appendLine("Awaiting your approval")
+                } else {
+                    val tasks = active.tasks
+                    val taskDone = tasks.count { it.status.lowercase() in DONE_STATUSES }
+                    val failed = tasks.count { it.status.lowercase() in setOf("failed", "error") }
+                    val running = tasks.firstOrNull { it.status.lowercase() == "in_progress" }
+                    if (running != null) appendLine("▶ ${running.task}")
+                    if (tasks.isNotEmpty()) append("$taskDone/${tasks.size} done")
+                    if (failed > 0) append("  ·  $failed failed")
+                    if (tasks.isNotEmpty() || failed > 0) appendLine()
+                }
+                appendLine()
+            }
+
+            val pending = stories.filter { it.status.lowercase() == "pending" }
+            if (pending.isNotEmpty()) {
+                appendLine("Up next:")
+                pending.take(MAX_PENDING_PREVIEW).forEach { appendLine("○ ${it.title}") }
+                val overflow = pending.size - MAX_PENDING_PREVIEW
+                if (overflow > 0) appendLine("… $overflow more")
+                appendLine()
+            }
+
+            val decisions = prd.decisions
+            if (!decisions.isNullOrEmpty()) {
+                val last = decisions.last()
+                val kind = last.kind ?: "decision"
+                val actor = last.actor ?: "unknown"
+                val note = last.note?.let { ": $it" } ?: ""
+                appendLine("Last $kind ($actor)$note")
+            }
+        }.trimEnd()
     }
 }
