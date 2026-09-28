@@ -269,7 +269,10 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             buildString {
                 val totalStories = prd.stories.size
                 val completedStories = prd.stories.count { it.status.lowercase() in setOf("complete", "completed", "done") }
-                val bar = if (totalStories > 0) progressBar(completedStories, totalStories) else ""
+                // Progress: use active story position when one is in progress so "Story 3/4"
+                // and the bar both read 75%; fall back to completed-story count otherwise.
+                val progressNumerator = storyPos ?: completedStories
+                val bar = if (totalStories > 0) progressBar(progressNumerator, totalStories) else ""
                 val isActive = prd.status == "running" || prd.status == "active"
                 if (!isActive) {
                     append("[${prd.status.ifBlank { "idle" }}]  ")
@@ -277,13 +280,13 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 if (storyPos != null && totalStories > 0) {
                     append("$bar  Story $storyPos/$totalStories")
                 } else if (totalStories > 0) {
-                    append("$bar  $completedStories/$totalStories stories")
+                    append("$bar  $completedStories/$totalStories done")
                 } else {
                     append(prd.status.ifBlank { "no stories" })
                 }
                 // Blocking flag
                 val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
-                if (hasBlock) append(" ⚠ awaiting approval")
+                if (hasBlock) append(" ⚠ review")
             }
     }
 }

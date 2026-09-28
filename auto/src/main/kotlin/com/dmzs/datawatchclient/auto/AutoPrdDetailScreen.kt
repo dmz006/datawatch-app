@@ -184,19 +184,18 @@ public class AutoPrdDetailScreen(
     private fun buildOverviewBody(): String {
         val p = prd ?: return "No data."
         val stories = p.stories
+        // Keep body short — MessageTemplate has a ~320-char effective limit on some hosts.
+        // Stories list comes first so it's never truncated by a long spec.
+        // Spec is omitted here; it's available via TTS (speaker icon).
         return buildString {
-            append("Status: ${p.status}")
-            p.spec?.takeIf { it.isNotBlank() }?.let { append("\n\n${it.take(MAX_SPEC_CHARS)}") }
+            val done = stories.count { it.status.lowercase() in DONE_STATUSES }
+            append("${p.status}  ·  $done/${stories.size} done\n\n")
             if (stories.isEmpty()) {
-                append("\n\nNo stories yet.")
+                append("No stories yet.\nTap ← to go back.")
             } else {
-                append("\n\nStories (${stories.size}):\n")
                 stories.take(MAX_STORY_LIST).forEachIndexed { i, s ->
                     val m = storyMarker(s.status)
-                    val done = s.tasks.count { it.status.lowercase() in DONE_STATUSES }
-                    val total = s.tasks.size
-                    val taskInfo = if (total > 0) " ($done/$total)" else ""
-                    append("$m ${i + 1}. ${s.title.take(MAX_STORY_TITLE)}$taskInfo\n")
+                    append("$m ${i + 1}. ${s.title.take(MAX_STORY_TITLE)}\n")
                 }
                 if (stories.size > MAX_STORY_LIST) append("… ${stories.size - MAX_STORY_LIST} more\n")
                 append("\nTap sessions ▶ to read story 1")
@@ -209,29 +208,23 @@ public class AutoPrdDetailScreen(
         val story = stories.getOrNull(storyIndex) ?: return "Story not found."
         val tasks = story.tasks
         val hasNext = storyIndex < stories.size - 1
+        // Keep body short — MessageTemplate body limit ~320 chars on some hosts.
         return buildString {
             val done = tasks.count { it.status.lowercase() in DONE_STATUSES }
             val running = tasks.count { it.status.lowercase() in setOf("in_progress", "running", "active") }
             val failed = tasks.count { it.status.lowercase() == "failed" }
-            append("Status: ${story.status}")
+            append("${story.status}  ·  $done/${tasks.size} tasks")
+            if (running > 0) append("  ·  $running running")
+            if (failed > 0) append("  ·  $failed failed")
+            append("\n")
             if (tasks.isNotEmpty()) {
-                append("  ·  $done/${tasks.size} tasks")
-                if (running > 0) append("  ·  $running running")
-                if (failed > 0) append("  ·  $failed failed")
-            }
-            story.description?.takeIf { it.isNotBlank() }?.let {
-                append("\n\n${it.take(MAX_DESC_CHARS)}")
-            }
-            if (tasks.isNotEmpty()) {
-                append("\n\nTasks:\n")
                 tasks.take(MAX_TASK_LIST).forEach { t ->
                     val m = taskMarker(t.status)
                     append("$m ${t.task.take(MAX_TASK_CHARS)}\n")
                 }
-                if (tasks.size > MAX_TASK_LIST) append("… ${tasks.size - MAX_TASK_LIST} more tasks\n")
+                if (tasks.size > MAX_TASK_LIST) append("… ${tasks.size - MAX_TASK_LIST} more\n")
             }
-            append("\nTap sessions ▶ ${if (hasNext) "→ story ${storyIndex + 2}" else "→ back to overview"}")
-            append("  ·  ← back")
+            append("\nTap sessions ▶ ${if (hasNext) "story ${storyIndex + 2}" else "back to overview"}")
         }
     }
 
