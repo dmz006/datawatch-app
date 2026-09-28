@@ -94,8 +94,14 @@ internal fun SessionStatsCards(
 ) {
     val envelope: StatEnvelopeDto? = sparkState.envelope
 
-    // Host card — always shown; backend name wired in for BL369 header
-    HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, session?.backend)
+    // Host card — only when we have real eBPF/process data.
+    // When envelope is null we show a lightweight "no data" placeholder
+    // inside the same card shell so the backend name is still visible.
+    if (envelope != null) {
+        HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, session?.backend)
+    } else {
+        HostCardNoData(session?.backend)
+    }
 
     // Container card — conditional on envelope.container != null
     val containerInfo =
@@ -131,21 +137,6 @@ internal fun SessionStatsCards(
             onNavigate = onNavigateToLlmTab,
         )
     }
-
-    if (envelope == null && containerInfo == null &&
-        session?.computeNodeRef.isNullOrBlank() && session?.llmRef.isNullOrBlank()
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(48.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                stringResource(R.string.session_detail_stats_no_data),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
 }
 
 @Composable
@@ -176,6 +167,27 @@ private fun StatRowWithSparkline(
                 value,
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HostCardNoData(backend: String? = null) {
+    val title = if (!backend.isNullOrBlank()) {
+        stringResource(R.string.stats_card_host_with_backend, backend.uppercase())
+    } else {
+        stringResource(R.string.stats_card_host)
+    }
+    SectionCard {
+        PwaSectionTitle(title)
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Text(
+                stringResource(R.string.session_detail_stats_no_data),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
