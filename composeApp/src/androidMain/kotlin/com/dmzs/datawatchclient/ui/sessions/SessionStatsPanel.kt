@@ -97,8 +97,10 @@ internal fun SessionStatsCards(
     // Host card — only when we have real eBPF/process data.
     // When envelope is null we show a lightweight "no data" placeholder
     // inside the same card shell so the backend name is still visible.
+    // Use envelope.label ("opencode-docker") over session.backend ("opencode") to match PWA title.
     if (envelope != null) {
-        HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, session?.backend)
+        val backendLabel = envelope.label.takeIf { it.isNotBlank() } ?: session?.backend
+        HostCard(envelope, sparkState.cpuSamples, sparkState.rssSamples, backendLabel)
     } else {
         HostCardNoData(session?.backend)
     }

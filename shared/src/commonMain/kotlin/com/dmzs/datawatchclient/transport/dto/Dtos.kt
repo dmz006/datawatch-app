@@ -1148,12 +1148,24 @@ public data class ComputeNodeOllamaDto(
 )
 
 @Serializable
+public data class ComputeNodeDiskStatDto(
+    val mount: String = "",
+    val pct: Double = 0.0,
+    @SerialName("used_bytes") val usedBytes: Long = 0,
+    @SerialName("total_bytes") val totalBytes: Long = 0,
+    @SerialName("fs_type") val fsType: String = "",
+)
+
+@Serializable
 public data class ComputeNodeDetailDto(
     val cpu: ComputeNodeCpuStatDto? = null,
     val mem: ComputeNodeMemStatDto? = null,
+    val disk: List<ComputeNodeDiskStatDto> = emptyList(),
     val gpu: List<ComputeNodeGpuStatDto> = emptyList(),
     @SerialName("cpu_pct") val cpuPct: Double? = null,
     @SerialName("mem_pct") val memPct: Double? = null,
+    @SerialName("disk_pct") val diskPct: Double? = null,
+    @SerialName("uptime_seconds") val uptimeSeconds: Long = 0,
     @SerialName("sampled_at_unix_ms") val sampledAtUnixMs: Long = 0,
     @SerialName("ollama_stats") val ollamaStats: ComputeNodeOllamaDto? = null,
 )
