@@ -63,8 +63,8 @@ public fun SessionStatsPanel(
         onDispose { sessionStatsVm.stopPolling() }
     }
 
-    LaunchedEffect(session?.computeNodeRef) {
-        sessionStatsVm.updateComputeNodeRef(session?.computeNodeRef)
+    LaunchedEffect(session?.computeNodeRef, session?.backend) {
+        sessionStatsVm.updateComputeNodeRef(session?.computeNodeRef, session?.backend)
     }
 
     Column(
@@ -272,9 +272,10 @@ private fun HostCard(
                         )
                     }
                     if ((env?.fds ?: 0) > 0) StatRow(stringResource(R.string.stats_field_fds), env!!.fds.toString())
-                    val pid = env?.rootPid ?: 0
+                    val pid = env?.rootPid?.takeIf { it > 0 }
+                        ?: env?.pids?.firstOrNull() ?: 0
                     if (pid > 0) {
-                        val childCount = (env?.pids?.size ?: 0)
+                        val childCount = ((env?.pids?.size ?: 0) - 1).coerceAtLeast(0)
                         val pidLabel = if (childCount > 0) "PID $pid (+$childCount)" else "PID $pid"
                         StatRow(stringResource(R.string.stats_field_pid), pidLabel)
                     }
