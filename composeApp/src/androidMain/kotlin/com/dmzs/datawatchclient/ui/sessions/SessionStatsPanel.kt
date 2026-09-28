@@ -127,6 +127,9 @@ internal fun SessionStatsCards(
             gpuPct = envelope?.gpuPct ?: 0.0,
             gpuMemBytes = envelope?.gpuMemBytes ?: 0L,
             detail = sparkState.computeNodeDetail,
+            gpuUtilSamples = sparkState.gpuUtilSamples,
+            gpuTempSamples = sparkState.gpuTempSamples,
+            ollamaCpuSamples = sparkState.ollamaCpuSamples,
             onNavigate = onNavigateToComputeTab,
         )
     }
@@ -135,7 +138,6 @@ internal fun SessionStatsCards(
     if (session?.llmRef?.isNotBlank() == true) {
         LlmCard(
             llmRef = session.llmRef!!,
-            backendFamily = session.backend,
             onNavigate = onNavigateToLlmTab,
         )
     }
@@ -323,6 +325,9 @@ private fun ComputeNodeCard(
     gpuPct: Double,
     gpuMemBytes: Long,
     detail: ComputeNodeDetailDto? = null,
+    gpuUtilSamples: List<Float> = emptyList(),
+    gpuTempSamples: List<Float> = emptyList(),
+    ollamaCpuSamples: List<Float> = emptyList(),
     onNavigate: (() -> Unit)?,
 ) {
     val dw = LocalDatawatchColors.current
@@ -409,8 +414,29 @@ private fun ComputeNodeCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    StatRow("$prefix${stringResource(R.string.obs_cn_gpu_util)}", "%.1f%%".format(gpu.utilPct))
-                    if (gpu.tempC > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_temp)}", "${gpu.tempC.toInt()} °C")
+                    // GPU util — sparkline (only first GPU drives the history buffer)
+                    val utilSamples = if (idx == 0) gpuUtilSamples else emptyList()
+                    StatRowWithSparkline(
+                        label = "$prefix${stringResource(R.string.obs_cn_gpu_util)}",
+                        value = "%.1f%%".format(gpu.utilPct),
+                        samples = utilSamples,
+                        sparkColor = dw.success,
+                    )
+                    // GPU temp — temperature-colored sparkline (matches PWA temp coloring)
+                    if (gpu.tempC > 0) {
+                        val tempSamples = if (idx == 0) gpuTempSamples else emptyList()
+                        val tempColor = when {
+                            gpu.tempC > 80 -> MaterialTheme.colorScheme.error
+                            gpu.tempC > 60 -> dw.warning
+                            else -> dw.success
+                        }
+                        StatRowWithSparkline(
+                            label = "$prefix${stringResource(R.string.obs_cn_gpu_temp)}",
+                            value = "${gpu.tempC.toInt()} °C",
+                            samples = tempSamples,
+                            sparkColor = tempColor,
+                        )
+                    }
                     if (gpu.powerW > 0) StatRow("$prefix${stringResource(R.string.obs_cn_gpu_power)}", "${gpu.powerW.toInt()} W")
                     val vramUsedGb = gpu.memUsedBytes / 1_073_741_824.0
                     val vramTotalGb = gpu.memTotalBytes / 1_073_741_824.0
@@ -429,11 +455,19 @@ private fun ComputeNodeCard(
                 if (ollama.cpuPct > 0.0 || ollama.rssBytes > 0L) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Ollama",
+                        "OLLAMA",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (ollama.cpuPct > 0.0) StatRow("Ollama CPU", "%.1f%%".format(ollama.cpuPct))
+                    // Ollama CPU — purple/accent2 sparkline (matches PWA purple sparkline)
+                    if (ollama.cpuPct > 0.0) {
+                        StatRowWithSparkline(
+                            label = "Ollama CPU",
+                            value = "%.1f%%".format(ollama.cpuPct),
+                            samples = ollamaCpuSamples,
+                            sparkColor = dw.accent2,
+                        )
+                    }
                     if (ollama.rssBytes > 0L) StatRow("Ollama RSS", formatBytes(ollama.rssBytes))
                 }
             }
@@ -458,17 +492,19 @@ private fun ComputeNodeCard(
 @Composable
 private fun LlmCard(
     llmRef: String,
-    backendFamily: String?,
     onNavigate: (() -> Unit)?,
 ) {
     val dw = LocalDatawatchColors.current
     SectionCard {
         PwaSectionTitle(stringResource(R.string.stats_card_llm))
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            StatRow(stringResource(R.string.stats_card_llm), llmRef)
-            if (!backendFamily.isNullOrBlank()) {
-                StatRow("Backend", backendFamily)
-            }
+            StatRow("LLM ref", llmRef)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.stats_llm_more_soon),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (onNavigate != null) {
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -482,12 +518,6 @@ private fun LlmCard(
                             .padding(vertical = 4.dp),
                 )
             }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                stringResource(R.string.stats_llm_more_soon),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

@@ -23,12 +23,18 @@ public class SessionStatsViewModel(
     public data class UiState(
         val cpuSamples: List<Float> = emptyList(),
         val rssSamples: List<Float> = emptyList(),
+        val gpuUtilSamples: List<Float> = emptyList(),
+        val gpuTempSamples: List<Float> = emptyList(),
+        val ollamaCpuSamples: List<Float> = emptyList(),
         val envelope: StatEnvelopeDto? = null,
         val computeNodeDetail: ComputeNodeDetailDto? = null,
     )
 
     private val cpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     private val rssBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
+    private val gpuUtilBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
+    private val gpuTempBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
+    private val ollamaCpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
     @Volatile private var computeNodeRef: String? = null
     @Volatile private var backendFamily: String? = null
     @Volatile private var computeNodeRefResolved = false
@@ -70,6 +76,20 @@ public class SessionStatsViewModel(
             }
             computeNodeRefResolved = true
         }
+
+        // Fetch compute node detail independently — matches PWA parallel-fetch approach.
+        // Must run regardless of whether a matching envelope is found.
+        val detail = computeNodeRef?.let { transport.getComputeNodeDetail(it).getOrNull() }
+        if (detail != null) {
+            detail.gpu.firstOrNull()?.let { gpu ->
+                push(gpuUtilBuf, gpu.utilPct.toFloat())
+                push(gpuTempBuf, gpu.tempC.toFloat())
+            }
+            detail.ollamaStats?.let { ollama ->
+                push(ollamaCpuBuf, ollama.cpuPct.toFloat())
+            }
+        }
+
         // Use getAllEnvelopes (no session_id filter) — the server groups envelopes by
         // backend/container, never by individual session. Match the PWA's two-step
         // approach: session-kind first (exact id), then backend-kind by backend_family.
@@ -84,17 +104,30 @@ public class SessionStatsViewModel(
                     } else {
                         null
                     }
-                    ?: return
-            push(cpuBuf, env.cpuPct.toFloat())
-            push(rssBuf, env.rssBytes.toFloat())
-            val detail = computeNodeRef?.let { transport.getComputeNodeDetail(it).getOrNull() }
+            if (env != null) {
+                push(cpuBuf, env.cpuPct.toFloat())
+                push(rssBuf, env.rssBytes.toFloat())
+            }
             _state.value =
                 UiState(
                     cpuSamples = cpuBuf.toList(),
                     rssSamples = rssBuf.toList(),
+                    gpuUtilSamples = gpuUtilBuf.toList(),
+                    gpuTempSamples = gpuTempBuf.toList(),
+                    ollamaCpuSamples = ollamaCpuBuf.toList(),
                     envelope = env,
                     computeNodeDetail = detail,
                 )
+        }.onFailure {
+            // Envelopes unavailable — still surface compute node detail.
+            if (detail != null) {
+                _state.value = _state.value.copy(
+                    gpuUtilSamples = gpuUtilBuf.toList(),
+                    gpuTempSamples = gpuTempBuf.toList(),
+                    ollamaCpuSamples = ollamaCpuBuf.toList(),
+                    computeNodeDetail = detail,
+                )
+            }
         }
     }
 
