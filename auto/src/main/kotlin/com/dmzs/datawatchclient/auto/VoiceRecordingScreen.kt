@@ -223,21 +223,12 @@ public class VoiceRecordingScreen(
     private fun buildConfirmTemplate(transcript: String): Template {
         val chatIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_chat)).build()
         val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
-        val screenTitle = when {
-            taskId != null -> "$sessionTitle · Update Task"
-            storyId != null -> "$sessionTitle · Update Story"
-            prdId != null -> "$sessionTitle · Update Spec"
-            else -> "$sessionTitle · Voice"
-        }
         val preview = transcript.take(MAX_TRANSCRIPT_PREVIEW).ifBlank { "No transcription" }
-        // MESSAGING category driving-mode constraint: Samsung gearhead enforces ≤2 total actions
-        // (ActionStrip + addAction combined). Using .addAction() here would push the total past 2
-        // and trigger "can't do that while driving." ActionStrip must be icon-only (no setTitle)
-        // while driving. BACK header acts as cancel — no third action needed.
-        //
-        // Layout: body = transcript + tap-guide. ActionStrip: ✉ = send, 🎤 = re-record.
-        return MessageTemplate.Builder("\"$preview\"\n\nTap ✉ to send  ·  tap 🎤 to re-record  ·  ← to cancel")
-            .setTitle(screenTitle)
+        // MESSAGING category driving-mode constraint: Samsung gearhead enforces ≤2 total actions.
+        // Action instructions go in the TITLE (most prominent text) so the user sees them immediately.
+        // ActionStrip: ✉ (chat) = send, 🎤 (voice) = re-record. BACK header = cancel.
+        return MessageTemplate.Builder("\"$preview\"")
+            .setTitle("Tap ✉ to send  ·  🎤 to re-record  ·  ← cancel")
             .setHeaderAction(Action.BACK)
             .setActionStrip(
                 ActionStrip.Builder()

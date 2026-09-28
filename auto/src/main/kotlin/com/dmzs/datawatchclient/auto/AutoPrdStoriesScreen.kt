@@ -36,9 +36,10 @@ import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
 public class AutoPrdStoriesScreen(
     carContext: CarContext,
     private val prd: PrdDto,
+    initialStory: PrdStoryDto? = null,
 ) : Screen(carContext) {
 
-    private var selectedStory: PrdStoryDto? = null
+    private var selectedStory: PrdStoryDto? = initialStory
 
     override fun onGetTemplate(): Template = try {
         val story = selectedStory
