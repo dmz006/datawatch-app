@@ -291,6 +291,11 @@ public data class ContainerInfoDto(
 )
 
 @Serializable
+public data class EnvelopesResponseDto(
+    val envelopes: List<StatEnvelopeDto> = emptyList(),
+)
+
+@Serializable
 public data class StatEnvelopeDto(
     val id: String = "",
     val kind: String = "",
