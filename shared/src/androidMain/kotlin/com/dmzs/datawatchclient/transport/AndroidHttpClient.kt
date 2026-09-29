@@ -13,6 +13,16 @@ import javax.net.ssl.X509TrustManager
 
 public actual fun createHttpClient(): HttpClient =
     HttpClient(OkHttp) {
+        engine {
+            config {
+                // Keep connections alive for 10 minutes — the sessions list polls every
+                // few seconds so the TCP+TLS connection to the Tailscale server is warm
+                // by the time the detail screen opens, avoiding a cold-connect RTT.
+                connectionPool(
+                    okhttp3.ConnectionPool(5, 10, java.util.concurrent.TimeUnit.MINUTES),
+                )
+            }
+        }
         install(HttpTimeout) {
             requestTimeoutMillis = 15_000
             connectTimeoutMillis = 5_000
@@ -37,6 +47,9 @@ public fun createTrustAllHttpClient(): HttpClient =
     HttpClient(OkHttp) {
         engine {
             config {
+                connectionPool(
+                    okhttp3.ConnectionPool(5, 10, java.util.concurrent.TimeUnit.MINUTES),
+                )
                 val trustAll =
                     object : X509TrustManager {
                         override fun checkClientTrusted(
