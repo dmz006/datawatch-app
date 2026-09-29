@@ -310,15 +310,10 @@ public class AutoSessionDetailScreen(
                         }.build(),
                 )
                 val autoId = automataIdFromTelemetry()
-                if (autoId.isNotBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Stages")
-                            .setOnClickListener {
-                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
-                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }.build(),
-                    )
-                } else {
+                // "Stages" button removed — monitor icon in ActionStrip handles PRD navigation
+                // while driving. Titled addAction() buttons trigger Samsung "can't do that while
+                // driving" on MESSAGING path even as parked-only buttons.
+                if (autoId.isBlank()) {
                     templateBuilder.addAction(
                         Action.Builder().setTitle("Restart").setOnClickListener { onRestart() }.build(),
                     )
@@ -352,15 +347,7 @@ public class AutoSessionDetailScreen(
                         }.build(),
                 )
                 val autoId = automataIdFromTelemetry()
-                if (autoId.isNotBlank()) {
-                    templateBuilder.addAction(
-                        Action.Builder().setTitle("Stages")
-                            .setOnClickListener {
-                                CarToast.makeText(carContext, "Loading stages…", CarToast.LENGTH_SHORT).show()
-                                screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))
-                            }.build(),
-                    )
-                }
+                // "Stages" button removed — see isTerminal comment above.
                 val secondStripAction = if (autoId.isNotBlank()) {
                     Action.Builder().setIcon(monitorIcon).setOnClickListener {
                         screenManager.push(AutoPrdStagesScreen(carContext, autoId, automataNameFromTelemetry()))

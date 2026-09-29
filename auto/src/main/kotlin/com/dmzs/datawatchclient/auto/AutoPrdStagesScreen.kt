@@ -1,11 +1,9 @@
 package com.dmzs.datawatchclient.auto
 
 import androidx.car.app.CarContext
-import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
@@ -20,14 +18,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Shows the story stages for a PRD/automaton with Approve/Reject/Stop actions.
+ * Shows the story stages for a PRD/automaton — status display only while driving.
  *
  * Used from [AutoSessionDetailScreen] when the session's telemetry indicates it belongs
  * to an automaton (telemetry.sprint.automataId is non-blank). Each story is listed with
- * a status marker; the primary buttons perform PRD-level actions.
+ * a status marker. Action hints (approve/reject/stop) are shown in the body text; the
+ * actual actions require the phone app to avoid Samsung MESSAGING driving restrictions.
  *
- * Navigation depth: this screen is always pushed from SessionDetail, so it may be at
- * depth 5 (the Car App Library max). All actions here pop rather than push.
+ * Navigation depth: always pushed from SessionDetail (depth 3–4). All exits here pop.
  */
 public class AutoPrdStagesScreen(
     carContext: CarContext,
@@ -76,42 +74,29 @@ public class AutoPrdStagesScreen(
         }
     }
 
-    private fun fire(action: String) {
-        scope.launch {
-            try {
-                val profile = resolveActiveProfile() ?: return@launch
-                AutoServiceLocator.transportFor(profile).prdAction(prdId, action).fold(
-                    onSuccess = {
-                        CarToast.makeText(
-                            carContext,
-                            "${action.replaceFirstChar { it.uppercase() }} sent",
-                            CarToast.LENGTH_SHORT,
-                        ).show()
-                        screenManager.pop()
-                    },
-                    onFailure = { err ->
-                        CarToast.makeText(
-                            carContext,
-                            "Failed: ${err.message ?: err::class.simpleName}",
-                            CarToast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-            } catch (e: Throwable) {
-                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
-            }
-        }
-    }
-
     override fun onGetTemplate(): Template = try {
+        val statusLower = prdStatus.lowercase()
+        val isReview = statusLower in setOf("needs_review", "revisions_asked", "awaiting_review")
+        val isRunning = statusLower == "running" || statusLower == "active"
+
         val body =
             when {
                 isLoading -> "Loading plan stages…"
                 error != null -> "Error: $error"
-                stories.isEmpty() -> "No stages configured for this plan.\n\nStatus: $prdStatus"
+                stories.isEmpty() -> {
+                    buildString {
+                        appendLine("No stages configured for this plan.")
+                        appendLine()
+                        append("Status: $prdStatus")
+                        if (isReview) append("\n\n⚠ Open app to approve or reject.")
+                    }
+                }
                 else ->
                     buildString {
-                        appendLine("Status: $prdStatus\n")
+                        appendLine("Status: $prdStatus")
+                        if (isReview) appendLine("⚠ Open app to approve or reject.")
+                        else if (isRunning) appendLine("▶ Open app to stop the plan.")
+                        appendLine()
                         stories.forEach { s ->
                             val marker =
                                 when (s.status) {
@@ -126,60 +111,26 @@ public class AutoPrdStagesScreen(
                     }.trimEnd()
             }
 
-        val statusLower = prdStatus.lowercase()
-        val isReview = statusLower in setOf("needs_review", "revisions_asked", "awaiting_review")
-        val isRunning = statusLower == "running" || statusLower == "active"
-
         val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
 
-        val builder =
-            MessageTemplate.Builder(body)
-                .setTitle(prdName.take(MAX_TITLE_CHARS))
-                .setHeaderAction(Action.BACK)
-                // MessageTemplate requires 2 icon-only ActionStrip actions on MESSAGING path while driving.
-                // Titled addAction() buttons are parked-only and don't affect template acceptance.
-                .setActionStrip(
-                    ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
-                            AutoTts.speak(carContext, body)
-                        }.build())
-                        .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
-                            screenManager.pop()
-                        }.build())
-                        .build(),
-                )
-
-        if (!isLoading && error == null) {
-            when {
-                isReview -> {
-                    builder.addAction(
-                        Action.Builder()
-                            .setTitle("Approve")
-                            .setBackgroundColor(CarColor.GREEN)
-                            .setOnClickListener { fire("approve") }
-                            .build(),
-                    )
-                    builder.addAction(
-                        Action.Builder()
-                            .setTitle("Reject")
-                            .setOnClickListener { fire("reject") }
-                            .build(),
-                    )
-                }
-                isRunning -> {
-                    builder.addAction(
-                        Action.Builder()
-                            .setTitle("Stop Plan")
-                            .setBackgroundColor(CarColor.RED)
-                            .setOnClickListener { fire("cancel") }
-                            .build(),
-                    )
-                }
-            }
-        }
-
-        builder.build()
+        // No addAction() buttons — titled actions are parked-only on MESSAGING path and Samsung
+        // shows "can't do that while driving" when the template contains them. Action hints are
+        // encoded in the body text instead.
+        MessageTemplate.Builder(body)
+            .setTitle(prdName.take(MAX_TITLE_CHARS))
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                        AutoTts.speak(carContext, body)
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                        screenManager.pop()
+                    }.build())
+                    .build(),
+            )
+            .build()
     } catch (e: Throwable) {
         val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         MessageTemplate.Builder("Error: ${e.message ?: "Unknown"}")
