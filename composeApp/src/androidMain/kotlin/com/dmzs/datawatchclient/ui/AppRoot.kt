@@ -347,8 +347,11 @@ private fun HomeShell(
     // any one of the fanned-out profiles may have it.
     val activeId by ServiceLocator.activeServerStore.observe()
         .collectAsState(initial = null)
-    var prdsSupported by remember { mutableStateOf(false) }
-    var dashboardEnabled by remember { mutableStateOf(false) }
+    // Default true — show the tab immediately; probe corrects to false only when the
+    // active server explicitly has autonomous.enabled=false.  Avoids the 10-15 s delay
+    // users see while waiting for profileRepository + fetchConfig() to settle.
+    var prdsSupported by remember { mutableStateOf(true) }
+    var dashboardEnabled by remember { mutableStateOf(true) }
 
     // v0.42.9 — probe `autonomous.enabled` from /api/config on
     // active-server change AND on every successful config save
@@ -396,8 +399,6 @@ private fun HomeShell(
     }
 
     LaunchedEffect(activeId) {
-        prdsSupported = false
-        dashboardEnabled = false
         probeAutonomous()
     }
     LaunchedEffect(Unit) {
