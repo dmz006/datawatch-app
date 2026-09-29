@@ -117,26 +117,35 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
         return object : InputConnectionWrapper(ic, true) {
-            // Timestamp of the most recent commitText / finishComposingText call.
-            // We use a time-based window instead of a boolean flag to avoid a
-            // race where any non-Enter sendKeyEvent (e.g. KEYCODE_SPACE fired by
-            // the keyboard between the word commit and the spurious Enter) clears
-            // the guard prematurely, letting the spurious Enter through.
+            // Timestamp of the most recent text-commit event.
+            // Time-based window prevents a non-Enter key event fired between
+            // the commit and the spurious Enter from clearing the guard early.
             private var lastCommitMs = 0L
+
+            // Track whether the IME has active composing text so finishComposingText
+            // can mark the window only when it's finalizing composed chars,
+            // not on focus-loss or other no-op firings.
+            private var hasComposingText = false
 
             private fun recentlyCommitted() =
                 lastCommitMs > 0 && System.currentTimeMillis() - lastCommitMs < SPURIOUS_ENTER_WINDOW_MS
 
+            private fun markCommit() {
+                lastCommitMs = System.currentTimeMillis()
+            }
+
             override fun performEditorAction(editorAction: Int): Boolean {
-                if (!recentlyCommitted()) {
-                    // Intentional soft-keyboard Enter (no autocomplete commit just fired).
+                val recent = recentlyCommitted()
+                Log.d("DwTerm", "IC.performEditorAction action=$editorAction recent=$recent")
+                if (!recent) {
+                    // Intentional soft-keyboard Enter (no commit just fired).
                     // Inject \r directly so xterm processes it without a DOM round-trip.
                     this@TerminalWebView.evaluateJavascript(
                         "window.DwBridge && DwBridge.onInput('\r');",
                         null,
                     )
                 } else {
-                    Log.d("DwTerm", "performEditorAction SUPPRESSED (post-commit window)")
+                    Log.d("DwTerm", "IC.performEditorAction SUPPRESSED (post-commit window)")
                 }
                 lastCommitMs = 0L
                 return true
@@ -144,14 +153,14 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
 
             override fun sendKeyEvent(event: KeyEvent?): Boolean {
                 val kc = event?.keyCode
+                Log.d("DwTerm", "IC.sendKeyEvent kc=$kc action=${event?.action} recent=${recentlyCommitted()}")
                 if (kc == KeyEvent.KEYCODE_DPAD_CENTER) {
                     lastCommitMs = 0L
                     return true // DPAD_CENTER never has a terminal role on touchscreen
                 }
                 if (kc == KeyEvent.KEYCODE_ENTER) {
                     if (recentlyCommitted()) {
-                        // Spurious Enter from autocomplete commit — suppress.
-                        Log.d("DwTerm", "IC.sendKeyEvent SUPPRESSED (post-commit window) kc=$kc")
+                        Log.d("DwTerm", "IC.sendKeyEvent ENTER SUPPRESSED (post-commit window)")
                         lastCommitMs = 0L
                         return true
                     }
@@ -160,10 +169,24 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
                     lastCommitMs = 0L
                     return super.sendKeyEvent(event)
                 }
-                // Do NOT clear lastCommitMs for non-Enter keys — a KEYCODE_SPACE or
-                // KEYCODE_BACKSPACE fired between commitText and the spurious Enter would
-                // reset the window early and let the spurious Enter through as intentional.
                 return super.sendKeyEvent(event)
+            }
+
+            override fun setComposingText(text: CharSequence?, newCursorPosition: Int): Boolean {
+                hasComposingText = !text.isNullOrEmpty()
+                Log.d("DwTerm", "IC.setComposingText len=${text?.length} hasComposing=$hasComposingText")
+                return super.setComposingText(text, newCursorPosition)
+            }
+
+            override fun finishComposingText(): Boolean {
+                Log.d("DwTerm", "IC.finishComposingText hasComposing=$hasComposingText")
+                if (hasComposingText) {
+                    // Composing text is being finalized — mark the window so the
+                    // Samsung spurious Enter that follows is suppressed.
+                    markCommit()
+                }
+                hasComposingText = false
+                return super.finishComposingText()
             }
 
             override fun commitText(
@@ -172,18 +195,15 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             ): Boolean {
                 // Strip any trailing \r / \n Samsung/Gboard appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
-                // Open the spurious-Enter window for ALL non-empty commits.
-                // Samsung fires performEditorAction / sendKeyEvent(ENTER) after *every*
-                // character commit — not just multi-char autocomplete. With the window only
-                // gating on length > 1, single-char commits left lastCommitMs = 0, so
-                // performEditorAction treated the post-char Enter as intentional and fired
-                // DwBridge.onInput('\r'), making every typed character send char + \r.
-                if (cleaned.isNotEmpty()) lastCommitMs = System.currentTimeMillis()
+                Log.d("DwTerm", "IC.commitText len=${cleaned.length} text=${cleaned.take(20)}")
+                // Mark the window for ALL non-empty commits — Samsung fires
+                // performEditorAction / sendKeyEvent(ENTER) after every character commit.
+                if (cleaned.isNotEmpty()) {
+                    markCommit()
+                }
+                hasComposingText = false
                 return super.commitText(cleaned, newCursorPosition)
             }
-            // finishComposingText NOT overridden: it fires on focus-loss and other
-            // non-commit events in addition to word commits, so always marking the
-            // window there suppresses intentional Enters (breaks typing entirely).
         }
     }
 
