@@ -583,6 +583,18 @@ public interface TransportClient {
     public suspend fun setPrdGuidedMode(prdId: String, guidedMode: Boolean): Result<Unit> =
         prdAction(prdId, "set_guided_mode", kotlinx.serialization.json.buildJsonObject { put("guided_mode", kotlinx.serialization.json.JsonPrimitive(guidedMode)) })
 
+    /** POST /api/autonomous/prds/{id}/set_continue_on_story_failure — nullable per-PRD override.
+     *  Pass null to clear the override (PRD inherits the daemon global default). */
+    public suspend fun setPrdContinueOnStoryFailure(prdId: String, value: Boolean?): Result<Unit> =
+        prdAction(
+            prdId,
+            "set_continue_on_story_failure",
+            kotlinx.serialization.json.buildJsonObject {
+                if (value != null) put("continue_on_story_failure", kotlinx.serialization.json.JsonPrimitive(value))
+                else put("continue_on_story_failure", kotlinx.serialization.json.JsonNull)
+            },
+        )
+
     /** POST /api/autonomous/prds/{id}/set_skills. */
     public suspend fun setPrdSkills(prdId: String, skills: List<String>): Result<Unit> =
         prdAction(

@@ -473,6 +473,7 @@ public fun AutonomousScreen(
                 automataTypes = state.automataTypes,
                 onSetType = { type -> vm.setPrdType(id, type) },
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },
+                onSetContinueOnStoryFailure = { v -> vm.setPrdContinueOnStoryFailure(id, v) },
                 onSetSkills = { skills -> vm.setPrdSkills(id, skills) },
                 onCloneTemplate = { vm.clonePrdToTemplate(id) },
                 onOpenFile = { path -> vm.openFileViewer(path, prd.projectDir) },

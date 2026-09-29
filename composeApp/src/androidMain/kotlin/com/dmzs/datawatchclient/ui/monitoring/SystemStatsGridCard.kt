@@ -145,6 +145,16 @@ private fun LocalSystemCard(stats: StatsDto) {
                     color = Color(0xFF60A5FA),
                 )
             }
+        } else {
+            val gpuErr = stats.gpuError?.takeIf { it.isNotBlank() }
+            if (gpuErr != null) {
+                Text(
+                    "GPU probe failed: $gpuErr",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFEF4444),
+                    modifier = androidx.compose.ui.Modifier.padding(top = 4.dp),
+                )
+            }
         }
     }
 }
@@ -229,27 +239,39 @@ private fun PeerSystemCard(peer: ObserverPeerDto, detail: ComputeNodeDetailDto?)
             )
         }
 
-        detail.gpu.forEachIndexed { idx, gpu ->
-            val label = if (detail.gpu.size > 1) "GPU ${idx + 1}" else "GPU"
-            val utilPct = (gpu.utilPct / 100.0).coerceIn(0.0, 1.0).toFloat()
-            val gpuColor = if (utilPct > 0.8f) Color(0xFFEF4444) else Color(0xFF60A5FA)
-            StatBar(label = "$label util", pct = utilPct, valueLabel = "${gpu.utilPct.toInt()}%", color = gpuColor)
-            if (gpu.tempC > 0) {
-                val tempColor = when {
-                    gpu.tempC >= 80 -> Color(0xFFEF4444)
-                    gpu.tempC >= 60 -> Color(0xFFF59E0B)
-                    else -> Color(0xFF10B981)
+        if (detail.gpu.isNotEmpty()) {
+            detail.gpu.forEachIndexed { idx, gpu ->
+                val label = if (detail.gpu.size > 1) "GPU ${idx + 1}" else "GPU"
+                val utilPct = (gpu.utilPct / 100.0).coerceIn(0.0, 1.0).toFloat()
+                val gpuColor = if (utilPct > 0.8f) Color(0xFFEF4444) else Color(0xFF60A5FA)
+                StatBar(label = "$label util", pct = utilPct, valueLabel = "${gpu.utilPct.toInt()}%", color = gpuColor)
+                if (gpu.tempC > 0) {
+                    val tempColor = when {
+                        gpu.tempC >= 80 -> Color(0xFFEF4444)
+                        gpu.tempC >= 60 -> Color(0xFFF59E0B)
+                        else -> Color(0xFF10B981)
+                    }
+                    val tempPct = (gpu.tempC / 100.0).coerceIn(0.0, 1.0).toFloat()
+                    StatBar(label = "$label temp", pct = tempPct, valueLabel = "${gpu.tempC.toInt()}°C", color = tempColor)
                 }
-                val tempPct = (gpu.tempC / 100.0).coerceIn(0.0, 1.0).toFloat()
-                StatBar(label = "$label temp", pct = tempPct, valueLabel = "${gpu.tempC.toInt()}°C", color = tempColor)
+                if (gpu.memTotalBytes > 0) {
+                    val vramPct = (gpu.memUsedBytes.toFloat() / gpu.memTotalBytes.toFloat()).coerceIn(0f, 1f)
+                    StatBar(
+                        label = "$label VRAM",
+                        pct = vramPct,
+                        valueLabel = "${fmtBytes(gpu.memUsedBytes)} / ${fmtBytes(gpu.memTotalBytes)}",
+                        color = Color(0xFF60A5FA),
+                    )
+                }
             }
-            if (gpu.memTotalBytes > 0) {
-                val vramPct = (gpu.memUsedBytes.toFloat() / gpu.memTotalBytes.toFloat()).coerceIn(0f, 1f)
-                StatBar(
-                    label = "$label VRAM",
-                    pct = vramPct,
-                    valueLabel = "${fmtBytes(gpu.memUsedBytes)} / ${fmtBytes(gpu.memTotalBytes)}",
-                    color = Color(0xFF60A5FA),
+        } else {
+            val gpuErr = detail.gpuError?.takeIf { it.isNotBlank() }
+            if (gpuErr != null) {
+                Text(
+                    "GPU probe failed: $gpuErr",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFEF4444),
+                    modifier = androidx.compose.ui.Modifier.padding(top = 4.dp),
                 )
             }
         }

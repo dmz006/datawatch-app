@@ -761,6 +761,14 @@ public class AutonomousViewModel(
         prdOp("Set guided mode") { it.prdAction(prdId, "set_guided_mode", body) }
     }
 
+    public fun setPrdContinueOnStoryFailure(prdId: String, value: Boolean?) {
+        val body = buildJsonObject {
+            if (value != null) put("continue_on_story_failure", JsonPrimitive(value))
+            else put("continue_on_story_failure", kotlinx.serialization.json.JsonNull)
+        }
+        prdOp("Set continue on story failure") { it.prdAction(prdId, "set_continue_on_story_failure", body) }
+    }
+
     public fun setPrdSkills(
         prdId: String,
         skills: List<String>,
@@ -885,7 +893,7 @@ public class AutonomousViewModel(
             while (true) {
                 val (_, transport) = resolver.resolve() ?: break
                 val prd = _state.value.prds.firstOrNull { it.id == prdId }
-                if (prd == null || prd.status !in setOf("running", "decomposing", "planning")) {
+                if (prd == null || prd.status !in setOf("running", "decomposing", "planning", "blocked")) {
                     _state.value = _state.value.copy(
                         prdEnvelopes = emptyList(),
                         prdComputeNodeDetail = null,

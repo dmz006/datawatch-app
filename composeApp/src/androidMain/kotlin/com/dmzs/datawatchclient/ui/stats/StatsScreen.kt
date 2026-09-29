@@ -112,6 +112,22 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
  * [ebpfActive] is false. Mirrors PWA app.js eBPF status strip.
  */
 @Composable
+private fun DegradedBanner(message: String) {
+    androidx.compose.material3.Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        )
+    }
+}
+
+@Composable
 private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     val enabled = s.ebpfEnabled ?: return
     if (!enabled || s.ebpfActive) return
@@ -709,6 +725,12 @@ private fun SystemStatisticsCard(s: StatsDto) {
                     pct,
                     "${formatBytes(usedMb * 1_000_000L)} / ${formatBytes(vramTotal * 1_000_000L)}",
                 )
+            }
+
+            // GPU probe error — shown when probe failed but no GPU data was returned.
+            val gpuErr = s.gpuError?.takeIf { it.isNotBlank() }
+            if (gpuErr != null && s.gpuName == null && gpuUtilPct == null && (vramTotal == null || vramTotal == 0L)) {
+                DegradedBanner("GPU probe failed: $gpuErr")
             }
         }
     }

@@ -143,6 +143,13 @@ public object ConfigFieldSchemas {
                         "autonomous.default_quality_gates.block_on_regression",
                         "Block on test regression",
                     ),
+                    // Issue #193 — continue past a failed story instead of halting the PRD.
+                    // Default false = halt (PRD reaches `blocked`). Per-PRD nullable override
+                    // lives on PrdDto.continueOnStoryFailure and overrides this daemon default.
+                    Toggle(
+                        "autonomous.continue_on_story_failure",
+                        "Continue past a failed story (default: halt)",
+                    ),
                 ),
         )
 

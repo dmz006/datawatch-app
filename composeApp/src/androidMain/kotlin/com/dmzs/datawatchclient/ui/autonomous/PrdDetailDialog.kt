@@ -116,6 +116,7 @@ internal fun PrdDetailDialog(
     automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
+    onSetContinueOnStoryFailure: ((Boolean?) -> Unit)? = null,
     onSetSkills: ((List<String>) -> Unit)? = null,
     onCloneTemplate: (() -> Unit)? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
@@ -488,6 +489,7 @@ internal fun PrdDetailDialog(
                         0 -> {
                             PrdTypeRow(prd, automataTypes, onSetType)
                             PrdGuidedModeRow(prd, onSetGuidedMode)
+                            PrdContinueOnStoryFailureRow(prd, onSetContinueOnStoryFailure)
                             PrdSkillsRow(prd, onSetSkills)
                             prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
                                 Text(
@@ -1579,7 +1581,8 @@ private fun TaskRow(
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
 ) {
-    val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus == "running"
+    // Server now accepts reset_task for PRDBlocked (same as PRDFailed) — widen gate to match.
+    val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus in setOf("running", "blocked")
     val canRequeue = task.status in setOf("complete", "cancelled")
     val canCancel = task.status !in setOf("complete", "cancelled", "failed")
     val canEdit = prdStatus in setOf("needs_review", "revisions_asked")
@@ -1984,6 +1987,51 @@ private fun PrdGuidedModeRow(
             androidx.compose.material3.Switch(checked = prd.guidedMode, onCheckedChange = onSetGuidedMode)
         } else {
             Text(if (prd.guidedMode) "on" else "off", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+private fun PrdContinueOnStoryFailureRow(
+    prd: PrdDto,
+    onSet: ((Boolean?) -> Unit)?,
+) {
+    val current = prd.continueOnStoryFailure
+    if (current == null && onSet == null) return
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            "Continue on story failure",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (onSet != null) {
+            // Three-state: null (inherit global) shown as unchecked; true = on; false = off.
+            // Tapping toggles true → false → null → true.
+            val checked = current == true
+            val label = when (current) {
+                true -> "on"
+                false -> "off"
+                null -> "default"
+            }
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.material3.Switch(
+                checked = checked,
+                onCheckedChange = { newVal ->
+                    onSet(
+                        when (current) {
+                            null -> true
+                            true -> false
+                            false -> null
+                        },
+                    )
+                },
+            )
+        } else {
+            Text(
+                when (current) { true -> "on"; false -> "off"; null -> "default" },
+                style = MaterialTheme.typography.labelSmall,
+            )
         }
     }
 }
