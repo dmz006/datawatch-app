@@ -5,6 +5,7 @@ import android.content.Context
 import android.text.InputType
 import android.util.Log
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -23,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
@@ -49,6 +51,22 @@ import org.json.JSONObject
  * phone) can pan via touch.
  */
 private class TerminalWebView(ctx: Context) : WebView(ctx) {
+    /**
+     * Called by [TerminalView] on every recomposition to clear Compose focus
+     * from the Reply OutlinedTextField when the user taps the terminal area.
+     * Without this, Compose routes IME focus to the nearest Compose-native
+     * focusable (the Reply field) even though the WebView is the touch target,
+     * causing keyboard input to land in the Reply field instead of xterm.
+     */
+    var focusCaptureCallback: (() -> Unit)? = null
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            focusCaptureCallback?.invoke()
+        }
+        return super.onTouchEvent(event)
+    }
+
     override fun overScrollBy(
         deltaX: Int,
         deltaY: Int,
@@ -475,6 +493,7 @@ public fun TerminalView(
     modifier: Modifier = Modifier,
     controller: TerminalController? = null,
 ) {
+    val focusManager = LocalFocusManager.current
     // Keyed to sessionId so navigating A → B resets ready to false, preventing
     // stale-true from causing dwPaneCapture to fire against a not-yet-loaded WebView.
     var ready by remember(sessionId) { mutableStateOf(false) }
@@ -637,6 +656,11 @@ public fun TerminalView(
             }
         },
         update = { webView ->
+            // Keep focusCaptureCallback fresh on every recomposition so
+            // onTouchEvent always holds the current FocusManager reference.
+            (webView as TerminalWebView).focusCaptureCallback = {
+                focusManager.clearFocus(force = true)
+            }
             // onSizeChanged → dwExplicitSize is the primary resize path
             // (above LaunchedEffect). Keep dwResize() as a no-op nudge for
             // recompositions where dimensions did NOT change but state
