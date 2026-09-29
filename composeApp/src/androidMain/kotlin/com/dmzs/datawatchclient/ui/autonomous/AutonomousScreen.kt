@@ -457,6 +457,7 @@ public fun AutonomousScreen(
                 openWebUiModels = state.openWebUiModels,
                 openCodeModels = state.openCodeModels,
                 openCodeModelGroups = state.openCodeModelGroups,
+                extraBackendModels = state.extraBackendModels,
                 onRun = { vm.runPrd(id) },
                 onCancel = { vm.cancelPrd(id) },
                 onRequestRevision = { note -> vm.requestRevision(id, note) },

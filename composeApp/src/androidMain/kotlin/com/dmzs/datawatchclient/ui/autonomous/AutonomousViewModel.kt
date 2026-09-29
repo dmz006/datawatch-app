@@ -74,6 +74,8 @@ public class AutonomousViewModel(
         val openCodeModels: List<String> = emptyList(),
         /** Grouped opencode models: providerLabel → model IDs. */
         val openCodeModelGroups: Map<String, List<String>> = emptyMap(),
+        /** Models for non-ollama/openwebui/opencode backends (e.g. quad): kind → model IDs. */
+        val extraBackendModels: Map<String, List<String>> = emptyMap(),
         /** Latest scan result for the open PRD (v0.62.0). */
         val scanResult: ScanResultDto? = null,
         val scanLoading: Boolean = false,
@@ -222,6 +224,7 @@ public class AutonomousViewModel(
             val openWebUiResult: List<String>
             var openCodeModelsResult: List<String> = emptyList()
             var openCodeGroupsResult: Map<String, List<String>> = emptyMap()
+            var extraBackendModelsResult: Map<String, List<String>> = emptyMap()
             coroutineScope {
                 val prds = async { transport.listPrds() }
                 val backends = async { transport.listBackends().getOrNull()?.llm.orEmpty() }
@@ -229,6 +232,7 @@ public class AutonomousViewModel(
                 val ollama = async { transport.listOllamaModels().getOrElse { emptyList() } }
                 val openWebUi = async { transport.listOpenWebUiModels().getOrElse { emptyList() } }
                 val openCode = async { transport.fetchOpenCodeModels() }
+                val llms = async { transport.listLlms().getOrElse { emptyList() } }
                 prdsResult = prds.await()
                 backendsResult = backends.await()
                 permModesResult = permModes.await()
@@ -241,6 +245,17 @@ public class AutonomousViewModel(
                     openCodeGroupsResult = groups
                     openCodeModelsResult = resp.models.map { it.id }.filter { it.isNotBlank() }
                 }
+                val llmList = llms.await()
+                extraBackendModelsResult = llmList
+                    .filter { it.enabled && !it.kind.startsWith("opencode") && it.kind !in setOf("ollama", "openwebui") }
+                    .groupBy { it.kind }
+                    .mapValues { (_, entries) ->
+                        entries
+                            .flatMap { e -> e.models.map { p -> p.model } + listOf(e.model) }
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                    }
+                    .filterValues { it.isNotEmpty() }
             }
             prdsResult.fold(
                 onSuccess = { dto ->
@@ -254,6 +269,7 @@ public class AutonomousViewModel(
                             openWebUiModels = openWebUiResult,
                             openCodeModels = openCodeModelsResult,
                             openCodeModelGroups = openCodeGroupsResult,
+                            extraBackendModels = extraBackendModelsResult,
                         )
                 },
                 onFailure = { err ->

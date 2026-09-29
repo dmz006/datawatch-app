@@ -102,6 +102,8 @@ internal fun PrdDetailDialog(
     openCodeModels: List<String> = emptyList(),
     /** Grouped opencode models: providerLabel → model IDs. */
     openCodeModelGroups: Map<String, List<String>> = emptyMap(),
+    /** Models for non-ollama/openwebui/opencode backends (e.g. quad): kind → model IDs. */
+    extraBackendModels: Map<String, List<String>> = emptyMap(),
     onRun: () -> Unit,
     onCancel: () -> Unit,
     onRequestRevision: (note: String) -> Unit,
@@ -872,6 +874,7 @@ internal fun PrdDetailDialog(
             openWebUiModels = openWebUiModels,
             openCodeModels = openCodeModels,
             openCodeModelGroups = openCodeModelGroups,
+            extraBackendModels = extraBackendModels,
             onDismiss = { llmOpen = false },
             onSave = { b, e, m, dp, dm ->
                 onSetLlm(b, e, m, dp, dm)
@@ -1022,6 +1025,7 @@ private fun LlmOverrideDialog(
     openWebUiModels: List<String> = emptyList(),
     openCodeModels: List<String> = emptyList(),
     openCodeModelGroups: Map<String, List<String>> = emptyMap(),
+    extraBackendModels: Map<String, List<String>> = emptyMap(),
     onDismiss: () -> Unit,
     onSave: (backend: String, effort: String, model: String, decompositionProfile: String, decompositionModel: String) -> Unit,
 ) {
@@ -1043,7 +1047,7 @@ private fun LlmOverrideDialog(
         backend.contains("ollama", ignoreCase = true) -> ollamaModels
         backend.contains("openwebui", ignoreCase = true) -> openWebUiModels
         backend.startsWith("opencode", ignoreCase = true) -> openCodeModels
-        else -> emptyList()
+        else -> extraBackendModels[backend].orEmpty()
     }
     val execIsOpenCode = backend.startsWith("opencode", ignoreCase = true) && openCodeModelGroups.isNotEmpty()
 
@@ -1052,7 +1056,7 @@ private fun LlmOverrideDialog(
         decompositionProfile.contains("ollama", ignoreCase = true) -> ollamaModels
         decompositionProfile.contains("openwebui", ignoreCase = true) -> openWebUiModels
         decompositionProfile.startsWith("opencode", ignoreCase = true) -> openCodeModels
-        else -> emptyList()
+        else -> extraBackendModels[decompositionProfile].orEmpty()
     }
     val planIsOpenCode = decompositionProfile.startsWith("opencode", ignoreCase = true) && openCodeModelGroups.isNotEmpty()
 

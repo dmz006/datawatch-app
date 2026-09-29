@@ -203,6 +203,21 @@ internal fun NewPrdDialog(
                         if (opencodeMods.isNotEmpty()) models["opencode"] = opencodeMods
                     }
                 }
+                // Populate models for all other backends (e.g. quad) from the LLM registry.
+                llmsD.await().onSuccess { llmList ->
+                    llmList
+                        .filter { it.enabled && !it.kind.startsWith("opencode") && it.kind !in setOf("ollama", "openwebui") }
+                        .groupBy { it.kind }
+                        .forEach { (kind, entries) ->
+                            if (kind !in models) {
+                                val ids = entries
+                                    .flatMap { e -> e.models.map { p -> p.model } + listOf(e.model) }
+                                    .filter { it.isNotBlank() }
+                                    .distinct()
+                                if (ids.isNotEmpty()) models[kind] = ids
+                            }
+                        }
+                }
                 availableModels = models
             }
         }
