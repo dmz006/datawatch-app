@@ -120,10 +120,13 @@ internal fun SessionStatsCards(
         ContainerCard(containerInfo)
     }
 
-    // ComputeNode card — conditional on session.computeNodeRef != null
-    if (session?.computeNodeRef?.isNotBlank() == true) {
+    // ComputeNode card — use session.computeNodeRef when set; fall back to the ViewModel's
+    // resolved ref (looked up via LLM registry for opencode sessions that have no explicit ref).
+    val effectiveComputeNodeRef = session?.computeNodeRef?.takeIf { it.isNotBlank() }
+        ?: sparkState.resolvedComputeNodeRef?.takeIf { it.isNotBlank() }
+    if (effectiveComputeNodeRef != null) {
         ComputeNodeCard(
-            computeNodeRef = session.computeNodeRef!!,
+            computeNodeRef = effectiveComputeNodeRef,
             gpuPct = envelope?.gpuPct ?: 0.0,
             gpuMemBytes = envelope?.gpuMemBytes ?: 0L,
             detail = sparkState.computeNodeDetail,
@@ -134,10 +137,13 @@ internal fun SessionStatsCards(
         )
     }
 
-    // LLM card — conditional on session.llmRef != null
-    if (session?.llmRef?.isNotBlank() == true) {
+    // LLM card — show if llmRef is set; fall back to backend name (opencode sessions
+    // never get llm_ref from server but their backend field maps to the LLM registry entry).
+    val llmCardRef = session?.llmRef?.takeIf { it.isNotBlank() }
+        ?: session?.backend?.takeIf { it.isNotBlank() }
+    if (llmCardRef != null) {
         LlmCard(
-            llmRef = session.llmRef!!,
+            llmRef = llmCardRef,
             onNavigate = onNavigateToLlmTab,
         )
     }

@@ -28,6 +28,8 @@ public class SessionStatsViewModel(
         val ollamaCpuSamples: List<Float> = emptyList(),
         val envelope: StatEnvelopeDto? = null,
         val computeNodeDetail: ComputeNodeDetailDto? = null,
+        /** Compute node name resolved via LLM registry when session.computeNodeRef is null. */
+        val resolvedComputeNodeRef: String? = null,
     )
 
     private val cpuBuf = ArrayDeque<Float>(SPARKLINE_SIZE)
@@ -72,11 +74,21 @@ public class SessionStatsViewModel(
 
     private suspend fun fetchEnvelopes() {
         val (_, transport) = resolver.resolve() ?: return
-        // Auto-resolve computeNodeRef from session list on first poll if not provided externally
+        // Auto-resolve computeNodeRef from session list on first poll if not provided externally.
+        // If the session has no explicit compute_node_ref, fall back to the LLM registry:
+        // each LLM entry lists compute_nodes[] — mirrors PWA PRD widget getBackendNodes().
         if (!computeNodeRefResolved) {
             transport.listSessions().getOrNull()?.firstOrNull { it.id == sessionId }?.let { session ->
                 computeNodeRef = session.computeNodeRef
                 backendFamily = session.backend
+            }
+            if (computeNodeRef == null && backendFamily != null) {
+                val bf = backendFamily
+                transport.listLlms().getOrNull()
+                    ?.firstOrNull { it.name == bf }
+                    ?.computeNodes
+                    ?.firstOrNull()
+                    ?.let { computeNodeRef = it }
             }
             computeNodeRefResolved = true
         }
@@ -123,17 +135,17 @@ public class SessionStatsViewModel(
                     ollamaCpuSamples = ollamaCpuBuf.toList(),
                     envelope = env,
                     computeNodeDetail = detail,
+                    resolvedComputeNodeRef = computeNodeRef,
                 )
         }.onFailure {
-            // Envelopes unavailable — still surface compute node detail.
-            if (detail != null) {
-                _state.value = _state.value.copy(
-                    gpuUtilSamples = gpuUtilBuf.toList(),
-                    gpuTempSamples = gpuTempBuf.toList(),
-                    ollamaCpuSamples = ollamaCpuBuf.toList(),
-                    computeNodeDetail = detail,
-                )
-            }
+            // Envelopes unavailable — still surface compute node detail and resolved ref.
+            _state.value = _state.value.copy(
+                gpuUtilSamples = gpuUtilBuf.toList(),
+                gpuTempSamples = gpuTempBuf.toList(),
+                ollamaCpuSamples = ollamaCpuBuf.toList(),
+                computeNodeDetail = detail,
+                resolvedComputeNodeRef = computeNodeRef,
+            )
         }
     }
 
