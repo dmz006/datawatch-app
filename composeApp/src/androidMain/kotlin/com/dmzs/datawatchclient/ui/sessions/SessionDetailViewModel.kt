@@ -17,10 +17,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 
 /**
@@ -109,6 +111,9 @@ public class SessionDetailViewModel(
     private var profileCache: ServerProfile? = null
     // Debounce job that delays _reachable → false to absorb transient blips (<3.5s).
     private var offlineDebounceJob: Job? = null
+    // True when a pane_capture arrived before state.session was populated — triggers
+    // contentReady once the session lands from the REST refresh.
+    @Volatile private var paneCaptureArrived = false
 
     public val state: StateFlow<UiState> by lazy { buildState() }
 
@@ -161,19 +166,28 @@ public class SessionDetailViewModel(
     }
 
     init {
-        // Kick off the WebSocket stream once we know the profile.
         viewModelScope.launch {
             val profile = resolveProfile() ?: return@launch
             profileCache = profile
-            // v0.54.0 — await the REST refresh BEFORE opening the WS stream.
-            // Previous order (startStream → refreshFromServer) meant the WS
-            // delivered a pane_capture and dismissed the loading overlay while
-            // state.session was still null (REST in flight). Result: no
-            // GeneratingIndicator, no state badge until the REST eventually
-            // landed. Swapping the order ensures state.session is populated
-            // before the first frame from the WS arrives.
-            doRefreshFromServer(profile)
+
+            // Start WS connection immediately — don't block on REST refresh.
+            // State.session is populated from the local DB cache (observeForProfileAny)
+            // so the terminal renders as soon as pane_capture arrives.
+            // Previously the REST refresh ran first (sequential), which delayed WS
+            // connection by the full listSessions() round-trip over Tailscale (~3-8s).
             startStream(profile)
+
+            // REST refresh runs in parallel — updates DB which feeds sessionsFlow.
+            launch { doRefreshFromServer(profile) }
+
+            // Safety net for cold-start (empty DB cache): if pane_capture arrived
+            // before state.session was populated, set contentReady once session lands.
+            state
+                .filter { it.session != null }
+                .take(1)
+                .onEach { if (paneCaptureArrived && !_contentReady.value) _contentReady.value = true }
+                .launchIn(viewModelScope)
+
             // Mirror the owning profile's transport reachability into the VM.
             // Only delay the offline transition — online is immediate.
             ServiceLocator.transportFor(profile).isReachable
@@ -190,16 +204,13 @@ public class SessionDetailViewModel(
                     }
                 }
                 .launchIn(viewModelScope)
-            // Fetch /api/info once for the messaging-backend badge in
-            // the header. Best-effort; silent on failure.
+
+            // Single fetchInfo call for both messagingBackend and whisperConfigured.
+            // Previously two back-to-back calls to the same endpoint.
             ServiceLocator.transportFor(profile).fetchInfo().onSuccess { info ->
                 info.messagingBackend?.takeIf { it.isNotBlank() }?.let {
                     _messagingBackend.value = it
                 }
-            }
-            // Use the dedicated whisper_configured field from GET /api/info (v8.33.34+).
-            // Falls back to false on older servers that don't emit the field.
-            ServiceLocator.transportFor(profile).fetchInfo().onSuccess { info ->
                 if (info.whisperConfigured) _whisperConfigured.value = true
             }
         }
@@ -237,6 +248,7 @@ public class SessionDetailViewModel(
         streamJob = null
         _reachable.value = null
         _contentReady.value = false
+        paneCaptureArrived = false
     }
 
     /**
@@ -342,7 +354,13 @@ public class SessionDetailViewModel(
                         _infoBanner.value = null
                     }
                     if (!_contentReady.value && ev is SessionEvent.PaneCapture) {
-                        _contentReady.value = true
+                        paneCaptureArrived = true
+                        // Only mark content ready when session metadata is also available
+                        // (guards against the cold-start edge case where session isn't in
+                        // the local DB cache yet and REST is still in flight).
+                        if (state.value.session != null) _contentReady.value = true
+                        // else: the state.filter{session!=null}.take(1) observer in init will
+                        // set contentReady once the REST refresh completes and session arrives.
                     }
                     ServiceLocator.sessionEventRepository.insert(ev)
                     // v0.35.8 — mirror PWA v5.26.49 fix:

@@ -62,7 +62,9 @@ public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient
         }
         install(ContentNegotiation) { json(RestTransport.DefaultJson) }
         install(HttpTimeout) {
-            connectTimeoutMillis = 10_000
+            // 5 s is enough for Tailscale connections — halves the wait on a
+            // failed first attempt before the 500ms-backoff retry fires.
+            connectTimeoutMillis = 5_000
             // Critical: Ktor's default requestTimeoutMillis cuts long-lived
             // WebSockets after ~15 s. Setting these to Long.MAX_VALUE lets
             // the OkHttp ping mechanism manage liveness instead.
