@@ -172,11 +172,13 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
             ): Boolean {
                 // Strip any trailing \r / \n Samsung/Gboard appends when committing a word.
                 val cleaned = text?.trimEnd('\r', '\n') ?: return super.commitText(text, newCursorPosition)
-                // Only open the spurious-Enter window for multi-character commits — those
-                // are autocomplete/autocorrect word commits. Single-character commits are
-                // individual keypresses (no composing); marking the window for them would
-                // suppress intentional Enters typed within 150 ms of any character.
-                if (cleaned.length > 1) lastCommitMs = System.currentTimeMillis()
+                // Open the spurious-Enter window for ALL non-empty commits.
+                // Samsung fires performEditorAction / sendKeyEvent(ENTER) after *every*
+                // character commit — not just multi-char autocomplete. With the window only
+                // gating on length > 1, single-char commits left lastCommitMs = 0, so
+                // performEditorAction treated the post-char Enter as intentional and fired
+                // DwBridge.onInput('\r'), making every typed character send char + \r.
+                if (cleaned.isNotEmpty()) lastCommitMs = System.currentTimeMillis()
                 return super.commitText(cleaned, newCursorPosition)
             }
             // finishComposingText NOT overridden: it fires on focus-loss and other
@@ -186,9 +188,9 @@ private class TerminalWebView(ctx: Context) : WebView(ctx) {
     }
 
     private companion object {
-        // How long after a multi-char autocomplete commit to treat the next Enter
-        // as spurious. Samsung/Gboard fire the phantom Enter within ~50 ms; 150 ms
-        // gives headroom without blocking rapid intentional Enter presses.
+        // How long after any character commit to treat the next Enter as spurious.
+        // Samsung fires the phantom Enter within ~50 ms; 150 ms gives headroom
+        // without blocking intentional Enter presses (two soft-key taps < 150 ms apart).
         const val SPURIOUS_ENTER_WINDOW_MS = 150L
     }
 
