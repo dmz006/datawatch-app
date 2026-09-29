@@ -2176,7 +2176,7 @@ private fun ReplyComposer(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
             modifier = Modifier.height(32.dp),
         ) {
-            Text("␛", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("␛", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         // PWA arrow order: ↑ ↓ ← →
         IconButton(
@@ -2187,7 +2187,7 @@ private fun ReplyComposer(
                 Icons.Filled.KeyboardArrowUp,
                 contentDescription = stringResource(R.string.session_detail_up_arrow),
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         IconButton(
@@ -2198,7 +2198,7 @@ private fun ReplyComposer(
                 Icons.Filled.KeyboardArrowDown,
                 contentDescription = stringResource(R.string.session_detail_down_arrow),
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         IconButton(
@@ -2209,7 +2209,7 @@ private fun ReplyComposer(
                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = stringResource(R.string.session_detail_left_arrow),
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         IconButton(
@@ -2220,7 +2220,7 @@ private fun ReplyComposer(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = stringResource(R.string.session_detail_right_arrow),
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         // Enter — matches PWA savedCmdsQuick ⏎ button
@@ -2229,7 +2229,7 @@ private fun ReplyComposer(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp),
             modifier = Modifier.height(32.dp),
         ) {
-            Text("⏎", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("⏎", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 
