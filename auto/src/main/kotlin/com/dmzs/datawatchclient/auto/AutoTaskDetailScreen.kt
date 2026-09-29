@@ -7,14 +7,11 @@ import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
@@ -32,8 +29,7 @@ import kotlinx.coroutines.launch
  * the user couldn't requeue/cancel a task while driving with the old design.
  *
  * At depth 5 (max), VoiceRecordingScreen cannot be pushed (would exceed the
- * 5-screen limit). The mic ActionStrip icon instead speaks the full task body
- * via TTS so the user can listen to all details hands-free.
+ * 5-screen limit).
  *
  * Row layout:
  *   [if failed]       "⟳ Requeue task" (tappable)
@@ -41,10 +37,6 @@ import kotlinx.coroutines.launch
  *   Task detail row   (status + spec + error if any) — display only
  *   Verification row  (if present) — display only
  *   Files row         (filesTouched, if any) — display only
- *
- * ActionStrip (2 icon-only, MESSAGING limit; no screen push at depth 5):
- *   slot 1: speaker → TTS task name + status (quick summary)
- *   slot 2: mic     → TTS full task body including spec, error, verification
  */
 public class AutoTaskDetailScreen(
     carContext: CarContext,
@@ -202,36 +194,10 @@ public class AutoTaskDetailScreen(
             rowCount++
         }
 
-        // ActionStrip: 2 icon-only at depth 5 — no screen push (would exceed limit).
-        // Speaker = quick TTS (name + status); mic = full TTS (spec + verification + files).
-        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
-        val micIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
-        val strip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(speakerIcon)
-                    .setOnClickListener {
-                        // Quick: task name + status
-                        AutoTts.speak(carContext, "${task.task}. Status: ${task.status.replace('_', ' ')}.")
-                    }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(micIcon)
-                    .setOnClickListener {
-                        // Full: spec + error + verification (long version for listening while parked)
-                        AutoTts.speak(carContext, buildTaskBody(task))
-                    }
-                    .build(),
-            )
-            .build()
-
         return ListTemplate.Builder()
             .setTitle(taskTitle)
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
-            .setActionStrip(strip)
             .build()
     }
 

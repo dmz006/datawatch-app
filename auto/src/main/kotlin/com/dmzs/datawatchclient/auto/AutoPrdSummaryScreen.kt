@@ -5,11 +5,8 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 
 /**
@@ -17,7 +14,7 @@ import com.dmzs.datawatchclient.transport.dto.PrdDto
  *
  * Shows PRD-level summary: status, story counts, and spec text (truncated to fit).
  * Pushed from a ListTemplate (AutoPrdDetailScreen), so MessageTemplate is allowed here.
- * ActionStrip: speaker (TTS) + close (pop) — exactly 2 icon-only actions.
+ * No ActionStrip — buttons removed temporarily while diagnosing Samsung driving restriction.
  */
 public class AutoPrdSummaryScreen(
     carContext: CarContext,
@@ -40,45 +37,14 @@ public class AutoPrdSummaryScreen(
             if (isEmpty()) append("No additional details.")
         }
 
-        val speakerIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)
-        ).build()
-        val closeIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)
-        ).build()
-
         MessageTemplate.Builder(body)
             .setTitle(prd.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Overview")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(speakerIcon)
-                            .setOnClickListener { AutoTts.speak(carContext, body) }
-                            .build(),
-                    )
-                    .addAction(
-                        Action.Builder()
-                            .setIcon(closeIcon)
-                            .setOnClickListener { screenManager.pop() }
-                            .build(),
-                    )
-                    .build(),
-            )
             .build()
     } catch (e: Throwable) {
-        val closeIcon = CarIcon.Builder(
-            IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)
-        ).build()
         MessageTemplate.Builder("Error: ${e.message ?: "Unknown"}")
             .setTitle("Overview")
             .setHeaderAction(Action.BACK)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
-                    .build(),
-            )
             .build()
     }
 

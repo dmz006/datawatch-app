@@ -6,15 +6,11 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
@@ -26,11 +22,10 @@ import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
  * depth slot and leaving depth 5 free for [AutoTaskDetailScreen].
  *
  * Lifecycle actions (Approve, Reset Task, Cancel Story) live in the story-
- * detail ActionStrip. Each task row in story-detail mode is tappable and
+ * Each task row in story-detail mode is tappable and
  * pushes [AutoTaskDetailScreen] (depth 5).
  *
- * "◀ Stories" in the ActionStrip returns to stories-list mode without
- * popping the screen. The system-back / header BACK action pops to
+ * The system-back / header BACK action pops to
  * [AutoPrdDetailScreen] (depth 3) regardless of which mode is active.
  */
 public class AutoPrdStoriesScreen(
@@ -151,42 +146,11 @@ public class AutoPrdStoriesScreen(
             )
         }
 
-        // ActionStrip: MESSAGING path limits ALL templates to 2 icon-only strip actions.
-        // Strip = sessions (back to list) + voice (update story). Approve/reset/cancel
-        // actions require returning to PRD detail — depth 5 is consumed by task detail.
-        val sessionsIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_sessions)).build()
-        val voiceIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_voice)).build()
         val storyTitle = story.title.take(38).ifBlank { "Story" }
-
-        val strip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(sessionsIcon)
-                    .setOnClickListener { selectedStory = null; invalidate() }
-                    .build(),
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(voiceIcon)
-                    .setOnClickListener {
-                        screenManager.push(
-                            VoiceRecordingScreen(
-                                carContext,
-                                sessionId = "",
-                                sessionTitle = storyTitle,
-                                prdId = prd.id,
-                                storyId = story.id,
-                            ),
-                        )
-                    }
-                    .build(),
-            )
-            .build()
 
         return ListTemplate.Builder()
             .setTitle(storyTitle.ifBlank { "Story Detail" })
             .setHeaderAction(Action.BACK)
-            .setActionStrip(strip)
             .setSingleList(items.build())
             .build()
     }
