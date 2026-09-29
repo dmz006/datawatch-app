@@ -47,7 +47,11 @@ public class SessionStatsViewModel(
     public fun updateComputeNodeRef(ref: String?, backendFamily: String? = null) {
         computeNodeRef = ref
         if (backendFamily != null) this.backendFamily = backendFamily
-        computeNodeRefResolved = true
+        // Only mark resolved when the caller has a real ref. The LaunchedEffect in
+        // SessionStatsPanel fires with null on first composition (session not yet
+        // loaded), and setting computeNodeRefResolved=true there would skip the
+        // auto-resolve-from-session-list path on the first poll.
+        if (ref != null) computeNodeRefResolved = true
     }
 
     public fun startPolling() {
@@ -96,8 +100,10 @@ public class SessionStatsViewModel(
         transport.getAllEnvelopes().onSuccess { envelopes ->
             val bf = backendFamily
             val env =
-                envelopes.firstOrNull { it.kind == "session" && it.id == "session:$sessionId" }
-                    ?: if (bf != null) {
+                envelopes.firstOrNull {
+                    it.kind == "session" &&
+                        (it.sessionId == sessionId || it.id == "session:$sessionId")
+                } ?: if (bf != null) {
                         envelopes.firstOrNull {
                             it.kind == "backend" && (it.id == "backend:$bf" || it.id == "backend:$bf-docker")
                         }

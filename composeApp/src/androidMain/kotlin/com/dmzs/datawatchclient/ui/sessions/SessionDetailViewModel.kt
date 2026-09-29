@@ -170,12 +170,18 @@ public class SessionDetailViewModel(
             val profile = resolveProfile() ?: return@launch
             profileCache = profile
 
+            // resolveProfile() already queried the session from DB; capture the
+            // fullId ("hostname-shortid") now so startStream's subscribe frame
+            // uses it. state.value.session is null at this point — the lazy
+            // StateFlow hasn't had time to emit — so fullIdOrShort() would
+            // return the bare shortId, causing the server to drop pane_capture
+            // frames (it keys them on fullId).
+            val cachedFullId = runCatching {
+                ServiceLocator.sessionRepository.observeForProfileAny(sessionId).first()?.fullId
+            }.getOrNull()
+
             // Start WS connection immediately — don't block on REST refresh.
-            // State.session is populated from the local DB cache (observeForProfileAny)
-            // so the terminal renders as soon as pane_capture arrives.
-            // Previously the REST refresh ran first (sequential), which delayed WS
-            // connection by the full listSessions() round-trip over Tailscale (~3-8s).
-            startStream(profile)
+            startStream(profile, cachedFullId)
 
             // REST refresh runs in parallel — updates DB which feeds sessionsFlow.
             launch { doRefreshFromServer(profile) }
@@ -273,7 +279,7 @@ public class SessionDetailViewModel(
     public var terminalCols: Int = 80
     public var terminalRows: Int = 24
 
-    private fun startStream(profile: ServerProfile) {
+    private fun startStream(profile: ServerProfile, knownFullId: String? = null) {
         streamJob?.cancel()
         wsSessionRefreshFired = false
         _contentReady.value = false
@@ -291,7 +297,9 @@ public class SessionDetailViewModel(
         // Subscribe with fullId (hostname-shortid format), not just short sessionId.
         // The server keys all pane_capture frames on fullId, so we must subscribe with it.
         // But store events with short sessionId for the UI to query.
-        val subscriptionId = fullIdOrShort()
+        // knownFullId is pre-fetched in init from the DB to avoid the race where
+        // state.value.session is null and fullIdOrShort() would return the bare shortId.
+        val subscriptionId = knownFullId ?: fullIdOrShort()
         streamJob =
             transport.events(subscriptionId, sessionId)
                 .onEach { ev ->
