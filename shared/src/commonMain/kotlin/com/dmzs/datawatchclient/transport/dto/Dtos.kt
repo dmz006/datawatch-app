@@ -261,6 +261,9 @@ public data class StatsDto(
     val backends: List<BackendStatusDto> = emptyList(),
     // B5 — per-core CPU utilisation strip (server emits when eBPF/proc available)
     @SerialName("cpu_cores_detail") val cpuCoresDetail: List<Double> = emptyList(),
+    /** Non-empty when the GPU probe (NVML/tegrastats/nvidia-smi) failed. Distinguishes
+     *  "no GPU hardware" (empty string, gpu fields absent) from "GPU probe broken" (reason string). */
+    @SerialName("gpu_error") val gpuError: String? = null,
 )
 
 @Serializable
@@ -680,6 +683,9 @@ public data class PrdDto(
     /** v8.30.0 BL386: auto-generated learning summary on completion. */
     @SerialName("memory_report") val memoryReport: String? = null,
     @SerialName("memory_report_at") val memoryReportAt: String? = null,
+    /** Issue #193: null = inherit global `autonomous.continue_on_story_failure` daemon default.
+     *  true = continue into later stories even if one fails; false = halt (PRD → blocked). */
+    @SerialName("continue_on_story_failure") val continueOnStoryFailure: Boolean? = null,
 )
 
 @Serializable
@@ -1173,6 +1179,8 @@ public data class ComputeNodeDetailDto(
     @SerialName("uptime_seconds") val uptimeSeconds: Long = 0,
     @SerialName("sampled_at_unix_ms") val sampledAtUnixMs: Long = 0,
     @SerialName("ollama_stats") val ollamaStats: ComputeNodeOllamaDto? = null,
+    /** Non-empty when the GPU probe failed — same semantics as [StatsDto.gpuError]. */
+    @SerialName("gpu_error") val gpuError: String? = null,
 )
 
 @Serializable
