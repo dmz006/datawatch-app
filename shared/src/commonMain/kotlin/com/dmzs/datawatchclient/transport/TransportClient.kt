@@ -198,7 +198,12 @@ public interface TransportClient {
      * expected `{"id": "..."}` body; callers receive [TransportError.NotFound]
      * if the server doesn't support it yet and grey out the UI control.
      */
-    public suspend fun deleteSession(sessionId: String): Result<Unit>
+    public suspend fun deleteSession(
+        sessionId: String,
+        memoryStrategy: String? = null,
+        archiveRoleFilter: List<String> = emptyList(),
+        archiveToScope: String? = null,
+    ): Result<Unit>
 
     /**
      * POST /api/sessions/delete with `{"ids": [...]}` body for bulk. Same
@@ -496,6 +501,12 @@ public interface TransportClient {
 
     /** POST /api/autonomous/prds/{id}/reject_story — block a story; runner skips it until re-approved. */
     public suspend fun rejectStory(prdId: String, storyId: String, reason: String): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/set_priority — update admission priority (higher = runs first). */
+    public suspend fun setPrdPriority(prdId: String, priority: Int): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/set_dirs — update allowed read/write directory scope. */
+    public suspend fun setPrdDirs(prdId: String, readDirs: List<String>, writeDirs: List<String>): Result<Unit>
 
     /** POST /api/autonomous/prds/{id}/add_story — append a new empty story. */
     public suspend fun addStory(prdId: String, title: String, description: String = "", actor: String? = null): Result<Unit>

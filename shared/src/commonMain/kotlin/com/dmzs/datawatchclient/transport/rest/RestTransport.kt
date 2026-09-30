@@ -503,12 +503,22 @@ public class RestTransport(
             dto.toDomain(profile.id)
         }
 
-    override suspend fun deleteSession(sessionId: String): Result<Unit> =
+    override suspend fun deleteSession(
+        sessionId: String,
+        memoryStrategy: String?,
+        archiveRoleFilter: List<String>,
+        archiveToScope: String?,
+    ): Result<Unit> =
         request {
             client.post("${profile.baseUrl}/api/sessions/delete") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
-                setBody(DeleteSessionDto(id = sessionId))
+                setBody(DeleteSessionDto(
+                    id = sessionId,
+                    memoryStrategy = memoryStrategy?.takeIf { it != "keep" },
+                    archiveRoleFilter = archiveRoleFilter.takeIf { it.isNotEmpty() },
+                    archiveToScope = archiveToScope,
+                ))
             }
         }
 
@@ -1049,6 +1059,31 @@ public class RestTransport(
                 put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
             }
             client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/reject_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun setPrdPriority(prdId: String, priority: Int): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("priority", kotlinx.serialization.json.JsonPrimitive(priority))
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/set_priority") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun setPrdDirs(prdId: String, readDirs: List<String>, writeDirs: List<String>): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("read_dirs", kotlinx.serialization.json.buildJsonArray { readDirs.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } })
+                put("write_dirs", kotlinx.serialization.json.buildJsonArray { writeDirs.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } })
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/set_dirs") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
                 contentType(ContentType.Application.Json)
                 setBody(body)

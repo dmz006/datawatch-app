@@ -706,6 +706,30 @@ public class AutonomousViewModel(
         }
     }
 
+    public fun setPriority(prdId: String, priority: Int) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.setPrdPriority(prdId, priority).fold(
+                onSuccess = { fetchFullPrd(prdId) },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Set priority failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun setDirs(prdId: String, readDirs: List<String>, writeDirs: List<String>) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.setPrdDirs(prdId, readDirs, writeDirs).fold(
+                onSuccess = { fetchFullPrd(prdId) },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Set dirs failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
     public fun addStory(prdId: String, title: String, description: String = "") {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch

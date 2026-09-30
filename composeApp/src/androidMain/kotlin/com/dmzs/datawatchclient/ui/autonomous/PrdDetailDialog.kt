@@ -67,8 +67,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
@@ -155,6 +157,10 @@ internal fun PrdDetailDialog(
     prdActiveSessions: List<com.dmzs.datawatchclient.ui.autonomous.AutonomousViewModel.PrdActiveSessionInfo> = emptyList(),
     /** Capacity admission pools + wait queue. PWA prdCapacityCard parity. */
     prdCapacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto? = null,
+    /** #192 — set Automaton admission priority (higher = runs first). */
+    onSetPriority: ((Int) -> Unit)? = null,
+    /** #191 — set allowed read/write directory scope. */
+    onSetDirs: ((readDirs: List<String>, writeDirs: List<String>) -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -508,10 +514,34 @@ internal fun PrdDetailDialog(
                 ) {
                     when (selectedTab) {
                         0 -> {
+                            // #191 scope_warnings banner
+                            if (prd.scopeWarnings) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text(
+                                            stringResource(R.string.prd_scope_warnings_title),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            stringResource(R.string.prd_scope_warnings_body),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                        )
+                                    }
+                                }
+                            }
                             PrdTypeRow(prd, automataTypes, onSetType)
                             PrdGuidedModeRow(prd, onSetGuidedMode)
                             PrdContinueOnStoryFailureRow(prd, onSetContinueOnStoryFailure)
                             PrdSkillsRow(prd, onSetSkills)
+                            PrdPriorityRow(prd, onSetPriority)
+                            PrdScopeDirsRow(prd, onSetDirs)
                             prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
                                 Text(
                                     spec,
@@ -1789,7 +1819,7 @@ private fun TaskRow(
     val canEdit = prdStatus in setOf("needs_review", "revisions_asked", "cancelled")
 
     val activeTaskStatuses2 = remember {
-        setOf("running", "in_progress", "verifying", "running_tests", "blocked", "failed")
+        setOf("running", "in_progress", "verifying", "running_tests", "blocked", "failed", "waiting_capacity")
     }
     var expanded by remember { mutableStateOf(task.status.lowercase() in activeTaskStatuses2) }
     var cancelTaskOpen by remember { mutableStateOf(false) }
@@ -1805,13 +1835,14 @@ private fun TaskRow(
         "complete", "completed" -> "✓" to Color(0xFF10B981)
         "failed" -> "✗" to Color(0xFFEF4444)
         "blocked" -> "⛔" to Color(0xFFF59E0B)
+        "waiting_capacity" -> "⏳" to Color(0xFFF59E0B)
         "cancelled", "canceled" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
         "pending" -> "○" to MaterialTheme.colorScheme.onSurfaceVariant
         else -> "" to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     val hasBody = task.spec.isNotBlank() || task.filesTouched.isNotEmpty() || task.files.isNotEmpty() ||
-        !task.sessionId.isNullOrBlank() || !task.error.isNullOrBlank() ||
+        !task.sessionId.isNullOrBlank() || !task.error.isNullOrBlank() || !task.waitReason.isNullOrBlank() ||
         task.verification != null || canRetry || canRequeue || canCancel || canEdit
 
     Column(
@@ -1934,6 +1965,20 @@ private fun TaskRow(
                     err,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFEF4444),
+                    modifier = Modifier.padding(6.dp),
+                )
+            }
+        }
+        task.waitReason?.takeIf { task.status == "waiting_capacity" && it.isNotBlank() }?.let { reason ->
+            Surface(
+                color = Color(0xFFF59E0B).copy(alpha = 0.12f),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                Text(
+                    "⏳ $reason",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFF59E0B),
                     modifier = Modifier.padding(6.dp),
                 )
             }
@@ -2304,6 +2349,128 @@ private fun PrdSkillsRow(
                 TextButton(
                     onClick = { editOpen = false },
                 ) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PrdPriorityRow(prd: PrdDto, onSetPriority: ((Int) -> Unit)?) {
+    if (prd.priority == 3 && onSetPriority == null) return
+    var editOpen by remember { mutableStateOf(false) }
+    var priorityText by remember(prd.priority) { mutableStateOf(prd.priority.toString()) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.prd_settings_priority_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            prd.priority.toString(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (onSetPriority != null) {
+            IconButton(onClick = { editOpen = true }) {
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
+            }
+        }
+    }
+    if (editOpen && onSetPriority != null) {
+        AlertDialog(
+            onDismissRequest = { editOpen = false },
+            title = { Text(stringResource(R.string.prd_settings_priority_label)) },
+            text = {
+                OutlinedTextField(
+                    value = priorityText,
+                    onValueChange = { priorityText = it.filter { c -> c.isDigit() } },
+                    label = { Text(stringResource(R.string.prd_settings_priority_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    priorityText.toIntOrNull()?.let { onSetPriority(it) }
+                    editOpen = false
+                }) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PrdScopeDirsRow(prd: PrdDto, onSetDirs: ((List<String>, List<String>) -> Unit)?) {
+    val hasAny = prd.readDirs.isNotEmpty() || prd.writeDirs.isNotEmpty()
+    if (!hasAny && onSetDirs == null) return
+    var editOpen by remember { mutableStateOf(false) }
+    var writeDirsText by remember(prd.writeDirs) { mutableStateOf(prd.writeDirs.joinToString("\n")) }
+    var readDirsText by remember(prd.readDirs) { mutableStateOf(prd.readDirs.joinToString("\n")) }
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.automata_detail_writable_dirs),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            if (onSetDirs != null) {
+                IconButton(onClick = { editOpen = true }) {
+                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
+                }
+            }
+        }
+        if (prd.writeDirs.isNotEmpty()) {
+            prd.writeDirs.forEach { dir ->
+                Text(dir, style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+        if (prd.readDirs.isNotEmpty()) {
+            Text(
+                stringResource(R.string.automata_detail_readonly_dirs),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            prd.readDirs.forEach { dir ->
+                Text(dir, style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+    }
+    if (editOpen && onSetDirs != null) {
+        AlertDialog(
+            onDismissRequest = { editOpen = false },
+            title = { Text(stringResource(R.string.prd_settings_write_dirs_label)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.prd_settings_dirs_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = writeDirsText, onValueChange = { writeDirsText = it },
+                        label = { Text(stringResource(R.string.prd_settings_write_dirs_label)) },
+                        modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4,
+                    )
+                    OutlinedTextField(
+                        value = readDirsText, onValueChange = { readDirsText = it },
+                        label = { Text(stringResource(R.string.prd_settings_read_dirs_label)) },
+                        modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val writeDirs = writeDirsText.lines().map { it.trim() }.filter { it.isNotBlank() }
+                    val readDirs = readDirsText.lines().map { it.trim() }.filter { it.isNotBlank() }
+                    onSetDirs(readDirs, writeDirs)
+                    editOpen = false
+                }) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editOpen = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }

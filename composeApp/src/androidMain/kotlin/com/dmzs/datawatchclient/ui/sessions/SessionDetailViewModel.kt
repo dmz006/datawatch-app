@@ -580,18 +580,25 @@ public class SessionDetailViewModel(
      * the PWA's "Delete data" is a separate two-step confirmation that
      * we surface as its own UI iteration.
      */
-    public fun delete(onDeleted: () -> Unit) {
+    public fun delete(
+        onDeleted: () -> Unit,
+        memoryStrategy: String? = null,
+        archiveRoleFilter: List<String> = emptyList(),
+        archiveToScope: String? = null,
+    ) {
         val profile = profileCache ?: return
         viewModelScope.launch {
-            ServiceLocator.transportFor(profile).deleteSession(fullIdOrShort()).fold(
-                onSuccess = {
-                    _banner.value = null
-                    onDeleted()
-                },
-                onFailure = { err ->
-                    _banner.value = "Delete failed: ${err.describe()}"
-                },
-            )
+            ServiceLocator.transportFor(profile)
+                .deleteSession(fullIdOrShort(), memoryStrategy, archiveRoleFilter, archiveToScope)
+                .fold(
+                    onSuccess = {
+                        _banner.value = null
+                        onDeleted()
+                    },
+                    onFailure = { err ->
+                        _banner.value = "Delete failed: ${err.describe()}"
+                    },
+                )
         }
     }
 

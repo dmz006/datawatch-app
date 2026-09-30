@@ -686,6 +686,13 @@ public data class PrdDto(
     /** Issue #193: null = inherit global `autonomous.continue_on_story_failure` daemon default.
      *  true = continue into later stories even if one fails; false = halt (PRD → blocked). */
     @SerialName("continue_on_story_failure") val continueOnStoryFailure: Boolean? = null,
+    /** #192 capacity-aware Automata: admission priority (higher runs first). Default 3. */
+    val priority: Int = 3,
+    /** #191 scope dirs: absolute paths workers may write/read. Empty = project dir only. */
+    @SerialName("read_dirs") val readDirs: List<String> = emptyList(),
+    @SerialName("write_dirs") val writeDirs: List<String> = emptyList(),
+    /** #191 scope warnings: true when the plan references paths outside allowed directories. */
+    @SerialName("scope_warnings") val scopeWarnings: Boolean = false,
 )
 
 @Serializable
@@ -748,10 +755,11 @@ public data class PrdTaskDto(
     val spec: String = "",
     /** Planned files the task is expected to touch (server field: 'files'). */
     val files: List<String> = emptyList(),
-    /** pending | in_progress | complete | failed | blocked | verifying | running_tests | cancelled */
+    /** pending | in_progress | complete | failed | blocked | verifying | running_tests | cancelled | waiting_capacity */
     val status: String = "",
     @SerialName("session_id") val sessionId: String? = null,
     val error: String? = null,
+    @SerialName("wait_reason") val waitReason: String? = null,
     val verification: PrdTaskVerificationDto? = null,
     @SerialName("retry_count") val retryCount: Int = 0,
     @SerialName("files_touched") val filesTouched: List<String> = emptyList(),

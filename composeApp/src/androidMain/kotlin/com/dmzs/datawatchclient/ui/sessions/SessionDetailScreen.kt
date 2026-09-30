@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -231,6 +232,8 @@ public fun SessionDetailScreen(
 
     var killConfirm by remember { mutableStateOf(false) }
     var deleteConfirm by remember { mutableStateOf(false) }
+    var deleteMemoryStrategy by remember { mutableStateOf("keep") }
+    var deleteArchiveRoles by remember { mutableStateOf("") }
     var menuOpen by remember { mutableStateOf(false) }
     var stateMenuOpen by remember { mutableStateOf(false) }
     var scheduleOpen by remember { mutableStateOf(false) }
@@ -901,12 +904,56 @@ public fun SessionDetailScreen(
             onDismissRequest = { deleteConfirm = false },
             title = { Text(stringResource(R.string.session_detail_delete_title)) },
             text = {
-                Text(stringResource(R.string.session_detail_delete_body))
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.session_detail_delete_body))
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.prd_delete_memory_strategy),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    listOf("keep", "purge", "archive").forEach { strategy ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable { deleteMemoryStrategy = strategy },
+                        ) {
+                            RadioButton(
+                                selected = deleteMemoryStrategy == strategy,
+                                onClick = { deleteMemoryStrategy = strategy },
+                            )
+                            Text(
+                                when (strategy) {
+                                    "keep" -> stringResource(R.string.prd_delete_memory_keep)
+                                    "purge" -> stringResource(R.string.prd_delete_memory_purge)
+                                    else -> stringResource(R.string.prd_delete_memory_archive)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    if (deleteMemoryStrategy == "archive") {
+                        OutlinedTextField(
+                            value = deleteArchiveRoles,
+                            onValueChange = { deleteArchiveRoles = it },
+                            label = { Text(stringResource(R.string.prd_delete_memory_archive_roles)) },
+                            placeholder = { Text(stringResource(R.string.prd_delete_memory_archive_roles_hint)) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            maxLines = 2,
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
+                    val strategy = deleteMemoryStrategy.takeIf { it != "keep" }
+                    val roles = if (deleteMemoryStrategy == "archive")
+                        deleteArchiveRoles.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    else emptyList()
+                    val scope = if (deleteMemoryStrategy == "archive") "project-shared" else null
                     deleteConfirm = false
-                    vm.delete(onDeleted = onBack)
+                    deleteMemoryStrategy = "keep"
+                    deleteArchiveRoles = ""
+                    vm.delete(onDeleted = onBack, memoryStrategy = strategy, archiveRoleFilter = roles, archiveToScope = scope)
                 }) {
                     Text(
                         stringResource(R.string.action_delete),

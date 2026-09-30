@@ -500,6 +500,8 @@ public fun AutonomousScreen(
                 prdComputeNodeRef = state.prdComputeNodeRef,
                 prdActiveSessions = state.prdActiveSessions,
                 prdCapacity = state.prdCapacity,
+                onSetPriority = { priority -> vm.setPriority(id, priority) },
+                onSetDirs = { readDirs, writeDirs -> vm.setDirs(id, readDirs, writeDirs) },
             )
         }
     }
