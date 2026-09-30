@@ -41,3 +41,16 @@ public data class StateOverrideDto(
     @SerialName("id") val sessionId: String,
     val state: String,
 )
+
+/** Data payload for a `sessions` WS frame: server's full session-list push (#204). */
+@Serializable
+internal data class WsSessionsFrameDataDto(
+    val sessions: List<SessionDto>? = null,
+    val version: String? = null,
+)
+
+/** Data payload for a `session_state` WS frame: single-session diff (v8.37.0+, #204). */
+@Serializable
+internal data class WsSessionStateFrameDataDto(
+    val session: SessionDto? = null,
+)
