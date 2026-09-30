@@ -32,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.ObserverPeerDto
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.LiveDot
 import com.dmzs.datawatchclient.ui.common.relativeTimeLabel
 import kotlinx.coroutines.delay
@@ -114,7 +115,9 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
             }
 
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                if (state.groupByNode) {
+                if (state.loading && state.peers.isEmpty()) {
+                    DatawatchLoadingContent(verticalPadding = 16.dp)
+                } else if (state.groupByNode) {
                     // Bucketed view: one section per ComputeNode + unbound
                     if (state.byNode.isEmpty() && state.unbound.isEmpty()) {
                         Text(

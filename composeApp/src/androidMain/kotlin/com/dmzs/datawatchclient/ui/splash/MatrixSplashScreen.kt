@@ -60,6 +60,7 @@ public fun MatrixSplashScreen(
     replay: Boolean = false,
     autoAdvance: Boolean = !replay,
     autoAdvanceMs: Long = 3200L,
+    statusText: String? = null,
     onFinished: () -> Unit,
 ) {
     if (autoAdvance) {
@@ -68,6 +69,17 @@ public fun MatrixSplashScreen(
             onFinished()
         }
     }
+
+    val infinite = rememberInfiniteTransition(label = "status-pulse")
+    val statusAlpha by infinite.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1.00f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "status-alpha",
+    )
 
     Box(
         modifier =
@@ -110,6 +122,16 @@ public fun MatrixSplashScreen(
                 color = Color(0xFFA855F7).copy(alpha = 0.85f),
                 modifier = Modifier.padding(top = 8.dp),
             )
+            if (statusText != null) {
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF94A3B8).copy(alpha = statusAlpha),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
             if (replay) {
                 TextButton(
                     onClick = onFinished,

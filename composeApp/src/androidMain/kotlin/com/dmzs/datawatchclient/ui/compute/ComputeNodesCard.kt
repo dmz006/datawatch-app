@@ -27,6 +27,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -184,12 +185,7 @@ public fun ComputeNodesCard(
             )
         }
         if (loading) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            DatawatchLoadingContent(modifier = Modifier.padding(horizontal = 12.dp))
         } else if (nodes.isEmpty() && banner == null) {
             Text(
                 stringResource(R.string.compute_nodes_empty),

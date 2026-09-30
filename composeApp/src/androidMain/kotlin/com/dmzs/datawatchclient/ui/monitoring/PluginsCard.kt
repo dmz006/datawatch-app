@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,8 +49,12 @@ public fun PluginsCard(vm: PluginsCardViewModel = viewModel()) {
 
     Section(title = "Plugins") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-            (state.native + state.plugins).forEach { plugin ->
-                PluginRow(plugin = plugin)
+            if (state.loading && state.plugins.isEmpty() && state.native.isEmpty()) {
+                DatawatchLoadingContent(verticalPadding = 12.dp)
+            } else {
+                (state.native + state.plugins).forEach { plugin ->
+                    PluginRow(plugin = plugin)
+                }
             }
         }
     }
