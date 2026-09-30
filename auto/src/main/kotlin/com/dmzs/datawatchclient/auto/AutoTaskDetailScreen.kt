@@ -7,11 +7,14 @@ import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
@@ -105,10 +108,32 @@ public class AutoTaskDetailScreen(
             .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
     }.getOrElse { MAX_ROWS_FALLBACK }
 
+    private fun buildActionStrip(): ActionStrip {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val ttsText = "${task.task.take(MAX_TITLE).ifBlank { "Task" }}. Status: ${task.status.replace('_', ' ')}."
+        return ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, ttsText)
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                screenManager.pop()
+            }.build())
+            .build()
+    }
+
     override fun onGetTemplate(): Template = try {
         buildTemplate()
     } catch (e: Throwable) {
         val taskTitle = task.task.take(MAX_TITLE).ifBlank { "Task" }
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val errStrip = ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, e.message ?: "Error")
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+            .build()
         val errItems = ItemList.Builder()
             .addItem(Row.Builder().setTitle("Error").addText(e.message ?: e::class.simpleName ?: "Unknown error").build())
             .addItem(Row.Builder().setTitle("Close").addText("Tap to go back").setOnClickListener { screenManager.pop() }.build())
@@ -117,6 +142,7 @@ public class AutoTaskDetailScreen(
             .setTitle(taskTitle)
             .setHeaderAction(Action.BACK)
             .setSingleList(errItems)
+            .setActionStrip(errStrip)
             .build()
     }
 
@@ -198,6 +224,7 @@ public class AutoTaskDetailScreen(
             .setTitle(taskTitle)
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
+            .setActionStrip(buildActionStrip())
             .build()
     }
 

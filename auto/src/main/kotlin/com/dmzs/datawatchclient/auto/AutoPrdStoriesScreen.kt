@@ -6,11 +6,14 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
 import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
@@ -36,12 +39,33 @@ public class AutoPrdStoriesScreen(
 
     private var selectedStory: PrdStoryDto? = initialStory
 
+    private fun buildActionStrip(ttsText: String): ActionStrip {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        return ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, ttsText)
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                screenManager.pop()
+            }.build())
+            .build()
+    }
+
     override fun onGetTemplate(): Template = try {
         val story = selectedStory
         if (story == null) buildStoriesListTemplate() else buildStoryDetailTemplate(story)
     } catch (e: Throwable) {
         // Keep ListTemplate on error to avoid template-type change on invalidate() in MESSAGING category.
         val prdTitle = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: "Automata"
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val errStrip = ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, e.message ?: "Error")
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+            .build()
         val errItems = ItemList.Builder()
             .addItem(
                 Row.Builder()
@@ -61,6 +85,7 @@ public class AutoPrdStoriesScreen(
             .setTitle(prdTitle)
             .setHeaderAction(Action.BACK)
             .setSingleList(errItems)
+            .setActionStrip(errStrip)
             .build()
     }
 
@@ -100,10 +125,12 @@ public class AutoPrdStoriesScreen(
             }
         }
         val prdTitle = prd.title?.takeIf { it.isNotBlank() } ?: prd.name.takeIf { it.isNotBlank() } ?: prd.id
+        val ttsList = "$prdTitle. ${prd.stories.size} stories."
         return ListTemplate.Builder()
             .setTitle("${prdTitle.take(28)} — Stories")
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
+            .setActionStrip(buildActionStrip(ttsList))
             .build()
     }
 
@@ -148,11 +175,14 @@ public class AutoPrdStoriesScreen(
         }
 
         val storyTitle = story.title.take(38).ifBlank { "Story" }
+        val done = story.tasks.count { it.status in setOf("complete", "completed", "done") }
+        val ttsDetail = "${story.title.ifBlank { "Story" }}. ${story.status}. $done of ${story.tasks.size} tasks done."
 
         return ListTemplate.Builder()
             .setTitle(storyTitle.ifBlank { "Story Detail" })
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
+            .setActionStrip(buildActionStrip(ttsDetail))
             .build()
     }
 
