@@ -172,15 +172,22 @@ private fun Nav(
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Destinations.Splash) {
+            var splashStatus by remember { mutableStateOf("unlocking vault…") }
             MatrixSplashScreen(
                 replay = false,
-                autoAdvance = false, // we gate exit on profiles emission below
-                onFinished = { /* no-op: managed by the LaunchedEffect */ },
+                autoAdvance = false,
+                statusText = splashStatus,
+                onFinished = { /* managed by LaunchedEffect below */ },
             )
             LaunchedEffect(profiles) {
-                // Minimum dwell for brand moment; cap extra wait at 2 s more so
-                // a stuck DB layer doesn't soft-lock the app.
-                delay(3200L)
+                // Cycle status messages timed to what's actually happening:
+                // SQLCipher unwrap → profile query → service startup → navigate.
+                delay(800L)
+                splashStatus = "loading profiles…"
+                delay(1200L)
+                splashStatus = "starting services…"
+                // Wait out the remaining dwell to reach the 3200ms brand moment.
+                delay(1200L)
                 var resolved = profiles
                 var waited = 0L
                 while (resolved == null && waited < 2000L) {
@@ -188,6 +195,8 @@ private fun Nav(
                     waited += 100L
                     resolved = profiles
                 }
+                splashStatus = "ready"
+                delay(180L) // brief flash so "ready" is visible
                 val next =
                     if (resolved?.isNotEmpty() == true) {
                         Destinations.Home

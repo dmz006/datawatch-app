@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -66,9 +67,7 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
     val info = state.info
 
     if (s == null && info == null && state.banner == null) {
-        Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        DatawatchLoadingContent()
         return
     }
 

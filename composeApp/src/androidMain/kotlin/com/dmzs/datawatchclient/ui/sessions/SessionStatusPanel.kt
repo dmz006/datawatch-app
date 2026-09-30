@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -73,9 +74,7 @@ public fun SessionStatusPanel(
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         if (uiState.loading && uiState.board == null) {
-            Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
-            }
+            DatawatchLoadingContent()
             return@Column
         }
 

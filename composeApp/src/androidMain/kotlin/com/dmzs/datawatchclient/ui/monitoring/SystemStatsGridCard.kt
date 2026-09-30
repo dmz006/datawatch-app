@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -76,15 +77,19 @@ public fun SystemStatsGridCard(vm: SystemStatsGridViewModel = viewModel()) {
                 )
                 LiveDot()
             }
-            state.local?.let { local ->
-                LocalSystemCard(local)
-                if (state.peers.isNotEmpty()) {
-                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+            if (state.loading && state.local == null && state.peers.isEmpty()) {
+                DatawatchLoadingContent(verticalPadding = 16.dp)
+            } else {
+                state.local?.let { local ->
+                    LocalSystemCard(local)
+                    if (state.peers.isNotEmpty()) {
+                        androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                    }
                 }
-            }
-            state.peers.forEachIndexed { idx, (peer, detail) ->
-                if (idx > 0) androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
-                PeerSystemCard(peer, detail)
+                state.peers.forEachIndexed { idx, (peer, detail) ->
+                    if (idx > 0) androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                    PeerSystemCard(peer, detail)
+                }
             }
         }
     }

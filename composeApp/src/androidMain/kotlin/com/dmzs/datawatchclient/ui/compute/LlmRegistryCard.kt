@@ -29,6 +29,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -192,9 +193,7 @@ public fun LlmRegistryCard() {
             )
         }
         if (loading) {
-            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.Center) {
-                CircularProgressIndicator()
-            }
+            DatawatchLoadingContent(modifier = Modifier.padding(horizontal = 12.dp))
         } else if (llms.isEmpty() && banner == null) {
             Text(
                 stringResource(R.string.llm_registry_empty),

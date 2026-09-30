@@ -78,6 +78,7 @@ import com.dmzs.datawatchclient.transport.dto.IdentityDto
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.ui.alerts.AlertsViewModel
 import com.dmzs.datawatchclient.ui.common.AlertsBellAction
+import com.dmzs.datawatchclient.ui.common.DatawatchLoadingContent
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.ReachabilityDot
 import com.dmzs.datawatchclient.ui.settings.IdentityWizardSheet
@@ -689,9 +690,7 @@ private fun PrdsBody(
             modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f).align(Alignment.Center).alpha(0.10f),
         )
         if (visible.isEmpty() && state.loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
-            }
+            DatawatchLoadingContent(modifier = Modifier.align(Alignment.Center))
         } else if (visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
