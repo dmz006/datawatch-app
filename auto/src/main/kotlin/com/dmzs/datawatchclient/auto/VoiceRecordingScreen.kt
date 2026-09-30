@@ -96,19 +96,19 @@ public class VoiceRecordingScreen(
                         override fun onStart(utteranceId: String) {}
 
                         override fun onDone(utteranceId: String) {
-                            abandonTtsFocus()
+                            scope.launch { abandonTtsFocus(); invalidate() }
                         }
 
                         @Deprecated("replaced by onStop")
                         override fun onError(utteranceId: String) {
-                            abandonTtsFocus()
+                            scope.launch { abandonTtsFocus(); invalidate() }
                         }
 
                         override fun onStop(
                             utteranceId: String,
                             interrupted: Boolean,
                         ) {
-                            abandonTtsFocus()
+                            scope.launch { abandonTtsFocus(); invalidate() }
                         }
                     },
                 )
