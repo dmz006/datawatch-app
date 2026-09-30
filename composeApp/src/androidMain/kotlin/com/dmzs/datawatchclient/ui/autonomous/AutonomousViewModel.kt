@@ -670,6 +670,54 @@ public class AutonomousViewModel(
         }
     }
 
+    public fun addStory(prdId: String, title: String, description: String = "") {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.addStory(prdId, title, description).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Add story failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun removeStory(prdId: String, storyId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.removeStory(prdId, storyId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Remove story failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun addTask(prdId: String, storyId: String, title: String, spec: String = "") {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.addTask(prdId, storyId, title, spec).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Add task failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun removeTask(prdId: String, storyId: String, taskId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.removeTask(prdId, storyId, taskId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Remove task failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
     public fun editFiles(
         prdId: String,
         storyId: String,

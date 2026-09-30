@@ -115,6 +115,10 @@ internal fun PrdDetailDialog(
     onCancelTask: ((taskId: String, reason: String?) -> Unit)? = null,
     onRequeueTask: ((taskId: String) -> Unit)? = null,
     onEditTask: ((taskId: String, newSpec: String) -> Unit)? = null,
+    onAddStory: ((title: String, description: String) -> Unit)? = null,
+    onRemoveStory: ((storyId: String) -> Unit)? = null,
+    onAddTask: ((storyId: String, title: String, spec: String) -> Unit)? = null,
+    onRemoveTask: ((storyId: String, taskId: String) -> Unit)? = null,
     automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
@@ -160,6 +164,9 @@ internal fun PrdDetailDialog(
     var editingStory: PrdStoryDto? by remember { mutableStateOf(null) }
     var editingFilesFor: PrdStoryDto? by remember { mutableStateOf(null) }
     var graphOpen by remember { mutableStateOf(false) }
+    var addStoryOpen by remember { mutableStateOf(false) }
+    var addStoryTitle by remember { mutableStateOf("") }
+    var addStoryDescription by remember { mutableStateOf("") }
     var approveOpen by remember { mutableStateOf(false) }
     var approveNote by remember { mutableStateOf("") }
     // Memory strategy on delete (#175)
@@ -584,9 +591,20 @@ internal fun PrdDetailDialog(
                                             onCancelTask = onCancelTask,
                                             onRequeueTask = onRequeueTask,
                                             onEditTask = onEditTask,
+                                            onRemoveStory = onRemoveStory?.let { cb -> { cb(story.id) } },
+                                            onAddTask = onAddTask?.let { cb -> { title, spec -> cb(story.id, title, spec) } },
+                                            onRemoveTask = onRemoveTask?.let { cb -> { taskId -> cb(story.id, taskId) } },
                                             projectDir = prd.projectDir,
                                             onOpenFile = onOpenFile,
                                         )
+                                    }
+                                }
+                                if (canEdit && onAddStory != null) {
+                                    TextButton(
+                                        onClick = { addStoryTitle = ""; addStoryDescription = ""; addStoryOpen = true },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Text("+ Add story", style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
                             }
@@ -991,6 +1009,43 @@ internal fun PrdDetailDialog(
             onDismiss = { graphOpen = false },
         )
     }
+
+    if (addStoryOpen && onAddStory != null) {
+        AlertDialog(
+            onDismissRequest = { addStoryOpen = false },
+            title = { Text("Add story") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = addStoryTitle,
+                        onValueChange = { addStoryTitle = it },
+                        label = { Text("Title") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = addStoryDescription,
+                        onValueChange = { addStoryDescription = it },
+                        label = { Text("Description (optional)") },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        maxLines = 4,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onAddStory(addStoryTitle.trim(), addStoryDescription.trim())
+                        addStoryOpen = false
+                    },
+                    enabled = addStoryTitle.isNotBlank(),
+                ) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { addStoryOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
+            },
+        )
+    }
 }
 
 @Composable
@@ -1348,6 +1403,9 @@ private fun StoryRow(
     onCancelTask: ((taskId: String, reason: String?) -> Unit)? = null,
     onRequeueTask: ((taskId: String) -> Unit)? = null,
     onEditTask: ((taskId: String, newSpec: String) -> Unit)? = null,
+    onRemoveStory: (() -> Unit)? = null,
+    onAddTask: ((title: String, spec: String) -> Unit)? = null,
+    onRemoveTask: ((taskId: String) -> Unit)? = null,
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
 ) {
@@ -1357,6 +1415,9 @@ private fun StoryRow(
     var expanded by remember { mutableStateOf(story.status.lowercase() in activeStoryStatuses) }
     var cancelStoryOpen by remember { mutableStateOf(false) }
     var cancelStoryReason by remember { mutableStateOf("") }
+    var addTaskOpen by remember { mutableStateOf(false) }
+    var addTaskTitle by remember { mutableStateOf("") }
+    var addTaskSpec by remember { mutableStateOf("") }
 
     Column(
         modifier =
@@ -1464,6 +1525,11 @@ private fun StoryRow(
                                     )
                                 }
                             }
+                            if (onRemoveStory != null) {
+                                TextButton(onClick = { onRemoveStory() }) {
+                                    Text("🗑", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                }
+                            }
                         }
                     }
                 }
@@ -1535,9 +1601,18 @@ private fun StoryRow(
                             onCancelTask = onCancelTask?.let { cb -> { r -> cb(task.id, r) } },
                             onRequeueTask = onRequeueTask?.let { cb -> { cb(task.id) } },
                             onEditTask = onEditTask?.let { cb -> { spec -> cb(task.id, spec) } },
+                            onRemoveTask = onRemoveTask?.let { cb -> { cb(task.id) } },
                             projectDir = projectDir,
                             onOpenFile = onOpenFile,
                         )
+                    }
+                }
+                if (canEdit && onAddTask != null) {
+                    TextButton(
+                        onClick = { addTaskTitle = ""; addTaskSpec = ""; addTaskOpen = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("+ Add task", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -1570,6 +1645,42 @@ private fun StoryRow(
             },
         )
     }
+    if (addTaskOpen && onAddTask != null) {
+        AlertDialog(
+            onDismissRequest = { addTaskOpen = false },
+            title = { Text("Add task") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = addTaskTitle,
+                        onValueChange = { addTaskTitle = it },
+                        label = { Text("Title") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = addTaskSpec,
+                        onValueChange = { addTaskSpec = it },
+                        label = { Text("Spec (optional)") },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        maxLines = 4,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onAddTask(addTaskTitle.trim(), addTaskSpec.trim())
+                        addTaskOpen = false
+                    },
+                    enabled = addTaskTitle.isNotBlank(),
+                ) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { addTaskOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
+            },
+        )
+    }
 }
 
 @Composable
@@ -1582,14 +1693,15 @@ private fun TaskRow(
     onCancelTask: ((reason: String?) -> Unit)? = null,
     onRequeueTask: (() -> Unit)? = null,
     onEditTask: ((newSpec: String) -> Unit)? = null,
+    onRemoveTask: (() -> Unit)? = null,
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
 ) {
     // Server now accepts reset_task for PRDBlocked (same as PRDFailed) — widen gate to match.
-    val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus in setOf("running", "blocked")
+    val canRetry = (task.status == "failed" || task.status == "blocked") && prdStatus in setOf("running", "blocked", "cancelled")
     val canRequeue = task.status in setOf("complete", "cancelled")
     val canCancel = task.status !in setOf("complete", "cancelled", "failed")
-    val canEdit = prdStatus in setOf("needs_review", "revisions_asked")
+    val canEdit = prdStatus in setOf("needs_review", "revisions_asked", "cancelled")
 
     val activeTaskStatuses2 = remember {
         setOf("running", "in_progress", "verifying", "running_tests", "blocked", "failed")
@@ -1765,7 +1877,7 @@ private fun TaskRow(
         }
         // Action buttons row
         val hasActions = (canRetry && onResetTask != null) || (canRequeue && onRequeueTask != null) ||
-            (canCancel && onCancelTask != null) || (canEdit && onEditTask != null)
+            (canCancel && onCancelTask != null) || (canEdit && onEditTask != null) || (canEdit && onRemoveTask != null)
         if (hasActions) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 if (canRetry && onResetTask != null) {
@@ -1783,6 +1895,15 @@ private fun TaskRow(
                         Text(
                             stringResource(R.string.action_edit),
                             style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+                if (canEdit && onRemoveTask != null) {
+                    TextButton(onClick = { onRemoveTask() }) {
+                        Text(
+                            "🗑",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
                         )
                     }
                 }
