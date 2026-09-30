@@ -1022,10 +1022,11 @@ public class RestTransport(
             }.body<Unit>()
         }
 
-    override suspend fun getCapacity(): Result<com.dmzs.datawatchclient.transport.dto.CapacityResponseDto> =
+    override suspend fun getCapacity(prdId: String?): Result<com.dmzs.datawatchclient.transport.dto.CapacityResponseDto> =
         request {
             client.get("${profile.baseUrl}/api/capacity") {
                 bearer()?.let { header(HttpHeaders.Authorization, it) }
+                prdId?.let { parameter("prd_id", it) }
             }.body()
         }
 

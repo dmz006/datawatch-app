@@ -2622,7 +2622,8 @@ private fun PrdActiveSessionsCard(
 private fun PrdCapacityCard(capacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto) {
     val poolsWithLimit = capacity.pools.filter { it.limit > 0 }
     val poolsUnlimited = capacity.pools.filter { it.limit <= 0 && (it.held + it.external) > 0 }
-    if (poolsWithLimit.isEmpty() && poolsUnlimited.isEmpty() && capacity.waiting.isEmpty()) return
+    val idleNodes = capacity.pools.filter { it.name != "host" && it.limit <= 0 && (it.held + it.external) == 0 }
+    if (poolsWithLimit.isEmpty() && poolsUnlimited.isEmpty() && idleNodes.isEmpty() && capacity.waiting.isEmpty()) return
 
     fun poolLabel(name: String): String = when {
         name == "host" -> "Host sessions (all tasks + interactive)"
@@ -2670,6 +2671,13 @@ private fun PrdCapacityCard(capacity: com.dmzs.datawatchclient.transport.dto.Cap
                     "${poolLabel(pool.name)}: $used · no limit",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            idleNodes.forEach { pool ->
+                Text(
+                    "${poolLabel(pool.name)} · no cap configured",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
             if (capacity.waiting.isNotEmpty()) {
