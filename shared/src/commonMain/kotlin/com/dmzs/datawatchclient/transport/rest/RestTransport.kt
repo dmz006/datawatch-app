@@ -1022,6 +1022,62 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun addStory(prdId: String, title: String, description: String, actor: String?): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("title", kotlinx.serialization.json.JsonPrimitive(title))
+                if (description.isNotBlank()) put("description", kotlinx.serialization.json.JsonPrimitive(description))
+                actor?.let { put("actor", kotlinx.serialization.json.JsonPrimitive(it)) }
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/add_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun removeStory(prdId: String, storyId: String, actor: String?): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                actor?.let { put("actor", kotlinx.serialization.json.JsonPrimitive(it)) }
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/remove_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun addTask(prdId: String, storyId: String, title: String, spec: String, actor: String?): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                put("title", kotlinx.serialization.json.JsonPrimitive(title))
+                if (spec.isNotBlank()) put("spec", kotlinx.serialization.json.JsonPrimitive(spec))
+                actor?.let { put("actor", kotlinx.serialization.json.JsonPrimitive(it)) }
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/add_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun removeTask(prdId: String, storyId: String, taskId: String, actor: String?): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                put("task_id", kotlinx.serialization.json.JsonPrimitive(taskId))
+                actor?.let { put("actor", kotlinx.serialization.json.JsonPrimitive(it)) }
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/remove_task") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
     override suspend fun orchestratorGraph(
         id: String,
     ): Result<com.dmzs.datawatchclient.transport.dto.OrchestratorGraphDto> =

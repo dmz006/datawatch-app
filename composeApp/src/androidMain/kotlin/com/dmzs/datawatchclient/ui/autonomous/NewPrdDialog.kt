@@ -90,6 +90,7 @@ internal fun NewPrdDialog(
     var modelMenuOpen by remember { mutableStateOf(false) }
     var planningBackend by remember { mutableStateOf("") }
     var planningBackendMenuOpen by remember { mutableStateOf(false) }
+    var planningBackendTouched by remember { mutableStateOf(false) }
     var planningModel by remember { mutableStateOf("") }
     var planningModelMenuOpen by remember { mutableStateOf(false) }
 
@@ -226,6 +227,8 @@ internal fun NewPrdDialog(
     // Clear model when backend changes to one with no known model list
     LaunchedEffect(backend) { if (modelsForBackend.isEmpty()) model = "" }
     LaunchedEffect(planningBackend) { if (planModelsForBackend.isEmpty()) planningModel = "" }
+    // Mirror execution backend into planning backend unless operator explicitly chose a different one.
+    LaunchedEffect(backend) { if (!planningBackendTouched) planningBackend = backend }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -536,12 +539,12 @@ internal fun NewPrdDialog(
                         DropdownMenu(expanded = planningBackendMenuOpen, onDismissRequest = { planningBackendMenuOpen = false }) {
                             DropdownMenuItem(
                                 text = { Text(inheritLabel) },
-                                onClick = { planningBackend = ""; planningBackendMenuOpen = false },
+                                onClick = { planningBackendTouched = true; planningBackend = ""; planningBackendMenuOpen = false },
                             )
                             backendOptions.forEach { b ->
                                 DropdownMenuItem(
                                     text = { Text(b) },
-                                    onClick = { planningBackend = b; planningBackendMenuOpen = false },
+                                    onClick = { planningBackendTouched = true; planningBackend = b; planningBackendMenuOpen = false },
                                 )
                             }
                         }

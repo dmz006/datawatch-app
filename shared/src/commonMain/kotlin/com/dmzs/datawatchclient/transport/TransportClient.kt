@@ -488,6 +488,18 @@ public interface TransportClient {
         actor: String? = null,
     ): Result<Unit>
 
+    /** POST /api/autonomous/prds/{id}/add_story — append a new empty story. */
+    public suspend fun addStory(prdId: String, title: String, description: String = "", actor: String? = null): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/remove_story — delete a story and its tasks. */
+    public suspend fun removeStory(prdId: String, storyId: String, actor: String? = null): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/add_task — append a new task to an existing story. */
+    public suspend fun addTask(prdId: String, storyId: String, title: String, spec: String = "", actor: String? = null): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/remove_task — delete one task from a story. */
+    public suspend fun removeTask(prdId: String, storyId: String, taskId: String, actor: String? = null): Result<Unit>
+
     /**
      * POST /api/autonomous/prds/{id}/edit_files — story or task
      * files-list edit. Pass story_id OR task_id, never both.
