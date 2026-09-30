@@ -407,6 +407,7 @@ public fun SettingsScreen(
                                 com.dmzs.datawatchclient.ui.automata.OrchestratorGraphsCard()
                                 // Guardrail Library (PWA: automata_scan + automata_guardrail_profiles)
                                 ScanConfigCard()
+                                AutonomousConfigCard()
                                 GuardrailLibraryCard()
                                 // Autonomous config + Skill Registries
                                 com.dmzs.datawatchclient.ui.configfields.ConfigFieldsPanel(

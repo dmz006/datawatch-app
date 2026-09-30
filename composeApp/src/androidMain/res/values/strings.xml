@@ -297,6 +297,15 @@
     <string name="scan_proposed_rules_title">Proposed rules</string>
     <string name="scan_no_result">No scan result yet.</string>
 
+    <!-- Autonomous config -->
+    <string name="autonomous_config_title">Verification backends</string>
+    <string name="autonomous_config_verification_backends">Backends (load-balanced, ordered)</string>
+    <string name="autonomous_config_add_backend">Add backend (e.g. ollama-node)</string>
+    <string name="autonomous_config_backends_hint">Verifier picks backends in order listed</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_add">Add</string>
+    <string name="action_clear_all">Clear all</string>
+
     <!-- New PRD dialog -->
     <string name="new_prd_title">New Automaton</string>
     <string name="new_prd_name_label">Name (required)</string>

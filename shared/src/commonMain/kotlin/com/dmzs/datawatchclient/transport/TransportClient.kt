@@ -660,6 +660,12 @@ public interface TransportClient {
     /** PUT /api/autonomous/scan_config — update global scan configuration. */
     public suspend fun updateScanConfig(config: com.dmzs.datawatchclient.transport.dto.ScanConfigDto): Result<Unit>
 
+    /** GET /api/autonomous/config — fetch global autonomous runtime settings (v8.36.9). */
+    public suspend fun getAutonomousConfig(): Result<com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto>
+
+    /** PUT /api/autonomous/config — update global autonomous runtime settings (v8.36.9). */
+    public suspend fun updateAutonomousConfig(config: com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto): Result<com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto>
+
     // ---- v0.61.0 BL221 Phase 2: Template Store (datawatch v6.2.0) ----
 
     /** GET /api/autonomous/templates — list all templates. */
