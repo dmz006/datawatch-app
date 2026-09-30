@@ -161,6 +161,8 @@ internal fun PrdDetailDialog(
     onSetPriority: ((Int) -> Unit)? = null,
     /** #191 — set allowed read/write directory scope. */
     onSetDirs: ((readDirs: List<String>, writeDirs: List<String>) -> Unit)? = null,
+    /** #202 — re-resolve stuck depends_on refs (v8.36.6). */
+    onRepairDependsOn: (() -> Unit)? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -478,6 +480,18 @@ internal fun PrdDetailDialog(
                             }) {
                                 Text(
                                     stringResource(R.string.prd_btn_reset_to_draft),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+                        if (onRepairDependsOn != null) {
+                            TextButton(onClick = {
+                                onRepairDependsOn()
+                                onDismiss()
+                            }) {
+                                Text(
+                                    stringResource(R.string.prd_btn_repair_depends_on),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.labelSmall,
                                 )

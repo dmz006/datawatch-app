@@ -706,6 +706,18 @@ public class AutonomousViewModel(
         }
     }
 
+    public fun repairDependsOn(prdId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.repairDependsOn(prdId).fold(
+                onSuccess = { fetchFullPrd(prdId) },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Repair depends_on failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
     public fun setPriority(prdId: String, priority: Int) {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch

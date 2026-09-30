@@ -584,6 +584,7 @@
     <string name="prd_action_request_revision">Request revision</string>
     <string name="prd_btn_clone_template">Clone to Template</string>
     <string name="prd_btn_reset_to_draft">Reset to Draft</string>
+    <string name="prd_btn_repair_depends_on">Repair Dependencies</string>
     <string name="prd_btn_clone_template_title">Save this automaton as a reusable template</string>
     <string name="prd_btn_delete">Delete</string>
     <string name="prd_btn_delete_title">Hard-delete the PRD and any descendants</string>

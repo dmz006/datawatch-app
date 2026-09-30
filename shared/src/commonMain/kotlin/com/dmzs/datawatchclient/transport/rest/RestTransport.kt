@@ -1255,6 +1255,13 @@ public class RestTransport(
             }.bodyAsText()
         }
 
+    override suspend fun repairDependsOn(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.PrdDto> =
+        request {
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/repair_depends_on") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun resetPrdTask(
         prdId: String,
         taskId: String,
