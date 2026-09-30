@@ -4,6 +4,9 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionEvent
 import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.WsFrameDto
+import com.dmzs.datawatchclient.transport.dto.WsSessionsFrameDataDto
+import com.dmzs.datawatchclient.transport.dto.WsSessionStateFrameDataDto
+import com.dmzs.datawatchclient.transport.rest.toDomain
 import com.dmzs.datawatchclient.transport.rest.RestTransport
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocket
@@ -144,6 +147,18 @@ public class WebSocketTransport(
                                         tryRoutePrdUpdateFrame(dto.data, json)
                                         continue
                                     }
+                                    // #204: sessions (full-list) and session_state
+                                    // (single-row diff, v8.37.0+) are global — route
+                                    // to SessionsHub so SessionsViewModel can drop
+                                    // REST polling in favour of event-driven updates.
+                                    if (dto.type == "sessions") {
+                                        tryRouteSessionsFrame(dto.data, json, profile.id)
+                                        continue
+                                    }
+                                    if (dto.type == "session_state") {
+                                        tryRouteSessionStateFrame(dto.data, json, profile.id)
+                                        continue
+                                    }
                                     // v0.33.19: trace every inbound frame
                                     // type + count mapped → events, so we
                                     // can see when pane_captures arrive but
@@ -202,6 +217,63 @@ public class WebSocketTransport(
             awaitClose()
         }
 
+    /**
+     * Opens a persistent WS connection that routes only global frames to their
+     * hubs ([SessionsHub], [StatsHub], [PrdHub]) without subscribing to any
+     * session. Intended for [SessionsViewModel] so it receives real-time
+     * session-list pushes even when no session detail is open.
+     *
+     * The returned flow never emits — callers should `launchIn` and read from
+     * the relevant hub. Reconnects with jittered exponential backoff until the
+     * collecting coroutine is cancelled.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    public fun globalStream(): Flow<Unit> =
+        callbackFlow {
+            val wsUrl = buildWsUrl(profile.baseUrl)
+            var backoff = INITIAL_BACKOFF_MS
+            println("WsTransport[global]: stream start → $wsUrl")
+            while (!isClosedForSend) {
+                val bearerHeader = tokenProvider?.invoke()?.let { "Bearer $it" }
+                try {
+                    client.webSocket(
+                        urlString = wsUrl,
+                        request = { bearerHeader?.let { header(HttpHeaders.Authorization, it) } },
+                    ) {
+                        println("WsTransport[global]: connected $wsUrl")
+                        for (frame in incoming) {
+                            when (frame) {
+                                is Frame.Text -> {
+                                    val text = frame.readText()
+                                    val dto = runCatching {
+                                        json.decodeFromString(WsFrameDto.serializer(), text)
+                                    }.getOrNull() ?: continue
+                                    when (dto.type) {
+                                        "stats" -> tryRouteStatsFrame(dto.data, json)
+                                        "prd_update" -> tryRoutePrdUpdateFrame(dto.data, json)
+                                        "sessions" -> tryRouteSessionsFrame(dto.data, json, profile.id)
+                                        "session_state" -> tryRouteSessionStateFrame(dto.data, json, profile.id)
+                                    }
+                                }
+                                is Frame.Close -> {
+                                    println("WsTransport[global]: server closed WS")
+                                    return@webSocket
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
+                    backoff = INITIAL_BACKOFF_MS
+                } catch (e: Throwable) {
+                    println("WsTransport[global]: $wsUrl failed — ${e.message?.take(80)}")
+                }
+                if (isClosedForSend) break
+                delay(backoff + Random.nextLong(0, BACKOFF_JITTER_MS))
+                backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
+            }
+            awaitClose()
+        }
+
     /** Converts `https://host:port` → `wss://host:port/ws` (and http→ws). */
     internal fun buildWsUrl(baseUrl: String): String {
         val base = Url(baseUrl)
@@ -233,6 +305,34 @@ private fun tryRoutePrdUpdateFrame(
         val dto = json.decodeFromJsonElement(PrdDto.serializer(), data)
         PrdHub.emit(dto)
     }.onFailure { println("WsTransport: failed to parse prd_update frame: ${it.message}") }
+}
+
+/** Parse a `sessions` WS frame and forward to [SessionsHub] (#204). */
+private fun tryRouteSessionsFrame(
+    data: kotlinx.serialization.json.JsonElement?,
+    json: Json,
+    profileId: String,
+) {
+    if (data == null) return
+    runCatching {
+        val payload = json.decodeFromJsonElement(WsSessionsFrameDataDto.serializer(), data)
+        val sessions = payload.sessions?.map { it.toDomain(profileId) } ?: return
+        SessionsHub.emitFullList(SessionsUpdate(profileId, sessions))
+    }.onFailure { println("WsTransport: failed to parse sessions frame: ${it.message}") }
+}
+
+/** Parse a `session_state` WS frame and forward to [SessionsHub] (#204). */
+private fun tryRouteSessionStateFrame(
+    data: kotlinx.serialization.json.JsonElement?,
+    json: Json,
+    profileId: String,
+) {
+    if (data == null) return
+    runCatching {
+        val payload = json.decodeFromJsonElement(WsSessionStateFrameDataDto.serializer(), data)
+        val session = payload.session?.toDomain(profileId) ?: return
+        SessionsHub.emitSingle(SessionStateUpdate(profileId, session))
+    }.onFailure { println("WsTransport: failed to parse session_state frame: ${it.message}") }
 }
 
 // Preserve the old signature for test compatibility (takes sessionId but

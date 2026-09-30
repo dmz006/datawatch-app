@@ -13,12 +13,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
+import com.dmzs.datawatchclient.transport.ws.SessionsHub
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -451,11 +453,46 @@ public class SessionsViewModel : ViewModel() {
                 }
             }
             .launchIn(viewModelScope)
-        // Periodic poll — PWA refreshes on every WS `session_update` tick;
-        // mobile doesn't subscribe to WS at the list level yet, so we poll
-        // REST instead. 5 s matches the StatsViewModel cadence and keeps
-        // the reachability dot + state pills live-ish without draining
-        // battery. Ref: `internal/server/web/app.js` loadSessions().
+        // Open a persistent WS connection per active profile to receive server-pushed
+        // session-list updates. The server sends a "sessions" frame immediately on
+        // connect and again on every session change; SessionsHub routes it here.
+        activeProfile
+            .flatMapLatest { profile ->
+                if (profile == null) emptyFlow()
+                else ServiceLocator.wsTransportFor(profile).globalStream()
+            }
+            .launchIn(viewModelScope)
+
+        // Full-list WS push: replaces SQLite cache exactly as refresh() does.
+        activeProfile
+            .flatMapLatest { profile ->
+                if (profile == null) emptyFlow()
+                else SessionsHub.fullListFlow
+                    .filter { it.serverProfileId == profile.id }
+                    .onEach { update ->
+                        ServiceLocator.sessionRepository.replaceAll(profile.id, update.sessions)
+                        _refreshing.value = false
+                        _lastProbeEpochMs.value = System.currentTimeMillis()
+                        SessionStateWatcher.onSessionsUpdated(update.sessions, ServiceLocator.context())
+                        ServiceLocator.refreshHomeWidgets()
+                    }
+            }
+            .launchIn(viewModelScope)
+
+        // Single-session diff (v8.37.0+): upsert without clearing the whole cache.
+        activeProfile
+            .flatMapLatest { profile ->
+                if (profile == null) emptyFlow()
+                else SessionsHub.singleSessionFlow
+                    .filter { it.serverProfileId == profile.id }
+                    .onEach { update ->
+                        ServiceLocator.sessionRepository.upsert(update.session)
+                    }
+            }
+            .launchIn(viewModelScope)
+
+        // REST fallback poll — WS push handles live updates; this fires every 30 s
+        // to recover from WS reconnect gaps and keep the reachability dot accurate.
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
                 kotlinx.coroutines.delay(AUTO_REFRESH_MS)
@@ -465,7 +502,7 @@ public class SessionsViewModel : ViewModel() {
     }
 
     private companion object {
-        const val AUTO_REFRESH_MS: Long = 5_000L
+        const val AUTO_REFRESH_MS: Long = 30_000L
     }
 
     public fun selectProfile(profileId: String) {
