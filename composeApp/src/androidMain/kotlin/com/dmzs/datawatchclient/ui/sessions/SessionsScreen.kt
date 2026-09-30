@@ -1,7 +1,12 @@
 package com.dmzs.datawatchclient.ui.sessions
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -331,9 +336,7 @@ public fun SessionsScreen(
             val visible = state.visibleSessions
             if (visible.isEmpty()) {
                 if (state.refreshing) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(36.dp))
-                    }
+                    SessionSkeletonList()
                 } else {
                     EmptyState()
                 }
@@ -813,6 +816,43 @@ private fun SessionsToolbar(
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SessionSkeletonList() {
+    val transition = rememberInfiniteTransition(label = "skeleton")
+    val alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "skeletonAlpha",
+    )
+    val shimmer = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+        repeat(5) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(if (it % 2 == 0) 0.65f else 0.80f)
+                        .height(14.dp)
+                        .background(shimmer, RoundedCornerShape(4.dp)),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.45f)
+                        .height(10.dp)
+                        .background(shimmer, RoundedCornerShape(4.dp)),
+                )
             }
         }
     }

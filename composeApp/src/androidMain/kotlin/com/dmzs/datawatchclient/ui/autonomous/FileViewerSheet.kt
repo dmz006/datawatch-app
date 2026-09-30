@@ -116,6 +116,7 @@ internal fun FileViewerSheet(
                 isMd(state.path) -> MarkdownView(
                     text = state.content,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    scrollable = true,
                 )
 
                 else -> LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {

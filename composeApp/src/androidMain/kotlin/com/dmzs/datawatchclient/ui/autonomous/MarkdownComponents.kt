@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -159,15 +160,20 @@ internal fun buildInline(text: String) = buildAnnotatedString {
     }
 }
 
+/**
+ * @param scrollable Pass true when MarkdownView is the outermost scrollable in its
+ *   container (e.g. FileViewerSheet). Pass false (default) when it is embedded inside
+ *   a LazyColumn or Column+verticalScroll, where the parent handles scrolling.
+ */
 @Composable
-internal fun MarkdownView(text: String, modifier: Modifier = Modifier) {
+internal fun MarkdownView(text: String, modifier: Modifier = Modifier, scrollable: Boolean = false) {
     val blocks = parseMd(text)
     val codeBackground = MaterialTheme.colorScheme.surfaceVariant
     val codeFg = MaterialTheme.colorScheme.onSurfaceVariant
+    val scrollState = rememberScrollState()
+    val columnMod = if (scrollable) modifier.verticalScroll(scrollState) else modifier
 
-    // Column (not LazyColumn) so MarkdownView can be safely embedded inside
-    // LazyColumn or verticalScroll containers without nested-scroll crashes.
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = columnMod, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         blocks.forEach { block ->
             when (block) {
                 is MdBlock.Heading -> {
