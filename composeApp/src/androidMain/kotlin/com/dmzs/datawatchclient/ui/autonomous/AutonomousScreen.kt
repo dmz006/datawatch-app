@@ -498,6 +498,8 @@ public fun AutonomousScreen(
                 prdEnvelopes = state.prdEnvelopes,
                 prdComputeNodeDetail = state.prdComputeNodeDetail,
                 prdComputeNodeRef = state.prdComputeNodeRef,
+                prdActiveSessions = state.prdActiveSessions,
+                prdCapacity = state.prdCapacity,
             )
         }
     }

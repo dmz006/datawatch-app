@@ -2098,6 +2098,33 @@ public data class WebPushRegistrationsDto(
     val registrations: List<WebPushRegistrationDto> = emptyList(),
 )
 
+// ── Capacity admission (/api/capacity) ───────────────────────────────────────
+
+/** One pool entry from GET /api/capacity (host, node:X, llm:X). */
+@Serializable
+public data class CapacityPoolDto(
+    val name: String = "",
+    val limit: Int = 0,
+    val held: Int = 0,
+    val external: Int = 0,
+)
+
+/** One wait-queue entry from GET /api/capacity. */
+@Serializable
+public data class CapacityWaitItemDto(
+    val holder: String = "",
+    @SerialName("prd_id") val prdId: String? = null,
+    val since: String? = null,
+    val reason: String? = null,
+)
+
+/** GET /api/capacity — concurrency pools + wait queue. */
+@Serializable
+public data class CapacityResponseDto(
+    val pools: List<CapacityPoolDto> = emptyList(),
+    val waiting: List<CapacityWaitItemDto> = emptyList(),
+)
+
 /** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
 @Serializable
 public data class WebSearchStatsDto(

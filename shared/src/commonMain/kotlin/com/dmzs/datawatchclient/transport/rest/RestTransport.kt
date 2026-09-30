@@ -1022,6 +1022,13 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun getCapacity(): Result<com.dmzs.datawatchclient.transport.dto.CapacityResponseDto> =
+        request {
+            client.get("${profile.baseUrl}/api/capacity") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     override suspend fun approveStory(prdId: String, storyId: String): Result<Unit> =
         request {
             val body = kotlinx.serialization.json.buildJsonObject {

@@ -66,7 +66,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.transport.dto.PrdDto
@@ -149,6 +151,10 @@ internal fun PrdDetailDialog(
     prdComputeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto? = null,
     /** Name of the compute node currently providing stats. */
     prdComputeNodeRef: String? = null,
+    /** Active sessions for this PRD with status boards. PWA prdActiveSessionCard parity. */
+    prdActiveSessions: List<com.dmzs.datawatchclient.ui.autonomous.AutonomousViewModel.PrdActiveSessionInfo> = emptyList(),
+    /** Capacity admission pools + wait queue. PWA prdCapacityCard parity. */
+    prdCapacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto? = null,
 ) {
     BackHandler(enabled = true, onBack = onDismiss)
 
@@ -316,22 +322,23 @@ internal fun PrdDetailDialog(
                     // Lifecycle strip
                     LifecycleStrip(status)
 
-                    // Inline compute stats card — visible for planning/decomposing/running (PWA parity)
-                    if (status in setOf("planning", "decomposing", "running")) {
+                    // Active session card — PWA prdActiveSessionCard parity (planning/decomposing/running/blocked)
+                    if (status in setOf("planning", "decomposing", "running", "blocked")) {
                         Spacer(Modifier.height(8.dp))
-                        PrdActiveComputeCard(
-                            status = status,
+                        PrdActiveSessionsCard(
+                            prdStatus = status,
+                            activeSessions = prdActiveSessions,
                             computeNodeDetail = prdComputeNodeDetail,
                             computeNodeRef = prdComputeNodeRef,
                         )
                     }
 
-                    // Compact running-session card (session link) — shown when a task is active
-                    val activeTask = prd.stories.flatMap { it.tasks }.firstOrNull { it.status == "in_progress" }
-                    val activeSessionId = activeTask?.sessionId
-                    if (activeSessionId != null) {
-                        Spacer(Modifier.height(6.dp))
-                        PrdRunningSessionCard(sessionId = activeSessionId, taskName = activeTask.task)
+                    // Capacity card — PWA prdCapacityCard parity
+                    val showCapacity = prdCapacity != null &&
+                        (prdCapacity.pools.any { it.limit > 0 } || prdCapacity.waiting.isNotEmpty())
+                    if (showCapacity && prdCapacity != null) {
+                        Spacer(Modifier.height(8.dp))
+                        PrdCapacityCard(capacity = prdCapacity)
                     }
 
                     // Terminal-state hint
@@ -755,6 +762,13 @@ internal fun PrdDetailDialog(
                                                 "$storyDone/$storyTotal",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(
+                                                "${(fraction * 100).toInt()}%",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.defaultMinSize(minWidth = 34.dp),
                                             )
                                         }
                                         LinearProgressIndicator(
@@ -2426,6 +2440,254 @@ private fun PrdRunningSessionCard(sessionId: String, taskName: String) {
                     color = gpuColor,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+// ── Active session card — PWA _loadPRDActiveSessionCard parity ───────────────
+
+@Composable
+private fun PrdActiveSessionsCard(
+    prdStatus: String,
+    activeSessions: List<com.dmzs.datawatchclient.ui.autonomous.AutonomousViewModel.PrdActiveSessionInfo>,
+    computeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto?,
+    computeNodeRef: String?,
+) {
+    val accent2 = com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors.current.accent2
+
+    @Composable
+    fun SessionRow(info: com.dmzs.datawatchclient.ui.autonomous.AutonomousViewModel.PrdActiveSessionInfo) {
+        val sess = info.session
+        val board = info.board
+        val stateStr = sess.state.name.lowercase()
+        val stateColor = when (stateStr) {
+            "running" -> Color(0xFF3B82F6)
+            "waiting", "waiting_input" -> Color(0xFFF59E0B)
+            "completed", "complete" -> Color(0xFF10B981)
+            "failed", "error", "killed" -> Color(0xFFEF4444)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        val hookColor = when (board?.hookHealth) {
+            "alive" -> Color(0xFF22C55E)
+            "stale" -> Color(0xFFF59E0B)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawRect(color = accent2, topLeft = Offset.Zero, size = Size(3.dp.toPx(), size.height))
+                }
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+                )
+                .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(stateColor.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+                        .border(0.5.dp, stateColor.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                ) {
+                    Text(stateStr, style = MaterialTheme.typography.labelSmall, color = stateColor)
+                }
+                Text(
+                    sess.fullId.takeLast(8),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                sess.name?.takeIf { it.isNotBlank() }?.let { name ->
+                    Text(name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                }
+                // Hook health dot
+                Text("●", style = MaterialTheme.typography.labelSmall, color = hookColor)
+                // Test stats
+                board?.tests?.let { t ->
+                    if (t.passing > 0 || t.failing > 0) {
+                        Text(
+                            "${t.passing}✓/${t.failing}✗",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (t.failing > 0) Color(0xFFEF4444) else Color(0xFF22C55E),
+                        )
+                    }
+                }
+            }
+            // Story/task context
+            val ctxParts = listOfNotNull(info.storyTitle, info.taskTitle)
+            if (ctxParts.isNotEmpty()) {
+                Text(
+                    ctxParts.joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+            }
+            // Last event / focus
+            board?.lastEvent?.let { ev ->
+                val focus = buildString {
+                    ev.event?.let { append(it) }
+                    ev.tool?.let { append(" · $it") }
+                }
+                if (focus.isNotBlank()) {
+                    Text(
+                        focus,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+
+    when {
+        activeSessions.isNotEmpty() -> {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                activeSessions.forEach { info -> SessionRow(info) }
+                // Resource bars (from compute node) below the session rows
+                if (computeNodeDetail != null) {
+                    PrdActiveComputeCard(
+                        status = prdStatus,
+                        computeNodeDetail = computeNodeDetail,
+                        computeNodeRef = computeNodeRef,
+                    )
+                }
+            }
+        }
+        prdStatus in setOf("planning", "decomposing") -> {
+            // Decomposing state — spinner + compute bars
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        drawRect(color = accent2, topLeft = Offset.Zero, size = Size(3.dp.toPx(), size.height))
+                    }
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+                    .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                        Text("Decomposing PRD…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (computeNodeDetail != null) {
+                        Spacer(Modifier.height(8.dp))
+                        PrdActiveComputeCard(status = prdStatus, computeNodeDetail = computeNodeDetail, computeNodeRef = computeNodeRef)
+                    }
+                }
+            }
+        }
+        prdStatus == "running" -> {
+            // Stuck: running but no active session found
+            Surface(
+                color = Color(0xFFF59E0B).copy(alpha = 0.08f),
+                shape = RoundedCornerShape(6.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "⚠ No active session record",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFF59E0B),
+                    )
+                    Text(
+                        "Status looks active but no spawned session was found. The LLM call may have failed silently.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        else -> {
+            PrdActiveComputeCard(status = prdStatus, computeNodeDetail = computeNodeDetail, computeNodeRef = computeNodeRef)
+        }
+    }
+}
+
+// ── Capacity card — PWA prdCapacityCard parity ────────────────────────────────
+
+@Composable
+private fun PrdCapacityCard(capacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto) {
+    val poolsWithLimit = capacity.pools.filter { it.limit > 0 }
+    val poolsUnlimited = capacity.pools.filter { it.limit <= 0 && (it.held + it.external) > 0 }
+    if (poolsWithLimit.isEmpty() && poolsUnlimited.isEmpty() && capacity.waiting.isEmpty()) return
+
+    fun poolLabel(name: String): String = when {
+        name == "host" -> "Host sessions (all tasks + interactive)"
+        name.startsWith("node:") -> "Compute node: ${name.removePrefix("node:")}"
+        name.startsWith("llm:") -> "LLM: ${name.removePrefix("llm:")}"
+        else -> name
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(6.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "Capacity",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            poolsWithLimit.forEach { pool ->
+                val used = pool.held + pool.external
+                val fraction = (used.toFloat() / pool.limit).coerceIn(0f, 1f)
+                val pct = (fraction * 100).toInt()
+                val barColor = when {
+                    pct >= 100 -> Color(0xFFEF4444)
+                    pct >= 75 -> Color(0xFFF59E0B)
+                    else -> Color(0xFF22C55E)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(poolLabel(pool.name), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$used / ${pool.limit}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    LinearProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxWidth().height(4.dp),
+                        color = barColor,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+            }
+            poolsUnlimited.forEach { pool ->
+                val used = pool.held + pool.external
+                Text(
+                    "${poolLabel(pool.name)}: $used · no limit",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (capacity.waiting.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                Text(
+                    "Waiting (${capacity.waiting.size})",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                capacity.waiting.forEach { w ->
+                    Text(
+                        "⏳ ${w.holder.take(8)} · ${w.reason.orEmpty().take(60)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
