@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
@@ -119,6 +122,8 @@ internal fun PrdDetailDialog(
     onRemoveStory: ((storyId: String) -> Unit)? = null,
     onAddTask: ((storyId: String, title: String, spec: String) -> Unit)? = null,
     onRemoveTask: ((storyId: String, taskId: String) -> Unit)? = null,
+    onApproveStory: ((storyId: String) -> Unit)? = null,
+    onRejectStory: ((storyId: String, reason: String) -> Unit)? = null,
     automataTypes: List<com.dmzs.datawatchclient.transport.dto.AutomataTypeDto> = emptyList(),
     onSetType: ((String) -> Unit)? = null,
     onSetGuidedMode: ((Boolean) -> Unit)? = null,
@@ -594,6 +599,8 @@ internal fun PrdDetailDialog(
                                             onRemoveStory = onRemoveStory?.let { cb -> { cb(story.id) } },
                                             onAddTask = onAddTask?.let { cb -> { title, spec -> cb(story.id, title, spec) } },
                                             onRemoveTask = onRemoveTask?.let { cb -> { taskId -> cb(story.id, taskId) } },
+                                            onApproveStory = onApproveStory?.let { cb -> { cb(story.id) } },
+                                            onRejectStory = onRejectStory?.let { cb -> { reason -> cb(story.id, reason) } },
                                             projectDir = prd.projectDir,
                                             onOpenFile = onOpenFile,
                                         )
@@ -1406,6 +1413,8 @@ private fun StoryRow(
     onRemoveStory: (() -> Unit)? = null,
     onAddTask: ((title: String, spec: String) -> Unit)? = null,
     onRemoveTask: ((taskId: String) -> Unit)? = null,
+    onApproveStory: (() -> Unit)? = null,
+    onRejectStory: ((reason: String) -> Unit)? = null,
     projectDir: String? = null,
     onOpenFile: ((path: String) -> Unit)? = null,
 ) {
@@ -1415,6 +1424,8 @@ private fun StoryRow(
     var expanded by remember { mutableStateOf(story.status.lowercase() in activeStoryStatuses) }
     var cancelStoryOpen by remember { mutableStateOf(false) }
     var cancelStoryReason by remember { mutableStateOf("") }
+    var rejectStoryOpen by remember { mutableStateOf(false) }
+    var rejectStoryReason by remember { mutableStateOf("") }
     var addTaskOpen by remember { mutableStateOf(false) }
     var addTaskTitle by remember { mutableStateOf("") }
     var addTaskSpec by remember { mutableStateOf("") }
@@ -1451,6 +1462,38 @@ private fun StoryRow(
                 modifier = Modifier.padding(horizontal = 6.dp),
             )
             StoryStatusPill(effectiveStatus)
+        }
+
+        // Guided-mode approve/reject: visible only when story is awaiting_approval and PRD is running.
+        val canApproveReject = story.status.lowercase() == "awaiting_approval" &&
+            prdStatus.lowercase() in setOf("approved", "active", "running")
+        if (canApproveReject && (onApproveStory != null || onRejectStory != null)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                if (onApproveStory != null) {
+                    Button(
+                        onClick = { onApproveStory() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp),
+                    ) {
+                        Text(stringResource(R.string.action_approve), style = MaterialTheme.typography.labelSmall, color = Color.White)
+                    }
+                }
+                if (onRejectStory != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Button(
+                        onClick = { rejectStoryReason = ""; rejectStoryOpen = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp),
+                    ) {
+                        Text(stringResource(R.string.action_reject), style = MaterialTheme.typography.labelSmall, color = Color.White)
+                    }
+                }
+            }
         }
 
         // Expandable body: description + files + edit buttons
@@ -1642,6 +1685,34 @@ private fun StoryRow(
             },
             dismissButton = {
                 TextButton(onClick = { cancelStoryOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
+            },
+        )
+    }
+    if (rejectStoryOpen && onRejectStory != null) {
+        AlertDialog(
+            onDismissRequest = { rejectStoryOpen = false },
+            title = { Text(stringResource(R.string.prd_detail_reject_title)) },
+            text = {
+                OutlinedTextField(
+                    value = rejectStoryReason,
+                    onValueChange = { rejectStoryReason = it },
+                    label = { Text(stringResource(R.string.prd_detail_reject_reason_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (rejectStoryReason.isNotBlank()) {
+                            onRejectStory(rejectStoryReason.trim())
+                            rejectStoryOpen = false
+                        }
+                    },
+                ) { Text(stringResource(R.string.action_reject), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { rejectStoryOpen = false }) { Text(stringResource(R.string.action_dismiss)) }
             },
         )
     }

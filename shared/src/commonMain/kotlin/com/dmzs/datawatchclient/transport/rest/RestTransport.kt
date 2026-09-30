@@ -1022,6 +1022,31 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun approveStory(prdId: String, storyId: String): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/approve_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
+    override suspend fun rejectStory(prdId: String, storyId: String, reason: String): Result<Unit> =
+        request {
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("story_id", kotlinx.serialization.json.JsonPrimitive(storyId))
+                put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+            }
+            client.post("${profile.baseUrl}/api/autonomous/prds/$prdId/reject_story") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body<Unit>()
+        }
+
     override suspend fun addStory(prdId: String, title: String, description: String, actor: String?): Result<Unit> =
         request {
             val body = kotlinx.serialization.json.buildJsonObject {

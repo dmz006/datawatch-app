@@ -475,6 +475,8 @@ public fun AutonomousScreen(
                 onRemoveStory = { storyId -> vm.removeStory(id, storyId) },
                 onAddTask = { storyId, title, spec -> vm.addTask(id, storyId, title, spec) },
                 onRemoveTask = { storyId, taskId -> vm.removeTask(id, storyId, taskId) },
+                onApproveStory = { storyId -> vm.approveStory(id, storyId) },
+                onRejectStory = { storyId, reason -> vm.rejectStory(id, storyId, reason) },
                 automataTypes = state.automataTypes,
                 onSetType = { type -> vm.setPrdType(id, type) },
                 onSetGuidedMode = { gm -> vm.setPrdGuidedMode(id, gm) },

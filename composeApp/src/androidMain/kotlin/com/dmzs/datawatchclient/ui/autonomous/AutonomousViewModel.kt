@@ -670,6 +670,30 @@ public class AutonomousViewModel(
         }
     }
 
+    public fun approveStory(prdId: String, storyId: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.approveStory(prdId, storyId).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Approve story failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
+    public fun rejectStory(prdId: String, storyId: String, reason: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.rejectStory(prdId, storyId, reason).fold(
+                onSuccess = { refresh() },
+                onFailure = { err ->
+                    _state.value = _state.value.copy(banner = "Reject story failed — ${err.message ?: err::class.simpleName}")
+                },
+            )
+        }
+    }
+
     public fun addStory(prdId: String, title: String, description: String = "") {
         viewModelScope.launch {
             val (_, transport) = resolver.resolve() ?: return@launch

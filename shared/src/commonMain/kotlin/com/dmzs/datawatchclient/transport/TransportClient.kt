@@ -488,6 +488,12 @@ public interface TransportClient {
         actor: String? = null,
     ): Result<Unit>
 
+    /** POST /api/autonomous/prds/{id}/approve_story — approve a story in awaiting_approval state (guided mode). */
+    public suspend fun approveStory(prdId: String, storyId: String): Result<Unit>
+
+    /** POST /api/autonomous/prds/{id}/reject_story — block a story; runner skips it until re-approved. */
+    public suspend fun rejectStory(prdId: String, storyId: String, reason: String): Result<Unit>
+
     /** POST /api/autonomous/prds/{id}/add_story — append a new empty story. */
     public suspend fun addStory(prdId: String, title: String, description: String = "", actor: String? = null): Result<Unit>
 
