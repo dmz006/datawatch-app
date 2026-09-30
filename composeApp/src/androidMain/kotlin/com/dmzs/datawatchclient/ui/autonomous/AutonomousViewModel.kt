@@ -1046,7 +1046,7 @@ public class AutonomousViewModel(
                         async { transport.getSessionStatus(sess.fullId).getOrNull() to sess }
                     }
                     val cnDetailJob = if (cnRef != null) async { transport.getComputeNodeDetail(cnRef!!).getOrNull() } else null
-                    val capacityJob = async { transport.getCapacity().getOrNull() }
+                    val capacityJob = async { transport.getCapacity(prdId).getOrNull() }
 
                     val boards = boardJobs.map { it.await() }
                     val detail = cnDetailJob?.await()

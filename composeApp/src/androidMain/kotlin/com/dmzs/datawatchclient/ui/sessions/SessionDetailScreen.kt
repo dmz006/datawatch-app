@@ -104,6 +104,8 @@ import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -494,6 +496,7 @@ public fun SessionDetailScreen(
                             vm.refreshFromServer()
                             responseOpen = true
                         },
+                        lastActivityAt = state.session?.lastActivityAt,
                     )
 
                     // Fixed tab row - stays below SessionInfoBar while content scrolls below
@@ -1020,6 +1023,7 @@ private fun SessionInfoBar(
     // a non-blank lastResponse. Taps open the response viewer sheet.
     hasResponse: Boolean = false,
     onResponse: () -> Unit = {},
+    lastActivityAt: Instant? = null,
 ) {
     val isActive =
         state == SessionState.Running || state == SessionState.Waiting ||
@@ -1110,6 +1114,25 @@ private fun SessionInfoBar(
                             )
                         }
                     }
+                }
+            }
+            // Last-activity dot — green/amber/red + relative time, shown for headless sessions.
+            if (lastActivityAt != null) {
+                var nowMs by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+                LaunchedEffect(Unit) { while (true) { delay(1_000L); nowMs = Clock.System.now().toEpochMilliseconds() } }
+                val ageSeconds = ((nowMs - lastActivityAt.toEpochMilliseconds()) / 1000L).coerceAtLeast(0L)
+                val dotColor = when {
+                    ageSeconds < 30 -> Color(0xFF22C55E)
+                    ageSeconds < 300 -> Color(0xFFF59E0B)
+                    else -> Color(0xFFEF4444)
+                }
+                val ageText = if (ageSeconds < 60) "${ageSeconds}s ago" else "${ageSeconds / 60}m ago"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Box(modifier = Modifier.size(6.dp).background(dotColor, RoundedCornerShape(3.dp)))
+                    Text(ageText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             // Stop / Restart / Delete are LEFT-aligned next to the state

@@ -1,13 +1,18 @@
 package com.dmzs.datawatchclient.ui.autonomous
 
+import android.webkit.WebSettings
+import android.webkit.WebView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +34,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 
 private val VIEWABLE_EXTENSIONS = setOf(
     "md", "txt", "json", "yaml", "yml", "go", "js", "ts", "jsx", "tsx",
@@ -136,6 +143,8 @@ internal fun FileViewerSheet(
 private sealed interface MdBlock {
     data class Heading(val level: Int, val text: String) : MdBlock
     data class CodeBlock(val lang: String, val lines: List<String>) : MdBlock
+    data class MermaidBlock(val diagram: String) : MdBlock
+    data class Table(val headers: List<String>, val rows: List<List<String>>) : MdBlock
     data class ListItem(val ordered: Boolean, val number: Int, val text: String) : MdBlock
     data class Paragraph(val text: String) : MdBlock
     object Blank : MdBlock
@@ -148,7 +157,7 @@ private fun parseMd(raw: String): List<MdBlock> {
     while (i < lines.size) {
         val line = lines[i]
         when {
-            // Fenced code block
+            // Fenced code block (including mermaid)
             line.trimStart().startsWith("```") -> {
                 val lang = line.trimStart().removePrefix("```").trim()
                 val codeLines = mutableListOf<String>()
@@ -157,7 +166,25 @@ private fun parseMd(raw: String): List<MdBlock> {
                     codeLines.add(lines[i])
                     i++
                 }
-                blocks.add(MdBlock.CodeBlock(lang, codeLines))
+                if (lang.equals("mermaid", ignoreCase = true)) {
+                    blocks.add(MdBlock.MermaidBlock(codeLines.joinToString("\n")))
+                } else {
+                    blocks.add(MdBlock.CodeBlock(lang, codeLines))
+                }
+            }
+            // GFM table: line starts with | and next non-blank is a separator row
+            line.trimStart().startsWith("|") && i + 1 < lines.size &&
+                lines[i + 1].trimStart().startsWith("|") &&
+                lines[i + 1].replace("|", "").replace("-", "").replace(":", "").replace(" ", "").isEmpty() -> {
+                val headers = line.split("|").drop(1).dropLast(1).map { it.trim() }
+                i += 2 // skip header + separator
+                val rows = mutableListOf<List<String>>()
+                while (i < lines.size && lines[i].trimStart().startsWith("|")) {
+                    rows.add(lines[i].split("|").drop(1).dropLast(1).map { it.trim() })
+                    i++
+                }
+                blocks.add(MdBlock.Table(headers, rows))
+                i-- // outer loop will i++
             }
             // Heading
             line.startsWith("#") -> {
@@ -267,6 +294,15 @@ private fun MarkdownView(text: String, modifier: Modifier = Modifier) {
                         )
                     }
                 }
+                is MdBlock.MermaidBlock -> MermaidView(
+                    diagram = block.diagram,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                is MdBlock.Table -> GfmTableView(
+                    headers = block.headers,
+                    rows = block.rows,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 is MdBlock.ListItem -> Row(
                     modifier = Modifier.padding(start = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -292,4 +328,96 @@ private fun MarkdownView(text: String, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun GfmTableView(
+    headers: List<String>,
+    rows: List<List<String>>,
+    modifier: Modifier = Modifier,
+) {
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
+    val headerBg = MaterialTheme.colorScheme.surfaceVariant
+    val cols = headers.size.coerceAtLeast(1)
+
+    Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.border(1.dp, borderColor, RoundedCornerShape(4.dp))) {
+            // Header row
+            Row(modifier = Modifier.fillMaxWidth().background(headerBg).height(IntrinsicSize.Min)) {
+                headers.forEachIndexed { ci, h ->
+                    Text(
+                        h,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .then(if (ci < cols - 1) Modifier.border(width = 0.dp, color = Color.Transparent) else Modifier)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                    if (ci < cols - 1) {
+                        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(borderColor))
+                    }
+                }
+            }
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
+            // Data rows
+            rows.forEachIndexed { ri, row ->
+                Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                    val paddedRow = if (row.size < cols) row + List(cols - row.size) { "" } else row
+                    paddedRow.take(cols).forEachIndexed { ci, cell ->
+                        Text(
+                            cell,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                        if (ci < cols - 1) {
+                            Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(borderColor))
+                        }
+                    }
+                }
+                if (ri < rows.size - 1) {
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MermaidView(diagram: String, modifier: Modifier = Modifier) {
+    val html = remember(diagram) {
+        val escaped = diagram
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        """<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>body{margin:0;background:#fff}svg{max-width:100%;height:auto}</style>
+</head><body>
+<div class="mermaid">$escaped</div>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</body></html>"""
+    }
+    AndroidView(
+        factory = { ctx ->
+            WebView(ctx).apply {
+                settings.javaScriptEnabled = true
+                @Suppress("SetJavaScriptEnabled")
+                settings.domStorageEnabled = true
+                settings.cacheMode = WebSettings.LOAD_NO_CACHE
+            }
+        },
+        update = { wv ->
+            wv.loadDataWithBaseURL("https://cdn.jsdelivr.net", html, "text/html", "utf-8", null)
+        },
+        modifier = modifier.fillMaxWidth().height(260.dp),
+    )
 }

@@ -488,8 +488,8 @@ public interface TransportClient {
         actor: String? = null,
     ): Result<Unit>
 
-    /** GET /api/capacity — concurrency pool usage + wait queue. */
-    public suspend fun getCapacity(): Result<com.dmzs.datawatchclient.transport.dto.CapacityResponseDto>
+    /** GET /api/capacity — concurrency pool usage + wait queue, scoped to [prdId] when provided. */
+    public suspend fun getCapacity(prdId: String? = null): Result<com.dmzs.datawatchclient.transport.dto.CapacityResponseDto>
 
     /** POST /api/autonomous/prds/{id}/approve_story — approve a story in awaiting_approval state (guided mode). */
     public suspend fun approveStory(prdId: String, storyId: String): Result<Unit>
