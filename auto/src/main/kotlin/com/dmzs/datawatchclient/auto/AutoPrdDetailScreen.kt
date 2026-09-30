@@ -6,11 +6,14 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.DecisionDto
@@ -34,7 +37,8 @@ import kotlinx.coroutines.launch
  *   - ListTemplate is safe here; it is pushed FROM AutoAutomataScreen (also ListTemplate).
  *   - Child pushes are ListTemplate only (AutoPrdStoriesScreen) — safe from ListTemplate.
  *   - Template type is always ListTemplate — no type change on invalidate().
- *   - No ActionStrip required on ListTemplate in MESSAGING category.
+ *   - ActionStrip (2 icon-only) required: Samsung rejects ListTemplate without ActionStrip
+ *     in MESSAGING category, same as MessageTemplate. Both success and error paths carry it.
  *   - Overview row removed: AutoPrdSummaryScreen (MessageTemplate, no ActionStrip) caused
  *     Samsung host to reject the template with "can't do that while driving."
  */
@@ -93,6 +97,24 @@ public class AutoPrdDetailScreen(
         }
     }
 
+    private fun buildActionStrip(): ActionStrip {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val p = prd
+        val ttsText = if (p != null) {
+            val done = p.stories.count { it.status.lowercase() in AutoPrdDetailScreen.DONE_STATUSES }
+            "${p.title?.ifBlank { null } ?: p.name}. ${p.status}. $done of ${p.stories.size} stories done."
+        } else "Plan loading."
+        return ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, ttsText)
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                screenManager.pop()
+            }.build())
+            .build()
+    }
+
     override fun onGetTemplate(): Template = try {
         val prdTitle = prd?.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Plan"
         val items = ItemList.Builder()
@@ -105,8 +127,17 @@ public class AutoPrdDetailScreen(
             .setTitle(prdTitle)
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
+            .setActionStrip(buildActionStrip())
             .build()
     } catch (e: Throwable) {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val errStrip = ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                AutoTts.speak(carContext, e.message ?: "Error")
+            }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+            .build()
         val errItems = ItemList.Builder()
             .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
             .build()
@@ -114,6 +145,7 @@ public class AutoPrdDetailScreen(
             .setTitle("Plan")
             .setHeaderAction(Action.BACK)
             .setSingleList(errItems)
+            .setActionStrip(errStrip)
             .build()
     }
 
