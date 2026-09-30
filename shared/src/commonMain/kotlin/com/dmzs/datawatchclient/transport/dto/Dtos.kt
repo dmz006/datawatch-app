@@ -2133,6 +2133,12 @@ public data class CapacityResponseDto(
     val waiting: List<CapacityWaitItemDto> = emptyList(),
 )
 
+/** GET / PUT /api/autonomous/config — global autonomous runtime settings (v8.36.9+). */
+@Serializable
+public data class AutonomousConfigDto(
+    @SerialName("verification_backends") val verificationBackends: List<String>? = null,
+)
+
 /** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
 @Serializable
 public data class WebSearchStatsDto(

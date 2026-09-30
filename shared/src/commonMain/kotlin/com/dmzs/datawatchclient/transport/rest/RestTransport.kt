@@ -1402,6 +1402,24 @@ public class RestTransport(
             }.body<Unit>()
         }
 
+    override suspend fun getAutonomousConfig(): Result<com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun updateAutonomousConfig(
+        config: com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.AutonomousConfigDto> =
+        request {
+            client.put("${profile.baseUrl}/api/autonomous/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(config)
+            }.body()
+        }
+
     // ---- v0.61.0 Template Store ----
 
     override suspend fun listTemplates(): Result<TemplateListDto> =
