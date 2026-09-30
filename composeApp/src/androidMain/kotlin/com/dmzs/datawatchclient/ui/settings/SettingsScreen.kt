@@ -3,6 +3,7 @@ package com.dmzs.datawatchclient.ui.settings
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -872,8 +873,17 @@ private fun AboutCard(activeProfile: ServerProfile?) {
             // (PWA carries neither); rename "Parent project" →
             // "Project" and "Source" → "Mobile app" to match PWA's
             // labels exactly.
+            val context = LocalContext.current
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/dmz006/datawatch"))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                    .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("Project", style = MaterialTheme.typography.bodyMedium)
@@ -884,7 +894,15 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/dmz006/datawatch-app"))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                    .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("Mobile app", style = MaterialTheme.typography.bodyMedium)
@@ -894,12 +912,25 @@ private fun AboutCard(activeProfile: ServerProfile?) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            Text(
-                "Play Store link will land here once the app is published.",
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.dmzs.datawatchclient"))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Play Store", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "play.google.com",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             // S6-1 (#71): single docs link — opens in-app DocsViewerSheet.
             TextButton(
                 onClick = {
