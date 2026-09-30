@@ -502,6 +502,7 @@ public fun AutonomousScreen(
                 prdCapacity = state.prdCapacity,
                 onSetPriority = { priority -> vm.setPriority(id, priority) },
                 onSetDirs = { readDirs, writeDirs -> vm.setDirs(id, readDirs, writeDirs) },
+                onRepairDependsOn = { vm.repairDependsOn(id) },
             )
         }
     }

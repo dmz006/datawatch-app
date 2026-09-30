@@ -561,6 +561,9 @@ public interface TransportClient {
     /** GET /api/autonomous/prds/{id}/memory-report — fetch/generate PRD memory report (v8.30.0). */
     public suspend fun getPrdMemoryReport(prdId: String): Result<String>
 
+    /** POST /api/autonomous/prds/{id}/repair_depends_on — re-resolve stuck depends_on refs (v8.36.6). No-op if already resolved. */
+    public suspend fun repairDependsOn(prdId: String): Result<com.dmzs.datawatchclient.transport.dto.PrdDto>
+
     /** POST /api/autonomous/prds/{id}/reset_task — reset a failed/blocked task (v8.23.0). */
     public suspend fun resetPrdTask(
         prdId: String,
