@@ -307,11 +307,18 @@ internal fun PrdDetailDialog(
                                     .padding(start = 8.dp),
                         ) {
                             Column {
-                                Text(
-                                    displaySpec,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                if (specExpanded) {
+                                    MarkdownView(
+                                        text = fullSpec,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                } else {
+                                    Text(
+                                        displaySpec,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                                 if (isLong) {
                                     Text(
                                         if (specExpanded) stringResource(R.string.automata_spec_hide)
@@ -557,10 +564,9 @@ internal fun PrdDetailDialog(
                             PrdPriorityRow(prd, onSetPriority)
                             PrdScopeDirsRow(prd, onSetDirs)
                             prd.spec?.takeIf { it.isNotBlank() }?.let { spec ->
-                                Text(
-                                    spec,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                MarkdownView(
+                                    text = spec,
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
 
