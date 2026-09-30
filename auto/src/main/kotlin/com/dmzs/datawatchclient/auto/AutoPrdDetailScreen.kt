@@ -26,17 +26,17 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * PRD entry screen — ListTemplate showing selectable rows.
+ * PRD entry screen — ListTemplate showing selectable story rows (browse only).
  *
- * Row 0: "Overview" — PRD status summary → [AutoPrdSummaryScreen] (MessageTemplate, depth 3)
- * Rows 1..N: Story rows → [AutoPrdStoriesScreen] opened to that story's detail (depth 3)
+ * Rows 0..N-1: Story rows → [AutoPrdStoriesScreen] opened to that story's task list (depth 4)
  *
  * Samsung MESSAGING category notes:
  *   - ListTemplate is safe here; it is pushed FROM AutoAutomataScreen (also ListTemplate).
- *   - The only child pushes are ListTemplate (AutoPrdStoriesScreen) and
- *     MessageTemplate (AutoPrdSummaryScreen) — both allowed from ListTemplate.
- *   - ActionStrip: 1 icon-only action (speaker TTS) — well within the 2-action cap.
+ *   - Child pushes are ListTemplate only (AutoPrdStoriesScreen) — safe from ListTemplate.
  *   - Template type is always ListTemplate — no type change on invalidate().
+ *   - No ActionStrip required on ListTemplate in MESSAGING category.
+ *   - Overview row removed: AutoPrdSummaryScreen (MessageTemplate, no ActionStrip) caused
+ *     Samsung host to reject the template with "can't do that while driving."
  */
 public class AutoPrdDetailScreen(
     carContext: CarContext,
@@ -120,16 +120,6 @@ public class AutoPrdDetailScreen(
     private fun buildRows(items: ItemList.Builder) {
         val p = prd ?: return
         val stories = p.stories
-        val done = stories.count { it.status.lowercase() in DONE_STATUSES }
-
-        // Overview row — selectable, shows PRD spec/description on tap.
-        items.addItem(
-            Row.Builder()
-                .setTitle("Overview")
-                .addText("${p.status}  ·  $done/${stories.size} done")
-                .setOnClickListener { screenManager.push(AutoPrdSummaryScreen(carContext, p)) }
-                .build(),
-        )
 
         if (stories.isEmpty()) {
             items.addItem(
@@ -143,8 +133,8 @@ public class AutoPrdDetailScreen(
                 .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
         }.getOrElse { MAX_ROWS_FALLBACK }
 
-        // Reserve 1 slot for overview and 1 for the overflow row.
-        val visible = stories.take((listMax - 2).coerceAtLeast(1))
+        // Reserve 1 slot for the overflow row.
+        val visible = stories.take((listMax - 1).coerceAtLeast(1))
         val overflow = stories.size - visible.size
 
         visible.forEachIndexed { idx, story ->
