@@ -114,6 +114,18 @@ public class AutonomousViewModel(
         val prdComputeNodeDetail: com.dmzs.datawatchclient.transport.dto.ComputeNodeDetailDto? = null,
         /** Name of the compute node currently providing stats, for display. */
         val prdComputeNodeRef: String? = null,
+        /** Active sessions for the open PRD with their status boards. PWA prdActiveSessionCard parity. */
+        val prdActiveSessions: List<PrdActiveSessionInfo> = emptyList(),
+        /** Capacity admission pools + wait queue. PWA prdCapacityCard parity. */
+        val prdCapacity: com.dmzs.datawatchclient.transport.dto.CapacityResponseDto? = null,
+    )
+
+    /** Active session paired with its status board and story/task context — used by PrdActiveSessionsCard. */
+    public data class PrdActiveSessionInfo(
+        val session: com.dmzs.datawatchclient.domain.Session,
+        val board: com.dmzs.datawatchclient.transport.dto.SessionStatusBoardDto?,
+        val storyTitle: String?,
+        val taskTitle: String?,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -986,6 +998,8 @@ public class AutonomousViewModel(
                         prdEnvelopes = emptyList(),
                         prdComputeNodeDetail = null,
                         prdComputeNodeRef = null,
+                        prdActiveSessions = emptyList(),
+                        prdCapacity = null,
                     )
                     break
                 }
@@ -1000,25 +1014,62 @@ public class AutonomousViewModel(
                 }
                 _state.value = _state.value.copy(prdEnvelopes = envelopesResult)
 
+                // Build session → {storyTitle, taskTitle} lookup from PRD tasks.
+                val sessionTaskMap = mutableMapOf<String, Pair<String, String>>()
+                prd.stories.forEach { story ->
+                    story.tasks.forEach { task ->
+                        val sid = task.sessionId ?: return@forEach
+                        sessionTaskMap[sid] = Pair(story.title.ifBlank { story.id }, task.task.ifBlank { task.id })
+                    }
+                }
+
                 // Resolve compute node: check active task sessions for compute_node_ref.
-                val taskSessionIds = prd.stories
-                    .flatMap { it.tasks }
-                    .mapNotNull { it.sessionId }
-                    .toSet()
-                var cnRef = sessionsResult.firstOrNull {
-                    (it.fullId in taskSessionIds || it.id in taskSessionIds) && it.computeNodeRef != null
-                }?.computeNodeRef
-                // Fall back to partial/suffix match for short ids stored in task.sessionId.
+                val taskSessionIds = sessionTaskMap.keys
+                val terminalStates = setOf("killed", "complete", "completed", "failed", "cancelled", "stopped", "error")
+                val activeSessionMatches = sessionsResult.filter { s ->
+                    val fid = s.fullId
+                    val matchesTask = fid in taskSessionIds || s.id in taskSessionIds ||
+                        taskSessionIds.any { tid -> fid.endsWith(tid) || tid.endsWith(s.id) }
+                    matchesTask && s.state.name.lowercase() !in terminalStates
+                }.take(3)
+
+                var cnRef = activeSessionMatches.firstOrNull { it.computeNodeRef != null }?.computeNodeRef
                 if (cnRef == null && taskSessionIds.isNotEmpty()) {
                     cnRef = sessionsResult.firstOrNull { s ->
                         taskSessionIds.any { tid -> s.fullId.endsWith(tid) || tid.endsWith(s.id) }
                     }?.computeNodeRef
                 }
-                if (cnRef != null) {
-                    val detail = transport.getComputeNodeDetail(cnRef).getOrNull()
+
+                // Fetch boards, compute node detail, and capacity in parallel.
+                coroutineScope {
+                    val boardJobs = activeSessionMatches.map { sess ->
+                        async { transport.getSessionStatus(sess.fullId).getOrNull() to sess }
+                    }
+                    val cnDetailJob = if (cnRef != null) async { transport.getComputeNodeDetail(cnRef!!).getOrNull() } else null
+                    val capacityJob = async { transport.getCapacity().getOrNull() }
+
+                    val boards = boardJobs.map { it.await() }
+                    val detail = cnDetailJob?.await()
+                    val capacity = capacityJob.await()
+
+                    val activeInfos = boards.map { (board, sess) ->
+                        val fid = sess.fullId
+                        val ctx = sessionTaskMap[fid] ?: sessionTaskMap[sess.id]
+                            ?: taskSessionIds.firstOrNull { tid -> fid.endsWith(tid) || tid.endsWith(sess.id) }
+                                ?.let { sessionTaskMap[it] }
+                        PrdActiveSessionInfo(
+                            session = sess,
+                            board = board,
+                            storyTitle = ctx?.first,
+                            taskTitle = ctx?.second,
+                        )
+                    }
+
                     _state.value = _state.value.copy(
-                        prdComputeNodeDetail = detail,
-                        prdComputeNodeRef = cnRef,
+                        prdActiveSessions = activeInfos,
+                        prdCapacity = capacity,
+                        prdComputeNodeDetail = detail ?: _state.value.prdComputeNodeDetail,
+                        prdComputeNodeRef = cnRef ?: _state.value.prdComputeNodeRef,
                     )
                 }
                 delay(5_000L)
@@ -1034,6 +1085,8 @@ public class AutonomousViewModel(
             prdEnvelopes = emptyList(),
             prdComputeNodeDetail = null,
             prdComputeNodeRef = null,
+            prdActiveSessions = emptyList(),
+            prdCapacity = null,
         )
     }
 
