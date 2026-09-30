@@ -812,7 +812,15 @@ public fun SessionDetailScreen(
                 // Connecting overlay — datawatch splash covers the black terminal until both
                 // the WS connects (reachable != null) AND the first pane_capture arrives.
                 // Stays up through the full "WS handshake → resize_term → first frame" sequence.
-                SessionLoadingOverlay(visible = !hadContent && (state.reachable == null || !contentReady))
+                val connectStatus = when {
+                    state.reachable == null -> "connecting…"
+                    !contentReady -> "waiting for terminal…"
+                    else -> "connecting…"
+                }
+                SessionLoadingOverlay(
+                    visible = !hadContent && (state.reachable == null || !contentReady),
+                    statusText = connectStatus,
+                )
                 // Connection-lost toast — floats over terminal without layout reflow.
                 if (state.reachable == false) {
                     DatawatchToastHost(
@@ -1029,7 +1037,12 @@ public fun SessionDetailScreen(
     }
     // Loading overlay — rendered on top of the Scaffold; fades out when
     // the first pane_capture arrives (sessionLoaded = true).
-    SessionLoadingOverlay(visible = !sessionLoaded)
+    val newSessionStatus = when {
+        state.reachable == null -> "connecting…"
+        !contentReady -> "waiting for terminal…"
+        else -> "connecting…"
+    }
+    SessionLoadingOverlay(visible = !sessionLoaded, statusText = newSessionStatus)
 }
 
 /**

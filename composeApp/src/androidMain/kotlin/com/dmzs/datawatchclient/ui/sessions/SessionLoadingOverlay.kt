@@ -39,11 +39,15 @@ private val Pink = Color(0xFFE879F9)
 /**
  * Full-screen loading state shown when navigating to a brand-new session.
  * Displays the animated datawatch eye with a pulsing lightning bolt in the
- * pupil and a "Loading" label.  Fades out as soon as [visible] becomes false
+ * pupil and a status label.  Fades out as soon as [visible] becomes false
  * (first pane_capture arrives from the server).
+ *
+ * [statusText] should reflect the current connection stage so the user can see
+ * what's happening: "connecting…" while the WS handshake is in progress, then
+ * "waiting for terminal…" once the socket is up but no pane_capture has arrived.
  */
 @Composable
-public fun SessionLoadingOverlay(visible: Boolean) {
+public fun SessionLoadingOverlay(visible: Boolean, statusText: String = "connecting…") {
     AnimatedVisibility(
         visible = visible,
         enter = EnterTransition.None,
@@ -158,9 +162,9 @@ public fun SessionLoadingOverlay(visible: Boolean) {
                 )
             }
 
-            // "Loading" label — bottom of screen, teal + pulsing
+            // Status label — bottom of screen, teal + pulsing
             Text(
-                text = "Loading",
+                text = statusText,
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
