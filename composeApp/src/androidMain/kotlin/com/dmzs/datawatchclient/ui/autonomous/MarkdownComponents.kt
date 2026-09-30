@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -167,8 +165,10 @@ internal fun MarkdownView(text: String, modifier: Modifier = Modifier) {
     val codeBackground = MaterialTheme.colorScheme.surfaceVariant
     val codeFg = MaterialTheme.colorScheme.onSurfaceVariant
 
-    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(blocks) { block ->
+    // Column (not LazyColumn) so MarkdownView can be safely embedded inside
+    // LazyColumn or verticalScroll containers without nested-scroll crashes.
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        blocks.forEach { block ->
             when (block) {
                 is MdBlock.Heading -> {
                     val (size, weight) = when (block.level) {
