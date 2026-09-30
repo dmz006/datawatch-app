@@ -1447,4 +1447,22 @@
     <string name="prd_memory_recall_hint">Search PRD memories…</string>
     <string name="prd_memory_recall_empty">No results</string>
     <string name="prd_memory_recall_search">Search</string>
+    <!-- #191 scope dirs + scope warnings (#191) -->
+    <string name="prd_settings_write_dirs_label">Writable directories (comma-separated, absolute; empty = project dir)</string>
+    <string name="prd_settings_read_dirs_label">Read-only directories (comma-separated, absolute)</string>
+    <string name="prd_settings_dirs_hint">Workers may not read or write outside these directories.</string>
+    <string name="prd_scope_warnings_title">Scope warnings</string>
+    <string name="prd_scope_warnings_body">The plan references paths outside this Automaton\'s allowed directories; tasks that do will not start until fixed.</string>
+    <string name="automata_detail_writable_dirs">Writable dirs</string>
+    <string name="automata_detail_readonly_dirs">Read-only dirs</string>
+    <!-- #191 detection timing settings -->
+    <string name="settings_detection_alert_settle">Alert settle (sec):</string>
+    <string name="settings_detection_alert_repeat">Alert repeat (sec):</string>
+    <!-- #192 capacity-aware Automata -->
+    <string name="prd_settings_priority_label">Priority</string>
+    <string name="prd_settings_priority_hint">Higher priority runs first (default: 3)</string>
+    <string name="capacity_card_title">Capacity</string>
+    <string name="capacity_waiting">Waiting</string>
+    <string name="capacity_no_limit">no limit</string>
+    <string name="prd_task_waiting_capacity">waiting for capacity</string>
 </resources>

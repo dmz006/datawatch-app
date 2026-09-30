@@ -29,6 +29,9 @@ public data class RestartSessionDto(
 public data class DeleteSessionDto(
     val id: String? = null,
     val ids: List<String>? = null,
+    @SerialName("memory_strategy") val memoryStrategy: String? = null,
+    @SerialName("archive_role_filter") val archiveRoleFilter: List<String>? = null,
+    @SerialName("archive_to_scope") val archiveToScope: String? = null,
 )
 
 /**
