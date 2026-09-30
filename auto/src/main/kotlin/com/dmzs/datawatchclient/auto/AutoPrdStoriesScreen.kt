@@ -128,8 +128,9 @@ public class AutoPrdStoriesScreen(
         overviewBuilder.addText("[datawatch]: $dwResponse")
         items.addItem(overviewBuilder.build())
 
-        // Task rows — each pushes AutoTaskDetailScreen (depth 5). Reserve 1 slot for the overview row.
-        val taskMax = (listLimit() - 1).coerceAtLeast(1)
+        // Task rows — each pushes AutoTaskDetailScreen (depth 5).
+        // Reserve 2 slots: 1 for the overview row + 1 for the potential overflow row.
+        val taskMax = (listLimit() - 2).coerceAtLeast(1)
         val visibleTasks = story.tasks.take(taskMax)
         val taskOverflow = story.tasks.size - visibleTasks.size
         visibleTasks.forEach { task ->
