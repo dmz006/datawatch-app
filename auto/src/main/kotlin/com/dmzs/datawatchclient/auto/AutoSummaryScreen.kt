@@ -308,10 +308,18 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
             val errItems = ItemList.Builder()
                 .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
                 .build()
+            val serverIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_server)).build()
+            val infoIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_info)).build()
             ListTemplate.Builder()
                 .setTitle("datawatch")
                 .setHeaderAction(Action.APP_ICON)
                 .setSingleList(errItems)
+                .setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(Action.Builder().setIcon(serverIcon).setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }.build())
+                        .addAction(Action.Builder().setIcon(infoIcon).setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }.build())
+                        .build(),
+                )
                 .build()
         }
     }

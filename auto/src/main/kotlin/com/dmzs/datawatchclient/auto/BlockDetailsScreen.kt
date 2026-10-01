@@ -105,10 +105,18 @@ public class BlockDetailsScreen(
         val errItems = ItemList.Builder()
             .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
             .build()
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
         ListTemplate.Builder()
             .setTitle(sessionName)
             .setHeaderAction(Action.BACK)
             .setSingleList(errItems)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener { AutoTts.speak(carContext, e.message ?: "Error") }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
             .build()
     }
 

@@ -3,11 +3,14 @@ package com.dmzs.datawatchclient.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.ServerProfile
@@ -74,7 +77,14 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
         }
     }
 
-    override fun onGetTemplate(): Template = try {
+    override fun onGetTemplate(): Template {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val actionStrip = ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener { AutoTts.speak(carContext, "Active server picker") }.build())
+            .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+            .build()
+        return try {
         val items = ItemList.Builder()
         if (isLoading) {
             items.addItem(
@@ -122,20 +132,23 @@ public class AutoServerPickerScreen(carContext: CarContext) : Screen(carContext)
                 )
             }
         }
-        ListTemplate.Builder()
-            .setTitle("Active server")
-            .setHeaderAction(Action.BACK)
-            .setSingleList(items.build())
-            .build()
-    } catch (e: Throwable) {
-        val errItems = ItemList.Builder()
-            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
-            .build()
-        ListTemplate.Builder()
-            .setTitle("Active server")
-            .setHeaderAction(Action.BACK)
-            .setSingleList(errItems)
-            .build()
+            ListTemplate.Builder()
+                .setTitle("Active server")
+                .setHeaderAction(Action.BACK)
+                .setSingleList(items.build())
+                .setActionStrip(actionStrip)
+                .build()
+        } catch (e: Throwable) {
+            val errItems = ItemList.Builder()
+                .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+                .build()
+            ListTemplate.Builder()
+                .setTitle("Active server")
+                .setHeaderAction(Action.BACK)
+                .setSingleList(errItems)
+                .setActionStrip(actionStrip)
+                .build()
+        }
     }
 
     private companion object {
