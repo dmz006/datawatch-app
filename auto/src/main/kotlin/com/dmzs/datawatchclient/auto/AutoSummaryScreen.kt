@@ -180,21 +180,27 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         return try {
         fun iconOf(resId: Int) = CarIcon.Builder(IconCompat.createWithResource(carContext, resId)).build()
 
+        // Always use setSingleList (never setLoading(true)) so Samsung MESSAGING host counts
+        // this as ONE template slot. setLoading→setSingleList is a structural change that Samsung
+        // treats as a second slot, pushing AutoPrdDetailScreen to slot 4 and story-tap invalidate
+        // to slot 5 where ListTemplate is blocked ("can't do that while driving").
+        val actionStrip = ActionStrip.Builder()
+            .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_server))
+                .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }.build())
+            .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_info))
+                .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }.build())
+            .build()
+
         if (isFirstLoad) {
-            // ListTemplate (not MessageTemplate) so MESSAGING-path host accepts it while driving.
-            // MessageTemplate without a 2-icon ActionStrip is rejected on the MESSAGING path.
             return ListTemplate.Builder()
                 .setTitle("datawatch")
                 .setHeaderAction(Action.APP_ICON)
-                .setLoading(true)
-                .setActionStrip(
-                    ActionStrip.Builder()
-                        .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_server))
-                            .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }.build())
-                        .addAction(Action.Builder().setIcon(iconOf(R.drawable.ic_auto_info))
-                            .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }.build())
+                .setSingleList(
+                    ItemList.Builder()
+                        .addItem(Row.Builder().setTitle("Connecting…").addText("Loading server data").build())
                         .build(),
                 )
+                .setActionStrip(actionStrip)
                 .build()
         }
 
@@ -279,24 +285,6 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         val title = "datawatch"
-        val actionStrip =
-            ActionStrip.Builder()
-                // Server-switch icon first = upper-right position so the user can switch
-                // servers without going into the server row. Row 1 (server name) navigates
-                // to the monitor/stats screen.
-                .addAction(
-                    Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_server))
-                        .setOnClickListener { screenManager.push(AutoServerPickerScreen(carContext)) }
-                        .build(),
-                )
-                .addAction(
-                    Action.Builder()
-                        .setIcon(iconOf(R.drawable.ic_auto_info))
-                        .setOnClickListener { screenManager.push(AutoAboutScreen(carContext)) }
-                        .build(),
-                )
-                .build()
 
         ListTemplate.Builder()
             .setTitle(if (error != null) "$title · $error" else title)
