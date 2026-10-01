@@ -707,7 +707,14 @@ public fun TerminalView(
     DisposableEffect(Unit) {
         onDispose {
             controller?.webView = null
-            webViewRef.value?.destroy()
+            val wv = webViewRef.value
+            // Must stop → pause → remove from window → destroy in order.
+            // Calling destroy() while the WebView is still attached invalidates the
+            // Chromium GPU surface mid-frame, which blanks the Activity window (black screen).
+            wv?.stopLoading()
+            wv?.onPause()
+            (wv?.parent as? android.view.ViewGroup)?.removeView(wv)
+            wv?.destroy()
             webViewRef.value = null
         }
     }
