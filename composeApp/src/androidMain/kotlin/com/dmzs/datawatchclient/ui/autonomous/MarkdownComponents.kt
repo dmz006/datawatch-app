@@ -113,6 +113,7 @@ internal fun parseMd(raw: String): List<MdBlock> {
                 while (i + 1 < lines.size && lines[i + 1].isNotBlank() &&
                     !lines[i + 1].startsWith("#") &&
                     !lines[i + 1].trimStart().startsWith("```") &&
+                    !lines[i + 1].trimStart().startsWith("|") &&
                     !lines[i + 1].trimStart().let { t -> t.startsWith("- ") || t.startsWith("* ") } &&
                     !lines[i + 1].trimStart().matches(Regex("^\\d+\\.\\s.*"))
                 ) {
@@ -248,20 +249,22 @@ internal fun GfmTableView(
     val borderColor = MaterialTheme.colorScheme.outlineVariant
     val headerBg = MaterialTheme.colorScheme.surfaceVariant
     val cols = headers.size.coerceAtLeast(1)
+    // Fixed column width avoids weight(1f)/fillMaxWidth() inside horizontalScroll's
+    // unbounded constraint, which would collapse all cells to 0 width.
+    val colW = 100.dp
 
     Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
         Column(modifier = Modifier.border(1.dp, borderColor, RoundedCornerShape(4.dp))) {
             // Header row
-            Row(modifier = Modifier.fillMaxWidth().background(headerBg).height(IntrinsicSize.Min)) {
+            Row(modifier = Modifier.background(headerBg).height(IntrinsicSize.Min)) {
                 headers.forEachIndexed { ci, h ->
                     Text(
                         h,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
-                            .weight(1f)
+                            .width(colW)
                             .fillMaxHeight()
-                            .then(if (ci < cols - 1) Modifier.border(width = 0.dp, color = Color.Transparent) else Modifier)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                     if (ci < cols - 1) {
@@ -269,10 +272,18 @@ internal fun GfmTableView(
                     }
                 }
             }
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
+            // Header/body separator — built from explicit column widths to stay within scroll bounds
+            Row {
+                repeat(cols) { ci ->
+                    Box(modifier = Modifier.width(colW).height(1.dp).background(borderColor))
+                    if (ci < cols - 1) {
+                        Box(modifier = Modifier.width(1.dp).height(1.dp).background(borderColor))
+                    }
+                }
+            }
             // Data rows
             rows.forEachIndexed { ri, row ->
-                Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
                     val paddedRow = if (row.size < cols) row + List(cols - row.size) { "" } else row
                     paddedRow.take(cols).forEachIndexed { ci, cell ->
                         Text(
@@ -280,7 +291,7 @@ internal fun GfmTableView(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
-                                .weight(1f)
+                                .width(colW)
                                 .fillMaxHeight()
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                         )
@@ -290,7 +301,14 @@ internal fun GfmTableView(
                     }
                 }
                 if (ri < rows.size - 1) {
-                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
+                    Row {
+                        repeat(cols) { ci ->
+                            Box(modifier = Modifier.width(colW).height(1.dp).background(borderColor))
+                            if (ci < cols - 1) {
+                                Box(modifier = Modifier.width(1.dp).height(1.dp).background(borderColor))
+                            }
+                        }
+                    }
                 }
             }
         }

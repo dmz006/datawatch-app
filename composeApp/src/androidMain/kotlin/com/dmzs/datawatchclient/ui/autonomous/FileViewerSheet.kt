@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,7 +74,7 @@ internal fun FileViewerSheet(
         sheetState = sheetState,
         windowInsets = WindowInsets(0),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(bottom = 24.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -95,7 +96,9 @@ internal fun FileViewerSheet(
                 }
             }
 
-            // Content
+            // Content — weight(1f) gives it the remaining height after the header so that
+            // the inner verticalScroll (for .md) and LazyColumn can activate within a
+            // bounded viewport rather than expanding to full content height.
             when {
                 state.loading -> Box(
                     modifier = Modifier.fillMaxWidth().height(200.dp),
@@ -115,11 +118,13 @@ internal fun FileViewerSheet(
 
                 isMd(state.path) -> MarkdownView(
                     text = state.content,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp),
                     scrollable = true,
                 )
 
-                else -> LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 12.dp),
+                ) {
                     item {
                         Text(
                             state.content,
