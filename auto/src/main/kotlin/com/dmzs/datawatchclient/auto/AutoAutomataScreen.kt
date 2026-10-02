@@ -31,27 +31,26 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Automata hub — PRD list, story list, story detail, and task detail all in one screen (depth 2).
+ * Automata hub — PRD list, flat story+task view, and task detail in one screen (depth 2).
  *
- * Samsung MESSAGING category counts each onGetTemplate() call (including invalidate() triggers)
- * as a template step. With AutoSummaryScreen at depth 1 and this screen at depth 2, we have a
- * hard budget of 4 user-visible steps before Samsung blocks ListTemplate:
- *   step 1 — initial onGetTemplate() from push  (MUST show PRD list, not loading)
- *   step 2 — PRD tap → story list
- *   step 3 — story tap → story detail
- *   step 4 — task tap → task detail          ← ListTemplate allowed here
+ * Samsung MESSAGING counts steps from the ROOT screen, not just from this push:
+ *   step 1 — AutoSummaryScreen (root)
+ *   step 2 — Push AutoAutomataScreen
+ *   step 3 — PRD tap → invalidate() (flat story+task view)
+ *   step 4 — Task tap → invalidate() (task detail)  ← ListTemplate allowed through step 4
  *   step 5 would be blocked for ListTemplate
  *
- * To keep step 1 as the PRD list (no init loading→data invalidate), AutoSummaryScreen passes
- * its cached prd list as seedPrds so this screen starts fully hydrated. The init-block
- * invalidate() is skipped entirely when seed data is present, saving the critical step-2 slot.
+ * The former two-level story navigation (story list → story tap → story detail → task tap →
+ * task detail) placed task-tap at step 5 and was blocked. Flattening to one level (PRD tap →
+ * flat story headers + task rows → task tap → task detail) keeps task-tap at step 4.
+ *
+ * Story section headers are non-tappable visual dividers. Task rows are directly tappable.
  *
  * Navigation state:
- *   selectedPrd == null                                    → PRD list
- *   selectedPrd != null                                    → story list
- *   selectedPrd != null, selectedStory != null             → story detail
- *   selectedPrd != null, selectedStory != null,
- *     selectedTask != null                                 → task detail
+ *   selectedPrd == null               → PRD list
+ *   selectedPrd != null               → flat story+task view (no intermediate story level)
+ *   selectedPrd != null,
+ *     selectedTask != null            → task detail
  */
 public class AutoAutomataScreen(
     carContext: CarContext,
@@ -214,10 +213,11 @@ public class AutoAutomataScreen(
                         AutoTts.speak(carContext, ttsText)
                     }.build())
                     .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                        // Story level removed — task detail closes back to flat story+task view,
+                        // flat view closes back to PRD list.
                         when {
                             selectedTask != null -> { selectedTask = null; invalidate() }
-                            selectedStory != null -> { selectedStory = null; invalidate() }
-                            else -> { selectedPrd = null; invalidate() }
+                            else -> { selectedPrd = null; selectedStory = null; invalidate() }
                         }
                     }.build())
                     .build()
@@ -244,8 +244,7 @@ public class AutoAutomataScreen(
     override fun onGetTemplate(): Template = try {
         when {
             selectedTask != null -> buildTaskDetailTemplate(selectedTask!!)
-            selectedStory != null -> buildStoryDetailTemplate(selectedStory!!)
-            selectedPrd != null -> buildStoryListTemplate(selectedPrd!!)
+            selectedPrd != null -> buildFlatStoryTaskTemplate(selectedPrd!!)
             else -> buildPrdListTemplate()
         }
     } catch (e: Throwable) {
@@ -382,103 +381,69 @@ public class AutoAutomataScreen(
             .build()
     }
 
-    // ---- Story list (was AutoPrdDetailScreen.buildStoryListTemplate) ----
+    // ---- Flat story+task view ----
+    //
+    // Shows story section headers (non-tappable) with their task rows directly below them.
+    // Eliminates the former story-tap step so task-tap stays at step 4 (within Samsung budget).
 
-    private fun buildStoryListTemplate(prd: PrdDto): ListTemplate {
+    private fun buildFlatStoryTaskTemplate(prd: PrdDto): ListTemplate {
         val prdTitle = prd.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Plan"
         val items = ItemList.Builder()
-        val stories = prd.stories
 
         when {
             prdDetailLoading -> items.addItem(
-                Row.Builder().setTitle("Loading stories…").addText("Fetching plan detail").build(),
+                Row.Builder().setTitle("Loading…").addText("Fetching plan detail").build(),
             )
             prdDetailError != null -> items.addItem(
                 Row.Builder().setTitle("Error").addText(prdDetailError ?: "Unknown error").build(),
             )
-            stories.isEmpty() -> items.addItem(
+            prd.stories.isEmpty() -> items.addItem(
                 Row.Builder().setTitle("No stories").addText("This plan has no stories yet").build(),
             )
             else -> {
-            val listMax = listLimit()
-            val visible = stories.take((listMax - 1).coerceAtLeast(1))
-            val overflow = stories.size - visible.size
-
-            visible.forEachIndexed { idx, story ->
-                val marker = storyMarker(story.status)
-                val taskDone = story.tasks.count { it.status.lowercase() in DONE_STATUSES }
-                val color = when (story.status.lowercase()) {
-                    "awaiting_approval", "needs_review" -> CarColor.RED
-                    "in_progress", "running", "active" -> CarColor.GREEN
-                    else -> CarColor.DEFAULT
+                val limit = listLimit()
+                // Build a flat sequence: story-header row, then task rows, repeat per story.
+                // Reserve 1 slot for an overflow indicator.
+                val maxContent = (limit - 1).coerceAtLeast(1)
+                var rowsAdded = 0
+                var overflow = 0
+                outer@ for (story in prd.stories) {
+                    // Story section header — not tappable, serves as a visual divider.
+                    if (rowsAdded >= maxContent) { overflow++; continue }
+                    val marker = storyMarker(story.status)
+                    val taskDone = story.tasks.count { it.status.lowercase() in DONE_STATUSES }
+                    val storyColor = when (story.status.lowercase()) {
+                        "awaiting_approval", "needs_review" -> CarColor.RED
+                        "in_progress", "running", "active" -> CarColor.GREEN
+                        else -> CarColor.DEFAULT
+                    }
+                    items.addItem(
+                        Row.Builder()
+                            .setTitle(colored("$marker ${story.title.take(MAX_STORY_TITLE)}", storyColor))
+                            .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks")
+                            .build(), // no listener — section header only
+                    )
+                    rowsAdded++
+                    // Task rows under this story — tappable.
+                    for (task in story.tasks) {
+                        if (rowsAdded >= maxContent) { overflow += story.tasks.size - story.tasks.indexOf(task); continue@outer }
+                        items.addItem(buildTaskRow(task) { selectedStory = story; selectedTask = task; invalidate() })
+                        rowsAdded++
+                    }
                 }
-                items.addItem(
-                    Row.Builder()
-                        .setTitle(colored("$marker ${idx + 1}. ${story.title.take(MAX_STORY_TITLE)}", color))
-                        .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks")
-                        .setOnClickListener {
-                            selectedStory = story
-                            selectedTask = null
-                            invalidate()
-                        }
-                        .build(),
-                )
+                if (overflow > 0) {
+                    items.addItem(
+                        Row.Builder()
+                            .setTitle("… $overflow more")
+                            .addText("Showing top $rowsAdded of ${prd.stories.sumOf { 1 + it.tasks.size }}")
+                            .build(),
+                    )
+                }
             }
-            if (overflow > 0) {
-                items.addItem(
-                    Row.Builder()
-                        .setTitle("… $overflow more stories")
-                        .addText("Showing top ${visible.size}")
-                        .build(),
-                )
-            }
-            }  // close else branch
-        }  // close when
+        }
 
         return ListTemplate.Builder()
             .setTitle(prdTitle)
-            .setHeaderAction(Action.BACK)
-            .setSingleList(items.build())
-            .setActionStrip(buildActionStrip())
-            .build()
-    }
-
-    // ---- Story detail ----
-
-    private fun buildStoryDetailTemplate(story: PrdStoryDto): ListTemplate {
-        val items = ItemList.Builder()
-
-        val overviewBuilder = Row.Builder()
-            .setTitle("[You]: ${story.title.take(MAX_STORY_TITLE_DETAIL)}")
-        val dwResponse = buildString {
-            story.description?.takeIf { it.isNotBlank() }
-                ?.let { append(it.take(MAX_DESC_CHARS)) }
-            val statusLine = buildStoryStatusLine(story)
-            if (statusLine.isNotBlank()) {
-                if (isNotEmpty()) append("  ·  ")
-                append(statusLine)
-            }
-        }.ifBlank { buildStoryStatusLine(story) }
-        overviewBuilder.addText("[datawatch]: $dwResponse")
-        items.addItem(overviewBuilder.build())
-
-        val taskMax = (listLimit() - 2).coerceAtLeast(1)
-        val visibleTasks = story.tasks.take(taskMax)
-        val taskOverflow = story.tasks.size - visibleTasks.size
-        visibleTasks.forEach { task ->
-            items.addItem(buildTaskRow(task) { selectedTask = task; invalidate() })
-        }
-        if (taskOverflow > 0) {
-            items.addItem(
-                Row.Builder()
-                    .setTitle("… $taskOverflow more tasks")
-                    .addText("Showing top ${visibleTasks.size}")
-                    .build(),
-            )
-        }
-
-        return ListTemplate.Builder()
-            .setTitle(story.title.take(38).ifBlank { "Story" })
             .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
