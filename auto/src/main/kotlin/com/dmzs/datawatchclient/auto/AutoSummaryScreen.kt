@@ -18,6 +18,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.domain.SessionState
+import com.dmzs.datawatchclient.transport.dto.PrdDto
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,10 +55,11 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastSnapshotHash: Int = -1
 
-    // Automata counts
+    // Automata counts + cached list (passed to AutoAutomataScreen to avoid an init invalidate step)
     private var automataRunning: Int = 0
     private var automataBlocked: Int = 0
     private var automataTotal: Int = 0
+    private var cachedPrds: List<PrdDto> = emptyList()
 
     // Last output across sessions
     private var lastOutputSessionId: String? = null
@@ -170,6 +172,7 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
                 automataTotal = prdList.prds.size
                 automataRunning = prdList.prds.count { it.status == "running" }
                 automataBlocked = prdList.prds.count { p -> p.stories.any { it.status == "awaiting_approval" } }
+                cachedPrds = prdList.prds
             }
         } catch (e: Throwable) {
             error = "Error: ${e.message ?: e::class.simpleName}"
@@ -260,7 +263,9 @@ public class AutoSummaryScreen(carContext: CarContext) : Screen(carContext) {
             Row.Builder()
                 .setTitle(automataTitle)
                 .addText(automataSubtitle)
-                .setOnClickListener { screenManager.push(AutoAutomataScreen(carContext)) }
+                .setOnClickListener {
+                    screenManager.push(AutoAutomataScreen(carContext, cachedPrds.ifEmpty { null }))
+                }
                 .build(),
         )
 
