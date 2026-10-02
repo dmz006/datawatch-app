@@ -341,7 +341,10 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                             selectedTask = null
                             prdDetailLoading = true
                             prdDetailError = null
-                            invalidate()
+                            // Do NOT invalidate here before data loads — each click-handler
+                            // invalidate() consumes a Samsung MESSAGING template step.
+                            // Skipping the loading-state render means story-tap is step 3
+                            // and task-tap is step 4, both within the 5-step limit.
                             scope.launch { refreshSelectedPrd(prd.id); invalidate() }
                         }
                         .build(),
