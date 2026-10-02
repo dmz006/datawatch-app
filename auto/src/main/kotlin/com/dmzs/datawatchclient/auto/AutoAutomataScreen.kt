@@ -33,29 +33,43 @@ import kotlinx.coroutines.launch
 /**
  * Automata hub — PRD list, story list, story detail, and task detail all in one screen (depth 2).
  *
- * Samsung MESSAGING category counts each loading→data invalidate() and each screen push as a
- * template step. With AutoSummaryScreen at depth 1 and this screen at depth 2, all PRD navigation
- * stays within depth 2 via in-place state transitions, avoiding the ListTemplate-at-last-step
- * restriction that Samsung enforces. A push to AutoPrdDetailScreen at depth 3 is NOT used.
+ * Samsung MESSAGING category counts each onGetTemplate() call (including invalidate() triggers)
+ * as a template step. With AutoSummaryScreen at depth 1 and this screen at depth 2, we have a
+ * hard budget of 4 user-visible steps before Samsung blocks ListTemplate:
+ *   step 1 — initial onGetTemplate() from push  (MUST show PRD list, not loading)
+ *   step 2 — PRD tap → story list
+ *   step 3 — story tap → story detail
+ *   step 4 — task tap → task detail          ← ListTemplate allowed here
+ *   step 5 would be blocked for ListTemplate
+ *
+ * To keep step 1 as the PRD list (no init loading→data invalidate), AutoSummaryScreen passes
+ * its cached prd list as seedPrds so this screen starts fully hydrated. The init-block
+ * invalidate() is skipped entirely when seed data is present, saving the critical step-2 slot.
  *
  * Navigation state:
- *   selectedPrd == null              → PRD list
- *   selectedPrd != null              → story list for that PRD
- *   selectedPrd != null, selectedStory != null → story detail
- *   selectedPrd != null, selectedStory != null, selectedTask != null → task detail
- *
- * ActionStrip close button walks back up the state hierarchy; screenManager.pop() only on root.
+ *   selectedPrd == null                                    → PRD list
+ *   selectedPrd != null                                    → story list
+ *   selectedPrd != null, selectedStory != null             → story detail
+ *   selectedPrd != null, selectedStory != null,
+ *     selectedTask != null                                 → task detail
  */
-public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
-    // PRD list state
-    private var automata: List<PrdDto> = emptyList()
+public class AutoAutomataScreen(
+    carContext: CarContext,
+    seedPrds: List<PrdDto>? = null,
+) : Screen(carContext) {
+    // PRD list state — seeded from AutoSummaryScreen's cached list to avoid an init invalidate()
+    private var automata: List<PrdDto> = seedPrds
+        ?.filter { it.status.lowercase() !in TERMINAL_STATUSES }
+        ?.sortedWith(automataComparator)
+        ?: emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
-    private var isLoading: Boolean = true
+    private var isLoading: Boolean = seedPrds == null
     private var historyOn: Boolean = false
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var lastHash: Int = -1
+    // Initialize hash from seed data so the first pollLoop iteration doesn't fire a spurious invalidate
+    private var lastHash: Int = if (seedPrds != null) automata.hashCode() else -1
 
     // In-place PRD/story/task selection (all at depth 2 — no screenManager.push())
     private var selectedPrd: PrdDto? = null
@@ -68,9 +82,11 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
     private var prdDetailError: String? = null
 
     init {
-        scope.launch {
-            refresh()
-            invalidate()
+        // Only fetch on init when no seed data was provided.
+        // With seed data the first onGetTemplate() already shows the PRD list,
+        // so this invalidate() is unnecessary and would waste a Samsung MESSAGING step.
+        if (seedPrds == null) {
+            scope.launch { refresh(); invalidate() }
         }
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
@@ -125,11 +141,9 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             AutoServiceLocator.transportFor(profile).listPrds().fold(
                 onSuccess = { dto ->
                     error = null
-                    val terminalStatuses =
-                        setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
                     automata =
                         dto.prds
-                            .filter { prd -> historyOn || prd.status.lowercase() !in terminalStatuses }
+                            .filter { prd -> historyOn || prd.status.lowercase() !in TERMINAL_STATUSES }
                             .sortedWith(automataComparator)
                 },
                 onFailure = { err ->
@@ -679,6 +693,7 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         const val MAX_DESC_CHARS: Int = 70
 
         val DONE_STATUSES = setOf("complete", "completed", "done")
+        val TERMINAL_STATUSES = setOf("killed", "completed", "complete", "cancelled", "canceled", "rejected", "error")
 
         val automataComparator: Comparator<PrdDto> =
             compareByDescending { prd ->
