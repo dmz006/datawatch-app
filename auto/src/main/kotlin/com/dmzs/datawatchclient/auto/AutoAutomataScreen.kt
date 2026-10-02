@@ -10,6 +10,7 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.CarText
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
@@ -18,6 +19,8 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dmzs.datawatchclient.transport.dto.PrdDto
+import com.dmzs.datawatchclient.transport.dto.PrdStoryDto
+import com.dmzs.datawatchclient.transport.dto.PrdTaskDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,26 +31,38 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * BL303-A3 — Running automata overview for Android Auto.
+ * Automata hub — PRD list, story list, story detail, and task detail all in one screen (depth 2).
  *
- * Lists all running PRDs/automata sorted by depth (deepest first — most
- * granular work at top). Shows story/task position and progress arc text.
- * Tap → [AutoSessionListScreen] filtered to sessions for that automaton.
+ * Samsung MESSAGING category counts each loading→data invalidate() and each screen push as a
+ * template step. With AutoSummaryScreen at depth 1 and this screen at depth 2, all PRD navigation
+ * stays within depth 2 via in-place state transitions, avoiding the ListTemplate-at-last-step
+ * restriction that Samsung enforces. A push to AutoPrdDetailScreen at depth 3 is NOT used.
+ *
+ * Navigation state:
+ *   selectedPrd == null              → PRD list
+ *   selectedPrd != null              → story list for that PRD
+ *   selectedPrd != null, selectedStory != null → story detail
+ *   selectedPrd != null, selectedStory != null, selectedTask != null → task detail
+ *
+ * ActionStrip close button walks back up the state hierarchy; screenManager.pop() only on root.
  */
 public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
+    // PRD list state
     private var automata: List<PrdDto> = emptyList()
     private var serverName: String = "datawatch"
     private var error: String? = null
     private var isLoading: Boolean = true
-    private var historyOn: Boolean = false // false = hide terminal automata by default
+    private var historyOn: Boolean = false
     private var pollJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
-    // §15: track snapshot hash to skip redundant invalidate() calls.
     private var lastHash: Int = -1
 
+    // In-place PRD/story/task selection (all at depth 2 — no screenManager.push())
+    private var selectedPrd: PrdDto? = null
+    private var selectedStory: PrdStoryDto? = null
+    private var selectedTask: PrdTaskDto? = null
+
     init {
-        // Eager fetch so the first onGetTemplate() render has real data.
         scope.launch {
             refresh()
             invalidate()
@@ -73,9 +88,18 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun pollLoop() {
         while (scope.isActive) {
-            refresh()
-            // §15: only invalidate when the automata list actually changed.
-            val newHash = automata.hashCode() xor (error?.hashCode() ?: 0)
+            val prd = selectedPrd
+            if (prd != null) {
+                refreshSelectedPrd(prd.id)
+            } else {
+                refresh()
+            }
+            val newHash =
+                automata.hashCode() xor
+                    (error?.hashCode() ?: 0) xor
+                    (selectedPrd.hashCode()) xor
+                    (selectedStory.hashCode()) xor
+                    (selectedTask.hashCode())
             if (newHash != lastHash) {
                 lastHash = newHash
                 invalidate()
@@ -114,7 +138,109 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         }
     }
 
+    private suspend fun refreshSelectedPrd(prdId: String) {
+        try {
+            val profile = resolveActiveProfile() ?: return
+            AutoServiceLocator.transportFor(profile).getPrd(prdId).fold(
+                onSuccess = { dto ->
+                    selectedPrd = dto
+                    selectedStory = selectedStory?.let { ss -> dto.stories.find { it.id == ss.id } ?: ss }
+                    selectedTask = selectedTask?.let { st -> selectedStory?.tasks?.find { it.id == st.id } ?: st }
+                },
+                onFailure = {},
+            )
+        } catch (_: Throwable) {}
+    }
+
+    // ---- ActionStrip ----
+
+    private fun buildActionStrip(): ActionStrip {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val filterIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_filter)).build()
+
+        return when {
+            selectedPrd != null -> {
+                // Navigating within a PRD: speaker (TTS) + close (in-place back)
+                val task = selectedTask
+                val story = selectedStory
+                val p = selectedPrd
+                val ttsText = when {
+                    task != null ->
+                        "${task.task.take(50).ifBlank { "Task" }}. Status: ${task.status.replace('_', ' ')}."
+                    story != null -> {
+                        val done = story.tasks.count { it.status.lowercase() in DONE_STATUSES }
+                        "${story.title.ifBlank { "Story" }}. ${story.status}. $done of ${story.tasks.size} tasks done."
+                    }
+                    p != null -> {
+                        val done = p.stories.count { it.status.lowercase() in DONE_STATUSES }
+                        "${p.title?.ifBlank { null } ?: p.name}. ${p.status}. $done of ${p.stories.size} stories done."
+                    }
+                    else -> "Loading."
+                }
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                        AutoTts.speak(carContext, ttsText)
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                        when {
+                            selectedTask != null -> { selectedTask = null; invalidate() }
+                            selectedStory != null -> { selectedStory = null; invalidate() }
+                            else -> { selectedPrd = null; invalidate() }
+                        }
+                    }.build())
+                    .build()
+            }
+            else -> {
+                // PRD list: filter toggle + back-to-summary
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(filterIcon).setOnClickListener {
+                        historyOn = !historyOn
+                        isLoading = true
+                        invalidate()
+                        scope.launch { refresh(); invalidate() }
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener {
+                        screenManager.pop()
+                    }.build())
+                    .build()
+            }
+        }
+    }
+
+    // ---- Template dispatch ----
+
     override fun onGetTemplate(): Template = try {
+        when {
+            selectedTask != null -> buildTaskDetailTemplate(selectedTask!!)
+            selectedStory != null -> buildStoryDetailTemplate(selectedStory!!)
+            selectedPrd != null -> buildStoryListTemplate(selectedPrd!!)
+            else -> buildPrdListTemplate()
+        }
+    } catch (e: Throwable) {
+        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
+        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
+        val errItems = ItemList.Builder()
+            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
+            .build()
+        ListTemplate.Builder()
+            .setTitle("$serverName Automata")
+            .setHeaderAction(Action.BACK)
+            .setSingleList(errItems)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener {
+                        AutoTts.speak(carContext, e.message ?: "Error")
+                    }.build())
+                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
+                    .build(),
+            )
+            .build()
+    }
+
+    // ---- PRD list ----
+
+    private fun buildPrdListTemplate(): ListTemplate {
         val builder = ItemList.Builder()
 
         if (isLoading) {
@@ -164,7 +290,6 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                     carContext.getCarService(ConstraintManager::class.java)
                         .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
                 }.getOrElse { MAX_ROWS_FALLBACK }
-            // Reserve 1 slot for the overflow row.
             val visible = automata.take((max - 1).coerceAtLeast(1))
             val overflow = automata.size - visible.size
             visible.forEach { prd ->
@@ -194,8 +319,12 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .setImage(dotIcon)
                         .addText(subtitle)
                         .setOnClickListener {
-                            // All states → full PRD detail (overview, stories, actions)
-                            screenManager.push(AutoPrdDetailScreen(carContext, prd.id))
+                            selectedPrd = prd
+                            selectedStory = null
+                            selectedTask = null
+                            invalidate()
+                            // Immediately fetch full PRD detail (stories + task data)
+                            scope.launch { refreshSelectedPrd(prd.id); invalidate() }
                         }
                         .build(),
                 )
@@ -210,57 +339,332 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             }
         }
 
-        val filterIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_filter)).build()
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(filterIcon)
-                    .setOnClickListener {
-                        historyOn = !historyOn
-                        isLoading = true
-                        invalidate()
-                        scope.launch { refresh(); invalidate() }
-                    }
-                    .build(),
-            )
-            .build()
-
-        ListTemplate.Builder()
+        return ListTemplate.Builder()
             .setTitle("$serverName Automata")
             .setHeaderAction(Action.BACK)
             .setSingleList(builder.build())
-            .setActionStrip(actionStrip)
-            .build()
-    } catch (e: Throwable) {
-        val errItems = ItemList.Builder()
-            .addItem(Row.Builder().setTitle("Error").addText(e.message ?: "Unknown").build())
-            .build()
-        val speakerIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_speaker)).build()
-        val closeIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_close)).build()
-        ListTemplate.Builder()
-            .setTitle("Automata")
-            .setHeaderAction(Action.BACK)
-            .setSingleList(errItems)
-            .setActionStrip(
-                ActionStrip.Builder()
-                    .addAction(Action.Builder().setIcon(speakerIcon).setOnClickListener { AutoTts.speak(carContext, e.message ?: "Error") }.build())
-                    .addAction(Action.Builder().setIcon(closeIcon).setOnClickListener { screenManager.pop() }.build())
-                    .build(),
-            )
+            .setActionStrip(buildActionStrip())
             .build()
     }
+
+    // ---- Story list (was AutoPrdDetailScreen.buildStoryListTemplate) ----
+
+    private fun buildStoryListTemplate(prd: PrdDto): ListTemplate {
+        val prdTitle = prd.title?.takeIf { it.isNotBlank() }?.take(MAX_TITLE) ?: "Plan"
+        val items = ItemList.Builder()
+        val stories = prd.stories
+
+        if (stories.isEmpty()) {
+            items.addItem(
+                Row.Builder().setTitle("Loading stories…").addText("Fetching plan detail").build(),
+            )
+        } else {
+            val listMax = listLimit()
+            val visible = stories.take((listMax - 1).coerceAtLeast(1))
+            val overflow = stories.size - visible.size
+
+            visible.forEachIndexed { idx, story ->
+                val marker = storyMarker(story.status)
+                val taskDone = story.tasks.count { it.status.lowercase() in DONE_STATUSES }
+                val color = when (story.status.lowercase()) {
+                    "awaiting_approval", "needs_review" -> CarColor.RED
+                    "in_progress", "running", "active" -> CarColor.GREEN
+                    else -> CarColor.DEFAULT
+                }
+                items.addItem(
+                    Row.Builder()
+                        .setTitle(colored("$marker ${idx + 1}. ${story.title.take(MAX_STORY_TITLE)}", color))
+                        .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks")
+                        .setOnClickListener {
+                            selectedStory = story
+                            selectedTask = null
+                            invalidate()
+                        }
+                        .build(),
+                )
+            }
+            if (overflow > 0) {
+                items.addItem(
+                    Row.Builder()
+                        .setTitle("… $overflow more stories")
+                        .addText("Showing top ${visible.size}")
+                        .build(),
+                )
+            }
+        }
+
+        return ListTemplate.Builder()
+            .setTitle(prdTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(buildActionStrip())
+            .build()
+    }
+
+    // ---- Story detail ----
+
+    private fun buildStoryDetailTemplate(story: PrdStoryDto): ListTemplate {
+        val items = ItemList.Builder()
+
+        val overviewBuilder = Row.Builder()
+            .setTitle("[You]: ${story.title.take(MAX_STORY_TITLE_DETAIL)}")
+        val dwResponse = buildString {
+            story.description?.takeIf { it.isNotBlank() }
+                ?.let { append(it.take(MAX_DESC_CHARS)) }
+            val statusLine = buildStoryStatusLine(story)
+            if (statusLine.isNotBlank()) {
+                if (isNotEmpty()) append("  ·  ")
+                append(statusLine)
+            }
+        }.ifBlank { buildStoryStatusLine(story) }
+        overviewBuilder.addText("[datawatch]: $dwResponse")
+        items.addItem(overviewBuilder.build())
+
+        val taskMax = (listLimit() - 2).coerceAtLeast(1)
+        val visibleTasks = story.tasks.take(taskMax)
+        val taskOverflow = story.tasks.size - visibleTasks.size
+        visibleTasks.forEach { task ->
+            items.addItem(buildTaskRow(task) { selectedTask = task; invalidate() })
+        }
+        if (taskOverflow > 0) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("… $taskOverflow more tasks")
+                    .addText("Showing top ${visibleTasks.size}")
+                    .build(),
+            )
+        }
+
+        return ListTemplate.Builder()
+            .setTitle(story.title.take(38).ifBlank { "Story" })
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(buildActionStrip())
+            .build()
+    }
+
+    // ---- Task detail ----
+
+    private fun buildTaskDetailTemplate(task: PrdTaskDto): ListTemplate {
+        val taskTitle = task.task.take(MAX_TASK_TITLE).ifBlank { "Task" }
+        val limit = listLimit()
+        val items = ItemList.Builder()
+        var rowCount = 0
+
+        if (task.status == "failed" && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("⟳ Requeue task")
+                    .addText("Tap to requeue this failed task")
+                    .setOnClickListener { fireRequeue(task) }
+                    .build(),
+            )
+            rowCount++
+        }
+        if (task.status in setOf("pending", "in_progress") && rowCount < limit - 1) {
+            items.addItem(
+                Row.Builder()
+                    .setTitle("✗ Cancel task")
+                    .addText("Tap to cancel this task")
+                    .setOnClickListener { fireCancelTask(task) }
+                    .build(),
+            )
+            rowCount++
+        }
+
+        if (rowCount < limit) {
+            val statusLine = buildString {
+                append("Status: ${task.status.replace('_', ' ')}")
+                if (task.retryCount > 0) append("  ·  Retries: ${task.retryCount}")
+            }
+            val row = Row.Builder().setTitle(CarText.create(statusLine))
+            task.spec.takeIf { it.isNotBlank() }?.let { row.addText(it.take(MAX_SPEC_CHARS)) }
+            task.error?.takeIf { it.isNotBlank() && task.status == "failed" }
+                ?.let { row.addText("Error: ${it.take(MAX_ERROR_SHORT)}") }
+            items.addItem(row.build())
+            rowCount++
+        }
+
+        task.verification?.let { v ->
+            if (rowCount < limit) {
+                val verTitle = buildString {
+                    append("Verification")
+                    v.severity?.takeIf { it.isNotBlank() }?.let { append("  ·  $it") }
+                }
+                val verText = v.summary?.take(MAX_VERIF_CHARS)?.takeIf { it.isNotBlank() }
+                val issueText = v.issues.take(3).joinToString("  ·  ") { it.take(40) }
+                val row = Row.Builder().setTitle(verTitle)
+                if (verText != null) row.addText(verText)
+                if (issueText.isNotBlank()) row.addText(issueText)
+                items.addItem(row.build())
+                rowCount++
+            }
+        }
+
+        if (task.filesTouched.isNotEmpty() && rowCount < limit) {
+            val fileTitle = "${task.filesTouched.size} file${if (task.filesTouched.size == 1) "" else "s"} touched"
+            val fileList = task.filesTouched.take(3).joinToString("  ") { it.substringAfterLast('/') }
+            val more = (task.filesTouched.size - 3).takeIf { it > 0 }
+            items.addItem(
+                Row.Builder()
+                    .setTitle(fileTitle)
+                    .addText(fileList + (more?.let { " … +$it" } ?: ""))
+                    .build(),
+            )
+            rowCount++
+        }
+
+        return ListTemplate.Builder()
+            .setTitle(taskTitle)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(items.build())
+            .setActionStrip(buildActionStrip())
+            .build()
+    }
+
+    // ---- Task actions ----
+
+    private fun fireRequeue(task: PrdTaskDto) {
+        val prdId = selectedPrd?.id ?: return
+        scope.launch {
+            try {
+                val profile = resolveActiveProfile() ?: return@launch
+                AutoServiceLocator.transportFor(profile).requeuePrdTask(prdId, task.id).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Task requeued", CarToast.LENGTH_SHORT).show()
+                        selectedTask = null
+                        invalidate()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Requeue failed: ${err.message ?: err::class.simpleName}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+            } catch (e: Throwable) {
+                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun fireCancelTask(task: PrdTaskDto) {
+        val prdId = selectedPrd?.id ?: return
+        scope.launch {
+            try {
+                val profile = resolveActiveProfile() ?: return@launch
+                AutoServiceLocator.transportFor(profile).cancelPrdTask(prdId, task.id).fold(
+                    onSuccess = {
+                        CarToast.makeText(carContext, "Task cancelled", CarToast.LENGTH_SHORT).show()
+                        selectedTask = null
+                        invalidate()
+                    },
+                    onFailure = { err ->
+                        CarToast.makeText(
+                            carContext,
+                            "Cancel failed: ${err.message ?: err::class.simpleName}",
+                            CarToast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+            } catch (e: Throwable) {
+                CarToast.makeText(carContext, "Error: ${e.message}", CarToast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // ---- Row builders ----
+
+    private fun buildTaskRow(task: PrdTaskDto, onClick: () -> Unit): Row {
+        val marker = when (task.status) {
+            "complete", "completed", "done" -> "✓"
+            "in_progress" -> "◉"
+            "failed" -> "✗"
+            else -> "○"
+        }
+        val color = when (task.status) {
+            "failed" -> CarColor.RED
+            "in_progress" -> CarColor.GREEN
+            else -> CarColor.DEFAULT
+        }
+        val builder = Row.Builder()
+            .setTitle(colored("$marker ${task.task.take(MAX_TASK_CHARS)}", color))
+            .setOnClickListener(onClick)
+        val detail = buildTaskDetailLine(task)
+        if (detail.isNotBlank()) builder.addText(detail)
+        return builder.build()
+    }
+
+    private fun buildTaskDetailLine(task: PrdTaskDto): String =
+        buildString {
+            when (task.status) {
+                "failed" -> {
+                    task.error?.takeIf { it.isNotBlank() }
+                        ?.let { append("Error: ${it.take(60)}") }
+                    if (task.retryCount > 0) {
+                        if (isNotEmpty()) append(" · ")
+                        append("${task.retryCount} retr${if (task.retryCount == 1) "y" else "ies"}")
+                    }
+                }
+                "complete", "completed", "done" ->
+                    task.verification?.summary?.takeIf { it.isNotBlank() }
+                        ?.let { append(it.take(70)) }
+                "in_progress" ->
+                    task.sessionId?.takeIf { it.isNotBlank() }
+                        ?.let { append("Session: $it") }
+            }
+        }
+
+    private fun buildStoryStatusLine(story: PrdStoryDto): String =
+        buildString {
+            append(story.status.ifBlank { "unknown" })
+            if (story.tasks.isNotEmpty()) {
+                val done = story.tasks.count { it.status in DONE_STATUSES }
+                val failed = story.tasks.count { it.status == "failed" }
+                append(" · $done/${story.tasks.size} tasks")
+                if (failed > 0) append(" · $failed failed")
+            }
+        }
+
+    private fun listLimit(): Int = runCatching {
+        carContext.getCarService(ConstraintManager::class.java)
+            .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+    }.getOrElse { MAX_ROWS_FALLBACK }
+
+    // ---- Companions ----
 
     private companion object {
         const val POLL_MS: Long = 15_000L
         const val MAX_ROWS_FALLBACK: Int = 5
         const val PROGRESS_BAR_WIDTH: Int = 8
 
+        // PRD/story/task display limits (mirrors AutoPrdDetailScreen)
+        const val MAX_TITLE: Int = 30
+        const val MAX_STORY_TITLE: Int = 36
+        const val MAX_STORY_TITLE_DETAIL: Int = 50
+        const val MAX_TASK_TITLE: Int = 52
+        const val MAX_TASK_CHARS: Int = 55
+        const val MAX_SPEC_CHARS: Int = 200
+        const val MAX_ERROR_SHORT: Int = 120
+        const val MAX_VERIF_CHARS: Int = 150
+        const val MAX_DESC_CHARS: Int = 70
+
+        val DONE_STATUSES = setOf("complete", "completed", "done")
+
         val automataComparator: Comparator<PrdDto> =
             compareByDescending { prd ->
-                // Gravitation: blocked stories float to top; deeper work (more depth) wins ties
                 val blockedStories = prd.stories.count { it.status == "awaiting_approval" }
                 blockedStories * 10 + prd.depth
             }
+
+        fun storyMarker(status: String): String = when (status.lowercase()) {
+            "complete", "completed", "done" -> "✓"
+            "running", "active", "in_progress" -> "◉"
+            "failed", "error" -> "✗"
+            "needs_review", "awaiting_review", "awaiting_approval" -> "⚠"
+            else -> "○"
+        }
 
         fun activeStoryPosition(prd: PrdDto): Int? {
             val idx =
@@ -270,24 +674,17 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
             return if (idx >= 0) idx + 1 else null
         }
 
-        fun progressBar(
-            completedStories: Int,
-            totalStories: Int,
-        ): String {
+        fun progressBar(completedStories: Int, totalStories: Int): String {
             val pct = if (totalStories > 0) (completedStories * 100) / totalStories else 0
             val filled = (pct * PROGRESS_BAR_WIDTH / 100).coerceIn(0, PROGRESS_BAR_WIDTH)
             return "▓".repeat(filled) + "░".repeat(PROGRESS_BAR_WIDTH - filled) + " $pct%"
         }
 
-        fun buildSubtitle(
-            prd: PrdDto,
-            storyPos: Int?,
-        ): String =
+        fun buildSubtitle(prd: PrdDto, storyPos: Int?): String =
             buildString {
                 val totalStories = prd.stories.size
-                val completedStories = prd.stories.count { it.status.lowercase() in setOf("complete", "completed", "done") }
-                // Progress: use active story position when one is in progress so "Story 3/4"
-                // and the bar both read 75%; fall back to completed-story count otherwise.
+                val completedStories =
+                    prd.stories.count { it.status.lowercase() in setOf("complete", "completed", "done") }
                 val progressNumerator = storyPos ?: completedStories
                 val bar = if (totalStories > 0) progressBar(progressNumerator, totalStories) else ""
                 val isActive = prd.status == "running" || prd.status == "active"
@@ -301,7 +698,6 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                 } else {
                     append(prd.status.ifBlank { "no stories" })
                 }
-                // Blocking flag
                 val hasBlock = prd.stories.any { it.status == "awaiting_approval" }
                 if (hasBlock) append(" ⚠ review")
             }
