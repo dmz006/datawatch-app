@@ -252,18 +252,20 @@ public class AutoSessionListScreen(
             visible.forEach { row ->
                 val s = row.session
                 val subtitle = buildSubtitle(row)
-                builder.addItem(
-                    Row.Builder()
-                        .setTitle(colored(s.name ?: s.taskSummary ?: s.id, stateColor(row)))
-                        .setImage(dotIcon(row))
-                        .addText(subtitle)
-                        .setOnClickListener {
-                            screenManager.push(
-                                AutoSessionDetailScreen(carContext, s.id, s.name ?: s.taskSummary ?: s.id),
-                            )
-                        }
-                        .build(),
-                )
+                val preview = buildContentPreview(row)
+                val rowBuilder = Row.Builder()
+                    .setTitle(colored(s.name ?: s.taskSummary ?: s.id, stateColor(row)))
+                    .setImage(dotIcon(row))
+                    .addText(subtitle)
+                    .setOnClickListener {
+                        screenManager.push(
+                            AutoSessionDetailScreen(carContext, s.id, s.name ?: s.taskSummary ?: s.id),
+                        )
+                    }
+                // Car App Library allows up to 2 text lines per row.
+                // subtitle occupies line 1; content preview goes in line 2 when available.
+                if (preview != null) rowBuilder.addText(preview)
+                builder.addItem(rowBuilder.build())
             }
             if (overflow > 0) {
                 builder.addItem(
@@ -365,5 +367,22 @@ public class AutoSessionListScreen(
                     append("  $bar $pct%")
                 }
             }
+
+        // Second text line: brief content preview matching the phone list's "View last response".
+        // Prefer AI summary, fall back to last response snippet. Null = no second line shown.
+        fun buildContentPreview(row: SessionRow): String? {
+            val s = row.session
+            val text = when (s.state) {
+                SessionState.Waiting, SessionState.RateLimited ->
+                    s.promptContext?.lines()?.firstOrNull { it.isNotBlank() }
+                        ?: s.lastPrompt?.takeIf { it.isNotBlank() }
+                else ->
+                    s.lastSummaryLong?.takeIf { it.isNotBlank() }
+                        ?: s.lastResponse?.takeIf { it.isNotBlank() }
+            }
+            return text?.take(CONTENT_PREVIEW_CHARS)
+        }
+
+        const val CONTENT_PREVIEW_CHARS: Int = 72
     }
 }

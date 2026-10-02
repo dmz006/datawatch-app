@@ -397,7 +397,11 @@ public class AutoSessionDetailScreen(
                     val prompt = lastPrompt?.lines()?.firstOrNull { it.isNotBlank() }
                         ?: promptContext?.lines()?.firstOrNull { it.isNotBlank() }
                     if (prompt != null) appendLine("[You]: $prompt")
-                    val response = lastResponse?.takeIf { it.isNotBlank() }
+                    // Prefer AI-generated summary over raw last-response snippet.
+                    // lastResponse is just the most-recent LLM output fragment, not a
+                    // meaningful session summary. lastSummaryLong is richer when available.
+                    val response = lastSummaryLong?.takeIf { it.isNotBlank() }
+                        ?: lastResponse?.takeIf { it.isNotBlank() }
                         ?: "Session ${sessionState.name.lowercase()}"
                     append("[datawatch]: $response")
                 }
