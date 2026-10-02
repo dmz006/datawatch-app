@@ -62,6 +62,11 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
     private var selectedStory: PrdStoryDto? = null
     private var selectedTask: PrdTaskDto? = null
 
+    // Explicit loading/error state for PRD detail so the screen always updates
+    // rather than silently staying on "Loading stories…" if getPrd() fails.
+    private var prdDetailLoading: Boolean = false
+    private var prdDetailError: String? = null
+
     init {
         scope.launch {
             refresh()
@@ -140,16 +145,28 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
 
     private suspend fun refreshSelectedPrd(prdId: String) {
         try {
-            val profile = resolveActiveProfile() ?: return
+            val profile = resolveActiveProfile() ?: run {
+                prdDetailError = "No enabled server"
+                prdDetailLoading = false
+                return
+            }
             AutoServiceLocator.transportFor(profile).getPrd(prdId).fold(
                 onSuccess = { dto ->
                     selectedPrd = dto
                     selectedStory = selectedStory?.let { ss -> dto.stories.find { it.id == ss.id } ?: ss }
                     selectedTask = selectedTask?.let { st -> selectedStory?.tasks?.find { it.id == st.id } ?: st }
+                    prdDetailError = null
+                    prdDetailLoading = false
                 },
-                onFailure = {},
+                onFailure = { err ->
+                    prdDetailError = err.message ?: err::class.simpleName ?: "Error"
+                    prdDetailLoading = false
+                },
             )
-        } catch (_: Throwable) {}
+        } catch (e: Throwable) {
+            prdDetailError = e.message ?: e::class.simpleName ?: "Error"
+            prdDetailLoading = false
+        }
     }
 
     // ---- ActionStrip ----
@@ -322,8 +339,9 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                             selectedPrd = prd
                             selectedStory = null
                             selectedTask = null
+                            prdDetailLoading = true
+                            prdDetailError = null
                             invalidate()
-                            // Immediately fetch full PRD detail (stories + task data)
                             scope.launch { refreshSelectedPrd(prd.id); invalidate() }
                         }
                         .build(),
@@ -354,11 +372,17 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
         val items = ItemList.Builder()
         val stories = prd.stories
 
-        if (stories.isEmpty()) {
-            items.addItem(
+        when {
+            prdDetailLoading -> items.addItem(
                 Row.Builder().setTitle("Loading stories…").addText("Fetching plan detail").build(),
             )
-        } else {
+            prdDetailError != null -> items.addItem(
+                Row.Builder().setTitle("Error").addText(prdDetailError ?: "Unknown error").build(),
+            )
+            stories.isEmpty() -> items.addItem(
+                Row.Builder().setTitle("No stories").addText("This plan has no stories yet").build(),
+            )
+            else -> {
             val listMax = listLimit()
             val visible = stories.take((listMax - 1).coerceAtLeast(1))
             val overflow = stories.size - visible.size
@@ -391,7 +415,8 @@ public class AutoAutomataScreen(carContext: CarContext) : Screen(carContext) {
                         .build(),
                 )
             }
-        }
+            }  // close else branch
+        }  // close when
 
         return ListTemplate.Builder()
             .setTitle(prdTitle)
