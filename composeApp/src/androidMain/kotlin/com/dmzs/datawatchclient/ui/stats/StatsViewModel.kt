@@ -50,6 +50,12 @@ public class StatsViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     public val state: StateFlow<UiState> = _state.asStateFlow()
 
+    // Last live-list session counts — kept so WS stat frames can be patched with
+    // the same values the REST poll used, preventing the server's lifetime counter
+    // (sessionsTotal in /api/stats) from flashing in whenever a WS frame arrives.
+    // Null = no successful list fetch yet; use dto as-is.
+    private var cachedSessionCounts: Triple<Int, Int, Int>? = null // total, running, waiting
+
     init {
         // B10: subscribe to live stats frames arriving on any active
         // session WS connection. These overlay REST poll values —
@@ -59,9 +65,18 @@ public class StatsViewModel : ViewModel() {
             StatsHub.flow.collect { liveDto ->
                 val current = _state.value
                 if (current.stats != null) {
+                    // Re-apply the last known session-list counts so the WS frame
+                    // doesn't clobber our patched values with the server's lifetime counter.
+                    val patched = cachedSessionCounts?.let { (total, running, waiting) ->
+                        liveDto.copy(
+                            sessionsTotal = total,
+                            sessionsRunning = running,
+                            sessionsWaiting = waiting,
+                        )
+                    } ?: liveDto
                     _state.value =
                         current.copy(
-                            stats = liveDto,
+                            stats = patched,
                             refreshing = false,
                             banner = null,
                         )
@@ -109,26 +124,36 @@ public class StatsViewModel : ViewModel() {
             // a full poll cycle; the list is the authoritative source.
             // Pull it here alongside stats so the card never shows 0
             // when there are live sessions (2026-04-22 user report).
-            val (sessionsList, webSearchStatsResult, webSearchStatsV2Result) =
+            //
+            // Track the Result (not .orEmpty()) so we can distinguish
+            // "request succeeded with 0 sessions" from "request failed".
+            // The old `if (sessionsTotal > 0)` guard caused the server's
+            // lifetime counter (e.g. 2373) to flash in whenever the list
+            // returned an empty page.
+            val (sessionsResult, webSearchStatsResult, webSearchStatsV2Result) =
                 coroutineScope {
-                    val sessions = async { transport.listSessions().getOrNull().orEmpty() }
+                    val sessions = async { transport.listSessions() }
                     val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
                     val webSearchV2 = async { transport.fetchWebSearchStatsV2().getOrNull() }
                     Triple(sessions.await(), webSearch.await(), webSearchV2.await())
                 }
-            val sessionsTotal = sessionsList.size
-            val sessionsRunning = sessionsList.count { it.state == SessionState.Running }
-            val sessionsWaiting = sessionsList.count { it.state == SessionState.Waiting }
+            val sessionsList = sessionsResult.getOrNull()  // null = request failed
+            val sessionsTotal = sessionsList?.size ?: 0
+            val sessionsRunning = sessionsList?.count { it.state == SessionState.Running } ?: 0
+            val sessionsWaiting = sessionsList?.count { it.state == SessionState.Waiting } ?: 0
+            // Cache for WS-frame patching (only update when the request succeeded).
+            if (sessionsList != null) {
+                cachedSessionCounts = Triple(sessionsTotal, sessionsRunning, sessionsWaiting)
+            }
             val webSearchStats = webSearchStatsResult
             val webSearchStatsV2 = webSearchStatsV2Result
             transport.stats().fold(
                 onSuccess = { dto ->
-                    // Override the stats-reported counts when the session
-                    // list returns something richer. `.copy` leaves the
-                    // stats fields as-is when the list was empty so we
-                    // don't clobber a v4.1.0 envelope-only payload.
+                    // Always use the list-derived counts when the request succeeded
+                    // (even when the list is empty — 0 active sessions is the correct
+                    // value). Only fall back to dto when the list request itself failed.
                     val patched =
-                        if (sessionsTotal > 0) {
+                        if (sessionsList != null) {
                             dto.copy(
                                 sessionsTotal = sessionsTotal,
                                 sessionsRunning = sessionsRunning,
