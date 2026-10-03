@@ -444,7 +444,6 @@ public class AutoAutomataScreen(
 
         return ListTemplate.Builder()
             .setTitle(prdTitle)
-            .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
@@ -523,7 +522,6 @@ public class AutoAutomataScreen(
 
         return ListTemplate.Builder()
             .setTitle(taskTitle)
-            .setHeaderAction(Action.BACK)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
@@ -596,7 +594,7 @@ public class AutoAutomataScreen(
             else -> CarColor.DEFAULT
         }
         val builder = Row.Builder()
-            .setTitle(colored("$marker ${task.task.take(MAX_TASK_CHARS)}", color))
+            .setTitle(colored("  ↳ $marker ${task.task.take(MAX_TASK_CHARS)}", color))
             .setOnClickListener(onClick)
         val detail = buildTaskDetailLine(task)
         if (detail.isNotBlank()) builder.addText(detail)
