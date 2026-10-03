@@ -86,106 +86,86 @@ public class StatsViewModel : ViewModel() {
         }
         viewModelScope.launch {
             while (isActive) {
-                refresh()
+                doRefresh()          // suspend — next delay only starts AFTER this completes
                 delay(REFRESH_INTERVAL_MS)
             }
         }
     }
 
+    /** Trigger a one-shot manual refresh (e.g. pull-to-refresh). */
     public fun refresh() {
-        viewModelScope.launch {
-            val profile = ServiceLocator.activeProfileFlow().first()
-            if (profile == null) {
+        viewModelScope.launch { doRefresh() }
+    }
+
+    private suspend fun doRefresh() {
+        val profile = ServiceLocator.activeProfileFlow().first()
+        if (profile == null) {
+            _state.value =
+                _state.value.copy(
+                    stats = null,
+                    refreshing = false,
+                    banner = "No enabled server. Add or enable one in Settings.",
+                    serverName = null,
+                )
+            return
+        }
+        _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
+        val transport = ServiceLocator.transportFor(profile)
+        val infoResult = transport.fetchInfo()
+        val maxSessions: Int? =
+            _state.value.maxSessions
+                ?: transport.fetchConfig().getOrNull()?.let { cfg ->
+                    runCatching { cfg.raw["session.max_sessions"]?.jsonPrimitive?.content?.toInt() }.getOrNull()
+                }
+        val (sessionsResult, webSearchStatsResult, webSearchStatsV2Result) =
+            coroutineScope {
+                val sessions = async { transport.listSessions() }
+                val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
+                val webSearchV2 = async { transport.fetchWebSearchStatsV2().getOrNull() }
+                Triple(sessions.await(), webSearch.await(), webSearchV2.await())
+            }
+        val sessionsList = sessionsResult.getOrNull()
+        val sessionsTotal = sessionsList?.size ?: 0
+        val sessionsRunning = sessionsList?.count { it.state == SessionState.Running } ?: 0
+        val sessionsWaiting = sessionsList?.count { it.state == SessionState.Waiting } ?: 0
+        if (sessionsList != null) {
+            cachedSessionCounts = Triple(sessionsTotal, sessionsRunning, sessionsWaiting)
+        }
+        transport.stats().fold(
+            onSuccess = { dto ->
+                val patched =
+                    if (sessionsList != null) {
+                        dto.copy(
+                            sessionsTotal = sessionsTotal,
+                            sessionsRunning = sessionsRunning,
+                            sessionsWaiting = sessionsWaiting,
+                        )
+                    } else {
+                        dto
+                    }
+                _state.value =
+                    UiState(
+                        stats = patched,
+                        info = infoResult.getOrNull() ?: _state.value.info,
+                        refreshing = false,
+                        banner = null,
+                        serverName = profile.displayName,
+                        maxSessions = maxSessions,
+                        webSearchStats = webSearchStatsResult,
+                        webSearchStatsV2 = webSearchStatsV2Result,
+                    )
+                ServiceLocator.refreshHomeWidgets()
+            },
+            onFailure = { err ->
                 _state.value =
                     _state.value.copy(
-                        stats = null,
                         refreshing = false,
-                        banner = "No enabled server. Add or enable one in Settings.",
-                        serverName = null,
+                        info = infoResult.getOrNull() ?: _state.value.info,
+                        banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
+                        maxSessions = maxSessions,
                     )
-                return@launch
-            }
-            _state.value = _state.value.copy(refreshing = true, serverName = profile.displayName)
-            val transport = ServiceLocator.transportFor(profile)
-            // /api/info is cheap and rarely changes; fetch alongside /api/stats
-            // so the server-identity header is populated.
-            val infoResult = transport.fetchInfo()
-            // Fetch `session.max_sessions` once, then keep the cached value.
-            // Config is heavy relative to stats, so only hit it when we
-            // don't already have a denominator for the Sessions ring.
-            val maxSessions: Int? =
-                _state.value.maxSessions
-                    ?: transport.fetchConfig().getOrNull()?.let { cfg ->
-                        runCatching { cfg.raw["session.max_sessions"]?.jsonPrimitive?.content?.toInt() }.getOrNull()
-                    }
-            // PWA derives Monitor's session counts from the live
-            // `/api/sessions` list, not from `/api/stats`. Many server
-            // builds either don't populate `sessions_total` or lag by
-            // a full poll cycle; the list is the authoritative source.
-            // Pull it here alongside stats so the card never shows 0
-            // when there are live sessions (2026-04-22 user report).
-            //
-            // Track the Result (not .orEmpty()) so we can distinguish
-            // "request succeeded with 0 sessions" from "request failed".
-            // The old `if (sessionsTotal > 0)` guard caused the server's
-            // lifetime counter (e.g. 2373) to flash in whenever the list
-            // returned an empty page.
-            val (sessionsResult, webSearchStatsResult, webSearchStatsV2Result) =
-                coroutineScope {
-                    val sessions = async { transport.listSessions() }
-                    val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
-                    val webSearchV2 = async { transport.fetchWebSearchStatsV2().getOrNull() }
-                    Triple(sessions.await(), webSearch.await(), webSearchV2.await())
-                }
-            val sessionsList = sessionsResult.getOrNull()  // null = request failed
-            val sessionsTotal = sessionsList?.size ?: 0
-            val sessionsRunning = sessionsList?.count { it.state == SessionState.Running } ?: 0
-            val sessionsWaiting = sessionsList?.count { it.state == SessionState.Waiting } ?: 0
-            // Cache for WS-frame patching (only update when the request succeeded).
-            if (sessionsList != null) {
-                cachedSessionCounts = Triple(sessionsTotal, sessionsRunning, sessionsWaiting)
-            }
-            val webSearchStats = webSearchStatsResult
-            val webSearchStatsV2 = webSearchStatsV2Result
-            transport.stats().fold(
-                onSuccess = { dto ->
-                    // Always use the list-derived counts when the request succeeded
-                    // (even when the list is empty — 0 active sessions is the correct
-                    // value). Only fall back to dto when the list request itself failed.
-                    val patched =
-                        if (sessionsList != null) {
-                            dto.copy(
-                                sessionsTotal = sessionsTotal,
-                                sessionsRunning = sessionsRunning,
-                                sessionsWaiting = sessionsWaiting,
-                            )
-                        } else {
-                            dto
-                        }
-                    _state.value =
-                        UiState(
-                            stats = patched,
-                            info = infoResult.getOrNull() ?: _state.value.info,
-                            refreshing = false,
-                            banner = null,
-                            serverName = profile.displayName,
-                            maxSessions = maxSessions,
-                            webSearchStats = webSearchStats,
-                            webSearchStatsV2 = webSearchStatsV2,
-                        )
-                    ServiceLocator.refreshHomeWidgets()
-                },
-                onFailure = { err ->
-                    _state.value =
-                        _state.value.copy(
-                            refreshing = false,
-                            info = infoResult.getOrNull() ?: _state.value.info,
-                            banner = "Disconnected — last reading shown. (${err.message ?: err::class.simpleName})",
-                            maxSessions = maxSessions,
-                        )
-                },
-            )
-        }
+            },
+        )
     }
 
     public companion object {
