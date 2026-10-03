@@ -247,6 +247,83 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- BL391: multi-provider web search registry (v8.39.0) ----
+
+    override suspend fun listWebSearchProviders(): Result<List<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto>> =
+        request {
+            client.get("${profile.baseUrl}/api/websearch/providers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body<com.dmzs.datawatchclient.transport.dto.WebSearchProvidersDto>().providers
+        }
+
+    override suspend fun createWebSearchProvider(
+        dto: com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto> =
+        request {
+            client.post("${profile.baseUrl}/api/websearch/providers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun updateWebSearchProvider(
+        name: String,
+        dto: com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto,
+    ): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto> =
+        request {
+            client.patch("${profile.baseUrl}/api/websearch/providers/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.body()
+        }
+
+    override suspend fun deleteWebSearchProvider(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/websearch/providers/$name") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun enableWebSearchProvider(
+        name: String,
+        enabled: Boolean,
+    ): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto> =
+        request {
+            client.post("${profile.baseUrl}/api/websearch/providers/$name/${if (enabled) "enable" else "disable"}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun testWebSearchProvider(name: String): Result<com.dmzs.datawatchclient.transport.dto.WebSearchTestResultDto> =
+        request {
+            client.post("${profile.baseUrl}/api/websearch/providers/$name/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun fetchWebSearchStatsV2(days: Int): Result<com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto> =
+        request {
+            client.get("${profile.baseUrl}/api/websearch/stats") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("days", days)
+            }.body()
+        }
+
+    override suspend fun fetchWebSearchHistory(
+        limit: Int,
+        offset: Int,
+    ): Result<com.dmzs.datawatchclient.transport.dto.WebSearchHistoryDto> =
+        request {
+            client.get("${profile.baseUrl}/api/websearch/history") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                parameter("limit", limit)
+                parameter("offset", offset)
+            }.body()
+        }
+
     override suspend fun observerStats(): Result<com.dmzs.datawatchclient.transport.dto.ObserverStatsDto> =
         request {
             client.get("${profile.baseUrl}/api/observer/stats") {

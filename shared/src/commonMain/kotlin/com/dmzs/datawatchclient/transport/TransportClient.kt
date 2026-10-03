@@ -76,8 +76,34 @@ public interface TransportClient {
     /** GET /api/stats. */
     public suspend fun stats(): Result<StatsDto>
 
-    /** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
+    /** GET /api/web_search/stats — web-search engine live counters (v8.22.0 legacy). */
     public suspend fun fetchWebSearchStats(): Result<com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto>
+
+    // ---- BL391: multi-provider web search registry (v8.39.0) ----
+
+    /** GET /api/websearch/providers */
+    public suspend fun listWebSearchProviders(): Result<List<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto>>
+
+    /** POST /api/websearch/providers */
+    public suspend fun createWebSearchProvider(dto: com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto>
+
+    /** PATCH /api/websearch/providers/{name} */
+    public suspend fun updateWebSearchProvider(name: String, dto: com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto>
+
+    /** DELETE /api/websearch/providers/{name} */
+    public suspend fun deleteWebSearchProvider(name: String): Result<Unit>
+
+    /** POST /api/websearch/providers/{name}/enable or /disable */
+    public suspend fun enableWebSearchProvider(name: String, enabled: Boolean): Result<com.dmzs.datawatchclient.transport.dto.WebSearchProviderDto>
+
+    /** POST /api/websearch/providers/{name}/test */
+    public suspend fun testWebSearchProvider(name: String): Result<com.dmzs.datawatchclient.transport.dto.WebSearchTestResultDto>
+
+    /** GET /api/websearch/stats?days=N */
+    public suspend fun fetchWebSearchStatsV2(days: Int = 30): Result<com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto>
+
+    /** GET /api/websearch/history?limit=N&offset=M */
+    public suspend fun fetchWebSearchHistory(limit: Int = 50, offset: Int = 0): Result<com.dmzs.datawatchclient.transport.dto.WebSearchHistoryDto>
 
     /**
      * GET /api/observer/stats — richer observer payload that carries

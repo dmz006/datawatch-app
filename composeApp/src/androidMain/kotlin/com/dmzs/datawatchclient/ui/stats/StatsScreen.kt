@@ -31,6 +31,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto
+import com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
 import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
 import com.dmzs.datawatchclient.ui.theme.pwaCard
@@ -98,7 +99,13 @@ public fun StatsScreenContent(vm: StatsViewModel = viewModel()) {
         if (it.envelopes.isNotEmpty()) EnvelopesCard(it.envelopes)
         if (it.backends.isNotEmpty()) BackendHealthCard(it.backends)
     }
-    state.webSearchStats?.takeIf { it.enabled }?.let { WebSearchCard(it) }
+    // BL391: prefer multi-provider stats (v8.39.0+), fall back to legacy single-provider card.
+    val wsV2 = state.webSearchStatsV2
+    val wsLegacy = state.webSearchStats
+    when {
+        wsV2 != null -> WebSearchCardV2(wsV2)
+        wsLegacy?.enabled == true -> WebSearchCard(wsLegacy)
+    }
 }
 
 // ---------- New v4.1.0 observer cards ----------
@@ -880,6 +887,92 @@ private fun WebSearchCard(ws: WebSearchStatsDto) {
                 MonoRow(stringResource(R.string.stats_row_ws_errors), ws.errorsTotal.toString())
             }
             ws.lastQueryAt?.let { MonoRow(stringResource(R.string.stats_row_ws_last_query), it) }
+        }
+    }
+}
+
+// BL391 — multi-provider stats card (v8.39.0+)
+@Composable
+private fun WebSearchCardV2(ws: WebSearchStatsV2Dto) {
+    PwaCardContainer {
+        PwaSectionTitle(stringResource(R.string.stats_section_web_search))
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            // Overall totals row
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                WebSearchStat(stringResource(R.string.ws_stats_total), ws.summary.total.toString(), modifier = Modifier.weight(1f))
+                WebSearchStat(stringResource(R.string.ws_stats_today), ws.summary.today.toString(), modifier = Modifier.weight(1f))
+                WebSearchStat(stringResource(R.string.ws_stats_week), ws.summary.thisWeek.toString(), modifier = Modifier.weight(1f))
+                WebSearchStat(stringResource(R.string.ws_stats_month), ws.summary.thisMonth.toString(), modifier = Modifier.weight(1f))
+            }
+            if (ws.summary.cacheHits > 0) {
+                MonoRow(stringResource(R.string.ws_stats_cache_hits), ws.summary.cacheHits.toString())
+            }
+            // Per-provider rows
+            if (ws.summary.providers.size > 1) {
+                androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                ws.summary.providers.forEach { p ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            p.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "${p.today}d · ${p.thisWeek}w · ${p.total}t",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (p.errors > 0) {
+                            Text(
+                                "${p.errors}err",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+            // Daily sparkline (hand-rolled bar chart)
+            if (ws.dailySeries.isNotEmpty()) {
+                androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                WebSearchSparkline(ws.dailySeries)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebSearchStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun WebSearchSparkline(series: List<com.dmzs.datawatchclient.transport.dto.WebSearchDayCountDto>) {
+    val max = series.maxOfOrNull { it.count } ?: 0
+    if (max == 0) return
+    val barColor = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier.fillMaxWidth().height(40.dp).padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        series.forEach { day ->
+            val frac = if (max > 0) day.count.toFloat() / max else 0f
+            val height = (frac * 32).dp.coerceAtLeast(2.dp)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(height)
+                    .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    .background(barColor),
+            )
         }
     }
 }
