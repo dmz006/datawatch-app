@@ -7,6 +7,7 @@ import com.dmzs.datawatchclient.domain.ServerInfo
 import com.dmzs.datawatchclient.domain.SessionState
 import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto
+import com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto
 import com.dmzs.datawatchclient.transport.ws.StatsHub
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -42,6 +43,8 @@ public class StatsViewModel : ViewModel() {
          */
         val maxSessions: Int? = null,
         val webSearchStats: WebSearchStatsDto? = null,
+        /** BL391 multi-provider stats (v8.39.0+). Null on older server versions. */
+        val webSearchStatsV2: WebSearchStatsV2Dto? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -106,16 +109,18 @@ public class StatsViewModel : ViewModel() {
             // a full poll cycle; the list is the authoritative source.
             // Pull it here alongside stats so the card never shows 0
             // when there are live sessions (2026-04-22 user report).
-            val (sessionsList, webSearchStatsResult) =
+            val (sessionsList, webSearchStatsResult, webSearchStatsV2Result) =
                 coroutineScope {
                     val sessions = async { transport.listSessions().getOrNull().orEmpty() }
                     val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
-                    sessions.await() to webSearch.await()
+                    val webSearchV2 = async { transport.fetchWebSearchStatsV2().getOrNull() }
+                    Triple(sessions.await(), webSearch.await(), webSearchV2.await())
                 }
             val sessionsTotal = sessionsList.size
             val sessionsRunning = sessionsList.count { it.state == SessionState.Running }
             val sessionsWaiting = sessionsList.count { it.state == SessionState.Waiting }
             val webSearchStats = webSearchStatsResult
+            val webSearchStatsV2 = webSearchStatsV2Result
             transport.stats().fold(
                 onSuccess = { dto ->
                     // Override the stats-reported counts when the session
@@ -141,6 +146,7 @@ public class StatsViewModel : ViewModel() {
                             serverName = profile.displayName,
                             maxSessions = maxSessions,
                             webSearchStats = webSearchStats,
+                            webSearchStatsV2 = webSearchStatsV2,
                         )
                     ServiceLocator.refreshHomeWidgets()
                 },

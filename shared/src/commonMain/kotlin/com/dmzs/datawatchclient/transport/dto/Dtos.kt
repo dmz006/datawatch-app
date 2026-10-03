@@ -2139,7 +2139,7 @@ public data class AutonomousConfigDto(
     @SerialName("verification_backends") val verificationBackends: List<String>? = null,
 )
 
-/** GET /api/web_search/stats — web-search engine live counters (v8.22.0). */
+/** GET /api/web_search/stats — web-search engine live counters (v8.22.0 legacy alias). */
 @Serializable
 public data class WebSearchStatsDto(
     val enabled: Boolean = false,
@@ -2150,4 +2150,97 @@ public data class WebSearchStatsDto(
     @SerialName("web_search_queries_total") val queriesTotal: Long = 0,
     @SerialName("web_search_errors_total") val errorsTotal: Long = 0,
     @SerialName("web_search_last_query_at") val lastQueryAt: String? = null,
+)
+
+// ---- BL391: multi-provider web search registry (v8.39.0) ----
+
+/** GET/POST /api/websearch/providers — single provider in the registry. */
+@Serializable
+public data class WebSearchProviderDto(
+    val name: String = "",
+    val type: String = "searxng",
+    val enabled: Boolean = false,
+    val priority: Int = 0,
+    val url: String = "",
+    val engine: String = "",
+    @SerialName("api_key") val apiKey: String = "",
+    @SerialName("num_results") val numResults: Int = 10,
+    @SerialName("cache_ttl_seconds") val cacheTtlSeconds: Int = 0,
+)
+
+/** GET /api/websearch/providers — providers list envelope. */
+@Serializable
+public data class WebSearchProvidersDto(
+    val providers: List<WebSearchProviderDto> = emptyList(),
+)
+
+/** Per-provider usage rollup inside GET /api/websearch/stats. */
+@Serializable
+public data class WebSearchProviderStatsDto(
+    val name: String = "",
+    val type: String = "",
+    val total: Int = 0,
+    val today: Int = 0,
+    @SerialName("this_week") val thisWeek: Int = 0,
+    @SerialName("this_month") val thisMonth: Int = 0,
+    @SerialName("cache_hits") val cacheHits: Int = 0,
+    val errors: Int = 0,
+    @SerialName("last_query_at") val lastQueryAt: String? = null,
+)
+
+/** GET /api/websearch/stats summary object. */
+@Serializable
+public data class WebSearchSummaryDto(
+    val providers: List<WebSearchProviderStatsDto> = emptyList(),
+    val total: Int = 0,
+    val today: Int = 0,
+    @SerialName("this_week") val thisWeek: Int = 0,
+    @SerialName("this_month") val thisMonth: Int = 0,
+    @SerialName("cache_hits") val cacheHits: Int = 0,
+)
+
+/** One day's query count — GET /api/websearch/stats daily_series. */
+@Serializable
+public data class WebSearchDayCountDto(
+    val date: String = "",
+    val count: Int = 0,
+)
+
+/** GET /api/websearch/stats full response (BL391, v8.39.0). */
+@Serializable
+public data class WebSearchStatsV2Dto(
+    val enabled: Boolean = false,
+    @SerialName("cache_enabled") val cacheEnabled: Boolean = false,
+    @SerialName("provider_names") val providerNames: List<String> = emptyList(),
+    val summary: WebSearchSummaryDto = WebSearchSummaryDto(),
+    @SerialName("daily_series") val dailySeries: List<WebSearchDayCountDto> = emptyList(),
+)
+
+/** One search event in GET /api/websearch/history. */
+@Serializable
+public data class WebSearchHistoryEntryDto(
+    val time: String = "",
+    @SerialName("provider_name") val providerName: String = "",
+    @SerialName("provider_type") val providerType: String = "",
+    val query: String = "",
+    @SerialName("session_id") val sessionId: String = "",
+    @SerialName("cache_hit") val cacheHit: Boolean = false,
+    val success: Boolean = true,
+    val error: String = "",
+    @SerialName("latency_ms") val latencyMs: Long = 0,
+    @SerialName("result_count") val resultCount: Int = 0,
+)
+
+/** GET /api/websearch/history response. */
+@Serializable
+public data class WebSearchHistoryDto(
+    val history: List<WebSearchHistoryEntryDto> = emptyList(),
+)
+
+/** POST /api/websearch/providers/{name}/test response. */
+@Serializable
+public data class WebSearchTestResultDto(
+    val ok: Boolean = false,
+    val error: String? = null,
+    @SerialName("result_count") val resultCount: Int = 0,
 )

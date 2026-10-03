@@ -1298,6 +1298,38 @@
     <string name="stats_row_ws_errors">Errors</string>
     <string name="stats_row_ws_last_query">Last query</string>
 
+    <!-- ── Common action labels used by multiple screens ── -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="show">Show</string>
+    <string name="hide">Hide</string>
+
+    <!-- ── BL391: multi-provider web search registry (v1.23.107) ── -->
+    <string name="ws_registry_title">Web Search Providers</string>
+    <string name="ws_registry_add">Add provider</string>
+    <string name="ws_registry_edit">Edit provider</string>
+    <string name="ws_registry_empty">No search providers configured</string>
+    <string name="ws_registry_test">Test</string>
+    <string name="ws_registry_delete_title">Delete provider?</string>
+    <string name="ws_registry_delete_confirm">Delete \"%s\" permanently?</string>
+    <string name="ws_registry_name_label">Name</string>
+    <string name="ws_registry_type_label">Type</string>
+    <string name="ws_registry_url_label">SearXNG URL</string>
+    <string name="ws_registry_engine_label">Search engine</string>
+    <string name="ws_registry_api_key_label">API key</string>
+    <string name="ws_registry_api_key_set">API key already set</string>
+    <string name="ws_registry_num_results_label">Results per query</string>
+    <string name="ws_registry_priority_label">Priority (1 = highest)</string>
+    <string name="ws_registry_enabled_label">Enabled</string>
+    <!-- BL391: stats card labels -->
+    <string name="ws_stats_total">All-time</string>
+    <string name="ws_stats_today">Today</string>
+    <string name="ws_stats_week">This week</string>
+    <string name="ws_stats_month">This month</string>
+    <string name="ws_stats_cache_hits">Cache hits</string>
+
     <!-- ── Sprint 31 i18n — Council persona CRUD + built-in badge (v1.00.0) ── -->
     <string name="council_personas_title">Council Personas</string>
     <string name="council_persona_name">Name</string>
