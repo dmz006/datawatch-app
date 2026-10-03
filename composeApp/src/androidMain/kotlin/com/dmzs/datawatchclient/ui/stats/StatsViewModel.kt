@@ -56,17 +56,17 @@ public class StatsViewModel : ViewModel() {
     // Null = no successful list fetch yet; use dto as-is.
     private var cachedSessionCounts: Triple<Int, Int, Int>? = null // total, running, waiting
 
+    // How many REST poll cycles between webSearch supplemental fetches.
+    // At 30s REST interval this is ~3 min — webSearch stats don't need real-time freshness.
+    private var restCycleCount = 0
+
     init {
-        // B10: subscribe to live stats frames arriving on any active
-        // session WS connection. These overlay REST poll values —
-        // typically arrive at the server's own broadcast cadence
-        // (~5 s on most configs) and bypass the REST round-trip.
+        // WS is the primary update path (like the PWA). `stats` frames arrive at the
+        // server's own broadcast cadence (~5 s) and update the UI without any REST round-trip.
         viewModelScope.launch {
             StatsHub.flow.collect { liveDto ->
                 val current = _state.value
                 if (current.stats != null) {
-                    // Re-apply the last known session-list counts so the WS frame
-                    // doesn't clobber our patched values with the server's lifetime counter.
                     val patched = cachedSessionCounts?.let { (total, running, waiting) ->
                         liveDto.copy(
                             sessionsTotal = total,
@@ -84,9 +84,11 @@ public class StatsViewModel : ViewModel() {
                 }
             }
         }
+        // REST poll is a fallback/reconnect mechanism, not the real-time source.
+        // 30 s matches the PWA's scoped polling cadence; WS fills the gaps.
         viewModelScope.launch {
             while (isActive) {
-                doRefresh()          // suspend — next delay only starts AFTER this completes
+                doRefresh()
                 delay(REFRESH_INTERVAL_MS)
             }
         }
@@ -117,11 +119,21 @@ public class StatsViewModel : ViewModel() {
                 ?: transport.fetchConfig().getOrNull()?.let { cfg ->
                     runCatching { cfg.raw["session.max_sessions"]?.jsonPrimitive?.content?.toInt() }.getOrNull()
                 }
+        // Fetch webSearch stats every 6th REST cycle (~3 min at 30s interval).
+        // These cards don't need real-time freshness; keep them in state between cycles.
+        val fetchWebSearch = (restCycleCount % WEB_SEARCH_POLL_EVERY == 0)
+        restCycleCount++
         val (sessionsResult, webSearchStatsResult, webSearchStatsV2Result) =
             coroutineScope {
                 val sessions = async { transport.listSessions() }
-                val webSearch = async { transport.fetchWebSearchStats().getOrNull() }
-                val webSearchV2 = async { transport.fetchWebSearchStatsV2().getOrNull() }
+                val webSearch = async {
+                    if (fetchWebSearch) transport.fetchWebSearchStats().getOrNull()
+                    else _state.value.webSearchStats
+                }
+                val webSearchV2 = async {
+                    if (fetchWebSearch) transport.fetchWebSearchStatsV2().getOrNull()
+                    else _state.value.webSearchStatsV2
+                }
                 Triple(sessions.await(), webSearch.await(), webSearchV2.await())
             }
         val sessionsList = sessionsResult.getOrNull()
@@ -169,6 +181,11 @@ public class StatsViewModel : ViewModel() {
     }
 
     public companion object {
-        public const val REFRESH_INTERVAL_MS: Long = 5_000L
+        // REST poll is a fallback/reconnect path; WS `stats` frames drive real-time updates.
+        // 30 s matches the PWA's scoped polling cadence.
+        public const val REFRESH_INTERVAL_MS: Long = 30_000L
+
+        // Fetch webSearch supplemental stats every Nth REST cycle (~3 min).
+        private const val WEB_SEARCH_POLL_EVERY = 6
     }
 }
