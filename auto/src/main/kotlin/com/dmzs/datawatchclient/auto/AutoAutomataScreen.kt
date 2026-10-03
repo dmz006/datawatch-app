@@ -450,8 +450,17 @@ public class AutoAutomataScreen(
             }
         }
 
+        // Samsung Gearhead requires a header action on every non-root template.
+        // Action.BACK would pop AutoAutomataScreen entirely; use a custom back
+        // arrow that navigates in-place back to the PRD list instead.
+        val backIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_back)).build()
+        val inPlaceBack = Action.Builder()
+            .setIcon(backIcon)
+            .setOnClickListener { selectedPrd = null; selectedStory = null; invalidate() }
+            .build()
         return ListTemplate.Builder()
             .setTitle(prdTitle)
+            .setHeaderAction(inPlaceBack)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
@@ -528,8 +537,14 @@ public class AutoAutomataScreen(
             rowCount++
         }
 
+        val backIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_auto_back)).build()
+        val inPlaceBack = Action.Builder()
+            .setIcon(backIcon)
+            .setOnClickListener { selectedTask = null; invalidate() }
+            .build()
         return ListTemplate.Builder()
             .setTitle(taskTitle)
+            .setHeaderAction(inPlaceBack)
             .setSingleList(items.build())
             .setActionStrip(buildActionStrip())
             .build()
