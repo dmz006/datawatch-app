@@ -111,18 +111,20 @@ public class AutoAutomataScreen(
             val prd = selectedPrd
             if (prd != null) {
                 refreshSelectedPrd(prd.id)
+                // Never invalidate() from the background poll while inside a PRD.
+                // Each invalidate() consumes one Samsung MESSAGING template step.
+                // Step budget from root: step 2 = push this screen, step 3 = PRD tap
+                // (flat view), step 4 = task tap (task detail). A background poll
+                // invalidate would consume step 4, pushing task tap to step 5 (blocked).
+                // Data is refreshed silently; the user sees the updated state when they
+                // navigate back to the PRD list or tap in/out of the flat view.
             } else {
                 refresh()
-            }
-            val newHash =
-                automata.hashCode() xor
-                    (error?.hashCode() ?: 0) xor
-                    (selectedPrd.hashCode()) xor
-                    (selectedStory.hashCode()) xor
-                    (selectedTask.hashCode())
-            if (newHash != lastHash) {
-                lastHash = newHash
-                invalidate()
+                val newHash = automata.hashCode() xor (error?.hashCode() ?: 0)
+                if (newHash != lastHash) {
+                    lastHash = newHash
+                    invalidate()
+                }
             }
             delay(POLL_MS)
         }
@@ -417,11 +419,17 @@ public class AutoAutomataScreen(
                         "in_progress", "running", "active" -> CarColor.GREEN
                         else -> CarColor.DEFAULT
                     }
+                    val ttsStoryText = buildString {
+                        append("${story.title.ifBlank { "Story" }}. Status: ${story.status.replace('_', ' ')}.")
+                        append(" $taskDone of ${story.tasks.size} tasks done.")
+                        story.tasks.take(3).forEach { t -> append(" ${t.task.take(60)}: ${t.status.replace('_', ' ')}.") }
+                    }
                     items.addItem(
                         Row.Builder()
                             .setTitle(colored("$marker ${story.title.take(MAX_STORY_TITLE)}", storyColor))
-                            .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks")
-                            .build(), // no listener — section header only
+                            .addText("${story.status}  ·  $taskDone/${story.tasks.size} tasks  ·  tap to hear")
+                            .setOnClickListener { AutoTts.speak(carContext, ttsStoryText) }
+                            .build(),
                     )
                     rowsAdded++
                     // Task rows under this story — tappable.

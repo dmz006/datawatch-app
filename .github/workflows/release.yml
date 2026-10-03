@@ -136,6 +136,27 @@ jobs:
         run: |
           echo "$PLAY_PUBLISHER_KEY_JSON" > "$RUNNER_TEMP/play-key.json"
 
+      - name: Generate Play Store release notes
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^DATAWATCH_APP_VERSION=' gradle.properties | cut -d= -f2)
+          NOTES_DIR="composeApp/src/publicTrack/play/release-notes/en-US"
+          mkdir -p "$NOTES_DIR"
+          {
+            echo "v${VERSION}"
+            echo ""
+            # Last 5 non-merge commits, strip leading hash + type prefix, truncate to 80 chars each
+            git log --oneline --no-merges -5 --pretty=format:"%s" \
+              | sed 's/^fix: v[0-9.]* — //' \
+              | sed 's/^feat: v[0-9.]* — //' \
+              | sed 's/^fix: //' \
+              | sed 's/^feat: //' \
+              | cut -c1-80 \
+              | sed 's/^/• /'
+          } | head -c 500 > "$NOTES_DIR/internal.txt"
+          echo "--- release notes ---"
+          cat "$NOTES_DIR/internal.txt"
+
       - name: Publish to Play Store internal track
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
