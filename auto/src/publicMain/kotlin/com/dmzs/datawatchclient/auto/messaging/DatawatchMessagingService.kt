@@ -85,17 +85,23 @@ public class DatawatchMessagingService : CarAppService() {
             }
 
             override fun onCreateScreen(intent: android.content.Intent): AutoSummaryScreen {
-                val pending = pendingNavIntent
-                if (pending != null) {
-                    pendingNavIntent = null
+                // Prefer a queued action-button intent over the launch intent so that
+                // "Play" pressed before the app was open takes precedence. Fall back to
+                // the direct launch intent (notification body tap) if no action intent
+                // was queued — without this the contentIntent is silently ignored and the
+                // user lands on the summary screen instead of the session detail.
+                val navIntent = pendingNavIntent
+                    ?: intent.takeIf { it.hasExtra(CAR_SESSION_ID_EXTRA) }
+                pendingNavIntent = null
+                if (navIntent != null) {
                     // Defer navigation until after the root screen is installed — popToRoot()
                     // requires the stack to exist, and Car framework sets it after this returns.
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
                         try {
                             val sm = carContext.getCarService(ScreenManager::class.java)
-                            navigateFromIntent(pending, sm, carContext)
+                            navigateFromIntent(navIntent, sm, carContext)
                         } catch (e: Exception) {
-                            android.util.Log.w(TAG, "pendingNavIntent nav failed: ${e.message}")
+                            android.util.Log.w(TAG, "onCreateScreen nav failed: ${e.message}")
                         }
                     }
                 }
