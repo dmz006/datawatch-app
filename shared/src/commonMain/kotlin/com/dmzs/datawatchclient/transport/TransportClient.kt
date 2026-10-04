@@ -1587,6 +1587,26 @@ public interface TransportClient {
 
     /** POST /api/summarizer/test — v8.9.5 inline summarizer validation. Returns latency and ok status. */
     public suspend fun testSummarizer(): Result<com.dmzs.datawatchclient.transport.dto.SummarizerTestResultDto>
+
+    // ---- iOS Settings parity ----
+    // Defaults keep fakes compiling; RestTransport overrides all four.
+
+    /** POST /api/plugins/{name}/{action} — `enable` / `disable` a subprocess plugin (PWA pluginAction). */
+    public suspend fun pluginAction(
+        name: String,
+        action: String,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("pluginAction"))
+
+    /** POST /api/plugins/reload — rescan the plugin dir; returns the server's `count`. */
+    public suspend fun reloadPlugins(): Result<Int> = Result.failure(UnsupportedOperationException("reloadPlugins"))
+
+    /** GET /api/federation/peers — federation peers with CBAC capabilities (PWA loadFederationPeersPanel). */
+    public suspend fun listFederationPeers(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        Result.failure(UnsupportedOperationException("listFederationPeers"))
+
+    /** DELETE /api/federation/peers/{name}. */
+    public suspend fun deleteFederationPeer(name: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("deleteFederationPeer"))
 }
 
 /** A single system quick-command entry served by /api/config quick_commands. */
