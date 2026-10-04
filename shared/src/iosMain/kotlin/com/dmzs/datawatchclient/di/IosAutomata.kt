@@ -369,3 +369,16 @@ public object IosTemplates {
         }
     }
 }
+
+/** PRD capacity (parity B17; GET /api/capacity?prd_id=…): pools + wait queue, or null. */
+public object IosPrdCapacity {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun load(
+        profile: ServerProfile,
+        prdId: String,
+        onResult: (com.dmzs.datawatchclient.transport.dto.CapacityResponseDto?) -> Unit,
+    ) {
+        scope.launch { onResult(IosServiceLocator.transportFor(profile).getCapacity(prdId).getOrNull()) }
+    }
+}
