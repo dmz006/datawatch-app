@@ -7,6 +7,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSURLCredential
 import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
 import platform.Foundation.NSURLSessionAuthChallengeUseCredential
@@ -22,6 +23,7 @@ import platform.Foundation.serverTrust
  *   servers is installing the server CA on the device, which URLSession honours
  *   with no exception here. Per-profile SHA-256 pinning is the planned follow-up.
  */
+@OptIn(ExperimentalForeignApi::class)
 public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
     HttpClient(Darwin) {
         if (trustAll) {
