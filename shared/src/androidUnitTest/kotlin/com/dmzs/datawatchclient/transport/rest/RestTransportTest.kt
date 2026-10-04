@@ -836,4 +836,99 @@ class RestTransportTest {
             assertEquals("DELETE", del.method)
             assertEquals("/api/federation/peers/alpha", del.path)
         }
+
+    // ---- iOS Observer parity ----
+
+    @Test
+    fun `fetchStatsJson v2 adds query and returns raw object`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"host":{"ebpf":{"kprobes_loaded":true}},"net":{"per_process":[]}}"""))
+            val obj = transport.fetchStatsJson(v2 = true).getOrThrow()
+            assertTrue(obj.containsKey("host"))
+            val req = server.takeRequest()
+            assertEquals("/api/stats?v=2", req.path)
+            assertEquals("Bearer secret-token", req.getHeader("Authorization"))
+        }
+
+    @Test
+    fun `fetchStatsJson v1 hits plain stats path`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"hostname":"h","cpu_load_avg_5":0.5}"""))
+            val obj = transport.fetchStatsJson().getOrThrow()
+            assertEquals("h", (obj["hostname"] as kotlinx.serialization.json.JsonPrimitive).content)
+            assertEquals("/api/stats", server.takeRequest().path)
+        }
+
+    @Test
+    fun `fetchObserverPeerSnapshot gets peer stats path`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"host":{"name":"n"},"envelopes":[{"id":"e1"}]}"""))
+            val obj = transport.fetchObserverPeerSnapshot("peer-a").getOrThrow()
+            assertTrue(obj.containsKey("envelopes"))
+            assertEquals("/api/observer/peers/peer-a/stats", server.takeRequest().path)
+        }
+
+    @Test
+    fun `removeObserverPeer sends DELETE`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200))
+            assertTrue(transport.removeObserverPeer("peer-a").isSuccess)
+            val req = server.takeRequest()
+            assertEquals("DELETE", req.method)
+            assertEquals("/api/observer/peers/peer-a", req.path)
+        }
+
+    @Test
+    fun `fetchObserverStatsJson and config hit observer endpoints`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"peers":2,"host":{}}"""))
+            server.enqueue(jsonResponse("""{"enabled":true}"""))
+            assertTrue(transport.fetchObserverStatsJson().getOrThrow().containsKey("peers"))
+            assertTrue(transport.fetchObserverConfig().getOrThrow().containsKey("enabled"))
+            assertEquals("/api/observer/stats", server.takeRequest().path)
+            assertEquals("/api/observer/config", server.takeRequest().path)
+        }
+
+    @Test
+    fun `fetchChannelDiagnostics parses sessions and hints`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"sessions":[{"session_id":"s1","channel_port":7000,"bridge_alive":true}],"hints":["h"]}"""))
+            val obj = transport.fetchChannelDiagnostics().getOrThrow()
+            assertTrue(obj.containsKey("sessions"))
+            assertEquals("/api/channel/diagnostics", server.takeRequest().path)
+        }
+
+    @Test
+    fun `sendMatrixTest posts empty json object`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"ok":true}"""))
+            assertTrue(transport.sendMatrixTest().isSuccess)
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/api/matrix/test", req.path)
+            assertEquals("{}", req.body.readUtf8())
+        }
+
+    @Test
+    fun `updateSchedule puts id command and run_at`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"ok":true}"""))
+            assertTrue(transport.updateSchedule("sc1", "echo hi", "2026-10-05T10:00:00Z").isSuccess)
+            val req = server.takeRequest()
+            assertEquals("PUT", req.method)
+            assertEquals("/api/schedules", req.path)
+            val body = req.body.readUtf8()
+            assertTrue(body.contains("\"id\":\"sc1\""), body)
+            assertTrue(body.contains("\"command\":\"echo hi\""), body)
+            assertTrue(body.contains("\"run_at\":\"2026-10-05T10:00:00Z\""), body)
+        }
+
+    @Test
+    fun `updateSchedule omits blank run_at`() =
+        runTest {
+            server.enqueue(jsonResponse("""{"ok":true}"""))
+            assertTrue(transport.updateSchedule("sc1", "echo hi", "").isSuccess)
+            assertTrue(!server.takeRequest().body.readUtf8().contains("run_at"))
+        }
+
 }
