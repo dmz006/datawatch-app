@@ -6,6 +6,7 @@ import DatawatchShared
 struct SessionsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var viewModel = SessionsViewModel()
+    @ObservedObject private var nav = SessionsNav.shared
 
     @State private var filterText: String = ""
     @State private var showFilter: Bool = false
@@ -110,7 +111,9 @@ struct SessionsView: View {
         .onAppear {
             viewModel.update(profiles: store.profiles)
             viewModel.startPolling()
+            applyPendingFilter()
         }
+        .onChange(of: nav.pendingFilter) { _ in applyPendingFilter() }
         .onDisappear {
             viewModel.stopPolling()
         }
@@ -427,6 +430,14 @@ struct SessionsView: View {
                 .overlay(Capsule().stroke(DatawatchColors.onSurfaceMuted.opacity(0.4), lineWidth: 1))
         }
         .accessibilityLabel(showHistory ? "Hide finished sessions" : "Show \(historyCount) finished sessions")
+    }
+
+    /// Automata → View sessions / task session link (SessionsNav).
+    private func applyPendingFilter() {
+        guard let f = nav.consume() else { return }
+        filterText = f
+        showHistory = true
+        withAnimation { showFilter = true }
     }
 
     private var filteredSessions: [DwSession] {

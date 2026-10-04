@@ -121,6 +121,7 @@ struct PrdDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
+                if prd.scopeWarnings { scopeWarningsBanner }
                 actions
                 statusGraphs
                 capacityCard
@@ -129,6 +130,10 @@ struct PrdDetailView: View {
                 }
                 storiesSection
                 PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
+                Button { SessionsNav.shared.jumpTo(prd.name) } label: {
+                    Text("→ View sessions").font(DatawatchFonts.bodyMedium)
+                }
+                .buttonStyle(.borderless)
                 if let err = vm.error {
                     Text(err)
                         .font(DatawatchFonts.labelSmall)
@@ -475,6 +480,21 @@ struct PrdDetailView: View {
         }
     }
 
+    /// #191 scope_warnings (PWA prd_scope_warnings_*).
+    private var scopeWarningsBanner: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Scope warnings")
+                .font(DatawatchFonts.labelSmall.weight(.semibold))
+                .foregroundStyle(DatawatchColors.error)
+            Text("The plan references paths outside this Automaton's allowed directories; tasks that do will not start until fixed.")
+                .font(DatawatchFonts.labelSmall)
+                .foregroundStyle(DatawatchColors.onSurface)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(DatawatchColors.error.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
+    }
+
     @ViewBuilder
     private var capacityCard: some View {
         if let c = capacity, !c.pools.isEmpty || !c.waiting.isEmpty {
@@ -650,10 +670,14 @@ struct PrdTaskRow: View {
                     .padding(.leading, 24)
             }
             if let sid = task.sessionId, !sid.isEmpty {
-                Text("session \(sid.prefix(12))")
-                    .font(DatawatchFonts.terminalSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .padding(.leading, 24)
+                Button { SessionsNav.shared.jumpTo(sid) } label: {
+                    Text("→ session \(sid.prefix(12))")
+                        .font(DatawatchFonts.terminalSmall)
+                        .foregroundStyle(DatawatchColors.primary)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 24)
+                .accessibilityLabel("Open worker session \(sid)")
             }
             if !actions.isEmpty || busy {
                 HStack(spacing: 6) {
