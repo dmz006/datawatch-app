@@ -50,6 +50,7 @@ private struct SettingsServerCustomCard: View {
         case .orchestratorGraphs: OrchestratorGraphsView(profile: profile)
         case .automataTypes: SettingsAutomataTypesView(profile: profile)
         case .identity: SettingsIdentityCard(profile: profile)
+        case .algorithmMode: SettingsAlgorithmModeCard(profile: profile)
         case .docsSearch: SettingsDocsSearchCard(profile: profile)
         case .configViewer: SettingsConfigViewerCard(profile: profile)
         case .rawConfig: SettingsRawConfigCard(profile: profile)
@@ -257,10 +258,10 @@ private struct SettingsCommBackendsCard: View {
                         backendRow(svc)
                     }
                 }
-            } footer: {
-                Text("Signal device linking (QR) is available from the web UI.")
             }
             .listRowBackground(DatawatchColors.surface)
+            // PWA: "Signal Device" row (status + Link Device → QR) inside this card.
+            SignalDeviceSection(profile: profile)
             if restartNeeded {
                 Section { RestartNeededRow(profile: profile) }
             }

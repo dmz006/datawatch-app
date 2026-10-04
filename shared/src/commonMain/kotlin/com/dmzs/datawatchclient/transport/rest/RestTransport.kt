@@ -3760,6 +3760,217 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- iOS settings forms ----
+
+    override suspend fun fetchComputeNodeJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun saveComputeNodeJson(
+        name: String?,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            if (name.isNullOrBlank()) {
+                client.post("${profile.baseUrl}/api/compute/nodes") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            } else {
+                client.put("${profile.baseUrl}/api/compute/nodes/${iosPathPart(name)}") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            }
+            Unit
+        }
+
+    override suspend fun computeNodeHealthJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/compute/nodes/${iosPathPart(name)}/health") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun computeNodeModelNames(
+        name: String,
+        kind: String,
+    ): Result<List<String>> =
+        request {
+            val el: JsonElement =
+                client.get("${profile.baseUrl}/api/compute/nodes/${iosPathPart(name)}/models") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    parameter("kind", kind)
+                }.body()
+            val arr: kotlinx.serialization.json.JsonArray? =
+                when (el) {
+                    is kotlinx.serialization.json.JsonArray -> el
+                    is kotlinx.serialization.json.JsonObject -> el["models"] as? kotlinx.serialization.json.JsonArray
+                    else -> null
+                }
+            arr.orEmpty().mapNotNull { m ->
+                when (m) {
+                    is kotlinx.serialization.json.JsonPrimitive -> m.content
+                    is kotlinx.serialization.json.JsonObject -> (m["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    else -> null
+                }
+            }.filter { it.isNotEmpty() }
+        }
+
+    override suspend fun fetchLlmJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/llms/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun saveLlmJson(
+        name: String?,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> =
+        request {
+            if (name.isNullOrBlank()) {
+                client.post("${profile.baseUrl}/api/llms") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            } else {
+                client.put("${profile.baseUrl}/api/llms/${iosPathPart(name)}") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            }
+            Unit
+        }
+
+    override suspend fun testLlmJson(
+        name: String,
+        model: String?,
+    ): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            val payload: kotlinx.serialization.json.JsonObject =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("prompt", kotlinx.serialization.json.JsonPrimitive("Reply with the single word OK so we can verify reachability."))
+                    if (!model.isNullOrBlank()) put("model", kotlinx.serialization.json.JsonPrimitive(model))
+                }
+            client.post("${profile.baseUrl}/api/llms/${iosPathPart(name)}/test") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(payload)
+            }.body()
+        }
+
+    override suspend fun algorithmAdvanceWithOutput(
+        sessionId: String,
+        output: String,
+    ): Result<Unit> =
+        request {
+            val payload: kotlinx.serialization.json.JsonObject =
+                kotlinx.serialization.json.buildJsonObject {
+                    put("output", kotlinx.serialization.json.JsonPrimitive(output))
+                }
+            client.post("${profile.baseUrl}/api/algorithm/${iosPathPart(sessionId)}/advance") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(payload)
+            }
+            Unit
+        }
+
+    override suspend fun fetchScanConfigJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/autonomous/scan/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
+    override suspend fun patchScanConfig(patch: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        request {
+            client.put("${profile.baseUrl}/api/autonomous/scan/config") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                contentType(ContentType.Application.Json)
+                setBody(patch)
+            }
+            Unit
+        }
+
+    override suspend fun startSignalLink(deviceName: String): Result<String> {
+        val payload: kotlinx.serialization.json.JsonObject =
+            kotlinx.serialization.json.buildJsonObject {
+                put("device_name", kotlinx.serialization.json.JsonPrimitive(deviceName))
+            }
+        val result: Result<String> =
+            request {
+                val resp: kotlinx.serialization.json.JsonObject =
+                    client.post("${profile.baseUrl}/api/link/start") {
+                        bearer()?.let { header(HttpHeaders.Authorization, it) }
+                        contentType(ContentType.Application.Json)
+                        setBody(payload)
+                    }.body()
+                (resp["stream_id"] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+            }
+        val id: String = result.getOrNull() ?: return result
+        if (id.isEmpty()) {
+            return Result.failure<String>(TransportError.ServerError(status = 0, message = "Failed to start linking"))
+        }
+        return Result.success<String>(id)
+    }
+
+    override fun signalLinkEvents(streamId: String): Flow<com.dmzs.datawatchclient.transport.SignalLinkEvent> =
+        flow {
+            client.prepareGet("${profile.baseUrl}/api/link/stream") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+                header(HttpHeaders.Accept, "text/event-stream")
+                header(HttpHeaders.CacheControl, "no-cache")
+                parameter("id", streamId)
+                timeout {
+                    // signal-cli link waits for the phone scan — unbounded request; server keepalive is 25 s.
+                    requestTimeoutMillis = Long.MAX_VALUE
+                    socketTimeoutMillis = 60_000L
+                    connectTimeoutMillis = 10_000L
+                }
+            }.execute { res ->
+                val channel = res.bodyAsChannel()
+                var event = "message"
+                val data = StringBuilder()
+                while (true) {
+                    val line = channel.readUTF8Line() ?: break
+                    when {
+                        line.isBlank() -> {
+                            if (data.isNotEmpty()) {
+                                emit(com.dmzs.datawatchclient.transport.SignalLinkEvent(event = event, data = data.toString()))
+                            }
+                            event = "message"
+                            data.setLength(0)
+                        }
+                        line.startsWith(":") -> Unit
+                        line.startsWith("event:") -> event = line.removePrefix("event:").trim()
+                        line.startsWith("data:") -> {
+                            if (data.isNotEmpty()) data.append('\n')
+                            data.append(line.removePrefix("data:").trimStart())
+                        }
+                    }
+                }
+                if (data.isNotEmpty()) {
+                    emit(com.dmzs.datawatchclient.transport.SignalLinkEvent(event = event, data = data.toString()))
+                }
+            }
+        }
+
+    override suspend fun fetchSignalLinkStatusJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/link/status") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     // ---- Android-missing parity ----
 
     override suspend fun sendChannelMessage(

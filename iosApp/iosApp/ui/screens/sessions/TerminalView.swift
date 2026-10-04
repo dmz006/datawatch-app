@@ -141,6 +141,8 @@ struct TerminalView: View {
         .animation(.easeInOut(duration: 0.25), value: hasContent)
         .animation(.easeInOut(duration: 0.25), value: disconnected)
         .background(DatawatchColors.background)
+        // The xterm terminal is always dark (PWA termOpts.theme), whatever the app theme.
+        .environment(\.colorScheme, .dark)
     }
 
     private var reconnectOverlay: some View {

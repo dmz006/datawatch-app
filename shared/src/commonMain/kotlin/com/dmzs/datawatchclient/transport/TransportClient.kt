@@ -1679,6 +1679,75 @@ public interface TransportClient {
     public suspend fun fetchSessionStatusJson(sessionId: String): Result<kotlinx.serialization.json.JsonObject> =
         Result.failure(UnsupportedOperationException("fetchSessionStatusJson"))
 
+    // ---- iOS settings forms ----
+    // Raw-JSON CRUD so edit forms round-trip fields the DTOs don't model
+    // (PWA collect*Form clones the GET record and overlays form values).
+
+    /** GET /api/compute/nodes/{name} as raw JSON (PWA computeEditNode). */
+    public suspend fun fetchComputeNodeJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchComputeNodeJson"))
+
+    /** POST /api/compute/nodes when [name] is null, else PUT /api/compute/nodes/{name} (PWA computeAddNode). */
+    public suspend fun saveComputeNodeJson(
+        name: String?,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("saveComputeNodeJson"))
+
+    /** GET /api/compute/nodes/{name}/health — reachability probe (PWA computeTestConnectionDraft). */
+    public suspend fun computeNodeHealthJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("computeNodeHealthJson"))
+
+    /** GET /api/compute/nodes/{name}/models?kind= — tolerant of `{models:[…]}` or a bare array. */
+    public suspend fun computeNodeModelNames(
+        name: String,
+        kind: String,
+    ): Result<List<String>> = Result.failure(UnsupportedOperationException("computeNodeModelNames"))
+
+    /** GET /api/llms/{name} as raw JSON (PWA llmEdit). */
+    public suspend fun fetchLlmJson(name: String): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchLlmJson"))
+
+    /** POST /api/llms when [name] is null, else PUT /api/llms/{name} (PWA _llmSaveDraft). */
+    public suspend fun saveLlmJson(
+        name: String?,
+        body: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("saveLlmJson"))
+
+    /** POST /api/llms/{name}/test `{prompt, model?}` (PWA _llmTestDraft). */
+    public suspend fun testLlmJson(
+        name: String,
+        model: String?,
+    ): Result<kotlinx.serialization.json.JsonObject> = Result.failure(UnsupportedOperationException("testLlmJson"))
+
+    /** POST /api/algorithm/{id}/advance `{output}` (PWA algorithmAdvance with the phase-output field). */
+    public suspend fun algorithmAdvanceWithOutput(
+        sessionId: String,
+        output: String,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("algorithmAdvanceWithOutput"))
+
+    /** GET /api/autonomous/scan/config as raw JSON (PWA loadAutomataSettingsPanel). */
+    public suspend fun fetchScanConfigJson(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchScanConfigJson"))
+
+    /** PUT /api/autonomous/scan/config with a partial object (PWA saveAutomataScanField). */
+    public suspend fun patchScanConfig(patch: kotlinx.serialization.json.JsonObject): Result<Unit> =
+        Result.failure(UnsupportedOperationException("patchScanConfig"))
+
+    /** POST /api/link/start `{device_name}` → `stream_id` (PWA startLinking). */
+    public suspend fun startSignalLink(deviceName: String): Result<String> =
+        Result.failure(UnsupportedOperationException("startSignalLink"))
+
+    /**
+     * GET /api/link/stream?id= — SSE events `qr` (data = `sgnl://` URI), `linked`,
+     * `error`. The flow completes when the server closes the stream.
+     */
+    public fun signalLinkEvents(streamId: String): kotlinx.coroutines.flow.Flow<SignalLinkEvent> =
+        kotlinx.coroutines.flow.flow { throw UnsupportedOperationException("signalLinkEvents") }
+
+    /** GET /api/link/status as raw JSON (`linked`, `account_number`, `devices`, `error`). */
+    public suspend fun fetchSignalLinkStatusJson(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchSignalLinkStatusJson"))
+
     // ---- Android-missing parity ----
 
     /**
@@ -1690,6 +1759,9 @@ public interface TransportClient {
         text: String,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("sendChannelMessage"))
 }
+
+/** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */
+public data class SignalLinkEvent(val event: String, val data: String)
 
 /** A single system quick-command entry served by /api/config quick_commands. */
 public data class QuickCommandItem(val label: String, val value: String)
