@@ -24,7 +24,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -146,11 +148,26 @@ public fun SignalLinkingDialog(
                     }
                     else -> {
                         val uri = linkUri.orEmpty()
+                        val qr = remember(uri) { signalQrBitmap(uri) }
+                        if (qr != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = qr,
+                                contentDescription = stringResource(R.string.signal_link_title),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f)
+                                        .background(Color.White)
+                                        .padding(8.dp),
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
                         SelectionContainer {
                             Text(
                                 uri,
                                 fontSize = 10.sp,
                                 color = Color.Black,
+                                maxLines = if (qr != null) 2 else Int.MAX_VALUE,
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
@@ -196,4 +213,23 @@ public fun SignalLinkingDialog(
             }
         },
     )
+}
+
+
+/** Render the `sgnl://linkdevice…` URI as a QR code (ZXing core), black on white. */
+internal fun signalQrBitmap(uri: String): androidx.compose.ui.graphics.ImageBitmap? {
+    if (uri.isBlank()) return null
+    return runCatching {
+        val size = 512
+        val matrix =
+            com.google.zxing.qrcode.QRCodeWriter().encode(
+                uri,
+                com.google.zxing.BarcodeFormat.QR_CODE,
+                size,
+                size,
+                mapOf(com.google.zxing.EncodeHintType.MARGIN to 1),
+            )
+        val pixels = IntArray(size * size) { i -> if (matrix.get(i % size, i / size)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt() }
+        android.graphics.Bitmap.createBitmap(pixels, size, size, android.graphics.Bitmap.Config.ARGB_8888)
+    }.getOrNull()?.asImageBitmap()
 }

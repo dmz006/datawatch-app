@@ -1,4 +1,5 @@
 [versions]
+zxing = "3.5.3"
 agp = "8.5.2"
 kotlin = "2.0.20"
 compose-multiplatform = "1.6.11"
@@ -32,6 +33,8 @@ turbine = "1.1.0"
 mockwebserver = "4.12.0"
 
 [libraries]
+# QR rendering for Signal device linking (ZXing core only; no Play Services)
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 # Kotlin + stdlib
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
