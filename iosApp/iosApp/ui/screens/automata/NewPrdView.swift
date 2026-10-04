@@ -365,3 +365,89 @@ struct SetPrdLlmView: View {
         }
     }
 }
+
+/// PRD settings panel (parity B16; PWA prdSettings*).
+struct PrdSettingsView: View {
+    let profile: ServerProfile
+    let prd: PrdDto
+    var onSaved: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var type = ""
+    @State private var guided = false
+    @State private var continueOnFailure = "inherit"
+    @State private var priority = 3
+    @State private var readDirs = ""
+    @State private var writeDirs = ""
+    @State private var saving = false
+    @State private var errorMessage: String? = nil
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Type", selection: $type) {
+                        ForEach(["software", "research", "operational", "personal"], id: \.self) { Text($0).tag($0) }
+                    }
+                    Toggle("Guided mode", isOn: $guided)
+                    Picker("On story failure", selection: $continueOnFailure) {
+                        Text("Server default").tag("inherit")
+                        Text("Continue").tag("on")
+                        Text("Stop (blocked)").tag("off")
+                    }
+                    Stepper("Priority \(priority)", value: $priority, in: 1...9)
+                } footer: {
+                    Text("Guided mode pauses each story for approval. Higher priority runs first when capacity is limited.")
+                }
+                Section {
+                    TextField("Read dirs (comma-separated)", text: $readDirs, axis: .vertical)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(DatawatchFonts.terminalSmall)
+                    TextField("Write dirs (comma-separated)", text: $writeDirs, axis: .vertical)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(DatawatchFonts.terminalSmall)
+                } header: {
+                    Text("Scope")
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(DatawatchColors.error).font(DatawatchFonts.bodyMedium) }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .navigationTitle("Automaton settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if saving { ProgressView() } else { Button("Save") { save() }.fontWeight(.semibold) }
+                }
+            }
+            .onAppear {
+                type = prd.type?.isEmpty == false ? prd.type! : "software"
+                guided = prd.guidedMode
+                continueOnFailure = prd.continueOnStoryFailure.map { $0.boolValue ? "on" : "off" } ?? "inherit"
+                priority = Int(prd.priority)
+                readDirs = prd.readDirs.joined(separator: ", ")
+                writeDirs = prd.writeDirs.joined(separator: ", ")
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func save() {
+        saving = true
+        errorMessage = nil
+        IosPrdSettings.shared.apply(
+            profile: profile, prd: prd, type: type, guidedMode: guided, continueOnFailure: continueOnFailure,
+            priority: Int32(priority), readDirs: readDirs, writeDirs: writeDirs
+        ) { err in
+            DispatchQueue.main.async {
+                saving = false
+                if let err { errorMessage = err } else { onSaved(); dismiss() }
+            }
+        }
+    }
+}
