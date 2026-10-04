@@ -382,3 +382,40 @@ public object IosPrdCapacity {
         scope.launch { onResult(IosServiceLocator.transportFor(profile).getCapacity(prdId).getOrNull()) }
     }
 }
+
+/**
+ * PRD settings panel (parity B16; PWA prdSettings*): type, guided mode,
+ * continue-on-story-failure ("inherit" | "on" | "off"), priority, read/write dirs
+ * (comma-separated). Applies only fields that differ from the PRD; returns the
+ * first error, or null.
+ */
+public object IosPrdSettings {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun apply(
+        profile: ServerProfile,
+        prd: com.dmzs.datawatchclient.transport.dto.PrdDto,
+        type: String,
+        guidedMode: Boolean,
+        continueOnFailure: String,
+        priority: Int,
+        readDirs: String,
+        writeDirs: String,
+        onDone: (String?) -> Unit,
+    ) {
+        fun dirs(s: String) = s.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        scope.launch {
+            val t = IosServiceLocator.transportFor(profile)
+            val results = mutableListOf<Result<Unit>>()
+            if (type.isNotBlank() && type != (prd.type ?: "")) results += t.setPrdType(prd.id, type)
+            if (guidedMode != prd.guidedMode) results += t.setPrdGuidedMode(prd.id, guidedMode)
+            val cont: Boolean? = when (continueOnFailure) { "on" -> true; "off" -> false; else -> null }
+            if (cont != prd.continueOnStoryFailure) results += t.setPrdContinueOnStoryFailure(prd.id, cont)
+            if (priority != prd.priority) results += t.setPrdPriority(prd.id, priority)
+            val rd = dirs(readDirs)
+            val wd = dirs(writeDirs)
+            if (rd != prd.readDirs || wd != prd.writeDirs) results += t.setPrdDirs(prd.id, rd, wd)
+            onDone(results.firstOrNull { it.isFailure }?.exceptionOrNull()?.let { it.message ?: "Couldn't save settings." })
+        }
+    }
+}
