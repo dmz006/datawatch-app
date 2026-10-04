@@ -18,6 +18,11 @@ internal fun fakeTransport(): TransportClient =
         // edge-case). Pre-stub methods that return Result<T> and are called as side-effects
         // by VMs under test so they don't throw inside a viewModelScope.launch block.
         coEvery { getSessionTelemetry(any()) } returns Result.failure(RuntimeException("not configured"))
+        // AutonomousViewModel.refresh() fans these out in parallel (v1.23.49 model pickers).
+        coEvery { fetchOpenCodeModels(any()) } returns Result.failure(RuntimeException("not configured"))
+        coEvery { listOllamaModels() } returns Result.failure(RuntimeException("not configured"))
+        coEvery { listOpenWebUiModels() } returns Result.failure(RuntimeException("not configured"))
+        coEvery { listLlms() } returns Result.failure(RuntimeException("not configured"))
     }
 
 /** Convenience: build a [ProfileResolver] backed by a relaxed mockk transport. */
