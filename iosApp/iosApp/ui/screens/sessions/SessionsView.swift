@@ -608,7 +608,8 @@ struct SessionsView: View {
             onFetchStatus: { fetchCurrentStatus(for: session) },
             onToggleLong: { cardStatus[session.fullId]?.longExpanded.toggle() },
             onToggleSelect: { toggleSelect(session) },
-            onResponse: { responseSession = session }
+            onResponse: { responseSession = session },
+            onExpand: { DashExpandNav.shared.open(session.fullId) }
         )
         Group {
             if selectMode {

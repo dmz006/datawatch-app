@@ -87,6 +87,7 @@ struct SessionCardView: View {
     var onToggleLong: () -> Void = {}
     var onToggleSelect: () -> Void = {}
     var onResponse: () -> Void = {}
+    var onExpand: () -> Void = {}
 
     private var isDone: Bool { SessionStateStyle.isDone(session.state) }
     private var isWaiting: Bool { session.state == .waiting }
@@ -143,6 +144,9 @@ struct SessionCardView: View {
                     cardButton("↻ Restart", tint: DatawatchColors.onSurface, action: onRestart)
                     cardButton("🗑", tint: DatawatchColors.error, action: onDelete)
                 }
+                // PWA sess-maximize-btn: open this session in Dashboard expand mode.
+                cardButton("☷", tint: DatawatchColors.onSurface, action: onExpand)
+                    .accessibilityLabel("Open in Dashboard")
             }
             Text("|").font(.system(size: 11)).foregroundStyle(DatawatchColors.onSurfaceMuted.opacity(0.5))
         }
