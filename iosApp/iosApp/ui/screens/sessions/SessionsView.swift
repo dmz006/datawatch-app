@@ -1,8 +1,12 @@
-import AVFoundation
 import SwiftUI
 import DatawatchShared
 
-/// Sessions tab — live list of Claude / agent sessions for the active server.
+/// Sessions tab — live list of sessions for the active server (PWA renderSessionsView).
+///
+/// Parity decisions applied (2026-10-04): D12a collapsible `State (N)` chips with every
+/// real state · D13a inline card actions (no swipe) · D14a inline current status ·
+/// D15a select mode with fixed bottom bar · D16a PWA identity row · D42a manual order
+/// then most-recent (no sort menu) · D44a "Stop" wording.
 struct SessionsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var viewModel = SessionsViewModel()
@@ -10,20 +14,25 @@ struct SessionsView: View {
 
     @State private var filterText: String = ""
     @State private var showFilter: Bool = false
-    @State private var stateFilter: SessionStateFilter = .all
-    @State private var sortOrder: SortOrder = .recentActivity
+    /// PWA cs_session_state_chip: "all" | a real state key.
+    @AppStorage("dw.sessions.state_chip") private var stateChip: String = "all"
+    @State private var stateFilterOpen = false
+    @State private var llmFilterOpen = false
+    /// PWA cs_session_order: manual order of full ids.
+    @AppStorage("dw.sessions.order") private var orderJSON: String = "[]"
 
-    // Confirmation state for per-row actions.
-    @State private var sessionToKill: DwSession? = nil
+    @State private var sessionToStop: DwSession? = nil
     @State private var sessionToRestart: DwSession? = nil
     @State private var sessionToDelete: DwSession? = nil
     @State private var actionInProgress: String? = nil
+    @State private var actionError: String? = nil
 
-    // Current-status sheet state.
-    @State private var currentStatusShort: String? = nil
-    @State private var currentStatusLong: String? = nil
-    @State private var currentStatusSession: DwSession? = nil
-    @State private var currentStatusLoadingId: String? = nil
+    @State private var cardStatus: [String: CardStatus] = [:]
+    @State private var responseSession: DwSession? = nil
+
+    @State private var selectMode = false
+    @State private var selected: Set<String> = []
+    @State private var confirmBulkDelete = false
 
     @State private var showNewSession = false
     @State private var quickCmdSession: DwSession? = nil
@@ -32,26 +41,24 @@ struct SessionsView: View {
     /// PWA `recent_session_minutes` default.
     private static let recentWindowMs: Int64 = 5 * 60 * 1000
 
-    enum SessionStateFilter: String, CaseIterable {
-        case all     = "All"
-        case active  = "Active"
-        case waiting = "Waiting"
-        case done    = "Done"
-    }
-
-    enum SortOrder: String, CaseIterable {
-        case recentActivity = "Recent activity"
-        case startedAt      = "Started"
-        case name           = "Name"
-    }
+    /// PWA realStateChips (key, label, colour).
+    private static let stateChips: [(String, String, Color)] = [
+        ("all", "All", DatawatchColors.onSurfaceMuted),
+        ("running", "Running", DatawatchColors.success),
+        ("waiting_input", "Waiting", DatawatchColors.warning),
+        ("rate_limited", "Rate-limited", DatawatchColors.error),
+        ("complete", "Complete", DatawatchColors.onSurfaceMuted),
+        ("failed", "Failed", DatawatchColors.error),
+        ("killed", "Killed", DatawatchColors.onSurfaceMuted),
+    ]
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             DatawatchColors.background.ignoresSafeArea()
-
             content
-
-            if viewModel.activeProfile != nil {
+            if selectMode {
+                selectBar
+            } else if viewModel.activeProfile != nil {
                 newSessionFab
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
@@ -70,41 +77,16 @@ struct SessionsView: View {
                 NewSessionView(profile: profile) { _ in viewModel.refresh() }
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                HeaderView(
-                    title: "Sessions",
-                    subtitle: sessionsSubtitle,
-                    serverName: viewModel.activeProfile?.displayName
-                )
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 4) {
-                    if viewModel.isLoading && !viewModel.sessions.isEmpty {
-                        ProgressView()
-                            .tint(DatawatchColors.onSurfaceMuted)
-                            .controlSize(.mini)
-                            .accessibilityLabel("Refreshing")
-                    }
-                    DocsLinkButton(
-                        profile: viewModel.activeProfile,
-                        anchor: "sessions-list"
-                    )
-                    Button {
-                        withAnimation { showFilter.toggle() }
-                    } label: {
-                        Image(systemName: showFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                            .foregroundStyle(DatawatchColors.primary)
-                    }
-                    .accessibilityLabel(showFilter ? "Hide filter" : "Filter sessions")
-
-                    AlertsBellButton()
-                    ReachabilityDotView(profile: viewModel.activeProfile)
-                }
+        .sheet(isPresented: Binding(
+            get: { responseSession != nil },
+            set: { if !$0 { responseSession = nil } }
+        )) {
+            if let s = responseSession {
+                LastResponseSheet(session: s)
             }
         }
-        // React to profile changes.
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbarContent }
         .onChange(of: store.profiles) { profiles in
             viewModel.update(profiles: profiles)
         }
@@ -114,15 +96,13 @@ struct SessionsView: View {
             applyPendingFilter()
         }
         .onChange(of: nav.pendingFilter) { _ in applyPendingFilter() }
-        .onDisappear {
-            viewModel.stopPolling()
-        }
-        .alert("Kill session?", isPresented: Binding(
-            get: { sessionToKill != nil },
-            set: { if !$0 { sessionToKill = nil } }
+        .onDisappear { viewModel.stopPolling() }
+        .alert("Stop session?", isPresented: Binding(
+            get: { sessionToStop != nil },
+            set: { if !$0 { sessionToStop = nil } }
         )) {
-            Button("Kill", role: .destructive) { performKill() }
-            Button("Cancel", role: .cancel) { sessionToKill = nil }
+            Button("Stop", role: .destructive) { performStop() }
+            Button("Cancel", role: .cancel) { sessionToStop = nil }
         } message: {
             Text("This stops the session on the server and cannot be undone.")
         }
@@ -144,26 +124,42 @@ struct SessionsView: View {
                 Text("Permanently delete \"\(s.name ?? s.taskSummary ?? s.id)\"?")
             }
         }
-        .sheet(isPresented: Binding(
-            get: { currentStatusShort != nil },
-            set: { if !$0 { currentStatusShort = nil; currentStatusLong = nil; currentStatusSession = nil } }
-        )) {
-            CurrentStatusSheetView(
-                short: currentStatusShort ?? "",
-                long: currentStatusLong,
-                onResummarize: {
-                    guard let session = currentStatusSession,
-                          let profile = viewModel.activeProfile else { return }
-                    IosServiceLocator.shared.resummarizeSession(
-                        sessionId: session.id,
-                        profile: profile,
-                        onSuccess: { text in
-                            DispatchQueue.main.async { self.currentStatusShort = text }
-                        },
-                        onError: { _ in }
-                    )
-                }
+        .alert("Delete \(selected.count) sessions?", isPresented: $confirmBulkDelete) {
+            Button("Delete", role: .destructive) { performBulkDelete() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the selected sessions.")
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HeaderView(
+                title: "datawatch",
+                subtitle: sessionsSubtitle,
+                serverName: viewModel.activeProfile?.displayName
             )
+        }
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 4) {
+                if viewModel.isLoading && !viewModel.sessions.isEmpty {
+                    ProgressView()
+                        .tint(DatawatchColors.onSurfaceMuted)
+                        .controlSize(.mini)
+                        .accessibilityLabel("Refreshing")
+                }
+                DocsLinkButton(profile: viewModel.activeProfile, anchor: "sessions-list")
+                Button {
+                    withAnimation { showFilter.toggle() }
+                } label: {
+                    Image(systemName: showFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(DatawatchColors.primary)
+                }
+                .accessibilityLabel(showFilter ? "Hide filter" : "Filter sessions")
+                AlertsBellButton()
+                ReachabilityDotView(profile: viewModel.activeProfile)
+            }
         }
     }
 
@@ -171,79 +167,75 @@ struct SessionsView: View {
 
     private func fetchCurrentStatus(for session: DwSession) {
         guard let profile = viewModel.activeProfile else { return }
-        currentStatusLoadingId = session.id
+        let key = session.fullId
+        var st = cardStatus[key] ?? CardStatus()
+        st.loading = true
+        cardStatus[key] = st
         IosServiceLocator.shared.fetchSessionCurrentStatus(
             sessionId: session.id,
             profile: profile,
             onSuccess: { short, long in
                 DispatchQueue.main.async {
-                    self.currentStatusLoadingId = nil
-                    self.currentStatusShort = short
-                    self.currentStatusLong = long.isEmpty ? nil : long
-                    self.currentStatusSession = session
+                    let text = short.isEmpty ? "(" + L("no change since last refresh") + ")" : short
+                    cardStatus[key] = CardStatus(text: text, long: long, generatedAt: Date())
                 }
             },
-            onError: { _ in
-                DispatchQueue.main.async { self.currentStatusLoadingId = nil }
+            onError: { msg in
+                DispatchQueue.main.async {
+                    cardStatus[key] = CardStatus(text: "(\(msg))", generatedAt: Date())
+                }
             }
         )
     }
 
-    private func performKill() {
-        guard let session = sessionToKill, let profile = viewModel.activeProfile else { return }
-        sessionToKill = nil
+    private func runOp(_ session: DwSession, _ op: (ServerProfile, String, @escaping () -> Void, @escaping (String) -> Void) -> Void) {
+        guard let profile = viewModel.activeProfile else { return }
         actionInProgress = session.id
-        IosServiceLocator.shared.killSession(
-            profile: profile,
-            sessionId: session.id,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    self.actionInProgress = nil
-                    self.viewModel.refresh()
-                }
-            },
-            onError: { _ in
-                DispatchQueue.main.async { self.actionInProgress = nil }
-            }
-        )
+        op(profile, session.id, {
+            DispatchQueue.main.async { actionInProgress = nil; viewModel.refresh() }
+        }, { msg in
+            DispatchQueue.main.async { actionInProgress = nil; actionError = msg }
+        })
+    }
+
+    private func performStop() {
+        guard let s = sessionToStop else { return }
+        sessionToStop = nil
+        runOp(s) { p, id, ok, err in IosServiceLocator.shared.killSession(profile: p, sessionId: id, onSuccess: ok, onError: err) }
     }
 
     private func performRestart() {
-        guard let session = sessionToRestart, let profile = viewModel.activeProfile else { return }
+        guard let s = sessionToRestart else { return }
         sessionToRestart = nil
-        actionInProgress = session.id
-        IosServiceLocator.shared.restartSession(
-            profile: profile,
-            sessionId: session.id,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    self.actionInProgress = nil
-                    self.viewModel.refresh()
-                }
-            },
-            onError: { _ in
-                DispatchQueue.main.async { self.actionInProgress = nil }
-            }
-        )
+        runOp(s) { p, id, ok, err in IosServiceLocator.shared.restartSession(profile: p, sessionId: id, onSuccess: ok, onError: err) }
     }
 
     private func performDelete() {
-        guard let session = sessionToDelete, let profile = viewModel.activeProfile else { return }
+        guard let s = sessionToDelete else { return }
         sessionToDelete = nil
-        actionInProgress = session.id
-        IosServiceLocator.shared.deleteSession(
-            profile: profile,
-            sessionId: session.id,
-            onSuccess: {
-                DispatchQueue.main.async {
-                    self.actionInProgress = nil
-                    self.viewModel.refresh()
-                }
-            },
-            onError: { _ in
-                DispatchQueue.main.async { self.actionInProgress = nil }
-            }
-        )
+        runOp(s) { p, id, ok, err in IosServiceLocator.shared.deleteSession(profile: p, sessionId: id, onSuccess: ok, onError: err) }
+    }
+
+    /// PWA deleteSelectedSessions.
+    private func performBulkDelete() {
+        guard let profile = viewModel.activeProfile else { return }
+        let targets = viewModel.sessions.filter { selected.contains($0.fullId) }
+        let group = DispatchGroup()
+        var failures = 0
+        for s in targets {
+            group.enter()
+            IosServiceLocator.shared.deleteSession(
+                profile: profile, sessionId: s.id,
+                onSuccess: { DispatchQueue.main.async { group.leave() } },
+                onError: { _ in DispatchQueue.main.async { failures += 1; group.leave() } }
+            )
+        }
+        group.notify(queue: .main) {
+            selected.removeAll()
+            selectMode = false
+            if failures > 0 { actionError = String(format: L("%lld of %lld deletes failed."), Int64(failures), Int64(targets.count)) }
+            viewModel.refresh()
+        }
     }
 
     // ── Body states ───────────────────────────────────────────────────────
@@ -252,13 +244,10 @@ struct SessionsView: View {
     private var content: some View {
         VStack(spacing: 0) {
             ConnectionStatusBanner(state: connectionState)
-
             if viewModel.isLoading && viewModel.sessions.isEmpty {
                 LoadingIndicator(message: "Loading sessions…")
             } else if let errorMsg = viewModel.error, viewModel.sessions.isEmpty {
-                ErrorCard(message: errorMsg) {
-                    viewModel.refresh()
-                }
+                ErrorCard(message: errorMsg) { viewModel.refresh() }
             } else if viewModel.activeProfile == nil {
                 emptyNoProfile
             } else {
@@ -269,167 +258,222 @@ struct SessionsView: View {
 
     private var sessionList: some View {
         VStack(spacing: 0) {
-            if showFilter {
-                filterBar
+            if showFilter { filterBar }
+            if let actionError {
+                Text(actionError)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(DatawatchColors.error)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onTapGesture { self.actionError = nil }
             }
             List {
-                if filteredSessions.isEmpty && !viewModel.sessions.isEmpty && filterText.isEmpty && stateFilter == .all && !showHistory {
-                    Button {
-                        showHistory = true
-                    } label: {
-                        Text("No active sessions — show \(historyCount) finished")
-                            .font(DatawatchFonts.bodyMedium)
-                            .foregroundStyle(DatawatchColors.primary)
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                } else if filteredSessions.isEmpty && (!filterText.isEmpty || stateFilter != .all) {
-                    Text(filterText.isEmpty ? "No \(stateFilter.rawValue.lowercased()) sessions" : "No sessions match \"\(filterText)\"")
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                } else if viewModel.sessions.isEmpty {
-                    emptySessionsRow
-                } else {
-                    ForEach(filteredSessions, id: \.id) { session in
-                        sessionRow(session)
-                    }
-                }
+                listRows
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(DatawatchColors.background)
-            .refreshable {
-                viewModel.refresh()
-            }
-        }
-    }
-
-    private var filterBar: some View {
-        VStack(spacing: 0) {
-            // Row 1: state filter chips + sort menu
-            HStack(spacing: 0) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(SessionStateFilter.allCases, id: \.self) { filter in
-                            stateChip(filter)
-                        }
-                        historyChip
-                    }
-                    .padding(.horizontal, 12)
-                }
-
-                Menu {
-                    ForEach(SortOrder.allCases, id: \.self) { order in
-                        Button {
-                            sortOrder = order
-                        } label: {
-                            if sortOrder == order {
-                                Label(order.rawValue, systemImage: "checkmark")
-                            } else {
-                                Text(order.rawValue)
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "arrow.up.arrow.down")
-                        Text(sortOrder.rawValue)
-                            .lineLimit(1)
-                    }
-                    .font(DatawatchFonts.badge)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(DatawatchColors.chipBackground)
-                    .clipShape(Capsule())
-                }
-                .padding(.trailing, 12)
-            }
-            .padding(.vertical, 6)
-            .background(DatawatchColors.background)
-
-            // Row 2: text search
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                TextField("Filter by name / task / id / backend", text: $filterText)
-                    .font(DatawatchFonts.bodyMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                if !filterText.isEmpty {
-                    Button { filterText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    }
-                    .accessibilityLabel("Clear filter")
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(DatawatchColors.surface)
-            Divider().background(DatawatchColors.border)
+            .refreshable { viewModel.refresh() }
+            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: selectMode ? 56 : 0) }
         }
     }
 
     @ViewBuilder
-    private func stateChip(_ filter: SessionStateFilter) -> some View {
-        let selected = stateFilter == filter
-        let color: Color = {
-            switch filter {
-            case .all:     return DatawatchColors.onSurfaceMuted
-            case .active:  return DatawatchColors.primary
-            case .waiting: return DatawatchColors.waiting
-            case .done:    return DatawatchColors.onSurfaceMuted
+    private var listRows: some View {
+        let visible = filteredSessions
+        if visible.isEmpty && !viewModel.sessions.isEmpty && filterText.isEmpty && stateChip == "all" && !showHistory {
+            Button {
+                showHistory = true
+            } label: {
+                Text("No active sessions — show \(historyCount) finished")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.primary)
             }
-        }()
-        let count = chipCount(for: filter)
-        Button {
-            stateFilter = filter
-            if filter == .done { showHistory = true }
-        } label: {
-            Text(count > 0 ? "\(filter.rawValue) (\(count))" : filter.rawValue)
-                .font(DatawatchFonts.badge)
-                .foregroundStyle(selected ? DatawatchColors.background : color)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(selected ? color : color.opacity(0.15))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(color.opacity(0.4), lineWidth: 1))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        } else if visible.isEmpty && (!filterText.isEmpty || stateChip != "all") {
+            Text(filterText.isEmpty ? "No sessions in this state" : "No sessions match \"\(filterText)\"")
+                .font(DatawatchFonts.bodyMedium)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        } else if viewModel.sessions.isEmpty {
+            emptySessionsRow
+        } else {
+            ForEach(visible, id: \.id) { session in
+                sessionRow(session)
+            }
+            .onMove { from, to in move(visible, from: from, to: to) }
         }
     }
 
-    // ── History (PWA: default pool = active + recently finished) ─────────
+    // ── Toolbar (PWA sessions-toolbar) ────────────────────────────────────
 
-    private func isDone(_ s: DwSession) -> Bool {
-        s.state == .completed || s.state == .killed || s.state == .error
+    private var filterBar: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                TextField("Filter sessions…", text: $filterText)
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onChange(of: filterText) { _ in selected.removeAll() }
+                if !filterText.isEmpty {
+                    Button { filterText = "" } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    }
+                    .accessibilityLabel("Clear filter")
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 8))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    if backendTypes.count > 1 {
+                        toggleBadge(llmButtonLabel, active: llmFilterOpen || llmActive != nil) { llmFilterOpen.toggle() }
+                    }
+                    toggleBadge(stateButtonLabel, active: stateFilterOpen || stateChip != "all") { stateFilterOpen.toggle() }
+                    toggleBadge("History (\(historyCount))", active: showHistory, chevron: false) {
+                        showHistory.toggle()
+                        if !showHistory { selectMode = false; selected.removeAll() }
+                    }
+                    if showHistory && historyCount > 0 {
+                        Button {
+                            selectMode.toggle()
+                            if !selectMode { selected.removeAll() }
+                        } label: {
+                            Text("☑").font(.system(size: 14)).opacity(selectMode ? 1 : 0.5)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Select sessions")
+                    }
+                }
+            }
+            if llmFilterOpen && backendTypes.count > 1 {
+                chipRow(backendTypes.map { bt in
+                    (bt, bt, DatawatchColors.secondary, viewModel.sessions.filter { $0.backend == bt }.count, filterText.lowercased() == bt.lowercased())
+                }) { key in filterText = filterText.lowercased() == key.lowercased() ? "" : key }
+            }
+            if stateFilterOpen {
+                chipRow(visibleStateChips.map { c in
+                    (c.0, c.1, c.2, stateCount(c.0), stateChip == c.0)
+                }) { key in stateChip = key }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(DatawatchColors.background)
     }
 
-    private var historyCount: Int { viewModel.sessions.filter { isDone($0) }.count }
+    private func toggleBadge(_ label: String, active: Bool, chevron: Bool = true, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(chevron ? label + (active ? " ▾" : " ▸") : label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(active ? DatawatchColors.background : DatawatchColors.onSurfaceMuted)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(active ? DatawatchColors.primary : DatawatchColors.chipBackground, in: Capsule())
+        }
+        .buttonStyle(.borderless)
+    }
+
+    private func chipRow(_ chips: [(String, String, Color, Int, Bool)], onTap: @escaping (String) -> Void) -> some View {
+        FlowLayout(spacing: 4) {
+            ForEach(chips, id: \.0) { c in
+                Button { onTap(c.0) } label: {
+                    HStack(spacing: 4) {
+                        Text("●").foregroundStyle(c.2)
+                        Text(L(c.1)).foregroundStyle(c.4 ? DatawatchColors.background : DatawatchColors.onSurface)
+                        Text("\(c.3)").foregroundStyle(c.4 ? DatawatchColors.background.opacity(0.8) : DatawatchColors.onSurfaceMuted)
+                    }
+                    .font(.system(size: 11))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(c.4 ? DatawatchColors.primary : DatawatchColors.chipBackground, in: Capsule())
+                    .overlay(alignment: .leading) { Capsule().fill(c.2).frame(width: 3).padding(.vertical, 4) }
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+    }
+
+    private var backendTypes: [String] {
+        Array(Set(viewModel.sessions.compactMap { $0.backend }.filter { !$0.isEmpty })).sorted()
+    }
+
+    private var llmActive: String? {
+        backendTypes.first { $0.lowercased() == filterText.lowercased() }
+    }
+
+    private var llmButtonLabel: String {
+        if let a = llmActive { return "LLM: \(a)" }
+        return "LLM (\(backendTypes.count))"
+    }
+
+    private func stateCount(_ key: String) -> Int {
+        key == "all" ? viewModel.sessions.count : viewModel.sessions.filter { SessionStateStyle.key($0.state) == key }.count
+    }
+
+    /// PWA: hide 0-count chips except All and the active one.
+    private var visibleStateChips: [(String, String, Color)] {
+        Self.stateChips.filter { $0.0 == "all" || stateCount($0.0) > 0 || stateChip == $0.0 }
+    }
+
+    private var stateButtonLabel: String {
+        if stateChip != "all" { return "State: \(stateChip)" }
+        return "State (\(visibleStateChips.count - 1))"
+    }
+
+    // ── History + ordering (PWA pool + sortSessionsByOrder) ──────────────
+
+    private var historyCount: Int { viewModel.sessions.filter { SessionStateStyle.isDone($0.state) }.count }
 
     private var visiblePool: [DwSession] {
         let cutoff = Int64(Date().timeIntervalSince1970 * 1000) - Self.recentWindowMs
         return viewModel.sessions.filter { s in
-            !isDone(s) || s.lastActivityAt.toEpochMilliseconds() >= cutoff
+            !SessionStateStyle.isDone(s.state) || s.lastActivityAt.toEpochMilliseconds() >= cutoff
         }
     }
 
-    private var historyChip: some View {
-        Button {
-            showHistory.toggle()
-        } label: {
-            Text("History (\(historyCount))")
-                .font(DatawatchFonts.badge)
-                .foregroundStyle(showHistory ? DatawatchColors.background : DatawatchColors.onSurfaceMuted)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(showHistory ? DatawatchColors.onSurfaceMuted : DatawatchColors.onSurfaceMuted.opacity(0.15))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(DatawatchColors.onSurfaceMuted.opacity(0.4), lineWidth: 1))
+    private var manualOrder: [String] {
+        (try? JSONDecoder().decode([String].self, from: Data(orderJSON.utf8))) ?? []
+    }
+
+    private func saveOrder(_ ids: [String]) {
+        if let data = try? JSONEncoder().encode(ids), let s = String(data: data, encoding: .utf8) { orderJSON = s }
+    }
+
+    private func sortByOrder(_ sessions: [DwSession]) -> [DwSession] {
+        let order = manualOrder
+        var inOrder: [DwSession] = []
+        var seen = Set<String>()
+        for id in order {
+            if let s = sessions.first(where: { $0.fullId == id }) { inOrder.append(s); seen.insert(id) }
         }
-        .accessibilityLabel(showHistory ? "Hide finished sessions" : "Show \(historyCount) finished sessions")
+        let rest = sessions.filter { !seen.contains($0.fullId) }
+            .sorted { $0.lastActivityAt.toEpochMilliseconds() > $1.lastActivityAt.toEpochMilliseconds() }
+        return inOrder + rest
+    }
+
+    /// Drag-to-reorder / Move up-down (PWA sessionDrop / moveSession): persists the full order.
+    private func move(_ visible: [DwSession], from: IndexSet, to: Int) {
+        var ids = visible.map { $0.fullId }
+        ids.move(fromOffsets: from, toOffset: to)
+        let others = sortByOrder(viewModel.sessions).map { $0.fullId }.filter { !ids.contains($0) }
+        saveOrder(ids + others)
+    }
+
+    private func moveOne(_ session: DwSession, by delta: Int) {
+        var ids = sortByOrder(viewModel.sessions).map { $0.fullId }
+        guard let i = ids.firstIndex(of: session.fullId) else { return }
+        let j = i + delta
+        guard j >= 0, j < ids.count else { return }
+        ids.swapAt(i, j)
+        saveOrder(ids)
     }
 
     /// Automata → View sessions / task session link (SessionsNav).
@@ -442,14 +486,10 @@ struct SessionsView: View {
 
     private var filteredSessions: [DwSession] {
         var result = showHistory ? viewModel.sessions : visiblePool
-
-        switch stateFilter {
-        case .all:     break
-        case .active:  result = result.filter { $0.state == .running || $0.state == .waiting || $0.state == .rateLimited }
-        case .waiting: result = result.filter { $0.state == .waiting }
-        case .done:    result = result.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }
+        switch stateChip {
+        case "all": break
+        default: result = result.filter { SessionStateStyle.key($0.state) == stateChip }
         }
-
         if !filterText.isEmpty {
             let q = filterText.lowercased()
             result = result.filter { s in
@@ -458,48 +498,41 @@ struct SessionsView: View {
                 (s.taskSummary?.lowercased().contains(q) ?? false) ||
                 (s.backend?.lowercased().contains(q) ?? false) ||
                 (s.llmRef?.lowercased().contains(q) ?? false) ||
-                (s.computeNodeRef?.lowercased().contains(q) ?? false) ||
-                (s.hostnamePrefix?.lowercased().contains(q) ?? false)
+                (s.computeNodeRef?.lowercased().contains(q) ?? false)
             }
         }
+        return sortByOrder(result)
+    }
 
-        // State-bucket always wins (Waiting → Running → RateLimited → Done),
-        // within each bucket apply user sort order.
-        result.sort { lhs, rhs in
-            let lb = stateBucket(lhs.state), rb = stateBucket(rhs.state)
-            if lb != rb { return lb < rb }
-            switch sortOrder {
-            case .recentActivity:
-                return lhs.lastActivityAt.toEpochMilliseconds() > rhs.lastActivityAt.toEpochMilliseconds()
-            case .startedAt:
-                return lhs.createdAt.toEpochMilliseconds() > rhs.createdAt.toEpochMilliseconds()
-            case .name:
-                let a = (lhs.name ?? lhs.taskSummary ?? lhs.id).lowercased()
-                let b = (rhs.name ?? rhs.taskSummary ?? rhs.id).lowercased()
-                return a < b
+    // ── Select bar (PWA select-bar-fixed) ─────────────────────────────────
+
+    private var visibleDone: [DwSession] { filteredSessions.filter { SessionStateStyle.isDone($0.state) } }
+
+    private var selectBar: some View {
+        let done = visibleDone
+        let allSelected = !done.isEmpty && done.allSatisfy { selected.contains($0.fullId) }
+        return HStack(spacing: 10) {
+            Button {
+                if allSelected { selected.removeAll() } else { selected = Set(done.map { $0.fullId }) }
+            } label: {
+                Text("☑ " + L(allSelected ? "None" : "All") + " (\(done.count))")
             }
+            Button(role: .destructive) {
+                confirmBulkDelete = true
+            } label: {
+                Text("🗑 " + L("Delete") + " (\(selected.count))")
+            }
+            .disabled(selected.isEmpty)
+            Spacer()
+            Button("Cancel") { selectMode = false; selected.removeAll() }
         }
-
-        return result
-    }
-
-    private func chipCount(for filter: SessionStateFilter) -> Int {
-        let all = viewModel.sessions
-        switch filter {
-        case .all:     return all.count
-        case .active:  return all.filter { $0.state == .running || $0.state == .waiting || $0.state == .rateLimited }.count
-        case .waiting: return all.filter { $0.state == .waiting }.count
-        case .done:    return all.filter { $0.state == .completed || $0.state == .killed || $0.state == .error }.count
-        }
-    }
-
-    private func stateBucket(_ state: SessionState) -> Int {
-        switch state {
-        case .waiting:     return 0
-        case .running:     return 1
-        case .rateLimited: return 2
-        default:           return 3
-        }
+        .font(DatawatchFonts.bodyMedium)
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(DatawatchColors.surface)
+        .overlay(alignment: .top) { Rectangle().fill(DatawatchColors.border).frame(height: 1) }
     }
 
     // ── New Session FAB (PWA `+` / Android FAB) ─────────────────────────────
@@ -524,11 +557,11 @@ struct SessionsView: View {
         HStack {
             Spacer()
             VStack(spacing: 12) {
-                Image(systemName: "terminal")
-                    .font(.system(.largeTitle))
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .accessibilityHidden(true)
-                Text("No sessions — start one in the web UI")
+                Text("💬").font(.system(size: 40)).accessibilityHidden(true)
+                Text("No active sessions")
+                    .font(DatawatchFonts.titleMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                Text("Tap the + button to start a session,\nor send commands via Signal.")
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .multilineTextAlignment(.center)
@@ -562,367 +595,92 @@ struct SessionsView: View {
 
     @ViewBuilder
     private func sessionRow(_ session: DwSession) -> some View {
-        NavigationLink {
-            if let profile = viewModel.activeProfile {
-                SessionDetailView(session: session, profile: profile)
+        let card = SessionCardView(
+            session: session,
+            showHost: store.profiles.count > 1,
+            status: cardStatus[session.fullId],
+            selecting: selectMode,
+            selected: selected.contains(session.fullId),
+            onStop: { sessionToStop = session },
+            onQuick: { quickCmdSession = session },
+            onRestart: { sessionToRestart = session },
+            onDelete: { sessionToDelete = session },
+            onFetchStatus: { fetchCurrentStatus(for: session) },
+            onToggleLong: { cardStatus[session.fullId]?.longExpanded.toggle() },
+            onToggleSelect: { toggleSelect(session) },
+            onResponse: { responseSession = session }
+        )
+        Group {
+            if selectMode {
+                card.onTapGesture { if SessionStateStyle.isDone(session.state) { toggleSelect(session) } }
+            } else {
+                NavigationLink {
+                    if let profile = viewModel.activeProfile {
+                        SessionDetailView(session: session, profile: profile)
+                    }
+                } label: { card }
             }
-        } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                // Row 1: name + state pill
-                HStack(spacing: 8) {
-                    Text(sessionDisplayName(session))
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .lineLimit(1)
-                    Spacer()
-                    if session.state == .waiting {
-                        Button {
-                            quickCmdSession = session
-                        } label: {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(DatawatchColors.waiting)
-                                .frame(width: 30, height: 26)
-                                .background(DatawatchColors.waiting.opacity(0.15), in: Capsule())
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel("Quick commands")
-                    }
-                    statePill(for: session.state)
-                }
-
-                // Row 2: task text (if different from name)
-                if let task = session.taskSummary, !task.isEmpty,
-                   task != session.name {
-                    Text(task)
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        .lineLimit(2)
-                }
-
-                // Row 3: badges
-                HStack(spacing: 6) {
-                    if let backend = session.backend, !backend.isEmpty {
-                        Text(backend.uppercased())
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(DatawatchColors.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(DatawatchColors.secondary.opacity(0.12))
-                            .clipShape(Capsule())
-                    }
-                    if session.state == .waiting {
-                        Text("WAITING INPUT")
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(DatawatchColors.waiting)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(DatawatchColors.waiting.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                    if let agentId = session.agentId {
-                        Text("⬡ \(agentId)")
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(DatawatchColors.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(DatawatchColors.secondary.opacity(0.12))
-                            .clipShape(Capsule())
-                            .accessibilityLabel("Worker \(agentId)")
-                    }
-                    if session.backend == "council-virtual" {
-                        Text("🎭")
-                            .font(DatawatchFonts.badge)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(DatawatchColors.secondary.opacity(0.12))
-                            .clipShape(Capsule())
-                            .accessibilityLabel("Council session")
-                    }
-                    if let hostname = session.hostnamePrefix, !hostname.isEmpty {
-                        Text(hostname)
-                            .font(DatawatchFonts.badge)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(DatawatchColors.onSurfaceMuted.opacity(0.10))
-                            .clipShape(Capsule())
-                    }
-                    if session.lastResponse != nil {
-                        Image(systemName: "doc.text")
-                            .font(DatawatchFonts.labelSmall)
-                            .imageScale(.small)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                            .accessibilityLabel("Has response")
-                    }
-                    if session.muted {
-                        Image(systemName: "bell.slash.fill")
-                            .font(DatawatchFonts.labelSmall)
-                            .imageScale(.small)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                            .accessibilityLabel("Muted")
-                    }
-                    Spacer()
-                    if let summaryAt = session.summaryGeneratedAt {
-                        Text("AI " + relativeTime(summaryAt))
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.primary.opacity(0.7))
-                        Text("·")
-                            .font(DatawatchFonts.labelSmall)
-                            .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    }
-                    Text(relativeTime(session.lastActivityAt))
-                        .font(DatawatchFonts.labelSmall)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                }
-
-                // Row 4: prompt context for waiting sessions
-                if session.state == .waiting, let ctx = session.promptContext ?? session.lastPrompt, !ctx.isEmpty {
-                    Text(ctx)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        .lineLimit(2)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(DatawatchColors.waiting.opacity(0.08))
-                        .overlay(Rectangle().fill(DatawatchColors.waiting).frame(width: 2), alignment: .leading)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-
-                // Row 5: "What's it doing?" quick-action for running sessions
-                if session.state == .running {
-                    Button {
-                        fetchCurrentStatus(for: session)
-                    } label: {
-                        HStack(spacing: 4) {
-                            if currentStatusLoadingId == session.id {
-                                ProgressView().controlSize(.mini)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .imageScale(.small)
-                            }
-                            Text("What's it doing?")
-                                .font(DatawatchFonts.labelSmall)
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .padding(.top, 2)
-                }
-            }
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-            .opacity(isDoneState(session.state) ? 0.6 : 1.0)
         }
         .listRowBackground(DatawatchColors.surface)
         .listRowSeparatorTint(DatawatchColors.border)
-        .accessibilityLabel(accessibilityLabel(for: session))
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            if session.state == .running || session.state == .waiting || session.state == .rateLimited {
-                Button(role: .destructive) {
-                    sessionToKill = session
-                } label: {
-                    Label("Stop", systemImage: "stop.circle")
-                }
-            }
-            if isDoneState(session.state) {
-                Button(role: .destructive) {
-                    sessionToDelete = session
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            if isDoneState(session.state) {
-                Button {
-                    sessionToRestart = session
-                } label: {
-                    Label("Restart", systemImage: "arrow.counterclockwise")
-                }
-                .tint(DatawatchColors.primary)
-            }
+        .accessibilityElement(children: .contain)
+        .contextMenu {
+            Button { moveOne(session, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }
+            Button { moveOne(session, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }
         }
     }
 
-    @ViewBuilder
-    private func statePill(for state: SessionState) -> some View {
-        let color = dotColor(for: state)
-        Text(stateLabel(for: state))
-            .font(DatawatchFonts.badge)
-            .foregroundStyle(color)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(color.opacity(0.15))
-            .clipShape(Capsule())
+    private func toggleSelect(_ s: DwSession) {
+        if selected.contains(s.fullId) { selected.remove(s.fullId) } else { selected.insert(s.fullId) }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
-
-    private func sessionDisplayName(_ session: DwSession) -> String {
-        if let name = session.name, !name.isEmpty { return name }
-        if let task = session.taskSummary, !task.isEmpty { return task }
-        return session.id
-    }
-
-    private func dotColor(for state: SessionState) -> Color {
-        switch state {
-        case .running:     return DatawatchColors.success
-        case .waiting:     return DatawatchColors.waiting
-        case .rateLimited: return DatawatchColors.warning
-        case .error:       return DatawatchColors.error
-        default:           return DatawatchColors.onSurfaceMuted
-        }
-    }
-
-    private func stateLabel(for state: SessionState) -> String {
-        switch state {
-        case .running:     return "RUNNING"
-        case .waiting:     return "WAITING INPUT"
-        case .rateLimited: return "RATE LIMITED"
-        case .completed:   return "COMPLETED"
-        case .killed:      return "KILLED"
-        case .error:       return "ERROR"
-        default:           return "UNKNOWN"
-        }
-    }
-
-    private func isDoneState(_ state: SessionState) -> Bool {
-        state == .completed || state == .killed || state == .error
-    }
-
-    private func relativeTime(_ instant: Kotlinx_datetimeInstant) -> String {
-        let seconds = Int((Date().timeIntervalSince1970 * 1000 - Double(instant.toEpochMilliseconds())) / 1000)
-        if seconds < 5   { return "just now" }
-        if seconds < 60  { return "\(seconds)s ago" }
-        if seconds < 3600 { return "\(seconds / 60)m ago" }
-        if seconds < 86400 { return "\(seconds / 3600)h ago" }
-        return "\(seconds / 86400)d ago"
-    }
-
-    private func accessibilityLabel(for session: DwSession) -> String {
-        "\(sessionDisplayName(session)), \(stateLabel(for: session.state))"
-    }
 
     private var sessionsSubtitle: String? {
         guard !viewModel.sessions.isEmpty else { return nil }
         let running = viewModel.sessions.filter { $0.state == .running || $0.state == .rateLimited }.count
         let waiting = viewModel.sessions.filter { $0.state == .waiting }.count
         if running > 0 && waiting > 0 {
-            return "\(running) running · \(waiting) waiting"
+            return String(format: L("%lld running · %lld waiting"), Int64(running), Int64(waiting))
         } else if running > 0 {
-            return "\(running) running"
+            return String(format: L("%lld running"), Int64(running))
         } else if waiting > 0 {
-            return "\(waiting) waiting"
+            return String(format: L("%lld waiting"), Int64(waiting))
         }
         return nil
     }
 
     private var connectionState: ConnectionState {
-        if viewModel.error != nil && !viewModel.sessions.isEmpty {
-            return .reconnecting(attempt: 1)
-        }
-        if viewModel.isLoading && viewModel.sessions.isEmpty {
-            return .connecting
-        }
+        if viewModel.error != nil && !viewModel.sessions.isEmpty { return .reconnecting(attempt: 1) }
+        if viewModel.isLoading && viewModel.sessions.isEmpty { return .connecting }
         return .connected
     }
 }
 
-// MARK: - Current Status Sheet
-
-private struct CurrentStatusSheetView: View {
-    let short: String
-    let long: String?
-    let onResummarize: () -> Void
+/// Last-response viewer (PWA showResponseViewer; D43a).
+private struct LastResponseSheet: View {
+    let session: DwSession
     @Environment(\.dismiss) private var dismiss
-    @State private var expanded = false
-    @State private var isSpeaking = false
-    @State private var isResummarizing = false
-    private let synthesizer = AVSpeechSynthesizer()
-
-    var displayText: String { expanded && long != nil ? long! : short }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(short)
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.onSurface)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if let longText = long {
-                        Button {
-                            withAnimation { expanded.toggle() }
-                        } label: {
-                            Label(expanded ? "▲ Less" : "▼ More detail",
-                                  systemImage: expanded ? "chevron.up" : "chevron.down")
-                                .font(DatawatchFonts.labelSmall)
-                        }
-                        .buttonStyle(.borderless)
-
-                        if expanded {
-                            Text(longText)
-                                .font(DatawatchFonts.labelSmall)
-                                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
-                .padding()
+                Text(session.lastResponse ?? "")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurface)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
             }
-            .navigationTitle("Current status")
+            .background(DatawatchColors.background)
+            .navigationTitle("Last response")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    HStack(spacing: 8) {
-                        if isResummarizing {
-                            ProgressView().controlSize(.mini)
-                        } else {
-                            Button {
-                                isResummarizing = true
-                                onResummarize()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    isResummarizing = false
-                                }
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                            }
-                        }
-                        Button {
-                            if isSpeaking {
-                                synthesizer.stopSpeaking(at: .immediate)
-                                isSpeaking = false
-                            } else {
-                                let utterance = AVSpeechUtterance(string: displayText)
-                                utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.identifier)
-                                synthesizer.speak(utterance)
-                                isSpeaking = true
-                            }
-                        } label: {
-                            Image(systemName: isSpeaking ? "stop.circle" : "play.circle")
-                        }
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        synthesizer.stopSpeaking(at: .immediate)
-                        dismiss()
-                    }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .primaryAction) {
+                    ShareLink(item: session.lastResponse ?? "") { Image(systemName: "square.and.arrow.up") }
                 }
             }
         }
-        .background(DatawatchColors.background)
     }
 }
-
-#if DEBUG
-#Preview {
-    NavigationStack {
-        SessionsView()
-            .environmentObject(ServerProfileStore())
-    }
-    .preferredColorScheme(.dark)
-}
-#endif
