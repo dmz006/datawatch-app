@@ -52,15 +52,14 @@ final class AutomataViewModel: ObservableObject {
 
 struct AutomataView: View {
     @EnvironmentObject private var store: ServerProfileStore
-    @StateObject private var vm = AutomataViewModel()
     @State private var selectedProfileId: String? = nil
-    @State private var showAddSheet = false
     @State private var section: AutomataSection = .prds
 
+    // D22a/D25a: PRDs | Templates. The type registry moved to
+    // Settings › Automata › Type Registry (SettingsAutomataTypesView).
     private enum AutomataSection: String, CaseIterable {
         case prds = "PRDs"
         case templates = "Templates"
-        case types = "Types"
     }
 
     private var selectedProfile: ServerProfile? {
@@ -91,24 +90,8 @@ struct AutomataView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 4) {
                     DocsLinkButton(profile: selectedProfile, anchor: "automata")
-                    if !store.profiles.isEmpty && section == .types {
-                        Button {
-                            showAddSheet = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .foregroundStyle(DatawatchColors.primary)
-                        }
-                        .accessibilityLabel("Add automata type")
-                    }
                     AlertsBellButton()
                     ReachabilityDotView(profile: selectedProfile)
-                }
-            }
-        }
-        .sheet(isPresented: $showAddSheet) {
-            if let profile = selectedProfile {
-                AddAutomataTypeSheet(profile: profile) {
-                    vm.load(profile: profile)
                 }
             }
         }
@@ -116,14 +99,6 @@ struct AutomataView: View {
             // If the selected profile was removed, reset selection
             if let id = selectedProfileId, !profiles.contains(where: { $0.id == id }) {
                 selectedProfileId = nil
-            }
-            if let profile = selectedProfile {
-                vm.load(profile: profile)
-            }
-        }
-        .onAppear {
-            if let profile = selectedProfile {
-                vm.load(profile: profile)
             }
         }
     }
@@ -159,25 +134,6 @@ struct AutomataView: View {
                 if let profile = selectedProfile {
                     TemplatesView(profile: profile)
                 }
-            case .types:
-                if vm.isLoading && vm.types.isEmpty {
-                    LoadingIndicator(message: "Loading automata types…")
-                } else if let err = vm.error, vm.types.isEmpty {
-                    ErrorCard(message: err) {
-                        if let profile = selectedProfile {
-                            vm.load(profile: profile)
-                        }
-                    }
-                } else if vm.types.isEmpty {
-                    emptyTypesView
-                } else {
-                    typesList
-                }
-            }
-        }
-        .task(id: selectedProfile?.id ?? "") {
-            if let profile = selectedProfile {
-                vm.load(profile: profile)
             }
         }
     }
@@ -195,36 +151,6 @@ struct AutomataView: View {
         .accessibilityLabel("Select server profile")
     }
 
-    // ── Types list ────────────────────────────────────────────────────────
-
-    private var typesList: some View {
-        List {
-            ForEach(vm.types, id: \.id) { type_ in
-                AutomataTypeRow(automataType: type_)
-                    .listRowBackground(DatawatchColors.surface)
-                    .listRowSeparatorTint(DatawatchColors.border)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            if let profile = selectedProfile {
-                                vm.delete(id: type_.id, profile: profile) {}
-                            }
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .tint(DatawatchColors.error)
-                    }
-            }
-        }
-        .listStyle(.plain)
-        .background(DatawatchColors.background)
-        .scrollContentBackground(.hidden)
-        .refreshable {
-            if let profile = selectedProfile {
-                vm.load(profile: profile)
-            }
-        }
-    }
-
     // ── Empty states ──────────────────────────────────────────────────────
 
     private var noProfilesView: some View {
@@ -237,105 +163,13 @@ struct AutomataView: View {
             Text("No server connected")
                 .font(DatawatchFonts.titleMedium)
                 .foregroundStyle(DatawatchColors.onSurface)
-            Text("Connect a server in Settings to manage automata types.")
+            Text("Connect a server in Settings to manage automata.")
                 .font(DatawatchFonts.bodyMedium)
                 .foregroundStyle(DatawatchColors.onSurfaceMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var emptyTypesView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(.largeTitle))
-                .imageScale(.large)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .accessibilityHidden(true)
-            Text("No automata types")
-                .font(DatawatchFonts.titleMedium)
-                .foregroundStyle(DatawatchColors.onSurface)
-            Text("Tap + to register the first automata type.")
-                .font(DatawatchFonts.bodyMedium)
-                .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-// ── Automata type row ──────────────────────────────────────────────────────
-
-private struct AutomataTypeRow: View {
-    let automataType: AutomataTypeDto
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(swatchColor(for: automataType.color))
-                .frame(width: 14, height: 14)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(automataType.label.isEmpty ? automataType.id : automataType.label)
-                    .font(DatawatchFonts.titleMedium)
-                    .foregroundStyle(DatawatchColors.onSurface)
-                    .lineLimit(1)
-
-                if let desc = automataType.description_, !desc.isEmpty {
-                    Text(desc)
-                        .font(DatawatchFonts.bodyMedium)
-                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                        .lineLimit(2)
-                }
-
-                Text(automataType.id)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityDescription)
-    }
-
-    private var accessibilityDescription: String {
-        var parts = [automataType.label.isEmpty ? automataType.id : automataType.label]
-        if let desc = automataType.description_, !desc.isEmpty {
-            parts.append(desc)
-        }
-        return parts.joined(separator: ", ")
-    }
-
-    /// Parse hex string (#RRGGBB) or CSS color name → SwiftUI Color.
-    private func swatchColor(for color: String?) -> Color {
-        guard let color, !color.isEmpty else { return DatawatchColors.primary }
-        if color.hasPrefix("#"), color.count == 7,
-           let hex = UInt32(color.dropFirst(), radix: 16) {
-            return Color(hex: hex)
-        }
-        switch color.lowercased() {
-        case "red":          return Color.red
-        case "green":        return Color.green
-        case "blue":         return Color.blue
-        case "yellow":       return Color.yellow
-        case "orange":       return Color.orange
-        case "purple":       return Color.purple
-        case "pink":         return Color.pink
-        case "cyan", "teal": return Color.cyan
-        case "white":        return Color.white
-        case "gray", "grey": return Color.gray
-        case "black":        return Color.black
-        case "indigo":       return Color.indigo
-        case "mint":         return Color.mint
-        case "brown":        return Color.brown
-        default:             return DatawatchColors.primary
-        }
     }
 }
 

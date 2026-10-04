@@ -3557,6 +3557,61 @@ public class RestTransport(
             }.body()
         }
 
+    // ---- iOS Settings parity ----
+
+    override suspend fun pluginAction(
+        name: String,
+        action: String,
+    ): Result<Unit> =
+        request {
+            client.post("${profile.baseUrl}/api/plugins/${iosPathPart(name)}/${iosPathPart(action)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    override suspend fun reloadPlugins(): Result<Int> =
+        request {
+            val o: kotlinx.serialization.json.JsonObject =
+                client.post("${profile.baseUrl}/api/plugins/reload") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            (o["count"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: 0
+        }
+
+    override suspend fun listFederationPeers(): Result<List<kotlinx.serialization.json.JsonObject>> =
+        request {
+            val el: kotlinx.serialization.json.JsonElement =
+                client.get("${profile.baseUrl}/api/federation/peers") {
+                    bearer()?.let { header(HttpHeaders.Authorization, it) }
+                }.body()
+            (el as? kotlinx.serialization.json.JsonArray)?.mapNotNull { it as? kotlinx.serialization.json.JsonObject }.orEmpty()
+        }
+
+    override suspend fun deleteFederationPeer(name: String): Result<Unit> =
+        request {
+            client.delete("${profile.baseUrl}/api/federation/peers/${iosPathPart(name)}") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }
+            Unit
+        }
+
+    /** RFC 3986 path-segment encoding (unreserved chars pass through). */
+    private fun iosPathPart(s: String): String =
+        buildString {
+            s.encodeToByteArray().forEach { b ->
+                val c = b.toInt() and 0xFF
+                val ch = c.toChar()
+                if (ch.isLetterOrDigit() && c < 0x80 || ch == '-' || ch == '.' || ch == '_' || ch == '~') {
+                    append(ch)
+                } else {
+                    append('%')
+                    append("0123456789ABCDEF"[c shr 4])
+                    append("0123456789ABCDEF"[c and 0x0F])
+                }
+            }
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =
