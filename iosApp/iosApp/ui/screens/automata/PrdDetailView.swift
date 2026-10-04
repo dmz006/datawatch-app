@@ -128,6 +128,7 @@ struct PrdDetailView: View {
                     specSection(spec)
                 }
                 storiesSection
+                PrdScanCard(profile: vm.profile, prdId: prd.id) { _ in Task { await vm.refresh() } }
                 if let err = vm.error {
                     Text(err)
                         .font(DatawatchFonts.labelSmall)

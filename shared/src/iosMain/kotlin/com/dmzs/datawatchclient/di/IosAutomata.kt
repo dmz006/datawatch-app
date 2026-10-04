@@ -419,3 +419,63 @@ public object IosPrdSettings {
         }
     }
 }
+
+/**
+ * PRD security scan + rule proposals (parity B16; PWA prd_btn_run_scan /
+ * prd_btn_run_rules, Android ScanResultCard). `load` returns null when the
+ * PRD has never been scanned.
+ */
+public object IosPrdScan {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun load(
+        profile: ServerProfile,
+        prdId: String,
+        onResult: (com.dmzs.datawatchclient.transport.dto.ScanResultDto?) -> Unit,
+    ) {
+        scope.launch { onResult(IosServiceLocator.transportFor(profile).getScanResult(prdId).getOrNull()) }
+    }
+
+    public fun run(
+        profile: ServerProfile,
+        prdId: String,
+        onSuccess: (com.dmzs.datawatchclient.transport.dto.ScanResultDto) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).triggerScan(prdId).fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError("Scan failed — ${it.message ?: "unknown error"}") },
+            )
+        }
+    }
+
+    public fun createFixPrd(
+        profile: ServerProfile,
+        prdId: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).createFixPrd(prdId).fold(
+                onSuccess = { onSuccess(it.id) },
+                onFailure = { onError("Fix PRD failed — ${it.message ?: "unknown error"}") },
+            )
+        }
+    }
+
+    /** Proposed rules as display text (text, else diff). */
+    public fun proposeRules(
+        profile: ServerProfile,
+        prdId: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).proposeRules(prdId).fold(
+                onSuccess = { onSuccess(it.text.ifBlank { it.diff ?: "" }) },
+                onFailure = { onError("Propose rules failed — ${it.message ?: "unknown error"}") },
+            )
+        }
+    }
+}
