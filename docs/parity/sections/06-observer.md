@@ -28,7 +28,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | token | GPU temp thresholds ≥80 error / ≥60 warning | ✓ | ✓ (PeerResources/grid) | ✓ tempTone | aligned | | |
 | element | Statistics panel bars: CPU Load (load/cores), Memory, Disk, Swap (if >0), GPU util+temp, GPU VRAM | ✓ renderStatsData app.js:20473–20486 | ✓ SystemStatisticsCard | ✓ IosObserver.buildStatsPanel bars | aligned | | |
 | token | Statistics panel thresholds: CPU >80/>50, Memory >85, Disk >90, GPU >80 | ✓ app.js:20475–20486 | ~ pctColor ≥90/≥70 for all (StatsScreen:860) | ✓ PWA per-metric values (D29a) | misaligned | D29a | iOS = PWA; Android ≥90/≥70 |
-| element | GPU probe failed card (red, grid-column 1/-1) | ✓ app.js:20492 | ✗ | ✓ GpuProbeFailedCard | android-missing | | shows when probe exists but last poll failed |
+| element | GPU probe failed card (red, grid-column 1/-1) | ✓ app.js:20492 | ✓ `GpuProbeFailedCard` (red border, monospace error) | ✓ GpuProbeFailedCard | aligned | | shows when probe exists but last poll failed · Android done 2026-10-04 (android-missing sweep) |
 | element | Network card "(datawatch)" vs "(system)" label by ebpf_active, ↓ Download / ↑ Upload | ✓ app.js:20498 | ✓ NetworkCard | ✓ | aligned | | |
 | element | Daemon card: Memory RSS, Uptime (h m / m s) | ✓ app.js:20507 | ✓ DaemonCard | ✓ RSS, goroutines, FDs, uptime h m / m s | aligned | | |
 | element | Infrastructure card | ✓ app.js:20519 | ✓ InfrastructureCard | ✓ | aligned | | |
@@ -52,9 +52,9 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | interaction | Peer row tap → compute node / peer detail | ✗ (snapshot modal instead) | ✓ onClick → compute node detail (v1.23.66) | ✗ (D55a: snapshot sheet) | pwa-missing | D55a | Android navigates; PWA opens modal |
 | element | Observer peers block: filter pills with counts (all/free/attached…) | ✓ loadObserverPeers app.js:20048 | ~ FederatedPeersCard (observer_free string) | ✓ All/Agents/Standalone/Cluster + counts, cs_peer_filter | misaligned | | verify Android pill set; Android to verify |
 | interaction | Group-by-compute-node toggle | ✓ togglePeerGroupByNode | ✓ peer_group_by_node | ✓ meta-peers buckets | aligned | | |
-| interaction | "Cross-host view" button → showCrossHostView() | ✓ app.js:20061 | ✗ verify | ✗ | android-missing | | iOS ✗ too — not in B22 scope |
+| interaction | "Cross-host view" button → showCrossHostView() | ✓ app.js:20061 | ✓ ↔ Cross-host view dialog (`/api/observer/envelopes/all-peers`, 🔗 cross tags) | ✗ | ios-missing | | iOS ✗ too — not in B22 scope · Android done 2026-10-04 (android-missing sweep) |
 | interaction | 📊 Snapshot button → showObserverPeerSnapshot modal | ✓ | ✗ (tap navigates instead) | ✓ PeerSnapshotSheet (envelopes; no per-envelope process drill-down) | misaligned | D55a | |
-| interaction | × Remove peer (rotates token) with confirm | ✓ removeObserverPeer | ✗ verify | ✓ alert confirm | android-missing | D55a | |
+| interaction | × Remove peer (rotates token) with confirm | ✓ removeObserverPeer | ✓ × with confirm → `removeObserverPeer`, result to dock | ✓ alert confirm | aligned | D55a | Android done 2026-10-04 (android-missing sweep) |
 | element | Peer dot colors by last push: green <15 s / amber <60 s / red ≥60 s / grey never | ✓ | ✓ FederatedPeersCard Canvas + relative age (v1.23.4) | ✓ | aligned | | |
 | element | Shape badge A/B/C (agent/standalone/cluster) | ✓ | ~ verify | ✓ | misaligned | | Android to verify |
 | string | Empty: "no peers registered" + deploy hint `datawatch-stats --datawatch <url> --name <peer>` | ✓ app.js:20066 | ~ obs_peer_no_peers (no hint) | ✓ with deploy hint | misaligned | | |
@@ -82,7 +82,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | interaction | Select-all checkbox + "Delete selected" | ✓ | ~ verify | ✓ | misaligned | | Android to verify |
 | interaction | Edit (pencil) via browser prompt() ×2 | ✓ editSchedulePrompt | ~ sheet/dialog (IconButton ×5) | ✓ alert with 2 TextFields (prompt equivalent) | misaligned | needs-decision (D9) | PWA uses native prompt() |
 | interaction | Delete (🗑) → toast "Deleted" | ✓ | ✓ | ✓ | aligned | | |
-| interaction | Pagination Prev/Next | ✓ settingsPagination.schedules | ✗ verify | ✓ | android-missing | | |
+| interaction | Pagination Prev/Next | ✓ settingsPagination.schedules | ✓ SchedulesCard 10/page Prev/Next | ✓ | aligned | | already present (verified 2026-10-04) |
 | **7.5 Global Cooldown** | | | | | | | |
 | element | Status: active until / none | ✓ loadCooldownStatus | ✓ CooldownCard | ✓ | aligned | | |
 | interaction | "Set for:" 5m / 15m / 30m / 1h buttons | ✓ | ~ verify (has "Reason (optional)" field) | ✓ 15m/30m/1h/4h/8h/24h + reason | misaligned | | Android adds reason field PWA lacks; PWA actually offers 15m–24h + reason (app.js:25398) |
@@ -92,11 +92,11 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | "No sessions in range." | ✓ | ~ verify | ✓ | misaligned | | Android to verify |
 | **7.7 Audit Log** | | | | | | | |
 | element | Filters actor / action + limit 5/20/50/100 + Load | ✓ loadAuditPanel | ✓ AuditLogCard ("Actor", "Action", "Load") | ✓ | aligned | | |
-| element | Pipelines live block (8 s, Cancel button) rendered under audit | ✓ loadPipelinesPanel app.js:25656 | ✗ verify | ✗ | android-missing | | iOS ✗ too — not in B25 scope |
+| element | Pipelines live block (8 s, Cancel button) rendered under audit | ✓ loadPipelinesPanel app.js:25656 | ✓ `PipelineManagerCard(liveRefreshMs = 8 s)` under audit log | ✗ | ios-missing | | iOS ✗ too — not in B25 scope · Android done 2026-10-04 (android-missing sweep) |
 | **7.8 Knowledge Graph** | | | | | | | |
 | element | Entity query input + Query; triples result | ✓ loadKgPanel `/api/memory/kg/query` | ✓ KnowledgeGraphCard ("Entity", "Query") | ✓ | aligned | | |
 | interaction | Add triple (Subject/Predicate/Object) → toast | ✓ `/api/memory/kg/add` | ✓ ("Subject","Predicate","Object","Add triple") | ✓ | aligned | | |
-| element | Identity panel (`/api/identity`) under KG | ✓ app.js:25751 | ✗ verify | ✗ | android-missing | | iOS ✗ too |
+| element | Identity panel (`/api/identity`) under KG | ✓ app.js:25751 | ✓ `IdentityCard` under KG | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep) |
 | **7.9 Daemon Log** | | | | | | | |
 | element | Monospace panel, dark bg, max-height 300 | ✓ | ✓ DaemonLogCard | ✓ | aligned | | |
 | interaction | Newest / Older (50 lines, offset counter) | ✓ loadDaemonLog | ✓ "Newer"/"Older"/"Refresh" | ✓ Newest/Older | misaligned | | button labels differ (Newest vs Newer+Refresh) |
@@ -112,7 +112,7 @@ Spec §7 is stale: live PWA adds per-system grid (BL379), eBPF/network, plugins,
 | string | Empty copy "Add a server in Settings to monitor metrics." | n/a | "No enabled server. Add or enable one in Settings." | ✓ | misaligned | | unify copy |
 
 ## Coverage
-rows: 93 · aligned: 46 · ios-missing: 2 · android-missing: 9 · pwa-missing: 6 · misaligned: 28 · n/a: 2
+rows: 93 · aligned: 49 · ios-missing: 5 · android-missing: 3 · pwa-missing: 6 · misaligned: 28 · n/a: 2
 
 ## Decisions needed
 _Resolved for iOS (B20–B25): 1→D26a, 2→D27a, 3→D28a, 4→D54b, 5→D29a, 6→D78a, 7→D55a, 8→D89b, 10→D30a. Android rows still carry the old behaviour where noted._
