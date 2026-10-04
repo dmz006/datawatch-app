@@ -6,14 +6,22 @@ import DatawatchShared
 @MainActor
 final class AlertsViewModel: ObservableObject {
     @Published var alerts: [DatawatchShared.Alert] = []
+    /// Live session list — classifies alerts into Active / Historical (PWA: by session liveness).
+    @Published private(set) var sessions: [DwSession] = []
     @Published var unreadCount: Int = 0 {
         didSet { UserDefaults.standard.set(unreadCount, forKey: "dw.alert.badge") }
     }
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
-    @Published var filterText: String = ""
-    @Published var severityFilter: AlertSeverityFilter = .all
-    @Published var selectedTab: AlertTab = .active
+    @Published var filterText: String = "" { didSet { persistTabState() } }
+    @Published var severityFilter: AlertSeverityFilter = .all { didSet { persistTabState() } }
+    @Published var sortMode: SortMode = .session { didSet { persistTabState() } }
+    @Published var selectedTab: AlertTab = .active {
+        didSet {
+            UserDefaults.standard.set(selectedTab.rawValue, forKey: "dw.alerts.activeTab")
+            loadTabState()
+        }
+    }
 
     enum AlertTab: String, CaseIterable {
         case active    = "Active"
@@ -29,13 +37,58 @@ final class AlertsViewModel: ObservableObject {
         case info = "Info"
     }
 
-    /// Alerts for the currently selected tab (before severity/text filtering).
-    var tabAlerts: [DatawatchShared.Alert] {
-        switch selectedTab {
-        case .active:     return alerts.filter { !$0.read && $0.sessionId != nil }
-        case .historical: return alerts.filter { $0.read && $0.sessionId != nil }
-        case .system:     return alerts.filter { $0.sessionId == nil }
+    /// PWA `setAlertsSort`: grouped by session (default) or flat chronological.
+    enum SortMode: String { case session, chrono }
+
+    /// One by-session card (PWA `renderSessionCard`). `session == nil` with `isSystem` = System card.
+    struct AlertGroup: Identifiable {
+        let id: String
+        let session: DwSession?
+        let isSystem: Bool
+        let alerts: [DatawatchShared.Alert]
+    }
+
+    private var loadingTabState = false
+
+    init() {
+        if let raw = UserDefaults.standard.string(forKey: "dw.alerts.activeTab"),
+           let tab = AlertTab(rawValue: raw) {
+            selectedTab = tab
         }
+        loadTabState()
+    }
+
+    // ── Session lookup / classification ──────────────────────────────────
+
+    func session(for alert: DatawatchShared.Alert) -> DwSession? {
+        guard let sid = alert.sessionId, !sid.isEmpty else { return nil }
+        return sessions.first { $0.fullId == sid || $0.id == sid }
+    }
+
+    private func isDone(_ s: DwSession) -> Bool {
+        s.state == .completed || s.state == .killed || s.state == .error
+    }
+
+    /// PWA: a session alert is Active only while its session is in the live list and not finished.
+    private func isActive(_ alert: DatawatchShared.Alert) -> Bool {
+        guard let s = session(for: alert) else { return false }
+        return !isDone(s)
+    }
+
+    private func belongs(_ alert: DatawatchShared.Alert, to tab: AlertTab) -> Bool {
+        let hasSession = !(alert.sessionId ?? "").isEmpty
+        switch tab {
+        case .system:     return !hasSession
+        case .active:     return hasSession && isActive(alert)
+        case .historical: return hasSession && !isActive(alert)
+        }
+    }
+
+    /// Alerts for the currently selected tab (before severity/text filtering).
+    var tabAlerts: [DatawatchShared.Alert] { alerts.filter { belongs($0, to: selectedTab) } }
+
+    func isPrompt(_ a: DatawatchShared.Alert) -> Bool {
+        a.type.contains("input") || a.type.contains("prompt")
     }
 
     var filteredAlerts: [DatawatchShared.Alert] {
@@ -49,34 +102,81 @@ final class AlertsViewModel: ObservableObject {
         }
         switch severityFilter {
         case .all: break
-        case .prompt:  result = result.filter { $0.type.contains("input") || $0.type.contains("prompt") }
+        case .prompt:  result = result.filter { isPrompt($0) }
         case .error:   result = result.filter { $0.severity == .error }
         case .warning: result = result.filter { $0.severity == .warning }
         case .info:    result = result.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }
         }
-        return result
+        return result.sorted { $0.createdAt.toEpochMilliseconds() > $1.createdAt.toEpochMilliseconds() }
     }
 
-    func tabCount(for tab: AlertTab) -> Int {
-        switch tab {
-        case .active:     return alerts.filter { !$0.read && $0.sessionId != nil }.count
-        case .historical: return alerts.filter { $0.read && $0.sessionId != nil }.count
-        case .system:     return alerts.filter { $0.sessionId == nil }.count
+    /// By-session cards: waiting → running → others (PWA stateRank), System card last.
+    var groups: [AlertGroup] {
+        var bySession: [String: [DatawatchShared.Alert]] = [:]
+        var system: [DatawatchShared.Alert] = []
+        for a in filteredAlerts {
+            if let sid = a.sessionId, !sid.isEmpty {
+                bySession[sid, default: []].append(a)
+            } else {
+                system.append(a)
+            }
         }
+        func rank(_ g: AlertGroup) -> Int {
+            switch g.session?.state {
+            case .some(.waiting): return 0
+            case .some(.running): return 1
+            default: return 2
+            }
+        }
+        var out = bySession.map { sid, list in
+            AlertGroup(id: sid, session: sessions.first { $0.fullId == sid || $0.id == sid }, isSystem: false, alerts: list)
+        }
+        out.sort { l, r in
+            let lr = rank(l), rr = rank(r)
+            if lr != rr { return lr < rr }
+            return (l.alerts.first?.createdAt.toEpochMilliseconds() ?? 0) > (r.alerts.first?.createdAt.toEpochMilliseconds() ?? 0)
+        }
+        if !system.isEmpty { out.append(AlertGroup(id: "__system__", session: nil, isSystem: true, alerts: system)) }
+        return out
     }
+
+    func tabCount(for tab: AlertTab) -> Int { alerts.filter { belongs($0, to: tab) }.count }
 
     func chipCount(for filter: AlertSeverityFilter) -> Int {
         let base = tabAlerts
         switch filter {
         case .all:     return base.count
-        case .prompt:  return base.filter { $0.type.contains("input") || $0.type.contains("prompt") }.count
+        case .prompt:  return base.filter { isPrompt($0) }.count
         case .error:   return base.filter { $0.severity == .error }.count
         case .warning: return base.filter { $0.severity == .warning }.count
         case .info:    return base.filter { $0.severity != .error && $0.severity != .warning && !$0.type.contains("input") }.count
         }
     }
 
-    private var profile: ServerProfile?
+    // ── Per-tab persisted filter state (PWA cs_alerts_tab_state_<tab>) ──
+
+    private func tabKey(_ tab: AlertTab) -> String { "dw.alerts.tab.\(tab.rawValue)" }
+
+    private func loadTabState() {
+        loadingTabState = true
+        defer { loadingTabState = false }
+        let d = UserDefaults.standard.dictionary(forKey: tabKey(selectedTab)) ?? [:]
+        filterText = d["search"] as? String ?? ""
+        severityFilter = AlertSeverityFilter(rawValue: d["chip"] as? String ?? "") ?? .all
+        sortMode = SortMode(rawValue: d["sort"] as? String ?? "") ?? .session
+    }
+
+    private func persistTabState() {
+        guard !loadingTabState else { return }
+        UserDefaults.standard.set(
+            ["search": filterText, "chip": severityFilter.rawValue, "sort": sortMode.rawValue],
+            forKey: tabKey(selectedTab)
+        )
+    }
+
+    // ── Loading ──────────────────────────────────────────────────────────
+
+    private(set) var profile: ServerProfile?
     private var pollTask: Task<Void, Never>? = nil
     private var inFlight = false
     private static let pollInterval: Duration = .seconds(5)
@@ -91,6 +191,7 @@ final class AlertsViewModel: ObservableObject {
         } else {
             stopPolling()
             alerts = []
+            sessions = []
             unreadCount = 0
             error = nil
         }
@@ -115,41 +216,27 @@ final class AlertsViewModel: ObservableObject {
         pollTask = nil
     }
 
-    private func refreshAsync() async {
+    func refresh() {
+        if alerts.isEmpty { isLoading = true }
+        Task { await refreshAsync() }
+    }
+
+    func refreshAsync() async {
         guard let profile, !inFlight else { return }
         inFlight = true
         defer { inFlight = false }
+        async let alertsResult = ServiceLocatorAsync.listAlerts(profile: profile)
+        async let sessionsResult = ServiceLocatorAsync.listSessions(profile: profile)
         do {
-            let result = try await ServiceLocatorAsync.listAlerts(profile: profile)
+            let result = try await alertsResult
             alerts = result.alerts
             unreadCount = result.unreadCount
             error = nil
         } catch {
             self.error = error.localizedDescription
         }
+        if let live = try? await sessionsResult { sessions = live }
         isLoading = false
-    }
-
-    func refresh() {
-        guard let profile else { return }
-        isLoading = true
-        error = nil
-        IosServiceLocator.shared.listAlerts(
-            profile: profile,
-            onSuccess: { [weak self] view in
-                DispatchQueue.main.async {
-                    self?.alerts = view.alerts
-                    self?.unreadCount = Int(view.unreadCount)
-                    self?.isLoading = false
-                }
-            },
-            onError: { [weak self] msg in
-                DispatchQueue.main.async {
-                    self?.error = msg
-                    self?.isLoading = false
-                }
-            }
-        )
     }
 
     /// Mark an alert as read on server and remove it locally.
@@ -188,6 +275,9 @@ final class AlertsViewModel: ObservableObject {
 struct AlertsView: View {
     @EnvironmentObject private var store: ServerProfileStore
     @StateObject private var vm = AlertsViewModel()
+    @State private var collapsed: Set<String> = []
+    @State private var replying: String? = nil
+    @State private var savedCommands: [IosSavedCommand] = []
 
     var body: some View {
         Group {
@@ -220,6 +310,11 @@ struct AlertsView: View {
         }
         .onAppear {
             vm.load(from: store.profiles)
+            if let p = store.profiles.first {
+                IosQuickCommands.shared.loadSaved(profile: p) { list in
+                    DispatchQueue.main.async { savedCommands = list }
+                }
+            }
         }
         .onDisappear {
             vm.stopPolling()
@@ -305,6 +400,10 @@ struct AlertsView: View {
                     .font(DatawatchFonts.bodyMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
                 Spacer()
+                controlBtn(vm.sortMode == .session ? "⏷ by session" : "🕒 chronological") {
+                    vm.sortMode = vm.sortMode == .session ? .chrono : .session
+                }
+                .accessibilityLabel("Toggle sort: by session or chronological")
                 controlBtn("✕") { vm.dismissAll() }
                     .accessibilityLabel("Dismiss all")
                 controlBtn("🔕") { vm.dismissAll() }
@@ -417,28 +516,193 @@ struct AlertsView: View {
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                } else {
+                } else if vm.sortMode == .chrono {
                     ForEach(vm.filteredAlerts, id: \.id) { alert in
-                        AlertRow(alert: alert)
-                            .listRowBackground(DatawatchColors.surface)
-                            .listRowSeparatorTint(DatawatchColors.border)
-                            .listRowInsets(EdgeInsets())
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    vm.dismiss(alert: alert)
-                                } label: {
-                                    Label("Dismiss", systemImage: "xmark.circle")
+                        VStack(alignment: .leading, spacing: 0) {
+                            sessionLabel(for: vm.session(for: alert), isSystem: (alert.sessionId ?? "").isEmpty, fallbackId: alert.sessionId)
+                                .padding(.horizontal, 12)
+                                .padding(.top, 6)
+                            alertRow(alert)
+                        }
+                        .listRowBackground(DatawatchColors.surface)
+                        .listRowSeparatorTint(DatawatchColors.border)
+                        .listRowInsets(EdgeInsets())
+                    }
+                } else {
+                    ForEach(vm.groups) { group in
+                        Section {
+                            if !collapsed.contains(group.id) {
+                                ForEach(Array(group.alerts.enumerated()), id: \.element.id) { index, alert in
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        alertRow(alert)
+                                        if index == 0, group.session?.state == .waiting, let s = group.session {
+                                            quickReply(for: s)
+                                                .padding(.horizontal, 12)
+                                                .padding(.bottom, 8)
+                                        }
+                                    }
+                                    .listRowBackground(DatawatchColors.surface)
+                                    .listRowSeparatorTint(DatawatchColors.border)
+                                    .listRowInsets(EdgeInsets())
                                 }
-                                .tint(DatawatchColors.error)
                             }
+                        } header: {
+                            groupHeader(group)
+                        }
                     }
                 }
             }
             .listStyle(.plain)
             .background(DatawatchColors.background)
             .scrollContentBackground(.hidden)
-            .refreshable { vm.refresh() }
+            .refreshable { await vm.refreshAsync() }
         }
+    }
+
+    private func alertRow(_ alert: DatawatchShared.Alert) -> some View {
+        AlertRow(alert: alert)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    vm.dismiss(alert: alert)
+                } label: {
+                    Label("Dismiss", systemImage: "xmark.circle")
+                }
+                .tint(DatawatchColors.error)
+            }
+    }
+
+    // ── By-session card header (PWA renderSessionCard) ─────────────────────
+
+    private func groupHeader(_ group: AlertsViewModel.AlertGroup) -> some View {
+        let promptCount = group.alerts.filter { vm.isPrompt($0) }.count
+        let last = group.alerts.first.map { alertClock($0) } ?? "—"
+        return HStack(spacing: 8) {
+            Image(systemName: collapsed.contains(group.id) ? "chevron.right" : "chevron.down")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+            sessionLabel(for: group.session, isSystem: group.isSystem, fallbackId: group.id)
+            if let state = stateText(group.session) {
+                Text(state.text)
+                    .font(DatawatchFonts.labelSmall)
+                    .foregroundStyle(state.color)
+            }
+            HStack(spacing: 4) {
+                Text("\(group.alerts.count) \(group.alerts.count == 1 ? "alert" : "alerts")")
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                if promptCount > 0 {
+                    Text("· 🟡 \(promptCount)")
+                        .fontWeight(.bold)
+                        .foregroundStyle(DatawatchColors.warning)
+                }
+            }
+            .font(DatawatchFonts.labelSmall)
+            Spacer(minLength: 4)
+            Text("last \(last)")
+                .font(DatawatchFonts.terminalSmall)
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DatawatchColors.surface2)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if collapsed.contains(group.id) { collapsed.remove(group.id) } else { collapsed.insert(group.id) }
+        }
+        .textCase(nil)
+        .listRowInsets(EdgeInsets())
+    }
+
+    /// Session name as a link to the session (PWA sessLink); plain text for System/unknown.
+    @ViewBuilder
+    private func sessionLabel(for session: DwSession?, isSystem: Bool, fallbackId: String?) -> some View {
+        if isSystem {
+            Text("System")
+                .font(DatawatchFonts.bodyMedium.weight(.bold))
+                .foregroundStyle(DatawatchColors.onSurface)
+        } else if let session, let profile = vm.profile {
+            NavigationLink {
+                SessionDetailView(session: session, profile: profile)
+            } label: {
+                Text(session.name?.isEmpty == false ? session.name! : session.id)
+                    .font(DatawatchFonts.bodyMedium.weight(.bold))
+                    .foregroundStyle(DatawatchColors.secondary)
+                    .underline()
+                    .lineLimit(1)
+            }
+            .buttonStyle(.borderless)
+        } else {
+            Text((fallbackId ?? "").components(separatedBy: "-").last ?? "")
+                .font(DatawatchFonts.bodyMedium.weight(.bold))
+                .foregroundStyle(DatawatchColors.onSurfaceMuted)
+        }
+    }
+
+    private func stateText(_ session: DwSession?) -> (text: String, color: Color)? {
+        guard let s = session else { return nil }
+        switch s.state {
+        case .waiting: return ("🟠 waiting input", DatawatchColors.warning)
+        case .running: return ("🟢 running", DatawatchColors.success)
+        case .completed: return ("✅ complete", DatawatchColors.onSurfaceMuted)
+        case .killed: return ("✅ killed", DatawatchColors.onSurfaceMuted)
+        case .error: return ("✅ failed", DatawatchColors.onSurfaceMuted)
+        default: return nil
+        }
+    }
+
+    private func alertClock(_ a: DatawatchShared.Alert) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(a.createdAt.toEpochMilliseconds()) / 1000)
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f.string(from: date)
+    }
+
+    // ── Quick reply on the latest alert of a waiting session ─────────────
+
+    private func quickReply(for session: DwSession) -> some View {
+        Menu {
+            Button("approve") { sendReply("yes", to: session) }
+            Button("reject") { sendReply("no", to: session) }
+            Button("continue") { sendReply("continue", to: session) }
+            Button("skip") { sendReply("skip", to: session) }
+            Button("ESC") { sendReply("__esc__", to: session) }
+            if !savedCommands.isEmpty {
+                Section("Saved") {
+                    ForEach(savedCommands, id: \.name) { cmd in
+                        Button(cmd.name) { sendReply(cmd.command, to: session) }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if replying == session.id { ProgressView().controlSize(.mini) }
+                Text("Quick reply…")
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+            }
+            .font(DatawatchFonts.labelSmall)
+            .foregroundStyle(DatawatchColors.primary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(DatawatchColors.primary.opacity(0.12), in: Capsule())
+        }
+        .disabled(replying != nil)
+    }
+
+    private func sendReply(_ value: String, to session: DwSession) {
+        guard let profile = vm.profile else { return }
+        replying = session.id
+        IosQuickCommands.shared.send(
+            profile: profile,
+            session: session,
+            value: value,
+            onSuccess: {
+                DispatchQueue.main.async {
+                    replying = nil
+                    Task { await vm.refreshAsync() }
+                }
+            },
+            onError: { _ in DispatchQueue.main.async { replying = nil } }
+        )
     }
 }
 
