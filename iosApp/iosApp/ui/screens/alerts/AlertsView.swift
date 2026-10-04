@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import DatawatchShared
 
 // ── ViewModel ─────────────────────────────────────────────────────────────
@@ -9,7 +10,17 @@ final class AlertsViewModel: ObservableObject {
     /// Live session list — classifies alerts into Active / Historical (PWA: by session liveness).
     @Published private(set) var sessions: [DwSession] = []
     @Published var unreadCount: Int = 0 {
-        didSet { UserDefaults.standard.set(unreadCount, forKey: "dw.alert.badge") }
+        didSet { publishBadge() }
+    }
+    /// D61a watched-badge filter: once any session is watched, the tab / bell badge
+    /// counts only watched sessions' unread alerts (Android watchedAlertCount).
+    private var watchSink: AnyCancellable? = nil
+
+    func publishBadge() {
+        let badge: Int = LocalSessionPrefs.badgeCount(
+            serverUnread: unreadCount, alerts: alerts, sessions: sessions, profileId: profile?.id
+        )
+        UserDefaults.standard.set(badge, forKey: "dw.alert.badge")
     }
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
@@ -56,6 +67,9 @@ final class AlertsViewModel: ObservableObject {
             selectedTab = tab
         }
         loadTabState()
+        watchSink = LocalSessionPrefs.shared.$revision.dropFirst().sink { [weak self] _ in
+            Task { @MainActor [weak self] in self?.publishBadge() }
+        }
     }
 
     // ── Session lookup / classification ──────────────────────────────────
@@ -236,6 +250,7 @@ final class AlertsViewModel: ObservableObject {
             self.error = error.localizedDescription
         }
         if let live = try? await sessionsResult { sessions = live }
+        publishBadge()
         isLoading = false
     }
 

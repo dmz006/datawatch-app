@@ -33,6 +33,16 @@ struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     /// PWA output tab bar: "tmux" (terminal) or "status".
     @State private var detailTab = "tmux"
+    /// D67a: last-used output tab persists across sessions (Android chat_mode pref).
+    @AppStorage("dw.session.detail.tab") private var savedDetailTab = "tmux"
+    /// D61a watch toggle.
+    @ObservedObject private var localPrefs = LocalSessionPrefs.shared
+    /// D67a rate-limit notice + hooks-installed toast.
+    @State private var rateLimitShown = false
+    @State private var rateRetryAt: Date? = nil
+    @State private var toast: String? = nil
+    /// D69a terminal search / copy strip.
+    @State private var showSearch = false
     /// Status tab sub-tabs (PWA switchStatusSubtab): "status" | "stats".
     @State private var statusSubtab = "status"
     @StateObject private var terminal = TerminalController()
@@ -50,7 +60,13 @@ struct SessionDetailView: View {
             VStack(spacing: 0) {
                 metadataBar
                 detailTabBar
+                if rateLimitShown && !isTerminalState {
+                    RateLimitNotice(retryAt: rateRetryAt) { rateLimitShown = false }
+                }
                 if detailTab == "tmux" && !isChatMode { terminalFontBar }
+                if showSearch && detailTab == "tmux" && !isChatMode {
+                    TerminalSearchBar(controller: terminal) { showSearch = false }
+                }
                 ZStack {
                     if isChatMode {
                         ChatTranscriptView(profile: profile, session: session)
@@ -108,6 +124,7 @@ struct SessionDetailView: View {
                             .foregroundStyle(DatawatchColors.onSurfaceMuted)
                     }
                     .accessibilityLabel("Timeline")
+                    watchButton
                     DocsLinkButton(profile: profile, anchor: "sessions")
                     if let resp = session.lastResponse, !resp.isEmpty {
                         Button { showLastResponse = true } label: {
@@ -149,21 +166,27 @@ struct SessionDetailView: View {
             LastResponseSheet(session: session, onDismiss: { showLastResponse = false })
         }
         .overlay(alignment: .top) {
-            if let errorMsg = killError {
-                Text(errorMsg)
-                    .font(DatawatchFonts.labelSmall)
-                    .foregroundStyle(DatawatchColors.error)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(DatawatchColors.surface)
-                    .cornerRadius(8)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .onTapGesture { killError = nil }
+            VStack(spacing: 6) {
+                if let errorMsg = killError {
+                    Text(errorMsg)
+                        .font(DatawatchFonts.labelSmall)
+                        .foregroundStyle(DatawatchColors.error)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(DatawatchColors.surface)
+                        .cornerRadius(8)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .onTapGesture { killError = nil }
+                }
+                if let toast { SessionToast(text: toast).onTapGesture { self.toast = nil } }
             }
         }
         .animation(.easeInOut, value: killError)
+        .animation(.easeInOut, value: toast)
+        .onChange(of: detailTab) { tab in savedDetailTab = tab }
         .onAppear {
+            applyDetailExtras()
             terminal.onAutoFontSize = { px in termFontSize = px }
             terminal.setMinCols(TerminalController.defaultMinCols(backend: session.backend))
             fetchMessagingBackend()
@@ -176,6 +199,45 @@ struct SessionDetailView: View {
             if voiceRecorder != nil {
                 recordingOverlay
             }
+        }
+    }
+
+    // ── App-only extras (D61a / D67a) ─────────────────────────────────────
+
+    private var isWatched: Bool {
+        _ = localPrefs.revision
+        return localPrefs.contains(.watchedSessions, profileId: profile.id, id: session.id)
+    }
+
+    /// D61a (Android SDS:404): watch toggle in the top bar.
+    private var watchButton: some View {
+        Button {
+            localPrefs.toggle(.watchedSessions, profileId: profile.id, id: session.id)
+        } label: {
+            Image(systemName: isWatched ? "bell.fill" : "bell.slash")
+                .foregroundStyle(isWatched ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted.opacity(0.5))
+        }
+        .accessibilityLabel(isWatched ? "Watching" : "Not watching")
+    }
+
+    private func applyDetailExtras() {
+        // Restore the persisted output tab when this session offers it.
+        if detailTabs.contains(where: { $0.0 == savedDetailTab }) { detailTab = savedDetailTab }
+        // Rate-limit notice: current state now, then live `rate_limited` events.
+        if session.state == .rateLimited { rateLimitShown = true }
+        terminal.onRateLimited = { retry in
+            DispatchQueue.main.async {
+                rateRetryAt = retry
+                rateLimitShown = true
+            }
+        }
+        // One-time hooks-installed toast for claude-code sessions (Android SDS:275).
+        let key = "dw.session.hook_toast." + session.id
+        if (session.backend ?? "").lowercased() == "claude-code" && !UserDefaults.standard.bool(forKey: key) {
+            UserDefaults.standard.set(true, forKey: key)
+            let path: String = session.taskSummary.map { String($0.prefix(30)) } ?? String(session.id.prefix(8))
+            toast = String(format: L("Hooks installed in %@/.claude/"), path)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { toast = nil }
         }
     }
 
@@ -540,6 +602,19 @@ struct SessionDetailView: View {
             }
             .accessibilityLabel("Fit terminal to width")
 
+            // D69a: search within the terminal buffer + copy selection / visible text.
+            Button {
+                showSearch.toggle()
+                if !showSearch { terminal.clearSearch() }
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(showSearch ? DatawatchColors.primary : DatawatchColors.onSurface)
+                    .frame(minWidth: 40, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(showSearch ? "Close search" : "Search terminal")
+
             if !isTerminalState {
                 Button {
                     toggleScrollMode()
@@ -584,6 +659,9 @@ struct SessionDetailView: View {
                     .frame(height: 2)
             } else {
                 Divider().background(DatawatchColors.border)
+            }
+            if isChatMode && detailTab == "tmux" {
+                ChatMemoryCmdBar { prefix in replyText = prefix }
             }
             keysStrip
             if isTranscribing {

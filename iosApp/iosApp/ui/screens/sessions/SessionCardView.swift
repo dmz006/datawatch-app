@@ -88,6 +88,11 @@ struct SessionCardView: View {
     var onToggleSelect: () -> Void = {}
     var onResponse: () -> Void = {}
     var onExpand: () -> Void = {}
+    /// D61a: watched sessions' alerts drive the badge once any session is watched.
+    var watched: Bool = false
+    var onWatchToggle: (() -> Void)? = nil
+    /// D62a: locally muted (swipe-to-mute) or server-reported muted.
+    var muted: Bool = false
 
     private var isDone: Bool { SessionStateStyle.isDone(session.state) }
     private var isWaiting: Bool { session.state == .waiting }
@@ -179,11 +184,21 @@ struct SessionCardView: View {
                 accentBadge(llm)
             }
             if session.agentId != nil { accentBadge("⬡ worker") }
-            if session.backend == "council-virtual" { accentBadge("🎭") }
+            if SessionCardView.isCouncil(session) { accentBadge("🎭").accessibilityLabel("Council session") }
             if showHost, let host = session.hostnamePrefix, !host.isEmpty { accentBadge(host) }
-            if session.muted {
-                Image(systemName: "bell.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
+            if muted || session.muted {
+                Image(systemName: "speaker.slash.fill").font(.system(size: 10)).foregroundStyle(DatawatchColors.onSurfaceMuted)
                     .accessibilityLabel("Muted")
+            }
+            if let onWatchToggle {
+                Button(action: onWatchToggle) {
+                    Image(systemName: watched ? "bell.fill" : "bell.slash")
+                        .font(.system(size: 11))
+                        .foregroundStyle(watched ? DatawatchColors.primary : DatawatchColors.onSurfaceMuted.opacity(0.5))
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(watched ? "Watching" : "Not watching")
+                .accessibilityHint("Watch this session to include its alerts in your badge count")
             }
             Spacer(minLength: 4)
             if session.lastResponse != nil {
@@ -287,6 +302,11 @@ struct SessionCardView: View {
             }
             .buttonStyle(.borderless)
         }
+    }
+
+    /// D64: Council virtual session (Android v0.74.0 S5-7 rule).
+    static func isCouncil(_ s: DwSession) -> Bool {
+        s.backend == "council-virtual" || s.fullId.hasPrefix("council-")
     }
 
     static func ago(_ epochMs: Int64) -> String {
