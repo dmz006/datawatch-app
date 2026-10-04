@@ -426,13 +426,14 @@ public object IosServiceLocator {
      */
     public fun subscribeSessionEvents(
         profile: ServerProfile,
-        subscriptionId: String,
-        storageId: String,
+        session: com.dmzs.datawatchclient.domain.Session,
         onEvent: (com.dmzs.datawatchclient.domain.SessionEvent) -> Unit,
     ): EventSubscription {
+        // Subscribe with the server's full id (hostname-shortid); store/route outbound
+        // frames by the short id — same split as Android's SessionDetailViewModel.
         val job =
             ioScope.launch {
-                wsTransportFor(profile).events(subscriptionId, storageId).collect { onEvent(it) }
+                wsTransportFor(profile).events(session.fullId, session.id).collect { onEvent(it) }
             }
         return EventSubscription(job)
     }

@@ -20,7 +20,7 @@ enum ServiceLocatorAsync {
         }
     }
 
-    static func listAlerts(profile: ServerProfile) async throws -> (alerts: [Alert], unreadCount: Int) {
+    static func listAlerts(profile: ServerProfile) async throws -> (alerts: [DatawatchShared.Alert], unreadCount: Int) {
         try await withCheckedThrowingContinuation { cont in
             IosServiceLocator.shared.listAlerts(
                 profile: profile,

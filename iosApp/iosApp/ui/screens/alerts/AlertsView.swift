@@ -5,7 +5,7 @@ import DatawatchShared
 
 @MainActor
 final class AlertsViewModel: ObservableObject {
-    @Published var alerts: [Alert] = []
+    @Published var alerts: [DatawatchShared.Alert] = []
     @Published var unreadCount: Int = 0 {
         didSet { UserDefaults.standard.set(unreadCount, forKey: "dw.alert.badge") }
     }
@@ -30,7 +30,7 @@ final class AlertsViewModel: ObservableObject {
     }
 
     /// Alerts for the currently selected tab (before severity/text filtering).
-    var tabAlerts: [Alert] {
+    var tabAlerts: [DatawatchShared.Alert] {
         switch selectedTab {
         case .active:     return alerts.filter { !$0.read && $0.sessionId != nil }
         case .historical: return alerts.filter { $0.read && $0.sessionId != nil }
@@ -38,7 +38,7 @@ final class AlertsViewModel: ObservableObject {
         }
     }
 
-    var filteredAlerts: [Alert] {
+    var filteredAlerts: [DatawatchShared.Alert] {
         var result = tabAlerts
         if !filterText.isEmpty {
             let q = filterText.lowercased()
@@ -153,7 +153,7 @@ final class AlertsViewModel: ObservableObject {
     }
 
     /// Mark an alert as read on server and remove it locally.
-    func dismiss(alert: Alert) {
+    func dismiss(alert: DatawatchShared.Alert) {
         alerts.removeAll { $0.id == alert.id }
         if !alert.read, unreadCount > 0 {
             unreadCount -= 1
@@ -445,7 +445,7 @@ struct AlertsView: View {
 // ── Alert row ─────────────────────────────────────────────────────────────
 
 private struct AlertRow: View {
-    let alert: Alert
+    let alert: DatawatchShared.Alert
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {

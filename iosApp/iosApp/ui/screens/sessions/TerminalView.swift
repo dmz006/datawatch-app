@@ -235,8 +235,7 @@ extension TerminalWebView {
             EventMapperKt.resetPaneCaptureSeen(sessionId: storageId)
             subscription = IosServiceLocator.shared.subscribeSessionEvents(
                 profile: profile,
-                subscriptionId: session.fullId,
-                storageId: storageId
+                session: session
             ) { [weak self] event in
                 DispatchQueue.main.async { self?.handle(event: event) }
             }
