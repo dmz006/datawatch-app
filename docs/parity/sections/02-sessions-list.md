@@ -17,8 +17,8 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | interaction | Picking a historical state chip auto-enables History | ✓ P:2217 | ✓ `setStateChip` (complete/failed/killed) | ✓ I:391 Done chip sets `showHistory` | aligned | | Android done 2026-10-04 (via D12a) |
 | element | `History (N)` toggle: default pool = active + recent (5 min); History = all | ✓ P:2102, P:1972 | ✓ A:690, AV:157 `RECENT_WINDOW_MINUTES=5` | ✓ I:419 `historyChip` + `visiblePool` 5-min window | aligned | | |
 | element | `☑` Select button (only when History on and history>0) | ✓ P:2105 | ✓ ☑ toggles select mode, shown only with History on | ✗ | misaligned | decided D15a | D6 · Android done 2026-10-04 |
-| element | Tree view toggle (BL348): parent/child grouping, 18px indent, `⚠ orphaned` badge | ✓ P:2098, P:2242 | ✗ | ✗ | android-missing | | iOS ✗ too |
-| element | Pending-schedules badge 🕒 N + dropdown with per-item cancel | ✓ P:2094, P:2160 | ✗ (schedules strip is in detail) | ✗ | android-missing | | iOS ✗ too |
+| element | Tree view toggle (BL348): parent/child grouping, 18px indent, `⚠ orphaned` badge | ✓ P:2098, P:2242 | ✓ Tree toggle `cs_session_tree_view`, `flattenTree` 18 dp/level + orphaned note | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep) |
+| element | Pending-schedules badge 🕒 N + dropdown with per-item cancel | ✓ P:2094, P:2160 | ✓ toolbar 🕒 N + dropdown with ✕ cancel (`/api/schedules?state=pending`) | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep) |
 | element | Sort control (Recent / Started / Name / Custom) | ✗ (manual order only) | ✗ removed | ✓ I:283 (no Custom) | pwa-missing | decided D42a | D3 · Android done 2026-10-04 |
 | data | List ordering rule | ✓ P:2323 manual `cs_session_order` first, then `updated_at` desc; no state buckets | ✓ manual drag order (persisted `cs_session_order`) then last activity desc; no buckets | ~ I:386 same buckets | misaligned | decided D42a | D3 · Android done 2026-10-04 |
 | motion | Toolbar / chip-row expand animation | ✗ (re-render) | ~ A:660 `AnimatedVisibility` (LLM chips only) | ~ I:68 `withAnimation` default | misaligned | | minor |
@@ -30,7 +30,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | token | Watermark | ✓ C:344 `/favicon.svg` fixed centre, min(85vw,400px), opacity .045 | ~ A:351 launcher foreground, 85% width, alpha .10 | ✗ | misaligned | | align alpha to .045; iOS add |
 | token | Card surface | ✓ C:369 bg2, radius `--radius`, 4px left state border, pad 12/14, list gap 8px | ~ `pwaCard` 12dp radius + 1dp border + 4dp `pwaStateEdge` (PwaComponents.kt:125,152) | ~ I:606 plain List row, no state edge | misaligned | | iOS lacks left state edge |
 | token | Done-card dimming | ✓ C:2265 complete .7, killed .5; actions/handle stay 1.0 (C:2284) | ~ A:940 .6 for all done, whole row | ~ I:604 .6 whole row | misaligned | | PWA keeps actionable zones full-opacity |
-| motion | Left-border pulse: waiting_input `pulse-border` 2s ease-in-out (waiting↔#93c5fd); rate_limited 3s | ✓ C:2255–2262 | ✗ static edge | ✗ | android-missing | | iOS ✗ too |
+| motion | Left-border pulse: waiting_input `pulse-border` 2s ease-in-out (waiting↔#93c5fd); rate_limited 3s | ✓ C:2255–2262 | ✓ `pwaStateEdge` pulse (waiting 2 s ↔ #93c5fd; rate_limited 3 s ↔ amber-300), static under reduced motion | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep); rate_limited peaks to amber (PWA keyframe reuses --waiting) |
 | motion | Pressed/hover feedback (`:active` bg3, .2s transitions) | ✓ C:2247, C:375 | ~ Material ripple | ~ system highlight | n/a | | platform-native |
 | interaction | Tap card → session detail | ✓ P:2490 | ✓ A:423 | ✓ I:467 | aligned | | |
 | interaction | Drag-to-reorder; order persisted | ✓ P:2350 HTML5 DnD, `cs_session_order`; dragging .4, drag-over accent top border (C:2167) | ~ A:370 long-press drag (translationY, shadow 12) + reorderMode ↑↓ arrows; customOrder persisted | ✗ | ios-missing | | Android gesture differs (long-press) |
@@ -43,24 +43,24 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Short-id pill (mono, bg3, border, accent2) | ✓ P:2507, C:2316 | ✓ `SessionIdPill` in meta row | ✗ | misaligned | decided D16a | D13 · Android done 2026-10-04 |
 | token | State badge style: uppercase text, 1px currentColor border, radius 10, 11px/600 | ✓ P:2502, C:2327 | ~ `PwaStatePill` filled .15 bg, no border (PwaComponents.kt:58) | ~ I:638 filled .15, labels RUNNING/WAITING INPUT/… | misaligned | | align to bordered PWA pill |
 | motion | Running badge pulse | ✓ C:2343 700 ms .55↔1.0 ease-in-out alternate; honours reduced-motion | ✓ `rememberRunningPulseAlpha` 700 ms .55↔1.0 ease-in-out; static under reduced motion | ✗ | ios-missing | | align timing to PWA; iOS add · Android done 2026-10-04 (D18 kept) |
-| element | `stale-dot` inside badge (no channel activity >2 s, `data-channel-evt`) | ✓ P:2502, P:1612 | ✗ | ✗ | android-missing | | iOS ✗ too |
+| element | `stale-dot` inside badge (no channel activity >2 s, `data-channel-evt`) | ✓ P:2502, P:1612 | — not rendered | ✗ | n/a | | iOS ✗ too · PWA hides `.stale-dot` (`display:none`, GATE 2026-05-10) — nothing visible to mirror |
 | element | Active-card action: `■ Stop` (red) | ✓ P:2410 button in header | ✓ A:1237 OutlinedButton → confirm | ~ I:609 trailing swipe "Stop" → alert | misaligned | needs-decision | D4 |
 | element | `▶` quick-commands button (waiting_input only) → popup | ✓ P:2412 | ✓ A:1325 "⌨ Commands" → `QuickCommandsSheet` | ✓ I:578 ▶ (waiting only) → QuickCommandsSheet.swift | aligned | | |
 | element | Done-card actions: `↺ Restart` + `🗑` (red) | ✓ P:2415 | ✓ A:1346 (+ `deleteSupported` gate) | ~ I:617/626 swipe Delete (trailing) / Restart (leading) | misaligned | needs-decision | D4 |
 | interaction | Confirm before Stop / Restart / Delete | ~ delete via `showConfirmModal`; stop/restart direct (verify) | ✓ A:1409–1447 dialogs | ✓ I:91–117 alerts | misaligned | | verify PWA stop/restart confirm |
 | element | `🤖 Summary` / `⏳ Summarizing…` button (when summarizer enabled; running → current-status) | ✓ P:2418 `manualSummarize` | ~ re-summarize ↻ only inside `CurrentStatusSheet` (A:1808) | ~ refresh only inside sheet (I:772) | misaligned | needs-decision | D5 |
-| element | `⛶` maximize → Dashboard expand mode (BL303) | ✓ P:2424 `openDashExpand` | ✗ (expand entered from Dashboard › only) | ✗ | android-missing | | iOS ✗ too |
+| element | `⛶` maximize → Dashboard expand mode (BL303) | ✓ P:2424 `openDashExpand` | ✓ row Fullscreen icon → session status (expand) mode | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep) |
 | element | LLM badge: `llm_ref`, else `backend_family`, accent2 tint + 1px border | ✓ P:2508 | ~ A:1031 backend only, uppercase, accent2 .12, no border | ~ I:494 backend only, uppercase, secondary .12 | misaligned | | prefer llm_ref; PWA style |
-| element | Server badge (`sess.server` ≠ local) | ✓ P:2509 | ✗ | ✗ | android-missing | | iOS ✗; apps show hostname instead (next row) |
+| element | Server badge (`sess.server` ≠ local) | ✓ P:2509 | ✓ outlined accent2 badge when `server` ≠ local | ✗ | ios-missing | | iOS ✗; apps show hostname instead (next row) · Android done 2026-10-04 (android-missing sweep); needs Session.server (migration 8) |
 | element | Hostname label | ✗ (var unused P:2393) | ~ shown only in All-servers mode | ✓ I:531 muted badge | pwa-missing | decided D16a | D13 · Android done 2026-10-04 |
 | element | Worker badge | ✓ P:2510 "⬡ worker", accent2 border, purple .15 bg | ~ A:2212 "⬡ <agentId>" purple A855F7 .15 | ~ I:512 "⬡ <agentId>" secondary .12 | misaligned | | label + colour |
-| element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `parent_id` in Session DTO |
-| element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `claude_alive` in DTO |
+| element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✓ `↳ child of [host]` badge | ✗ | ios-missing | | iOS ✗ too; needs `parent_id` in Session DTO · Android done 2026-10-04 (android-missing sweep); Session.parentId (migration 8) |
+| element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✓ amber `⚠ zombie` when `claude_alive == false` | ✗ | ios-missing | | iOS ✗ too; needs `claude_alive` in DTO · Android done 2026-10-04 (android-missing sweep); Session.claudeAlive (migration 8) |
 | element | 🎭 Council badge | ✗ | ✓ A:1041 | ✓ `SessionCardView.isCouncil` 🎭 badge + "🎭 Council" chip in the LLM filter row | pwa-missing | decided D64a | D12 · iOS done 2026-10-04 |
 | element | `📄 Response` button → last-response viewer | ✓ P:2513 → modal | ✓ A:1101 "View last response" → `LastResponseSheet` | ~ I:540 `doc.text` icon only, not tappable | misaligned | needs-decision | D5 |
 | data | Response content freshness | ✓ P:14890 shows cache, then fetches `GET /api/sessions/response?id` (stale badge) | ~ cached `session.lastResponse` only (A:1392) | n/a | misaligned | needs-decision | D5 |
 | interaction | Read response aloud (TTS) | ✗ | ✓ A:1732 sheet VolumeUp/Stop | ✗ (TTS only in current-status sheet I:782) | pwa-missing | needs-decision | D5 |
-| element | Live elapsed clock on active cards (BL383 `formatElapsed`, tabular, accent2) | ✓ P:2514, P:15468 | ✗ | ✗ | android-missing | | iOS ✗ too |
+| element | Live elapsed clock on active cards (BL383 `formatElapsed`, tabular, accent2) | ✓ P:2514, P:15468 | ✓ 1 s `formatElapsed` clock, tabular, accent2 | ✗ | ios-missing | | iOS ✗ too · Android done 2026-10-04 (android-missing sweep) |
 | element | `AI <age>` summary-age label | ✓ P:2449 inside waiting row, 9px | ~ A:1120 meta row, primary .7 | ~ I:555 meta row | misaligned | | placement |
 | string | Time-ago format: just now <5 s · Ns · Nm · Nh · Nd | ✓ P:15454 | ~ `relativeTimeLabel` (not verified) | ✓ I:683 identical | aligned | | verify Android thresholds |
 | element | Muted indicator | ✗ | ✗ (state only) | ✓ speaker.slash on the card (local per-profile mute) | pwa-missing | decided D62a | D10 · iOS done 2026-10-04 — push suppression needs a Notification Service Extension |
@@ -77,7 +77,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | data | List source: WS `sessions` full-list frames | ✓ spec §3.7 | ✓ AV:470 `SessionsHub.fullListFlow` + SQLite | ✓ IV:57 `subscribeGlobalStream` | aligned | | |
 | data | `session_state` single-row diff (v8.37) | ? not verified in list path | ✓ AV:486 upsert | ✓ IV:78 `subscribeSessionDiffs` → `upsert` | aligned | | apps aligned; PWA list path still unverified |
 | data | REST fallback poll | ✗ (WS only) | ✓ AV:498 30 s + ON_RESUME (A:170) | ✓ IV:24 30 s | pwa-missing | | mobile resilience; no decision |
-| interaction | Pull-to-refresh | n/a | ✗ | ✓ I:264 | android-missing | | mobile convention |
+| interaction | Pull-to-refresh | n/a | ✓ M3 `PullToRefreshContainer` | ✓ I:264 | aligned | | mobile convention · Android done 2026-10-04 (android-missing sweep) |
 | data | Recent window (done sessions shown ≤5 min) | ✓ P:1972 `_recentMinutes` | ✓ AV:258 | ✓ I:412 `visiblePool` (`recentWindowMs` 5 min) | aligned | | |
 | data | Persistence of chip / collapsed / order / tree prefs | ✓ localStorage ×4 | ~ customOrder persisted; chip + collapsed not | ✗ | misaligned | | |
 | string | Session-list strings localised | ✓ `t()` keys (session_filter_ph, sessions_no_active, …) | ✓ strings.xml + 4 locales | ✗ hard-coded | ios-missing | | |
@@ -93,9 +93,9 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:220 | ✓ I:57 | pwa-missing | | PWA uses header daemon light (§01) |
 
 ## Coverage
-rows: 83 · aligned: 18 · ios-missing: 6 · android-missing: 11 · pwa-missing: 12 · misaligned: 33 · n/a: 3
+rows: 83 · aligned: 20 · ios-missing: 15 · android-missing: 0 · pwa-missing: 12 · misaligned: 32 · n/a: 4
 
-Both-apps-missing (counted under android-missing above): tree view, schedules badge, border pulse, stale-dot, maximize, server badge, parent badge, zombie badge, elapsed clock — 9 rows.
+Both-apps-missing at audit time: tree view, schedules badge, border pulse, stale-dot, maximize, server badge, parent badge, zombie badge, elapsed clock — 9 rows. Android implemented eight of them on 2026-10-04 (now counted as ios-missing); stale-dot is n/a because the PWA hides it.
 
 ## Decisions needed
 1. **Server/profile switcher placement** — PWA: toolbar server chip + injected picker bar (federation servers); Android: app-bar title dropdown over app profiles (+ All servers); iOS: none, first profile only. Options: (a) iOS adopts Android title dropdown; (b) iOS uses the segmented profile picker its other tabs use; (c) PWA-style chip in toolbar on both apps. Refs P:2095, A:1514, IV:33.

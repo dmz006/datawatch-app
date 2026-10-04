@@ -13,7 +13,7 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 | element | Task description (expandable textarea) | ✓ `<details>` textarea | ✓ :368–431 + mic (`MicAttachableTextField`) | ✓ NewSessionView | aligned | | |
 | element | Saved-command library picker inside task field | ✗ (0 hits `savedCmd\|saved_command` in modal) | ✓ `SavedCommandLibraryDropdown` :379 | ✓ NewSessionView "From library ▾" menu (`/api/commands`) | pwa-missing | decided D81a | Android-only convenience — D1 · iOS done 2026-10-04 |
 | element | Project directory input | ✓ `#sessDirRow` :5560 | ✓ `new_session_working_dir` :714–726 | ✓ NewSessionView | aligned | | |
-| interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✗ (`FilePickerDialog` not used here) | ✗ | android-missing | | iOS also missing |
+| interaction | Directory browser (breadcrumb, mkdir, click-to-navigate) | ✓ `#dirBrowser` :5558 | ✓ `FilePickerDialog(FolderOnly)` from New Session dir row (parent nav + New folder) | ✗ | ios-missing | | iOS also missing · already present (verified 2026-10-04) |
 | element | Profile select (project profiles, "— project directory —" first) | ✓ `#sessProfile` :5615 | ✓ `new_session_profile_label` :590 | ✓ NewSessionView | aligned | | |
 | element | Cluster select (hidden until profile picked) | ✓ `#sessClusterRow` :5620 | ✓ `new_session_cluster_label` :608–629 | ✓ NewSessionView | aligned | | |
 | element | LLM picker (v7 registry) + compute-node sub-select + hint | ✓ `#sessLLMSelect` :5648, `#sessComputeSelect` :5655, `#sessV7Hint` :5659 | ✓ `llmEntries`/`pickedComputeNode` :136–154 | ✓ NewSessionView | aligned | | |
@@ -38,17 +38,17 @@ Verification was code-level (grep/read), not visual. `~ unverified` = present in
 | interaction | Generic modal (`showModal`) — template create/edit, batch guards | ✓ :16849 | ✓ `CreateEditTemplateSheet.kt`, `InstantiateTemplateDialog.kt` | ✓ TemplateEditView / InstantiateTemplateView sheets; batch confirm (PrdListView) | aligned | | |
 | interaction | State override dropdown on state badge → `PUT /api/sessions/state` | ✓ `showStateOverride` :14843; live states `running, waiting_input, complete, killed, failed` | ✓ `StateOverrideDialog` SessionDetailScreen.kt:2578 | ✓ SessionDetailView state menu (B6) | aligned | | spec §10.3 lists `rate_limited` — removed in live PWA |
 | interaction | Backend config popup (Comms → Configure) | ✓ `showBackendConfigPopup` :14028 | ✓ `channels/BackendConfigDialog.kt` | ✗ | ios-missing | | |
-| interaction | Compute Kind migration modal (deprecated kinds) | ✓ `deprecatedKinds` :7920 | ✗ not found | ✗ | android-missing | | iOS also missing; spec §10.5 |
+| interaction | Compute Kind migration modal (deprecated kinds) | ✓ `deprecatedKinds` :7920 | ✓ ComputeNodesCard migration (`getMigrationComputeKinds` / `migrateComputeNodeKind`) | ✗ | ios-missing | | iOS also missing; spec §10.5 · already present (verified 2026-10-04) |
 | motion | Toast — 3.5 s auto-dismiss, 4 types, stacks newest-first | ✓ `showToast` :14988 (`_duration = 3500`) | ✓ `common/DatawatchToast.kt` `DatawatchToastHost` :107 (duration ~ unverified) | ✗ | ios-missing | | iOS surfaces errors via alerts/banners only |
 | interaction | Response viewer modal (last response) | ✓ `showResponseViewer` :14890 | ✓ SessionDetailScreen.kt:583–656 | ✓ `LastResponseSheet` SessionDetailView.swift:91 | aligned | | |
 | interaction | Schedule input popup | ✓ `showScheduleInputPopup` :3681 | ✓ `schedules/ScheduleDialog.kt` | ✓ ScheduleInputSheet | aligned | | |
 | interaction | Card quick commands + command edit | ✓ `showCardCmds` :2610, `showCmdEdit` :21012 | ✓ `commands/` package | ✓ QuickCommandsSheet + SavedCommandsView | aligned | | |
 | interaction | Filter edit dialog | ✓ `showFilterEdit` :21124 | ✓ `filters/` package | ✓ FiltersView edit sheet | aligned | | |
-| interaction | Channel help popup | ✓ `showChannelHelp` :4525 | ✗ not found | ✗ | android-missing | | iOS also missing |
+| interaction | Channel help popup | ✓ `showChannelHelp` :4525 | ✓ `ChannelHelpDialog` | ✗ | ios-missing | | iOS also missing · Android done 2026-10-04 (android-missing sweep) |
 | interaction | Remote server / federation peer forms | ✓ `showServerForm` :14550, `showFedPeerForm` :23619 | ✓ `federation/FederationPeersCard.kt` | ✗ | ios-missing | | |
 | interaction | Web search provider form | ✓ `showWebSearchProviderForm` :12768 | ✓ `websearch/WebSearchRegistryCard.kt` | ✗ | ios-missing | | |
 | interaction | Observer peer snapshot modal | ✓ `showObserverPeerSnapshot` :20224 | ~ `monitoring/PeerResourcesCard.kt` unverified | ✗ | ios-missing | | |
-| interaction | Debug panel | ✓ `showDebugPanel` :15427 | ✗ | ✗ | android-missing | needs-decision | dev tool — n/a on mobile? D4 |
+| interaction | Debug panel | ✓ `showDebugPanel` :15427 | — | ✗ | n/a | needs-decision | dev tool — n/a on mobile? D4 · decided D92a — no debug panel on mobile |
 | interaction | Mobile-only sheets: voice recording, docs viewer, server picker, file picker | n/a | ✓ `common/VoiceRecordingDialog.kt`, `DocsViewerSheet.kt`, `servers/ServerPickerSheet.kt`, `files/FilePickerDialog.kt` | ~ `VoiceRecorder.swift`, `DocsLinkButton` (Safari), none, none | n/a | | platform affordances; iOS file picker missing |
 
 ## B — Live-PWA views/features not in the May spec (§1–§10)
@@ -77,12 +77,12 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | element | Discussion Scopes card (Settings → General, BL332) | ✓ :7246 | ~ `memory/` (#191 scope dirs) unverified | ✗ | ios-missing | | |
 | element | Algorithm Mode settings section | ✓ :6902 | ✓ `settings/AlgorithmModeCard.kt` | ✓ `SettingsAlgorithmModeCard` (Settings › Automata) | aligned | | |
 | interaction | Ollama marketplace modal / catalog | ✓ `openOllamaMarketplace` :8224, `renderOllamaCatalog` :8247 | ~ `compute/LlmRegistryCard.kt` unverified | ✗ | ios-missing | | |
-| element | Project profiles panel + cluster/project YAML editors | ✓ `renderProfilesPanel` :15778, `renderClusterEditorForm` :15852, `renderProjectEditorForm` | ✗ not found | ✗ | android-missing | | iOS also missing; smoke buttons per profile |
+| element | Project profiles panel + cluster/project YAML editors | ✓ `renderProfilesPanel` :15778, `renderClusterEditorForm` :15852, `renderProjectEditorForm` | ~ `KindProfilesCard` project/cluster: list · smoke · delete · form edit (no raw YAML editor) | ✗ | misaligned | | iOS also missing; smoke buttons per profile · already present as forms; raw YAML editor not ported |
 | element | Web search stats + provider registry | ✓ `renderWebSearchStatsHTML` :20397 | ✓ `websearch/WebSearchRegistryCard.kt` + Observer (v1.23.107) | ✗ | ios-missing | | |
 | interaction | Identity wizard (header button on Automata page + Settings card) | ✓ :1805–1809 | ✓ `settings/IdentityWizardSheet.kt` | ✗ | ios-missing | | |
 | element | Tailscale card (Settings → Compute) | ✓ (`tailscale` ×56) | ✓ `tailscale/TailscaleSettingsCard.kt`, `TailscaleMeshCard.kt` | ✗ | ios-missing | | detail in 07 |
 | element | Skills registry (automata skills, registries) | ✓ (`skills` ×115) | ~ unverified | ✗ | ios-missing | | |
-| element | Secrets vault card (Settings → General) | ✓ (`secret` ×58) | ✗ not found | ✗ | android-missing | | iOS also missing |
+| element | Secrets vault card (Settings → General) | ✓ (`secret` ×58) | ✓ `SecretsCard` + `SecretsStatusCard` | ✗ | ios-missing | | iOS also missing · already present (see 07 Secrets vault status row) |
 | element | Compute node telemetry / declared capacity | ✓ :7911, :8120 | ✓ `compute/` (#192 capacity-aware) | ✗ | ios-missing | | |
 | nav | Docs / diagrams help links (`/diagrams.html#…`) | ✓ ×17 | ✓ `common/DocsViewerSheet.kt`, `settings/DocsSearchCard.kt` | ✓ `DocsLinkButton` (SFSafariViewController) | aligned | | Android in-app viewer vs iOS Safari — verify intent |
 | element | Memory recall / scope inventory / lifecycle UI (BL385–387) | ✗ (0 hits `memory/recall\|memory_scope`; only Observer "Memory Browser" card) | ✓ `memory/` (#174–176) | ~ PRD memory UI (`PrdMemorySection`: stats, report, recall); no standalone scope inventory | pwa-missing | decided D77a | D6 · iOS done 2026-10-04 |
@@ -93,7 +93,7 @@ Live nav (`index.html data-view`): sessions · alerts · autonomous · observer 
 | interaction | Batch select mode, FAB, Channel tab, Kind migration (spec items spot-checked) | ✓ (`selectMode\|bulkDelete` ×28, `fab` ×16, channel ×17, :7920) | — | — | aligned | | spec items confirmed still live; no removals found besides §1.6 and `rate_limited` |
 
 ## Coverage
-rows: 71 · aligned: 22 · ios-missing: 29 · android-missing: 6 · pwa-missing: 5 · misaligned: 6 · n/a: 3
+rows: 71 · aligned: 34 · ios-missing: 22 · android-missing: 0 · pwa-missing: 5 · misaligned: 6 · n/a: 4
 
 ## Decisions needed
 1. **D1 Saved-command library in New Session task field** — Android-only (`SavedCommandLibraryDropdown` NewSessionScreen.kt:379). Options: (a) adopt in PWA + iOS, (b) drop from Android, (c) keep as mobile-only.
