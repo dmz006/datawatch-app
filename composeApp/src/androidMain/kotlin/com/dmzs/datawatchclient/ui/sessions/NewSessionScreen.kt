@@ -52,6 +52,8 @@ import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.ui.common.DocsLinkAction
 import com.dmzs.datawatchclient.ui.common.VoiceRecordingDialog
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -101,7 +103,10 @@ public fun NewSessionScreen(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                            DockLevel.Error,
+                        )
                     }
             }
         }
@@ -405,7 +410,10 @@ public fun NewSessionScreen(
                                         ).onSuccess { result ->
                                             task = (task + " " + result.transcript.trim()).trim()
                                         }.onFailure { err ->
-                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                            AlertDockChannel.post(
+                                                "Transcribe failed: ${err.message}",
+                                                DockLevel.Error,
+                                            )
                                         }
                                 }
                                 transcribingVoice = false
@@ -441,7 +449,10 @@ public fun NewSessionScreen(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                            AlertDockChannel.post(
+                                                "Recording failed: ${e.message}",
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)

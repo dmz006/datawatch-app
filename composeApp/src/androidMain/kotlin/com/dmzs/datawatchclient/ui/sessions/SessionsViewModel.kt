@@ -292,10 +292,11 @@ public class SessionsViewModel : ViewModel() {
     private val _filterText = MutableStateFlow("")
     private val _backendFilter = MutableStateFlow<String?>(null)
     private val _showHistory = MutableStateFlow(false)
+
     private fun prefs() = android.preference.PreferenceManager.getDefaultSharedPreferences(ServiceLocator.context())
 
     // Parity D12a: PWA state chip, persisted like `cs_session_state_chip`.
-    private val _stateChip =
+    private val stateChipFlow =
         MutableStateFlow(
             prefs().getString(PREF_STATE_CHIP, UiState.STATE_CHIP_ALL)
                 ?.takeIf { it in UiState.STATE_CHIP_KEYS } ?: UiState.STATE_CHIP_ALL,
@@ -370,7 +371,7 @@ public class SessionsViewModel : ViewModel() {
                 _filterText,
                 _backendFilter,
                 _showHistory,
-                _stateChip,
+                stateChipFlow,
                 allServersMode,
                 activeReachable,
                 _lastProbeEpochMs,
@@ -510,7 +511,7 @@ public class SessionsViewModel : ViewModel() {
      */
     public fun setStateChip(chip: String) {
         val key = chip.takeIf { it in UiState.STATE_CHIP_KEYS } ?: UiState.STATE_CHIP_ALL
-        _stateChip.value = key
+        stateChipFlow.value = key
         prefs().edit().putString(PREF_STATE_CHIP, key).apply()
         if (key in UiState.HISTORICAL_STATE_CHIPS) _showHistory.value = true
     }

@@ -1159,8 +1159,10 @@ internal fun PrdStatusPill(status: String) {
         when {
             active -> dw.success.copy(alpha = 0.15f) to dw.success
             s == "failed" -> MaterialTheme.colorScheme.error.copy(alpha = 0.15f) to MaterialTheme.colorScheme.error
-            s == "complete" ->
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f) to MaterialTheme.colorScheme.onSurfaceVariant
+            s == "complete" -> {
+                val muted = MaterialTheme.colorScheme.onSurfaceVariant
+                muted.copy(alpha = 0.10f) to muted
+            }
             else -> Color.Transparent to MaterialTheme.colorScheme.onSurface
         }
     val alpha by com.dmzs.datawatchclient.ui.theme.rememberRunningPulseAlpha(active)

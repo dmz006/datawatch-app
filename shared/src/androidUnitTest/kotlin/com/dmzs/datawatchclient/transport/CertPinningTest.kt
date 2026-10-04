@@ -34,7 +34,9 @@ class CertPinningTest {
         CertificateFactory.getInstance("X.509").generateCertificate(pem.byteInputStream()) as X509Certificate
 
     @Test
-    fun `sha256Hex is the leaf DER digest`() = assertEquals(expectedSha, CertPins.sha256Hex(cert.encoded))
+    fun `sha256Hex is the leaf DER digest`() {
+        assertEquals(expectedSha, CertPins.sha256Hex(cert.encoded))
+    }
 
     @Test
     fun `normalize strips separators and lowercases`() =

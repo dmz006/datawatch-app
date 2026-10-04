@@ -11,10 +11,10 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | data | Server picker bar on Alerts view | ✓ js:19168 `_injectServerPickerBar` | ✓ A:AlertsScreen.kt:380 AlertsTopBar dropdown incl. All servers | ✗ | ios-missing | | |
 | data | Saved commands GET /api/commands for quick reply | ✓ js:19171 | ✓ A:AlertsScreen.kt:744 onQuickReply | ✓ I:AlertsView `IosQuickCommands.loadSaved` on appear | aligned | |  |
 | data | Sessions GET /api/sessions for liveness (Active vs Historical) | ✓ js:19172 refreshes state.sessions | ✓ A:AlertsViewModel.kt grouping by session state | ✓ I:AlertsView.swift `AlertsViewModel.isActive` — listSessions each poll, Active = live & not done | aligned | | iOS Active = unread, Historical = read — different model from PWA (session done/alive); mechanical fix to PWA rule |
-| data | Auto-ack all on opening Alerts page POST /api/alerts {all:true} | ✓ js:19191 | ✗ | ✗ | misaligned | needs-decision | D3 |
-| data | Dismiss all = POST {all:true, delete:true} | ✓ js:19535 | ~ A:AlertsViewModel.kt:583 markAlertRead(all=true) (ack, no delete) | ~ I:IosServiceLocator.kt:336 markAlertRead(all=true) | misaligned | needs-decision | D2 |
-| data | Per-alert mark-read POST /api/alerts {id} | ✗ (auto-ack makes it moot) | ✓ A:AlertsViewModel.kt:561 | ✓ I:AlertsView.swift:32 dismiss(alert) | pwa-missing | needs-decision | D4 |
-| data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✗ no SessionEvent.Alert consumer; REST poll only | ✗ | misaligned | needs-decision | D11 — shared EventMapper maps `alert` (EventMapper.kt:69) but neither app consumes it |
+| data | Auto-ack all on opening Alerts page POST /api/alerts {all:true} | ✓ js:19191 | ✓ `AlertsViewModel.ackAllOnOpen` on screen open | ✗ | misaligned | decided D49a | D3 · Android done 2026-10-04 |
+| data | Dismiss all = POST {all:true, delete:true} | ✓ js:19535 | ✓ `deleteAllAlerts()` (new transport call) | ~ I:IosServiceLocator.kt:336 markAlertRead(all=true) | misaligned | decided D48a | D2 · Android done 2026-10-04 |
+| data | Per-alert mark-read POST /api/alerts {id} | ✗ (auto-ack makes it moot) | ~ VM fn kept, no UI | ✓ I:AlertsView.swift:32 dismiss(alert) | pwa-missing | decided D49a | D4 · Android done 2026-10-04 |
+| data | WS `alert` frame → unread++ + toast | ✓ js:879 handleAlert, showToast 4 s | ✓ global stream routes `alert` → `AlertsHub` → dock entry (`LiveAlertFeed`); badge from REST poll | ✗ | misaligned | decided D51a | D11 — shared EventMapper maps `alert` (EventMapper.kt:69) but neither app consumes it · Android done 2026-10-04 |
 | data | Unread count source | state.alertUnread (WS increments, reset on page open) | AlertsView.unreadCount from REST | AlertsView.unreadCount from REST → @AppStorage dw.alert.badge | misaligned | | Falls out of D3/D11 |
 | data | Alert rules GET/POST/DELETE /api/alert-rules, POST …/enable/disable | ✓ js:21179–21260 (Settings) | ✓ A:AlertRulesCard.kt:73–125 | ✓ I:IosAlertRules.kt list/create/delete/setEnabled | aligned | | Lives in Settings on PWA+Android; listed here per README §04 |
 | data | Alert rule firings GET (listAlertRuleFirings) | ✗ | ✓ A:AlertRulesCard.kt:76,132 "Recent Firings (N)" ×20 | ✗ | pwa-missing | needs-decision | D8 |
@@ -35,8 +35,8 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Default tab = first with entries (Active→Historical→System) | ✓ spec §5.1 | ~ A restores last tab | ~ I restores last persisted tab (like Android) | misaligned | | Minor |
 | element | Filter bar row 1: "🔔 N alerts" + ⏷/🕒 sort + ✕ + 🔕 + ↻ | ✓ js:19500–19525 | ✓ A:AlertsScreen.kt:160–215 | ✓ I:AlertsView `filterBar` 🔔 N + ⏷/🕒 sort + ✕ + 🔕 + ↻ | aligned | | iOS lacks sort |
 | interaction | Sort toggle by session ↔ chronological (persisted per tab) | ✓ js setAlertsSort | ✓ A:AlertsViewModel.kt SortMode | ✓ I:AlertsViewModel `SortMode` session/chrono, persisted per tab | aligned | |  |
-| interaction | ✕ dismiss all | ✓ js dismissAlertsAll (delete) | ✓ A ControlBtn("✕") dismissAll | ✓ I controlBtn("✕") dismissAll | misaligned | needs-decision | D2 semantics |
-| interaction | 🔕 button | ✓ muteAlertDock — session-scoped dock mute, no server call | ~ A:AlertsScreen.kt ControlBtn("🔕") { dismissAll() } | ~ I:AlertsView.swift controlBtn("🔕") { dismissAll() } | misaligned | needs-decision | D1 — both apps repurpose mute as dismiss |
+| interaction | ✕ dismiss all | ✓ js dismissAlertsAll (delete) | ✓ ControlBtn("✕") → delete-all | ✓ I controlBtn("✕") dismissAll | misaligned | decided D48a | D2 semantics · Android done 2026-10-04 |
+| interaction | 🔕 button | ✓ muteAlertDock — session-scoped dock mute, no server call | ✓ ControlBtn("🔕") → `AlertDockChannel.mute()` | ~ I:AlertsView.swift controlBtn("🔕") { dismissAll() } | misaligned | decided D47a | D1 — both apps repurpose mute as dismiss · Android done 2026-10-04 |
 | interaction | ↻ refresh | ✓ | ✓ | ✓ | aligned | | |
 | element | Chips all / 🟡 prompts / 🔴 errors / 🟠 warn / ⚪ info with counts | ✓ js:19505–19509 | ✓ A:AlertsScreen.kt chip row, counts search-filtered | ~ I:AlertsView `severityChip` emoji + "All/Prompt/Error/Warn/Info ×N" (casing/wording differs) | misaligned | | iOS casing/wording differs ("prompts"→"Prompt"); align to PWA |
 | token | Chip colors: text2 / warning / error / warning / text2; selected = filled | ✓ js chipBtn | ✓ A chipBorderColor + chipBg | ✓ I severityChip | aligned | | |
@@ -51,18 +51,18 @@ Refs: `js:` = app.js line · `A:` = Android file:line · `I:` = iOS file:line.
 | element | Time: HH:MM:SS mono, opacity .55 | ✓ js | ✓ A formatAlertTime | ✓ I alertTime monospaced | aligned | | |
 | element | Title 13px/600, body 12px text2 | ✓ | ✓ | ✓ (bodyMedium/labelSmall) | aligned | | iOS clamps title 2 lines, body 3 lines; PWA unclamped |
 | element | Quick reply `<select>` of saved commands on prompt alerts → alertSendCmd | ✓ js:19417–19422 | ✓ A:AlertCard onQuickReply (alerts_quick_reply_ph) | ~ I:AlertsView `quickReply` Menu (approve/reject/continue/skip/ESC + saved commands) on latest alert of a waiting session group only; not in chronological mode | misaligned | |  |
-| element | Per-alert ✓ mark-read control | ✗ | ✓ A:AlertCard "✓" (comment: "not in PWA but needed for Android UX") | ~ I unread dot + dimmed read rows | pwa-missing | needs-decision | D4 |
-| interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✓ A:AlertGroupCard 510–527 | ✗ | pwa-missing | needs-decision | D6 |
+| element | Per-alert ✓ mark-read control | ✗ | ✗ removed | ~ I unread dot + dimmed read rows | pwa-missing | decided D49a | D4 · Android done 2026-10-04 |
+| interaction | Swipe-left dismisses a session group (80 dp threshold) | ✗ | ✗ removed | ✗ | pwa-missing | decided D50d | D6 · Android done 2026-10-04 |
 | interaction | Swipe-left dismisses a single alert | ✗ | ✗ | ✓ I:AlertsView.swift:302 swipeActions | pwa-missing | needs-decision | D6 |
 | data | Watched-session filter (badge counts only watched sessions) | ✗ | ✓ A:AlertsViewModel.kt:175–182, 480–493 | ✗ | pwa-missing | needs-decision | D7 |
 | element | Alert dock panel (header chips per type, collapse chevron, ✕, 🔕; body cards with ×N, 3-line clamp, left rail) | ✓ js:15044 | ~ A:AlertDockOverlay.kt (pill + category pills + expand + dismiss + mute); feed/coalescing not verified | ✗ | misaligned | | Verify what populates Android dock rows |
 | data | Dock coalescing: family key, 60 s window, ×N, max 100 | ✓ js:15004–15040 | ~ not verified | ✗ | misaligned | | |
 | data | Dock mute persisted per browser session (sessionStorage cs_alert_muted) | ✓ js:15204 | ~ A onMute callback "suppresses for session" | ✗ | misaligned | | |
-| motion | Dock expand/collapse: Android chevron rotate animateFloatAsState 0→180 + AnimatedVisibility; PWA no animation (panel created/removed) | ✗ | ✓ A:AlertDockOverlay.kt:65,149 | ✗ | pwa-missing | needs-decision | D10 — app had an idea; adopt in PWA? |
+| motion | Dock expand/collapse: Android chevron rotate animateFloatAsState 0→180 + AnimatedVisibility; PWA no animation (panel created/removed) | ✗ | ✗ static (no chevron rotation / AnimatedVisibility) | ✗ | pwa-missing | decided D36b | D10 — app had an idea; adopt in PWA? · Android done 2026-10-04 |
 | motion | Alert card hover bg3 transition .15 s | ✓ style.css:2232–2242 | n/a (touch) | n/a | n/a | | |
-| motion | Toast on WS alert, 4 s | ✓ js:891 showToast | ✗ | ✗ | misaligned | needs-decision | D11 |
+| motion | Toast on WS alert, 4 s | ✓ js:891 showToast | ✓ dock entry (toasts retired, D41a) | ✗ | misaligned | decided D51a | D11 · Android done 2026-10-04 |
 | motion | Loading state | ✓ spinner "Loading…" (common_loading) | ~ not verified | ✓ I LoadingIndicator "Loading alerts…" | misaligned | | |
-| string | Empty state copy | "No alerts." (common_no_alerts) | per-tab: alerts_empty_active "No sessions need input. You're caught up." / alerts_empty_inactive "No historical alerts." | "No <tab> alerts" + "No server connected" | misaligned | needs-decision | D5 — PWA single string vs Android per-tab copy |
+| string | Empty state copy | "No alerts." (common_no_alerts) | "No alerts." (`alerts_empty`) on every tab | "No <tab> alerts" + "No server connected" | misaligned | decided D35a | D5 — PWA single string vs Android per-tab copy · Android done 2026-10-04 |
 | string | Error state copy | "Failed to load alerts." (alerts_load_error) | ✓ alerts_load_error | ✗ raw error.localizedDescription | misaligned | | |
 | string | i18n of alert strings | ✓ t() keys | ✓ 36 keys × de/es/fr/ja | ✗ hardcoded English | ios-missing | | |
 | string | Tab labels Active / Historical / System | ✓ | ✓ alerts_*_tab_label | ✓ rawValue | aligned | | |

@@ -609,7 +609,9 @@ public class AlertsViewModel : ViewModel() {
             } else {
                 _banner.value =
                     "Dismiss all failed — " +
-                    failures.take(2).joinToString("; ") { (name, err) -> "$name: ${err.message ?: err::class.simpleName}" }
+                    failures.take(2).joinToString("; ") { (name, err) ->
+                        "$name: ${err.message ?: err::class.simpleName}"
+                    }
             }
         }
     }

@@ -33,6 +33,8 @@ import androidx.core.content.ContextCompat
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.ui.settings.Section
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.voice.VoiceRecorder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -140,7 +142,10 @@ public fun TestWhisperCard() {
                         recording = true
                         status = "recording — tap ■ to stop"
                         // S6-7 (#88): mic recording toast.
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(context.getString(R.string.mic_toast_recording), com.dmzs.datawatchclient.ui.shell.DockLevel.Info)
+                        AlertDockChannel.post(
+                            context.getString(R.string.mic_toast_recording),
+                            DockLevel.Info,
+                        )
                     }
                     .onFailure { status = "mic start failed: ${it.message}" }
             } else {
@@ -193,7 +198,10 @@ public fun TestWhisperCard() {
                                         recording = true
                                         status = "recording — tap ■ to stop"
                                         // S6-7 (#88): mic recording toast.
-                                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(context.getString(R.string.mic_toast_recording), com.dmzs.datawatchclient.ui.shell.DockLevel.Info)
+                                        AlertDockChannel.post(
+                                            context.getString(R.string.mic_toast_recording),
+                                            DockLevel.Info,
+                                        )
                                     }
                                     .onFailure { status = "mic start failed: ${it.message}" }
                             } else {

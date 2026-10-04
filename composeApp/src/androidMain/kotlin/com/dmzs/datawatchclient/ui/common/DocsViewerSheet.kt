@@ -57,6 +57,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.dmzs.datawatchclient.di.ServiceLocator
+import com.dmzs.datawatchclient.ui.shell.AlertDockChannel
+import com.dmzs.datawatchclient.ui.shell.DockLevel
 import com.dmzs.datawatchclient.voice.VoiceRecorder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -409,10 +411,16 @@ private fun DocsSearchDialog(
                         showVoiceDialog = true
                     }
                     .onFailure { e ->
-                        com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                        AlertDockChannel.post(
+                            "Recording failed: ${e.message ?: e::class.simpleName}",
+                            DockLevel.Error,
+                        )
                     }
             } else {
-                com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Microphone permission denied — enable it in Settings.", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                AlertDockChannel.post(
+                    "Microphone permission denied — enable it in Settings.",
+                    DockLevel.Error,
+                )
             }
         }
 
@@ -453,7 +461,10 @@ private fun DocsSearchDialog(
                                     if (t.isNotEmpty()) query = TextFieldValue(t)
                                 }
                                 .onFailure { err ->
-                                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Transcribe failed: ${err.message}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                    AlertDockChannel.post(
+                                        "Transcribe failed: ${err.message}",
+                                        DockLevel.Error,
+                                    )
                                 }
                         }
                     } finally {
@@ -497,7 +508,10 @@ private fun DocsSearchDialog(
                                             showVoiceDialog = true
                                         }
                                         .onFailure { e ->
-                                            com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Recording failed: ${e.message ?: e::class.simpleName}", com.dmzs.datawatchclient.ui.shell.DockLevel.Error)
+                                            AlertDockChannel.post(
+                                                "Recording failed: ${e.message ?: e::class.simpleName}",
+                                                DockLevel.Error,
+                                            )
                                         }
                                 } else {
                                     micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
