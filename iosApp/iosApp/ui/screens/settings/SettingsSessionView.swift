@@ -1,7 +1,7 @@
 import SwiftUI
 import DatawatchShared
 
-/// Settings → DwSession: session response summarizer controls.
+/// Settings → Session: session response summarizer controls.
 ///
 /// Surfaced in SettingsView below the Servers section.
 /// Requires server v8.8.13+. The summarizer compresses `last_response` to

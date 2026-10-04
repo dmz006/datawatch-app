@@ -35,7 +35,7 @@ struct SettingsView: View {
                     .listRowBackground(DatawatchColors.surface)
                 }
 
-                // ── DwSession ──────────────────────────────────────────────
+                // ── Session ──────────────────────────────────────────────
                 Section {
                     NavigationLink {
                         SettingsSessionView()
@@ -55,6 +55,29 @@ struct SettingsView: View {
                         }
                     }
                     .listRowBackground(DatawatchColors.surface)
+                }
+
+                // ── Alert rules (PWA Settings → Alert Rules) ─────────────
+                if let profile = store.profiles.first {
+                    Section {
+                        NavigationLink {
+                            AlertRulesView(profile: profile)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Alert Rules")
+                                        .foregroundStyle(DatawatchColors.onSurface)
+                                    Text("Metric thresholds that raise alerts or scale")
+                                        .font(DatawatchFonts.labelSmall)
+                                        .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                                }
+                            } icon: {
+                                Image(systemName: "bell.badge")
+                                    .foregroundStyle(DatawatchColors.primary)
+                            }
+                        }
+                        .listRowBackground(DatawatchColors.surface)
+                    }
                 }
 
                 // ── Security ─────────────────────────────────────────────
