@@ -34,6 +34,18 @@ enum PrdStatusStyle {
         }
     }
 
+    /// PWA `.automata-filter-badge.status-*.active` colours.
+    static func filterColor(_ status: String) -> Color {
+        switch status {
+        case "draft": return Color(hex: 0x6B7280)
+        case "planning": return Color(hex: 0x3B82F6)
+        case "needs_review": return Color(hex: 0xF59E0B)
+        case "approved", "running": return Color(hex: 0x10B981)
+        case "blocked": return Color(hex: 0xEF4444)
+        default: return Color(hex: 0x6B7280)
+        }
+    }
+
     static func isDone(_ status: String) -> Bool {
         let s = status.lowercased()
         return s == "complete" || s == "completed"
@@ -72,6 +84,58 @@ final class PrdListViewModel: ObservableObject {
     @Published private(set) var prds: [PrdDto] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String? = nil
+    @Published var filterOpen = false
+    @Published var historyOn = false
+    @Published var statusFilter: Set<String> = []
+    @Published var typeFilter: Set<String> = []
+    @Published var search = ""
+    @Published private(set) var pinned: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: "dw.automata.pinned") ?? [])
+
+    /// PWA _AUTOMATA_ACTIVE_STATUSES / _AUTOMATA_STATE_RANK.
+    static let activeStatuses: Set<String> = ["draft", "planning", "decomposing", "needs_review", "revisions_asked",
+                                              "approved", "running", "blocked", "completed"]
+    static let filterStatuses = ["draft", "planning", "needs_review", "approved", "running", "blocked", "archived"]
+    static let filterTypes = ["software", "research", "operational", "personal"]
+    private static let rank: [String: Int] = [
+        "waiting_input": 0, "needs_review": 0, "revisions_asked": 0, "blocked": 1, "running": 2, "decomposing": 2,
+        "approved": 3, "planning": 3, "draft": 4, "completed": 5, "rejected": 5, "cancelled": 5, "archived": 6,
+    ]
+
+    /// PWA _automataFilteredList: non-templates, history gate, status/type/search filters,
+    /// then pinned → state rank → most recently updated.
+    var visible: [PrdDto] {
+        var list = prds.filter { !$0.isTemplate }
+        if !historyOn && statusFilter.isEmpty {
+            list = list.filter { Self.activeStatuses.contains($0.status.isEmpty ? "draft" : $0.status) }
+        }
+        if !statusFilter.isEmpty { list = list.filter { statusFilter.contains($0.status.isEmpty ? "draft" : $0.status) } }
+        if !typeFilter.isEmpty { list = list.filter { typeFilter.contains($0.type ?? "") } }
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            list = list.filter { ($0.title ?? "").lowercased().contains(q) || $0.name.lowercased().contains(q) || $0.id.lowercased().contains(q) }
+        }
+        return list.sorted { a, b in
+            let ap = pinned.contains(a.id) ? 0 : 1, bp = pinned.contains(b.id) ? 0 : 1
+            if ap != bp { return ap < bp }
+            let ar = Self.rank[a.status] ?? 9, br = Self.rank[b.status] ?? 9
+            if ar != br { return ar < br }
+            return (a.updatedAt ?? a.createdAt ?? "") > (b.updatedAt ?? b.createdAt ?? "")
+        }
+    }
+
+    func togglePin(_ id: String) {
+        if pinned.contains(id) { pinned.remove(id) } else { pinned.insert(id) }
+        UserDefaults.standard.set(Array(pinned), forKey: "dw.automata.pinned")
+    }
+
+    func toggleStatus(_ v: String) {
+        if statusFilter.contains(v) { statusFilter.remove(v) } else { statusFilter.insert(v) }
+    }
+
+    func toggleType(_ v: String) {
+        if typeFilter.contains(v) { typeFilter.remove(v) } else { typeFilter.insert(v) }
+    }
 
     private var profile: ServerProfile?
     private var pollTask: Task<Void, Never>? = nil
@@ -151,7 +215,10 @@ struct PrdListView: View {
             } else if vm.prds.isEmpty {
                 emptyView
             } else {
-                list
+                VStack(spacing: 0) {
+                    listToolbar
+                    list
+                }
             }
         }
         .onAppear { vm.start(profile: profile) }
@@ -159,13 +226,70 @@ struct PrdListView: View {
         .onChange(of: profile.id) { _ in vm.start(profile: profile) }
     }
 
+    private var listToolbar: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                chip("⊞ Filter", on: vm.filterOpen) { vm.filterOpen.toggle() }
+                chip("History", on: vm.historyOn) { vm.historyOn.toggle() }
+                HStack(spacing: 4) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    TextField("Search automata…", text: $vm.search)
+                        .font(DatawatchFonts.bodyMedium)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(DatawatchColors.surface, in: RoundedRectangle(cornerRadius: 6))
+            }
+            if vm.filterOpen {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(PrdListViewModel.filterStatuses, id: \.self) { st in
+                            chip(PrdStatusStyle.label(st), on: vm.statusFilter.contains(st), tint: PrdStatusStyle.filterColor(st)) {
+                                vm.toggleStatus(st)
+                            }
+                        }
+                        Divider().frame(height: 18)
+                        ForEach(PrdListViewModel.filterTypes, id: \.self) { ty in
+                            chip(ty, on: vm.typeFilter.contains(ty)) { vm.toggleType(ty) }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func chip(_ title: String, on: Bool, tint: Color = DatawatchColors.primary, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(DatawatchFonts.badge)
+                .foregroundStyle(on ? Color.white : DatawatchColors.onSurfaceMuted)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(on ? tint : DatawatchColors.surface2, in: Capsule())
+        }
+        .buttonStyle(.borderless)
+    }
+
     private var list: some View {
         List {
-            ForEach(vm.prds, id: \.id) { prd in
+            if vm.visible.isEmpty {
+                Text(vm.historyOn || !vm.statusFilter.isEmpty ? "No automata match these filters." : "No active automata — turn on History to see finished ones.")
+                    .font(DatawatchFonts.bodyMedium)
+                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    .listRowBackground(Color.clear)
+            }
+            ForEach(vm.visible, id: \.id) { prd in
                 NavigationLink {
                     PrdDetailView(profile: profile, initial: prd)
                 } label: {
-                    PrdRow(prd: prd)
+                    PrdRow(prd: prd, pinned: vm.pinned.contains(prd.id))
+                }
+                .contextMenu {
+                    Button(vm.pinned.contains(prd.id) ? "Unpin" : "Pin") { vm.togglePin(prd.id) }
                 }
                 .listRowBackground(DatawatchColors.surface)
                 .listRowSeparatorTint(DatawatchColors.border)
@@ -201,12 +325,14 @@ struct PrdListView: View {
 
 struct PrdRow: View {
     let prd: PrdDto
+    var pinned: Bool = false
 
     var body: some View {
         let total = prd.allTasks.count
         let done = prd.doneTaskCount
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
+                if pinned { Text("📌").font(DatawatchFonts.labelSmall).accessibilityLabel("Pinned") }
                 Text(prd.displayTitle)
                     .font(DatawatchFonts.titleMedium)
                     .foregroundStyle(DatawatchColors.onSurface)
