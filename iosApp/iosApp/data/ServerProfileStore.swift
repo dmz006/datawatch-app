@@ -15,6 +15,10 @@ final class ServerProfileStore: ObservableObject {
 
     var enabledProfiles: [ServerProfile] { profiles.filter { $0.enabled } }
 
+    /// PWA picker "All" chip — aggregated sessions across every enabled server.
+    static let allServersId = "__all__"
+    var isAllServers: Bool { activeProfileId == Self.allServersId && enabledProfiles.count > 1 }
+
     var activeProfile: ServerProfile? {
         if let id = activeProfileId, let p = profiles.first(where: { $0.id == id && $0.enabled }) { return p }
         return enabledProfiles.first ?? profiles.first

@@ -5,6 +5,23 @@ import DatawatchShared
 /// active chip filled accent2. Hidden when only one server is configured.
 struct ServerPickerBar: View {
     @EnvironmentObject private var store: ServerProfileStore
+    /// Only screens that can aggregate (Sessions) offer "All".
+    var showsAll: Bool = false
+
+    private var allChip: some View {
+        let active = store.isAllServers
+        return Button { store.selectActive(ServerProfileStore.allServersId) } label: {
+            Text("All")
+                .font(.system(size: 11, weight: active ? .semibold : .regular))
+                .foregroundStyle(active ? Color.white : DatawatchColors.onSurface)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 2)
+                .background(active ? DatawatchColors.secondary : DatawatchColors.surface2, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DatawatchColors.border, lineWidth: 1))
+        }
+        .buttonStyle(.borderless)
+        .accessibilityAddTraits(active ? .isSelected : [])
+    }
 
     var body: some View {
         let servers = store.enabledProfiles
@@ -14,6 +31,7 @@ struct ServerPickerBar: View {
                     Text("Server:")
                         .font(.system(size: 11))
                         .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                    if showsAll { allChip }
                     ForEach(servers, id: \.id) { p in chip(p) }
                 }
                 .padding(.horizontal, 12)
@@ -25,7 +43,7 @@ struct ServerPickerBar: View {
     }
 
     private func chip(_ p: ServerProfile) -> some View {
-        let active = store.activeProfile?.id == p.id
+        let active = !store.isAllServers && store.activeProfile?.id == p.id
         return Button { store.selectActive(p.id) } label: {
             Text(p.displayName)
                 .font(.system(size: 11, weight: active ? .semibold : .regular))
