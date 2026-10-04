@@ -1,0 +1,62 @@
+name: iOS signing — match init (one-shot)
+
+# Generates (or rotates) the App Store distribution certificate + provisioning
+# profile with fastlane match and stores them encrypted in the private certs
+# repo. Runs on the hosted macOS runner with App Store Connect API-key auth, so
+# no Apple-ID login, 2FA prompt or local Mac is needed. Run once after the
+# secrets below exist; run again only to rotate.
+#
+# Required secrets (Settings → Secrets and variables → Actions):
+#   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,
+#   APP_STORE_CONNECT_API_KEY_BASE64  — ASC API key (App Manager role)
+#   MATCH_GIT_URL                     — https URL of the private certs repo
+#   MATCH_GIT_BASIC_AUTHORIZATION     — base64("<github-user>:<PAT with repo scope>")
+#   MATCH_PASSWORD                    — passphrase that encrypts the certs repo
+#   KEYCHAIN_PASSWORD                 — any random string (temporary CI keychain)
+#
+# See docs/plans/ios-testflight-setup.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'Profile type to generate'
+        type: choice
+        default: appstore
+        options: [appstore, development]
+
+permissions:
+  contents: read
+
+jobs:
+  match-init:
+    name: fastlane match (${{ inputs.type }})
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+
+      - name: Generate certificate + profile
+        working-directory: iosApp
+        env:
+          MATCH_TYPE: ${{ inputs.type }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          fastlane match_init
+
+      - name: Remove temporary keychain
+        if: always()
+        run: security delete-keychain build.keychain || true
