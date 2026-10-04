@@ -200,3 +200,76 @@ struct SessionTimelineSheet: View {
         )
     }
 }
+
+// MARK: - Schedule input (PWA showScheduleInputPopup)
+
+struct ScheduleInputSheet: View {
+    let profile: ServerProfile
+    let session: DwSession
+    var prefill: String = ""
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var command = ""
+    @State private var when = ""
+    @State private var cron = ""
+    @State private var saving = false
+    @State private var errorMessage: String? = nil
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Command") {
+                    TextField("e.g. continue", text: $command)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+                Section {
+                    TextField("in 30 minutes", text: $when)
+                        .textInputAutocapitalization(.never)
+                } header: {
+                    Text("When")
+                } footer: {
+                    Text("Examples: in 30m, at 14:00, tomorrow at 9am, next monday at 10:00. Leave blank to send on the next input prompt.")
+                }
+                Section {
+                    TextField("*/5 * * * * (optional)", text: $cron)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(DatawatchFonts.terminalSmall)
+                } footer: {
+                    Text("5-field cron: minute hour dom month dow. Overrides When for recurrence.")
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(DatawatchColors.error).font(DatawatchFonts.bodyMedium) }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(DatawatchColors.background)
+            .navigationTitle("Schedule input")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if saving { ProgressView() } else {
+                        Button("Schedule") { save() }
+                            .fontWeight(.semibold)
+                            .disabled(command.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+            .onAppear { if command.isEmpty { command = prefill } }
+        }
+        .presentationDetents([.medium, .large])
+        .preferredColorScheme(.dark)
+    }
+
+    private func save() {
+        saving = true
+        errorMessage = nil
+        IosSessionOps.shared.scheduleInput(
+            profile: profile, session: session, command: command, runAt: when, cronExpr: cron,
+            onSuccess: { DispatchQueue.main.async { saving = false; dismiss() } },
+            onError: { msg in DispatchQueue.main.async { saving = false; errorMessage = msg } }
+        )
+    }
+}

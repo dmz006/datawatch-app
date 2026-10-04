@@ -101,4 +101,31 @@ public object IosSessionOps {
     /** tmux scroll commands (PWA): tmux-copy-mode | tmux-page-up | tmux-page-down. */
     public fun tmuxCommand(session: Session, command: String): Boolean =
         WsOutbound.sendCommand(session.id, "$command ${session.fullId}")
+
+    /**
+     * Schedule input for this session (PWA showScheduleInputPopup → POST /api/schedules).
+     * [runAt]: natural language ("in 30m", "at 14:00", "tomorrow at 9am") or blank for
+     * on-next-input; [cronExpr]: optional 5-field cron, overrides [runAt] for recurrence.
+     */
+    public fun scheduleInput(
+        profile: ServerProfile,
+        session: Session,
+        command: String,
+        runAt: String,
+        cronExpr: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile).createSchedule(
+                task = command.trim(),
+                cron = cronExpr.trim(),
+                sessionId = session.fullId,
+                runAt = runAt.trim(),
+            ).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Couldn't schedule the command.") },
+            )
+        }
+    }
 }
