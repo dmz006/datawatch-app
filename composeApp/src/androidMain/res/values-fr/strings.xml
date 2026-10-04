@@ -1227,4 +1227,11 @@
     <string name="signal_link_copy">Copier le lien</string>
     <string name="signal_link_open">Ouvrir dans Signal</string>
     <string name="signal_link_no_app">Signal n\'est pas installé sur cet appareil — scannez ou collez le lien sur le téléphone à associer.</string>
+    <string name="stats_gpu_error_title">Échec de la sonde GPU</string>
+    <string name="observer_cross_host_view">Vue inter-hôtes</string>
+    <string name="observer_cross_host_title">Vue des enveloppes inter-hôtes</string>
+    <string name="observer_cross_host_empty">Aucune enveloppe — observateur local vide et aucun pair n\'a encore poussé.</string>
+    <string name="observer_remove_peer_title">Supprimer le pair « %1$s » ?</string>
+    <string name="observer_remove_peer_body">Il se réenregistrera automatiquement au prochain envoi (le jeton est renouvelé).</string>
+    <string name="action_remove">Supprimer</string>
 </resources>

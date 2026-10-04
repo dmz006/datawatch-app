@@ -1227,4 +1227,11 @@
     <string name="signal_link_copy">Link kopieren</string>
     <string name="signal_link_open">In Signal öffnen</string>
     <string name="signal_link_no_app">Signal ist auf diesem Gerät nicht installiert — scanne oder füge den Link auf dem zu verknüpfenden Telefon ein.</string>
+    <string name="stats_gpu_error_title">GPU-Prüfung fehlgeschlagen</string>
+    <string name="observer_cross_host_view">Hostübergreifende Ansicht</string>
+    <string name="observer_cross_host_title">Hostübergreifende Envelope-Ansicht</string>
+    <string name="observer_cross_host_empty">Nirgends Envelopes — lokaler Observer leer und noch keine Peer-Pushes.</string>
+    <string name="observer_remove_peer_title">Peer „%1$s“ entfernen?</string>
+    <string name="observer_remove_peer_body">Er registriert sich beim nächsten Push automatisch neu (Token wird rotiert).</string>
+    <string name="action_remove">Entfernen</string>
 </resources>

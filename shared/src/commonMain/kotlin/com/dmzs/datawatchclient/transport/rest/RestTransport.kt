@@ -3988,6 +3988,13 @@ public class RestTransport(
             Unit
         }
 
+    override suspend fun fetchCrossHostEnvelopesJson(): Result<kotlinx.serialization.json.JsonObject> =
+        request {
+            client.get("${profile.baseUrl}/api/observer/envelopes/all-peers") {
+                bearer()?.let { header(HttpHeaders.Authorization, it) }
+            }.body()
+        }
+
     private suspend fun bearer(): String? = tokenProvider?.invoke()?.let { "Bearer $it" }
 
     private inline fun <T> request(block: () -> T): Result<T> =

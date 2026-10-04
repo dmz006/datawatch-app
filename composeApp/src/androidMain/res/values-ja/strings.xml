@@ -1227,4 +1227,11 @@
     <string name="signal_link_copy">リンクをコピー</string>
     <string name="signal_link_open">Signalで開く</string>
     <string name="signal_link_no_app">このデバイスには Signal がインストールされていません — リンクする電話でスキャンまたは貼り付けてください。</string>
+    <string name="stats_gpu_error_title">GPU プローブに失敗しました</string>
+    <string name="observer_cross_host_view">クロスホスト表示</string>
+    <string name="observer_cross_host_title">クロスホスト エンベロープ表示</string>
+    <string name="observer_cross_host_empty">エンベロープがありません — ローカルのオブザーバーは空で、ピアからのプッシュもまだありません。</string>
+    <string name="observer_remove_peer_title">ピア「%1$s」を削除しますか?</string>
+    <string name="observer_remove_peer_body">次回のプッシュで自動的に再登録されます (トークンはローテーションされます)。</string>
+    <string name="action_remove">削除</string>
 </resources>
