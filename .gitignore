@@ -89,6 +89,10 @@ datawatch-test-workspace/
 # Soak test evidence — screenshots, heap dumps, per-run JSON (gitignored; preserve fails locally)
 docs/testing/soak/evidence/
 
+# Node toolchains (puppeteer test harness etc.) — run `npm install` in the harness dir
+node_modules/
+/package-lock.json
+
 # PWA audit frames — thousands of per-frame PNGs from Playwright.
 # Regenerate from /home/dmz/workspace/pwa-audit/out/ (untracked).
 # Phone and watch screenshots (docs/media/phone/, docs/media/watch/)
