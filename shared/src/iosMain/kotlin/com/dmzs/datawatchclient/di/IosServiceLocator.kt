@@ -86,6 +86,7 @@ public object IosServiceLocator {
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
         val tokenProvider: (suspend () -> String)? =
             alias?.let { { tokenStore.get(it) ?: error("Missing token for profile ${profile.id}") } }
+        com.dmzs.datawatchclient.transport.IosCertPins.sync(profile.baseUrl, profile.trustAnchorSha256, TRUST_ALL_SENTINEL)
         val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) trustAllClient else httpClient
         return RestTransport(profile = profile, client = client, tokenProvider = tokenProvider)
     }
@@ -95,6 +96,7 @@ public object IosServiceLocator {
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
         val tokenProvider: (suspend () -> String)? =
             alias?.let { { tokenStore.get(it) ?: error("Missing token for profile ${profile.id}") } }
+        com.dmzs.datawatchclient.transport.IosCertPins.sync(profile.baseUrl, profile.trustAnchorSha256, TRUST_ALL_SENTINEL)
         val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) trustAllWsClient else wsClient
         return WebSocketTransport(profile = profile, client = client, tokenProvider = tokenProvider)
     }

@@ -9,6 +9,7 @@ import io.ktor.serialization.kotlinx.json.json
 
 public actual fun createHttpClient(): HttpClient =
     HttpClient(Darwin) {
+        engine { handleChallenge(IosTls.challengeHandler(trustAll = false)) }
         install(HttpTimeout) {
             requestTimeoutMillis = 15_000
             connectTimeoutMillis = 5_000

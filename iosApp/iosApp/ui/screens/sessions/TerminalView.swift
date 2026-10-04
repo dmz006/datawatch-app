@@ -22,6 +22,7 @@ struct TerminalView: View {
 
     @State private var connected = false
     @State private var disconnected = false
+    @State private var hasContent = false
     @State private var reconnectGeneration = 0
 
     var body: some View {
@@ -33,11 +34,14 @@ struct TerminalView: View {
                 reconnectGeneration: reconnectGeneration,
                 connected: $connected,
                 disconnected: $disconnected,
+                hasContent: $hasContent,
                 terminalInput: $terminalInput
             )
 
-            if !connected && !disconnected {
-                LoadingIndicator(message: "Connecting to terminal…")
+            // Splash stays up through socket connect → subscribe → first pane_capture,
+            // so the user never sees a black terminal (Android SessionLoadingOverlay).
+            if !hasContent && !disconnected {
+                SessionLoadingOverlay(status: connected ? "waiting for terminal…" : "connecting…")
                     .transition(.opacity)
             }
 
@@ -46,7 +50,7 @@ struct TerminalView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: connected)
+        .animation(.easeInOut(duration: 0.25), value: hasContent)
         .animation(.easeInOut(duration: 0.25), value: disconnected)
         .background(DatawatchColors.background)
     }
@@ -88,6 +92,7 @@ private struct TerminalWebView: UIViewRepresentable {
     let reconnectGeneration: Int
     @Binding var connected: Bool
     @Binding var disconnected: Bool
+    @Binding var hasContent: Bool
     @Binding var terminalInput: String?
 
     static let bridgeName = "dwBridge"
@@ -117,6 +122,7 @@ private struct TerminalWebView: UIViewRepresentable {
             profile: profile,
             connected: $connected,
             disconnected: $disconnected,
+            hasContent: $hasContent,
             terminalInput: $terminalInput
         )
     }
@@ -189,6 +195,7 @@ extension TerminalWebView {
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         @Binding var connected: Bool
         @Binding var disconnected: Bool
+        @Binding var hasContent: Bool
         @Binding var terminalInput: String?
         weak var webView: WKWebView?
         var generation = 0
@@ -209,12 +216,14 @@ extension TerminalWebView {
             profile: ServerProfile,
             connected: Binding<Bool>,
             disconnected: Binding<Bool>,
+            hasContent: Binding<Bool>,
             terminalInput: Binding<String?>
         ) {
             self.session = session
             self.profile = profile
             _connected = connected
             _disconnected = disconnected
+            _hasContent = hasContent
             _terminalInput = terminalInput
         }
 
@@ -268,6 +277,7 @@ extension TerminalWebView {
                   let literal = String(data: quotedData, encoding: .utf8)
             else { return }
             evaluate("window.dwPaneCapture && window.dwPaneCapture(\(literal), \(capture.isFirst ? "true" : "false"));")
+            if !hasContent { hasContent = true }
         }
 
         // MARK: Outbound (Swift → Kotlin → /ws)

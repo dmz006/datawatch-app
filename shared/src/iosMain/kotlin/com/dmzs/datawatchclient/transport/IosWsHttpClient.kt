@@ -7,40 +7,17 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSURLCredential
-import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
-import platform.Foundation.NSURLSessionAuthChallengeUseCredential
-import platform.Foundation.credentialForTrust
-import platform.Foundation.serverTrust
 
 /**
  * iOS Ktor HttpClient with WebSockets installed. Mirrors [AndroidWsHttpClient].
  *
- * @param trustAll when true, accepts any server certificate (the iOS analogue of
- *   Android's accept-all X509TrustManager). Only selected when the profile has
- *   `trustAnchorSha256 == TRUST_ALL_SENTINEL`. The preferred path for self-signed
- *   servers is installing the server CA on the device, which URLSession honours
- *   with no exception here. Per-profile SHA-256 pinning is the planned follow-up.
+ * TLS policy lives in [IosTls.challengeHandler]: system validation by default,
+ * per-host leaf-certificate pins from the server profile, or accept-all when
+ * [trustAll] (profile sentinel; insecure, parity with Android's trust manager).
  */
-@OptIn(ExperimentalForeignApi::class)
 public fun createHttpClientWithWebSockets(trustAll: Boolean = false): HttpClient =
     HttpClient(Darwin) {
-        if (trustAll) {
-            engine {
-                handleChallenge { _, _, challenge, completionHandler ->
-                    val trust = challenge.protectionSpace.serverTrust
-                    if (trust != null) {
-                        completionHandler(
-                            NSURLSessionAuthChallengeUseCredential,
-                            NSURLCredential.credentialForTrust(trust),
-                        )
-                    } else {
-                        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, null)
-                    }
-                }
-            }
-        }
+        engine { handleChallenge(IosTls.challengeHandler(trustAll)) }
         install(WebSockets) {
             pingInterval = 30_000
         }
