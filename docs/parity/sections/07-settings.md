@@ -58,7 +58,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | element | Web Server card: `server.enabled/host/port/tls/tls_port/tls_auto_generate/tls_cert/tls_key/channel_port` | ✓ websrv | ✓ CFS.WebServer | ✓ config card cc_websrv (interface picker) | aligned | | |
 | element | MCP Server card: `mcp.enabled/sse_enabled/sse_host/sse_port/tls_*` | ✓ mcpsrv | ✓ CFS.McpServer | ✓ config card cc_mcpsrv | aligned | | |
 | element | Communication Configuration: per-backend cards (Signal, Telegram, Discord, Slack, Matrix, Ntfy, Email, Twilio, GitHub webhook, Webhook, DNS) toggle + config popup | ✓ backends A:6766, A:14028 | ✓ ChannelsCard + Backend/ChannelConfigDialog (ChannelBackendSchemas) | ✓ SettingsCommBackendsCard: per-service toggle + configure (PWA BACKEND_FIELDS) | aligned | | |
-| interaction | Signal device linking (Link Device → QR + instructions) | ✓ startLinking | ✓ SignalLinkingDialog | ✗ (footer points to web UI) | ios-missing | | |
+| interaction | Signal device linking (Link Device → QR + instructions) | ✓ startLinking | ✓ SignalLinkingDialog | ✓ SignalDeviceSection in Communication Configuration (status + Link Device → sheet; POST /api/link/start + /api/link/stream SSE; `sgnl://` URI rendered with CoreImage CIQRCodeGenerator) | aligned | | |
 | element | Proxy Resilience card (`proxy.enabled/request_timeout/health_interval/circuit_breaker_threshold/circuit_breaker_reset/offline_queue_size`) | ✓ proxy A:14230 | ✓ CFS.Proxy | ✓ config card proxy | aligned | | |
 | element | Routing Rules card | ✓ routing_rules A:24370 | ✓ RoutingRulesCard | ✓ list card (list / add / delete) | aligned | | |
 | element | Channel Routing card | ✓ channel_routing A:24413 | ✓ ChannelRoutingCard | ~ list card read-only | misaligned | | |
@@ -95,20 +95,20 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 | Cat | Feature | PWA | Android | iOS | Status | Decision | Notes |
 |---|---|---|---|---|---|---|---|
 | element | Identity card (role, goals, projects, values, focus, notes) + wizard | ✓ identity | ✓ IdentityCard + IdentityWizardSheet | ~ SettingsIdentityCard form (role, goals, projects, values, focus, notes); no wizard | misaligned | | |
-| element | Algorithm Mode card | ✓ algorithm | ✓ AlgorithmModeCard | ✗ | ios-missing | | |
+| element | Algorithm Mode card | ✓ algorithm | ✓ AlgorithmModeCard | ✓ Settings › Automata › Algorithm Mode (session list, 7-phase strip, output field, Advance / Edit / Abort / Reset) | aligned | | |
 | element | Evals card (suites, runs, Run) | ✓ evals | ✓ EvalsCard | ~ list card (suites + Run); no run history | misaligned | | |
 | element | Council panel (persona checkboxes, proposal, Quick/Debate, live SSE runs, recent 5, subsystem config, persona modal + 🤖 wizard) | ✓ council A:26111 | ✓ CouncilCard + CouncilPersonaWizardSheet | ~ list card personas (list / delete); no runs / proposal / wizard | misaligned | | |
 | element | Project Profiles card (list, Edit / Smoke Test / Delete, form ↔ YAML) | ✓ gc_projectprofiles | ✓ KindProfilesCard(project) + SmokeProgressCard | ~ list card (list / Smoke test / delete); no edit / YAML | misaligned | | |
 | element | Pipeline Manager card | ✓ pipelines A:25649 | ✓ PipelineManagerCard | ✓ PipelinesView re-homed to Automata | aligned | | |
 | element | Automata Orchestrator (graphs) card | ✓ orchestrator_graphs A:24574 | ✓ OrchestratorGraphsCard | ✓ OrchestratorGraphsView re-homed to Automata | aligned | | |
-| element | Guardrail Library card | ✓ automata_scan A:24770 | ✓ GuardrailLibraryCard + ScanConfigCard | ~ list card read-only (no scan config) | misaligned | | |
+| element | Guardrail Library card | ✓ automata_scan A:24770 | ✓ GuardrailLibraryCard + ScanConfigCard | ~ list card read-only; scan config lives in the new Autonomous Config card (Scan defaults section) | misaligned | | |
 | element | Guardrail Profiles card | ✓ A:24789 | ~ folded into GuardrailLibraryCard (GuardrailProfileRow) | ~ list card (list / delete); no create / edit | misaligned | | |
 | element | Autonomous Config card (26 `autonomous.*` keys incl. `verification_backends` editor, quality gates, capacity, per-task/story guardrails, injection guard) | ✓ automata_autonomous | ~ AutonomousConfigCard + CFS.Autonomous: has `decomposition_backend/effort`, `verification_effort`, `stale_task_seconds`; lacks `planning_backend/model/timeout_seconds`, `capacity_*`, `max_recursion_depth`, `auto_approve_children`, `per_task/per_story_guardrails`, `block_on_injection`, `injection_guard`, `verification_model` | ✓ config card gc_autonomous (PWA 27 keys) | misaligned | | verify key set against server config schema |
 | element | Pipelines config (`pipeline.max_parallel/default_backend`) | ✓ 'pipeline' | ✓ CFS.Pipelines | ✓ config card gc_pipeline | aligned | | |
 | element | Orchestrator config (`orchestrator.enabled/guardrail_backend/guardrail_model/guardrail_timeout_ms/max_parallel_prds`) | ✓ 'orchestrator' | ~ CFS.Orchestrator — no `guardrail_model` | ✓ config card gc_orchestrator (incl. guardrail_model) | misaligned | | |
 | element | Skill registries card (list, add/edit, connect, sync, browse) | ✓ automata_skills A:24852 | ✓ SkillRegistriesCard | ~ list card (list / add / Connect / delete); no browse / sync | misaligned | | |
 | element | Automata Type Registry card (list, create with label/id/color, delete) | ✓ automata_type_registry A:24702 | ✓ AutomataTypesCard (Settings › Automata) | ✓ Settings › Automata › Type Registry (D25a; removed from Automata tab) | aligned | needs-decision | D10 |
-| element | Automata settings panel (defaults: guided, priority, type, skills, read/write dirs) | ✓ A:24627 | ~ partially in AutonomousConfigCard / PRD settings | ✗ | ios-missing | | verify Android coverage |
+| element | Automata settings panel (defaults: guided, priority, type, skills, read/write dirs) | ✓ A:24627 | ~ partially in AutonomousConfigCard / PRD settings | ✓ Autonomous Config card (automata_autonomous): poll interval, max parallel tasks, auto-fix retries + Scan defaults (/api/autonomous/scan/config toggles, fail-on severity, max findings, fix-loop retries) — matches live PWA loadAutomataSettingsPanel | aligned | | live PWA panel = autonomous config + scan config; the guided/priority/type/skills/dirs list is per-PRD (PRD settings modal) |
 
 ## Plugins tab
 
@@ -139,7 +139,7 @@ Ref prefixes: **A** = `datawatch/internal/server/web/app.js`, **S** = `SettingsS
 ## Coverage
 rows: 97 · aligned: 42 · ios-missing: 8 · android-missing: 5 · pwa-missing: 4 · misaligned: 38 · n/a: 0
 
-iOS Settings rebuilt 2026-10-04 (B26–B32): six PWA groups as a native grouped list; schema-driven config cards ported from PWA `GENERAL/COMMS/LLM_CONFIG_FIELDS`, generic list cards over `IosSettingsLists`, bespoke About/Push/Encryption/raw-config cards. Remaining iOS gaps are the `✗`/`~` rows above (LLM + compute-node create/edit, council runs, algorithm mode, Signal linking, theme light palette, etc.).
+iOS Settings rebuilt 2026-10-04 (B26–B32): six PWA groups as a native grouped list; schema-driven config cards ported from PWA `GENERAL/COMMS/LLM_CONFIG_FIELDS`, generic list cards over `IosSettingsLists`, bespoke About/Push/Encryption/raw-config cards. Remaining iOS gaps are the `✗`/`~` rows above (council runs, LLM In-use / YAML views, Ollama model management, etc.). Added 2026-10-04: LLM + ComputeNode add/edit forms, Algorithm Mode, Autonomous Config + scan defaults, Signal device linking (QR), Dark/Light/System theme.
 
 ## Decisions needed
 1. **iOS Settings structure** — PWA/Android use six tabs; iOS is a flat 4-row list. Options: (a) adopt the six-tab bar on iOS (PWA rule), (b) keep the native grouped list but mirror the six groups as sections, (c) tabs on iPad / list on iPhone. Refs A:6697, S:119, SV.
