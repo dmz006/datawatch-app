@@ -1,0 +1,186 @@
+package com.dmzs.datawatchclient.di
+
+import com.dmzs.datawatchclient.domain.ServerProfile
+import com.dmzs.datawatchclient.transport.dto.NewPrdRequestDto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
+
+/** Picker data for the Launch Automaton wizard. */
+public data class IosPrdWizardOptions(
+    /** Execution backends from `/api/backends`. */
+    val backends: List<String>,
+    /** Project profiles (`kind=project`). */
+    val projectProfiles: List<String>,
+    /** Backend → model ids (Ollama, OpenWebUI, OpenCode, and LLM-registry kinds). */
+    val modelsByBackend: Map<String, List<String>>,
+    /** claude-code models / efforts (`/api/llm/claude/...`). */
+    val claudeModels: List<String>,
+    val efforts: List<String>,
+)
+
+/**
+ * Automata operations for Swift (parity B14 wizard, B16 detail actions). Option loading
+ * mirrors Android NewPrdDialog; OpenCode models are a flat list (grouping is D2).
+ */
+public object IosAutomata {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    public fun loadWizardOptions(
+        profile: ServerProfile,
+        onResult: (IosPrdWizardOptions) -> Unit,
+    ) {
+        scope.launch {
+            val t = IosServiceLocator.transportFor(profile)
+            val options =
+                coroutineScope {
+                    val backends = async { t.listBackends().getOrNull()?.llm.orEmpty() }
+                    val projects = async { t.listKindProfiles("project").getOrNull().orEmpty() }
+                    val ollama = async { t.listOllamaModels().getOrNull().orEmpty() }
+                    val owui = async { t.listOpenWebUiModels().getOrNull().orEmpty() }
+                    val openCode = async { t.fetchOpenCodeModels().getOrNull() }
+                    val llms = async { t.listLlms().getOrNull().orEmpty() }
+                    val claudeModels = async { t.listClaudeModels().getOrNull().orEmpty() }
+                    val efforts = async { t.listClaudeEfforts().getOrNull().orEmpty() }
+
+                    val models = linkedMapOf<String, List<String>>()
+                    ollama.await().takeIf { it.isNotEmpty() }?.let { models["ollama"] = it }
+                    owui.await().takeIf { it.isNotEmpty() }?.let { models["openwebui"] = it }
+                    openCode.await()?.models?.map { it.id }?.filter { it.isNotBlank() }
+                        ?.takeIf { it.isNotEmpty() }?.let { models["opencode"] = it }
+                    llms.await()
+                        .filter { it.enabled && it.kind !in setOf("ollama", "openwebui") }
+                        .groupBy { it.kind }
+                        .forEach { (kind, entries) ->
+                            if (kind !in models) {
+                                val ids =
+                                    entries.flatMap { e -> e.models.map { p -> p.model } + listOf(e.model) }
+                                        .filter { it.isNotBlank() }
+                                        .distinct()
+                                if (ids.isNotEmpty()) models[kind] = ids
+                            }
+                        }
+                    IosPrdWizardOptions(
+                        backends = backends.await(),
+                        projectProfiles =
+                            projects.await().mapNotNull { (it["name"] as? JsonPrimitive)?.content },
+                        modelsByBackend = models,
+                        claudeModels = claudeModels.await(),
+                        efforts = efforts.await(),
+                    )
+                }
+            onResult(options)
+        }
+    }
+
+    /** Models offered for [backend]: claude-code uses the Claude list, others the per-backend map. */
+    public fun modelsFor(options: IosPrdWizardOptions, backend: String): List<String> =
+        when {
+            backend.isBlank() -> emptyList()
+            backend.contains("claude", ignoreCase = true) -> options.claudeModels
+            backend.startsWith("opencode", ignoreCase = true) -> options.modelsByBackend["opencode"].orEmpty()
+            else -> options.modelsByBackend[backend].orEmpty()
+        }
+
+    /**
+     * POST /api/autonomous/prds. With [projectProfile] set only title/spec apply
+     * (Android/PWA profile mode); otherwise directory + LLM fields. Blank = unset.
+     * [onSuccess] receives the new PRD id.
+     */
+    public fun createPrd(
+        profile: ServerProfile,
+        title: String,
+        spec: String,
+        projectDir: String,
+        projectProfile: String,
+        backend: String,
+        model: String,
+        effort: String,
+        planningBackend: String,
+        planningModel: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        fun String.orNull(): String? = trim().ifBlank { null }
+        val request =
+            if (projectProfile.isNotBlank()) {
+                NewPrdRequestDto(
+                    name = "",
+                    title = title.orNull(),
+                    spec = spec.orNull(),
+                    projectProfile = projectProfile,
+                )
+            } else {
+                NewPrdRequestDto(
+                    name = "",
+                    title = title.orNull(),
+                    spec = spec.orNull(),
+                    projectDir = projectDir.orNull(),
+                    backend = backend.orNull(),
+                    model = model.orNull(),
+                    effort = effort.orNull(),
+                    decompositionProfile = planningBackend.orNull(),
+                    decompositionModel = planningModel.orNull(),
+                )
+            }
+        scope.launch {
+            IosServiceLocator.transportFor(profile).createPrd(request).fold(
+                onSuccess = { onSuccess(it) },
+                onFailure = { onError(it.message ?: "Couldn't create the automaton.") },
+            )
+        }
+    }
+
+    /** PATCH title and/or spec; blank = unchanged. */
+    public fun editPrd(
+        profile: ServerProfile,
+        prdId: String,
+        title: String,
+        spec: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            IosServiceLocator.transportFor(profile)
+                .patchPrd(prdId, title = title.trim().ifBlank { null }, spec = spec.ifBlank { null })
+                .fold(
+                    onSuccess = { onSuccess() },
+                    onFailure = { onError(it.message ?: "Couldn't save changes.") },
+                )
+        }
+    }
+
+    /**
+     * Hard-delete with a memory strategy ("keep" | "purge" | "archive"); archive takes an
+     * optional comma-separated role-prefix filter and "project-shared" | "global-shared".
+     */
+    public fun deletePrd(
+        profile: ServerProfile,
+        prdId: String,
+        strategy: String,
+        roleFilter: String,
+        archiveScope: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        scope.launch {
+            val archive = strategy == "archive"
+            IosServiceLocator.transportFor(profile).deletePrd(
+                prdId = prdId,
+                hard = true,
+                memoryStrategy = strategy.takeIf { it != "keep" },
+                archiveRoleFilter =
+                    if (archive) roleFilter.split(',').map { it.trim() }.filter { it.isNotEmpty() } else null,
+                archiveToScope = archiveScope.takeIf { archive && it.isNotBlank() },
+            ).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { onError(it.message ?: "Delete failed.") },
+            )
+        }
+    }
+}

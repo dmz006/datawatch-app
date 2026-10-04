@@ -119,8 +119,30 @@ final class PrdListViewModel: ObservableObject {
 struct PrdListView: View {
     let profile: ServerProfile
     @StateObject private var vm = PrdListViewModel()
+    @State private var showWizard = false
 
     var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            listContent
+            Button {
+                showWizard = true
+            } label: {
+                Text("⚡")
+                    .font(.system(size: 24))
+                    .frame(width: 56, height: 56)
+                    .background(DatawatchColors.primary, in: Circle())
+                    .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .accessibilityLabel("Launch automaton")
+        }
+        .sheet(isPresented: $showWizard) {
+            NewPrdView(profile: profile) { _ in Task { await vm.refreshAsync() } }
+        }
+    }
+
+    private var listContent: some View {
         Group {
             if vm.isLoading && vm.prds.isEmpty {
                 LoadingIndicator(message: "Loading PRDs…")
