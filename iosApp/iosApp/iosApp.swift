@@ -67,6 +67,10 @@ struct DatawatchClientApp: App {
         RootView()
             .environmentObject(profileStore)
             .task {
+                #if DEBUG
+                // Simulator screenshot passes: skip the system permission prompt.
+                if ProcessInfo.processInfo.arguments.contains("-dwSkipNotifPrompt") { return }
+                #endif
                 await NotificationService.shared.requestAuthorization()
             }
             .onReceive(
