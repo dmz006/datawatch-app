@@ -34,12 +34,11 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.domain.ServerProfile
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.LogsView
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Settings → Monitor cards wrapping the `/api/logs`,
@@ -83,10 +82,11 @@ public fun DaemonLogCard() {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "daemonlog",
+        title = "Daemon log",
+        docsAnchor = "daemon-log",
     ) {
-        PwaSectionTitle("Daemon log", docsAnchor = "daemon-log")
         banner?.let {
             Text(
                 it,
@@ -169,10 +169,11 @@ public fun InterfacesCard() {
             onFailure = { banner = "Interfaces unavailable — ${it.message ?: it::class.simpleName}" },
         )
     }
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "network_interfaces",
+        title = "Network interfaces",
+        docsAnchor = "network-interfaces",
     ) {
-        PwaSectionTitle("Network interfaces", docsAnchor = "network-interfaces")
         banner?.let {
             Text(
                 it,
@@ -234,10 +235,11 @@ public fun KillOrphansCard() {
     var confirmOpen by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "kill_orphans",
+        title = "Kill orphaned tmux sessions",
+        docsAnchor = "orphaned-tmux-sessions",
     ) {
-        PwaSectionTitle("Kill orphaned tmux sessions", docsAnchor = "daemon-log")
         Text(
             "Terminate tmux sessions on the server that datawatch isn't " +
                 "tracking. Useful after a crash or migration when tmux " +
@@ -334,10 +336,11 @@ public fun UpdateDaemonCard() {
     var pendingVersion by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "daemon_update",
+        title = "Daemon update",
+        docsAnchor = "auto-update",
     ) {
-        PwaSectionTitle("Daemon update", docsAnchor = "auto-update")
         Text(
             "Check whether a new datawatch daemon version is available on " +
                 "the active server. If an update is found you can choose to " +
@@ -466,10 +469,11 @@ public fun RestartDaemonCard() {
     var confirmOpen by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "daemon_restart",
+        title = "Daemon",
+        docsAnchor = "datawatch",
     ) {
-        PwaSectionTitle("Daemon", docsAnchor = "datawatch")
         Text(
             "Restart the datawatch daemon on the active server. Every " +
                 "running session briefly loses its WebSocket connection " +
@@ -552,10 +556,11 @@ public fun SubsystemReloadCard() {
     var reloading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
+    PwaCard(
+        id = "hot_reload",
+        title = "Hot-reload subsystem",
+        docsAnchor = "hot-reload",
     ) {
-        PwaSectionTitle("Hot-reload subsystem", docsAnchor = "hot-reload")
         Text(
             "Reload a subsystem on the active server without restarting the daemon. " +
                 "Changes to config files, filter rules, or memory are picked up immediately.",

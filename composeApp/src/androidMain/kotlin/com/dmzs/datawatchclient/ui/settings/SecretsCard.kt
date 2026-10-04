@@ -1,6 +1,7 @@
 package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,8 +41,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.dto.AddSecretDto
 import com.dmzs.datawatchclient.transport.dto.SecretDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -63,152 +63,147 @@ public fun SecretsCard(vm: SecretsCardViewModel = viewModel()) {
 
     LaunchedEffect(Unit) { vm.load() }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
+    PwaCard(
+        id = "secrets_store",
+        title = stringResource(R.string.secrets_section_store),
+        docsAnchor = "secrets-store",
+        innerPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            PwaSectionTitle(stringResource(R.string.secrets_section_store), docsAnchor = "secrets-store")
+        // Add form
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.secrets_name_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = { value = it },
+            label = { Text(stringResource(R.string.secrets_value_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        )
+        OutlinedTextField(
+            value = desc,
+            onValueChange = { desc = it },
+            label = { Text(stringResource(R.string.secrets_desc_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = tags,
+            onValueChange = { tags = it },
+            label = { Text(stringResource(R.string.secrets_tags_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = scopes,
+            onValueChange = { scopes = it },
+            label = { Text(stringResource(R.string.secrets_scopes_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedButton(
+            onClick = {
+                if (name.isNotBlank() && value.isNotBlank()) {
+                    vm.addSecret(
+                        AddSecretDto(
+                            name = name,
+                            value = value,
+                            description = desc,
+                            tags = tags.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                            scopes = scopes.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                        ),
+                    )
+                    name = ""
+                    value = ""
+                    desc = ""
+                    tags = ""
+                    scopes = ""
+                }
+            },
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            Text(stringResource(R.string.secrets_add_btn))
+        }
 
-            // Add form
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.secrets_name_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = { Text(stringResource(R.string.secrets_value_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            )
-            OutlinedTextField(
-                value = desc,
-                onValueChange = { desc = it },
-                label = { Text(stringResource(R.string.secrets_desc_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = tags,
-                onValueChange = { tags = it },
-                label = { Text(stringResource(R.string.secrets_tags_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = scopes,
-                onValueChange = { scopes = it },
-                label = { Text(stringResource(R.string.secrets_scopes_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedButton(
-                onClick = {
-                    if (name.isNotBlank() && value.isNotBlank()) {
-                        vm.addSecret(
-                            AddSecretDto(
-                                name = name,
-                                value = value,
-                                description = desc,
-                                tags = tags.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                                scopes = scopes.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                            ),
-                        )
-                        name = ""
-                        value = ""
-                        desc = ""
-                        tags = ""
-                        scopes = ""
-                    }
-                },
+        // Secret list
+        if (state.secrets.isEmpty()) {
+            Text(
+                stringResource(R.string.secrets_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
-            ) {
-                Text(stringResource(R.string.secrets_add_btn))
-            }
-
-            // Secret list
-            if (state.secrets.isEmpty()) {
-                Text(
-                    stringResource(R.string.secrets_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            } else {
-                state.secrets.forEach { s ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+            )
+        } else {
+            state.secrets.forEach { s ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                s.name,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            )
+                            if (s.tags.isNotEmpty()) {
+                                Spacer(Modifier.width(4.dp))
                                 Text(
-                                    s.name,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                                )
-                                if (s.tags.isNotEmpty()) {
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        "[${s.tags.joinToString(", ")}]",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                            if (s.description.isNotBlank()) {
-                                Text(
-                                    s.description,
+                                    "[${s.tags.joinToString(", ")}]",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            if (s.scopes.isNotEmpty()) {
-                                Row {
-                                    s.scopes.forEach { scope ->
-                                        Surface(
-                                            color = Color(0xFF00695C),
-                                            shape = RoundedCornerShape(4.dp),
-                                            modifier = Modifier.padding(end = 4.dp),
-                                        ) {
-                                            Text(
-                                                scope,
-                                                fontSize = 10.sp,
-                                                color = Color.White,
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                            )
-                                        }
+                        }
+                        if (s.description.isNotBlank()) {
+                            Text(
+                                s.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (s.scopes.isNotEmpty()) {
+                            Row {
+                                s.scopes.forEach { scope ->
+                                    Surface(
+                                        color = Color(0xFF00695C),
+                                        shape = RoundedCornerShape(4.dp),
+                                        modifier = Modifier.padding(end = 4.dp),
+                                    ) {
+                                        Text(
+                                            scope,
+                                            fontSize = 10.sp,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                        )
                                     }
                                 }
                             }
                         }
-                        Spacer(Modifier.width(4.dp))
-                        IconButton(onClick = { vm.deleteSecret(s.name) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.secrets_delete_btn),
-                            )
-                        }
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = { vm.deleteSecret(s.name) }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.secrets_delete_btn),
+                        )
                     }
                 }
             }
+        }
 
-            state.error?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

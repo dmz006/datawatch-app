@@ -1,7 +1,7 @@
 package com.dmzs.datawatchclient.ui.routing
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,8 +31,7 @@ import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.TransportClient
 import com.dmzs.datawatchclient.transport.dto.ChannelRoutingRuleDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -71,142 +70,138 @@ public fun ChannelRoutingCard() {
     }
     LaunchedEffect(Unit) { load() }
 
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
+    PwaCard(
+        id = "channel_routing",
+        title = stringResource(R.string.channel_routing_title),
+        docsAnchor = "channel-routing",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            PwaSectionTitle(stringResource(R.string.channel_routing_title), docsAnchor = "routing-rules")
+        // Add rule form
+        Text(
+            stringResource(R.string.channel_routing_add_rule),
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+        )
+        OutlinedTextField(
+            value = channelPattern,
+            onValueChange = { channelPattern = it },
+            label = { Text(stringResource(R.string.channel_routing_pattern_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = peerName,
+            onValueChange = { peerName = it },
+            label = { Text(stringResource(R.string.channel_routing_peer_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = automataType,
+            onValueChange = { automataType = it },
+            label = { Text(stringResource(R.string.channel_routing_type_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(6.dp))
+        Button(
+            onClick = {
+                if (channelPattern.isBlank()) return@Button
+                scope.launch {
+                    saving = true
+                    val newRule =
+                        ChannelRoutingRuleDto(
+                            channelPattern = channelPattern,
+                            peerName = peerName,
+                            automataType = automataType,
+                        )
+                    transport()?.putChannelRouting(rules + newRule)
+                        ?.onSuccess {
+                            rules = it.rules
+                            channelPattern = ""
+                            peerName = ""
+                            automataType = ""
+                            loadError = null
+                        }
+                        ?.onFailure { loadError = it.message }
+                    saving = false
+                }
+            },
+            enabled = !saving,
+        ) {
+            Text(stringResource(R.string.channel_routing_add_rule))
+        }
 
-            // Add rule form
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+        // Rules list
+        loadError?.let {
             Text(
-                stringResource(R.string.channel_routing_add_rule),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 4.dp),
             )
-            OutlinedTextField(
-                value = channelPattern,
-                onValueChange = { channelPattern = it },
-                label = { Text(stringResource(R.string.channel_routing_pattern_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
+        }
+        if (rules.isEmpty()) {
+            Text(
+                stringResource(R.string.channel_routing_no_rules),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(4.dp))
-            OutlinedTextField(
-                value = peerName,
-                onValueChange = { peerName = it },
-                label = { Text(stringResource(R.string.channel_routing_peer_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            Spacer(Modifier.height(4.dp))
-            OutlinedTextField(
-                value = automataType,
-                onValueChange = { automataType = it },
-                label = { Text(stringResource(R.string.channel_routing_type_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            Spacer(Modifier.height(6.dp))
-            Button(
-                onClick = {
-                    if (channelPattern.isBlank()) return@Button
-                    scope.launch {
-                        saving = true
-                        val newRule =
-                            ChannelRoutingRuleDto(
-                                channelPattern = channelPattern,
-                                peerName = peerName,
-                                automataType = automataType,
+        } else {
+            rules.forEachIndexed { idx, rule ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                rule.channelPattern,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
                             )
-                        transport()?.putChannelRouting(rules + newRule)
-                            ?.onSuccess {
-                                rules = it.rules
-                                channelPattern = ""
-                                peerName = ""
-                                automataType = ""
-                                loadError = null
-                            }
-                            ?.onFailure { loadError = it.message }
-                        saving = false
-                    }
-                },
-                enabled = !saving,
-            ) {
-                Text(stringResource(R.string.channel_routing_add_rule))
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
-            // Rules list
-            loadError?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 4.dp),
-                )
-            }
-            if (rules.isEmpty()) {
-                Text(
-                    stringResource(R.string.channel_routing_no_rules),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                rules.forEachIndexed { idx, rule ->
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    rule.channelPattern,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                )
-                                if (rule.peerName.isNotEmpty()) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Surface(
-                                        shape = MaterialTheme.shapes.small,
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                    ) {
-                                        Text(
-                                            rule.peerName,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        )
-                                    }
+                            if (rule.peerName.isNotEmpty()) {
+                                Spacer(Modifier.width(6.dp))
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ) {
+                                    Text(
+                                        rule.peerName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
                                 }
                             }
-                            if (rule.automataType.isNotEmpty()) {
-                                Text(
-                                    rule.automataType,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
                         }
-                        IconButton(onClick = {
-                            scope.launch {
-                                val newRules = rules.filterIndexed { i, _ -> i != idx }
-                                transport()?.putChannelRouting(newRules)
-                                    ?.onSuccess { rules = it.rules }
-                                    ?.onFailure { loadError = it.message }
-                            }
-                        }) {
+                        if (rule.automataType.isNotEmpty()) {
                             Text(
-                                "×",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error,
+                                rule.automataType,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    if (idx < rules.lastIndex) HorizontalDivider()
+                    IconButton(onClick = {
+                        scope.launch {
+                            val newRules = rules.filterIndexed { i, _ -> i != idx }
+                            transport()?.putChannelRouting(newRules)
+                                ?.onSuccess { rules = it.rules }
+                                ?.onFailure { loadError = it.message }
+                        }
+                    }) {
+                        Text(
+                            "×",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
+                if (idx < rules.lastIndex) HorizontalDivider()
             }
         }
     }

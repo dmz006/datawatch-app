@@ -27,8 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
@@ -79,19 +78,16 @@ public fun KindProfilesCard(
 
     LaunchedEffect(kind) { refresh() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PwaSectionTitle(title)
-            Spacer(modifier = Modifier.weight(1f))
+    PwaCard(
+        id = "gc_${kind}profiles",
+        title = title,
+        docsAnchor = "$kind-profiles",
+        headerActions = {
             TextButton(onClick = { creating = true }) {
                 Text("+ Add", style = MaterialTheme.typography.labelSmall)
             }
-        }
+        },
+    ) {
         banner?.let {
             Text(
                 it,

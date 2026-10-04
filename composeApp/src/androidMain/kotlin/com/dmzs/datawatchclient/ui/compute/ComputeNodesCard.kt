@@ -63,8 +63,7 @@ import com.dmzs.datawatchclient.transport.dto.MigrationComputeKindsDto
 import com.dmzs.datawatchclient.transport.dto.OllamaCatalogDto
 import com.dmzs.datawatchclient.transport.dto.OllamaPullTaskDto
 import com.dmzs.datawatchclient.transport.dto.OllamaTagDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -137,26 +136,19 @@ public fun ComputeNodesCard(
         loading = false
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PwaSectionTitle(
-                stringResource(R.string.settings_compute_nodes_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "compute-nodes",
-            )
+    PwaCard(
+        id = "compute_nodes",
+        title = stringResource(R.string.settings_compute_nodes_title),
+        docsAnchor = "compute-nodes",
+        headerActions = {
             IconButton(onClick = {
                 selectedNode = null
                 showAddDialog = true
             }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.compute_node_add))
             }
-        }
-
+        },
+    ) {
         // Migration banner — shown when deprecated-kind nodes exist
         if ((migrationData?.count ?: 0) > 0) {
             Card(

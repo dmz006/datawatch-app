@@ -45,7 +45,7 @@ public fun ClusterNodesCard(vm: ClusterNodesViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.refresh() }
     if (state.nodes.isEmpty()) return
 
-    Section(title = "Cluster nodes") {
+    Section(id = "cluster_nodes", title = "Cluster nodes", docsAnchor = "cluster-nodes") {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             state.nodes.forEach { node -> ClusterNodeRow(node) }
         }

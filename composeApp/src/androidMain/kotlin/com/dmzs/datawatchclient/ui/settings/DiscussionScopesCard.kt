@@ -1,8 +1,8 @@
 package com.dmzs.datawatchclient.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,8 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.TransportClient
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -147,111 +146,103 @@ public fun DiscussionScopesCard() {
         )
     }
 
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .pwaCard(),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PwaSectionTitle(
-                    stringResource(R.string.discussion_scopes_title),
-                    docsAnchor = "discussion-scopes",
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { scope.launch { reload() } }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                }
+    PwaCard(
+        id = "discussion_scopes",
+        title = stringResource(R.string.discussion_scopes_title),
+        docsAnchor = "discussion-scopes",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
+            IconButton(onClick = { scope.launch { reload() } }) {
+                Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
             }
+        },
+    ) {
+        Spacer(Modifier.height(8.dp))
 
-            Spacer(Modifier.height(8.dp))
-
-            when {
-                loadError != null ->
-                    Text(
-                        loadError!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                discussions.isEmpty() ->
-                    Text(
-                        stringResource(R.string.discussion_no_scopes),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                else -> {
-                    Text(
-                        stringResource(R.string.discussion_tap_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                    discussions.forEachIndexed { idx, discId ->
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+        when {
+            loadError != null ->
+                Text(
+                    loadError!!,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            discussions.isEmpty() ->
+                Text(
+                    stringResource(R.string.discussion_no_scopes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            else -> {
+                Text(
+                    stringResource(R.string.discussion_tap_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+                discussions.forEachIndexed { idx, discId ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.weight(1f),
+                            onClick = { selectedDiscussion = discId },
                         ) {
-                            Surface(
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.weight(1f),
-                                onClick = { selectedDiscussion = discId },
+                            Row(
+                                Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        discId,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        stringResource(R.string.discussion_write_btn),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
+                                Text(
+                                    discId,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontFamily = FontFamily.Monospace,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    stringResource(R.string.discussion_write_btn),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
-                        if (idx < discussions.lastIndex) HorizontalDivider()
                     }
+                    if (idx < discussions.lastIndex) HorizontalDivider()
                 }
             }
+        }
 
-            // New Discussion create form
-            HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = newDiscussionId,
-                    onValueChange = { newDiscussionId = it },
-                    label = { Text("Discussion ID") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = {
-                        scope.launch {
-                            creating = true
-                            transport()?.createDiscussionScope(newDiscussionId.trim())
-                                ?.onSuccess {
-                                    newDiscussionId = ""
-                                    reload()
-                                }
-                                ?.onFailure { loadError = it.message }
-                            creating = false
-                        }
-                    },
-                    enabled = !creating && newDiscussionId.isNotBlank(),
-                ) { Text("New Discussion") }
-            }
+        // New Discussion create form
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = newDiscussionId,
+                onValueChange = { newDiscussionId = it },
+                label = { Text("Discussion ID") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        creating = true
+                        transport()?.createDiscussionScope(newDiscussionId.trim())
+                            ?.onSuccess {
+                                newDiscussionId = ""
+                                reload()
+                            }
+                            ?.onFailure { loadError = it.message }
+                        creating = false
+                    }
+                },
+                enabled = !creating && newDiscussionId.isNotBlank(),
+            ) { Text("New Discussion") }
         }
     }
 }

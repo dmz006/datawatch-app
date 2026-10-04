@@ -18,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) per
 - **Observer**: Cross-host envelope view, remove a federated peer, live pipelines and identity panels, and a "GPU probe failed" card.
 - **Settings → Compute**: Exit Hooks and Work Queue cards; server profiles show a "certificate pinned" badge.
 - Rename results now appear in the alert dock.
+- **Observer and Settings cards** can be collapsed with the chevron on their header (remembered per card; all start expanded, as on the web), and every card header has a "?" link to its section of the datawatch manual.
 
 ### Fixed (Android)
 - Batch Archive on automata set the type to "archived" instead of archiving.

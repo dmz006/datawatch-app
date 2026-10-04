@@ -1254,4 +1254,6 @@
     <string name="work_queue_push">Ajouter un élément de travail</string>
     <string name="work_queue_new_role_hint">Rôle (ex. worker)</string>
     <string name="work_queue_delete_title">Supprimer l\'élément de file %1$s ?</string>
+    <string name="card_collapse">Réduire la section</string>
+    <string name="card_expand">Développer la section</string>
 </resources>

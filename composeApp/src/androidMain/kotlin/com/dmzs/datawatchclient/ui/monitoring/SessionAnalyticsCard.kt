@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.AnalyticsDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.layout.PaddingValues
 
 /**
  * Observer tab — Session Analytics card. Mirrors PWA analytics section.
@@ -61,15 +61,13 @@ public fun SessionAnalyticsCard() {
         }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
+    PwaCard(
+        id = "analytics",
+        title = "Session Analytics",
+        modifier = Modifier .fillMaxWidth() .padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "session-analytics",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle("Session Analytics", docsAnchor = "session-analytics")
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +102,7 @@ public fun SessionAnalyticsCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
         if (d.buckets.isEmpty()) {
             Text(
@@ -112,7 +110,7 @@ public fun SessionAnalyticsCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@PwaCard
         }
 
         val maxTotal = d.buckets.maxOfOrNull { it.sessionCount } ?: 1

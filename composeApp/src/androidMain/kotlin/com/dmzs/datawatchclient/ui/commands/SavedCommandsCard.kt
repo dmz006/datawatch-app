@@ -1,7 +1,6 @@
 package com.dmzs.datawatchclient.ui.commands
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,8 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dmzs.datawatchclient.domain.SavedCommand
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 
 /**
  * Settings → Saved commands card. Name + command snippet persistence via
@@ -46,46 +44,38 @@ public fun SavedCommandsCard(vm: SavedCommandsViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     var addOpen by remember { mutableStateOf(false) }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PwaSectionTitle("Saved Commands", modifier = Modifier.weight(1f), docsAnchor = "saved-commands")
-                IconButton(onClick = vm::refresh, enabled = state.supported) {
-                    Icon(
-                        Icons.Filled.Refresh,
-                        contentDescription = "Refresh",
-                        tint =
-                            if (state.supported) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
-                }
-                IconButton(onClick = { addOpen = true }, enabled = state.supported) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = "New saved command",
-                        tint =
-                            if (state.supported) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
-                }
+    PwaCard(
+        id = "cmds",
+        title = "Saved Commands",
+        docsAnchor = "saved-commands",
+        headerActions = {
+            IconButton(onClick = vm::refresh, enabled = state.supported) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = "Refresh",
+                    tint =
+                        if (state.supported) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
             }
-            SavedCommandsBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
-        }
+            IconButton(onClick = { addOpen = true }, enabled = state.supported) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "New saved command",
+                    tint =
+                        if (state.supported) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+            }
+        },
+    ) {
+        SavedCommandsBody(state = state, vm = vm, addOpen = addOpen, setAddOpen = { addOpen = it })
     }
 }
 

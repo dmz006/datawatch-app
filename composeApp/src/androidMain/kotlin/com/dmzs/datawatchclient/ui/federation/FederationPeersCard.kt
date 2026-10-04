@@ -30,8 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.prefs.ActiveServerStore
 import com.dmzs.datawatchclient.transport.dto.RemoteServerDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -68,15 +67,16 @@ public fun FederationPeersCard() {
 
     LaunchedEffect(Unit) { reload() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard(),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PwaSectionTitle("Federated peers", docsAnchor = "federated-observer", modifier = Modifier.weight(1f))
+    PwaCard(
+        id = "fedpeers",
+        title = "Federated peers",
+        docsAnchor = "federation-peers",
+        headerActions = {
             IconButton(onClick = { addOpen = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add peer")
             }
-        }
+        },
+    ) {
         banner?.let {
             Text(
                 it,

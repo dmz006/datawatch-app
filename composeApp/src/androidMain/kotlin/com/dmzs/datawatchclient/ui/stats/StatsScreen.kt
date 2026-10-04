@@ -34,7 +34,7 @@ import com.dmzs.datawatchclient.transport.dto.StatsDto
 import com.dmzs.datawatchclient.transport.dto.WebSearchStatsDto
 import com.dmzs.datawatchclient.transport.dto.WebSearchStatsV2Dto
 import com.dmzs.datawatchclient.ui.theme.LocalDatawatchColors
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import com.dmzs.datawatchclient.ui.theme.pwaCard
 import androidx.compose.foundation.border
 
@@ -173,8 +173,7 @@ private fun EbpfDegradedBanner(s: com.dmzs.datawatchclient.transport.dto.StatsDt
 
 @Composable
 private fun NetworkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
-    PwaCardContainer {
-        PwaSectionTitle(if (s.ebpfActive) "Network (datawatch)" else "Network (system)")
+    StatsCard(id = "network", title = if (s.ebpfActive) "Network (datawatch)" else "Network (system)") {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(stringResource(R.string.stats_row_download), formatBytes(s.netRxBytes))
             MonoRow(stringResource(R.string.stats_row_upload), formatBytes(s.netTxBytes))
@@ -184,8 +183,7 @@ private fun NetworkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
 
 @Composable
 private fun DaemonCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_daemon))
+    StatsCard(id = "daemon", title = stringResource(R.string.stats_section_daemon)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             if (s.daemonRssBytes > 0) {
                 MonoRow(
@@ -208,8 +206,7 @@ private fun InfrastructureCard(
     val host = s.boundInterfaces.firstOrNull() ?: "0.0.0.0"
     val httpPort = s.webPort ?: info?.serverPort ?: 8080
     val hasTls = s.tlsEnabled && s.tlsPort > 0
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_infrastructure))
+    StatsCard(id = "infrastructure", title = stringResource(R.string.stats_section_infrastructure)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(
                 stringResource(R.string.stats_row_http),
@@ -232,8 +229,7 @@ private fun InfrastructureCard(
 
 @Composable
 private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_rtk))
+    StatsCard(id = "rtk", title = stringResource(R.string.stats_section_rtk)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(stringResource(R.string.stats_row_version), s.rtkVersion ?: "?")
             val hooksColor =
@@ -267,8 +263,7 @@ private fun RtkCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
 @Composable
 private fun MemoryStatsCard(s: com.dmzs.datawatchclient.transport.dto.StatsDto) {
     val dw = LocalDatawatchColors.current
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_memory))
+    StatsCard(id = "memory", title = stringResource(R.string.stats_section_memory)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
@@ -311,8 +306,7 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
     val dw = LocalDatawatchColors.current
     val running = o.runningModels
     val totalVram = running.sumOf { it.sizeVram }
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_ollama))
+    StatsCard(id = "ollama", title = stringResource(R.string.stats_section_ollama)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             MonoRow(stringResource(R.string.stats_row_host), o.host ?: "—")
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -356,8 +350,7 @@ private fun OllamaStatsCard(o: com.dmzs.datawatchclient.transport.dto.OllamaStat
 
 @Composable
 private fun EnvelopesCard(envs: List<com.dmzs.datawatchclient.transport.dto.StatEnvelopeDto>) {
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_envelopes))
+    StatsCard(id = "envelopes", title = stringResource(R.string.stats_section_envelopes)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             envs.sortedByDescending { it.cpuPct }.forEach { env ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -393,8 +386,7 @@ private fun EnvelopesCard(envs: List<com.dmzs.datawatchclient.transport.dto.Stat
 @Composable
 private fun BackendHealthCard(backends: List<com.dmzs.datawatchclient.transport.dto.BackendStatusDto>) {
     val dw = LocalDatawatchColors.current
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_backends))
+    StatsCard(id = "backends", title = stringResource(R.string.stats_section_backends)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             backends.forEach { b ->
                 Row(
@@ -474,8 +466,7 @@ private fun ServerInfoCard(
     // LLM-backend row was removed — a fleet can run several backends and
     // the per-session badge in sessions list is the right surface for
     // that. Backends card below shows reachability.
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_server))
+    StatsCard(id = "server", title = stringResource(R.string.stats_section_server)) {
         InfoRow(stringResource(R.string.stats_row_hostname), info.hostname)
         InfoRow(stringResource(R.string.stats_row_daemon), "v${info.version}")
         info.messagingBackend?.let { InfoRow(stringResource(R.string.stats_row_messaging), it) }
@@ -554,8 +545,7 @@ private fun SessionStatisticsCard(
             fraction >= 0.7f -> dw.warning
             else -> dw.success
         }
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_sessions))
+    StatsCard(id = "sessions", title = stringResource(R.string.stats_section_sessions)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -648,8 +638,7 @@ private fun SystemStatisticsCard(s: StatsDto) {
     // for CPU load, mem_used / mem_total for memory, disk_used / disk_total
     // for disk, swap_used / swap_total when present, and the gpu_* block
     // when the host has a GPU. Mirror the same fields here.
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_system))
+    StatsCard(id = "system", title = stringResource(R.string.stats_section_system)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             // CPU Load — fraction against core count, cap bar at 100%.
             val load1 = s.cpuLoad1
@@ -881,8 +870,7 @@ private fun formatUptime(seconds: Long): String {
 
 @Composable
 private fun WebSearchCard(ws: WebSearchStatsDto) {
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_web_search))
+    StatsCard(id = "web_search", title = stringResource(R.string.stats_section_web_search)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             ws.provider?.let { MonoRow(stringResource(R.string.stats_row_ws_provider), it) }
             ws.url?.let { MonoRow(stringResource(R.string.stats_row_ws_url), it) }
@@ -900,8 +888,7 @@ private fun WebSearchCard(ws: WebSearchStatsDto) {
 // BL391 — multi-provider stats card (v8.39.0+)
 @Composable
 private fun WebSearchCardV2(ws: WebSearchStatsV2Dto) {
-    PwaCardContainer {
-        PwaSectionTitle(stringResource(R.string.stats_section_web_search))
+    StatsCard(id = "web_search", title = stringResource(R.string.stats_section_web_search)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             // Overall totals row
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -983,17 +970,18 @@ private fun WebSearchSparkline(series: List<com.dmzs.datawatchclient.transport.d
     }
 }
 
+/**
+ * Stats sub-card on the shared collapsible [PwaCard] (D26a/D27a). The PWA nests
+ * these inside its single "System Statistics" section, so every sub-card links
+ * that section's docs slug; ids are namespaced `stats_<card>`.
+ */
 @Composable
-private fun PwaCardContainer(content: @Composable () -> Unit) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) { content() }
-    }
+private fun StatsCard(
+    id: String,
+    title: String,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    PwaCard(id = "stats_$id", title = title, docsAnchor = "system-statistics", content = content)
 }
 
 /**

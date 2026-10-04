@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,8 +45,7 @@ import com.dmzs.datawatchclient.di.ServiceLocator
 import com.dmzs.datawatchclient.transport.TransportError
 import com.dmzs.datawatchclient.transport.dto.GuardrailLibraryItemDto
 import com.dmzs.datawatchclient.transport.dto.GuardrailProfileDto
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -96,24 +96,14 @@ internal fun GuardrailLibraryCard() {
 
     if (!visible) return
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .pwaCard()
-                .padding(12.dp),
-    ) {
-        // ── Section 1: Guardrail Library (collapsible) ──────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PwaSectionTitle(
-                stringResource(R.string.guardrail_library_title),
-                modifier = Modifier.weight(1f),
-                docsAnchor = "guardrail-library",
-            )
+    // ── Card 1: Guardrail Library (inner browse toggle kept as header action) ──
+    PwaCard(
+        id = "guardrail_library_list",
+        title = stringResource(R.string.guardrail_library_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "guardrail-library",
+        innerPadding = PaddingValues(12.dp),
+        headerActions = {
             IconButton(
                 onClick = { libraryExpanded = !libraryExpanded },
                 modifier = Modifier.size(32.dp),
@@ -129,8 +119,8 @@ internal fun GuardrailLibraryCard() {
                     modifier = Modifier.size(18.dp),
                 )
             }
-        }
-
+        },
+    ) {
         if (libraryExpanded) {
             if (library.isEmpty()) {
                 Text(
@@ -146,14 +136,16 @@ internal fun GuardrailLibraryCard() {
                 }
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // ── Section 2: Guardrail Profiles (always visible) ─────────────────
-        PwaSectionTitle(stringResource(R.string.guardrail_profiles_title), docsAnchor = "guardrail-profiles")
-
+    // ── Card 2: Guardrail Profiles (PWA automata_guardrail_profiles) ──
+    PwaCard(
+        id = "automata_guardrail_profiles",
+        title = stringResource(R.string.guardrail_profiles_title),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        docsAnchor = "guardrail-profiles",
+        innerPadding = PaddingValues(12.dp),
+    ) {
         if (profiles.isEmpty()) {
             Text(
                 stringResource(R.string.guardrail_no_profiles),

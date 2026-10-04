@@ -21,12 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import com.dmzs.datawatchclient.ui.theme.PwaCard
+import androidx.compose.foundation.layout.PaddingValues
 
 private val COMM_BACKENDS =
     listOf(
@@ -59,14 +59,16 @@ internal fun CommBackendsCard() {
 
     if (enabledBackends.isEmpty() && banner == null) return
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).pwaCard().padding(12.dp),
+    PwaCard(
+        id = "comm_backends",
+        title = "Communication Backends",
+        docsAnchor = "communication-configuration",
+        innerPadding = PaddingValues(12.dp),
     ) {
-        PwaSectionTitle("Communication Backends", docsAnchor = "communication-configuration")
 
         banner?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            return@Column
+            return@PwaCard
         }
 
         if (enabledBackends.isEmpty()) {

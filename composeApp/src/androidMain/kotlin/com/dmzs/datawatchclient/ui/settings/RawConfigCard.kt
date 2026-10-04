@@ -47,7 +47,7 @@ internal fun RawConfigCard() {
     var confirming by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Section(title = "Raw config") {
+    Section(id = "raw_config", title = "Raw config", docsAnchor = "datawatch") {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(
                 "View or edit the full server configuration as JSON. " +

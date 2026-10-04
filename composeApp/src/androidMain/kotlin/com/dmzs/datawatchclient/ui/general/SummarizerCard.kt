@@ -2,6 +2,7 @@ package com.dmzs.datawatchclient.ui.general
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,8 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dmzs.datawatchclient.R
 import com.dmzs.datawatchclient.di.ServiceLocator
-import com.dmzs.datawatchclient.ui.theme.PwaSectionTitle
-import com.dmzs.datawatchclient.ui.theme.pwaCard
+import com.dmzs.datawatchclient.ui.theme.PwaCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -74,15 +74,12 @@ public fun SummarizerCard() {
         loading = false
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .pwaCard()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+    PwaCard(
+        id = "gc_summarizer",
+        title = "Session Summarizer",
+        docsAnchor = "session-ai-summarizer",
+        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        PwaSectionTitle("Session Summarizer", docsAnchor = "session-summarizer")
 
         // Toggle row
         Row(
