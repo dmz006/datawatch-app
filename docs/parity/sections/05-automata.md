@@ -27,7 +27,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | element | Card: current position line "▶ Story i: … · Task j: … (verifying/testing)" when running | ✓ app:16694 | ✗ | ✗ | android-missing | | iOS also missing |
 | element | Card: compact lifecycle strip plan→review→approve→run→done | ✓ app:11212, css:544–585 | ✓ AS LifecycleStrip | ✓ PrdLifecycleStrip (card, display-only) | aligned | | |
 | interaction | Lifecycle steps clickable → plan/approve/reject/revise/run/instantiate/delete actions; `danger` style | ✓ app:11212 (clickable/danger) | ~ LifecycleStrip (click actions not verified) | ~ PrdLifecycleStrip interactive in detail; card display-only | misaligned | | |
-| element | Card action row: ✕ Cancel (non-terminal) · ✓ Approve amber (needs_review/revisions_asked/waiting_input) · 📌 pin | ✓ app:16785–16799 | ~ AS:12–26 adds inline Reject + Revise | ~ 📌 pin via context menu only; no card Cancel/Approve | misaligned | needs-decision | D3 |
+| element | Card action row: ✕ Cancel (non-terminal) · ✓ Approve amber (needs_review/revisions_asked/waiting_input) · 📌 pin | ✓ app:16785–16799 | ~ AS:12–26 adds inline Reject + Revise | ~ 📌 pin via context menu only; no card Cancel/Approve | misaligned | needs-decision | D3 · iOS 2026-10-04 (D72a): card lifecycle strip acts inline — Plan/Run direct, Approve (note) / Reject / Revise / Cancel via `PrdReviewDialogs` |
 | interaction | Pin (persisted localStorage) | ✓ app:16456 | ~ AVM togglePin (persistence not verified) | ✓ PrdListViewModel.togglePin (UserDefaults) | misaligned |  | Android persistence not verified |
 | element | Card: `<details>` "Stories & tasks (N)" expandable tree | ✓ app:16806 | ✓ AS (accordion, header-only click v1.23.32) | ✗ (detail only) | ios-missing | | |
 | interaction | Tap card (non-button) → detail | ✓ app:16766 | ✓ AS:57 onClick / long-press selects | ✓ NavigationLink | aligned | | Android long-press = select; PWA uses checkbox |
@@ -48,12 +48,12 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | element | Wizard: execution backend, model, effort | ✓ automata_wizard_backend/model/effort | ✓ NPD:392,426,463 | ✓ NewPrdView Execution: backend, model, effort | aligned |  |  |
 | element | Wizard: planning backend + decomposition model | ✓ prd_new_planning_label, prdNewDecompModel* | ✓ NPD:534,563 | ✓ NewPrdView Planning: planning backend + decomposition model | aligned |  |  |
 | element | Wizard: guided mode · story approval · rules enabled · scan enabled toggles (advanced) | ✓ wizardGuidedMode/StoryApproval/RulesEnabled/ScanEnabled | ~ NPD (toggles not found) | ✗ | misaligned | | Verify Android advanced toggles |
-| element | Wizard: memory "promote to" scope | ✗ | ✓ NPD:694 new_prd_memory_promote_to | ✗ | pwa-missing | needs-decision | D6 |
+| element | Wizard: memory "promote to" scope | ✗ | ✓ NPD:694 new_prd_memory_promote_to | ✓ NewPrdView Memory section: seed / harvest + promote-to picker | pwa-missing | decided D73a | D6 · iOS done 2026-10-04 |
 | interaction | Wizard: "Use template" link → Templates tab · skills hint link · help tip | ✓ automata_wizard_use_template/skills_hint_link/help_tip | ✗ | ✗ | android-missing | | iOS also missing |
 | nav | Detail view replaces list; breadcrumb/back (`automata_detail_back`) | ✓ app:17848, app:19007 | ~ PDD full-screen dialog, Close | ✓ push + back | misaligned | | Container differs (view vs dialog vs push) |
 | element | Detail header: type + status badges, title (tap to edit tip), id, last activity, lifecycle strip | ✓ app:17848+ | ✓ PDD:201–260 | ~ PrdDetailView header + PrdLifecycleStrip (no id / last activity) | misaligned |  |  |
 | element | Detail tabs: Overview · Stories · Decisions · Rules · Scan(cond.) | ✓ prd_tab_* | ~ PDD:201–205 Overview · Stories · Decisions · Graph · Progress | ✗ (single scroll) | misaligned | needs-decision | D7 |
-| interaction | Actions: ✓ Approve | ✓ app:10917 `{actor:'operator'}` | ~ PDD:395,868 approve with optional note | ✓ perform("approve") | misaligned | needs-decision | D8 note |
+| interaction | Actions: ✓ Approve | ✓ app:10917 `{actor:'operator'}` | ~ PDD:395,868 approve with optional note | ✓ approve-with-note dialog (`PrdReviewDialogs`; actor + optional note) | misaligned | decided D74a | D8 note · iOS done 2026-10-04 |
 | interaction | Actions: ✗ Reject (reason prompt) | ✓ app:11188 prdActionPrompt | ✓ PDD:448,891 | ✓ alert + TextField | aligned | | |
 | interaction | Actions: ↺ Request revision (note prompt) | ✓ prd_btn_request_revision | ✓ PDD:455,924 | ✓ alert "Request revision" | aligned | | |
 | interaction | Actions: ▶ Start Planning / Re-plan (decompose) | ✓ app:18686 | ✓ PDD:435 prd_detail_decompose | ✓ PrdLifecycleStrip ▶ Plan / Re-plan (revisions_asked) + Decompose button | aligned |  |  |
@@ -63,9 +63,9 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | interaction | Actions: Archive | ✓ app:5414/batch archive | ~ batch only AS:336; no detail action (AVM lacks archive) | ~ batch only (PrdListView batch bar) | misaligned |  | no detail Archive on either app |
 | interaction | Actions: Delete (with memory strategy keep/purge/archive, roles, scope) | ✓ prdDeleteArchiveOpts/Roles/Scope | ✓ PDD:992–1027 | ✓ MemoryStrategyDeleteSheet (strategy, roles, scope) | aligned |  |  |
 | interaction | Actions: Edit title / Edit spec (prdEditMenu) | ✓ prd_btn_edit, prd_btn_edit_spec | ✓ PDD:1395–1421 EditPrdDialog | ✓ PrdDetailView ⋯ Edit title / spec → EditPrdView | aligned |  |  |
-| element | Edit PRD: permission_mode field | ✗ (not in prdEdit* ids) | ✓ PDD:1421 new_prd_permission_mode_label | ✗ | pwa-missing | needs-decision | D9 |
+| element | Edit PRD: permission_mode field | ✗ (not in prdEdit* ids) | ✓ PDD:1421 new_prd_permission_mode_label | ✓ EditPrdView permission-mode picker (sent only when changed) | pwa-missing | decided D75a | D9 · iOS done 2026-10-04 |
 | interaction | Actions: Set LLM (backend/effort/model + planning backend/decomp model) | ✓ prdSetModel*, prdSetDecompModel* | ✓ PDD:1192–1347 LlmOverrideDialog | ✓ SetPrdLlmView (backend/model/effort + planning backend/decomp model) | aligned |  |  |
-| interaction | Actions: Repair depends_on (#202) | ✗ | ✓ PDD:501 | ✗ | pwa-missing | needs-decision | D10 |
+| interaction | Actions: Repair depends_on (#202) | ✗ | ✓ PDD:501 | ✓ detail ⋯ menu "Repair Dependencies" | pwa-missing | decided D76a | D10 · iOS done 2026-10-04 |
 | interaction | Actions: Run scan / Run rules (propose) | ✓ prd_btn_run_scan, prd_btn_run_rules | ✓ AVM triggerScan/proposeRules, ScanResultCard | ✓ PrdScanCard | aligned | | |
 | interaction | Actions: View sessions | ✓ automata_actions_view_sessions | ✓ PDD:608 | ✓ → View sessions (SessionsNav) | aligned | | |
 | interaction | Actions: Pause / Resume | ~ app:16808 defined, 0 callers (dead) | ✗ | ✗ | n/a | needs-decision | D11 spec lists them |
@@ -84,7 +84,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | element | Scan tab (Findings (N), help) | ✓ prd_tab_scan, "Findings" | ~ ScanResultCard FindingRow (card, no tab) | ~ PrdScanCard (card; tabs per D24) | misaligned | | |
 | element | Graph tab (orchestrator DAG canvas) | ✗ in detail (orchestrator view lives in Settings app:25116) | ✓ PDD:204,723 PrdDagCanvas; OrchestratorGraphDialog PDD:1078 | ✗ | pwa-missing | needs-decision | D7 |
 | element | Progress tab (per-story CPU/RSS + compute node) | ✗ | ✓ PDD:205 (v1.23.28) | ✗ | pwa-missing | needs-decision | D7 |
-| element | Memory: stats tile (prd/story/session-local), report, recall search | ~ "Learnings" app:14289 only | ✓ PDD:2896–3010 (BL385–387) | ✗ | pwa-missing | needs-decision | D13 |
+| element | Memory: stats tile (prd/story/session-local), report, recall search | ~ "Learnings" app:14289 only | ✓ PDD:2896–3010 (BL385–387) | ✓ `PrdMemorySection` (stats tile, Learning Report, Memory Recall) | pwa-missing | decided D77a | D13 · iOS done 2026-10-04 |
 | element | Story card header: chevron, title, status pill, profile pill, LLM pill | ✓ app:10274 | ~ StoryRow + StoryStatusPill (profile/LLM pills not verified) | ~ storyGroup glyph+title+done/total | misaligned | | |
 | element | Story body: description, verdicts, progress, planned files chips (⚠ conflict), files_touched, worker session link | ✓ app:10274–10388 | ~ StoryRow (conflict ⚠ not verified) | ~ description, planned-files chips (⚠ conflict), files touched, tasks (no verdicts / progress / worker link) | misaligned |  |  |
 | interaction | Story: approve/reject when awaiting_approval (guided mode) | ✓ app:10297 | ✓ AVM approveStory/rejectStory | ✓ storyActions ✓ Approve / ✗ Reject (awaiting_approval) | aligned |  |  |
@@ -102,7 +102,7 @@ Refs: `app:N` = app.js line, `css:N` = style.css line, `AS:N` = AutonomousScreen
 | data | Progress polling while running | ✗ (WS only) | ✓ AVM:1026 5 s | ~ 30 s REST fallback alongside WS | misaligned |  |  |
 | data | List reload preserves expanded cards on WS refresh | ✓ app:16817 | ✓ (expanded rows preserved) | n/a | aligned | | |
 | motion | Decompose: SSE planning stream ("Planning… stories will appear here shortly") | ✓ app:11108 _startDecomposeStream | ~ PDD:2769 "Decomposing PRD…" static | ~ static hint | misaligned | | |
-| interaction | Watch automata (per-PRD change notifications) | ✗ | ✓ AVM:1187 toggleWatchAutomata | ✗ | pwa-missing | needs-decision | D14 |
+| interaction | Watch automata (per-PRD change notifications) | ✗ | ✓ AVM:1187 toggleWatchAutomata | ✓ bell toggle on PRD cards (`LocalSessionPrefs`, per profile) | pwa-missing | decided D61a | D14 · iOS done 2026-10-04 |
 | element | Orchestrator graphs card · Pipeline manager card | ✓ app:24574/25116 Settings → Automata | ✓ SettingsScreen:405–406 (ui/automata) | ✓ OrchestratorGraphsView / PipelinesView (Settings links) | aligned | | Cross-ref section 07 |
 | string | i18n coverage | ✓ en/fr/es `locales/*.json` | ✓ 262 keys, 4 extra locales | ✗ 36 hard-coded en strings | ios-missing | | |
 

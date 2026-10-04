@@ -10,6 +10,8 @@ struct AlertRulesView: View {
     @State private var rules: [AlertRuleDto]? = nil
     @State private var loadError: String? = nil
     @State private var actionError: String? = nil
+    @State private var firings: [IosAlertFiring] = []
+    @State private var firingsExpanded = false
 
     // Add form (PWA defaults)
     @State private var name = ""
@@ -60,6 +62,29 @@ struct AlertRulesView: View {
                 }
             }
             .listRowBackground(DatawatchColors.surface)
+
+            if !firings.isEmpty {
+                // D70a (Android AlertRulesCard): collapsible "Recent Firings (N)", max 20.
+                Section {
+                    DisclosureGroup(isExpanded: $firingsExpanded) {
+                        ForEach(Array(firings.enumerated()), id: \.offset) { _, f in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(f.ruleName)
+                                    .font(DatawatchFonts.bodyMedium)
+                                    .foregroundStyle(DatawatchColors.onSurface)
+                                Text(f.detail)
+                                    .font(DatawatchFonts.labelSmall)
+                                    .foregroundStyle(DatawatchColors.onSurfaceMuted)
+                            }
+                        }
+                    } label: {
+                        Text(String(format: L("Recent Firings (%lld)"), Int64(firings.count)))
+                            .font(DatawatchFonts.labelSmall.weight(.semibold))
+                            .foregroundStyle(DatawatchColors.error)
+                    }
+                }
+                .listRowBackground(DatawatchColors.surface)
+            }
 
             Section("Add rule") {
                 TextField("Name", text: $name)
@@ -143,6 +168,9 @@ struct AlertRulesView: View {
     }
 
     private func reload() async {
+        IosExtras.shared.alertRuleFirings(profile: profile) { list in
+            DispatchQueue.main.async { firings = list }
+        }
         let result: Result<[AlertRuleDto], Error> = await withCheckedContinuation { cont in
             IosAlertRules.shared.list(
                 profile: profile,

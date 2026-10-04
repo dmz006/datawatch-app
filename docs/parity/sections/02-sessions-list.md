@@ -24,7 +24,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | motion | Toolbar / chip-row expand animation | ✗ (re-render) | ~ A:660 `AnimatedVisibility` (LLM chips only) | ~ I:68 `withAnimation` default | misaligned | | minor |
 | element | Empty state copy + icon | ✓ P:2114 💬 "No active sessions" / "Tap the + button to start a session, or send commands via Signal." | ✓ 💬 "No active sessions" + "Tap the + button…" hint | ~ I:433 terminal icon "No sessions — start one in the web UI" | misaligned | decided D35a | D7 · Android done 2026-10-04 |
 | element | Toolbar still shown in empty state when history>0 | ✓ P:2113 | ✓ (toolbar independent of list) | ✓ I:276 filter bar independent of list; empty pool shows "show N finished" | aligned | | |
-| motion | Skeleton list on first load: 5 shimmer rows, alpha .3↔.7, 900 ms reverse | ✗ | ✓ A:825 | ✗ I:228 spinner | pwa-missing | needs-decision | D8 |
+| motion | Skeleton list on first load: 5 shimmer rows, alpha .3↔.7, 900 ms reverse | ✗ | ✓ A:825 | ✓ `SkeletonListView` (5 rows, .3↔.7, 900 ms) | pwa-missing | decided D60a | D8 · iOS done 2026-10-04 |
 | element | No-server / no-profile state | n/a | ✓ A:1514 "No server", onboarding | ✓ I:445 `emptyNoProfile` | n/a | | PWA is served by the server |
 | element | Transport error surface on list | ~ header daemon light (§01) | ✓ A:286 errorContainer banner | ✓ I:225 `ConnectionStatusBanner` + I:230 `ErrorCard` | misaligned | | minor; copy differs |
 | token | Watermark | ✓ C:344 `/favicon.svg` fixed centre, min(85vw,400px), opacity .045 | ~ A:351 launcher foreground, 85% width, alpha .10 | ✗ | misaligned | | align alpha to .045; iOS add |
@@ -56,23 +56,23 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Worker badge | ✓ P:2510 "⬡ worker", accent2 border, purple .15 bg | ~ A:2212 "⬡ <agentId>" purple A855F7 .15 | ~ I:512 "⬡ <agentId>" secondary .12 | misaligned | | label + colour |
 | element | `↳ child of [xxxx]` parent badge | ✓ P:2511 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `parent_id` in Session DTO |
 | element | `⚠ zombie` badge (`claude_alive === false`) | ✓ P:2512 | ✗ | ✗ | android-missing | | iOS ✗ too; needs `claude_alive` in DTO |
-| element | 🎭 Council badge | ✗ | ✓ A:1041 | ✓ I:522 | pwa-missing | needs-decision | D12 |
+| element | 🎭 Council badge | ✗ | ✓ A:1041 | ✓ `SessionCardView.isCouncil` 🎭 badge + "🎭 Council" chip in the LLM filter row | pwa-missing | decided D64a | D12 · iOS done 2026-10-04 |
 | element | `📄 Response` button → last-response viewer | ✓ P:2513 → modal | ✓ A:1101 "View last response" → `LastResponseSheet` | ~ I:540 `doc.text` icon only, not tappable | misaligned | needs-decision | D5 |
 | data | Response content freshness | ✓ P:14890 shows cache, then fetches `GET /api/sessions/response?id` (stale badge) | ~ cached `session.lastResponse` only (A:1392) | n/a | misaligned | needs-decision | D5 |
 | interaction | Read response aloud (TTS) | ✗ | ✓ A:1732 sheet VolumeUp/Stop | ✗ (TTS only in current-status sheet I:782) | pwa-missing | needs-decision | D5 |
 | element | Live elapsed clock on active cards (BL383 `formatElapsed`, tabular, accent2) | ✓ P:2514, P:15468 | ✗ | ✗ | android-missing | | iOS ✗ too |
 | element | `AI <age>` summary-age label | ✓ P:2449 inside waiting row, 9px | ~ A:1120 meta row, primary .7 | ~ I:555 meta row | misaligned | | placement |
 | string | Time-ago format: just now <5 s · Ns · Nm · Nh · Nd | ✓ P:15454 | ~ `relativeTimeLabel` (not verified) | ✓ I:683 identical | aligned | | verify Android thresholds |
-| element | Muted indicator | ✗ | ✗ (state only) | ✓ I:547 bell.slash | pwa-missing | needs-decision | D10 |
-| interaction | Horizontal swipe ≥64 dp → toggle mute | ✗ | ✓ A:978 | ✗ | pwa-missing | needs-decision | D10 |
-| element | Watch toggle 🔔 (session alerts count toward badge) | ✗ | ✓ A:1055, AV:633 | ✗ | pwa-missing | needs-decision | D9 |
+| element | Muted indicator | ✗ | ✗ (state only) | ✓ speaker.slash on the card (local per-profile mute) | pwa-missing | decided D62a | D10 · iOS done 2026-10-04 — push suppression needs a Notification Service Extension |
+| interaction | Horizontal swipe ≥64 dp → toggle mute | ✗ | ✓ A:978 | ✓ leading `.swipeActions` Mute/Unmute (full swipe toggles) | pwa-missing | decided D62a | D10 · iOS done 2026-10-04 |
+| element | Watch toggle 🔔 (session alerts count toward badge) | ✗ | ✓ A:1055, AV:633 | ✓ bell toggle on card + detail top bar (`LocalSessionPrefs`, per profile) | pwa-missing | decided D61a | D9 · iOS done 2026-10-04 |
 | element | Waiting prompt context: last 4 `prompt_context` lines, ANSI-stripped, 100 chars; fallback "Input needed" | ✓ P:2437 | ✓ A:1141 4 lines/100 chars, 3dp waiting bar | ~ I:569 2 lines, no per-line cut, 2pt bar, no fallback text | misaligned | | |
 | element | Waiting: short summary (`last_response` italic ≤180) + ▼/▲ envelope for `last_summary_long` + AI age + ✕ panel | ✓ P:2445–2458 | ~ A:1182 "Full summary"/"Less" + ✕; no inline short text | ✗ | misaligned | | iOS ✗ |
 | element | Running: `▶ What's it doing?` → current-status | ✓ P:2480 inline | ✓ A:1255 → `CurrentStatusSheet` | ✓ I:583 → `CurrentStatusSheetView` | misaligned | needs-decision | D4b |
 | element | Current-status result: text + ▼ long + `↻ <age>` refresh; "Summarizing…" loading | ✓ P:2462–2478 inline in card | ~ A:1808 bottom sheet: refresh, TTS, "▼ More detail"/"▲ Less", ✕ | ~ I:723 sheet: refresh, TTS, More/Less, Done | misaligned | needs-decision | D4b |
 | data | `no_change` → "(no change since last refresh)" | ✓ P:2533 | ✓ A:1263 `noChangeStr` | ✓ IosServiceLocator.kt `fetchSessionCurrentStatus` appends "(no change since last refresh)" | aligned | | |
 | interaction | Quick commands: System (approve/reject/continue/skip/ESC/Ctrl-b/quit) · Saved (`/api/commands`) · Custom input | ✓ P:2612 `<select>` + custom row | ✓ A:1930 sheet: chips + list + custom field | ✓ QuickCommandsSheet.swift System / Saved (`IosQuickCommands.loadSaved`) / Custom sections | aligned | | |
-| interaction | Voice reply 🎤 (Whisper) in quick commands | ✗ | ✓ A:1930 (when `whisper.backend` set, AV:447) | ✗ | pwa-missing | needs-decision | D11 |
+| interaction | Voice reply 🎤 (Whisper) in quick commands | ✗ | ✓ A:1930 (when `whisper.backend` set, AV:447) | ✓ `QuickCommandsSheet` mic (whisper enabled) → transcript appended to Custom | pwa-missing | decided D63a | D11 · iOS done 2026-10-04 |
 | data | Quick-command send: WS `send_input` / `command sendkey` + toast "Sent" | ✓ P:2684 | ✓ `quickReply` → WsOutbound | n/a | aligned | | iOS covered by row above |
 | data | List source: WS `sessions` full-list frames | ✓ spec §3.7 | ✓ AV:470 `SessionsHub.fullListFlow` + SQLite | ✓ IV:57 `subscribeGlobalStream` | aligned | | |
 | data | `session_state` single-row diff (v8.37) | ? not verified in list path | ✓ AV:486 upsert | ✓ IV:78 `subscribeSessionDiffs` → `upsert` | aligned | | apps aligned; PWA list path still unverified |
@@ -87,7 +87,7 @@ Refs are `file:line`. `A:` = SessionsScreen.kt, `AV:` = SessionsViewModel.kt, `I
 | element | Session filters CRUD (`/api/filters`) | ✓ P:21124 `showFilterEdit` (Settings) | ✓ `filters/FiltersCard.kt` | ✓ FiltersView (Settings link) | aligned | | lives in Settings — detail in §07 |
 | element | Saved commands editor (`/api/commands`) | ~ consumer only here; editor location → §07 | ✓ `commands/SavedCommandsCard.kt` | ✓ SavedCommandsView (Settings link) | aligned | | §07 |
 | element | Kind profiles card | ✓ P:15785 `renderProfilesPanel` | ✓ `profiles/KindProfilesCard.kt` | ✗ | ios-missing | | §07 |
-| interaction | Three-finger swipe-up gesture (64 dp, 500 ms debounce) | ✗ | ✓ `gesture/ThreeFingerSwipe.kt` | ✗ | pwa-missing | needs-decision | D14 — call site outside this section |
+| interaction | Three-finger swipe-up gesture (64 dp, 500 ms debounce) | ✗ | ✓ `gesture/ThreeFingerSwipe.kt` | ✗ | pwa-missing | decided D65a | D14 — call site outside this section · iOS not done: the gesture opens the server picker, and iOS has no active-server switch yet (blocked on D1) |
 | interaction | Refresh on foreground/resume | ~ (visibilitychange not verified) | ✓ A:170 ON_RESUME | ~ I:84 onAppear → immediate fetch | aligned | | |
 | interaction | Rename from list | ✗ (header rename lives in detail) | ~ A:1451 `RenameSessionDialog` defined, no trigger in list | ✗ | n/a | | Android dead code candidate |
 | element | Refresh-in-progress spinner in header | ✗ | ✓ A:220 | ✓ I:57 | pwa-missing | | PWA uses header daemon light (§01) |
