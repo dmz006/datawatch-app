@@ -91,6 +91,7 @@ internal fun DocsLinkAction(docsPath: String) {
                 url = url,
                 onDismiss = { showDocs = false },
                 allowSelfSigned = allowSelfSigned,
+                pinSha256 = ServiceLocator.pinFor(activeProfile),
             )
         }
     }

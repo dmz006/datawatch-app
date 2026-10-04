@@ -71,6 +71,12 @@ public object AutoServiceLocator {
 
     private var _httpClient: HttpClient? = null
     private var _trustAllClient: HttpClient? = null
+    private val pinnedClients = HashMap<String, HttpClient>()
+
+    private fun pinnedClient(pin: String): HttpClient =
+        synchronized(pinnedClients) {
+            pinnedClients.getOrPut(pin) { com.dmzs.datawatchclient.transport.createPinnedHttpClient(pin) }
+        }
 
     private val httpClient: HttpClient
         get() = _httpClient ?: createHttpClient().also { _httpClient = it }
@@ -86,7 +92,15 @@ public object AutoServiceLocator {
         val alias = profile.bearerTokenRef.takeIf { it.isNotBlank() }
         val tokenProvider: (suspend () -> String)? =
             alias?.let { { tokenVault.get(it) ?: error("Missing token for profile ${profile.id}") } }
-        val client = if (profile.trustAnchorSha256 == TRUST_ALL_SENTINEL) trustAllClient else httpClient
+        val anchor = profile.trustAnchorSha256
+        val client =
+            when {
+                anchor == TRUST_ALL_SENTINEL -> trustAllClient
+                // Parity D91a — pinned profiles are enforced in the car too.
+                com.dmzs.datawatchclient.transport.CertPins.isPin(anchor, TRUST_ALL_SENTINEL) ->
+                    pinnedClient(com.dmzs.datawatchclient.transport.CertPins.normalize(anchor!!))
+                else -> httpClient
+            }
         return RestTransport(profile = profile, client = client, tokenProvider = tokenProvider)
     }
 

@@ -220,6 +220,7 @@ internal fun DocsInlineButton(anchor: String) {
                 url = url,
                 onDismiss = { showDocs = false },
                 allowSelfSigned = allowSelfSigned,
+                pinSha256 = ServiceLocator.pinFor(activeProfile),
             )
         }
     }
