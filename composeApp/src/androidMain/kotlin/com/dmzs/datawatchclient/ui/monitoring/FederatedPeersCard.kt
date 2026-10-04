@@ -39,6 +39,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 /**
  * Settings → Monitor → Federated peers card. Mirrors PWA
@@ -66,6 +71,27 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
     }
 
     if (state.peers.isEmpty() && !state.loading) return
+    var crossHostOpen by remember { mutableStateOf(false) }
+    var removeTarget by remember { mutableStateOf<String?>(null) }
+    if (crossHostOpen) CrossHostDialog(onDismiss = { crossHostOpen = false })
+    removeTarget?.let { name ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { removeTarget = null },
+            title = { Text(stringResource(R.string.observer_remove_peer_title, name)) },
+            text = { Text(stringResource(R.string.observer_remove_peer_body)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    vm.removePeer(name)
+                    removeTarget = null
+                }) { Text(stringResource(R.string.action_remove), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { removeTarget = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
 
     Box(
         modifier =
@@ -113,6 +139,11 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                     onCheckedChange = { vm.setGroupByNode(it) },
                 )
             }
+            // PWA "↔ Cross-host view" — local + every peer with cross-peer caller attribution.
+            androidx.compose.material3.TextButton(
+                onClick = { crossHostOpen = true },
+                modifier = Modifier.padding(start = 4.dp),
+            ) { Text("↔ " + stringResource(R.string.observer_cross_host_view), style = MaterialTheme.typography.labelSmall) }
 
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
                 if (state.loading && state.peers.isEmpty()) {
@@ -133,7 +164,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(vertical = 4.dp),
                             )
-                            peers.forEach { peer -> PeerRow(peer) }
+                            peers.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
                         }
                         if (state.unbound.isNotEmpty()) {
                             Text(
@@ -142,7 +173,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 4.dp),
                             )
-                            state.unbound.forEach { peer -> PeerRow(peer) }
+                            state.unbound.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
                         }
                     }
                 } else {
@@ -181,7 +212,7 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        visible.forEach { peer -> PeerRow(peer) }
+                        visible.forEach { peer -> PeerRow(peer, onRemove = { removeTarget = peer.name }) }
                     }
                 }
             }
@@ -190,7 +221,10 @@ public fun FederatedPeersCard(vm: FederatedPeersViewModel = viewModel()) {
 }
 
 @Composable
-private fun PeerRow(peer: ObserverPeerDto) {
+private fun PeerRow(
+    peer: ObserverPeerDto,
+    onRemove: () -> Unit = {},
+) {
     val staleDotColor = staleDotColor(peer.lastPushAt)
 
     Row(
@@ -255,8 +289,104 @@ private fun PeerRow(peer: ObserverPeerDto) {
             Spacer(Modifier.size(4.dp))
         }
         ShapeBadge(peer.hostInfo?.shape ?: peer.shape)
+        // PWA × — remove peer (rotates token; peer auto-re-registers).
+        androidx.compose.material3.IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+            Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
+
+/** PWA `showCrossHostView`: envelopes grouped by peer with 🔗 cross-host caller tags. */
+@Composable
+private fun CrossHostDialog(onDismiss: () -> Unit) {
+    var data by remember { mutableStateOf<kotlinx.serialization.json.JsonObject?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val (_, transport) =
+            com.dmzs.datawatchclient.ui.common.ProfileResolver.Default.resolve() ?: run {
+                error = "no server"
+                return@LaunchedEffect
+            }
+        transport.fetchCrossHostEnvelopesJson()
+            .onSuccess { data = it }
+            .onFailure { error = it.message ?: "load failed" }
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.observer_cross_host_title)) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                val err = error
+                val obj = data
+                when {
+                    err != null -> Text("load failed: $err", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    obj == null -> DatawatchLoadingContent(verticalPadding = 12.dp)
+                    else -> {
+                        val byPeer = obj["by_peer"] as? kotlinx.serialization.json.JsonObject
+                        if (byPeer.isNullOrEmpty()) {
+                            Text(
+                                stringResource(R.string.observer_cross_host_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        byPeer?.forEach { (peer, envs) ->
+                            val list = (envs as? kotlinx.serialization.json.JsonArray).orEmpty()
+                            Text(
+                                "$peer  (${list.size} envelopes)",
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                            )
+                            list.forEach { e -> CrossHostEnvelopeRow(e as? kotlinx.serialization.json.JsonObject ?: return@forEach) }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
+}
+
+private fun kotlinx.serialization.json.JsonObject.str(key: String): String =
+    (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+
+@Composable
+private fun CrossHostEnvelopeRow(e: kotlinx.serialization.json.JsonObject) {
+    val mono = androidx.compose.ui.text.font.FontFamily.Monospace
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(
+            listOf(e.str("id").ifBlank { "?" }, e.str("kind"), e.str("label")).filter { it.isNotBlank() }.joinToString("  "),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = mono,
+        )
+        fun addrs(key: String, ip: String, port: String) =
+            (e[key] as? kotlinx.serialization.json.JsonArray).orEmpty()
+                .mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+                .joinToString(", ") { "${it.str(ip)}:${it.str(port)}" }
+        addrs("listen_addrs", "ip", "port").takeIf { it.isNotBlank() }?.let {
+            Text("listen: $it", style = MaterialTheme.typography.labelSmall, color = dim)
+        }
+        addrs("outbound_edges", "target_ip", "target_port").takeIf { it.isNotBlank() }?.let {
+            Text("outbound: $it", style = MaterialTheme.typography.labelSmall, color = dim)
+        }
+        (e["callers"] as? kotlinx.serialization.json.JsonArray).orEmpty()
+            .mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+            .forEach { c ->
+                val caller = c.str("caller").ifBlank { "?" }
+                val cross = isCrossHostCaller(caller)
+                Text(
+                    (if (cross) "🔗 cross  " else "") + "$caller  ${c.str("caller_kind")} · ${c.str("conns").ifBlank { "0" }} conns",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (cross) MaterialTheme.colorScheme.primary else dim,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+    }
+}
+
+/** PWA: a caller is cross-host when it has at least three `:`-separated parts (`peer:kind:id`). */
+internal fun isCrossHostCaller(caller: String): Boolean = caller.contains(':') && caller.split(':').size >= 3
 
 @Composable
 private fun ShapeBadge(shape: String) {
@@ -368,6 +498,25 @@ public class FederatedPeersViewModel(
                 val (_, transport) = resolver.resolve() ?: return@launch
                 loadByNode(transport)
             }
+        }
+    }
+
+    /** PWA `removeObserverPeer`: DELETE /api/observer/peers/{name}; result → alert dock (D41a). */
+    public fun removePeer(name: String) {
+        viewModelScope.launch {
+            val (_, transport) = resolver.resolve() ?: return@launch
+            transport.removeObserverPeer(name).fold(
+                onSuccess = {
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post("Removed peer $name")
+                    refresh()
+                },
+                onFailure = { e ->
+                    com.dmzs.datawatchclient.ui.shell.AlertDockChannel.post(
+                        "Remove failed: ${e.message ?: e::class.simpleName}",
+                        com.dmzs.datawatchclient.ui.shell.DockLevel.Error,
+                    )
+                },
+            )
         }
     }
 

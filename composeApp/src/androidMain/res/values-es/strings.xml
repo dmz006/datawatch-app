@@ -1227,4 +1227,11 @@
     <string name="signal_link_copy">Copiar enlace</string>
     <string name="signal_link_open">Abrir en Signal</string>
     <string name="signal_link_no_app">Signal no está instalado en este dispositivo: escanea o pega el enlace en el teléfono que vas a vincular.</string>
+    <string name="stats_gpu_error_title">Falló la sonda de GPU</string>
+    <string name="observer_cross_host_view">Vista entre hosts</string>
+    <string name="observer_cross_host_title">Vista de envelopes entre hosts</string>
+    <string name="observer_cross_host_empty">No hay envelopes — el observador local está vacío y ningún par ha enviado datos.</string>
+    <string name="observer_remove_peer_title">¿Eliminar el par \"%1$s\"?</string>
+    <string name="observer_remove_peer_body">Se volverá a registrar automáticamente en el próximo envío (el token rota).</string>
+    <string name="action_remove">Eliminar</string>
 </resources>

@@ -1758,6 +1758,13 @@ public interface TransportClient {
         sessionId: String,
         text: String,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("sendChannelMessage"))
+
+    /**
+     * GET /api/observer/envelopes/all-peers — `{by_peer: {peer: [envelope…]}}`
+     * with cross-host caller attribution (PWA `showCrossHostView`).
+     */
+    public suspend fun fetchCrossHostEnvelopesJson(): Result<kotlinx.serialization.json.JsonObject> =
+        Result.failure(UnsupportedOperationException("fetchCrossHostEnvelopesJson"))
 }
 
 /** One server-sent event from the Signal device-link stream (`event:` name + `data:` payload). */

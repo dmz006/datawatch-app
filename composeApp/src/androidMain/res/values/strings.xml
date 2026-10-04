@@ -1544,4 +1544,10 @@
     <string name="signal_link_copy">Copy link</string>
     <string name="signal_link_open">Open in Signal</string>
     <string name="signal_link_no_app">Signal is not installed on this device — scan or paste the link on the phone you are linking.</string>
+    <string name="stats_gpu_error_title">GPU probe failed</string>
+    <string name="observer_cross_host_view">Cross-host view</string>
+    <string name="observer_cross_host_title">Cross-host envelope view</string>
+    <string name="observer_cross_host_empty">No envelopes anywhere — local observer empty and no peers pushed yet.</string>
+    <string name="observer_remove_peer_title">Remove peer \"%1$s\"?</string>
+    <string name="observer_remove_peer_body">It will auto-re-register on next push (token rotates).</string>
 </resources>

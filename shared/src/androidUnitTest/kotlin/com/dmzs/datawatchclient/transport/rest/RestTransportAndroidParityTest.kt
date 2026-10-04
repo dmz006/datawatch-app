@@ -103,4 +103,13 @@ class RestTransportAndroidParityTest {
             assertTrue(body.contains("\"fix_loop_max_retries\":2"), body)
             assertTrue(body.contains("\"rules_grader_enabled\":true"), body)
         }
+
+    @Test
+    fun fetchCrossHostEnvelopesHitsAllPeers() =
+        runTest {
+            server.enqueue(json("""{"by_peer":{"local":[{"id":"e1","kind":"session"}]}}"""))
+            val obj = transport.fetchCrossHostEnvelopesJson().getOrThrow()
+            assertTrue(obj.containsKey("by_peer"))
+            assertEquals("/api/observer/envelopes/all-peers", server.takeRequest().path)
+        }
 }
